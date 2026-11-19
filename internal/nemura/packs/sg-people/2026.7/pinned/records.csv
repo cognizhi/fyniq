@@ -1,0 +1,3 @@
+case,person,date,want_months,why,source
+current employees,current,2026-11-19,24,"MOM: latest two years",mom-employment-records
+former employees,former,2026-11-19,24,"MOM: last two years, kept one year after leaving",mom-employment-records

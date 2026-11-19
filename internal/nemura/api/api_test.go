@@ -330,6 +330,18 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 // fakeLetters answers letters with whatever the test says.
 type fakePayroll struct{ err error }
 
+func (f fakePayroll) PublishPayslips(context.Context, Session, uuid.UUID, int) (int, error) {
+	return 2, f.err
+}
+func (f fakePayroll) MyPayslips(context.Context, Session) ([]PayslipSummary, error) {
+	return nil, f.err
+}
+func (f fakePayroll) MyPayslip(context.Context, Session, uuid.UUID) (PayslipView, error) {
+	return PayslipView{}, f.err
+}
+func (f fakePayroll) MyPayslipFile(context.Context, Session, uuid.UUID) (string, []byte, error) {
+	return "PS-202606-0001", []byte("%PDF"), f.err
+}
 func (f fakePayroll) Approve(context.Context, Session, uuid.UUID, int, string) error { return f.err }
 func (f fakePayroll) Changes(context.Context, Session, uuid.UUID) (RunChanges, error) {
 	return RunChanges{}, f.err

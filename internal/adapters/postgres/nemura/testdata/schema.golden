@@ -52,6 +52,7 @@ pay_run | nemura_migrator | true | true
 pay_run_line | nemura_migrator | true | true
 pay_run_override | nemura_migrator | true | true
 pay_run_version | nemura_migrator | true | true
+payslip | nemura_migrator | true | true
 person | nemura_migrator | true | true
 person_classification | nemura_migrator | true | true
 person_contact | nemura_migrator | true | true
@@ -637,6 +638,18 @@ pay_run_version | approved_by | uuid | false |
 pay_run_version | approved_at | timestamp with time zone | false | 
 pay_run_version | approved_digest | bytea | false | 
 pay_run_version | envelope | jsonb | false | 
+payslip | organisation_id | uuid | true | nemura.current_org()
+payslip | id | uuid | true | uuidv7()
+payslip | version_id | uuid | true | 
+payslip | person_id | uuid | true | 
+payslip | month | date | true | 
+payslip | pay_date | date | true | 
+payslip | reference | text | true | 
+payslip | sha256 | bytea | true | 
+payslip | blob_key | text | true | 
+payslip | data | jsonb | true | 
+payslip | published_by | uuid | true | 
+payslip | published_at | timestamp with time zone | true | 
 person | organisation_id | uuid | true | nemura.current_org()
 person | id | uuid | true | uuidv7()
 person | member_id | uuid | false | 
@@ -1716,6 +1729,27 @@ pay_run_version | pay_run_version_state_not_null | NOT NULL state
 pay_run_version | pay_run_version_supersedes_fkey | FOREIGN KEY (organisation_id, supersedes) REFERENCES nemura.pay_run_version(organisation_id, id)
 pay_run_version | pay_run_version_version_not_null | NOT NULL version
 pay_run_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+payslip | payslip_blob_key_not_null | NOT NULL blob_key
+payslip | payslip_by_fkey | FOREIGN KEY (organisation_id, published_by) REFERENCES nemura.member(organisation_id, id)
+payslip | payslip_data_not_null | NOT NULL data
+payslip | payslip_id_not_null | NOT NULL id
+payslip | payslip_month | CHECK ((EXTRACT(day FROM month) = (1)::numeric))
+payslip | payslip_month_not_null | NOT NULL month
+payslip | payslip_once | UNIQUE (organisation_id, version_id, person_id)
+payslip | payslip_organisation_id_not_null | NOT NULL organisation_id
+payslip | payslip_pay_date_not_null | NOT NULL pay_date
+payslip | payslip_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+payslip | payslip_person_id_not_null | NOT NULL person_id
+payslip | payslip_pkey | PRIMARY KEY (organisation_id, id)
+payslip | payslip_published_at_not_null | NOT NULL published_at
+payslip | payslip_published_by_not_null | NOT NULL published_by
+payslip | payslip_reference_not_null | NOT NULL reference
+payslip | payslip_reference_once | UNIQUE (organisation_id, reference)
+payslip | payslip_sha | CHECK ((octet_length(sha256) = 32))
+payslip | payslip_sha256_not_null | NOT NULL sha256
+payslip | payslip_version_fkey | FOREIGN KEY (organisation_id, version_id) REFERENCES nemura.pay_run_version(organisation_id, id)
+payslip | payslip_version_id_not_null | NOT NULL version_id
+payslip | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 person | person_created_at_not_null | NOT NULL created_at
 person | person_employment_start_not_null | NOT NULL employment_start
 person | person_id_not_null | NOT NULL id
@@ -2129,6 +2163,10 @@ CREATE UNIQUE INDEX pay_run_pkey ON nemura.pay_run USING btree (organisation_id,
 CREATE UNIQUE INDEX pay_run_version_once ON nemura.pay_run_version USING btree (organisation_id, run_id, version)
 CREATE UNIQUE INDEX pay_run_version_pkey ON nemura.pay_run_version USING btree (organisation_id, id)
 CREATE INDEX pay_run_version_run_idx ON nemura.pay_run_version USING btree (organisation_id, run_id, version)
+CREATE UNIQUE INDEX payslip_once ON nemura.payslip USING btree (organisation_id, version_id, person_id)
+CREATE INDEX payslip_person_idx ON nemura.payslip USING btree (organisation_id, person_id, month)
+CREATE UNIQUE INDEX payslip_pkey ON nemura.payslip USING btree (organisation_id, id)
+CREATE UNIQUE INDEX payslip_reference_once ON nemura.payslip USING btree (organisation_id, reference)
 CREATE INDEX person_classification_person_idx ON nemura.person_classification USING btree (organisation_id, person_id, effective_from)
 CREATE UNIQUE INDEX person_classification_pkey ON nemura.person_classification USING btree (organisation_id, id)
 CREATE UNIQUE INDEX person_contact_pkey ON nemura.person_contact USING btree (organisation_id, person_id)
@@ -2258,6 +2296,8 @@ CREATE TRIGGER pay_run_override_guard BEFORE DELETE OR UPDATE ON nemura.pay_run_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_run_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_run_override', 'id')
 CREATE TRIGGER pay_run_version_guard BEFORE DELETE OR UPDATE ON nemura.pay_run_version FOR EACH ROW EXECUTE FUNCTION nemura.pay_run_version_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_run_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_run_version', 'id')
+CREATE TRIGGER payslip_append_only BEFORE DELETE OR UPDATE ON nemura.payslip FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('A payslip')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.payslip DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('payslip', 'id')
 CREATE TRIGGER person_guard BEFORE DELETE OR UPDATE ON nemura.person FOR EACH ROW EXECUTE FUNCTION nemura.person_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.person DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('person', 'id')
 CREATE TRIGGER person_classification_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.person_classification FOR EACH ROW EXECUTE FUNCTION nemura.person_classification_guard()
@@ -2348,6 +2388,7 @@ pay_run | tenant_isolation | (organisation_id = nemura.current_org()) | (organis
 pay_run_line | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_run_override | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_run_version | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+payslip | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person_classification | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person_contact | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())

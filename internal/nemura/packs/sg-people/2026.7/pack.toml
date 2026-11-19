@@ -1,0 +1,291 @@
+# sg-people@2026.7: sg-people@2026.6 with the twelve items an itemised payslip must hold and the days to give it, read from MOM's page on itemised pay slips on 20 Nov 2026 (p1-nemura-payroll slice 4).
+# The version before, kept: sg-people@2026.6: sg-people@2026.5 with the key employment terms (KETs) the employer gives in writing and the days to give them, read from MOM's tripartite guidelines on 20 Nov 2026 (p1-nemura-self-service-letters slice 2).
+# The version before, kept: sg-people@2026.5: sg-people@2026.4 with normal hours of work, rest-day pay by branch and adoption leave, read from MOM on 20 Nov 2026 (p1-nemura-leave-time left items).
+# The version before, kept: sg-people@2026.4: sg-people@2026.3 with the Part IV overtime rate, monthly limit and coverage, read from MOM on 20 Nov 2026 (p1-nemura-leave-time slice 4).
+# The version before, kept: sg-people@2026.3: sg-people@2026.2 with the unpaid infant care leave entitlement and the flexible work request reply window, read from MOM on 20 Nov 2026 (p1-nemura-leave-time slice 3B).
+# The version before, kept: sg-people@2026.2: sg-people@2026.1 with the government-paid parental leave schemes (maternity, paternity, shared parental), read from MOM's and MSF's pages on 20 Nov 2026 (p1-nemura-leave-time slice 1).
+# The first version, kept: sg-people@2026.1: the first version of Singapore's people pack, read from MOM's pages on 2026-11-19 (PRD-002 NM-PACK-06; p1-nemura-records-packs slice 4).
+# Every value is RESEARCHED, not verified: nobody on the publisher's side has yet checked the page a second time (NM-PACK-07, owner decision O2, 19 Nov 2026).
+# A company's calculation that needs one asks for a recorded decision on first use; the publishers verify the values before the first paid person (CTL-NM-07).
+# effective_from of a row is this version's first day, not the day the rule began: MOM's pages do not say when a rule began.
+# Never edit this version once it is active anywhere: a correction is sg-people@2026.2.
+id = "sg-people@2026.7"
+supersedes = "sg-people@2026.6"
+title = "Singapore people facts: itemised payslips, key employment terms, normal hours, rest-day pay, adoption leave, Part IV overtime, unpaid infant care leave, the flexible work request window, the government-paid parental leave schemes, annual and sick leave days, public holidays for 2026 and 2027, childcare leave, when salary is paid, how long employment records are kept, and the retirement and re-employment ages by birth cohort"
+effective_from = "2026-01-01"
+review_date = "2027-01-31"
+verifier = "none yet: the values were read from the official pages by Claude Code on 2026-11-19 and 2026-11-20 and are researched (p1-nemura-records-packs, p1-nemura-leave-time; owner decision O2)"
+conditions = "Employees covered by the Employment Act, in Singapore. A public holiday on an employee's rest day makes their next working day a paid holiday, and one on a non-working day gives another day off or an extra day's pay (MOM); this table lists the gazetted dates. From 1 January 2029 MOM says the retirement and re-employment ages rise to 65 and 70; MOM's page does not say which birth cohorts, so no row is written for it yet. For parental_leave, effective_from and effective_to are the first and last birth date a row applies to. Adoption leave is recorded from the formal intent to adopt date, which the dependants do not hold yet."
+
+[[sources]]
+id = "mom-annual-leave"
+title = "MOM: Annual leave, eligibility and entitlement"
+url = "https://www.mom.gov.sg/employment-practices/leave/annual-leave/eligibility-and-entitlement"
+section = "Eligibility and entitlement"
+kind = "official guidance"
+retrieved = "2026-11-19"
+quote = "If you are covered by the Employment Act and have worked for at least 3 months, you are entitled to annual leave. The table gives 7 days in the 1st year, increasing by one day each year to 14 days in the 8th year and thereafter."
+
+[[sources]]
+id = "mom-sick-leave"
+title = "MOM: Sick leave, eligibility and entitlement"
+url = "https://www.mom.gov.sg/employment-practices/leave/sick-leave/eligibility-and-entitlement"
+section = "The example table of paid sick leave by months of service"
+kind = "official guidance"
+retrieved = "2026-11-19"
+quote = "3 months: 5 days outpatient, 15 hospitalisation; 4: 8 and 30; 5: 11 and 45; 6 and thereafter: 14 and 60."
+
+[[sources]]
+id = "mom-public-holidays"
+title = "MOM: Public holidays"
+url = "https://www.mom.gov.sg/employment-practices/public-holidays"
+section = "The public holidays of 2026 and 2027"
+kind = "official guidance"
+retrieved = "2026-11-19"
+quote = "2027: 1 January, Friday, New Year's Day; 6 and 7 February, Saturday and Sunday, Chinese New Year; 26 March, Friday, Good Friday; 1 May, Saturday, Labour Day; 9 August, Monday, National Day; 25 December, Saturday, Christmas Day."
+
+[[sources]]
+id = "mom-childcare-leave"
+title = "MOM: Childcare leave, eligibility and entitlement"
+url = "https://www.mom.gov.sg/employment-practices/leave/childcare-leave/eligibility-and-entitlement"
+section = "Eligibility and entitlement"
+kind = "official guidance"
+retrieved = "2026-11-19"
+quote = "Eligible working parents of Singapore citizen children are entitled to 6 days of paid childcare leave per year. If your youngest Singaporean child is between 7 and 12 years old, you could be eligible for 2 days of extended childcare leave. If your child is not a Singapore citizen, you and your spouse are each entitled to 2 days of childcare leave."
+
+[[sources]]
+id = "mom-paying-salary"
+title = "MOM: Paying salary"
+url = "https://www.mom.gov.sg/employment-practices/salary/paying-salary"
+section = "When to pay salary"
+kind = "official guidance"
+retrieved = "2026-11-19"
+quote = "Within 7 days after the end of the salary period. For overtime work, within 14 days after the end of the salary period."
+
+[[sources]]
+id = "mom-employment-records"
+title = "MOM: Employment records"
+url = "https://www.mom.gov.sg/employment-practices/employment-records"
+section = "How long to keep records"
+kind = "official guidance"
+retrieved = "2026-11-19"
+quote = "For current employees: Latest two years. For ex-employees: Last two years, to be kept for one year after the employee leaves employment."
+
+[[sources]]
+id = "mom-re-employment"
+title = "MOM: Responsible re-employment"
+url = "https://www.mom.gov.sg/employment-practices/re-employment"
+section = "Retirement and re-employment ages"
+kind = "official guidance"
+retrieved = "2026-11-19"
+quote = "From 1 July 2026, the minimum retirement age is 64 years. The re-employment age was raised from 68 to 69 from 1 July 2026. Born 1 July 1958 to 30 June 1960: retirement 62; 1 July 1960 to 30 June 1963: 63; from 1 July 1963: 64."
+
+[[sources]]
+id = "mom-maternity-leave"
+title = "MOM: Maternity leave eligibility and entitlement"
+url = "https://www.mom.gov.sg/employment-practices/leave/maternity-leave/eligibility-and-entitlement"
+section = "Government-Paid Maternity Leave and Employment Act maternity leave"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "16 weeks of Government-Paid Maternity Leave. Your child must be a Singapore citizen and you have served your employer for a continuous period of at least 3 months before the birth. 1st and 2nd child: your employer pays the first 8 weeks, at your gross rate of pay; the Government reimburses the last 8 weeks, capped at $10,000 per 4 weeks or a total of $20,000 per child order. 3rd and later child: the Government reimburses all 16 weeks, capped at $10,000 per 4 weeks or a total of $40,000 per child order. Under the Act you are entitled to 12 weeks of maternity leave."
+
+[[sources]]
+id = "msf-paternity-leave"
+title = "MSF: Paternity Leave (GPPL), Government-Paid Leave portal"
+url = "https://www.profamilyleave.msf.gov.sg/schemes/paternity-leave"
+section = "Eligibility and entitlements"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "4 weeks of Government-Paid Paternity Leave (GPPL), from 1 Apr 2025. At least 3 continuous months of service right before the child's birth. Capped at $2,500 per week and up to $10,000 in total. Claims must be submitted no later than 3 months after the last date of your GPPL."
+
+[[sources]]
+id = "msf-shared-parental-leave"
+title = "MSF: Shared Parental Leave (SPL), Government-Paid Leave portal"
+url = "https://www.profamilyleave.msf.gov.sg/schemes/shared-parental-leave"
+section = "Eligibility and entitlements"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "Births or FIA dates from 1 April 2026: 10 weeks of SPL. Births or FIA dates from 1 April 2025 to 31 March 2026: 6 weeks of SPL. By default, each parent will be allocated half the SPL entitlement. Capped at $2,500 per week. Submission should be made no later than 3 months after the last date of your SPL."
+
+[[sources]]
+id = "mom-infant-care-leave"
+title = "MOM: Unpaid infant care leave"
+url = "https://www.mom.gov.sg/employment-practices/leave/unpaid-infant-care-leave"
+section = "Eligibility and entitlement"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "Each parent will have 12 days of unpaid infant care leave per year. Your child is below 2 years of age and is a Singapore citizen. You have served your employer for a continuous period of at least 3 months. A parent is not eligible for more than 24 days of unpaid infant care leave in respect of any child."
+
+[[sources]]
+id = "mom-flexible-work"
+title = "MOM: Tripartite Guidelines on Flexible Work Arrangement Requests (TG-FWAR)"
+url = "https://www.mom.gov.sg/employment-practices/good-work-practices/flexible-work-arrangements"
+section = "Responding to a request"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "You have 2 months to respond to your employee's FWA request. The Tripartite Guidelines took effect on 1 December 2024. (MOM's FAQ: you should provide a written decision on formal FWA requests within 2 months of receiving it, and if you reject the request, you should provide a reason for rejection.)"
+
+[[sources]]
+id = "mom-hours-overtime"
+title = "MOM: Hours of work, overtime and rest days"
+url = "https://www.mom.gov.sg/employment-practices/hours-of-work-overtime-and-rest-days"
+section = "Overtime"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "For overtime work, your employer must pay you at least 1.5 times the hourly basic rate of pay. An employee can only work up to 72 overtime hours in a month. A non-workman earning a monthly basic salary of $2,600 or less. A workman earning a monthly basic salary of $4,500 or less."
+
+[[sources]]
+id = "mom-hours-rest-day"
+title = "MOM: Hours of work, overtime and rest days (normal hours and rest-day pay)"
+url = "https://www.mom.gov.sg/employment-practices/hours-of-work-overtime-and-rest-days"
+section = "Normal hours of work and pay for work on a rest day"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "5 days or less a week: up to 9 hours per day or 44 hours a week. More than 5 days a week: up to 8 hours a day or 44 hours a week. Work on a rest day at the employer's request: up to half the normal daily hours 1 day's salary; more than half 2 days' salary; beyond normal daily hours 2 days' salary + overtime pay. At the employee's request: half day's salary; 1 day's salary; 1 day's salary + overtime pay."
+
+[[sources]]
+id = "mom-adoption-leave"
+title = "MOM: Adoption leave"
+url = "https://www.mom.gov.sg/employment-practices/leave/adoption-leave"
+section = "Eligibility and entitlement"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "You are entitled to 12 weeks of adoption leave, capped at $10,000 per 4 weeks of leave taken, including CPF. Your adopted child is below the age of 12 months at the point of your formal intent to adopt and is a Singapore citizen. You have served your employer for a continuous period of at least 3 months before the date of formal intent to adopt. Your employer will pay you during the leave period. The Government then reimburses employers for part of the leave."
+
+[[sources]]
+id = "mom-kets-guidelines"
+title = "MOM: Tripartite Guidelines on Issuance of Key Employment Terms in Writing"
+url = "https://www.mom.gov.sg/-/media/mom/documents/employment-practices/tripartite-guidelines-on-issuance-of-written-key-employment-terms.pdf"
+section = "Who and when (paragraphs 3 and 4) and the list of items (paragraph 6)"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "All employees who have a continuous employment of at least 14 days should be provided with key employment terms in writing. Employers are encouraged to provide them before the commencement of work; if not, no later than 14 days after the start of employment. The items: 1 Name of employer; 2 Name of employee; 3 Job title and main duties and responsibilities; 4 Date of commencing employment; 5 (only for fixed-term contracts) Duration of employment; 6 Daily working hours, number of working days per week and rest day(s); 7 Salary period; 8 Basic salary per salary period; 9 Fixed allowances per salary period; 10 Fixed deductions per salary period; 11 (only if different from the salary period) Overtime payment period; 12 Overtime rate of pay; 13 Other salary-related components; 14 Leave entitlements; 15 Other medical benefits; 16 Probation period; 17 Notice period for termination of employment initiated by either party. Employers need not include items that are not relevant to the employee."
+
+[[sources]]
+id = "mom-itemised-payslips"
+title = "MOM: Itemised pay slips"
+url = "https://www.mom.gov.sg/employment-practices/salary/itemised-payslips"
+section = "Who it applies to; when to give it; the items to include"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "All employees covered by the Employment Act must receive itemised pay slips. Give together with payment to employee; if unable to give together, within three working days of payment; in the case of termination or dismissal, together with outstanding salary. Pay slips must include the items below, unless an item is not applicable: 1 Full name of employer. 2 Full name of employee. 3 Date of payment (or dates, if the pay slip consolidates multiple payments). 4 Basic salary (for hourly, daily or piece-rated workers, the basic rate of pay and the total number of hours or days worked or pieces produced). 5 Start and end date of salary period. 6 Allowances paid for the salary period: all fixed allowances, e.g. transport; all ad-hoc allowances, e.g. one-off uniform allowance. 7 Any other additional payment for each salary period: bonuses, rest day pay, public holiday pay. 8 Deductions made for each salary period: all fixed deductions (e.g. employee's CPF contribution); all ad-hoc deductions (e.g. no-pay leave, absence from work). 9 Overtime hours worked. 10 Overtime pay. 11 Start and end date of overtime payment period (if different from item 5). 12 Net salary paid in total."
+
+[[tables]]
+name = "annual_leave"
+file = "annual_leave.csv"
+description = "Paid annual leave days by year of service"
+
+[[tables]]
+name = "sick_leave"
+file = "sick_leave.csv"
+description = "Paid sick leave days by months of service"
+
+[[tables]]
+name = "holidays"
+file = "holidays.csv"
+description = "Gazetted public holidays"
+
+[[tables]]
+name = "family_leave"
+file = "family_leave.csv"
+description = "Childcare leave days a year"
+
+[[tables]]
+name = "timing"
+file = "timing.csv"
+description = "When salary and overtime are paid"
+
+[[tables]]
+name = "records"
+file = "records.csv"
+description = "How long employment records are kept"
+
+[[tables]]
+name = "retirement"
+file = "retirement.csv"
+description = "Retirement and re-employment ages by birth cohort"
+
+[[tables]]
+name = "parental_leave"
+file = "parental_leave.csv"
+description = "Government-paid parental leave schemes by birth date"
+
+[[tables]]
+name = "flexible_work"
+file = "flexible_work.csv"
+description = "How long the employer has to reply to a formal flexible work arrangement request"
+
+[[tables]]
+name = "part_iv"
+file = "part_iv.csv"
+description = "Part IV of the Employment Act: the overtime rate, the monthly limit and who is covered"
+
+[[tables]]
+name = "ket_items"
+file = "ket_items.csv"
+description = "The key employment terms the employer gives in writing"
+
+[[tables]]
+name = "payslip_items"
+file = "payslip_items.csv"
+description = "The items an itemised payslip must hold"
+
+[[pinned]]
+name = "annual_leave"
+file = "pinned/annual_leave.csv"
+description = "Hand-worked cases for paid annual leave days by year of service"
+
+[[pinned]]
+name = "sick_leave"
+file = "pinned/sick_leave.csv"
+description = "Hand-worked cases for paid sick leave days by months of service"
+
+[[pinned]]
+name = "holidays"
+file = "pinned/holidays.csv"
+description = "Hand-worked cases for gazetted public holidays"
+
+[[pinned]]
+name = "family_leave"
+file = "pinned/family_leave.csv"
+description = "Hand-worked cases for childcare leave days a year"
+
+[[pinned]]
+name = "timing"
+file = "pinned/timing.csv"
+description = "Hand-worked cases for when salary and overtime are paid"
+
+[[pinned]]
+name = "records"
+file = "pinned/records.csv"
+description = "Hand-worked cases for how long employment records are kept"
+
+[[pinned]]
+name = "retirement"
+file = "pinned/retirement.csv"
+description = "Hand-worked cases for retirement and re-employment ages by birth cohort"
+
+[[pinned]]
+name = "parental_leave"
+file = "pinned/parental_leave.csv"
+description = "Hand-worked cases for government-paid parental leave schemes"
+
+[[pinned]]
+name = "flexible_work"
+file = "pinned/flexible_work.csv"
+description = "Hand-worked cases for the flexible work request reply window"
+
+[[pinned]]
+name = "part_iv"
+file = "pinned/part_iv.csv"
+description = "Hand-worked cases for the Part IV overtime rate, limit and coverage"
+
+[[pinned]]
+name = "ket_items"
+file = "pinned/ket_items.csv"
+description = "Hand-worked cases for the key employment terms"
+
+[[pinned]]
+name = "payslip_items"
+file = "pinned/payslip_items.csv"
+description = "Hand-worked cases for the payslip items"

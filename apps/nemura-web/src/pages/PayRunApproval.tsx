@@ -34,6 +34,11 @@ export function PayRunApproval({ id, roles, member }: { id: string; roles: reado
     setNote(error ? { ok: false, text: problem(error) } : { ok: true, text: t("approval.done") });
     if (!error) load();
   };
+  const publish = async () => {
+    if (!v) return;
+    const { data, error } = await api.POST("/v1/payroll/runs/{id}/payslips", { params: { path: { id } }, body: { version: v.version } });
+    setNote(data ? { ok: true, text: t("approval.published", { n: String(data.published) }) } : { ok: false, text: problem(error) });
+  };
   return (
     <Shell roles={roles} directory={team(roles)} features={admin(roles)}>
       <main className="nm-shell__main" id="main">
@@ -91,6 +96,7 @@ export function PayRunApproval({ id, roles, member }: { id: string; roles: reado
             {v.state === "calculated" && !mine && v.flags_failing > 0 && <p role="alert" className="fy-secondary">{t("approval.failing", { n: String(v.flags_failing) })}</p>}
             {v.state === "calculated" && !mine && v.flags_failing === 0 && <button className="fy-btn fy-btn--primary" type="button" onClick={approve}>{t("approval.approve", { version: String(v.version) })}</button>}
             {v.state === "approved" && <p role="status" className="fy-secondary">{t("approval.approved")}</p>}
+            {v.state === "approved" && <button className="fy-btn fy-btn--secondary" type="button" onClick={publish}>{t("approval.publish", { version: String(v.version) })}</button>}
           </>
         )}
       </main>

@@ -4,7 +4,7 @@ type: task
 title: Read and approve a pay run in Nemura
 summary: Who approves a pay run and why not its preparer, what the approver reads (digest, flags, overrides, what changed since last month) and what approving does
 sources:
-  - docs/user-guide/nemura/payroll-approval.md sha256:faefdfceaf5267911be09a113f6b9df3b1eca34fe53e50e2c2c228be42a2b9aa
+  - docs/user-guide/nemura/payroll-approval.md sha256:67be065a4fd71ff31b80313318357e3b684cfd93212479ee5ffa3b51dcd65b9c
 data_class: personal
 taint: trusted
 status: published
@@ -38,7 +38,7 @@ aliases:
 ## What happens next
 
 - The approval is written once with what the passkey confirmed; a correction of an approved month is a new version with a reason, and once approved it supersedes the one before.
-- The one-off items, unpaid leave and overtime the version used are marked used by the run. Nothing is posted or paid by approving. (src: docs/user-guide/nemura/payroll-approval.md#what-happens-next)
+- The one-off items, unpaid leave and overtime the version used are marked used by the run. Select **Publish the payslips** on an approved version to put each person's itemised payslip in their My pay (see [[nemura.my-pay]]); a version is published once and the employer's name is the letterhead's. Nothing is posted or paid by approving. (src: docs/user-guide/nemura/payroll-approval.md#what-happens-next)
 
 ## When it looks wrong
 
