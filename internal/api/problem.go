@@ -98,6 +98,9 @@ type Problem struct {
 	Fix      string         `json:"fix,omitempty" doc:"How to fix it." example:"Only a draft can be posted; reverse a posted journal instead."`
 	Instance string         `json:"instance,omitempty" format:"uri" doc:"The request this occurrence belongs to; quote it to support." example:"urn:fyniq:request:01JA2B3C4D5E6F7G8H9J0K1M2N"`
 	Errors   []FieldProblem `json:"errors,omitempty" doc:"Every invalid field, all at once."`
+	// OAuthError and OAuthErrorDescription are RFC 7591's error and error_description, which a registering client reads.
+	OAuthError            string `json:"error,omitempty" doc:"An OAuth error code, on a client registration's refusal (RFC 7591)." example:"invalid_redirect_uri"`
+	OAuthErrorDescription string `json:"error_description,omitempty" doc:"The same, in words." example:"The redirect URI is not exact."`
 
 	headers http.Header
 }
@@ -305,6 +308,10 @@ var codeFacts = map[string]struct {
 	CodeToolGrant:                 {403, "Not one of the agent's tools"},
 	CodeMCPScope:                  {403, "The app was not granted what this call needs"},
 	CodeMCPNotAgent:               {403, "Not the delegated token of an agent for a person"},
+	CodeRegClosed:                 {403, "AI apps cannot register here"},
+	CodeRegPolicy:                 {400, "The registration breaks the policy"},
+	CodeRegLimit:                  {429, "Too many registrations"},
+	CodeRegBackend:                {502, "The sign-in service did not take the registration"},
 	CodeMCPLimit:                  {429, "This app has made too many requests"},
 	CodeMCPTooLarge:               {422, "The result is larger than an AI app may receive"},
 	mcpgate.CodeOrganisationOff:   {403, "AI apps are not turned on for this organisation"},

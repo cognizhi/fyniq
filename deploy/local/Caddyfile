@@ -35,6 +35,10 @@
 	handle /.well-known/oauth-protected-resource* {
 		reverse_proxy mcp:8080
 	}
+	# RFC 8414: the authorisation server's metadata, which an MCP client finds from the protected-resource metadata; the API serves it.
+	handle /.well-known/oauth-authorization-server* {
+		reverse_proxy api:8080
+	}
 	handle /mcp* {
 		reverse_proxy mcp:8080 {
 			flush_interval -1

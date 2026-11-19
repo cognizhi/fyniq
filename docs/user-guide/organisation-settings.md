@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [CMP-PD-01, FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32, AI-35, AI-43]
+requirements: [CMP-PD-01, FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32, AI-35, AI-43, AI-90]
 status: draft
 ---
 
@@ -221,8 +221,13 @@ always wins.
 - **AI apps through MCP**: off unless changed. Turning it on needs a second approver; turning it off takes effect at
   once and cuts every AI app off.
 - **AI apps that may connect**: none unless changed. Enter the apps to allow, such as `claude-code`, separated by
-  commas. Only the apps this release has registered can be listed; an app that is not listed cannot connect. Adding an
-  app needs a second approver. Taking one off takes effect at once, with no second approver, and cuts that app off.
+  commas. You can list the apps this release has registered, and an app that registered itself, by the ID shown when it
+  asked; an app that is not listed cannot connect. Adding an app needs a second approver. Taking one off takes effect at
+  once, with no second approver, and cuts that app off.
+- **AI apps may register themselves**: off unless changed. An AI app can ask to be registered, on its own, only while an
+  Owner has turned this on with a second approver. A registered app is limited to the default read access, is not
+  verified, and cannot connect until an Owner adds it to the apps that may connect. A registration nobody approves
+  expires after 7 days, and an approved app nobody uses after 30. Turning it off takes effect at once.
 - Each person also has to opt in before an app can act for them, and sees what the app may read when they allow it.
 - This release only holds these settings. No AI app can connect until the MCP server is opened for the deployment, which
   is done separately, after a security review.

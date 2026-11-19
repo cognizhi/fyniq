@@ -324,6 +324,13 @@ fyniq_api       EXECUTE   link_identity()
 fyniq_api       EXECUTE   lock_ledger()
 fyniq_api       INSERT    mcp_call (app, app_version, at, code, duration_ms, facts, input_sha256, network, outcome, output_sha256, token_id, tool, user_id)
 fyniq_api       SELECT    mcp_call
+fyniq_api       EXECUTE   mcp_client_decide()
+fyniq_api       EXECUTE   mcp_client_register()
+fyniq_api       EXECUTE   mcp_client_status()
+fyniq_api       EXECUTE   mcp_client_touch()
+fyniq_api       EXECUTE   mcp_clients_expire()
+fyniq_api       EXECUTE   mcp_clients_pending()
+fyniq_api       EXECUTE   mcp_registration_open()
 fyniq_api       INSERT    mcp_seen (first_seen, kind, user_id, value)
 fyniq_api       SELECT    mcp_seen
 fyniq_api       INSERT    mcp_user_optin (opted_in, set_at, user_id)
@@ -1048,6 +1055,7 @@ fyniq_worker    SELECT    ledger_purged_entry
 fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
 fyniq_worker    SELECT    mcp_call
+fyniq_worker    EXECUTE   mcp_clients_expire()
 fyniq_worker    SELECT    mcp_seen
 fyniq_worker    SELECT    mcp_user_optin
 fyniq_worker    EXECUTE   member_emails()

@@ -36531,6 +36531,72 @@ components:
         - locked
         - etag
       type: object
+    OAuthClientRegistration:
+      additionalProperties: false
+      properties:
+        client_id:
+          description: The client's ID at Fyniq's OAuth server.
+          examples:
+            - mcp-0123456789abcdef0123
+          type: string
+        client_id_issued_at:
+          description: When it was issued, in seconds since 1970.
+          examples:
+            - 1763517600
+          format: int64
+          type: integer
+        client_name:
+          description: The name it registered with.
+          examples:
+            - Acme Books Assistant
+          type: string
+        grant_types:
+          description: Always the authorisation code and refresh tokens.
+          items:
+            description: An OAuth grant or response type.
+            examples:
+              - authorization_code
+            type: string
+          maxItems: 2
+          type: array
+        redirect_uris:
+          description: The exact redirect URIs it may use.
+          items:
+            description: An exact https or loopback redirect URI.
+            examples:
+              - https://acme.example/oauth/callback
+            type: string
+          maxItems: 5
+          type: array
+        response_types:
+          description: Always code.
+          items:
+            description: An OAuth grant or response type.
+            examples:
+              - authorization_code
+            type: string
+          maxItems: 1
+          type: array
+        scope:
+          description: "What it may ask for: the default read access only."
+          examples:
+            - openid offline_access fyniq.read.reports
+          type: string
+        token_endpoint_auth_method:
+          description: "Always none: a public client with PKCE."
+          examples:
+            - none
+          type: string
+      required:
+        - client_id
+        - client_id_issued_at
+        - client_name
+        - redirect_uris
+        - grant_types
+        - response_types
+        - token_endpoint_auth_method
+        - scope
+      type: object
     OffersOutputBody:
       additionalProperties: false
       properties:
@@ -40881,6 +40947,16 @@ components:
           description: What went wrong this time, in plain English.
           examples:
             - The journal is posted, not a draft.
+          type: string
+        error:
+          description: An OAuth error code, on a client registration's refusal (RFC 7591).
+          examples:
+            - invalid_redirect_uri
+          type: string
+        error_description:
+          description: The same, in words.
+          examples:
+            - The redirect URI is not exact.
           type: string
         errors:
           description: Every invalid field, all at once.
@@ -170768,6 +170844,125 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Own notifications and preferences (rev 0.6)
+        right: C
+  /v1/oauth/register:
+    post:
+      description: "Lets an AI app ask to be registered as an OAuth client (AI-90). Closed until an Owner turns it on with a second approver, and while the MCP server is off. Every request is checked against the policy: a public client with PKCE, exact https or loopback redirect URIs, nothing the server would fetch or trust, and a name that cannot pass for Fyniq or a known app. The client is created as an agent with the default read scope alone, unverified, and cannot connect until an Owner adds it to the apps that may connect. Limited by network and in total. Side effects: the client at the OAuth server and its record. Not idempotent: each call is a new client. Never on the AI's or MCP's tool list."
+      operationId: registerOAuthClient
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: "The client's metadata (RFC 7591): client_name, redirect_uris and, optionally, grant_types, response_types, token_endpoint_auth_method, scope and application_type. Anything else is refused."
+              examples:
+                - client_name: Acme Books Assistant
+                  redirect_uris:
+                    - https://acme.example/oauth/callback
+                  token_endpoint_auth_method: none
+              type: object
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthClientRegistration"
+          description: Created
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `MCP-REG-02` The registration breaks the policy."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `MCP-REG-01` AI apps cannot register here."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests; `MCP-REG-03` Too many registrations."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Gateway: `MCP-REG-04` The sign-in service did not take the registration."
+      summary: Register an AI app (RFC 7591)
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - MCP-REG-01
+        - MCP-REG-02
+        - MCP-REG-03
+        - MCP-REG-04
+      x-fyniq-exempt:
+        Idempotency-Key: RFC 7591 clients send none, and each call is meant to make a new client, limited by network (AI-90).
+        Prefer: A preview would show a client ID that does not exist and spend the network's registration allowance (AI-90).
+      x-fyniq-permission:
+        capability: (your session)
         right: C
   /v1/opening-balances:
     get:

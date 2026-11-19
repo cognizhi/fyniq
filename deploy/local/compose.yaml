@@ -159,6 +159,8 @@ services:
       FYNIQ_API_AUDIENCE: http://localhost:${FYNIQ_HTTP_PORT:-8080}/api
       FYNIQ_MCP_AUDIENCE: http://localhost:${FYNIQ_HTTP_PORT:-8080}/mcp
       FYNIQ_MCP_DELEGATION_CLIENT: mcp-delegation           # the MCP service's JWT-bearer client: its delegated tokens are accepted (local)
+      FYNIQ_OAUTH_ISSUER: http://localhost:${FYNIQ_HTTP_PORT:-8080}/oauth/   # the issuer the authorisation-server metadata names (RFC 8414)
+      FYNIQ_MCP_SERVER: ${FYNIQ_MCP_SERVER:-off}            # AI apps can register themselves only where the MCP server is on (AI-90)
       FYNIQ_PUBLIC_ORIGIN: http://localhost:${FYNIQ_HTTP_PORT:-8080}   # where the browser is: sign-in sends it back here
       FYNIQ_CLAMD_ADDR: ${FYNIQ_CLAMD_ADDR:-}                # clamav:3310 with the scanner profile; else the EICAR fake
       FYNIQ_TICK_INTERVAL: ${FYNIQ_TICK_INTERVAL:-5m}       # the API's own tick, as Cloud Scheduler's; the journeys' stack ticks faster

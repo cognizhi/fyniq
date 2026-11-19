@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:5f465e576d804ddacaf567e1700989e4bf42f3fa801162457394a0b0b15dc26f
+  - docs/user-guide/organisation-settings.md sha256:cbee3ae71921215e0cd7f49925e4b61bf79153a74c37397932a1d65e1f842127
 data_class: general
 taint: trusted
 status: draft
@@ -210,7 +210,8 @@ The calendar itself: [[compliance.calendar]].
 
 - Some AI apps, such as Claude Code or Claude Desktop, can work with the books on a person's behalf over the Model Context Protocol (MCP), using the same read tools as the assistant in Fyniq. They can read what that person may read and propose changes for a person to approve in Fyniq; they cannot approve, pay, export or change settings.
 - **AI apps through MCP**: off unless changed. Turning it on needs a second approver; turning it off takes effect at once and cuts every AI app off.
-- **AI apps that may connect**: none unless changed. Enter the apps to allow, such as `claude-code`, separated by commas; only the apps the release has registered can be listed, and an app that is not listed cannot connect. Adding an app needs a second approver; taking one off takes effect at once, with no second approver, and cuts that app off.
+- **AI apps that may connect**: none unless changed. Enter the apps to allow, such as `claude-code`, separated by commas; you can list the apps the release has registered, and an app that registered itself by the ID shown when it asked, and an app that is not listed cannot connect. Adding an app needs a second approver; taking one off takes effect at once, with no second approver, and cuts that app off.
+- **AI apps may register themselves**: off unless changed. An AI app can ask to be registered, on its own, only while an Owner has turned this on with a second approver. A registered app is limited to the default read access, is not verified, and cannot connect until an Owner adds it to the apps that may connect. A registration nobody approves expires after 7 days, and an approved app nobody uses after 30. Turning it off takes effect at once.
 - Each person also has to opt in before an app can act for them, and sees what the app may read when they allow it.
 - The release only holds these settings: no AI app can connect until the MCP server is opened for the deployment, separately, after a security review.
 

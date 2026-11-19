@@ -139,7 +139,7 @@ func (a *API) runMCPCall(ctx context.Context, p authn.Principal, in *mcpToolCall
 // mcpAdmit asks the gate consent passed, again: the organisation's switch, the allowlist and the person's opt-in. A failure to
 // ask refuses (fail closed).
 func (a *API) mcpAdmit(ctx context.Context, p authn.Principal, app string) error {
-	code, why, err := mcpgate.Gate{Store: a.deps.Store, Clock: a.deps.Clock}.Admit(ctx, p.Organisation, p.UserID, app)
+	code, why, err := mcpgate.Gate{Store: a.deps.Store, Clock: a.deps.Clock, Clients: a.deps.MCPClients}.Admit(ctx, p.Organisation, p.UserID, app)
 	if err != nil {
 		return err
 	}

@@ -1964,6 +1964,17 @@ type FyniqMcpCall struct {
 	At             time.Time
 }
 
+type FyniqMcpClient struct {
+	ClientID     string
+	Name         string
+	RedirectUris []string
+	Status       string
+	Network      string
+	RegisteredAt time.Time
+	DecidedAt    *time.Time
+	LastUsedAt   *time.Time
+}
+
 type FyniqMcpSeen struct {
 	OrganisationID uuid.UUID
 	UserID         uuid.UUID

@@ -11309,6 +11309,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/oauth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register an AI app (RFC 7591)
+         * @description Lets an AI app ask to be registered as an OAuth client (AI-90). Closed until an Owner turns it on with a second approver, and while the MCP server is off. Every request is checked against the policy: a public client with PKCE, exact https or loopback redirect URIs, nothing the server would fetch or trust, and a name that cannot pass for Fyniq or a known app. The client is created as an agent with the default read scope alone, unverified, and cannot connect until an Owner adds it to the apps that may connect. Limited by network and in total. Side effects: the client at the OAuth server and its record. Not idempotent: each call is a new client. Never on the AI's or MCP's tool list.
+         */
+        post: operations["registerOAuthClient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/opening-balances": {
         parameters: {
             query?: never;
@@ -40737,6 +40757,40 @@ export interface components {
              */
             type: string;
         };
+        OAuthClientRegistration: {
+            /**
+             * @description The client's ID at Fyniq's OAuth server.
+             * @example mcp-0123456789abcdef0123
+             */
+            client_id: string;
+            /**
+             * Format: int64
+             * @description When it was issued, in seconds since 1970.
+             * @example 1763517600
+             */
+            client_id_issued_at: number;
+            /**
+             * @description The name it registered with.
+             * @example Acme Books Assistant
+             */
+            client_name: string;
+            /** @description Always the authorisation code and refresh tokens. */
+            grant_types: string[];
+            /** @description The exact redirect URIs it may use. */
+            redirect_uris: string[];
+            /** @description Always code. */
+            response_types: string[];
+            /**
+             * @description What it may ask for: the default read access only.
+             * @example openid offline_access fyniq.read.reports
+             */
+            scope: string;
+            /**
+             * @description Always none: a public client with PKCE.
+             * @example none
+             */
+            token_endpoint_auth_method: string;
+        };
         OffersOutputBody: {
             /** @description The rules offered, most lines first. */
             items: components["schemas"]["BankRuleOffer"][];
@@ -43862,6 +43916,16 @@ export interface components {
              * @example The journal is posted, not a draft.
              */
             detail: string;
+            /**
+             * @description An OAuth error code, on a client registration's refusal (RFC 7591).
+             * @example invalid_redirect_uri
+             */
+            error?: string;
+            /**
+             * @description The same, in words.
+             * @example The redirect URI is not exact.
+             */
+            error_description?: string;
             /** @description Every invalid field, all at once. */
             errors?: components["schemas"]["FieldProblem"][] | null;
             /**
@@ -140312,6 +140376,103 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    registerOAuthClient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthClientRegistration"];
+                };
+            };
+            /** @description Bad Request: `MCP-REG-02` The registration breaks the policy. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `MCP-REG-01` AI apps cannot register here. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests; `MCP-REG-03` Too many registrations. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Bad Gateway: `MCP-REG-04` The sign-in service did not take the registration. */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

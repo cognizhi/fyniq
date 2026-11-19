@@ -22680,6 +22680,25 @@ Opts you in to AI apps acting for you over MCP, or out (AI-35). Opting out stops
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `MCP-OPT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/oauth/register`
+
+**Register an AI app (RFC 7591)** (`registerOAuthClient`)
+
+Lets an AI app ask to be registered as an OAuth client (AI-90). Closed until an Owner turns it on with a second approver, and while the MCP server is off. Every request is checked against the policy: a public client with PKCE, exact https or loopback redirect URIs, nothing the server would fetch or trust, and a name that cannot pass for Fyniq or a known app. The client is created as an agent with the default read scope alone, unverified, and cannot connect until an Owner adds it to the apps that may connect. Limited by network and in total. Side effects: the client at the OAuth server and its record. Not idempotent: each call is a new client. Never on the AI's or MCP's tool list.
+
+- **Permission:** Create on (your session)
+- **Request body:** [``](../../contracts/schemas/.schema.json)
+- **Responses:**
+  - `201` Created [`OAuthClientRegistration`](../../contracts/schemas/OAuthClientRegistration.schema.json)
+  - `400` Bad Request: `MCP-REG-02` The registration breaks the policy.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `MCP-REG-01` AI apps cannot register here.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests; `MCP-REG-03` Too many registrations.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `502` Bad Gateway: `MCP-REG-04` The sign-in service did not take the registration.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `MCP-REG-01`, `MCP-REG-02`, `MCP-REG-03`, `MCP-REG-04`
+
 ## Help
 
 Each person's first-run tour state: the tour's only write (FR-UX-34, G4-104).

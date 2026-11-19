@@ -293,6 +293,9 @@ func (f Flow) showConsent(w http.ResponseWriter, r *http.Request) {
 		publisher := f.Publishers[c.Client.ID]
 		client["publisher"], client["verified"] = publisher, publisher != ""
 		client["proposal_only"] = c.Client.Class == authn.ClassAgent
+		if publisher == "" { // an app that registered itself: Fyniq has not verified who it is, so the person sees where it sends them
+			client["redirect_uris"] = c.Client.RedirectURIs
+		}
 		cats := []map[string]string{}
 		for _, s := range d.Scopes {
 			if what, ok := scopeWords[s]; ok {

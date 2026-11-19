@@ -46,6 +46,9 @@ const (
 	// TaskTypes is a list of the proposal catalogue's task types, such as "sec.create_task,sec.draft_reminder":
 	// comma-separated IDs; the API checks each is in the release's catalogue (AI-32).
 	TaskTypes Kind = "task_types"
+	// Apps is a list of the AI apps that may connect (AI-35, AI-90): the first-party apps the release pre-registers, by name, and
+	// the apps that registered themselves, by their client ID. The API checks an ID against the registrations it holds.
+	Apps Kind = "apps"
 	// Cron is a schedule's entry: five cron fields in Singapore time, such as "0 7 * * *", or "off" (AI-62).
 	Cron Kind = "cron"
 	// TimeRange is a daily range in Singapore time, such as "22:00-07:00", or "off" (AI-62).
@@ -282,14 +285,17 @@ var Catalogue = []Definition{
 	{Key: "gst.threshold_warning_percent", Group: "GST registration", Label: "Warn when the year's taxable supplies reach", Kind: Percent, Recommended: "80",
 		Reason: "Months of notice before the S$1 million test is met: IRAS gives 30 days to apply once a forecast exceeds it [accountant to confirm]",
 		Guide:  guide + "gst-registration-monitor", Requirement: "FR-TAX-05", Min: "50", Max: "99"},
-	{Key: "mcp.clients", Group: "AI apps (MCP)", Label: "AI apps that may connect", Kind: Choices, Recommended: "",
+	{Key: "mcp.clients", Group: "AI apps (MCP)", Label: "AI apps that may connect", Kind: Apps, Recommended: "",
 		Choices: []string{"claude-code", "claude-desktop"},
-		Reason:  "Only an app you list here can connect, and only the apps this release has pre-registered can be listed; adding one needs a second approver, taking one off takes effect at once and cuts it off",
+		Reason:  "Only an app you list here can connect: one the release has pre-registered, or one that registered itself and you approve; adding one needs a second approver, taking one off takes effect at once and cuts it off",
 		Guide:   guide + "ai-apps-through-mcp", Requirement: "AI-35", DualControl: true, OffAtOnce: true},
 	{Key: "mcp.proposals_per_hour", Group: "AI apps (MCP)", Label: "Proposals an AI app may make for a person in an hour", Kind: Count, Recommended: "30",
 		Min: "1", Max: "1000", Unit: "proposals",
 		Reason: "A person reviews each proposal before anything changes, so thirty an hour is more than anyone approves; more is a runaway app",
 		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
+	{Key: "mcp.registration", Group: "AI apps (MCP)", Label: "AI apps may register themselves", Kind: Switch, Recommended: "false",
+		Reason: "No AI app can ask to be registered until an Owner turns this on with a second approver; a registered app is still unusable until an Owner adds it to the apps that may connect; turning it off takes effect at once",
+		Guide:  guide + "ai-apps-through-mcp", Requirement: "AI-90", DualControl: true, OffAtOnce: true},
 	{Key: "mcp.requests_per_minute", Group: "AI apps (MCP)", Label: "Requests a person's AI app may make a minute", Kind: Count, Recommended: "60",
 		Min: "1", Max: "600", Unit: "requests",
 		Reason: "One request a second is brisk for an app reading on a person's behalf; more is a script, which this stops before it loads the books",
@@ -380,7 +386,9 @@ var (
 	fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]{0,40}$`)
 	// taskTypeID is a proposal catalogue's task type, as internal/proposal names it.
 	taskTypeID = regexp.MustCompile(`^[a-z]+\.[a-z]+(_[a-z]+)*$`)
-	sgd        = money.MustLookup("SGD")
+	// registeredApp is the client ID of an app that registered itself (AI-90).
+	registeredApp = regexp.MustCompile(`^mcp-[0-9a-f]{20}$`)
+	sgd           = money.MustLookup("SGD")
 )
 
 // Normalise reads raw as a value of d, and returns it as stored: "true", "30", "50.00" or "2.5". It refuses
@@ -393,7 +401,7 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 	if raw == "" && d.Recommended == "" && !d.Fixed {
 		return "", nil
 	}
-	if list := d.Kind == Fields || d.Kind == TaskTypes; (!list && len(raw) > 200) || len(raw) > 4000 {
+	if list := d.Kind == Fields || d.Kind == TaskTypes || d.Kind == Apps; (!list && len(raw) > 200) || len(raw) > 4000 {
 		return bad("Send at most 200 characters, or 4,000 for a list")
 	}
 	switch d.Kind {
@@ -452,6 +460,22 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 		}
 		slices.Sort(names)
 		return strings.Join(names, ","), nil
+	case Apps:
+		var apps []string
+		for _, n := range strings.Split(raw, ",") {
+			n = strings.TrimSpace(n)
+			if !slices.Contains(d.Choices, n) && !registeredApp.MatchString(n) {
+				return bad("Send apps separated by commas: " + strings.Join(d.Choices, ", ") + ", or the ID of an app that registered itself, such as mcp-0123456789abcdef0123")
+			}
+			if !slices.Contains(apps, n) {
+				apps = append(apps, n)
+			}
+		}
+		if len(apps) > 50 {
+			return bad("Send at most 50 apps")
+		}
+		slices.Sort(apps)
+		return strings.Join(apps, ","), nil
 	case TaskTypes:
 		var ids []string
 		for _, n := range strings.Split(raw, ",") {
@@ -589,7 +613,7 @@ func Narrows(d Definition, was, value string) bool {
 	switch d.Kind {
 	case Switch:
 		return value == "false"
-	case TaskTypes, Choices:
+	case TaskTypes, Choices, Apps:
 		before := strings.Split(was, ",")
 		for _, id := range strings.Split(value, ",") {
 			if id != "" && !slices.Contains(before, id) {

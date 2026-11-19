@@ -849,6 +849,16 @@ components:
           examples:
             - The journal is posted, not a draft.
           type: string
+        error:
+          description: An OAuth error code, on a client registration's refusal (RFC 7591).
+          examples:
+            - invalid_redirect_uri
+          type: string
+        error_description:
+          description: The same, in words.
+          examples:
+            - The redirect URI is not exact.
+          type: string
         errors:
           description: Every invalid field, all at once.
           items:

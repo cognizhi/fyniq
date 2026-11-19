@@ -67,7 +67,7 @@ func TestTheCatalogueShipsEverySettingAtAValidRecommendedValue(t *testing.T) {
 		if !ok || !headings[section] {
 			t.Errorf("%s: the guide link %q has no section in the guide", d.Key, d.Guide)
 		}
-		if d.OffAtOnce && ((d.Kind != Switch && d.Kind != TaskTypes && d.Kind != Choices) || !d.DualControl) {
+		if d.OffAtOnce && ((d.Kind != Switch && d.Kind != TaskTypes && d.Kind != Choices && d.Kind != Apps) || !d.DualControl) {
 			t.Errorf("%s: only a switch, the task types or the allowed apps under dual control turn off at once (AI-13, AI-32, AI-35)", d.Key)
 		}
 		if d.Fixed {
@@ -76,7 +76,7 @@ func TestTheCatalogueShipsEverySettingAtAValidRecommendedValue(t *testing.T) {
 		if v, p := Normalise(d, d.Recommended); p != nil || v != d.Recommended {
 			t.Errorf("%s: the recommended value %q is not valid: %q %v", d.Key, d.Recommended, v, p)
 		}
-		if d.Kind != Switch && d.Kind != AccountCode && d.Kind != Choice && d.Kind != Choices && d.Kind != Cron && d.Kind != TimeRange {
+		if d.Kind != Switch && d.Kind != AccountCode && d.Kind != Choice && d.Kind != Choices && d.Kind != Apps && d.Kind != Cron && d.Kind != TimeRange {
 			if _, p := Normalise(d, d.Min); p != nil {
 				t.Errorf("%s: its minimum is out of range: %v", d.Key, p)
 			}
@@ -301,9 +301,14 @@ func TestTaskTypesNarrowAtOnceAndWidenUnderDualControl(t *testing.T) {
 // req: AI-35
 // req: AI-43
 // req: CTL-MCP-03
+// req: AI-90
 func TestMCPAccessIsClosedByDefaultAndAppsNarrowAtOnce(t *testing.T) {
 	sw, _ := Lookup("features.mcp")
 	apps, _ := Lookup("mcp.clients")
+	reg, _ := Lookup("mcp.registration")
+	if reg.Recommended != "false" || !reg.DualControl || !reg.OffAtOnce || reg.Requirement != "AI-90" {
+		t.Fatalf("mcp.registration %+v", reg)
+	}
 	if sw.Recommended != "false" || !sw.DualControl || !sw.OffAtOnce || apps.Recommended != "" || !apps.DualControl || !apps.OffAtOnce {
 		t.Fatalf("features.mcp %+v, mcp.clients %+v", sw, apps)
 	}
@@ -327,7 +332,10 @@ func TestMCPAccessIsClosedByDefaultAndAppsNarrowAtOnce(t *testing.T) {
 	if v, p := Normalise(apps, "claude-desktop, claude-code"); p != nil || v != "claude-code,claude-desktop" {
 		t.Errorf("two listed apps: %q %v", v, p)
 	}
-	for _, rogue := range []string{"rogue-app", "claude-code,rogue-app", "https://evil.test/client.json"} {
+	if v, p := Normalise(apps, "mcp-0123456789abcdef0123, claude-code"); p != nil || v != "claude-code,mcp-0123456789abcdef0123" {
+		t.Errorf("a registered app: %q %v", v, p)
+	}
+	for _, rogue := range []string{"rogue-app", "claude-code,rogue-app", "https://evil.test/client.json", "mcp-short", "mcp-0123456789ABCDEF0123", "mcp-0123456789abcdef01234"} {
 		if _, p := Normalise(apps, rogue); p == nil {
 			t.Errorf("%q was accepted as an app that may connect: only the release's own pre-registered apps can be listed", rogue)
 		}

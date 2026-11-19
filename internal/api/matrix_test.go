@@ -1657,6 +1657,14 @@ var matrixCalls = map[string]matrixCall{
 	"listSignInProviders": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/sign-in-providers", tok, nil), nil
 	},
+	"registerOAuthClient": func(e *env, tok string) (response, func() bool) { // public, and open here: closed until an Owner opens it (AI-90)
+		clients, oauth, audience, on := e.api.deps.MCPClients, e.api.deps.OAuthClients, e.api.deps.MCPAudience, e.api.deps.MCPServerOn
+		defer func() {
+			e.api.deps.MCPClients, e.api.deps.OAuthClients, e.api.deps.MCPAudience, e.api.deps.MCPServerOn = clients, oauth, audience, on
+		}()
+		e.api.deps.MCPClients, e.api.deps.OAuthClients, e.api.deps.MCPAudience, e.api.deps.MCPServerOn = openRegistration{}, fakeOAuthClients{}, mcpAudience, true
+		return e.call(http.MethodPost, "/v1/oauth/register", tok, map[string]any{"client_name": "Acme", "redirect_uris": []string{"https://acme.example/cb"}}), nil
+	},
 	"getSession": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/session", tok, nil), nil
 	},
@@ -2762,4 +2770,15 @@ func matrixExport(e *env, tok string, ready bool) string {
 		}
 	}
 	return id
+}
+
+// openRegistration stands in for the installation's record in the matrix: registration is open and every registration is taken.
+type openRegistration struct{ storage.MCPClients }
+
+func (openRegistration) RegistrationOpen(context.Context, time.Time) (bool, error) { return true, nil }
+func (openRegistration) ExpireClients(context.Context, time.Time, time.Duration, time.Duration) ([]string, error) {
+	return nil, nil
+}
+func (openRegistration) Register(context.Context, storage.MCPClientRegistration, storage.MCPClientLimits) (string, error) {
+	return "", nil
 }

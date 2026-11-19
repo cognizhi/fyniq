@@ -703,6 +703,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/notifications/{notification_id}/archive` (archiveNotification): Archive a notification
 - `POST /v1/notifications/{notification_id}/read` (readNotification): Mark a notification read
 - `POST /v1/notifications/{notification_id}/unread` (unreadNotification): Mark a notification unread
+- `POST /v1/oauth/register` (registerOAuthClient): Register an AI app (RFC 7591)
 - `GET /v1/opening-balances` (getOpeningBalances): Get the opening balances
 - `PUT /v1/opening-balances` (replaceOpeningBalances): Save the opening balances as a draft
 - `POST /v1/opening-balances/edit-approval` (requestOpeningBalancesEdit): Ask for approval to change the posted opening balances

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/mcpgate"
 	"github.com/cognizhi/fyniq/internal/oauthflow"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -51,7 +53,8 @@ func mcpConsent(oauth *hydra.Admin, audience string, store storage.Store, clock 
 			time.Sleep(5 * time.Second)
 		}
 	}()
-	return mcpgate.Gate{Store: store, Clock: clock}, publishers
+	registered, _ := store.(storage.MCPClients) // the apps that registered themselves (AI-90)
+	return mcpgate.Gate{Store: store, Clock: clock, Clients: registered}, publishers
 }
 
 // delegationClient is the MCP service's delegation client at the OAuth server (open question 40, option (b)): its tokens are the
@@ -94,4 +97,23 @@ func nonProtocol(scopes []string) []string {
 		}
 	}
 	return out
+}
+
+// registerMetadata publishes the authorisation server's metadata for MCP clients (RFC 8414, AI-90): the issuer's own endpoints and,
+// while an Owner has registration on and the MCP server is on in this deployment, the registration endpoint.
+func registerMetadata(s *httpserver.Server, store storage.Store, clock ports.Clock) {
+	issuer, origin := os.Getenv("FYNIQ_OAUTH_ISSUER"), strings.TrimSuffix(os.Getenv("FYNIQ_PUBLIC_ORIGIN"), "/")
+	if issuer == "" || origin == "" {
+		return
+	}
+	registered, _ := store.(storage.MCPClients)
+	on := os.Getenv("FYNIQ_MCP_SERVER") == "on"
+	oauthflow.Metadata{Issuer: issuer, RegisterURL: origin + "/api/v1/oauth/register", Scopes: mcpgate.DefaultScopes,
+		RegistrationOpen: func(ctx context.Context) bool {
+			if !on || registered == nil {
+				return false
+			}
+			open, err := registered.RegistrationOpen(ctx, clock.Now())
+			return err == nil && open
+		}}.Register(s)
 }

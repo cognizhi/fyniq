@@ -74,6 +74,7 @@ func init() {
 		}
 		log, mcpAudience, oauth := logging.New(os.Stderr, slog.LevelInfo), cmp.Or(os.Getenv("FYNIQ_MCP_AUDIENCE"), "http://localhost:8080/mcp"), wiring.Hydra(admin)
 		gate, publishers := mcpConsent(oauth, mcpAudience, store, clock, log)
+		registerMetadata(s, store, clock)
 		oauthflow.Flow{OAuth: oauth, SignedIn: firstParty(clock, sessions), Clock: clock, APIAudience: apiAudience(), MCPAudience: mcpAudience,
 			MCP: gate, Publishers: publishers, Log: log, SignInPage: "/", Base: base}.Register(s)
 	}

@@ -91,11 +91,17 @@ func Register(ctx context.Context, oauth ports.OAuthClients, audience string) er
 	return nil
 }
 
-// Gate asks the organisation's settings and the person's opt-in.
+// Gate asks the organisation's settings and the person's opt-in, and, for an app that registered itself, whether its registration
+// still stands.
 type Gate struct {
 	Store storage.Store
 	Clock ports.Clock
+	// Clients holds the registrations of the apps that registered themselves (AI-90); nil: none is ever admitted.
+	Clients storage.MCPClients
 }
+
+// Registered reports whether an app is one that registered itself, by its client ID.
+func Registered(app string) bool { return strings.HasPrefix(app, "mcp-") }
 
 // Admit is "" when the person may use the app over MCP in the organisation now, and otherwise why not, in plain words, with
 // the code. An error is a failure to ask, which the caller treats as a refusal (fail closed).
@@ -142,5 +148,30 @@ func (g Gate) Admit(ctx context.Context, org, user uuid.UUID, app string) (code,
 		}
 		return nil
 	})
-	return code, why, err
+	if err != nil || code != "" || !Registered(app) {
+		return code, why, err
+	}
+	// An app that registered itself is admitted only while its registration stands: an Owner adding it to the allowlist is the
+	// approval, so the first admission makes it approved; one that was denied or expired, or is unknown, is refused.
+	if g.Clients == nil {
+		return CodeNotAllowed, "This AI app is not allowed to connect.", nil
+	}
+	status, err := g.Clients.ClientStatus(ctx, app)
+	if err != nil {
+		return "", "", err
+	}
+	now := g.Clock.Now()
+	switch status {
+	case storage.MCPClientPending:
+		if _, err := g.Clients.DecideClient(ctx, app, storage.MCPClientApproved, now); err != nil {
+			return "", "", err
+		}
+	case storage.MCPClientApproved:
+		if err := g.Clients.TouchClient(ctx, app, now); err != nil {
+			return "", "", err
+		}
+	default:
+		return CodeNotAllowed, "This AI app's registration is no longer valid: it was denied or expired.", nil
+	}
+	return "", "", nil
 }
