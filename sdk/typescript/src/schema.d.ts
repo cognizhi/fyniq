@@ -40967,6 +40967,18 @@ export interface components {
              */
             id: string;
             /**
+             * Format: date-time
+             * @description When they last signed in to Fyniq; absent when they never have (SEC-06).
+             * @example 2026-11-20T09:00:00Z
+             */
+            last_sign_in_at?: string;
+            /**
+             * Format: int64
+             * @description How many live passkeys they hold: none means they confirm it's you only by signing in again (SEC-01).
+             * @example 1
+             */
+            passkeys: number;
+            /**
              * @description true in the answer to removeMember: they are no longer a member.
              * @example false
              */

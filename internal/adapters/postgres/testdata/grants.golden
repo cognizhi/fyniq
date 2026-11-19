@@ -359,6 +359,7 @@ fyniq_api       INSERT    mcp_seen (first_seen, kind, user_id, value)
 fyniq_api       SELECT    mcp_seen
 fyniq_api       INSERT    mcp_user_optin (opted_in, set_at, user_id)
 fyniq_api       SELECT    mcp_user_optin
+fyniq_api       EXECUTE   member_activity()
 fyniq_api       EXECUTE   member_emails()
 fyniq_api       INSERT    member_invitation (code_hash, created_at, display_name, expires_at, roles, roles_expire_at)
 fyniq_api       SELECT    member_invitation

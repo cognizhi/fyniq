@@ -4,7 +4,7 @@ type: task
 title: Invite someone, or join with an invitation
 summary: Create a one-time invitation with roles, give the code in person, withdraw it if unused, and join a company with a code
 sources:
-  - docs/user-guide/members-and-roles.md sha256:e65c55c44c60696fb13c0d8eb273e23990e0e1a40c8dc096d908e26f9f54764b
+  - docs/user-guide/members-and-roles.md sha256:3c5eba89c7d2d617783b7d37b95377c304cd024e6d36f42374f8cad5c94744e6
 data_class: general
 taint: trusted
 status: published

@@ -227,6 +227,9 @@
   warning while there is one; guide `installation-console.md`, compiled into `settings.console`. Tests
   `TestTheSuperAdminConsoleReadsHealthAndSuperAdmins`, `adminConsole.test.tsx`. Not shown: installation email senders, whose
   SPF, DKIM and DMARC status has its own page.)
+  (20 Nov 2026, members columns, PRD-001 rev 0.333: last sign-in and live passkeys beside each member (`member_activity()`, migration 000704).
+  **Left, an owner question:** the member's email (personal data the Auditor and the DPO would see on the list); the default experience
+  mode per invitation, an invitation's department scope, MFA status beyond passkeys (TOTP is the provider's).)
 - [x] 4.2 Run the walkthrough test for each role (QA-UI-08) on the workspaces these rights produce
   (20 Nov 2026, found built: `apps/web/journeys/walkthroughs.spec.ts` runs QA-UI-08 for each of the sixteen roles of §7.1
   in an organisation of its own: landing page, sidebar, Home blocks, Inbox, the "not part of your access" page and

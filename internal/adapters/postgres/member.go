@@ -42,6 +42,10 @@ func (r members) List(ctx context.Context, now time.Time) ([]storage.Member, err
 	for _, s := range scopes {
 		scoped[s.AssignmentID] = append(scoped[s.AssignmentID], s.DimensionValueID)
 	}
+	activity, err := r.u.q.MemberActivity(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
 	name := make(map[uuid.UUID]string, len(names))
 	for _, n := range names {
 		name[n.UserID] = n.DisplayName
@@ -50,6 +54,15 @@ func (r members) List(ctx context.Context, now time.Time) ([]storage.Member, err
 	for _, m := range rows {
 		mem := storage.Member{Membership: storage.Membership{ID: m.ID, UserID: m.UserID, Status: m.Status, Version: int(m.Version)},
 			DisplayName: name[m.UserID], Roles: []storage.RoleAssignment{}, Since: m.CreatedAt}
+		for _, x := range activity {
+			if x.UserID == m.UserID {
+				mem.Passkeys = int(x.Passkeys)
+				if x.LastSignInAt.Unix() > 0 {
+					t := x.LastSignInAt
+					mem.LastSignInAt = &t
+				}
+			}
+		}
 		for _, a := range roles {
 			if a.MembershipID == m.ID {
 				mem.Roles = append(mem.Roles, storage.RoleAssignment{ID: a.ID, MembershipID: a.MembershipID, Role: a.Role, ExpiresAt: a.ExpiresAt, DepartmentValues: scoped[a.ID]})

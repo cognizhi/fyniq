@@ -51,6 +51,9 @@ type Member struct {
 	// rev 0.165
 	ExpiredRoles []MemberRole `json:"expired_roles" doc:"Roles that ended at their end date and that nobody ended: they grant nothing. Give the role again with a new end date, or remove the member (C.2 #6)."`
 	Removed      bool         `json:"removed,omitempty" doc:"true in the answer to removeMember: they are no longer a member." example:"false"`
+	// rev 0.333
+	LastSignInAt *time.Time `json:"last_sign_in_at,omitempty" doc:"When they last signed in to Fyniq; absent when they never have (SEC-06)." example:"2026-11-20T09:00:00Z"`
+	Passkeys     int        `json:"passkeys" doc:"How many live passkeys they hold: none means they confirm it's you only by signing in again (SEC-01)." example:"1"`
 }
 
 // MemberPage is a page of members, in the order they joined.
@@ -91,10 +94,10 @@ type MemberInvitationCode struct {
 
 // RoleGrant gives a member a role.
 type RoleGrant struct {
-	Role              RoleName   `json:"role" doc:"The role (PRD-001 §6.2)."`
-	ExpiresAt         *time.Time `json:"expires_at,omitempty" doc:"For an external user: when it ends. Never on the Owner role." example:"2027-03-31T00:00:00Z"`
-	DepartmentValueIDs []string  `json:"department_value_ids,omitempty" maxItems:"20" doc:"For the Approver role only: the department values to narrow it to (FR-ADM-01, rev 0.253). Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another role is refused."`
-	SoDOverrideReason string     `json:"sod_override_reason,omitempty" maxLength:"500" doc:"In a team mode that blocks conflicts (Standard): why the member keeps the conflict of §6.3 this role makes. The role change's approver accepts the override, which is reported with the team mode (TEAM-02, rev 0.42)." example:"Founder who also keeps the books until we hire"`
+	Role               RoleName   `json:"role" doc:"The role (PRD-001 §6.2)."`
+	ExpiresAt          *time.Time `json:"expires_at,omitempty" doc:"For an external user: when it ends. Never on the Owner role." example:"2027-03-31T00:00:00Z"`
+	DepartmentValueIDs []string   `json:"department_value_ids,omitempty" maxItems:"20" doc:"For the Approver role only: the department values to narrow it to (FR-ADM-01, rev 0.253). Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another role is refused."`
+	SoDOverrideReason  string     `json:"sod_override_reason,omitempty" maxLength:"500" doc:"In a team mode that blocks conflicts (Standard): why the member keeps the conflict of §6.3 this role makes. The role change's approver accepts the override, which is reported with the team mode (TEAM-02, rev 0.42)." example:"Founder who also keeps the books until we hire"`
 }
 
 // JoinRequest redeems an invitation.
@@ -205,6 +208,11 @@ func memberOf(m storage.Member) Member {
 	for _, r := range m.Expired {
 		out.ExpiredRoles = append(out.ExpiredRoles, roleOut(r))
 	}
+	if m.LastSignInAt != nil {
+		at := m.LastSignInAt.UTC()
+		out.LastSignInAt = &at
+	}
+	out.Passkeys = m.Passkeys
 	return out
 }
 

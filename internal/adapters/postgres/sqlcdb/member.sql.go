@@ -323,6 +323,37 @@ func (q *Queries) LockMembers(ctx context.Context) error {
 	return err
 }
 
+const memberActivity = `-- name: MemberActivity :many
+SELECT r.user_id::uuid AS user_id, coalesce(r.last_sign_in_at, 'epoch'::timestamptz)::timestamptz AS last_sign_in_at, r.passkeys::bigint AS passkeys FROM fyniq.member_activity() r
+`
+
+type MemberActivityRow struct {
+	UserID       uuid.UUID
+	LastSignInAt time.Time
+	Passkeys     int64
+}
+
+// When each member last signed in and how many passkeys they hold (the members' list).
+func (q *Queries) MemberActivity(ctx context.Context) ([]MemberActivityRow, error) {
+	rows, err := q.db.Query(ctx, memberActivity)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MemberActivityRow
+	for rows.Next() {
+		var i MemberActivityRow
+		if err := rows.Scan(&i.UserID, &i.LastSignInAt, &i.Passkeys); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const memberNames = `-- name: MemberNames :many
 SELECT n.user_id::uuid AS user_id, n.display_name::text AS display_name FROM fyniq.member_names() AS n
 `

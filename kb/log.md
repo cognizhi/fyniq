@@ -733,3 +733,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | installation-console.md -> settings.console (new page: platform health and the Super admins)
 
 ## [2026-11-20] compile | sign-in-providers.md -> settings.sign-in-providers (links the installation console)
+
+## [2026-11-20] compile | members-and-roles.md -> settings.members (last sign-in and passkeys)

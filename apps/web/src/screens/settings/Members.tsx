@@ -7,7 +7,7 @@ import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
-import { date } from "../../format/date";
+import { date, dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
@@ -673,6 +673,11 @@ export function Members() {
                       {you ? " (you)" : ""}
                     </span>
                     <Roles roles={m.roles ?? []} />
+                    <span className="fy-list__meta whitespace-normal">
+                      {m.last_sign_in_at ? `Last signed in ${dateTime(m.last_sign_in_at)}` : "Has not signed in yet"}
+                      {" · "}
+                      {m.passkeys > 0 ? `${m.passkeys} ${m.passkeys === 1 ? "passkey" : "passkeys"}` : "No passkey: confirms it's you by signing in again"}
+                    </span>
                   </span>
                   {(m.roles ?? []).length === 0 && (m.expired_roles ?? []).length > 0 && (
                     <span className="fy-chip fy-chip--critical" title={(m.expired_roles ?? []).map((r) => `${roleLabel(r.role)} ended ${date(r.expires_at)}`).join(", ")}>

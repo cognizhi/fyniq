@@ -9139,6 +9139,7 @@ mcp_clients_named(p_ids text[]) → SETOF mcp_client | security definer | s | se
 mcp_clients_pending() → SETOF mcp_client | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4c562e36eec5a6f3140f98101328a5f3
 mcp_purge_calls(p_before timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b9fb6462aed784046e564c4fc8006bb5
 mcp_registration_open(p_now timestamp with time zone) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 354766d8448266a6f1bde09a79437dc8
+member_activity() → TABLE(user_id uuid, last_sign_in_at timestamp with time zone, passkeys bigint) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | b701999f6be623442445b3c78c74c09e
 member_emails() → TABLE(user_id uuid, email text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | de5d5500c1abd3c22db2454f742d293e
 member_invitation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bbbd3cfc69b3ef2e3f033c058258160c
 member_names() → TABLE(user_id uuid, display_name text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9cbac1cf633afffdb29757fcd8b4615f

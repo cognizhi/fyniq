@@ -51,6 +51,9 @@ func TestAnApproverRoleIsNarrowedToDepartments(t *testing.T) {
 		if item["display_name"] != "Third" {
 			continue
 		}
+		if _, ok := item["passkeys"]; !ok {
+			t.Fatalf("the member's passkey count is missing: %v", item) // SEC-06: the list says whether they hold a passkey
+		}
 		role := item["roles"].([]any)[0].(map[string]any)
 		ids, _ := role["department_value_ids"].([]any)
 		if role["role"] != "approver" || len(ids) != 1 || ids[0] != eng.str("id") {

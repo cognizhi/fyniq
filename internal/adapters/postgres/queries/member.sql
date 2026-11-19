@@ -77,3 +77,7 @@ INSERT INTO fyniq.role_assignment_scope (assignment_id, dimension_value_id) VALU
 -- name: ListRoleAssignmentScopes :many
 -- The department values each Approver assignment is narrowed to (FR-ADM-01).
 SELECT assignment_id, dimension_value_id FROM fyniq.role_assignment_scope ORDER BY created_at, dimension_value_id;
+
+-- name: MemberActivity :many
+-- When each member last signed in and how many passkeys they hold (the members' list).
+SELECT r.user_id::uuid AS user_id, coalesce(r.last_sign_in_at, 'epoch'::timestamptz)::timestamptz AS last_sign_in_at, r.passkeys::bigint AS passkeys FROM fyniq.member_activity() r;

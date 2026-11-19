@@ -62,6 +62,11 @@ A wrong, used, withdrawn or expired code is refused, and nothing changes. Ask fo
 - In Standard mode, a role that conflicts with the person's other roles needs a reason, and an
   invitation cannot give roles that conflict ([Choose how strictly duties are separated](team-mode.md)).
 
+## Who has signed in and who has a passkey
+
+Beside each person, the list says when they last signed in, or that they have not yet, and how many passkeys they hold. A person
+with no passkey confirms it's you by signing in again each time, so ask them to add one under Profile and security.
+
 ## Narrow an Approver to departments
 
 When you give the **Approver** role, **Departments this Approver acts for** lists the organisation's department values: tick

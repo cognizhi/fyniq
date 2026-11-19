@@ -4,7 +4,7 @@ type: concept
 title: Members, roles and the first founder's setup
 summary: What roles do, why the Owner sets up members alone until a second person joins, and why role changes then need a second approver
 sources:
-  - docs/user-guide/members-and-roles.md sha256:e65c55c44c60696fb13c0d8eb273e23990e0e1a40c8dc096d908e26f9f54764b
+  - docs/user-guide/members-and-roles.md sha256:3c5eba89c7d2d617783b7d37b95377c304cd024e6d36f42374f8cad5c94744e6
 data_class: general
 taint: trusted
 status: published
@@ -49,6 +49,13 @@ aliases:
 - In Standard mode, a role that conflicts with the person's other roles needs a reason, and an invitation cannot give roles that conflict ([[settings.team-mode]]).
 
 (src: docs/user-guide/members-and-roles.md#change-someones-roles)
+
+## Who has signed in and who has a passkey
+
+- Beside each person, the list says when they last signed in, or that they have not yet, and how many passkeys they hold.
+- A person with no passkey confirms it's you by signing in again each time, so ask them to add one under Profile and security.
+
+(src: docs/user-guide/members-and-roles.md#who-has-signed-in-and-who-has-a-passkey)
 
 ## Narrow an Approver to departments
 

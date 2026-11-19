@@ -100,6 +100,15 @@ describe("Members and roles", () => {
     expect(post?.headers.get("Idempotency-Key")).toBeTruthy();
   });
 
+  // req: SEC-06
+  it("says when each member last signed in and whether they hold a passkey", async () => {
+    page({ "GET /v1/members": { status: 200, body: { items: [{ id: "m-9", user_id: "u-9", display_name: "Kai Lim", roles: [{ role: "bookkeeper" }], expired_roles: [], passkeys: 2, last_sign_in_at: "2026-11-19T09:00:00Z" },
+      { id: "m-10", user_id: "u-10", display_name: "Nia Ong", roles: [{ role: "auditor" }], expired_roles: [], passkeys: 0 }] } } });
+    renderPage(Members, { path: "/settings/members" });
+    expect(await screen.findByText(/Last signed in 19 Nov 2026, 17:00 · 2 passkeys/)).toBeTruthy();
+    expect(screen.getByText(/Has not signed in yet · No passkey/)).toBeTruthy();
+  });
+
   // req: FR-ADM-01
   it("narrows an Approver's role to departments, and says so beside the role", async () => {
     const seen = page({
