@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/assistant"
 	"github.com/cognizhi/fyniq/internal/nemura/auth"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/identity"
@@ -103,7 +104,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	if err != nil {
 		return err
 	}
-	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, People: nemura.PeopleService{Store: store, Clock: deps.Clock}, Features: nemura.FeatureService{Store: store, Clock: deps.Clock}, Restricted: restricted(store, deps, getenv), Packs: packsService(store, deps), Leave: leaveService(store, deps), Requests: leaveRequests(store, deps), Sick: sickService(store, deps, getenv), Government: governmentService(store, deps), Flex: flexService(store, deps), Time: timeService(store, deps), Letters: lettersService(store, deps, getenv), SelfService: selfService(store, deps, getenv), Onboarding: onboardingService(store, deps), Payroll: payrollService(store, deps, getenv), Assistant: nemura.AssistantService{Store: store, Clock: deps.Clock, AllowScripted: scriptedAllowed}, Clock: deps.Clock,
+	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, People: nemura.PeopleService{Store: store, Clock: deps.Clock}, Features: nemura.FeatureService{Store: store, Clock: deps.Clock}, Restricted: restricted(store, deps, getenv), Packs: packsService(store, deps), Leave: leaveService(store, deps), Requests: leaveRequests(store, deps), Sick: sickService(store, deps, getenv), Government: governmentService(store, deps), Flex: flexService(store, deps), Time: timeService(store, deps), Letters: lettersService(store, deps, getenv), SelfService: selfService(store, deps, getenv), Onboarding: onboardingService(store, deps), Payroll: payrollService(store, deps, getenv), Assistant: nemura.AssistantService{Store: store, Clock: deps.Clock, AllowScripted: scriptedAllowed}, Asker: askService(store, deps), Clock: deps.Clock,
 		CookieNames: []string{auth.SessionCookie(true), auth.SessionCookie(false)}}
 	if provider != nil {
 		d.SignIn = signInInfo{provider: provider, store: store}
@@ -314,3 +315,16 @@ func payrollService(store *nemura.Store, deps app.Deps, getenv func(string) stri
 
 // scriptedAllowed lets an Owner choose local mode's scripted model as the assistant's route: the local build sets it, the release build never does.
 var scriptedAllowed = false
+
+// askService answers a person's question. Local mode gives it the scripted model; the release build has none until a model route is evidenced in Singapore, and answers that the assistant is not available.
+func askService(store *nemura.Store, deps app.Deps) api.Asker {
+	p, err := nemura.NewPacksService(store, deps.Clock)
+	if err != nil {
+		panic(err) // a pack that does not validate is a build error: the files are embedded
+	}
+	var m assistant.Model
+	if scriptedAllowed {
+		m = assistant.Scripted{}
+	}
+	return nemura.AskService{Store: store, Clock: deps.Clock, Packs: p, Model: m}
+}

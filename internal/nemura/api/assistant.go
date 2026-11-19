@@ -72,6 +72,25 @@ type AIDecision struct {
 	Final   map[string]any `json:"final_payload,omitempty" doc:"The text to approve, after editing: it must fit the task's shape. Left out, the assistant's own text is approved."`
 }
 
+// AISegment is a sentence of an answer with the sources it rests on.
+type AISegment struct {
+	Text    string   `json:"text" doc:"A sentence. Every figure in it came from a tool in this turn; one that did not is replaced by 'an unverified figure'." example:"You have 8.50 days left."`
+	Sources []string `json:"sources" doc:"Where it comes from: your own record, a pack version and its official source, or a rule."`
+}
+
+// AIAnswer is the assistant's answer to a question.
+type AIAnswer struct {
+	Segments []AISegment `json:"segments" doc:"The answer, sentence by sentence."`
+	Tools    []string    `json:"tools" doc:"The read tools that ran, all as the person asking."`
+	Refused  bool        `json:"refused" doc:"True when the question asks for something the assistant never does: it approves, changes, issues, pays and reads another person's records never." example:"false"`
+	Dropped  int         `json:"dropped" doc:"How many tools the model named that were refused." example:"0"`
+}
+
+// Asker answers a person's question with the assistant's read tools, as that person.
+type Asker interface {
+	Ask(ctx context.Context, s Session, question string) (AIAnswer, error)
+}
+
 // AssistantAdmin is the assistant's settings and proposals behind the API.
 type AssistantAdmin interface {
 	Settings(ctx context.Context, s Session) (AISettings, error)
@@ -90,6 +109,15 @@ func assistantError(err error) error {
 }
 
 type aiSettingsOutput struct{ Body AISettings }
+
+type aiAskInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	Body   struct {
+		Question string `json:"question" minLength:"1" maxLength:"1000" doc:"What to ask: about your own leave balance, your pay day, a rule of the Singapore pack or a line of your payslip." example:"How much leave do I have left?"`
+	}
+}
+
+type aiAskOutput struct{ Body AIAnswer }
 
 type aiSettingsPut struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
@@ -122,6 +150,7 @@ type aiDecisionInput struct {
 
 func (a *API) registerAssistant() {
 	IdempotencyExempt["POST /v1/assistant/proposals/{id}/decision"] = "a proposal is decided once: a repeat is refused (NM_AI_CONFLICT)"
+	IdempotencyExempt["POST /v1/assistant/ask"] = "a question changes nothing"
 	IdempotencyExempt["PUT /v1/assistant/settings"] = "a put of the same settings is the same settings"
 	team := func(ctx context.Context, cookie string) (Session, error) {
 		s, err := a.signedIn(ctx, cookie)
@@ -137,6 +166,23 @@ func (a *API) registerAssistant() {
 		}
 		return s, nil
 	}
+	huma.Register(a.API, huma.Operation{
+		OperationID: "askAssistant", Method: "POST", Path: "/v1/assistant/ask", Tags: []string{"Assistant"}, Summary: "Ask the people assistant",
+		Description: "Answers a question about the signed-in person's own leave balance, their pay day, a rule of the Singapore pack (cited, with a note to confirm it with HR when it has not been verified a second time) or what a line of their payslip is, as a rule with no figure. The read tools run as the person asking, so the assistant reads what they can and nothing else; no pay figure and no sealed field reaches a model, and every figure of the answer came from a tool in this turn. A question that asks it to approve, change, issue, pay or read another person's records is refused in words. The assistant must be on. The question is not stored; the audit event names the tools that ran. It changes nothing.", Errors: []int{401, 409, 422, 503},
+	}, func(ctx context.Context, in *aiAskInput) (*aiAskOutput, error) {
+		s, err := a.signedIn(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		ans, err := a.d.Asker.Ask(ctx, s, in.Body.Question)
+		if err != nil {
+			if errors.Is(err, ErrUnavailable) {
+				return nil, Err(CodeUnavailable, "The assistant is not available in this deployment yet.")
+			}
+			return nil, assistantError(err)
+		}
+		return &aiAskOutput{Body: ans}, nil
+	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "getAssistantSettings", Method: "GET", Path: "/v1/assistant/settings", Tags: []string{"Assistant"}, Summary: "The people assistant's settings",
 		Description: "Whether the assistant is on, its model route, the task types turned on and the catalogue of what it may propose. The assistant is off, with no route and no task type, until the Owner turns it on. Own-pay explanations are always off until a second approver exists. The HR officer, the HR administrator and the Owner. It changes nothing.", Errors: []int{401, 403},

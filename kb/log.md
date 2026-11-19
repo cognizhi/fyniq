@@ -782,3 +782,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | documents.inbox: masked text, photos not read
 
 ## [2026-11-20] compile | ai.proposals: approval quality
+
+## [2026-11-20] compile | docs/user-guide/nemura/ask-assistant.md -> nemura.ask-assistant (p1-nemura-assistant-external 2.1, 2.2)
+
+## [2026-11-20] compile | my-pay.md link to the assistant

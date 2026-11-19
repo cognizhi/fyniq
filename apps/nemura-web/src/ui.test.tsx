@@ -27,6 +27,7 @@ import { LeaverHome } from "./pages/LeaverHome";
 import { PayRunApproval } from "./pages/PayRunApproval";
 import { MyPay, Payslip } from "./pages/MyPay";
 import { FinalPay } from "./components/FinalPay";
+import { AskAssistant } from "./pages/AskAssistant";
 import { AssistantSettings } from "./pages/AssistantSettings";
 import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
@@ -1481,5 +1482,32 @@ describe("the people assistant's settings", () => {
   it("says that only the people team sees it", () => {
     render(<AssistantSettings roles={["employee"]} member="m" />);
     expect(screen.getByRole("alert").textContent).toContain("Only the HR officer, the HR administrator and the Owner");
+  });
+});
+
+// req: NM-AI-02, NM-AI-06
+describe("asking the assistant", () => {
+  it("shows what it can and cannot do, the answer with its sources and the AI badge, and the way to ask a person", async () => {
+    answer("POST /v1/assistant/ask", { status: 200, body: { segments: [{ text: "Your next pay day is 2026-11-25.", sources: ["the calendar of your pay group"] }], tools: ["my_payday"], refused: false, dropped: 0 } });
+    const { container } = render(<AskAssistant roles={["employee"]} />);
+    expect(screen.getByText(/I never approve, change, issue or pay anything/)).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Your question"), { target: { value: "When is my pay day?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    expect(await screen.findByText(/Your next pay day is 2026-11-25\./)).toBeTruthy();
+    expect(screen.getByText("AI answer")).toBeTruthy();
+    expect(screen.getByText(/Source: the calendar of your pay group/)).toBeTruthy();
+    expect(bodies.get("POST /v1/assistant/ask")).toMatchObject({ question: "When is my pay day?" });
+    expect(screen.getByRole("link", { name: "Ask the people team instead" })).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("says in words when the assistant is off", async () => {
+    answer("POST /v1/assistant/ask", { status: 409, body: { code: "NM_AI_OFF", detail: "The assistant is off: the Owner turns it on in the assistant's settings." } });
+    render(<AskAssistant roles={["employee"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Your question"), { target: { value: "Hello" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("The assistant is off");
   });
 });

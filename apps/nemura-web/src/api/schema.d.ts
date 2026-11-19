@@ -48,6 +48,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/assistant/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the people assistant
+         * @description Answers a question about the signed-in person's own leave balance, their pay day, a rule of the Singapore pack (cited, with a note to confirm it with HR when it has not been verified a second time) or what a line of their payslip is, as a rule with no figure. The read tools run as the person asking, so the assistant reads what they can and nothing else; no pay figure and no sealed field reaches a model, and every figure of the answer came from a tool in this turn. A question that asks it to approve, change, issue, pay or read another person's records is refused in words. The assistant must be on. The question is not stored; the audit event names the tools that ran. It changes nothing.
+         */
+        post: operations["askAssistant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/assistant/proposals": {
         parameters: {
             query?: never;
@@ -2608,6 +2628,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AIAnswer: {
+            /**
+             * Format: int64
+             * @description How many tools the model named that were refused.
+             * @example 0
+             */
+            dropped: number;
+            /**
+             * @description True when the question asks for something the assistant never does: it approves, changes, issues, pays and reads another person's records never.
+             * @example false
+             */
+            refused: boolean;
+            /** @description The answer, sentence by sentence. */
+            segments: components["schemas"]["AISegment"][] | null;
+            /** @description The read tools that ran, all as the person asking. */
+            tools: string[] | null;
+        };
         AIDecision: {
             /**
              * @description Approve the draft, or not.
@@ -2703,6 +2740,15 @@ export interface components {
              * @example A letter from a template for a request, with the fields filled from the record
              */
             what: string;
+        };
+        AISegment: {
+            /** @description Where it comes from: your own record, a pack version and its official source, or a rule. */
+            sources: string[] | null;
+            /**
+             * @description A sentence. Every figure in it came from a tool in this turn; one that did not is replaced by 'an unverified figure'.
+             * @example You have 8.50 days left.
+             */
+            text: string;
         };
         AISettings: {
             /** @description Every task type the assistant may propose. */
@@ -2939,6 +2985,13 @@ export interface components {
              * @enum {string}
              */
             pass_type: "employment_pass" | "s_pass" | "work_permit" | "dp_work_permit";
+        };
+        AiAskInputBody: {
+            /**
+             * @description What to ask: about your own leave balance, your pay day, a rule of the Singapore pack or a line of your payslip.
+             * @example How much leave do I have left?
+             */
+            question: string;
         };
         AiProposalsOutputBody: {
             /** @description Newest first, up to 200. */
@@ -7874,6 +7927,78 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    askAssistant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiAskInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIAnswer"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
