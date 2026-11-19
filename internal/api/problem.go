@@ -70,6 +70,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/paymentfile"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/planning"
+	"github.com/cognizhi/fyniq/internal/domain/project"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
@@ -367,6 +368,15 @@ var codeFacts = map[string]struct {
 	dimension.CodeName:            {422, "The name does not fit"},
 	dimension.CodeCode:            {422, "The value's code does not fit"},
 	dimension.CodeDimension:       {422, "Not a dimension in use"},
+	project.CodeStatus:            {422, "Not a status of a project"},
+	project.CodeBilling:           {422, "Not a billing method"},
+	project.CodeDates:             {422, "The project's dates do not fit"},
+	project.CodeBudget:            {422, "The project's budget does not fit"},
+	project.CodeCustomer:          {422, "The project's customer does not fit"},
+	project.CodeCurrency:          {422, "The project's currency does not fit"},
+	project.CodePeople:            {422, "The project's people do not fit"},
+	project.CodeTask:              {422, "The task does not fit"},
+	project.CodeOff:               {403, "Projects and time are switched off"},
 	ledger.CodeDimensionRequired:  {422, "The line needs a value its account requires"},
 	ledger.CodeDimensionValue:     {422, "The line's dimension values are not valid"},
 	fx.CodeNotOpen:                {409, "The period is not open"},
@@ -1003,6 +1013,7 @@ var codeFacts = map[string]struct {
 	storage.CodeConversionStep:       {409, "A conversion's ACRA steps do not change that way"},
 	storage.CodeDimension:            {422, "The dimension values are not valid"},
 	storage.CodeDimensionFixed:       {409, "The dimension does not change that way"},
+	storage.CodeProject:              {409, "The project record does not allow that"},
 	storage.CodeDimensionRequirement: {422, "The account cannot require those dimensions"},
 	equity.CodeIssue:                 {422, "The share issue does not fit"},
 	equity.CodeNotRecord:             {422, "Not the holder record or share class asked for"},
@@ -1123,6 +1134,7 @@ var storageFixes = map[string]string{
 	storage.CodeStatutoryFiling:      "Record the item the calendar gives once, as filed with its day and reference or as not required with the reason; withdraw a record before recording the item again",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",
 	storage.CodeDimensionFixed:       "Rename it or put it out of use: a dimension keeps its kind and place and a value its code, and neither is deleted",
+	storage.CodeProject:              "Close the project instead of deleting it, name an active member of the organisation, and a customer that is marked as one; a closed project takes no new task",
 	storage.CodeDimensionRequirement: "Name each of the organisation's dimensions once",
 	storage.CodeBatchHeld:            "Release the approved batch that holds it, or cancel the batch first and then record the payment",
 

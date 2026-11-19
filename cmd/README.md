@@ -16,6 +16,7 @@ sharing `internal/app` for start-up checks (DEV-07, SEC-16), the clock (DEV-05) 
 | `clamd` | The scanner's sidecar: runs `freshclam`, then `clamd` on loopback, in an image with no shell (rev 0.248) | p1-security-hardening |
 | `jobs` | Job: long work (nightly verification, anchoring, imports) | p0-audit-chain |
 | `migrate` | Job: database migrations under their own role | p0-database-tenancy-migrations |
+| `nemura` | Service: Nemura, the optional people platform (PRD-002 ADR-N1). One image whose role (`api`, then `migrate`, `worker`, `executor`, `assistant`) is chosen at start by `NEMURA_ROLE`, so each role is its own service with its own identity and database role (NM-ARC-06); `PEOPLE=yes make up` runs it | p1-nemura-platform |
 | `seed` | Tool: the one sample-company generator (DEV-04) | Now |
 
 Every binary has a release flavour and a local flavour (`-tags local`); see `deploy/docker/`.

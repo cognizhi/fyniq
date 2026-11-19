@@ -3,7 +3,7 @@ key: banking.accounts
 title: Bank accounts
 mode: basic
 roles: [bookkeeper, accountant, controller, owner, administrator, ar_specialist, ap_specialist, payment_releaser, auditor, tax_agent]
-requirements: [FR-BNK-01, FR-BNK-02, FR-BNK-04, FR-BNK-05, FR-BNK-06, FR-BNK-07, FR-BNK-08, FR-BNK-09, FR-BNK-10, FR-BNK-11, FR-BNK-13, FR-BNK-14, FR-BNK-15, FR-BNK-16, FR-BNK-17, FR-BNK-18, FR-DOC-08, FR-INT-22, SOD-5]
+requirements: [FR-BNK-01, FR-BNK-12, FR-BNK-02, FR-BNK-04, FR-BNK-05, FR-BNK-06, FR-BNK-07, FR-BNK-08, FR-BNK-09, FR-BNK-10, FR-BNK-11, FR-BNK-13, FR-BNK-14, FR-BNK-15, FR-BNK-16, FR-BNK-17, FR-BNK-18, FR-DOC-08, FR-INT-22, SOD-5]
 status: draft            # written with the banking screens (P1, p1-bank-import-reconcile task 10.1); reviewed with the accountant
 ---
 
@@ -33,7 +33,13 @@ Select **Add account** and follow the three steps.
    balance ID for Wise or Airwallex: Fyniq shows only its last four characters afterwards.
 2. **Where its data comes from**: statement files you import, the bank's reports by email, or a
    connector such as Wise or Airwallex. See [Where its data comes from](#where-its-data-comes-from).
+   Choose the bank from the list when it is there: DBS, OCBC, UOB and the other banks and providers
+   Fyniq knows. The bank decides which payment files the account may give. Another bank is fine; it
+   gives the payment list.
 3. **Check**: what happens next, such as waiting for the first emailed report.
+
+On step 2, a bank or wallet account also shows **Payment file**: see
+[The file its payment batches give](#the-file-its-payment-batches-give).
 
 ## Where its data comes from
 
@@ -49,6 +55,30 @@ Select **Add account** and follow the three steps.
 Setting where the data comes from, and naming the bank-ingest address, is for an Administrator. A
 source starts on a day and is never changed for the days before it, so switching from emailed reports to
 a connector leaves no gap.
+
+## The file its payment batches give
+
+A payment batch paying from a bank or wallet account gives a file when it is released. The account's
+**Payment file** says which, on the account's card under **Banking**, and on step 2 of **Add account**.
+
+- **The payment list** (the default): a CSV you key into your bank's bulk payment screen. It works for
+  any bank.
+- **Wise's batch payment file**: a CSV in Wise's batch template, which you upload to Wise. Only an
+  account at Wise can be set to it.
+- **DBS IDEAL's UFF**: the file you upload to DBS IDEAL to pay by FAST or GIRO. Only an account at DBS
+  can be set to it.
+
+A bank's own file can be chosen only once Fyniq writes it: until then it is listed with the reason, and
+the account keeps the payment list. Airwallex has no file of its own yet, so an Airwallex account gives the
+payment list.
+
+To change it, a Bookkeeper or an Accountant selects **Payment file** on the account's card, chooses a
+file and selects **Save the payment file**. The change is recorded in the audit trail with the old and
+new file. A batch already released keeps the file it was written with, so a change never alters a file
+you may have uploaded. Someone who cannot change money accounts sees the file but cannot change it.
+
+If you change the account's bank to one that does not take its file, Fyniq refuses the change and says
+which file to choose first.
 
 ## An account's statements and lines
 
