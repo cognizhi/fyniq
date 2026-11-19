@@ -46710,44 +46710,69 @@ components:
       additionalProperties: false
       properties:
         approved:
+          description: Decided by a person's approval.
+          examples:
+            - 22
           format: int64
           type: integer
         expired:
+          description: Left undecided until they expired.
+          examples:
+            - 2
           format: int64
           type: integer
         invalid:
+          description: Found invalid when they were made.
+          examples:
+            - 1
           format: int64
           type: integer
         made:
+          description: Proposals made in the month.
+          examples:
+            - 30
           format: int64
           type: integer
         median_decision_seconds:
+          description: The median time from a proposal to its decision, in seconds.
+          examples:
+            - 420
           format: double
           type: number
         per_approver:
+          description: What each person approved, the most first.
           items:
             $ref: "#/components/schemas/QualityApprover"
-          type:
-            - array
-            - "null"
+          type: array
         quick_share:
+          description: The share of approvals made within ten seconds of the decider first opening the review with no item changed, or with no look recorded, from 0 to 1.
+          examples:
+            - 0.18
           format: double
           type: number
         rejected:
+          description: Rejected by a person.
+          examples:
+            - 4
           format: int64
           type: integer
         rejected_with_reason_share:
+          description: The share of rejections that gave a reason, from 0 to 1.
+          examples:
+            - 0.75
           format: double
           type: number
         stale:
+          description: Approved, then not run because a record had changed.
+          examples:
+            - 1
           format: int64
           type: integer
         task_types:
+          description: Each task type's share of the month's proposals, the most first.
           items:
             $ref: "#/components/schemas/QualityTaskType"
-          type:
-            - array
-            - "null"
+          type: array
       required:
         - made
         - approved
@@ -46765,12 +46790,21 @@ components:
       additionalProperties: false
       properties:
         approved:
+          description: How many proposals they approved in the month.
+          examples:
+            - 14
           format: int64
           type: integer
         quick:
+          description: How many of them within ten seconds of first opening the review, with no item changed, or with no look at all.
+          examples:
+            - 3
           format: int64
           type: integer
         user:
+          description: The person.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
           type: string
       required:
         - user
@@ -46831,13 +46865,21 @@ components:
       additionalProperties: false
       properties:
         count:
+          description: How many of the month's proposals were of it.
+          examples:
+            - 12
           format: int64
           type: integer
         share:
           description: Of the month's proposals, from 0 to 1.
+          examples:
+            - 0.4
           format: double
           type: number
         task_type:
+          description: The task type.
+          examples:
+            - ap.draft_bill
           type: string
       required:
         - task_type

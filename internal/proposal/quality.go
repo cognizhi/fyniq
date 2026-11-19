@@ -18,35 +18,35 @@ const QuickApproval = 10 * time.Second
 
 // QualityTaskType is one task type's share of the month.
 type QualityTaskType struct {
-	TaskType string  `json:"task_type"`
-	Count    int     `json:"count"`
-	Share    float64 `json:"share" doc:"Of the month's proposals, from 0 to 1."`
+	TaskType string  `json:"task_type" doc:"The task type." example:"ap.draft_bill"`
+	Count    int     `json:"count" doc:"How many of the month's proposals were of it." example:"12"`
+	Share    float64 `json:"share" doc:"Of the month's proposals, from 0 to 1." example:"0.4"`
 }
 
 // QualityApprover is what one person approved in the month.
 type QualityApprover struct {
-	User     uuid.UUID `json:"user"`
-	Approved int       `json:"approved"`
-	Quick    int       `json:"quick"`
+	User     uuid.UUID `json:"user" doc:"The person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
+	Approved int       `json:"approved" doc:"How many proposals they approved in the month." example:"14"`
+	Quick    int       `json:"quick" doc:"How many of them within ten seconds of first opening the review, with no item changed, or with no look at all." example:"3"`
 }
 
 // Quality is a month's approval-quality metrics.
 type Quality struct {
-	Made     int `json:"made"`
-	Approved int `json:"approved"`
-	Rejected int `json:"rejected"`
-	Expired  int `json:"expired"`
-	Invalid  int `json:"invalid"`
-	Stale    int `json:"stale"`
+	Made     int `json:"made" doc:"Proposals made in the month." example:"30"`
+	Approved int `json:"approved" doc:"Decided by a person's approval." example:"22"`
+	Rejected int `json:"rejected" doc:"Rejected by a person." example:"4"`
+	Expired  int `json:"expired" doc:"Left undecided until they expired." example:"2"`
+	Invalid  int `json:"invalid" doc:"Found invalid when they were made." example:"1"`
+	Stale    int `json:"stale" doc:"Approved, then not run because a record had changed." example:"1"`
 	// QuickShare is the share of approvals made within QuickApproval of the decider's first look at the review with no item changed, or with no look
 	// recorded at all, from 0 to 1; 0 when nothing was approved.
-	QuickShare float64 `json:"quick_share"`
+	QuickShare float64 `json:"quick_share" doc:"The share of approvals made within ten seconds of the decider first opening the review with no item changed, or with no look recorded, from 0 to 1." example:"0.18"`
 	// MedianDecisionSeconds is the median time from a proposal to the decision, for those decided; 0 when none was.
-	MedianDecisionSeconds float64 `json:"median_decision_seconds"`
+	MedianDecisionSeconds float64 `json:"median_decision_seconds" doc:"The median time from a proposal to its decision, in seconds." example:"420"`
 	// RejectedWithReasonShare is the share of rejections that gave a reason; 0 when nothing was rejected.
-	RejectedWithReasonShare float64           `json:"rejected_with_reason_share"`
-	PerApprover             []QualityApprover `json:"per_approver"`
-	TaskTypes               []QualityTaskType `json:"task_types"`
+	RejectedWithReasonShare float64           `json:"rejected_with_reason_share" doc:"The share of rejections that gave a reason, from 0 to 1." example:"0.75"`
+	PerApprover             []QualityApprover `json:"per_approver" nullable:"false" doc:"What each person approved, the most first."`
+	TaskTypes               []QualityTaskType `json:"task_types" nullable:"false" doc:"Each task type's share of the month's proposals, the most first."`
 }
 
 // MeasureQuality computes the month's metrics from the proposals' rows. An approval is a decision with a decider that was not a rejection, an expiry or a

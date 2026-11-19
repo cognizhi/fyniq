@@ -49708,32 +49708,82 @@ export interface components {
             source_type: string;
         };
         Quality: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Decided by a person's approval.
+             * @example 22
+             */
             approved: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Left undecided until they expired.
+             * @example 2
+             */
             expired: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Found invalid when they were made.
+             * @example 1
+             */
             invalid: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Proposals made in the month.
+             * @example 30
+             */
             made: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description The median time from a proposal to its decision, in seconds.
+             * @example 420
+             */
             median_decision_seconds: number;
-            per_approver: components["schemas"]["QualityApprover"][] | null;
-            /** Format: double */
+            /** @description What each person approved, the most first. */
+            per_approver: components["schemas"]["QualityApprover"][];
+            /**
+             * Format: double
+             * @description The share of approvals made within ten seconds of the decider first opening the review with no item changed, or with no look recorded, from 0 to 1.
+             * @example 0.18
+             */
             quick_share: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Rejected by a person.
+             * @example 4
+             */
             rejected: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description The share of rejections that gave a reason, from 0 to 1.
+             * @example 0.75
+             */
             rejected_with_reason_share: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Approved, then not run because a record had changed.
+             * @example 1
+             */
             stale: number;
-            task_types: components["schemas"]["QualityTaskType"][] | null;
+            /** @description Each task type's share of the month's proposals, the most first. */
+            task_types: components["schemas"]["QualityTaskType"][];
         };
         QualityApprover: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description How many proposals they approved in the month.
+             * @example 14
+             */
             approved: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description How many of them within ten seconds of first opening the review, with no item changed, or with no look at all.
+             * @example 3
+             */
             quick: number;
+            /**
+             * @description The person.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
             user: string;
         };
         QualityMonth: {
@@ -49775,13 +49825,22 @@ export interface components {
             note?: string;
         };
         QualityTaskType: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description How many of the month's proposals were of it.
+             * @example 12
+             */
             count: number;
             /**
              * Format: double
              * @description Of the month's proposals, from 0 to 1.
+             * @example 0.4
              */
             share: number;
+            /**
+             * @description The task type.
+             * @example ap.draft_bill
+             */
             task_type: string;
         };
         QuietHours: {
