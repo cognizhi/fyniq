@@ -33,7 +33,8 @@ joins saves those approvals.
 
 1. Open **Settings → Members and roles** and select **Invite**.
 2. Enter the person's name and choose their roles. For someone from outside the company, such as an
-   auditor, set the date their roles end. The Owner role never ends.
+   auditor, set the date their roles end. The Owner role never ends. If you choose **Approver**, tick the
+   departments it acts for (see "Narrow an Approver to departments"); the other Owner approves them with the invitation.
 3. Select **Create invitation**, and confirm it's you if Fyniq asks. The code is shown once: copy
    it and give it to the person in person or on a call. It works once and stops working after
    7 days.
@@ -65,17 +66,26 @@ A wrong, used, withdrawn or expired code is refused, and nothing changes. Ask fo
 ## Who has signed in and who has a passkey
 
 Beside each person, the list says when they last signed in, or that they have not yet, and how many passkeys they hold. A person
-with no passkey confirms it's you by signing in again each time, so ask them to add one under Profile and security.
+with no passkey confirms it's you by signing in again each time, so ask them to add one under Profile and security. An Owner and an
+Administrator also see each person's sign-in email there; the Auditor and the DPO, who read the list, do not.
 
 ## Narrow an Approver to departments
 
-When you give the **Approver** role, **Departments this Approver acts for** lists the organisation's department values: tick
-the ones their role reaches. Their views and approvals that Fyniq limits by department then reach only those departments'
-records, lines and budgets, and what they read adds up only those: the profit and loss they open counts the lines of those departments
-and nothing else (the balance sheet, the cash flow, the trial balance, budget comparatives and exports are the whole company's, so they are not shown to them). An Approver role given with no department reaches none of them, so tick at least one. The choice is fixed
-when the role is given: to change it, end the role and give it again. The people's list shows it beside the role, such as
-"Approver for Engineering". The same limit applies to the assistant and to connected apps acting for that person. A person who
-holds any other role besides Employee is not narrowed by this: that role's own rights decide.
+When you give the **Approver** role, or invite someone with it, **Departments this Approver acts for** lists the organisation's
+department values: tick the ones their role reaches. Their views and approvals that Fyniq limits by department then reach only those
+departments' records, lines and budgets, and what they read adds up only those: the profit and loss they open counts the lines of those departments
+and nothing else (the balance sheet, the cash flow, the trial balance, budget comparatives and exports are the whole company's, so they are not shown to them).
+A department's budget holder sees only their department's lines of a budget, with those lines' totals and their department's Budget vs Actual, and plans
+by saving their own lines: the other lines of the draft stay as they were, and the company's drafting, copying, importing and asking for approval,
+the forecasts and the planning summary are not theirs. The choice is fixed when the role is given: to change it, end the role and give it again.
+The people's list shows it beside the role, such as "Approver for Engineering". The same limit applies to the assistant and to connected apps acting for that person.
+A person who holds any other role that already reaches the same records, such as an Accountant, is not narrowed by this: that role's own rights decide.
+
+An Approver narrowed to departments also reaches only their departments' bills, invoices and expense claims, and the requests for them: a record is in a
+department when its lines carry that department's values, and one whose lines carry none is in no department, so it reaches no narrowed Approver. They
+are told of a request, and may sign it, only when it is theirs; the company's payables and receivables, bill reminders and the files of a bill or invoice are not shown
+to them. Their own expense claims stay theirs whatever the department. An Approver role given with no department keeps the rights it had on bills, invoices
+and claims; it reaches none of a budget or a report.
 
 ## When an external person's roles end
 

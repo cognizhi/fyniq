@@ -121,6 +121,19 @@ func visibleClaim(ctx context.Context, u storage.UnitOfWork, p authn.Principal, 
 	if d.ClaimantID != p.UserID && ownClaimsOnly(p) {
 		return doc, d, ports.ErrNotFound
 	}
+	if d.ClaimantID != p.UserID { // an Approver narrowed to departments reads the files of their departments' claims
+		reach, err := reachOf(ctx, u, p, authz.ExpenseClaims, authz.View)
+		if err != nil {
+			return doc, d, err
+		}
+		var values []uuid.UUID
+		for _, l := range d.Lines {
+			values = append(values, l.Values...)
+		}
+		if !reach.holds(values) {
+			return doc, d, ports.ErrNotFound
+		}
+	}
 	return doc, d, nil
 }
 

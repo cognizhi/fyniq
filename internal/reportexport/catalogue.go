@@ -33,7 +33,7 @@ var Exported = []string{
 	"recurring_invoice_version", "recurring_journal", "recurring_journal_version", "report_export", "restore_drill",
 	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "role_assignment_scope", "sales_reminder",
 	"security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",
-	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "user_preference", "user_saved_item", "withholding_decision", "people_source", "person_projection", "payroll_mapping", "payroll_mapping_entry", "payroll_run_receipt",
+	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "user_preference", "user_saved_item", "record_comment", "withholding_decision", "people_source", "person_projection", "payroll_mapping", "payroll_mapping_entry", "payroll_run_receipt",
 	"psp_account", "psp_balance", "psp_dispute_credit", "psp_dispute_loss", "psp_event", "psp_payout", "psp_txn",
 }
 

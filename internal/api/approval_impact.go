@@ -89,6 +89,12 @@ func (a *API) impactOf(ctx context.Context, p authn.Principal, id uuid.UUID) (*A
 	if errors.Is(err, storage.ErrPreviewed) || errors.Is(err, errRefused) {
 		err = nil
 	}
+	// A claim posts only under an approved request (FY233): the dry run carries out the post without the approval it waits for, so the
+	// database's last check refuses it whatever it holds: what it would post is shown, and not a refusal that is not one.
+	var refused *storage.Error
+	if errors.As(err, &refused) && refused.Code == storage.CodeClaim && out != nil && out.Refused == nil {
+		err = nil
+	}
 	return out, err
 }
 

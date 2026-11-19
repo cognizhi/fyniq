@@ -107,19 +107,20 @@ func (q *Queries) ExpiredRoleAssignments(ctx context.Context, now *time.Time) ([
 }
 
 const getMemberInvitation = `-- name: GetMemberInvitation :one
-SELECT id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at
+SELECT id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at, department_value_ids
   FROM fyniq.member_invitation WHERE id = $1
 `
 
 type GetMemberInvitationRow struct {
-	ID            uuid.UUID
-	DisplayName   string
-	Roles         []string
-	RolesExpireAt *time.Time
-	CreatedAt     time.Time
-	ExpiresAt     time.Time
-	AcceptedAt    *time.Time
-	WithdrawnAt   *time.Time
+	ID                 uuid.UUID
+	DisplayName        string
+	Roles              []string
+	RolesExpireAt      *time.Time
+	CreatedAt          time.Time
+	ExpiresAt          time.Time
+	AcceptedAt         *time.Time
+	WithdrawnAt        *time.Time
+	DepartmentValueIds []uuid.UUID
 }
 
 func (q *Queries) GetMemberInvitation(ctx context.Context, id uuid.UUID) (GetMemberInvitationRow, error) {
@@ -134,34 +135,38 @@ func (q *Queries) GetMemberInvitation(ctx context.Context, id uuid.UUID) (GetMem
 		&i.ExpiresAt,
 		&i.AcceptedAt,
 		&i.WithdrawnAt,
+		&i.DepartmentValueIds,
 	)
 	return i, err
 }
 
 const insertMemberInvitation = `-- name: InsertMemberInvitation :one
-INSERT INTO fyniq.member_invitation (code_hash, display_name, roles, roles_expire_at, expires_at, created_at)
-VALUES ($1, $2, $3::text[], $4, $5, $6)
-RETURNING id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at
+INSERT INTO fyniq.member_invitation (code_hash, display_name, roles, roles_expire_at, expires_at, created_at, department_value_ids)
+VALUES ($1, $2, $3::text[], $4, $5, $6,
+        $7::uuid[])
+RETURNING id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at, department_value_ids
 `
 
 type InsertMemberInvitationParams struct {
-	CodeHash      []byte
-	DisplayName   string
-	Roles         []string
-	RolesExpireAt *time.Time
-	ExpiresAt     time.Time
-	CreatedAt     time.Time
+	CodeHash           []byte
+	DisplayName        string
+	Roles              []string
+	RolesExpireAt      *time.Time
+	ExpiresAt          time.Time
+	CreatedAt          time.Time
+	DepartmentValueIds []uuid.UUID
 }
 
 type InsertMemberInvitationRow struct {
-	ID            uuid.UUID
-	DisplayName   string
-	Roles         []string
-	RolesExpireAt *time.Time
-	CreatedAt     time.Time
-	ExpiresAt     time.Time
-	AcceptedAt    *time.Time
-	WithdrawnAt   *time.Time
+	ID                 uuid.UUID
+	DisplayName        string
+	Roles              []string
+	RolesExpireAt      *time.Time
+	CreatedAt          time.Time
+	ExpiresAt          time.Time
+	AcceptedAt         *time.Time
+	WithdrawnAt        *time.Time
+	DepartmentValueIds []uuid.UUID
 }
 
 // Both times come from the API's clock (000073), as an idempotency key's do.
@@ -173,6 +178,7 @@ func (q *Queries) InsertMemberInvitation(ctx context.Context, arg InsertMemberIn
 		arg.RolesExpireAt,
 		arg.ExpiresAt,
 		arg.CreatedAt,
+		arg.DepartmentValueIds,
 	)
 	var i InsertMemberInvitationRow
 	err := row.Scan(
@@ -184,6 +190,7 @@ func (q *Queries) InsertMemberInvitation(ctx context.Context, arg InsertMemberIn
 		&i.ExpiresAt,
 		&i.AcceptedAt,
 		&i.WithdrawnAt,
+		&i.DepartmentValueIds,
 	)
 	return i, err
 }
@@ -415,21 +422,22 @@ func (q *Queries) MemberSignIns(ctx context.Context) ([]MemberSignInsRow, error)
 }
 
 const pendingMemberInvitations = `-- name: PendingMemberInvitations :many
-SELECT id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at
+SELECT id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at, department_value_ids
   FROM fyniq.member_invitation
  WHERE accepted_at IS NULL AND withdrawn_at IS NULL AND expires_at > $1
  ORDER BY created_at, id
 `
 
 type PendingMemberInvitationsRow struct {
-	ID            uuid.UUID
-	DisplayName   string
-	Roles         []string
-	RolesExpireAt *time.Time
-	CreatedAt     time.Time
-	ExpiresAt     time.Time
-	AcceptedAt    *time.Time
-	WithdrawnAt   *time.Time
+	ID                 uuid.UUID
+	DisplayName        string
+	Roles              []string
+	RolesExpireAt      *time.Time
+	CreatedAt          time.Time
+	ExpiresAt          time.Time
+	AcceptedAt         *time.Time
+	WithdrawnAt        *time.Time
+	DepartmentValueIds []uuid.UUID
 }
 
 func (q *Queries) PendingMemberInvitations(ctx context.Context, now time.Time) ([]PendingMemberInvitationsRow, error) {
@@ -450,6 +458,7 @@ func (q *Queries) PendingMemberInvitations(ctx context.Context, now time.Time) (
 			&i.ExpiresAt,
 			&i.AcceptedAt,
 			&i.WithdrawnAt,
+			&i.DepartmentValueIds,
 		); err != nil {
 			return nil, err
 		}
@@ -521,7 +530,7 @@ func (q *Queries) UnrevokedRoleAssignments(ctx context.Context, membershipID uui
 const withdrawMemberInvitation = `-- name: WithdrawMemberInvitation :one
 UPDATE fyniq.member_invitation SET withdrawn_at = $1
  WHERE id = $2 AND accepted_at IS NULL AND withdrawn_at IS NULL
-RETURNING id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at
+RETURNING id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at, department_value_ids
 `
 
 type WithdrawMemberInvitationParams struct {
@@ -530,14 +539,15 @@ type WithdrawMemberInvitationParams struct {
 }
 
 type WithdrawMemberInvitationRow struct {
-	ID            uuid.UUID
-	DisplayName   string
-	Roles         []string
-	RolesExpireAt *time.Time
-	CreatedAt     time.Time
-	ExpiresAt     time.Time
-	AcceptedAt    *time.Time
-	WithdrawnAt   *time.Time
+	ID                 uuid.UUID
+	DisplayName        string
+	Roles              []string
+	RolesExpireAt      *time.Time
+	CreatedAt          time.Time
+	ExpiresAt          time.Time
+	AcceptedAt         *time.Time
+	WithdrawnAt        *time.Time
+	DepartmentValueIds []uuid.UUID
 }
 
 func (q *Queries) WithdrawMemberInvitation(ctx context.Context, arg WithdrawMemberInvitationParams) (WithdrawMemberInvitationRow, error) {
@@ -552,6 +562,7 @@ func (q *Queries) WithdrawMemberInvitation(ctx context.Context, arg WithdrawMemb
 		&i.ExpiresAt,
 		&i.AcceptedAt,
 		&i.WithdrawnAt,
+		&i.DepartmentValueIds,
 	)
 	return i, err
 }

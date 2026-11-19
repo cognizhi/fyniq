@@ -4,6 +4,7 @@ import { Banknote, CalendarClock, CircleCheck, CircleX, ClockAlert, Link2, Penci
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
+import { CommentsOnDemand } from "../../components/RecordComments";
 import { Refusal } from "../../components/Refusal";
 import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
@@ -937,6 +938,7 @@ export function BillPage() {
       {bill && one.data && !editing && (
         <EvidencePanel record={{ kind: "bill", id: bill.id, etag: one.data.etag }} draft={bill.status === "draft"} mayAttach={roles.some((r) => billAttachers.includes(r))} onChanged={setStatus} />
       )}
+      {bill && !editing && !form && <CommentsOnDemand recordType={bill.kind === "vendor_credit" ? "vendor_credit" : "bill"} recordId={bill.id} />}
       {bill && applying && (
         <ApplyCredit
           open={applying}

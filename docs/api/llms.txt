@@ -940,6 +940,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/quotes/{quote_id}/invoice` (invoiceQuote): Make an invoice from a quote or sales order
 - `POST /v1/quotes/{quote_id}/send` (sendQuote): Send a quote or sales order
 - `GET /v1/receivables` (getReceivables): Get AR ageing
+- `GET /v1/records/{record_type}/{record_id}/comments` (listRecordComments): List a record's comments
+- `POST /v1/records/{record_type}/{record_id}/comments` (addRecordComment): Comment on a record
+- `GET /v1/records/{record_type}/{record_id}/mentionable` (listRecordMentionable): List the members who may be mentioned on a record
 - `GET /v1/recurring-bills` (listRecurringBills): List the recurring bills
 - `POST /v1/recurring-bills` (createRecurringBill): Add a recurring bill
 - `GET /v1/recurring-bills/{recurring_bill_id}` (getRecurringBill): Get a recurring bill

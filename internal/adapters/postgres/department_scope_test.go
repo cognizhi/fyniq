@@ -3,8 +3,10 @@
 package postgres_test
 
 import (
+	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -204,4 +206,51 @@ WHERE m.user_id = $1 AND ra.role = $2 AND ra.revoked_at IS NULL`, user, role).Sc
 		t.Errorf("another organisation holds %d scopes", n)
 	}
 	_ = proj
+}
+
+// An invitation's department scope (FR-ADM-01, 000706): only an invitation that gives the Approver role carries one, of at most 20
+// values; the scope is kept and read back with the invitation.
+// req: FR-ADM-01
+// asvs: V8.2.1, V8.3.1
+func TestAttackAnInvitationsDepartmentScopeNeedsTheApproverRole(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "owner"}})
+	s := store(t, "fyniq_api")
+	b := porttest.NewBooks(t, s, "Invitation scope Pte Ltd")
+	now := clock.System{}.Now()
+	value := uuid.New()
+	invite := func(roles []string, values []uuid.UUID) error {
+		return s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: bytes.Repeat([]byte{byte(len(roles)), byte(len(values))}, 16)[:32], DisplayName: "Mei", Roles: roles,
+				ExpiresAt: now.Add(24 * time.Hour), CreatedAt: now, DepartmentValues: values})
+			return err
+		})
+	}
+	if err := invite([]string{"accountant"}, []uuid.UUID{value}); err == nil {
+		t.Error("an invitation that gives no Approver role was narrowed to a department")
+	}
+	many := make([]uuid.UUID, 21)
+	for i := range many {
+		many[i] = uuid.New()
+	}
+	if err := invite([]string{"approver"}, many); err == nil {
+		t.Error("an invitation was narrowed to 21 values")
+	}
+	if err := invite([]string{"approver", "employee"}, []uuid.UUID{value}); err != nil {
+		t.Fatalf("an Approver invitation with a scope: %v", err)
+	}
+	if err := invite([]string{"accountant"}, nil); err != nil {
+		t.Fatalf("an invitation with no scope: %v", err)
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		pending, err := u.MemberInvitations().Pending(ctx, now)
+		if err != nil {
+			return err
+		}
+		if len(pending) != 2 || len(pending[0].DepartmentValues) != 1 || pending[0].DepartmentValues[0] != value || len(pending[1].DepartmentValues) != 0 {
+			t.Errorf("the pending invitations: %+v", pending)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
 }

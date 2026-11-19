@@ -152,7 +152,7 @@ func registerBudgetReports(a *API) {
 			if by == "" {
 				by = budget.ByAccount
 			}
-			r, err := budget.Report(ctx, u, base, cal, from, to, by)
+			r, err := budget.ReportFor(ctx, u, base, cal, from, to, by, budgetScope(ctx, authz.View)) // a department's budget holder: their department's
 			if err != nil {
 				return err
 			}

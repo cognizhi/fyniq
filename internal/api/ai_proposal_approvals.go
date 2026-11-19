@@ -69,7 +69,7 @@ func approverOf(p authn.Principal, r storage.ApprovalRequest) bool {
 	if rule, ok := proposalRuleOf(r); ok {
 		return !p.AI() && proposal.Approves(rule.TaskType, rule.Command, p.Roles)
 	}
-	return mayApprove(p, r.ObjectType)
+	return mayApprove(p, r.ObjectType) && !narrowedOut(p, r, func(q authn.Principal) bool { return mayApprove(q, r.ObjectType) })
 }
 
 // approvesRequest reports whether a member's roles hold the right to sign r, for the recheck before it executes.

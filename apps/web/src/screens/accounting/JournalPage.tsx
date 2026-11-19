@@ -4,6 +4,7 @@ import { CalendarPlus, CircleCheck, CircleX, Clock, Eye, Pencil, Repeat, Save, S
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
+import { CommentsOnDemand } from "../../components/RecordComments";
 import { Refusal } from "../../components/Refusal";
 import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
@@ -805,6 +806,8 @@ export function JournalPage() {
       {j && journalId && one.data && (
         <JournalEvidence journalId={journalId} journalEtag={one.data.etag} draft={j.status === "draft"} mayAttach={roles.some((r) => attachers.includes(r))} onChanged={setStatus} />
       )}
+
+      {j && journalId && <CommentsOnDemand recordType="journal" recordId={journalId} />}
 
       {preview && (
         <section className="fy-card" aria-labelledby={`${id}-preview`}>

@@ -261,6 +261,7 @@ func Config(version string) huma.Config {
 		{Name: "AI", Description: "The AI's configuration: connections to model providers, their credentials and billing (AI-72, AI-73, AI-79), dual controlled; never reachable by the AI or over MCP (§9.6)."},
 		{Name: "Assistant", Description: "Ask the books in plain words: a person's own conversations with the assistant, answered as them through the read tools, every figure from a fact (AI-P1, AI-08); never reachable by the AI or over MCP (§9.6)."},
 		{Name: "Import", Description: "The generic import (FR-MIG-03): each entity's template, laid out as the workbook's sheet for it, as CSV or XLSX, and the import of a file filled in it, with its dry run; each row entered through its own command, in any organisation, under the entity's own right."},
+		{Name: "Records", Description: "What belongs to any record: the comments and @mentions on a record, which only members who may see it read, write or are offered (FR-UX-13)."},
 		{Name: "Planning", Description: "Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08)."},
 		{Name: "Audit trail", Description: "The audit trail (PRD-001 §11.5): the explorer and its export (FR-CTL-03, AUD-07), and Verify integrity for a range of days (AUD-03). Every saved change, sign-in, sensitive read and export is in it."},
 		{Name: "Checks", Description: "The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05)."},
@@ -400,6 +401,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerHelpState(a)
 	registerPreferences(a)
 	registerSavedItems(a)
+	registerRecordComments(a)
 	registerInstallationConsole(a)
 	registerMCPOptIn(a)
 	registerConnectedApps(a)
@@ -810,6 +812,10 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 			singapore(p.CoolingOffUntil)+" Singapore time (SEC-35).",
 			"Do it after then, or ask another member to do it.")
 	}
+	if refusal == nil && p.UserID != uuid.Nil && slices.Contains(p.Roles, authz.Approver) && ok && !policy.Public {
+		p.Approver = a.approverScope(ctx.Context(), p) // what their Approver role is narrowed to (FR-ADM-01); the handlers read it from the principal
+		ctx = huma.WithContext(ctx, authn.WithPrincipal(ctx.Context(), p))
+	}
 	var d authz.Decision
 	switch {
 	case refusal != nil:
@@ -831,6 +837,12 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 		if d = authz.Decide(policy, p.Roles, p.AI()); !d.Allowed {
 			refusal = problem(CodeForbidden, fmt.Sprintf("Your roles hold no %q right on %q.", string(policy.Need), policy.Capability),
 				"Ask an Owner or Administrator for a role with that right (PRD-001 Appendix D).")
+		} else if narrowedRefused(p, policy) {
+			// FR-ADM-01: an Approver narrowed to departments reads the records of their departments, and reaches the company's
+			// totals and registers of the sales, purchases and expense claims through their requests only.
+			d = authz.Decision{Reason: "the Approver role is narrowed to departments, which do not reach this read"}
+			refusal = problem(CodeForbidden, "Your Approver role is narrowed to your departments, so this reads the company's records, which are not in them.",
+				"Decide the requests of your departments in the Inbox; ask an Owner or Administrator if you need more")
 		} else if p.Scoped && !authz.ScopeAllows(p.Scopes, policy) {
 			// FR-INT-02: a registered client's scopes narrow its member's roles to whole areas; never approve or release.
 			d = authz.Decision{Reason: fmt.Sprintf("the client's scopes %v do not cover %q on %q", p.Scopes, string(policy.Need), policy.Capability)}
@@ -855,6 +867,50 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 	if _, audited := auditedReads[op.OperationID]; audited && ctx.Status() < 300 { // a mass export (SEC-31)
 		a.afterAuditedRead(ctx.Context(), p)
 	}
+}
+
+// approverScope is what the Approver role of p is narrowed to (FR-ADM-01): narrowed when every live Approver assignment carries a
+// department scope. A scope that cannot be read narrows to nothing, never to everything.
+func (a *API) approverScope(ctx context.Context, p authn.Principal) authn.DepartmentScope {
+	out := authn.DepartmentScope{Narrowed: true}
+	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		assigned, err := u.Members().Roles(ctx, p.UserID, a.deps.Clock.Now())
+		if err != nil {
+			return err
+		}
+		out = approverScopeOf(assigned)
+		return nil
+	})
+	if err != nil {
+		a.deps.Log.WarnContext(ctx, "api.approver_scope_unread", "error", err.Error(), "request_id", requestID(ctx))
+		return authn.DepartmentScope{Narrowed: true}
+	}
+	return out
+}
+
+// approverScopeOf is what the Approver assignments among a person's live roles are narrowed to: narrowed when there is one and
+// every one carries department values, which are then the values of all of them.
+func approverScopeOf(assigned []storage.RoleAssignment) authn.DepartmentScope {
+	out := authn.DepartmentScope{Narrowed: true}
+	held := 0
+	for _, r := range assigned {
+		if r.Role != string(authz.Approver) {
+			continue
+		}
+		held++
+		if len(r.DepartmentValues) == 0 {
+			out.Narrowed = false
+		}
+		for _, v := range r.DepartmentValues {
+			if !slices.Contains(out.Values, v) {
+				out.Values = append(out.Values, v)
+			}
+		}
+	}
+	if held == 0 {
+		return authn.DepartmentScope{}
+	}
+	return out
 }
 
 func requestID(ctx context.Context) string {

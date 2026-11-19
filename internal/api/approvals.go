@@ -291,6 +291,9 @@ type pendingChange struct {
 	// Facts are what the change says about itself for the policy's rules (FR-APR-01, rev 0.178): its accounts, its
 	// lines' dimension values and its vendor; its amount comes from Amounts when it has one in the base currency.
 	Facts approval.Facts
+	// Values are the dimension values on the lines of a change whose facts do not carry them, such as an expense claim's: with the
+	// facts' own they say which departments it is in (FR-ADM-01); they match no rule.
+	Values []uuid.UUID
 }
 
 // stored is what a request keeps of its change.
@@ -300,6 +303,9 @@ type stored struct {
 	Amounts []approval.Amount `json:"amounts"`
 	Content json.RawMessage   `json:"content,omitempty"`
 	Rule    int               `json:"rule,omitempty"` // the policy's rule that chose its steps, from 1; 0 for its default steps
+	// Departments are the department values its lines carry (FR-ADM-01): an Approver narrowed to departments sees and signs it only
+	// when every one is theirs. A change with none is in no department.
+	Departments []string `json:"departments,omitempty"`
 }
 
 // intIn is the whole number a change holds at key, as storedOf reads it.
@@ -1126,7 +1132,11 @@ func (a *API) requestApproval(ctx context.Context, u storage.UnitOfWork, c pendi
 	if err != nil {
 		return Approval{}, err
 	}
-	change, err := json.Marshal(stored{Execute: c.Execute, Diff: c.Diff, Amounts: c.Amounts, Content: c.Content, Rule: rule})
+	departments, err := changeDepartments(ctx, u, c)
+	if err != nil {
+		return Approval{}, err
+	}
+	change, err := json.Marshal(stored{Execute: c.Execute, Diff: c.Diff, Amounts: c.Amounts, Content: c.Content, Rule: rule, Departments: idStrings(departments)})
 	if err != nil {
 		return Approval{}, err
 	}
@@ -1142,10 +1152,58 @@ func (a *API) requestApproval(ctx context.Context, u storage.UnitOfWork, c pendi
 	// Those who may approve it hear that it waits for them (FR-NTF-01), the requester aside (SOD).
 	if err := a.notify(ctx, u, notify.Event{Type: "approval.requested", RecordType: "approval_request", RecordID: &r.ID,
 		Title: c.Summary + ": waits for your approval", Link: "/approvals/" + r.ID.String(), At: now,
-		Audience: notify.Audience{Capability: string(approvalRow(c.ObjectType)), Need: "A", Except: []uuid.UUID{p.UserID}}}); err != nil {
+		Audience: notify.Audience{Capability: string(approvalRow(c.ObjectType)), Need: "A", Except: []uuid.UUID{p.UserID}, Scoped: true, Departments: departments}}); err != nil {
 		return Approval{}, err
 	}
 	return a.approvalOf(ctx, u, r)
+}
+
+// changeDepartments are the department values the lines of a change carry, each once and in order: its facts' dimension values and
+// its own, which are the department dimension's (FR-ADM-01).
+func changeDepartments(ctx context.Context, u storage.UnitOfWork, c pendingChange) ([]uuid.UUID, error) {
+	values := append(slices.Clone(c.Facts.Values), c.Values...)
+	if len(values) == 0 {
+		return nil, nil
+	}
+	all, err := departmentValues(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	var out []uuid.UUID
+	for _, v := range values {
+		if slices.Contains(all, v) && !slices.Contains(out, v) {
+			out = append(out, v)
+		}
+	}
+	slices.SortFunc(out, func(a, b uuid.UUID) int { return strings.Compare(a.String(), b.String()) })
+	return out, nil
+}
+
+// narrowedOut reports whether department scopes keep p from a request: their Approver role is narrowed (FR-ADM-01), no other role of
+// theirs gives them what holds asks of the person without it, and the request is not in their departments, every one of its
+// department values among theirs. A request in no department is in none.
+func narrowedOut(p authn.Principal, r storage.ApprovalRequest, holds func(authn.Principal) bool) bool {
+	if !p.Approver.Narrowed {
+		return false
+	}
+	q := p
+	q.Roles = slices.DeleteFunc(slices.Clone(p.Roles), func(x authz.Role) bool { return x == authz.Approver })
+	if holds(q) {
+		return false
+	}
+	s, err := storedOf(r)
+	if err != nil {
+		return true
+	}
+	values := make([]uuid.UUID, 0, len(s.Departments))
+	for _, d := range s.Departments {
+		id, err := uuid.Parse(d)
+		if err != nil {
+			return true
+		}
+		values = append(values, id)
+	}
+	return !p.Approver.Holds(values)
 }
 
 // notifyDecided tells a request's requester that it was approved or rejected (FR-NTF-01).
@@ -1245,6 +1303,11 @@ func maySee(p authn.Principal, r storage.ApprovalRequest) bool {
 	if r.ObjectType == approval.ObjectAIProposal {
 		return seesProposal(p, r)
 	}
+	return seesByRow(p, r) && !narrowedOut(p, r, func(q authn.Principal) bool { return seesByRow(q, r) })
+}
+
+// seesByRow reports whether p holds a right on the row of a request's object that shows it to them.
+func seesByRow(p authn.Principal, r storage.ApprovalRequest) bool {
 	view := authz.Policy{Operation: "view", Capability: approvalRow(r.ObjectType), Need: authz.View}
 	if r.ObjectType == approval.ObjectClaim {
 		if mayApprove(p, r.ObjectType) {
@@ -1791,9 +1854,19 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 			}
 			expires = &t
 		}
+		var departments []uuid.UUID
+		if ids, ok := x["department_value_ids"].([]any); ok {
+			for _, v := range ids {
+				d, err := uuid.Parse(fmt.Sprint(v))
+				if err != nil {
+					return err
+				}
+				departments = append(departments, d)
+			}
+		}
 		now := a.deps.Clock.Now()
 		_, err = u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: text("display_name"), Roles: roles,
-			RolesExpireAt: expires, ExpiresAt: now.Add(InvitationTTL), CreatedAt: now})
+			RolesExpireAt: expires, ExpiresAt: now.Add(InvitationTTL), CreatedAt: now, DepartmentValues: departments})
 		return err
 	case approval.OpPolicyChange:
 		c, err := policyChangeOf(x)

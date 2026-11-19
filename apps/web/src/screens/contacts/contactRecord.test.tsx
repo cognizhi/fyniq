@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { answer, problem } from "../../test/api";
 import { noViolations } from "../../test/axe";
@@ -35,7 +35,8 @@ describe("ContactRecord", () => {
     expect(within(tiles).getByText("Billed this financial year").parentElement?.textContent).toContain("218.00 SGD");
     expect(within(screen.getByRole("table", { name: "What they owe us" })).getAllByText("100.00")).toHaveLength(2);
     expect(within(screen.getByRole("table", { name: "What we owe them" })).getAllByText("218.00")).toHaveLength(2);
-    const activity = screen.getByRole("list", { name: "Activity" });
+    fireEvent.click(screen.getByRole("tab", { name: "Related" }));
+    const activity = await screen.findByRole("list", { name: "Documents" });
     expect(within(activity).getByRole("link", { name: "Bill AU-100" }).getAttribute("href")).toBe("/purchases/bills/b1");
     expect(within(activity).getByRole("link", { name: "Invoice INV-0012" }).getAttribute("href")).toBe("/sales/invoices/i1");
     expect(within(activity).getByText("Receipt")).toBeTruthy();
@@ -54,7 +55,8 @@ describe("ContactRecord", () => {
     expect(within(tiles).queryByText("We owe")).toBeNull();
     expect(within(tiles).queryByText("Billed this financial year")).toBeNull();
     expect(screen.queryByRole("table")).toBeNull();
-    expect(screen.getByText("No documents yet.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: "Related" }));
+    expect(await screen.findByText("No documents yet.")).toBeTruthy();
   });
 
   it("says when the contact cannot be read", async () => {

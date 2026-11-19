@@ -632,6 +632,10 @@ func registerClaims(a *API) {
 			if err != nil {
 				return err
 			}
+			reach, err := reachOf(ctx, u, p, authz.ExpenseClaims, authz.View) // an Approver narrowed to departments reads their departments' claims, and their own
+			if err != nil {
+				return err
+			}
 			waiting := map[string]bool{}
 			if whose == "waiting_for_me" {
 				for key, r := range v.latest {
@@ -667,6 +671,9 @@ func registerClaims(a *API) {
 					c, err := a.claimOf(ctx, u, v, doc, false)
 					if err != nil {
 						return err
+					}
+					if reach != nil && d.ClaimantID != p.UserID && !reach.holds(claimValues(c.Lines)) {
+						continue
 					}
 					if in.Stage == "" || c.Stage == in.Stage {
 						out.Body.Items = append(out.Body.Items, c)
@@ -749,6 +756,13 @@ func registerClaims(a *API) {
 				return err
 			}
 			if c.Claimant.ID != p.UserID.String() && ownClaimsOnly(p) {
+				return ports.ErrNotFound
+			}
+			reach, err := reachOf(ctx, u, p, authz.ExpenseClaims, authz.View)
+			if err != nil {
+				return err
+			}
+			if c.Claimant.ID != p.UserID.String() && !reach.holds(claimValues(c.Lines)) {
 				return ports.ErrNotFound
 			}
 			return nil
@@ -897,7 +911,7 @@ func registerClaims(a *API) {
 				Execute: map[string]any{"claim_id": id.String(), "claim_version": doc.Version},
 				Diff: []ApprovalDiff{{Field: "status", Before: "draft", After: "posted"}, {Field: "owed", After: owed + " " + v.base.Code},
 					{Field: "finance_step", After: strconv.FormatBool(policy.Finance)}},
-				Amounts: []approval.Amount{{Amount: owed, Currency: v.base.Code}}, Then: then})
+				Amounts: []approval.Amount{{Amount: owed, Currency: v.base.Code}}, Then: then, Values: claimValues(c.Lines)})
 		})
 		if err != nil {
 			return nil, err
@@ -981,4 +995,17 @@ func registerClaimWithdrawal(a *API) {
 func lastClaim(items []ExpenseClaim) string {
 	last := items[len(items)-1]
 	return last.Date + "|" + last.ID
+}
+
+// claimValues are the dimension values on a claim's lines, each once: they say which departments the claim is in (FR-ADM-01).
+func claimValues(lines []ExpenseClaimLine) []uuid.UUID {
+	var out []uuid.UUID
+	for _, l := range lines {
+		for _, v := range l.DimensionValueIDs {
+			if id, err := uuid.Parse(string(v)); err == nil && !slices.Contains(out, id) {
+				out = append(out, id)
+			}
+		}
+	}
+	return out
 }

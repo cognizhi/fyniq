@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"encoding/json"
 	"slices"
 	"testing"
 	"time"
@@ -80,7 +81,7 @@ func TestAPersonSeesWhatTheirRolesHoldNow(t *testing.T) {
 		{"leaving them out", []byte(`{"capability":"Journals","need":"A","except":["` + me.String() + `"]}`), []authz.Role{authz.Controller}, false},
 		{"not an audience", []byte(`not json`), []authz.Role{authz.Controller}, false},
 	} {
-		if got := Sees(c.audience, me, c.roles); got != c.want {
+		if got := Sees(c.audience, me, Held(c.roles)); got != c.want {
 			t.Errorf("%s: sees %v, want %v", c.what, got, c.want)
 		}
 	}
@@ -160,5 +161,48 @@ func TestWhenADigestIsDue(t *testing.T) {
 		if got := due(c.cadence, c.created, c.now); got != c.want {
 			t.Errorf("%s made %s, at %s: %v", c.cadence, c.created, c.now, got)
 		}
+	}
+}
+
+// An event about a record that department scopes bind reaches a member whose Approver role is narrowed only when the record is in
+// their departments, every one of its department values among theirs; a record in no department, or one outside, reaches them
+// not at all, and their other roles count as they do (FR-ADM-01).
+// req: FR-ADM-01
+// asvs: V8.2.2, V8.3.2
+func TestAnApproversNotificationFollowsTheirDepartments(t *testing.T) {
+	sales, ops := uuid.New(), uuid.New()
+	narrowed := storage.Member{Membership: storage.Membership{UserID: uuid.New(), Status: "active"},
+		Roles: []storage.RoleAssignment{{Role: "approver", DepartmentValues: []uuid.UUID{sales}}}}
+	unscoped := storage.Member{Membership: storage.Membership{UserID: uuid.New(), Status: "active"}, Roles: []storage.RoleAssignment{{Role: "approver"}}}
+	both := storage.Member{Membership: storage.Membership{UserID: uuid.New(), Status: "active"},
+		Roles: []storage.RoleAssignment{{Role: "approver", DepartmentValues: []uuid.UUID{sales}}, {Role: "controller"}}}
+	for _, c := range []struct {
+		what        string
+		departments []uuid.UUID
+		want        []storage.Member
+	}{
+		{"in their department", []uuid.UUID{sales}, []storage.Member{narrowed, unscoped, both}},
+		{"in another department", []uuid.UUID{ops}, []storage.Member{unscoped, both}},
+		{"in two, one theirs", []uuid.UUID{sales, ops}, []storage.Member{unscoped, both}},
+		{"in no department", nil, []storage.Member{unscoped, both}},
+	} {
+		a := Audience{Capability: "Bills, vendor credits", Need: "A", Scoped: true, Departments: c.departments}
+		var want []uuid.UUID
+		for _, m := range c.want {
+			want = append(want, m.UserID)
+		}
+		got := Recipients(a, []storage.Member{narrowed, unscoped, both})
+		if !slices.Equal(got, want) {
+			t.Errorf("%s: told %d members, want %d", c.what, len(got), len(want))
+		}
+		// And at read time, as the bell and the email see it.
+		raw, _ := json.Marshal(a)
+		if got := Sees(raw, narrowed.UserID, narrowed.Roles); got != slices.Contains(want, narrowed.UserID) {
+			t.Errorf("%s: a narrowed Approver's bell sees it: %v", c.what, got)
+		}
+	}
+	// An audience that does not mark the record as scoped is unchanged: a narrowed Approver is told as before.
+	if got := Recipients(Audience{Capability: "Bills, vendor credits", Need: "A"}, []storage.Member{narrowed}); len(got) != 1 {
+		t.Errorf("an unscoped audience reached %d narrowed Approvers, want 1", len(got))
 	}
 }

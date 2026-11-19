@@ -245,10 +245,22 @@ const (
 	maxPagesScanned  = 20
 )
 
+// heldBy are the roles of p as the assignments a notification's audience reads: the Approver role carrying the department values it
+// is narrowed to (FR-ADM-01).
+func heldBy(p authn.Principal) []storage.RoleAssignment {
+	held := notify.Held(p.Roles)
+	for i := range held {
+		if held[i].Role == string(authz.Approver) && p.Approver.Narrowed {
+			held[i].DepartmentValues = p.Approver.Values
+		}
+	}
+	return held
+}
+
 // seeing keeps the notifications of ns that p still sees (SEC-34): those naming them, and those by row while their roles
 // hold the right.
 func seeing(p authn.Principal, ns []storage.Notification) []storage.Notification {
-	return slices.DeleteFunc(ns, func(n storage.Notification) bool { return !notify.Sees(n.Audience, p.UserID, p.Roles) })
+	return slices.DeleteFunc(ns, func(n storage.Notification) bool { return !notify.Sees(n.Audience, p.UserID, heldBy(p)) })
 }
 
 // unread counts p's unread notifications that are not archived and that they still see.
@@ -343,7 +355,7 @@ func registerNotifications(a *API) {
 				}
 				w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (Notification, error) {
 					n, err := u.Notifications().Get(ctx, nid)
-					if p, _ := authn.From(ctx); err == nil && (n.UserID != user || !notify.Sees(n.Audience, user, p.Roles)) {
+					if p, _ := authn.From(ctx); err == nil && (n.UserID != user || !notify.Sees(n.Audience, user, heldBy(p))) {
 						return Notification{}, problem(CodeNotFound, "No notification of yours has that ID.", "List your notifications")
 					}
 					if err != nil {

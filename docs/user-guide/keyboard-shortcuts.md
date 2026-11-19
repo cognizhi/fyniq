@@ -39,6 +39,24 @@ In an invoice, quote, bill, purchase order, journal or expense claim:
   is open under a field, Enter still picks what is highlighted.
 - **Ctrl+Enter** (⌘Enter on a Mac) saves it.
 
+## Work in a grid
+
+A grid is the spreadsheet-like table for bulk work, such as journal lines or opening balances. Click a cell, or Tab into the grid; it has one tab stop,
+the active cell, and Tab at its last cell goes on to the next thing on the page.
+
+- **Arrow keys** move between cells; with **Shift** they select a block. **Home**, **End**, **Page Up** and **Page Down** go further, and **Ctrl+Home**
+  and **Ctrl+End** go to the first and last cell. **Tab** and **Shift+Tab** move across the row.
+- Type to start editing a cell, or press **Enter** or **F2** to edit what it holds. **Enter** saves it and moves down, **Escape** cancels, and
+  **Delete** clears the selected cells. **Ctrl+Enter** sets every selected cell to what you typed.
+- In an amount cell, start a sum with **=**, such as **=1250.50*3-80**; Fyniq works it out exactly and keeps the result. A division is made only when it comes
+  out exact: type the amount you mean otherwise.
+- **Ctrl+D** fills down: the top cell of the selection is copied down it, or the cell above if you selected one.
+- **Ctrl+Z** undoes and **Ctrl+Y** redoes, up to 200 steps.
+- **Ctrl+C** copies the selected cells for a spreadsheet, with plain decimals and a minus sign. Paste cells from Excel or Google Sheets: Fyniq shows what it
+  read, flags any cell that does not fit its column and says how many rows it adds, and sets them only when you choose **Apply paste** or press **Enter**;
+  **Escape** leaves the grid as it was. Amounts such as (1,234.56), S$1,234.56 and −1,234.56 are understood.
+- Each row says whether it is ready or what is wrong. A grid holds up to 100,000 rows, and shows only the rows in view.
+
 ## Act on selected rows
 
 When you select rows on a page, such as bank lines in the categorise grid, open the command palette:

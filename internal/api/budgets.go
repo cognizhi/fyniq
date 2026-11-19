@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -257,6 +258,7 @@ func (a *API) budgetOf(ctx context.Context, u storage.UnitOfWork, doc storage.Do
 	if err != nil {
 		return BudgetView{}, err
 	}
+	b = budgetScope(ctx, authz.View).Within(b) // a department's budget holder reads their department's lines and their totals only
 	o, err := u.Organisation(ctx)
 	if err != nil {
 		return BudgetView{}, err
@@ -289,6 +291,17 @@ func (a *API) budgetOf(ctx context.Context, u storage.UnitOfWork, doc storage.Do
 		out.Status, out.ApprovalID = "awaiting_approval", asked[doc.ID.String()]
 	}
 	return out, nil
+}
+
+// budgetScope is the department scope a caller holds the right need on the budgets under (FR-ADM-01): the department values the
+// Approver's "C dept" reaches, or nil for a caller who holds it unqualified, whom it does not narrow. The scope comes from the live
+// Approver assignments the API loaded for the call; none reaches no line.
+func budgetScope(ctx context.Context, need authz.Right) *budget.Scope {
+	p, ok := authn.From(ctx)
+	if !ok || !authz.DeptOnlyNeed(p.Roles, authz.Budgets, need) {
+		return nil
+	}
+	return &budget.Scope{Values: slices.Clone(p.Approver.Values)}
 }
 
 // latestBudgets maps each year to its latest recorded budget.
@@ -502,7 +515,17 @@ func registerBudgets(a *API) {
 				if err := checkIfMatch(in.IfMatch, recordETag(doc)); err != nil {
 					return BudgetView{}, err
 				}
-				if _, err := budget.ReviseIn(ctx, u, id, budgetIn(in.Body)); err != nil {
+				next := budgetIn(in.Body)
+				if scope := budgetScope(ctx, authz.Create); scope != nil { // a department's budget holder changes their department's lines only
+					current, err := budget.Read(doc)
+					if err != nil {
+						return BudgetView{}, err
+					}
+					if next, err = scope.Merge(current, next); err != nil {
+						return BudgetView{}, equityProblems(err)
+					}
+				}
+				if _, err := budget.ReviseIn(ctx, u, id, next); err != nil {
 					return BudgetView{}, equityProblems(err)
 				}
 				return a.shownBudget(ctx, u, id)

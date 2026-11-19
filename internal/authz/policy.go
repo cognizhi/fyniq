@@ -392,6 +392,14 @@ var (
 	ListSavedItems             = Policy{Operation: "listSavedItems", Capability: OwnNotifications, Need: View} // favourites and views (FR-UX-12)
 	SaveSavedItem              = Policy{Operation: "saveSavedItem", Capability: OwnNotifications, Need: Create}
 	TakeAwaySavedItem          = Policy{Operation: "takeAwaySavedItem", Capability: OwnNotifications, Need: Create}
+	// Comments and @mentions on a record (FR-UX-13, rev 0.382): any member may read, write and mention on a record they may see; the
+	// record's own row of Appendix D decides that, as a search does (SEC-34), so a record the caller may not see is not found.
+	ListRecordComments = Policy{Operation: "listRecordComments", Capability: OwnNotifications, Need: View, ByRecord: true,
+		Note: "Needs a view of the record's own Appendix D row without a qualifier; a record the caller may not see is not found."}
+	AddRecordComment = Policy{Operation: "addRecordComment", Capability: OwnNotifications, Need: Create, ByRecord: true,
+		Note: "Needs a view of the record's own row; only a member who may see the record is mentioned, and only they are told."}
+	ListRecordMentionable = Policy{Operation: "listRecordMentionable", Capability: OwnNotifications, Need: View, ByRecord: true,
+		Note: "Lists only the members who may see the record: a name is never offered for a record its owner may not open."}
 	GetMyPreferences           = Policy{Operation: "getMyPreferences", Capability: OwnNotifications, Need: View}                  // the mode, view, look, shortcuts and formats (FR-UX-23)
 	SetMyPreferences           = Policy{Operation: "setMyPreferences", Capability: OwnNotifications, Need: Create}                // presentation only
 	RegisterOAuthClient        = Policy{Operation: "registerOAuthClient", Capability: Session, Need: Create, Public: true}        // an AI app asks to register (AI-90)
@@ -1747,20 +1755,22 @@ var (
 
 // Budgets (FR-PLN-01; p1-planning slice 4, design D6): read by whoever views budgets and forecasts; drafted, changed,
 // copied, imported and asked for approval by whoever prepares them; approved by a person who holds A, never the one
-// who asked. A department's budget holder (C dept) waits for members to carry their department.
+// who asked. A department's budget holder (the Approver's C dept, rev 0.381) reads the budget and the budget against actual, and
+// saves a draft, as their department's lines only; every other budget operation, the forecasts and the planning summary are the
+// company's.
 var (
-	ListBudgets  = Policy{Operation: "listBudgets", Capability: Budgets, Need: View, Unqualified: true}
+	ListBudgets  = Policy{Operation: "listBudgets", Capability: Budgets, Need: View, Unqualified: true, Qualified: []string{"dept"}, Note: "A department's budget holder (C dept) reads their department's lines and totals only."}
 	CreateBudget = Policy{Operation: "createBudget", Capability: Budgets, Need: Create, Unqualified: true}
 	// The generic import's budgets (FR-MIG-03, rev 0.272): each financial year's a draft, approved later.
 	GetBudgetsTemplate    = Policy{Operation: "getBudgetsTemplate", Capability: Budgets, Need: View, Unqualified: true}
 	ImportBudgets         = Policy{Operation: "importBudgets", Capability: Budgets, Need: Create, Unqualified: true}
-	GetBudget             = Policy{Operation: "getBudget", Capability: Budgets, Need: View, Unqualified: true}
-	ReplaceBudget         = Policy{Operation: "replaceBudget", Capability: Budgets, Need: Create, Unqualified: true}
+	GetBudget             = Policy{Operation: "getBudget", Capability: Budgets, Need: View, Unqualified: true, Qualified: []string{"dept"}, Note: "A department's budget holder (C dept) reads their department's lines and totals only."}
+	ReplaceBudget         = Policy{Operation: "replaceBudget", Capability: Budgets, Need: Create, Unqualified: true, Qualified: []string{"dept"}, Note: "A department's budget holder (C dept) replaces their department's lines only; every other line stays as it was."}
 	CopyBudget            = Policy{Operation: "copyBudget", Capability: Budgets, Need: Create, Unqualified: true}
 	ImportBudget          = Policy{Operation: "importBudget", Capability: Budgets, Need: Create, Unqualified: true}
 	RequestBudgetApproval = Policy{Operation: "requestBudgetApproval", Capability: Budgets, Need: Create, Unqualified: true, Note: "Approved by A: recorded and locked."}
 	// Budget vs Actual and Home's planning tiles show the budget's figures: read on the same row as budgets.
-	GetBudgetVsActual  = Policy{Operation: "getBudgetVsActual", Capability: Budgets, Need: View, Unqualified: true}
+	GetBudgetVsActual  = Policy{Operation: "getBudgetVsActual", Capability: Budgets, Need: View, Unqualified: true, Qualified: []string{"dept"}, Note: "A department's budget holder (C dept) reads their department's budget and actuals only."}
 	GetPlanningSummary = Policy{Operation: "getPlanningSummary", Capability: Budgets, Need: View, Unqualified: true}
 	// The short-term cash flow and its what-ifs (FR-PLN-09; p1-planning design D10): read by V on the row, unqualified.
 	GetCashProjection = Policy{Operation: "getCashProjection", Capability: Budgets, Need: View, Unqualified: true}
@@ -2033,7 +2043,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	ListDimensions, CreateDimension, ReplaceDimension, ListDimensionValues, CreateDimensionValue, ReplaceDimensionValue, ListContacts, GetContact, GetContactSummary,
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, RemoveMember, SearchEvidence, GetEvidenceRules, GetEvidenceFile, GetEvidencePreview, CreateEvidenceDownload, GetEvidenceDownload, SearchRecords, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
-	ObjectToOwnerSuccession, WithdrawOwnerSuccession, CompleteOwnerSuccession, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, GetHelpState, SetTourState, GetMyPreferences, SetMyPreferences, GetPlatformHealth, ListSuperAdmins, ListSavedItems, SaveSavedItem, TakeAwaySavedItem, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit, GetOAuthConsent, AnswerOAuthConsent, GetConnectedApps, RevokeMyConnection, ListMCPActivity, ListMCPRegistrations, DenyMCPRegistration, ListMCPConnections, RevokeMemberConnection, GetMyMCP, SetMyMCP, RegisterOAuthClient,
+	ObjectToOwnerSuccession, WithdrawOwnerSuccession, CompleteOwnerSuccession, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, GetHelpState, SetTourState, GetMyPreferences, SetMyPreferences, GetPlatformHealth, ListSuperAdmins, ListSavedItems, SaveSavedItem, TakeAwaySavedItem, ListRecordComments, AddRecordComment, ListRecordMentionable, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit, GetOAuthConsent, AnswerOAuthConsent, GetConnectedApps, RevokeMyConnection, ListMCPActivity, ListMCPRegistrations, DenyMCPRegistration, ListMCPConnections, RevokeMemberConnection, GetMyMCP, SetMyMCP, RegisterOAuthClient,
 
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetLedgerEntry, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, QueryMetrics, ListKpiInputs, SetKpiInput, ListChecks, GetCheck, RunChecks, SetCheckOwner, ReviewCheckItem, ReplayBackgroundWork, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
@@ -2273,8 +2283,13 @@ func rank(r Right) int {
 
 // DeptOnly says whether the roles reach a capability's view only through a department-qualified cell, such as the Approver's
 // "V dept" on the reports (FR-ADM-01): the operation then reads what the person's department scope reaches and nothing else.
-func DeptOnly(roles []Role, c Capability) bool {
-	p := Policy{Operation: "deptOnly", Capability: c, Need: View, Unqualified: true}
+func DeptOnly(roles []Role, c Capability) bool { return DeptOnlyNeed(roles, c, View) }
+
+// DeptOnlyNeed says whether the roles hold the right need on a capability only through a department-qualified cell, such as the
+// Approver's "C dept" on the budgets: what they read or write there is their department scope's and nothing else. A person whose
+// other role holds the right unqualified is not restricted by it.
+func DeptOnlyNeed(roles []Role, c Capability, need Right) bool {
+	p := Policy{Operation: "deptOnly", Capability: c, Need: need, Unqualified: true}
 	if _, ok := holds(p, roles); ok {
 		return false
 	}

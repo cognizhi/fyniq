@@ -70,6 +70,24 @@ func figuresOf(actual, budget money.Money) (Figures, error) {
 
 // Report reads Budget vs Actual for the months from..to, which lie in one financial year, as the books stand.
 func Report(ctx context.Context, u storage.UnitOfWork, base money.Currency, cal period.Calendar, from, to time.Time, by string) (VsActual, error) {
+	return ReportFor(ctx, u, base, cal, from, to, by, nil)
+}
+
+// Scope is the department values a department's budget holder reaches (FR-ADM-01): a budget line, or a set of an actual, is in the
+// scope when it carries one of them. No values reach nothing; a nil *Scope reaches everything.
+type Scope struct{ Values []uuid.UUID }
+
+// Holds reports whether a line or set with these dimension values is in the scope; every one is for a nil scope.
+func (s *Scope) Holds(values []uuid.UUID) bool {
+	if s == nil {
+		return true
+	}
+	return slices.ContainsFunc(values, func(v uuid.UUID) bool { return slices.Contains(s.Values, v) })
+}
+
+// ReportFor is Report for a department's budget holder: only the actuals and the budget lines in scope are added up, so the
+// totals are the department's too. A nil scope is Report.
+func ReportFor(ctx context.Context, u storage.UnitOfWork, base money.Currency, cal period.Calendar, from, to time.Time, by string, scope *Scope) (VsActual, error) {
 	from = time.Date(from.Year(), from.Month(), 1, 0, 0, 0, 0, time.UTC)
 	to = time.Date(to.Year(), to.Month(), 1, 0, 0, 0, 0, time.UTC)
 	out := VsActual{From: from, To: to, By: by}
@@ -142,7 +160,7 @@ func Report(ctx context.Context, u storage.UnitOfWork, base money.Currency, cal 
 		}
 		for _, s := range sets {
 			a, ok := byID[s.AccountID]
-			if !ok || (a.Type != storage.Revenue && a.Type != storage.Expense) {
+			if !ok || (a.Type != storage.Revenue && a.Type != storage.Expense) || !scope.Holds(s.Values) {
 				continue
 			}
 			x := s.Base.Decimal()
@@ -174,6 +192,9 @@ func Report(ctx context.Context, u storage.UnitOfWork, base money.Currency, cal 
 					return out, err
 				}
 				values = append(values, vid)
+			}
+			if !scope.Holds(values) {
+				continue
 			}
 			r := at(id, values)
 			for k := first; k <= last && k < len(l.Amounts); k++ {

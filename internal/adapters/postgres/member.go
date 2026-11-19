@@ -98,7 +98,7 @@ type invitations struct{ u *unitOfWork }
 
 func toInvitation(r sqlcdb.GetMemberInvitationRow) storage.MemberInvitation {
 	return storage.MemberInvitation{ID: r.ID, DisplayName: r.DisplayName, Roles: r.Roles, RolesExpireAt: r.RolesExpireAt,
-		CreatedAt: r.CreatedAt, ExpiresAt: r.ExpiresAt, AcceptedAt: r.AcceptedAt, WithdrawnAt: r.WithdrawnAt}
+		CreatedAt: r.CreatedAt, ExpiresAt: r.ExpiresAt, AcceptedAt: r.AcceptedAt, WithdrawnAt: r.WithdrawnAt, DepartmentValues: r.DepartmentValueIds}
 }
 
 func (r invitations) Create(ctx context.Context, n storage.NewMemberInvitation) (storage.MemberInvitation, error) {
@@ -109,14 +109,14 @@ func (r invitations) Create(ctx context.Context, n storage.NewMemberInvitation) 
 		return storage.MemberInvitation{}, &storage.Error{Code: storage.CodeInvalid, Message: "an invitation names when it was made"}
 	}
 	row, err := r.u.q.InsertMemberInvitation(ctx, sqlcdb.InsertMemberInvitationParams{CodeHash: n.CodeHash, DisplayName: n.DisplayName,
-		Roles: n.Roles, RolesExpireAt: n.RolesExpireAt, ExpiresAt: n.ExpiresAt, CreatedAt: n.CreatedAt})
+		Roles: n.Roles, RolesExpireAt: n.RolesExpireAt, ExpiresAt: n.ExpiresAt, CreatedAt: n.CreatedAt, DepartmentValueIds: valuesOrEmpty(n.DepartmentValues)})
 	if err != nil {
 		return storage.MemberInvitation{}, mapError(err)
 	}
 	inv := toInvitation(sqlcdb.GetMemberInvitationRow(row))
 	if err := r.u.event(ctx, "member_invitation.created", "member_invitation", inv.ID, nil, map[string][2]any{
 		"display_name": {nil, inv.DisplayName}, "roles": {nil, inv.Roles}, "roles_expire_at": {nil, inv.RolesExpireAt},
-		"expires_at": {nil, inv.ExpiresAt}}); err != nil {
+		"expires_at": {nil, inv.ExpiresAt}, "department_values": {nil, idStrings(inv.DepartmentValues)}}); err != nil {
 		return storage.MemberInvitation{}, err
 	}
 	return inv, nil
@@ -203,6 +203,11 @@ func (s *Store) JoinOrganisation(ctx context.Context, j storage.NewJoin) (storag
 				"membership_id": {nil, a.MembershipID}, "role": {nil, a.Role}, "expires_at": {nil, a.ExpiresAt}}); err != nil {
 				return err
 			}
+			if a.Role == "approver" && len(inv.DepartmentValueIds) > 0 { // the invitation's scope, fixed as a role given later is (FR-ADM-01)
+				if err := u.Members().Narrow(actx, a.ID, inv.DepartmentValueIds); err != nil {
+					return err
+				}
+			}
 			out.Roles = append(out.Roles, a.Role)
 		}
 		if err := u.event(actx, "member_invitation.accepted", "member_invitation", row.InvitationID, nil, map[string][2]any{
@@ -217,4 +222,21 @@ func (s *Store) JoinOrganisation(ctx context.Context, j storage.NewJoin) (storag
 		return nil
 	})
 	return out, err
+}
+
+// valuesOrEmpty is ids, never nil: a uuid[] column is NOT NULL.
+func valuesOrEmpty(ids []uuid.UUID) []uuid.UUID {
+	if ids == nil {
+		return []uuid.UUID{}
+	}
+	return ids
+}
+
+// idStrings are ids as text, for an audit event's values.
+func idStrings(ids []uuid.UUID) []string {
+	out := make([]string, len(ids))
+	for i, id := range ids {
+		out[i] = id.String()
+	}
+	return out
 }

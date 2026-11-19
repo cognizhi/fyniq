@@ -779,9 +779,14 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | payroll-approval.md -> nemura.payroll-approval (hand-off files, p1-nemura-payroll 6.1)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/assistant.md -> nemura.assistant; letters-issue link (p1-nemura-assistant-external 1.2)
+
 ## [2026-11-20] compile | documents.inbox: masked text, photos not read
 
 ## [2026-11-20] compile | ai.proposals: approval quality
+
+## [2026-11-20] compile | members.roles, members.invite, members.remove: an Approver narrowed to departments, budgets, records and invitations
+
+## [2026-11-20] compile | records.comments: comments and mentions on a record
 
 ## [2026-11-20] compile | docs/user-guide/nemura/ask-assistant.md -> nemura.ask-assistant (p1-nemura-assistant-external 2.1, 2.2)
 
@@ -792,3 +797,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | my-pay.md -> nemura.my-pay (next pay day)
 
 ## [2026-11-20] compile | payroll-records.md -> nemura.payroll-records (election kind)
+
+## [2026-11-20] compile | shell.shortcuts: working in a grid
