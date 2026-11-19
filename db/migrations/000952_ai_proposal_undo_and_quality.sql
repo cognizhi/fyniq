@@ -27,10 +27,12 @@ CREATE TABLE fyniq.ai_proposal_undo (
 
 CREATE TABLE fyniq.ai_proposal_view (
   organisation_id uuid        NOT NULL DEFAULT fyniq.current_org(),
+  id              uuid        NOT NULL DEFAULT uuidv7(),
   proposal_id     uuid        NOT NULL,
   user_id         uuid        NOT NULL,
   first_viewed_at timestamptz NOT NULL,
-  CONSTRAINT ai_proposal_view_pkey PRIMARY KEY (organisation_id, proposal_id, user_id),
+  CONSTRAINT ai_proposal_view_pkey PRIMARY KEY (organisation_id, id),
+  CONSTRAINT ai_proposal_view_once UNIQUE (organisation_id, proposal_id, user_id),
   CONSTRAINT ai_proposal_view_proposal_fkey FOREIGN KEY (organisation_id, proposal_id) REFERENCES fyniq.ai_proposal (organisation_id, id)
 );
 
@@ -42,7 +44,8 @@ CREATE TABLE fyniq.ai_quality_review (
   signed_at       timestamptz NOT NULL,
   report          jsonb       NOT NULL, -- the metrics as they stood when it was signed
   note            text,
-  CONSTRAINT ai_quality_review_pkey PRIMARY KEY (organisation_id, month),
+  CONSTRAINT ai_quality_review_pkey PRIMARY KEY (organisation_id, id),
+  CONSTRAINT ai_quality_review_once UNIQUE (organisation_id, month),
   CONSTRAINT ai_quality_review_month CHECK (month = date_trunc('month', month)::date),
   CONSTRAINT ai_quality_review_note CHECK (length(note) <= 1000)
 );
