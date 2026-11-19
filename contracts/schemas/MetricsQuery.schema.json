@@ -8,7 +8,8 @@
         "account",
         "customer",
         "vendor",
-        "department"
+        "department",
+        "project"
       ],
       "examples": [
         "customer"
@@ -54,6 +55,7 @@
         "current_liabilities",
         "total_liabilities",
         "equity",
+        "project_minutes",
         "account_movement",
         "account_balance",
         "gross_margin",

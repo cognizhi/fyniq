@@ -1990,7 +1990,7 @@ var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegra
 	TestOrganisationConnector,
 	ListProjects, GetProject, CreateProject, ReplaceProject, ListProjectPeople, ListProjectTasks, GetTimesheet, SaveTimesheet, SubmitTimesheet, GetTimer, StartTimer, StopTimer, DropTimer, ReverseTimeEntry,
 	ListTimesheetSubmissions, GetTimesheetSubmission, ApproveTimesheetSubmission, ReturnTimesheetSubmission,
-	ListCostRates, SetCostRate, ListBillingRates, SetBillingRate, GetProjectTimeCost, GetProjectReport, ListProjectTimeEntries, GetProjectUnbilled, DraftProjectInvoice, ListProjectMilestones, CreateProjectMilestone, AcceptProjectMilestone, CreateProjectTask, ReplaceProjectTask,
+	ListCostRates, SetCostRate, ListBillingRates, SetBillingRate, GetProjectTimeCost, GetProjectReport, ExportProjectReport, ListProjectTimeEntries, GetProjectUnbilled, DraftProjectInvoice, ListProjectMilestones, CreateProjectMilestone, AcceptProjectMilestone, CreateProjectTask, ReplaceProjectTask,
 	GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, RequestAccountMerge,
 	ListDimensions, CreateDimension, ReplaceDimension, ListDimensionValues, CreateDimensionValue, ReplaceDimensionValue, ListContacts, GetContact, GetContactSummary,

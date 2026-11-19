@@ -4,7 +4,9 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -129,5 +131,63 @@ func TestProjectReportsComeFromThePostedLedgerAndApprovedTime(t *testing.T) {
 	d := e.call(http.MethodGet, "/v1/projects/"+pid+"/time-entries?from=2026-10-01&to=2026-10-31", e.as(authz.Controller), nil)
 	if d.Status != 200 || len(d.Body["items"].([]any)) != 1 || d.Body["items"].([]any)[0].(map[string]any)["minutes"] != float64(180) {
 		t.Errorf("the drill: %s", d.Raw)
+	}
+	// The export holds what the caller's own report holds and no more (G4-050): a CSV with an ASCII minus and plain decimals, the Controller's
+	// with costs and margin, the AR specialist's with revenue and hours only; a workbook for the Owner; refused to an Employee; audited.
+	export := func(tok, format string) (response, string) {
+		r := e.call(http.MethodGet, "/v1/reports/projects/export?from=2026-10-01&to=2026-10-31&format="+format, tok, nil)
+		raw, _ := base64.StdEncoding.DecodeString(r.str("content_base64"))
+		return r, string(raw)
+	}
+	cx, csv := export(e.as(authz.Controller), "csv")
+	if cx.Status != 200 || cx.str("file_name") != "projects-2026-10.csv" || !strings.HasPrefix(cx.str("media_type"), "text/csv") || cx.str("sha256") == "" ||
+		!strings.Contains(csv, `"Margin SGD"`) || !strings.Contains(csv, `"REP-1"`) || !strings.Contains(csv, "490.00") || !strings.Contains(csv, "1500.00") || !strings.Contains(csv, "Tagged with no project") ||
+		strings.Contains(csv, "\u2212") || strings.Contains(csv, "180.00") {
+		t.Errorf("the Controller's CSV (%d): %s", cx.Status, csv)
+	}
+	ax, arCSV := export(e.as(authz.ARSpecialist), "csv")
+	if ax.Status != 200 || !strings.Contains(arCSV, "1000.00") || !strings.Contains(arCSV, "Approved minutes") || strings.Contains(arCSV, "Margin") || strings.Contains(arCSV, "Direct costs") ||
+		strings.Contains(arCSV, "Time at cost") || strings.Contains(arCSV, "490.00") || strings.Contains(arCSV, "300.00") || strings.Contains(arCSV, "1500.00") {
+		t.Errorf("the AR specialist's CSV (%d): %s", ax.Status, arCSV)
+	}
+	if ox, wb := export(e.as(authz.Owner), "xlsx"); ox.Status != 200 || ox.str("file_name") != "projects-2026-10.xlsx" || !strings.HasPrefix(wb, "PK") {
+		t.Errorf("the Owner's workbook (%d)", ox.Status)
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/reports/projects/export?from=2026-10-01&to=2026-10-31", e.as(authz.Employee), nil), "exportProjectReport", 403, CodeForbidden)
+	e.problemIs(e.call(http.MethodGet, "/v1/reports/projects/export?from=2026-10-01&to=2028-10-31", e.as(authz.Controller), nil), "exportProjectReport", 422, CodeInvalid)
+	// The semantic layer splits the P&L by project and gives each project's approved minutes, at the reader's projects (FR-PRJ-12): hours
+	// only, no rate or cost in any fact, and the lines tagged with no project to a reader who sees every project.
+	metric := func(tok string, body map[string]any) response {
+		return e.call(http.MethodPost, "/v1/metrics:query", tok, body)
+	}
+	member := func(r response, id string) map[string]any {
+		for _, f := range r.Body["facts"].([]any) {
+			if m := f.(map[string]any); m["member"] == id {
+				return m
+			}
+		}
+		return nil
+	}
+	rev := metric(e.as(authz.Controller), map[string]any{"measure": "revenue", "by": "project", "from": "2026-10", "to": "2026-10"})
+	if rev.Status != 200 || member(rev, pid) == nil || member(rev, pid)["value"] != "1000.00" || member(rev, "none") == nil || member(rev, "none")["value"] != "500.00" {
+		t.Errorf("revenue by project: %d %s", rev.Status, rev.Raw)
+	}
+	mins := metric(e.as(authz.Controller), map[string]any{"measure": "project_minutes", "by": "project", "from": "2026-10", "to": "2026-10"})
+	if mins.Status != 200 || member(mins, pid) == nil || member(mins, pid)["value"] != "180" || member(mins, pid)["unit"] != "minutes" ||
+		member(mins, pid)["lineage"] != "/v1/reports/projects?from=2026-10-01&to=2026-10-31" || strings.Contains(mins.Raw, `"cost`) || strings.Contains(mins.Raw, `"rate`) {
+		t.Errorf("approved minutes by project: %d %s", mins.Status, mins.Raw)
+	}
+	e.problemIs(metric(e.as(authz.Controller), map[string]any{"measure": "project_minutes", "from": "2026-10", "to": "2026-10"}), "queryMetrics", 422, "SEMANTIC-02")
+	e.problemIs(metric(e.as(authz.Employee), map[string]any{"measure": "project_minutes", "by": "project", "from": "2026-10", "to": "2026-10"}), "queryMetrics", 403, CodeForbidden)
+	var audited bool
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		evs, err := u.Audit().Find(ctx, storage.AuditQuery{Action: "report.exported", Limit: 20})
+		for _, ev := range evs {
+			audited = audited || strings.Contains(ev.Body, `"report":"projects"`)
+		}
+		return err
+	})
+	if !audited {
+		t.Errorf("the export is not audited")
 	}
 }

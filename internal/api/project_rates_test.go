@@ -236,6 +236,9 @@ var matrixProjectRates = map[string]func(e *env, tok string) (response, func() b
 		t := matrixTimeTeam(e)
 		return e.call(http.MethodGet, "/v1/reports/projects?from=2026-10-01&to=2026-10-31", t.as(e, tok, t.wei), nil), nil
 	},
+	"exportProjectReport": func(e *env, tok string) (response, func() bool) { // the matrix's own organisation, where Projects is off: the export is audited in TestProjectReportsCome…
+		return e.call(http.MethodGet, "/v1/reports/projects/export?from=2026-10-01&to=2026-10-31", tok, nil), nil
+	},
 	"listProjectTimeEntries": func(e *env, tok string) (response, func() bool) {
 		t := matrixTimeTeam(e)
 		return e.call(http.MethodGet, "/v1/projects/"+t.project+"/time-entries?from=2026-10-01&to=2026-10-31", t.as(e, tok, t.wei), nil), nil

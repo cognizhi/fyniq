@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChartColumn } from "lucide-react";
+import { ChartColumn, FileDown, FileSpreadsheet } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
@@ -8,15 +8,8 @@ import { Button } from "../../components/ui/button";
 import { formatAmount } from "../../format/amount";
 import { helpText } from "../../i18n";
 import { Icon, problemOf } from "../../ui";
-import { hours } from "./data";
-
-const basisWords: Record<string, string> = {
-  person: "each person's own rate",
-  role_average: "the average rate of their role",
-  standard: "the standard rate",
-  mixed: "more than one rate",
-  none: "hours only",
-};
+import { save } from "../reports/AccountantExports";
+import { basisWords, hours } from "./data";
 
 function thisMonth(): string {
   return new Date().toISOString().slice(0, 7);
@@ -41,6 +34,18 @@ export function ProjectReports() {
     },
   });
   const d = q.data;
+  const [exporting, setExporting] = useState<string | null>(null);
+  const [exportProblem, setExportProblem] = useState<ReturnType<typeof problemOf> | null>(null);
+  // download writes the report as the server wrote it (FR-PRJ-12, FR-RPT-09): the same rows this viewer's report holds, audited.
+  const download = async (format: "csv" | "xlsx") => {
+    setExporting(format);
+    setExportProblem(null);
+    const last = new Date(Date.UTC(Number(to.slice(0, 4)), Number(to.slice(5, 7)), 0)).toISOString().slice(0, 10);
+    const r = await api.GET("/v1/reports/projects/export", { params: { query: { from: `${from}-01`, to: last, format } } });
+    setExporting(null);
+    if (r.error) return setExportProblem(problemOf(r.error));
+    save(r.data.file_name, r.data.media_type, r.data.content_base64);
+  };
   const off = q.isError && problemOf(q.error).code === "PRJ-09";
   const money = (v?: string) => (v ? formatAmount(v) : <span className="fy-muted">n/a</span>);
   return (
@@ -61,6 +66,14 @@ export function ProjectReports() {
             To
             <input className="fy-input" type="month" value={to} onChange={(e) => setTo(e.target.value)} />
           </label>
+          <Button variant="secondary" size="sm" disabled={!d || exporting !== null} onClick={() => download("csv")} title={helpText("project.export").tooltip}>
+            <Icon of={FileDown} />
+            Export CSV
+          </Button>
+          <Button variant="secondary" size="sm" disabled={!d || exporting !== null} onClick={() => download("xlsx")}>
+            <Icon of={FileSpreadsheet} />
+            Export Excel
+          </Button>
         </div>
       </div>
       {off && (
@@ -74,6 +87,7 @@ export function ProjectReports() {
         </div>
       )}
       {q.isError && !off && <Refusal problem={problemOf(q.error)} title="The report could not be read" />}
+      {exportProblem && <Refusal problem={exportProblem} title="The export could not be made" />}
       {d && (
         <>
           {!d.costs_visible && <p className="fy-banner fy-banner--warning" role="status">You may see revenue and hours only.</p>}
