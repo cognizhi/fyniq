@@ -71,6 +71,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/planning"
 	"github.com/cognizhi/fyniq/internal/domain/project"
+	"github.com/cognizhi/fyniq/internal/domain/projectbilling"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
@@ -549,6 +550,11 @@ var codeFacts = map[string]struct {
 	bill.CodeBusinessShare:        {422, "A line's business share is not a percentage from 0 to 100"},
 	project.CodeMarkup:            {422, "A markup is not a percentage from 0 to 999.99, or is on a line that is not billable"},
 	project.CodeLine:              {422, "A billable line needs a project"},
+	projectbilling.CodeInternal:   {409, "An internal project is never billed"},
+	projectbilling.CodeNothing:    {409, "Nothing is ready to bill on the project, or the project has no customer"},
+	projectbilling.CodeAccount:    {422, "The invoice needs a revenue account and a GST code"},
+	projectbilling.CodeMilestone:  {409, "The milestone does not fit the project, is not accepted, or is billed already"},
+	storage.CodeMilestone:         {409, "The milestone record does not allow that"},
 	bill.CodeNature:               {422, "The bill does not say what the non-resident supplier's payment is for"},
 	bill.CodeWithholding:          {422, "The withholding decision cannot be recorded"},
 	CodeBillNeedsApproval:         {409, "The bill needs another person's approval"},
@@ -1023,6 +1029,7 @@ var codeFacts = map[string]struct {
 	storage.CodeProject:              {409, "The project record does not allow that"},
 	storage.CodeTime:                 {409, "The time record does not allow that"},
 	storage.CodeRate:                 {409, "The rate does not allow that"},
+	storage.CodeBilled:               {409, "That work is already billed, or is not billable work of the project"},
 	storage.CodeDimensionRequirement: {422, "The account cannot require those dimensions"},
 	equity.CodeIssue:                 {422, "The share issue does not fit"},
 	equity.CodeNotRecord:             {422, "Not the holder record or share class asked for"},
@@ -1142,6 +1149,8 @@ var storageFixes = map[string]string{
 	storage.CodeStatutoryFiling:      "Record the item the calendar gives once, as filed with its day and reference or as not required with the reason; withdraw a record before recording the item again",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",
 	storage.CodeDimensionFixed:       "Rename it or put it out of use: a dimension keeps its kind and place and a value its code, and neither is deleted",
+	storage.CodeMilestone:            "Milestones belong to a fixed-fee project and retainer periods to a retainer that is not closed; a milestone keeps its name and amount and is accepted once",
+	storage.CodeBilled:               "Void the invoice that billed it, or take it off this one; bill approved, billable time and posted, billable costs of the project only",
 	storage.CodeRate:                 "A rate never changes or goes: enter the new rate from the day it starts, and a day only once for a person or a scope",
 	storage.CodeTime:                 "Change only draft or returned entries of your own, on a project you are on and a task in use; a week is decided by a manager of the project or the Controller, never by the person",
 	storage.CodeProject:              "Close the project instead of deleting it, name an active member of the organisation, and a customer that is marked as one; a closed project takes no new task",

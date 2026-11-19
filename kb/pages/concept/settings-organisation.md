@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:365b3cbc25dc9f52c15f0391ad01eb7f8b621c0b74f7e9c29214553c2b692b2f
+  - docs/user-guide/organisation-settings.md sha256:b102492da8969bb36d8e38c02ed61da363b51de919e3ab67d8d074b3e2a193c0
 data_class: general
 taint: trusted
 status: draft
@@ -356,6 +356,7 @@ The calendar itself: [[compliance.calendar]].
 - **Largest evidence file**: a file larger than this is refused when it is attached; it is 25 MB by default, the most Fyniq takes, and an organisation may lower it.
 - **Evidence for statutory filings and payments**: an item of the statutory calendar is recorded as filed only with its acknowledgement attached, such as IRAS's or ACRA's acknowledgement of a return, CPF Board's of a payment, or an AGM's minutes.
 - Each is **required** by default; **recommended** lets the record post without a file and **Checks** lists it; **optional** asks for nothing. Changing any of them needs a second approver.
+- A record's **Evidence** panel lists **Rules for this activity**: a cross and **Required** while a required item has no file, a warning and **Recommended** while a recommended one has none, and **Attached** once a file meets it. A bill, an expense claim and a founder's cost are recommended to carry a business purpose note; a change of a supplier's bank details, a call-back note; a manual journal, an explanation; a filing, its working papers. Say what a file is when you attach it and it meets that item. Where evidence is optional, the panel says it asks for none.
 - Files go in the record's **Evidence** panel ([[purchases.bills]], [[accounting.journals]]); **Accounting › Evidence** lists the records still missing theirs ([[compliance.evidence]]).
 
 (src: docs/user-guide/organisation-settings.md#evidence-rules)

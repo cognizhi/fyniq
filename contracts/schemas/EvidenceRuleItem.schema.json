@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "label": {
+      "description": "In the table's words.",
+      "examples": [
+        "Receipt or invoice"
+      ],
+      "type": "string"
+    },
+    "types": {
+      "description": "Evidence types that meet it, as a file names what it is; none means any file does.",
+      "items": {
+        "description": "What a file is, such as bank_letter or receipt.",
+        "examples": [
+          "bank_letter"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "label",
+    "types"
+  ],
+  "title": "EvidenceRuleItem",
+  "type": "object"
+}
