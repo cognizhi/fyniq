@@ -1019,3 +1019,49 @@ func addApd(a *apd.Decimal, s string) *apd.Decimal {
 	_, _ = apd.BaseContext.WithPrecision(30).Add(out, a, b)
 	return out
 }
+
+// A pay run for 50 people calculates in under 5 seconds (NM-NFR-02), so one for 100 must in under 10 (it takes about a second and a quarter on a laptop): the run builds each person's month from their records, calculates CPF, SDL and the fund, and writes the
+// version, its lines and the audit event in one transaction.
+// req: NM-NFR-02
+func TestAPayRunOfAHundredPeopleCalculatesInUnderTenSeconds(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a hundred people are added first: not in -short")
+	}
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-11-20").Add(10 * time.Hour)
+	st := store(t, "nemura_api")
+	packsSvc, err := nemura.NewPacksService(st, clock.NewFrozen(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc}
+	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
+	gid, _ := svc.CreateGroup(ctx, prep, api.PayGroupInput{Name: "Monthly", PayDay: 25, CutoffDays: 7, ApprovalDays: 3})
+	birth := d("1990-05-20")
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		for i := 0; i < 100; i++ {
+			p, err := nemura.AddPerson(ctx, tx, lt.c.org, now, lt.c.owner, people.Person{LegalName: fmt.Sprintf("Person %03d", i), EmploymentStart: d("2025-01-06")}, people.Job{Title: "Analyst", Worksite: "SG", EmploymentType: "full_time"}, nil)
+			if err != nil {
+				return err
+			}
+			if err := nemura.SetClassification(ctx, tx, lt.c.org, now, lt.c.owner, p, d("2025-01-06"), people.Classification{ContractType: "service", EACovered: true, PartIVClass: "none", Residency: "citizen", BirthDate: &birth}); err != nil {
+				return err
+			}
+			if _, err := nemura.SetPay(ctx, tx, lt.c.org, now, lt.c.pay, p, d("2025-01-06"), payroll.PayRecord{Group: gid, Basic: fmt.Sprintf("%d.00", 3000+i*25), SHGFund: "CDAC"}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	// The budget is a deadline on the call itself: the run is cut off, and fails, when it takes more than 10 seconds.
+	budget, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	run, err := svc.StartRun(budget, prep, d("2026-06-01"), mustUUID(gid))
+	if err != nil {
+		t.Fatalf("a pay run of 100 people in 10 seconds: %v", err)
+	}
+	if run.Latest.People != 100 {
+		t.Fatalf("people in the run: %d", run.Latest.People)
+	}
+}
