@@ -165,6 +165,9 @@ var fyCodes = map[string]string{
 	"FY267": storage.CodeBanking,
 
 	"FY268": storage.CodeSuccession,
+	"FY700": storage.CodeMembership, // a department scope never changes or goes (000702)
+	"FY701": storage.CodeMembership, // only a live Approver role is narrowed to departments (000702)
+	"FY702": storage.CodeMembership, // a scope names department values (000702)
 	"FY269": storage.CodeVersion,            // an invitation's registry entry never changes (000236)
 	"FY270": storage.CodeIdentityStepUp,     // a sign-in linked or removed without a recent second factor (000239)
 	"FY271": storage.CodeIdentity,           // a sign-in linked already, or the last or current one removed (000239)

@@ -3237,6 +3237,13 @@ type FyniqRoleAssignment struct {
 	RevokedAt      *time.Time
 }
 
+type FyniqRoleAssignmentScope struct {
+	OrganisationID   uuid.UUID
+	AssignmentID     uuid.UUID
+	DimensionValueID uuid.UUID
+	CreatedAt        time.Time
+}
+
 type FyniqSalesReminder struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

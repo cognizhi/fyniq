@@ -4,14 +4,14 @@ type: task
 title: Turn sign-in providers on or off, and accept only some email domains
 summary: A Super admin's page of the ways people sign in: turn each on or off, end its sessions, set allowed email domains; the last way in; two Super admins
 sources:
-  - docs/user-guide/sign-in-providers.md sha256:fe0540471c0b57c0eafa97877e046971bdbcc6a61ea404d5e7df977ae5814c11
+  - docs/user-guide/sign-in-providers.md sha256:9e926fb8d2f6b8e0b155b1a2c4ab8da34c669b4eaf148c8cdeb4064eb431abfd
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-07
+compiled_at: 2026-11-20
 aliases:
   - sign-in providers
   - turn off google sign-in
@@ -65,5 +65,7 @@ aliases:
 
 - "That would leave a Super admin no way to sign in.": keep the provider on, or have the Super admin link a sign-in with another provider first.
 - "Is not a domain name.": give the domain as email addresses end, such as example.com, without the @.
+
+- Related: the platform's health and the Super admins ([[settings.console]]).
 
 (src: docs/user-guide/sign-in-providers.md#common-problems) (src: docs/user-guide/sign-in-providers.md#related)

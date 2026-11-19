@@ -49,7 +49,7 @@ type Execution struct {
 type Commands map[string]Command
 
 // Release are the release's commands. Each task type's change adds its own with what it acts on.
-var Release = Commands{"CreateComplianceTask": CreateComplianceTask{}, "DraftReminder": DraftReminder{}, "DraftCorporateDocument": DraftCorporateDocument{}, "DraftInvoice": DraftInvoice{}}
+var Release = Commands{"CreateComplianceTask": CreateComplianceTask{}, "DraftReminder": DraftReminder{}, "DraftCorporateDocument": DraftCorporateDocument{}, "DraftInvoice": DraftInvoice{}, "DraftBill": DraftBill{}, "DraftClaim": DraftClaim{}}
 
 // Measure is what a payload holds, for the limits: its items (1 when it is not a batch) and each item's amount.
 type Measure struct {
@@ -60,9 +60,12 @@ type Measure struct {
 // Actor is the person a command runs for: the person the AI proposed for in the dry run, the approving person when it
 // executes (AI-11).
 type Actor struct {
-	User  uuid.UUID
-	Roles []authz.Role
-	Today time.Time
+	User uuid.UUID
+	// Requester is the person the AI proposed for: the same as User in the dry run, and the person who asked (who may not be the approver)
+	// when it executes. A command that acts for one person, such as a claim, uses it and refuses when the approver is another.
+	Requester uuid.UUID
+	Roles     []authz.Role
+	Today     time.Time
 	// Proposal is the proposal it executes: Nil in the dry run.
 	Proposal uuid.UUID
 	// Outbox is where the command's side work goes as it executes, such as an email's send (outbox.Dispatcher): the

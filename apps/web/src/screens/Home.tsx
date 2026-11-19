@@ -5,10 +5,16 @@ import { api } from "../api/client";
 import { useSignedIn } from "../session";
 import { landingOf } from "../shell/navigation";
 import { Icon } from "../ui";
-import { PoliciesToAcknowledge } from "./compliance/Policies";
-import { Dashboard } from "./Dashboard";
-import { ApproverWork, Deadlines, YourWork } from "./HomeWork";
-import { WhatHappened } from "./WhatHappened";
+import { lazy, Suspense } from "react";
+
+// Home's heavy parts load after its first paint, so the shell's initial JavaScript stays small (NFR-PERF-UI-03): the dashboard
+// and the reports' code it reads, the roles' work, the policies to acknowledge and what happened where.
+const Dashboard = lazy(() => import("./Dashboard").then((m) => ({ default: m.Dashboard })));
+const YourWork = lazy(() => import("./HomeWork").then((m) => ({ default: m.YourWork })));
+const ApproverWork = lazy(() => import("./HomeWork").then((m) => ({ default: m.ApproverWork })));
+const Deadlines = lazy(() => import("./HomeWork").then((m) => ({ default: m.Deadlines })));
+const PoliciesToAcknowledge = lazy(() => import("./compliance/Policies").then((m) => ({ default: m.PoliciesToAcknowledge })));
+const WhatHappened = lazy(() => import("./WhatHappened").then((m) => ({ default: m.WhatHappened })));
 
 // Each read answers null when the person's roles may not read it: the step it feeds is left out
 // rather than shown as not done (the API decides who sees what).
@@ -224,7 +230,7 @@ function Workspace() {
         {session.super_admin && <p className="fy-small fy-secondary">You are a Super admin of this installation.</p>}
       </div>
       {organisation && (
-        <>
+        <Suspense fallback={null}>
           <Dashboard />
           <Waiting toApprove={c.toApprove.data ?? null} review={c.review.data ?? null} reversals={c.reversals.data ?? null} />
           <YourWork />
@@ -233,7 +239,7 @@ function Workspace() {
           <PoliciesToAcknowledge />
           {!allDone && <SetUp steps={steps} />}
           <WhatHappened />
-        </>
+        </Suspense>
       )}
     </div>
   );

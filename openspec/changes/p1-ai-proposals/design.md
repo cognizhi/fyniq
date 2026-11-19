@@ -47,7 +47,10 @@ The owner is away: the decisions below are on the recommended option, owner to c
 - The operation `undoAIProposal` runs as the person (never the executor), who holds the command's right; it refuses
   unless the proposal is Executed, the records are as it left them (the same base-version check as AI-P5) and, for
   ledger entries, the period is open. It runs in one transaction through the domain function a person would use: a draft
-  is discarded, an entry reversed by a reversing entry, master data restored to its previous version.
+  is not undone (see below), an entry is reversed by a reversing entry, master data restored to its previous version.
+- A draft the AI made (`ap.draft_bill`, `exp.draft_claim`, texts) is **not undoable**: it posts nothing, no document draft is ever
+  deleted (the lifecycle is draft, posted, reversed), and a person edits or ignores it. The undoable task types are those that post
+  or change master data: the bank's, the tier-2 ones.
 - "Under the same approval policy as the original": the reversal functions carry their own policies (a void in Founder
   mode needs a second person, a posted bill's reversal needs approval where a person's would), so the undo needs the
   approval a person's own would. No new approval object type: two engines would drift (as core D4 decided).

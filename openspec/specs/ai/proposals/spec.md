@@ -651,9 +651,9 @@ A person who holds the task type's right SHALL undo an executed proposal in one 
 
 Source: PRD-001 §9.7 · Priority S · Phase P1
 
-#### Scenario: Drafts are discarded, entries reversed, master data restored
+#### Scenario: Entries are reversed and master data restored
 - **WHEN** a person undoes an executed proposal
-- **THEN** a draft it made is discarded, an entry it posted is reversed by a reversing entry and master data it changed returns to its previous version
+- **THEN** an entry it posted is reversed by a reversing entry and master data it changed returns to its previous version
 - **AND** posted history is never updated or deleted
 
 #### Scenario: Each undo carries its own policy
@@ -661,7 +661,7 @@ Source: PRD-001 §9.7 · Priority S · Phase P1
 - **THEN** the undo needs that approval too
 
 #### Scenario: Not undoable
-- **WHEN** a task type's effect has no safe reversal
+- **WHEN** a task type's effect has no safe reversal, such as a draft, which posts nothing and is never deleted, or a message sent
 - **THEN** it declares itself not undoable and offers no undo
 
 #### Scenario: The undo is kept
