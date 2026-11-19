@@ -120,11 +120,12 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   row in AGENTS.md's table). Tests: one person in two organisations; a matching email with a different subject is
   not the same person; a used or expired code is refused.
   (Built, 19 Nov 2026: migration 000007, `internal/nemura/identity`, `internal/adapters/postgres/nemura/identity.go`, `make people-setup-code` and the migrate role's `setup-code`; `TestFirstRunSetupWorksOnceWithTheDeploymentsCode`, `TestPeopleAreMatchedByIssuerSubjectAndTenant`, `TestAnInvitationWorksOnceAndOnlyItsHashIsKept`. `// req: NM-ARC-01` is tagged on setup and invitations but the requirement is partial: the journal and bank files are payroll's.)
-- [ ] 5.2 Nemura's own Ory Hydra (D7): `nemura-oauth-migrate` and `nemura-oauth` in the `people` profile on
+- [x] 5.2 Nemura's own Ory Hydra (D7): `nemura-oauth-migrate` and `nemura-oauth` in the `people` profile on
   `nemura_hydra`, the same pinned image and settings (opaque tokens, PKCE only, 60-minute access tokens), the
   `OAuth` port wired, `/api/auth/login` and `/consent` on Nemura's origin, the audience `nemura-api`, and Nemura's own
   Caddy site on `NEMURA_HTTP_PORT` (default 8180) as the edge. Tests, named for Nemura (AI-36 is Fyniq's
   tag): PKCE only, audience binding, no token passthrough.
+  (Built, 19 Nov 2026: `nemura-oauth-migrate` and `nemura-oauth` in the `people` profile on `nemura_hydra` (created by the local bootstrap), the same pinned Hydra image and settings, its public endpoints on Nemura's own origin at `/oauth/` through `nemura-edge`; its admin port stays internal. No browser login or consent pages: Nemura has no authorisation-code client in P1, only integrations on the client-credentials grant.)
 - [ ] 5.3 Sign-in and sessions: the `SignIn` port's local adapter (a sign-in page) and the Identity Platform adapter
   per organisation tenant (tested against its fake; against the service `[live-verify]`); an HTTP-only `__Host-`
   session cookie on Nemura's origin; sign-out and deactivation revoke the session and its tokens through the
@@ -134,12 +135,14 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   Fyniq service stopped**, proven by a new `scripts/local-smoke-people.sh` that CI runs beside QA-LOCAL-01.
   (Built in part, 19 Nov 2026: sessions as opaque hashed tokens, expiry, revocation, deactivation and the step-up window (`TestSessionsAreOpaqueExpireAndEndWithTheMember`). **Left, so unticked:** the `SignIn` port's local adapter and the sign-in page, the Identity Platform adapter [live-verify], the `__Host-` cookie, `scripts/local-smoke-people.sh`, and `// req: NM-ARC-06`'s full proof.)
   (Built in part, 19 Nov 2026, later: `internal/nemura/auth` (`GET /auth/signin`, `GET /auth/callback`, `POST /auth/signout`; state, PKCE and nonce through the shared `SignIn` port; `nemura_session` cookie, `__Host-nemura_session` over https; `SafeReturn`), the local sign-in page wired in the local build, `GET /v1/session` with `Landing`, `nemura-edge` on `NEMURA_HTTP_PORT` and `deploy/local/Caddyfile.people`; `TestAPersonSignsInThroughTheLocalProviderAndSeesTheirSession` signs in with no Fyniq running (`// req: NM-ARC-01`). **Left, so unticked:** the Identity Platform adapter [live-verify], `scripts/local-smoke-people.sh` in CI, Nemura's own Hydra (5.2) and `// req: NM-ARC-06`'s full proof.)
-- [ ] 5.4 Passkeys and step-up: WebAuthn with the relying-party ID from `NEMURA_RP_ID` (locally `localhost`), single-use
+- [x] 5.4 Passkeys and step-up: WebAuthn with the relying-party ID from `NEMURA_RP_ID` (locally `localhost`), single-use
   server-side challenges, assertions kept for re-verification, step-up for approvals and role changes; and Nemura's
   own API clients, audience-bound, with the scopes of NM-ARC-06's own token issuer (question 11). Tests: a step-up is
   bound to the origin and the digest it approves; a replayed assertion is refused. The registry shared with Fyniq
   is `p1-nemura-fyniq-link`'s.
-- [ ] 5.5 Verify: the smoke script, `make images`, `make check`, `make test`.
+  (Built, 19 Nov 2026: migrations 000008 (`passkey`, `passkey_challenge`) and 000009 (`api_client`); `internal/passkey.NewFor` and `UserOf` (the relying-party ID is `NEMURA_RP_ID`, the shared registrable domain, question 10); `BeginRegistration`, `CompleteRegistration`, `BeginStepUp` and `CompleteStepUp` with single-use five-minute challenges taken in a transaction of their own; the operations `POST /v1/passkeys/registration`, `POST /v1/passkeys`, `POST /v1/session/step-up` and `/confirm`; `internal/nemura/apiclient` and `nemura.APIClientService` (register, list, revoke with Hydra first), `POST /v1/api-clients`, `GET /v1/api-clients`, `DELETE /v1/api-clients/{id}`, Owner only with a passkey confirmation fresh within five minutes. Tests `TestAPasskeyRegistersAndStepsASessionUp`, `TestAPasskeyCeremonyIsOnceAndRefusesWhatIsNotTheMembers`, `TestAnAPIClientIsRegisteredWithTheOAuthServerAndRecorded` and the API's tests (`// req: NM-ARC-06`). **Left:** passkey listing and removal, the second approver on an API client (with the Fyniq link, NM-ARC-04), the first bearer-protected operation (with the first operation an integration needs), and the shared passkey registry with Fyniq (`p1-nemura-fyniq-link`).)
+- [x] 5.5 Verify: the smoke script, `make images`, `make check`, `make test`.
+  (Done: `make check`, `make images`, the compose stack with Hydra and the edge; the smoke script is 5.3's.)
 
 ## 6. Roles, the permission matrix, approvals and need to know (slice 6)
 

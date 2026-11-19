@@ -1,6 +1,7 @@
 ## tables (table | owner | rls | forced)
 access_request | nemura_migrator | true | true
 access_request_item | nemura_migrator | true | true
+api_client | nemura_migrator | true | true
 approval_request | nemura_migrator | true | true
 audit_chain | nemura_migrator | true | true
 audit_event | nemura_migrator | true | true
@@ -13,6 +14,8 @@ legal_hold | nemura_migrator | true | true
 member | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
 outbox | nemura_migrator | true | true
+passkey | nemura_migrator | true | true
+passkey_challenge | nemura_migrator | true | true
 reporting_line | nemura_migrator | true | true
 role_assignment | nemura_migrator | true | true
 session | nemura_migrator | true | true
@@ -39,6 +42,14 @@ access_request_item | decision | text | true |
 access_request_item | exception | text | false | 
 access_request_item | decided_by | uuid | true | 
 access_request_item | decided_at | timestamp with time zone | true | now()
+api_client | organisation_id | uuid | true | nemura.current_org()
+api_client | id | uuid | true | uuidv7()
+api_client | name | text | true | 
+api_client | scopes | text[] | true | 
+api_client | hydra_client_id | text | true | 
+api_client | created_by | uuid | true | 
+api_client | created_at | timestamp with time zone | true | now()
+api_client | revoked_at | timestamp with time zone | false | 
 approval_request | organisation_id | uuid | true | nemura.current_org()
 approval_request | id | uuid | true | uuidv7()
 approval_request | object_type | text | true | 
@@ -134,6 +145,29 @@ outbox | deadline_at | timestamp with time zone | false |
 outbox | last_error | text | false | 
 outbox | created_at | timestamp with time zone | true | now()
 outbox | updated_at | timestamp with time zone | true | now()
+passkey | organisation_id | uuid | true | nemura.current_org()
+passkey | id | uuid | true | uuidv7()
+passkey | member_id | uuid | true | 
+passkey | credential_id | bytea | true | 
+passkey | public_key | bytea | true | 
+passkey | sign_count | bigint | true | 0
+passkey | aaguid | bytea | true | 
+passkey | transports | text[] | true | '{}'::text[]
+passkey | backup_eligible | boolean | true | false
+passkey | backup_state | boolean | true | false
+passkey | name | text | true | 
+passkey | created_at | timestamp with time zone | true | now()
+passkey | last_used_at | timestamp with time zone | false | 
+passkey | revoked_at | timestamp with time zone | false | 
+passkey_challenge | organisation_id | uuid | true | nemura.current_org()
+passkey_challenge | id | uuid | true | uuidv7()
+passkey_challenge | session_id | uuid | true | 
+passkey_challenge | member_id | uuid | true | 
+passkey_challenge | purpose | text | true | 
+passkey_challenge | challenge | bytea | true | 
+passkey_challenge | created_at | timestamp with time zone | true | now()
+passkey_challenge | expires_at | timestamp with time zone | true | 
+passkey_challenge | used_at | timestamp with time zone | false | 
 reporting_line | organisation_id | uuid | true | nemura.current_org()
 reporting_line | id | uuid | true | uuidv7()
 reporting_line | report_id | uuid | true | 
@@ -199,6 +233,20 @@ access_request_item | access_request_item_organisation_id_not_null | NOT NULL or
 access_request_item | access_request_item_pkey | PRIMARY KEY (organisation_id, request_id, category)
 access_request_item | access_request_item_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES nemura.access_request(organisation_id, id)
 access_request_item | access_request_item_request_id_not_null | NOT NULL request_id
+api_client | api_client_created_at_not_null | NOT NULL created_at
+api_client | api_client_created_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+api_client | api_client_created_by_not_null | NOT NULL created_by
+api_client | api_client_hydra_client_id_not_null | NOT NULL hydra_client_id
+api_client | api_client_hydra_key | UNIQUE (hydra_client_id)
+api_client | api_client_id_not_null | NOT NULL id
+api_client | api_client_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))
+api_client | api_client_name_not_null | NOT NULL name
+api_client | api_client_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+api_client | api_client_organisation_id_not_null | NOT NULL organisation_id
+api_client | api_client_pkey | PRIMARY KEY (organisation_id, id)
+api_client | api_client_scopes_not_null | NOT NULL scopes
+api_client | api_client_scopes_some | CHECK (((cardinality(scopes) >= 1) AND (cardinality(scopes) <= 20)))
+api_client | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 approval_request | approval_request_created_at_not_null | NOT NULL created_at
 approval_request | approval_request_decided_by_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
 approval_request | approval_request_decision_whole | CHECK (((state = ANY (ARRAY['approved'::text, 'refused'::text])) = ((decided_by IS NOT NULL) AND (decided_at IS NOT NULL))))
@@ -357,6 +405,40 @@ outbox | outbox_task_name_length | CHECK ((length(task_name) <= 500))
 outbox | outbox_updated_at_not_null | NOT NULL updated_at
 outbox | outbox_worker_class_known | CHECK ((worker_class = ANY (ARRAY['worker'::text, 'executor'::text])))
 outbox | outbox_worker_class_not_null | NOT NULL worker_class
+passkey | passkey_aaguid_16 | CHECK ((length(aaguid) = 16))
+passkey | passkey_aaguid_not_null | NOT NULL aaguid
+passkey | passkey_backup_eligible_not_null | NOT NULL backup_eligible
+passkey | passkey_backup_state_not_null | NOT NULL backup_state
+passkey | passkey_created_at_not_null | NOT NULL created_at
+passkey | passkey_credential_id_not_null | NOT NULL credential_id
+passkey | passkey_credential_key | UNIQUE (organisation_id, credential_id)
+passkey | passkey_id_not_null | NOT NULL id
+passkey | passkey_member_fkey | FOREIGN KEY (organisation_id, member_id) REFERENCES nemura.member(organisation_id, id)
+passkey | passkey_member_id_not_null | NOT NULL member_id
+passkey | passkey_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))
+passkey | passkey_name_not_null | NOT NULL name
+passkey | passkey_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+passkey | passkey_organisation_id_not_null | NOT NULL organisation_id
+passkey | passkey_pkey | PRIMARY KEY (organisation_id, id)
+passkey | passkey_public_key_not_null | NOT NULL public_key
+passkey | passkey_sign_count_not_null | NOT NULL sign_count
+passkey | passkey_sign_count_range | CHECK (((sign_count >= 0) AND (sign_count <= '4294967295'::bigint)))
+passkey | passkey_transports_not_null | NOT NULL transports
+passkey | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+passkey_challenge | passkey_challenge_32 | CHECK ((length(challenge) = 32))
+passkey_challenge | passkey_challenge_challenge_not_null | NOT NULL challenge
+passkey_challenge | passkey_challenge_created_at_not_null | NOT NULL created_at
+passkey_challenge | passkey_challenge_expires_at_not_null | NOT NULL expires_at
+passkey_challenge | passkey_challenge_expiry | CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '00:05:00'::interval))))
+passkey_challenge | passkey_challenge_id_not_null | NOT NULL id
+passkey_challenge | passkey_challenge_member_fkey | FOREIGN KEY (organisation_id, member_id) REFERENCES nemura.member(organisation_id, id)
+passkey_challenge | passkey_challenge_member_id_not_null | NOT NULL member_id
+passkey_challenge | passkey_challenge_organisation_id_not_null | NOT NULL organisation_id
+passkey_challenge | passkey_challenge_pkey | PRIMARY KEY (organisation_id, id)
+passkey_challenge | passkey_challenge_purpose_known | CHECK ((purpose = ANY (ARRAY['register'::text, 'step_up'::text])))
+passkey_challenge | passkey_challenge_purpose_not_null | NOT NULL purpose
+passkey_challenge | passkey_challenge_session_fkey | FOREIGN KEY (organisation_id, session_id) REFERENCES nemura.session(organisation_id, id)
+passkey_challenge | passkey_challenge_session_id_not_null | NOT NULL session_id
 reporting_line | reporting_line_created_at_not_null | NOT NULL created_at
 reporting_line | reporting_line_dates | CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))
 reporting_line | reporting_line_effective_from_not_null | NOT NULL effective_from
@@ -425,6 +507,9 @@ transfer_assessment | transfer_assessment_valid_until_not_null | NOT NULL valid_
 CREATE INDEX access_request_due_idx ON nemura.access_request USING btree (organisation_id, state, due_on)
 CREATE UNIQUE INDEX access_request_item_pkey ON nemura.access_request_item USING btree (organisation_id, request_id, category)
 CREATE UNIQUE INDEX access_request_pkey ON nemura.access_request USING btree (organisation_id, id)
+CREATE UNIQUE INDEX api_client_hydra_key ON nemura.api_client USING btree (hydra_client_id)
+CREATE UNIQUE INDEX api_client_live_name_key ON nemura.api_client USING btree (organisation_id, lower(name)) WHERE (revoked_at IS NULL)
+CREATE UNIQUE INDEX api_client_pkey ON nemura.api_client USING btree (organisation_id, id)
 CREATE INDEX approval_request_object_idx ON nemura.approval_request USING btree (organisation_id, object_type, object_id)
 CREATE UNIQUE INDEX approval_request_pkey ON nemura.approval_request USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_chain_pkey ON nemura.audit_chain USING btree (organisation_id)
@@ -444,6 +529,11 @@ CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organi
 CREATE UNIQUE INDEX outbox_business_key ON nemura.outbox USING btree (organisation_id, kind, business_key)
 CREATE UNIQUE INDEX outbox_pkey ON nemura.outbox USING btree (organisation_id, id)
 CREATE INDEX outbox_state_idx ON nemura.outbox USING btree (organisation_id, state, deadline_at)
+CREATE UNIQUE INDEX passkey_challenge_pkey ON nemura.passkey_challenge USING btree (organisation_id, id)
+CREATE INDEX passkey_challenge_session_idx ON nemura.passkey_challenge USING btree (organisation_id, session_id, purpose)
+CREATE UNIQUE INDEX passkey_credential_key ON nemura.passkey USING btree (organisation_id, credential_id)
+CREATE INDEX passkey_member_idx ON nemura.passkey USING btree (organisation_id, member_id)
+CREATE UNIQUE INDEX passkey_pkey ON nemura.passkey USING btree (organisation_id, id)
 CREATE INDEX reporting_line_manager_idx ON nemura.reporting_line USING btree (organisation_id, manager_id, effective_from)
 CREATE UNIQUE INDEX reporting_line_once ON nemura.reporting_line USING btree (organisation_id, report_id, manager_id, effective_from)
 CREATE UNIQUE INDEX reporting_line_pkey ON nemura.reporting_line USING btree (organisation_id, id)
@@ -460,6 +550,8 @@ CREATE UNIQUE INDEX transfer_assessment_pkey ON nemura.transfer_assessment USING
 CREATE TRIGGER access_request_guard BEFORE DELETE OR UPDATE ON nemura.access_request FOR EACH ROW EXECUTE FUNCTION nemura.access_request_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.access_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('access_request', 'id')
 CREATE TRIGGER access_request_item_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.access_request_item FOR EACH ROW EXECUTE FUNCTION nemura.access_request_item_guard()
+CREATE TRIGGER api_client_guard BEFORE DELETE OR UPDATE ON nemura.api_client FOR EACH ROW EXECUTE FUNCTION nemura.api_client_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.api_client DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('api_client', 'id')
 CREATE TRIGGER approval_request_guard BEFORE DELETE OR UPDATE ON nemura.approval_request FOR EACH ROW EXECUTE FUNCTION nemura.approval_request_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('approval_request', 'id')
 CREATE TRIGGER audit_chain_guard BEFORE DELETE OR UPDATE ON nemura.audit_chain FOR EACH ROW EXECUTE FUNCTION nemura.audit_chain_guard()
@@ -479,6 +571,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.organis
 CREATE TRIGGER outbox_guard BEFORE UPDATE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_guard()
 CREATE TRIGGER outbox_no_delete BEFORE DELETE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_no_delete()
 CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON nemura.outbox FOR EACH STATEMENT EXECUTE FUNCTION nemura.outbox_no_delete()
+CREATE TRIGGER passkey_guard BEFORE DELETE OR UPDATE ON nemura.passkey FOR EACH ROW EXECUTE FUNCTION nemura.passkey_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.passkey DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('passkey', 'id')
+CREATE TRIGGER passkey_challenge_guard BEFORE DELETE OR UPDATE ON nemura.passkey_challenge FOR EACH ROW EXECUTE FUNCTION nemura.passkey_challenge_guard()
 CREATE TRIGGER reporting_line_guard BEFORE DELETE OR UPDATE ON nemura.reporting_line FOR EACH ROW EXECUTE FUNCTION nemura.reporting_line_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.reporting_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('reporting_line', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('role_assignment', 'id')
@@ -492,6 +587,7 @@ CREATE TRIGGER transfer_assessment_append_only BEFORE DELETE OR UPDATE ON nemura
 ## policies (table | name | using | with check)
 access_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 access_request_item | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+api_client | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 approval_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 audit_chain | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 audit_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -502,6 +598,8 @@ legal_hold | tenant_isolation | (organisation_id = nemura.current_org()) | (orga
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 outbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+passkey | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+passkey_challenge | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 reporting_line | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 role_assignment | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 session | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -531,6 +629,20 @@ BEGIN
   IF TG_OP = 'DELETE' OR EXISTS (SELECT 1 FROM nemura.access_request r
        WHERE r.organisation_id = coalesce(NEW.organisation_id, OLD.organisation_id) AND r.id = coalesce(NEW.request_id, OLD.request_id) AND r.state = 'answered') THEN
     RAISE EXCEPTION 'The decisions of an answered access request are kept' USING ERRCODE = 'NM090';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.api_client_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.name IS DISTINCT FROM OLD.name OR NEW.scopes IS DISTINCT FROM OLD.scopes OR NEW.hydra_client_id IS DISTINCT FROM OLD.hydra_client_id
+     OR NEW.created_by IS DISTINCT FROM OLD.created_by OR (OLD.revoked_at IS NOT NULL AND NEW.revoked_at IS DISTINCT FROM OLD.revoked_at) THEN
+    RAISE EXCEPTION 'An API client can only be revoked, once' USING ERRCODE = 'NM104';
   END IF;
   RETURN NEW;
 END
@@ -762,6 +874,38 @@ CREATE OR REPLACE FUNCTION nemura.outbox_no_delete()
 AS $function$
 BEGIN
   RAISE EXCEPTION 'Outbox rows are kept (% on %)', TG_OP, TG_TABLE_NAME USING ERRCODE = 'NM070';
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.passkey_challenge_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR OLD.used_at IS NOT NULL OR NEW.challenge IS DISTINCT FROM OLD.challenge OR NEW.session_id IS DISTINCT FROM OLD.session_id
+     OR NEW.purpose IS DISTINCT FROM OLD.purpose OR NEW.expires_at IS DISTINCT FROM OLD.expires_at THEN
+    RAISE EXCEPTION 'A passkey challenge is used once and never changed' USING ERRCODE = 'NM102';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.passkey_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.member_id IS DISTINCT FROM OLD.member_id OR NEW.credential_id IS DISTINCT FROM OLD.credential_id
+     OR NEW.public_key IS DISTINCT FROM OLD.public_key OR NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR (OLD.revoked_at IS NOT NULL AND NEW.revoked_at IS DISTINCT FROM OLD.revoked_at) THEN
+    RAISE EXCEPTION 'A passkey can only be used or revoked, once' USING ERRCODE = 'NM102';
+  END IF;
+  IF NEW.sign_count < OLD.sign_count AND NEW.sign_count <> 0 THEN
+    RAISE EXCEPTION 'A passkey''s signature counter never goes back: the authenticator may be cloned' USING ERRCODE = 'NM103';
+  END IF;
+  RETURN NEW;
 END
 $function$
 

@@ -49,9 +49,17 @@ type Code struct {
 // (TestEveryCodeInTheCatalogueIsTriggered). PRD-002 names more (NM_FEATURE_REQUIRED, NM_POLICY_BELOW_STATUTE,
 // NM_FEATURE_OBLIGATIONS_OPEN): they arrive with the features that raise them.
 const (
-	CodeNotFound        = "NM_NOT_FOUND"       // no such record
-	CodeInvalid         = "NM_INVALID"         // a field is invalid
-	CodeUnauthenticated = "NM_UNAUTHENTICATED" // no valid session
+	CodeNotFound        = "NM_NOT_FOUND"           // no such record
+	CodeInvalid         = "NM_INVALID"             // a field is invalid
+	CodeUnauthenticated = "NM_UNAUTHENTICATED"     // no valid session
+	CodePasskeyRefused  = "NM_PASSKEY_REFUSED"     // #nosec G101 -- a problem code's name: the passkey's answer failed a check
+	CodeNoCeremony      = "NM_PASSKEY_NO_CEREMONY" // the ceremony was not started, or its challenge was used or has expired
+	CodeRoleRequired    = "NM_ROLE_REQUIRED"       // the person's roles do not allow this
+	CodeStepUp          = "NM_STEP_UP_REQUIRED"    // confirm it is the person with a passkey, then try again
+	CodeClientInvalid   = "NM_API_CLIENT_INVALID"  // the registration is not valid
+	CodeClientExists    = "NM_API_CLIENT_EXISTS"   // a live client has that name
+	CodeUnavailable     = "NM_UNAVAILABLE"         // the service is not configured for this here
+	CodeNoPasskey       = "NM_NO_PASSKEY"          // #nosec G101 -- a problem code's name: no passkey to confirm with
 )
 
 // Catalogue is every stable code the API returns, in order. It is served at GET /v1/errors.
@@ -59,6 +67,14 @@ var Catalogue = []Code{
 	{CodeNotFound, http.StatusNotFound, "Not found", "Check the identifier, and that it belongs to your organisation."},
 	{CodeInvalid, http.StatusUnprocessableEntity, "A field is not valid", "Correct the fields listed in errors and send the request again."},
 	{CodeUnauthenticated, http.StatusUnauthorized, "Sign-in required", "Sign in, then try again."},
+	{CodePasskeyRefused, http.StatusUnprocessableEntity, "The passkey's answer was refused", "Try again with the passkey you registered, on this site, and confirm it is you."},
+	{CodeNoCeremony, http.StatusConflict, "No passkey ceremony is open", "Start again: ask for the options, then answer them within five minutes."},
+	{CodeNoPasskey, http.StatusConflict, "No passkey to confirm with", "Register a passkey first, then confirm again."},
+	{CodeUnavailable, http.StatusServiceUnavailable, "Not available here", "This deployment has not set it up: ask whoever runs Nemura."},
+	{CodeRoleRequired, http.StatusForbidden, "Not allowed for your roles", "Ask the Owner to do it, or to change your roles."},
+	{CodeStepUp, http.StatusForbidden, "Confirm it is you", "Confirm with your passkey (POST /v1/session/step-up), then try again within five minutes."},
+	{CodeClientInvalid, http.StatusUnprocessableEntity, "The API client is not valid", "Correct the name, scopes, algorithm or public key named in the message."},
+	{CodeClientExists, http.StatusConflict, "An API client has that name", "Choose another name, or revoke the first client."},
 }
 
 func lookup(code string) Code {
