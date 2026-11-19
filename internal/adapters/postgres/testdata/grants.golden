@@ -708,6 +708,7 @@ fyniq_executor  SELECT    journal_line
 fyniq_executor  SELECT    ledger_boundary
 fyniq_executor  SELECT    ledger_purged_entry
 fyniq_executor  SELECT    ledger_revision
+fyniq_executor  EXECUTE   member_activity()
 fyniq_executor  EXECUTE   member_emails()
 fyniq_executor  EXECUTE   member_names()
 fyniq_executor  SELECT    opening_balance
@@ -740,6 +741,7 @@ fyniq_executor  SELECT    recurring_journal_version
 fyniq_executor  SELECT    review_log_entry
 fyniq_executor  SELECT    review_log_review
 fyniq_executor  SELECT    role_assignment
+fyniq_executor  SELECT    role_assignment_scope
 fyniq_executor  SELECT    sales_reminder
 fyniq_executor  USAGE     schema fyniq
 fyniq_executor  SELECT    sod_override
@@ -1205,6 +1207,7 @@ fyniq_worker    EXECUTE   mcp_clients_expire()
 fyniq_worker    EXECUTE   mcp_purge_calls()
 fyniq_worker    SELECT    mcp_seen
 fyniq_worker    SELECT    mcp_user_optin
+fyniq_worker    EXECUTE   member_activity()
 fyniq_worker    EXECUTE   member_emails()
 fyniq_worker    SELECT    member_invitation
 fyniq_worker    EXECUTE   member_names()
