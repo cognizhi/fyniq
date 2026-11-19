@@ -1,4 +1,4 @@
-<!-- fyniq-screen {"nav": "my-claims", "title": "New claim", "mode": "basic", "heights": {"compact": 2950, "medium": 2750, "expanded": 1650}} -->
+<!-- fyniq-screen {"nav": "my-claims", "title": "New claim", "mode": "basic", "heights": {"compact": 3200, "medium": 2950, "expanded": 1850}} -->
 <div class="fy-page fy-enter">
   <div class="fy-pagehead">
     <div class="fy-pagehead__text">
@@ -39,6 +39,27 @@
             </div>
           </div>
           <span class="fy-small fy-muted fy-row"><i data-icon="shield-check"></i>Kept as evidence. Location data removed; scanned for malware.</span>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="fwd-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="fwd-title"><i data-icon="mail"></i> Receipts forwarded to you</h2>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small">Forward a receipt to <span class="fy-mono fy-strong">ahkow@in.fyniq.example</span>. Mail from your own sign-in email arrives at once; mail from anyone else waits for you to accept its sender.</p>
+          <ul class="fy-list" aria-label="Mail waiting for you">
+            <li class="fy-row">
+              <span class="fy-grow fy-small">Mail from <span class="fy-mono">stranger@example.org</span>, 13 Oct 2026 09:02, waits for you to accept its sender.</span>
+              <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="user-check"></i>Accept sender</button>
+            </li>
+          </ul>
+          <ul class="fy-list" aria-label="Receipts forwarded to you">
+            <li class="fy-row">
+              <span class="fy-grow fy-small"><span class="fy-mono">GRAB-2610-0013.pdf</span> · 20 KB · from friend@example.net, 13 Oct 2026 08:44</span>
+              <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-label="Attach GRAB-2610-0013.pdf to this claim"><i data-icon="paperclip"></i>Attach</button>
+            </li>
+          </ul>
         </div>
       </section>
 

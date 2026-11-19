@@ -470,6 +470,8 @@ export const actions = [
   { kind: "action", id: "claim.submit", mode: "basic", help: "claim.submit", guide: "claims.my-claims#submit-a-claim" },
   { kind: "action", id: "claim.withdraw", mode: "basic", help: "claim.withdraw", guide: "claims.my-claims#submit-a-claim" },
   { kind: "action", id: "claim.attach-evidence", mode: "basic", help: "claim.attach-evidence", guide: "claims.my-claims#attach-the-receipt" },
+  { kind: "action", id: "claim.forwarded-receipts", mode: "basic", help: "claim.forwarded-receipts", guide: "claims.my-claims#attach-a-receipt-you-forwarded" },
+  { kind: "action", id: "claim.attach-forwarded", mode: "basic", help: "claim.attach-forwarded", guide: "claims.my-claims#attach-a-receipt-you-forwarded" },
   { kind: "action", id: "director-accounts.pay-choice", mode: "expert", help: "director-accounts.pay-choice", guide: "equity.director-accounts#record-a-pay-choice" },
   { kind: "action", id: "director-accounts.exempt", mode: "expert", help: "director-accounts.exempt", guide: "equity.director-accounts#record-the-exempt-private-company-status" },
   { kind: "action", id: "exempt-status.attach-evidence", mode: "expert", help: "exempt-status.attach-evidence", guide: "equity.director-accounts#record-the-exempt-private-company-status" },

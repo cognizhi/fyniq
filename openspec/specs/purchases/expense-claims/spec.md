@@ -70,6 +70,12 @@ Source: PRD-001 §8.6 · Priority M · Phase P1 (web) / P2 (PWA camera)
 - **WHEN** a user starts a new claim
 - **THEN** they can paste a screenshot of the receipt, drag and drop it, take it with the phone camera in the PWA, or forward it to their own capture address (FR-DOC-12)
 
+#### Scenario: Receipt forwarded to the member's own address (rev 0.322)
+- **GIVEN** a member has an address of their own and mail from them or from a sender they accepted is waiting there
+- **WHEN** they attach one of its attachments to their draft claim
+- **THEN** the file is checked again as an upload is and kept as evidence from email
+- **AND** an attachment of mail that is not at their own address, not accepted, or a message's text is refused (EML-10) and tells nothing of another member's mail
+
 #### Scenario: Claim details
 - **WHEN** a user fills in a claim
 - **THEN** they can set the category, project, GST and currency, split it into lines, and claim mileage at the organisation's rate (setting)

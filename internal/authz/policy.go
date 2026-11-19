@@ -1297,6 +1297,10 @@ var (
 	// adding and removing to the claimant, and an Employee's reading to their own claims.
 	AddExpenseClaimEvidence = Policy{Operation: "addExpenseClaimEvidence", Capability: Evidence, Need: Create, Parent: ExpenseClaims,
 		Note: "Only the claimant attaches. AI and MCP clients only propose attaching a document (doc.attach)."}
+	// AddExpenseClaimEvidenceFromMessage attaches a receipt the caller forwarded to their own email-in address (FR-AP-14,
+	// FR-DOC-12; rev 0.322): the same rights as attaching one by upload, and the file comes from the caller's own mail.
+	AddExpenseClaimEvidenceFromMessage = Policy{Operation: "addExpenseClaimEvidenceFromMessage", Capability: Evidence, Need: Create, Parent: ExpenseClaims,
+		Note: "Only the claimant, and only a file of mail at their own email-in address. AI and MCP clients only propose attaching a document (doc.attach)."}
 	ListExpenseClaimEvidence = Policy{Operation: "listExpenseClaimEvidence", Capability: Evidence, Need: View, Parent: ExpenseClaims,
 		Note: "Needs the right to view expense claims as well: an Employee's own only."}
 	GetExpenseClaimEvidence = Policy{Operation: "getExpenseClaimEvidence", Capability: Evidence, Need: View, Parent: ExpenseClaims,
@@ -2025,7 +2029,7 @@ var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegra
 	RemoveMyBankChangeEvidence, ListClaimantBankChangeEvidence, GetClaimantBankChangeEvidence,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
-	AddExpenseClaimEvidence, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,
+	AddExpenseClaimEvidence, AddExpenseClaimEvidenceFromMessage, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,
 	ListDocumentTemplates, GetDocumentTemplate, GetDocumentTemplateCatalogue, ListDocumentTemplateVersions, GetDocumentTemplateVersion,
 	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate, PreviewDocumentTemplate,
 	ExportDocumentTemplates, ImportDocumentTemplates, ListDocumentTemplateDefaults, SetDocumentTemplateDefault, GetAppliedDocumentTemplate,

@@ -2331,6 +2331,14 @@
       "label": "Attach",
       "tooltip": "Attach a receipt: a photo, a screenshot or a PDF. Fyniq scans it and strips image metadata such as location; then pick it on its line."
     },
+    "claim.forwarded-receipts": {
+      "label": "Receipts forwarded to you",
+      "tooltip": "Forward a receipt to your own address and attach it to this claim from here, without saving it first. Mail from your own sign-in email arrives at once; mail from anyone else waits for you to accept its sender."
+    },
+    "claim.attach-forwarded": {
+      "label": "Attach",
+      "tooltip": "Attach this forwarded file to the claim as a receipt. Fyniq scans it again and strips image metadata such as location; then pick it on its line."
+    },
     "card-line.complete": {
       "label": "Complete",
       "tooltip": "Say what a payment with your company card was for: the category of its receipt, or personal spend that you refund."
