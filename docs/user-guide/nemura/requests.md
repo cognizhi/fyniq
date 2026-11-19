@@ -3,7 +3,7 @@ key: nemura.requests
 title: See your requests and make a flexible work request
 mode: basic
 roles: [employee, line_manager, hr_officer, hr_admin, payroll_admin, owner]
-requirements: [NM-LV-10, NM-LV-04, NM-ESS-04, NM-TIM-04]
+requirements: [NM-LV-10, NM-LV-04, NM-ESS-04, NM-TIM-04, NM-ESS-03]
 ---
 
 # See your requests and make a flexible work request
@@ -22,7 +22,9 @@ shows the day the written reply is due. A clarification or a change of type does
 
 ## Steps
 
-1. Open **My requests**. Under **Leave**, you can **Cancel** a request that is waiting, or an approved one before it starts.
+1. Open **My requests**. **Where my requests are** lists everything you asked for in one place: letters, flexible work, changes of details and questions. Each shows
+   its step (**Received**, **With HR**, **Ready** or **Closed**), the day it is due and the reply or the reason it was refused. Withdraw a change of details or a
+   question that nobody has answered yet. Under **Leave**, you can **Cancel** a request that is waiting, or an approved one before it starts.
 2. Under **Flexible work**, read each request and, once the company has answered, its written reply.
 3. To make a request, fill in **Make a formal flexible work request**: what you want to change, the day it would start, the day
    it would end (leave it empty if open) and why. Select **Send the request**.

@@ -242,7 +242,11 @@ and names the requirement IDs it proves.
   items in the walkthroughs, which need records waiting for that role.
   (20 Nov 2026: a journey for the Owner's and the Administrator's Inbox, where the Administrator asks to change the
   capitalisation threshold and the Owner finds it under "To approve" as their turn, was drafted and left out, as it could
-  not be run here; the other roles' items each need a second person's choreography.))
+  not be run here; the other roles' items each need a second person's choreography.
+  What is built instead, on the API the Inbox reads: `TestEachRoleSeesTheInboxItemsItsRightsGive` (`// req: QA-UI-08`) has a founder's request
+  waiting and checks, for every role of §7.1, who lists it, who has it as their turn (only the Owner) and who is refused (an
+  Employee, a line manager, the HR officer, a Super admin); the web side is `approvals.test.tsx`. 5.4's baselines stay for the
+  final run, from CI's or the final head's picture, as the note above says.))
 - [ ] 5.4 QA-UI-07 and QA-RPT-04's visual snapshots (design D5; rev 0.284):
   - hash baselines in `apps/web/visual/baselines.json`;
   - the key pages on every pull request, every route nightly and in the release workflow, at the five frames, in light
@@ -353,6 +357,8 @@ and names the requirement IDs it proves.
   - `docs/quality/launch-gaps.md`: the 77 blockers by change, each with how it closes (44 with the chain).
 - [ ] 7.3 The build plan's paragraph says what was built and what waits. `make check`, `make test`, `make test-e2e` and
   `make test-journeys` pass.
+  (20 Nov 2026: the build plan's paragraph is written ("`p1-launch-readiness` is built in part"). **Left:** the last sentence's
+  runs, `make test`, `make test-e2e` and `make test-journeys`, on the final head; the task stays open until they pass.)
 
 ## Workflow follow-up
 

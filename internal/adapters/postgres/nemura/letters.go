@@ -221,6 +221,9 @@ func PublishTemplate(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time
 			return 0, err
 		}
 	}
+	if err := endDelegationsOf(ctx, tx, org, at, by, key); err != nil {
+		return 0, err
+	}
 	return next, Audit(ctx, tx, org, at, user(by), "nemura.letter_template.published", audit.Object{Type: "letter_template_version", ID: draft}, map[string]audit.Change{"type": {nil, key}, "version": {nil, next}}, "")
 }
 
@@ -522,7 +525,13 @@ func SignLetter(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by,
 	if got := sha256.Sum256(pdf); !bytes.Equal(got[:], sum) {
 		return uuid.Nil, &letters.Refusal{Code: letters.CodeConflict, Message: "The stored letter no longer matches its hash: it is not signed, and the change is for the security team to look into."}
 	}
-	envelope, _ := json.Marshal(map[string]any{"request": request.String(), "reference": ref, "sha256": hex.EncodeToString(sum), "template": tid.String(), "step_up_at": stepUpAt.UTC().Format(time.RFC3339), "signed_at": at.UTC().Format(time.RFC3339)})
+	env := map[string]any{"request": request.String(), "reference": ref, "sha256": hex.EncodeToString(sum), "template": tid.String(), "signed_at": at.UTC().Format(time.RFC3339)}
+	if stepUpAt.IsZero() {
+		env["signed_under"] = authority // no passkey: a delegation the signatory made gave the right
+	} else {
+		env["step_up_at"] = stepUpAt.UTC().Format(time.RFC3339)
+	}
+	envelope, _ := json.Marshal(env)
 	id := uuid.Must(uuid.NewV7())
 	if _, err := tx.Exec(ctx, `INSERT INTO nemura.letter_issued (id, request_id, person_id, type_key, reference, blob_key, sha256, template_id, data, signatory, authority, envelope, issued_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12::jsonb, $13)`, id, request, person, key, ref, blob, sum, tid, string(data), by, authority, string(envelope), at); err != nil {

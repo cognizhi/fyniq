@@ -91,6 +91,28 @@ Decided 20 Nov 2026 under the owner's standing instruction (the owner is away: t
 **Decided: A.** It keeps Appendix B intact and lets the first hire's KETs be issued before payroll exists; when payroll arrives, its pay record becomes the source and this
 form is read-only for a person it holds.
 
+### O4. How a change of legal name, residency or NRIC or FIN is requested and what the request holds
+
+| Option | Pros | Cons |
+|---|---|---|
+| **A. The request carries the evidence as a document and a note; it never holds an NRIC or FIN. Another HR member approves; a name or residency applies on approval, an NRIC or FIN is recorded by HR through the sealed flow afterwards** | The NRIC never rests anywhere but the sealed store (SEC-15); the evidence is on the person's file with its retention; one rule for the three kinds | An NRIC change takes two steps (approve, then record) |
+| B. The request holds a sealed proposed NRIC or FIN and applies it on approval | One step | A second sealed store and key handling for a value that may never be approved |
+| C. Only HR changes these, on a paper request | Nothing to build | Breaks NM-ESS-03 |
+
+**Decided: A.** Due days: a change is decided within 5 working days and a question answered within 3 (code constants; letters keep their type's days and flexible work the
+pack's months). The audit event of a direct change names the fields that changed and never their values (data minimisation, PDPA); a request's words stay in its row.
+
+### O5. How a leaver's narrow account is made
+
+| Option | Pros | Cons |
+|---|---|---|
+| **A. Derived from the record: after the last day the same login holds no role and keeps a short list of operations; it ends 12 months after the last day** | No new identity, no second sign-in, nothing to forget to switch off; the role cut is in the one place roles are read (`ActiveRoles`), so a leaver who was the HR administrator keeps nothing | A person whose last day is entered wrongly is narrowed at once (correct the date); the last Owner who leaves is locked out (the recovery runbook covers it) |
+| B. Deactivate the member and give a separate `leaver` identity | A clean break | A second identity, sign-in and session path to build and secure; two logins for one person |
+| C. Deactivate and mail documents | Nothing to maintain | Email links are only to deliver a document; a lost one has no way back |
+
+**Decided: A.** The retention months are the data inventory's 12 (MOM: employment records for 1 year after the person leaves). The API refuses every operation a leaver does not
+keep with `NM_LEAVER_ACCOUNT`; the list is the person's own documents, their own letters (read, link), asking a question and their own requests.
+
 ## Risks / Trade-offs
 
 - [A letter is edited after issue] -> the hash of the exact bytes is kept in a row nothing can change; a replacement is a new row.

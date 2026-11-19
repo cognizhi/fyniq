@@ -34,7 +34,9 @@ func AddMember(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by a
 // who has been deactivated.
 func ActiveRoles(ctx context.Context, tx pgx.Tx, member uuid.UUID, on time.Time) ([]authz.Role, error) {
 	rows, err := tx.Query(ctx, `SELECT DISTINCT a.role FROM nemura.role_assignment a JOIN nemura.member m ON m.organisation_id = a.organisation_id AND m.id = a.member_id
-WHERE a.member_id = $1 AND m.deactivated_at IS NULL AND a.effective_from <= $2 AND (a.effective_to IS NULL OR a.effective_to > $2) ORDER BY a.role`, member, on.Format(time.DateOnly))
+WHERE a.member_id = $1 AND m.deactivated_at IS NULL AND a.effective_from <= $2 AND (a.effective_to IS NULL OR a.effective_to > $2)
+-- a leaver holds no role: after their last day the account is for their own documents only (NM-ESS-06)
+AND NOT EXISTS (SELECT 1 FROM nemura.person p WHERE p.organisation_id = a.organisation_id AND p.member_id = a.member_id AND p.leaving_date < $2::date) ORDER BY a.role`, member, on.Format(time.DateOnly))
 	if err != nil {
 		return nil, err
 	}

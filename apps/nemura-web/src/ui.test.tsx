@@ -22,6 +22,12 @@ import { Directory } from "./pages/Directory";
 import { Join } from "./pages/Join";
 import { Person } from "./pages/Person";
 import { TermsPanel } from "./components/TermsPanel";
+import { MyDetails } from "./pages/MyDetails";
+import { LeaverHome } from "./pages/LeaverHome";
+import { Delegations } from "./components/Delegations";
+import { AskQuestion } from "./pages/AskQuestion";
+import { PeopleRequests } from "./pages/PeopleRequests";
+import { RequestSteps } from "./components/RequestSteps";
 import { matchRoute } from "./registry";
 import { SignIn, signInURL } from "./pages/SignIn";
 import { reviewsFor, review, type Register } from "./review";
@@ -32,7 +38,7 @@ const stepUp = vi.hoisted(() => ({ result: undefined as string | undefined }));
 vi.mock("./api/stepup", () => ({ confirmWithPasskey: async () => stepUp.result }));
 
 const providers = { providers: [{ id: "local", name: "Local sign-in" }, { id: "google", name: "Google" }], setup_done: true };
-const session = { landing: "/me", member_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45", organisation_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44", roles: ["employee"] };
+const session = { landing: "/me", member_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45", organisation_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44", roles: ["employee"], leaver: false };
 
 async function userType(input: HTMLInputElement, text: string): Promise<void> {
   const { fireEvent } = await import("@testing-library/react");
@@ -947,5 +953,167 @@ describe("key employment terms", () => {
   it("draws nothing for a person who is not the people team or payroll", () => {
     const { container } = render(<TermsPanel person={person} roles={["employee"]} />);
     expect(container.textContent).toBe("");
+  });
+});
+
+// req: NM-ESS-03, NM-ESS-04
+describe("self-service", () => {
+  const rid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0";
+
+  it("lets a person change their contact details and emergency contacts and ask for a change that needs evidence", async () => {
+    answer("GET /v1/me/details", { status: 200, body: { phone: "+65 9123 4567", emergency_contacts: [{ name: "Mei Lim", relationship: "spouse", phone: "9123 4567" }] } });
+    answer("PUT /v1/me/details", { status: 204, body: undefined });
+    answer("PUT /v1/me/emergency-contacts", { status: 204, body: undefined });
+    answer("POST /v1/me/details-changes", { status: 201, body: { id: rid, due_on: "2026-11-27" } });
+    const { container } = render(<MyDetails roles={["employee"]} />);
+    expect(await screen.findByDisplayValue("Mei Lim")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Personal email"), { target: { value: "ben@example.com" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Contact details" }));
+    expect(await screen.findByText("Saved.")).toBeTruthy();
+    expect(bodies.get("PUT /v1/me/details")).toMatchObject({ personal_email: "ben@example.com", phone: "+65 9123 4567" });
+    fireEvent.click(screen.getByRole("button", { name: "Add an emergency contact" }));
+    expect(screen.getByLabelText("Name of emergency contact 2")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove emergency contact 2" }));
+    fireEvent.submit(screen.getByRole("form", { name: "Emergency contacts" }));
+    expect(await screen.findByText("Your emergency contacts are saved.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("What changes"), { target: { value: "nric_fin" } });
+    expect(screen.getByText(/NRIC or FIN number is not typed here/)).toBeTruthy();
+    expect(screen.queryByLabelText("New legal name, as on your identity document")).toBeNull();
+    fireEvent.change(screen.getByLabelText("What changed and why"), { target: { value: "My FIN became an NRIC." } });
+    fireEvent.change(screen.getByLabelText("Evidence"), { target: { files: [new File(["%PDF"], "nric.pdf", { type: "application/pdf" })] } });
+    fireEvent.submit(screen.getByRole("form", { name: "Ask to change my legal name, residency or NRIC or FIN" }));
+    expect(await screen.findByText("Sent. The people team decides it by 2026-11-27.")).toBeTruthy();
+    expect(bodies.get("POST /v1/me/details-changes")).toMatchObject({ kind: "nric_fin", evidence: { title: "nric.pdf", content_type: "application/pdf" } });
+  });
+
+  it("lets a person ask the people team a question", async () => {
+    answer("POST /v1/me/questions", { status: 201, body: { id: rid, due_on: "2026-11-25" } });
+    const { container } = render(<AskQuestion roles={["employee"]} />);
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Your question"), { target: { value: "When is my review?" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Ask a question" }));
+    expect(await screen.findByText("Sent. The people team answers by 2026-11-25.")).toBeTruthy();
+  });
+
+  it("shows every request with its step and reply, and withdraws one nobody has answered", async () => {
+    const row = { id: rid, kind: "question", title: "question", state: "open", step: "received", asked_at: "2026-11-20T10:00:00Z", due_on: "2026-11-25" };
+    answer("GET /v1/me/requests", { status: 200, body: { requests: [row, { ...row, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef1", kind: "details_change", title: "legal_name", state: "refused", step: "closed", reply: "Not legible." },
+      { ...row, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef2", kind: "letter", title: "employment_confirmation", state: "issued", step: "ready" }] } });
+    answer(`POST /v1/me/requests/${rid}/withdrawal`, { status: 204, body: undefined });
+    const { container } = render(<RequestSteps />);
+    expect(await screen.findByText("Question to the people team")).toBeTruthy();
+    expect(screen.getByText("Change of details: Legal name")).toBeTruthy();
+    expect(screen.getByText("Reply: Not legible.")).toBeTruthy();
+    expect(screen.getByText("Ready")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "Withdraw" })).toHaveLength(1);
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw" }));
+    expect(await screen.findByText("Withdrawn.")).toBeTruthy();
+    expect(calls).toContain(`POST /v1/me/requests/${rid}/withdrawal`);
+  });
+
+  it("lets the people team read the evidence, approve or refuse a change and answer a question", async () => {
+    const base = { kind: "details_change", state: "requested", step: "received", asked_at: "2026-11-20T10:00:00Z", due_on: "2026-11-27", person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", person: "Ben Lim" };
+    answer("GET /v1/requests/queue", { status: 200, body: { queue: [{ ...base, id: rid, title: "legal_name", change_kind: "legal_name", evidence_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9", detail: "Deed poll." },
+      { ...base, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef1", kind: "question", state: "open", title: "question", detail: "When is my review?" }] } });
+    answer(`POST /v1/details-changes/${rid}/decision`, { status: 204, body: undefined });
+    answer("POST /v1/questions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef1/reply", { status: 204, body: undefined });
+    const { container } = render(<PeopleRequests roles={["hr_officer"]} />);
+    expect(await screen.findByText("Deed poll.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Read the evidence" }).getAttribute("href")).toBe("/api/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/documents/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9");
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Reason for refusing Ben Lim's request"), { target: { value: "Not legible." } });
+    fireEvent.click(screen.getByRole("button", { name: "Refuse Ben Lim's change" }));
+    expect(await screen.findByText("Refused. The person sees the reason.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/details-changes/${rid}/decision`)).toMatchObject({ approve: false, reason: "Not legible." });
+    fireEvent.change(screen.getByLabelText("Answer to Ben Lim"), { target: { value: "Next month." } });
+    fireEvent.click(screen.getByRole("button", { name: "Send the answer to Ben Lim" }));
+    expect(await screen.findByText("Answered.")).toBeTruthy();
+  });
+});
+
+// req: NM-ESS-01
+describe("my home", () => {
+  it("shows the actions, the annual leave left, the next public holiday and the open requests, with no wrong zero for what is not given", async () => {
+    const pid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+    const year = new Date().getFullYear();
+    answer(`GET /v1/me/leave/${year}`, { status: 200, body: { person_id: pid, year, types: [{ key: "annual", name: "Annual leave", counting: "working_days", balance: { entitled: "14.00", taken: "3.00", booked: "0.00", expired: "0.00", encashed: "0.00", left: "11.00" }, basis: [], sources: [] }] } });
+    const next = new Date(year + 20, 0, 1).toISOString().slice(0, 10);
+    answer("GET /v1/leave-calendar", { status: 200, body: { month: next.slice(0, 7), people: [{ person_id: pid, name: "Ben", weekdays: [1, 2, 3, 4, 5], entries: [{ date: next, kind: "holiday", label: "New Year's Day" }] }] } });
+    answer("GET /v1/me/requests", { status: 200, body: { requests: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0", kind: "question", title: "question", state: "open", step: "received", asked_at: "2026-11-20T10:00:00Z", due_on: "2026-11-25" }] } });
+    const { container } = render(<Home session={session} screen="me" />);
+    expect(await screen.findByText("11.00 days")).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "Apply for leave" })[1]?.getAttribute("href")).toBe("/me/leave/new");
+    expect(screen.getAllByRole("link", { name: "Update my details" })[0]?.getAttribute("href")).toBe("/me/details");
+    expect(await screen.findByText(/New Year's Day/)).toBeTruthy();
+    expect(await screen.findByText("1")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+  });
+});
+
+// req: NM-ESS-06
+describe("a leaver's home", () => {
+  it("shows only the leaver's documents, letters and a way to ask for a copy, and says when the account ends", async () => {
+    const pid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+    answer(`GET /v1/people/${pid}/documents`, { status: 200, body: { documents: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e72", doc_type: "contract", title: "Employment contract", content_type: "application/pdf", created_at: "2026-01-05T09:00:00Z", retention_class: "employment_record", size_bytes: 10, uploaded_by: pid, viewers: ["employee"] }] } });
+    answer("GET /v1/letters", { status: 200, body: { requests: [] } });
+    answer("GET /v1/me/requests", { status: 200, body: { requests: [] } });
+    answer("POST /v1/me/questions", { status: 201, body: { id: pid, due_on: "2027-01-05" } });
+    const { container } = render(<LeaverHome session={{ ...session, roles: [], leaver: true, leaver_until: "2027-12-15", person_id: pid }} />);
+    expect(await screen.findByRole("link", { name: "Employment contract" })).toBeTruthy();
+    expect(screen.getByText(/until 2027-12-15/)).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Apply for leave" })).toBeNull();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Your question"), { target: { value: "Please send my KETs again." } });
+    fireEvent.submit(screen.getByRole("form", { name: "Ask for a copy of a lost document" }));
+    expect(await screen.findByText("Sent. The people team answers by 2027-01-05.")).toBeTruthy();
+  });
+});
+
+// req: NM-LTR-04
+describe("automatic issue", () => {
+  const did = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10";
+  const types = [
+    { key: "employment_confirmation", title: "Employment confirmation", statement: "x", enabled: true, due_days: 3, published_version: 1, fields: [] },
+    { key: "salary_certificate", title: "Salary certificate", statement: "x", enabled: false, due_days: 3, published_version: 0, needs: "salary", fields: [] },
+    { key: "kets", title: "Key employment terms", statement: "x", enabled: true, due_days: 14, published_version: 1, fields: [] },
+  ];
+  const live = { id: did, type: "employment_confirmation", who: "active_employees", fields: [], monthly_limit: 50, issued_this_month: 3, created_on: "2026-11-20", ends_on: "2027-06-30", state: "active" };
+
+  it("lets the signatory delegate a standard letter only after a fresh passkey, never pay, and revoke it", async () => {
+    answer("GET /v1/letters/delegations", { status: 200, body: { delegations: [live] } });
+    answer("POST /v1/letters/delegations", { status: 201, body: { id: did } });
+    answer(`POST /v1/letters/delegations/${did}/revocation`, { status: 204, body: undefined });
+    const { container } = render(<Delegations types={types as never} signatory />);
+    expect(await screen.findByText(/3 of 50 this month, until 2027-06-30 \(active\)/)).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "Salary certificate" })).toBeNull();
+    expect(screen.queryByRole("option", { name: "Key employment terms" })).toBeNull();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Ends on (within twelve months)"), { target: { value: "2027-06-30" } });
+    stepUp.result = "Passkey failed.";
+    fireEvent.submit(screen.getByRole("form", { name: "Let a letter type be issued automatically" }));
+    expect(await screen.findByText("Passkey failed.")).toBeTruthy();
+    expect(calls).not.toContain("POST /v1/letters/delegations");
+    stepUp.result = undefined;
+    fireEvent.submit(screen.getByRole("form", { name: "Let a letter type be issued automatically" }));
+    expect(await screen.findByText("Delegated. Requests for that letter are now issued at once.")).toBeTruthy();
+    expect(bodies.get("POST /v1/letters/delegations")).toMatchObject({ type: "employment_confirmation", monthly_limit: 50, ends_on: "2027-06-30" });
+    fireEvent.click(screen.getByRole("button", { name: "Revoke automatic issue of employment_confirmation" }));
+    expect(await screen.findByText("Revoked. Letters already issued stay as they are.")).toBeTruthy();
+  });
+
+  it("shows the HR administrator the delegations and no way to make or revoke one", async () => {
+    answer("GET /v1/letters/delegations", { status: 200, body: { delegations: [{ ...live, state: "replaced" }] } });
+    render(<Delegations types={types as never} signatory={false} />);
+    expect(await screen.findByText(/ended because the template changed/)).toBeTruthy();
+    expect(screen.queryByRole("form")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Revoke/ })).toBeNull();
   });
 });

@@ -341,6 +341,133 @@ func TestKeyEmploymentTermsAreWrittenInPartsByTheirOwnRoles(t *testing.T) {
 	}
 }
 
+// Anyone signed in changes their own details and asks the people team; only the people team reads the queue, decides a change of details and answers a question; the evidence
+// must be a file of a size the API accepts (NM-ESS-03, NM-ESS-04).
+// req: NM-ESS-03, NM-ESS-04
+func TestOwnDetailsAreEveryonesAndTheQueueIsThePeopleTeams(t *testing.T) {
+	do := func(roles []authz.Role, method, path, body string) int {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0"
+	change := `{"kind":"legal_name","legal_name":"Ben Lim Wei","note":"Deed poll.","evidence":{"title":"Deed poll","content_type":"application/pdf","content_base64":"JVBERi0x"}}`
+	for _, tc := range []struct {
+		roles                []authz.Role
+		queue, decide, reply int
+	}{
+		{[]authz.Role{authz.Employee}, 403, 403, 403}, {[]authz.Role{authz.LineManager}, 403, 403, 403}, {[]authz.Role{authz.PayrollAdmin}, 403, 403, 403},
+		{[]authz.Role{authz.HROfficer}, 200, 204, 204}, {[]authz.Role{authz.HRAdmin}, 200, 204, 204}, {[]authz.Role{authz.Owner}, 200, 204, 204},
+	} {
+		for _, call := range []struct{ method, path, body string }{{"GET", "/v1/me/details", ""}, {"PUT", "/v1/me/details", `{"phone":"+65 9123 4567"}`},
+			{"PUT", "/v1/me/emergency-contacts", `{"contacts":[{"name":"Mei","relationship":"spouse","phone":"9123 4567"}]}`}, {"POST", "/v1/me/details-changes", change},
+			{"POST", "/v1/me/questions", `{"question":"When?"}`}, {"GET", "/v1/me/requests", ""}, {"POST", "/v1/me/requests/" + id + "/withdrawal", ""}} {
+			if got := do(tc.roles, call.method, call.path, call.body); got >= 300 {
+				t.Errorf("%v could not %s %s: %d", tc.roles, call.method, call.path, got)
+			}
+		}
+		if got := do(tc.roles, "GET", "/v1/requests/queue", ""); got != tc.queue {
+			t.Errorf("%v reading the queue: %d, want %d", tc.roles, got, tc.queue)
+		}
+		if got := do(tc.roles, "POST", "/v1/details-changes/"+id+"/decision", `{"approve":false,"reason":"Not legible."}`); got != tc.decide {
+			t.Errorf("%v deciding: %d, want %d", tc.roles, got, tc.decide)
+		}
+		if got := do(tc.roles, "POST", "/v1/questions/"+id+"/reply", `{"reply":"Soon."}`); got != tc.reply {
+			t.Errorf("%v replying: %d, want %d", tc.roles, got, tc.reply)
+		}
+	}
+	if got := do([]authz.Role{authz.Employee}, "POST", "/v1/me/details-changes", strings.Replace(change, "JVBERi0x", "not base64!", 1)); got != 422 {
+		t.Errorf("evidence that is not base64: %d", got)
+	}
+	if got := do([]authz.Role{authz.Employee}, "POST", "/v1/me/details-changes", strings.Replace(change, `"kind":"legal_name"`, `"kind":"bank"`, 1)); got != 422 {
+		t.Errorf("a kind that needs no approval path: %d", got)
+	}
+}
+
+// A leaver's account is narrow: it reads their own documents and letters and asks the people team a question, and every other operation answers NM_LEAVER_ACCOUNT, whatever
+// roles the leaver once held; the session says it is a leaver's and until when (NM-ESS-06).
+// req: NM-ESS-06
+// asvs: V8.2.1, V8.3.1
+func TestALeaversAccountKeepsOnlyTheirOwnDocumentsAndAQuestion(t *testing.T) {
+	do := func(method, path, body string) (int, string) {
+		testLeaver, testRoles = true, []authz.Role{authz.Owner}
+		defer func() { testLeaver, testRoles = false, []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code, rec.Body.String()
+	}
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0"
+	person := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"
+	for _, c := range []struct{ method, path, body string }{{"GET", "/v1/letters?mine=true", ""}, {"GET", "/v1/letters/" + id + "/file", ""}, {"POST", "/v1/letters/" + id + "/link", ""},
+		{"GET", "/v1/people/" + person + "/documents", ""}, {"POST", "/v1/me/questions", `{"question":"Please send me my letter again."}`}, {"GET", "/v1/me/requests", ""}} {
+		if code, _ := do(c.method, c.path, c.body); code >= 300 {
+			t.Errorf("a leaver could not %s %s: %d", c.method, c.path, code)
+		}
+	}
+	for _, c := range []struct{ method, path, body string }{{"GET", "/v1/me/details", ""}, {"GET", "/v1/me/leave/2026", ""}, {"GET", "/v1/people", ""}, {"GET", "/v1/people/" + person, ""},
+		{"POST", "/v1/me/letters", `{"type":"employment_confirmation","purpose":"x"}`}, {"GET", "/v1/requests/queue", ""}, {"PUT", "/v1/me/details", `{"phone":"+65 9123 4567"}`},
+		{"GET", "/v1/people/" + person + "/dependants", ""}, {"POST", "/v1/letters/" + id + "/check", ""}} {
+		if code, body := do(c.method, c.path, c.body); code != 403 || !strings.Contains(body, "NM_LEAVER_ACCOUNT") {
+			t.Errorf("a leaver %s %s: %d %s", c.method, c.path, code, body)
+		}
+	}
+	if code, body := do("GET", "/v1/session", ""); code != 200 || !strings.Contains(body, `"leaver":true`) || !strings.Contains(body, `"leaver_until"`) {
+		t.Errorf("the session: %d %s", code, body)
+	}
+}
+
+// Only the Owner, who signs, delegates automatic issue (after a fresh passkey confirmation) and revokes; the HR administrator reads the delegations; nobody else does (NM-LTR-04).
+// req: NM-LTR-04
+// asvs: V8.2.1, V8.3.1
+func TestOnlyTheSignatoryDelegatesAutomaticIssueAfterAFreshPasskey(t *testing.T) {
+	do := func(roles []authz.Role, stepUp bool, method, path, body string) int {
+		testRoles, testStepUp = roles, stepUp
+		defer func() { testRoles, testStepUp = []authz.Role{authz.HRAdmin}, false }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10"
+	create := `{"type":"employment_confirmation","monthly_limit":50,"ends_on":"2027-06-30"}`
+	for _, tc := range []struct {
+		roles                            []authz.Role
+		read, createFresh, revoke, plain int
+	}{
+		{[]authz.Role{authz.Employee}, 403, 403, 403, 403}, {[]authz.Role{authz.HROfficer}, 403, 403, 403, 403}, {[]authz.Role{authz.PayrollAdmin}, 403, 403, 403, 403},
+		{[]authz.Role{authz.HRAdmin}, 200, 403, 403, 403}, {[]authz.Role{authz.Owner}, 200, 201, 204, 403},
+	} {
+		if got := do(tc.roles, false, "GET", "/v1/letters/delegations", ""); got != tc.read {
+			t.Errorf("%v reading: %d, want %d", tc.roles, got, tc.read)
+		}
+		if got := do(tc.roles, true, "POST", "/v1/letters/delegations", create); got != tc.createFresh {
+			t.Errorf("%v delegating with a fresh passkey: %d, want %d", tc.roles, got, tc.createFresh)
+		}
+		if got := do(tc.roles, false, "POST", "/v1/letters/delegations/"+id+"/revocation", `{"reason":"No longer needed."}`); got != tc.revoke {
+			t.Errorf("%v revoking: %d, want %d", tc.roles, got, tc.revoke)
+		}
+	}
+	if got := do([]authz.Role{authz.Owner}, false, "POST", "/v1/letters/delegations", create); got != 403 {
+		t.Errorf("delegating without a fresh passkey: %d", got)
+	}
+	if got := do([]authz.Role{authz.Owner}, true, "POST", "/v1/letters/delegations", `{"type":"employment_confirmation","monthly_limit":5000,"ends_on":"2027-06-30"}`); got != 422 {
+		t.Errorf("a limit out of range: %d", got)
+	}
+}
+
 // Letters are asked for by the person, checked by the people team (never their own), signed only by the signatory after a fresh passkey confirmation, and read by the person
 // and the people team; the people team writes templates, the HR administrator and the Owner approve them and set the letterhead and the types; a delivery link needs no
 // sign-in (NM-LTR-01, NM-LTR-02, NM-LTR-03).

@@ -85,6 +85,15 @@ classes:
     protection: "Row-level security; a request keeps its words, its receipt date and its deadline, and is answered once; the audit event carries the outcome, never the reason or the reply"
     transfers: "None"
     columns: [flex_request.reason, flex_request.outcome, flex_request.written_reply]
+  - key: own-details
+    what: "A person's own contact details (personal email, home address, postal code), up to three emergency contacts (name, relationship, phone), their requests to change a legal name, residency or NRIC or FIN with the note and the evidence, and their questions to the people team with the answers"
+    why: "To reach a person and their family in an emergency, to keep the record true on the person's own word and evidence, and to answer what they ask"
+    where: "Nemura's database, in Singapore; the evidence in Nemura's file store, in Singapore"
+    who: "The person their own; the people team reads the details of a person it looks after and the queue of requests (Appendix B: Own profile, balances, payslips, letters, requests)"
+    retention: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"
+    protection: "Row-level security; a request keeps its words and its evidence and is decided once by someone else; the audit event names the fields that changed, never the details, and a request never holds an NRIC or FIN"
+    transfers: "None"
+    columns: [person_contact.personal_email, person_contact.address, person_contact.postal_code, emergency_contact.contact_name, emergency_contact.relationship, emergency_contact.contact_phone, details_change.new_legal_name, details_change.note, details_change.decision_reason, hr_question.question, hr_question.reply]
   - key: key-employment-terms
     what: "A person's key employment terms: main duties, notice period, medical benefits and a fixed-term contract's end, and the pay terms (salary period, basic salary, fixed allowances and deductions, overtime period, other pay)"
     why: "To give the person the key employment terms in writing (Employment Act) and to fill the letter from the record, not from memory"
@@ -102,7 +111,7 @@ classes:
     retention: "Kept with the employment record: an issued letter is evidence of what the company stated about the person"
     protection: "Row-level security; a request, a checked letter and an issued letter are evidence that never change; the PDF's SHA-256 is checked whenever it is read; a link's token is kept as a hash; the audit event carries the reference and the hash, never the letter's text"
     transfers: "None"
-    columns: [letter_request.purpose, letter_request.data, letter_request.decision_reason, letter_issued.data, letter_template_version.note]
+    columns: [letter_request.purpose, letter_request.data, letter_request.decision_reason, letter_issued.data, letter_template_version.note, letter_delegation.revoked_reason]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"
