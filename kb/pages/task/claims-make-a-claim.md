@@ -4,14 +4,14 @@ type: task
 title: Claim back money spent for the company
 summary: How a member claims a receipt or a trip in My claims, submits it, completes card lines, uses a cash advance, or keeps it as a loan
 sources:
-  - docs/user-guide/claims-my-claims.md sha256:71956f8e28753ba30069d9f203a1e1ddc7704046545ab2173d1128d7d0ab446d
+  - docs/user-guide/claims-my-claims.md sha256:c8b2954aefd3fd1a536b98eb0396b879dfff732725f23571c843e5d90796e7a2
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-06
+compiled_at: 2026-11-20
 aliases:
   - expense claim
   - reimbursement
@@ -80,6 +80,16 @@ aliases:
   already on another record blocks the line until the person says why it is not a duplicate.
 
 (src: docs/user-guide/claims-my-claims.md#attach-the-receipt)
+
+## Attach a receipt you forwarded
+
+- On a saved draft claim, **Receipts forwarded to you** lets you email a receipt to an address of your own and attach it from there, without saving it to your device first.
+- With no address yet, type a name (3 to 40 letters, digits, dots and hyphens) and select **Make my address**.
+- Mail from your own sign-in email arrives at once; mail from anyone else waits for you to select **Accept sender**.
+- **Attach** next to the file scans it again, strips image details such as location, and records that it came by email; then pick it on the line under **Its receipt**.
+- Only an attachment of accepted mail at your own address attaches, and only to your own claim. Where the company has not set up email-in the section is not shown and you attach the file from your device.
+
+(src: docs/user-guide/claims-my-claims.md#attach-a-receipt-you-forwarded)
 
 ## Submit and follow it
 

@@ -432,6 +432,7 @@ var codeFacts = map[string]struct {
 	preference.CodeKeys:           {422, "Not valid shortcut keys"},
 	preference.CodeReset:          {422, "Not a preference that can be reset"},
 	CodeSenderNotAddress:          {422, "Not one email address"},
+	CodeMessageFile:               {422, "Not an attachment of accepted mail at your own address"},
 	CodeNotifyLocked:              {409, "A security notice is always on"},
 	CodeNotifyTime:                {422, "Not a time of day"},
 	CodeNotifyType:                {404, "No such notification type"},
@@ -697,6 +698,7 @@ var codeFacts = map[string]struct {
 	evidence.CodeImage:            {422, "The picture cannot be read"},
 	evidence.CodeMacro:            {422, "Office files with macros are refused"},
 	evidence.CodeArchive:          {422, "The office file's archive is not safe to open"},
+	evidence.CodePreview:          {422, "The file cannot be previewed"},
 
 	// Customer credits applied to invoices (FR-AR-04).
 	customercredit.CodeNotApplication:   {404, "Not a customer credit application"},

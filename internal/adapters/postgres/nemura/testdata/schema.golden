@@ -13,6 +13,9 @@ feature_state | nemura_migrator | true | true
 identity_directory | nemura_migrator | false | false
 installation | nemura_migrator | false | false
 invitation | nemura_migrator | true | true
+leave_head | nemura_migrator | true | true
+leave_ledger | nemura_migrator | true | true
+leave_request | nemura_migrator | true | true
 legal_hold | nemura_migrator | true | true
 member | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
@@ -31,10 +34,12 @@ person_secret | nemura_migrator | true | true
 reporting_line | nemura_migrator | true | true
 role_assignment | nemura_migrator | true | true
 session | nemura_migrator | true | true
+sick_notification | nemura_migrator | true | true
 tenant_directory | nemura_migrator | false | false
 tenants | nemura_migrator | false | false
 transfer_assessment | nemura_migrator | true | true
 work_pass | nemura_migrator | true | true
+working_pattern | nemura_migrator | true | true
 
 ## columns (table | column | type | not null | default)
 access_request | organisation_id | uuid | true | nemura.current_org()
@@ -151,6 +156,42 @@ invitation | created_by | uuid | true |
 invitation | created_at | timestamp with time zone | true | now()
 invitation | expires_at | timestamp with time zone | true | 
 invitation | accepted_at | timestamp with time zone | false | 
+leave_head | organisation_id | uuid | true | nemura.current_org()
+leave_head | person_id | uuid | true | 
+leave_head | type_key | text | true | 
+leave_head | leave_year | integer | true | 
+leave_ledger | organisation_id | uuid | true | nemura.current_org()
+leave_ledger | id | uuid | true | uuidv7()
+leave_ledger | person_id | uuid | true | 
+leave_ledger | type_key | text | true | 
+leave_ledger | leave_year | integer | true | 
+leave_ledger | kind | text | true | 
+leave_ledger | amount | numeric(8,2) | true | 
+leave_ledger | negative_ok | boolean | true | false
+leave_ledger | expires_on | date | false | 
+leave_ledger | request_id | uuid | false | 
+leave_ledger | source | text | true | 
+leave_ledger | note | text | false | 
+leave_ledger | created_by | uuid | true | 
+leave_ledger | created_at | timestamp with time zone | true | now()
+leave_request | organisation_id | uuid | true | nemura.current_org()
+leave_request | id | uuid | true | uuidv7()
+leave_request | person_id | uuid | true | 
+leave_request | type_key | text | true | 
+leave_request | leave_year | integer | true | 
+leave_request | start_date | date | true | 
+leave_request | end_date | date | true | 
+leave_request | start_half | boolean | true | false
+leave_request | end_half | boolean | true | false
+leave_request | days | numeric(8,2) | true | 
+leave_request | note | text | false | 
+leave_request | state | text | true | 'pending'::text
+leave_request | requested_by | uuid | true | 
+leave_request | requested_at | timestamp with time zone | true | now()
+leave_request | decided_by | uuid | false | 
+leave_request | decided_at | timestamp with time zone | false | 
+leave_request | decision_reason | text | false | 
+leave_request | settled_at | timestamp with time zone | false | 
 legal_hold | organisation_id | uuid | true | nemura.current_org()
 legal_hold | id | uuid | true | uuidv7()
 legal_hold | record_type | text | true | 
@@ -323,6 +364,25 @@ session | created_at | timestamp with time zone | true | now()
 session | expires_at | timestamp with time zone | true | 
 session | revoked_at | timestamp with time zone | false | 
 session | step_up_at | timestamp with time zone | false | 
+sick_notification | organisation_id | uuid | true | nemura.current_org()
+sick_notification | id | uuid | true | uuidv7()
+sick_notification | person_id | uuid | true | 
+sick_notification | kind | text | true | 
+sick_notification | leave_year | integer | true | 
+sick_notification | start_date | date | true | 
+sick_notification | end_date | date | true | 
+sick_notification | days | numeric(8,2) | true | 
+sick_notification | paid_days | numeric(8,2) | true | 
+sick_notification | unpaid_days | numeric(8,2) | true | 
+sick_notification | late | boolean | true | 
+sick_notification | note | text | false | 
+sick_notification | notified_by | uuid | true | 
+sick_notification | notified_at | timestamp with time zone | true | 
+sick_notification | certificate_id | uuid | false | 
+sick_notification | issuer | text | false | 
+sick_notification | certificate_added_at | timestamp with time zone | false | 
+sick_notification | verified_by | uuid | false | 
+sick_notification | verified_at | timestamp with time zone | false | 
 tenant_directory | organisation_id | uuid | true | 
 tenant_directory | created_at | timestamp with time zone | true | now()
 transfer_assessment | organisation_id | uuid | true | nemura.current_org()
@@ -341,6 +401,14 @@ work_pass | number_masked | text | true |
 work_pass | issued_on | date | true | 
 work_pass | expires_on | date | true | 
 work_pass | created_at | timestamp with time zone | true | now()
+working_pattern | organisation_id | uuid | true | nemura.current_org()
+working_pattern | id | uuid | true | uuidv7()
+working_pattern | person_id | uuid | true | 
+working_pattern | effective_from | date | true | 
+working_pattern | effective_to | date | false | 
+working_pattern | weekdays | smallint[] | true | 
+working_pattern | hours_per_week | numeric(4,1) | true | 
+working_pattern | created_at | timestamp with time zone | true | now()
 
 ## constraints (table | name | definition)
 access_request | access_request_answered_whole | CHECK (((state = 'answered'::text) = ((outcome IS NOT NULL) AND (answered_on IS NOT NULL) AND (handled_by IS NOT NULL))))
@@ -539,6 +607,63 @@ invitation | invitation_organisation_fkey | FOREIGN KEY (organisation_id) REFERE
 invitation | invitation_organisation_id_not_null | NOT NULL organisation_id
 invitation | invitation_pkey | PRIMARY KEY (organisation_id, id)
 invitation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+leave_head | leave_head_leave_year_not_null | NOT NULL leave_year
+leave_head | leave_head_organisation_id_not_null | NOT NULL organisation_id
+leave_head | leave_head_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+leave_head | leave_head_person_id_not_null | NOT NULL person_id
+leave_head | leave_head_pkey | PRIMARY KEY (organisation_id, person_id, type_key, leave_year)
+leave_head | leave_head_type_key | CHECK ((type_key ~ '^[a-z][a-z0-9_.]{1,60}$'::text))
+leave_head | leave_head_type_key_not_null | NOT NULL type_key
+leave_head | leave_head_year | CHECK (((leave_year >= 2000) AND (leave_year <= 2200)))
+leave_ledger | leave_ledger_amount_nonzero | CHECK ((amount <> (0)::numeric))
+leave_ledger | leave_ledger_amount_not_null | NOT NULL amount
+leave_ledger | leave_ledger_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+leave_ledger | leave_ledger_created_at_not_null | NOT NULL created_at
+leave_ledger | leave_ledger_created_by_not_null | NOT NULL created_by
+leave_ledger | leave_ledger_head_fkey | FOREIGN KEY (organisation_id, person_id, type_key, leave_year) REFERENCES nemura.leave_head(organisation_id, person_id, type_key, leave_year)
+leave_ledger | leave_ledger_id_not_null | NOT NULL id
+leave_ledger | leave_ledger_kind_known | CHECK ((kind = ANY (ARRAY['grant'::text, 'accrual'::text, 'reservation'::text, 'use'::text, 'release'::text, 'expiry'::text, 'encashment'::text, 'transfer'::text, 'correction'::text])))
+leave_ledger | leave_ledger_kind_not_null | NOT NULL kind
+leave_ledger | leave_ledger_leave_year_not_null | NOT NULL leave_year
+leave_ledger | leave_ledger_negative_ok_not_null | NOT NULL negative_ok
+leave_ledger | leave_ledger_note_length | CHECK (((note IS NULL) OR (length(note) <= 500)))
+leave_ledger | leave_ledger_organisation_id_not_null | NOT NULL organisation_id
+leave_ledger | leave_ledger_person_id_not_null | NOT NULL person_id
+leave_ledger | leave_ledger_pkey | PRIMARY KEY (organisation_id, id)
+leave_ledger | leave_ledger_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES nemura.leave_request(organisation_id, id) NOT VALID
+leave_ledger | leave_ledger_sign | CHECK ((((kind = ANY (ARRAY['grant'::text, 'accrual'::text, 'release'::text])) AND (amount > (0)::numeric)) OR ((kind = ANY (ARRAY['reservation'::text, 'use'::text, 'expiry'::text, 'encashment'::text])) AND (amount < (0)::numeric)) OR (kind = ANY (ARRAY['transfer'::text, 'correction'::text]))))
+leave_ledger | leave_ledger_source_length | CHECK (((length(btrim(source)) >= 1) AND (length(btrim(source)) <= 200)))
+leave_ledger | leave_ledger_source_not_null | NOT NULL source
+leave_ledger | leave_ledger_type_key_not_null | NOT NULL type_key
+leave_ledger | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+leave_request | leave_request_dates | CHECK (((end_date >= start_date) AND (EXTRACT(year FROM start_date) = (leave_year)::numeric) AND (EXTRACT(year FROM end_date) = (leave_year)::numeric)))
+leave_request | leave_request_days | CHECK ((days > (0)::numeric))
+leave_request | leave_request_days_not_null | NOT NULL days
+leave_request | leave_request_decided_by_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
+leave_request | leave_request_decided_whole | CHECK ((((state = 'pending'::text) = (decided_by IS NULL)) AND ((state = 'pending'::text) = (decided_at IS NULL))))
+leave_request | leave_request_end_date_not_null | NOT NULL end_date
+leave_request | leave_request_end_half_not_null | NOT NULL end_half
+leave_request | leave_request_id_not_null | NOT NULL id
+leave_request | leave_request_leave_year_not_null | NOT NULL leave_year
+leave_request | leave_request_no_self_decision | CHECK (((state <> ALL (ARRAY['approved'::text, 'refused'::text])) OR (decided_by <> requested_by)))
+leave_request | leave_request_note_length | CHECK (((note IS NULL) OR (length(note) <= 500)))
+leave_request | leave_request_organisation_id_not_null | NOT NULL organisation_id
+leave_request | leave_request_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+leave_request | leave_request_person_id_not_null | NOT NULL person_id
+leave_request | leave_request_pkey | PRIMARY KEY (organisation_id, id)
+leave_request | leave_request_reason_length | CHECK (((decision_reason IS NULL) OR (length(decision_reason) <= 500)))
+leave_request | leave_request_refusal_reason | CHECK (((state <> 'refused'::text) OR (length(btrim(COALESCE(decision_reason, ''::text))) > 0)))
+leave_request | leave_request_requested_at_not_null | NOT NULL requested_at
+leave_request | leave_request_requested_by_fkey | FOREIGN KEY (organisation_id, requested_by) REFERENCES nemura.member(organisation_id, id)
+leave_request | leave_request_requested_by_not_null | NOT NULL requested_by
+leave_request | leave_request_settled_approved | CHECK (((settled_at IS NULL) OR (state = 'approved'::text)))
+leave_request | leave_request_start_date_not_null | NOT NULL start_date
+leave_request | leave_request_start_half_not_null | NOT NULL start_half
+leave_request | leave_request_state_known | CHECK ((state = ANY (ARRAY['pending'::text, 'approved'::text, 'refused'::text, 'cancelled'::text])))
+leave_request | leave_request_state_not_null | NOT NULL state
+leave_request | leave_request_type_key | CHECK ((type_key ~ '^[a-z][a-z0-9_.]{1,60}$'::text))
+leave_request | leave_request_type_key_not_null | NOT NULL type_key
+leave_request | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 legal_hold | legal_hold_dates | CHECK (((released_on IS NULL) OR (released_on >= placed_on)))
 legal_hold | legal_hold_id_not_null | NOT NULL id
 legal_hold | legal_hold_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
@@ -811,6 +936,32 @@ session | session_pkey | PRIMARY KEY (organisation_id, id)
 session | session_token_hash_not_null | NOT NULL token_hash
 session | session_token_key | UNIQUE (organisation_id, token_hash)
 session | session_token_sha256 | CHECK ((length(token_hash) = 32))
+sick_notification | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+sick_notification | sick_notification_by_fkey | FOREIGN KEY (organisation_id, notified_by) REFERENCES nemura.member(organisation_id, id)
+sick_notification | sick_notification_certificate_fkey | FOREIGN KEY (organisation_id, certificate_id) REFERENCES nemura.person_document(organisation_id, id)
+sick_notification | sick_notification_certificate_whole | CHECK ((((certificate_id IS NULL) = (issuer IS NULL)) AND ((certificate_id IS NULL) = (certificate_added_at IS NULL))))
+sick_notification | sick_notification_dates | CHECK (((end_date >= start_date) AND (EXTRACT(year FROM start_date) = (leave_year)::numeric) AND (EXTRACT(year FROM end_date) = (leave_year)::numeric)))
+sick_notification | sick_notification_days | CHECK (((days > (0)::numeric) AND (paid_days >= (0)::numeric) AND (unpaid_days >= (0)::numeric) AND ((paid_days + unpaid_days) = days)))
+sick_notification | sick_notification_days_not_null | NOT NULL days
+sick_notification | sick_notification_end_date_not_null | NOT NULL end_date
+sick_notification | sick_notification_id_not_null | NOT NULL id
+sick_notification | sick_notification_issuer_length | CHECK (((issuer IS NULL) OR ((length(btrim(issuer)) >= 1) AND (length(btrim(issuer)) <= 200))))
+sick_notification | sick_notification_kind_known | CHECK ((kind = ANY (ARRAY['outpatient'::text, 'hospitalisation'::text])))
+sick_notification | sick_notification_kind_not_null | NOT NULL kind
+sick_notification | sick_notification_late_not_null | NOT NULL late
+sick_notification | sick_notification_leave_year_not_null | NOT NULL leave_year
+sick_notification | sick_notification_note_length | CHECK (((note IS NULL) OR (length(note) <= 500)))
+sick_notification | sick_notification_notified_at_not_null | NOT NULL notified_at
+sick_notification | sick_notification_notified_by_not_null | NOT NULL notified_by
+sick_notification | sick_notification_organisation_id_not_null | NOT NULL organisation_id
+sick_notification | sick_notification_paid_days_not_null | NOT NULL paid_days
+sick_notification | sick_notification_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+sick_notification | sick_notification_person_id_not_null | NOT NULL person_id
+sick_notification | sick_notification_pkey | PRIMARY KEY (organisation_id, id)
+sick_notification | sick_notification_start_date_not_null | NOT NULL start_date
+sick_notification | sick_notification_unpaid_days_not_null | NOT NULL unpaid_days
+sick_notification | sick_notification_verified_whole | CHECK ((((verified_by IS NULL) = (verified_at IS NULL)) AND ((verified_by IS NULL) OR (certificate_id IS NOT NULL))))
+sick_notification | sick_notification_verifier_fkey | FOREIGN KEY (organisation_id, verified_by) REFERENCES nemura.member(organisation_id, id)
 tenant_directory | tenant_directory_created_at_not_null | NOT NULL created_at
 tenant_directory | tenant_directory_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
 tenant_directory | tenant_directory_organisation_id_not_null | NOT NULL organisation_id
@@ -844,6 +995,19 @@ work_pass | work_pass_person_fkey | FOREIGN KEY (organisation_id, person_id) REF
 work_pass | work_pass_person_id_not_null | NOT NULL person_id
 work_pass | work_pass_pkey | PRIMARY KEY (organisation_id, id)
 work_pass | work_pass_type_known | CHECK ((pass_type = ANY (ARRAY['employment_pass'::text, 's_pass'::text, 'work_permit'::text, 'dp_work_permit'::text])))
+working_pattern | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+working_pattern | working_pattern_created_at_not_null | NOT NULL created_at
+working_pattern | working_pattern_dates | CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))
+working_pattern | working_pattern_effective_from_not_null | NOT NULL effective_from
+working_pattern | working_pattern_hours | CHECK (((hours_per_week > (0)::numeric) AND (hours_per_week <= (168)::numeric)))
+working_pattern | working_pattern_hours_per_week_not_null | NOT NULL hours_per_week
+working_pattern | working_pattern_id_not_null | NOT NULL id
+working_pattern | working_pattern_organisation_id_not_null | NOT NULL organisation_id
+working_pattern | working_pattern_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+working_pattern | working_pattern_person_id_not_null | NOT NULL person_id
+working_pattern | working_pattern_pkey | PRIMARY KEY (organisation_id, id)
+working_pattern | working_pattern_weekdays | CHECK ((((cardinality(weekdays) >= 1) AND (cardinality(weekdays) <= 7)) AND (weekdays <@ ARRAY[(1)::smallint, (2)::smallint, (3)::smallint, (4)::smallint, (5)::smallint, (6)::smallint, (7)::smallint])))
+working_pattern | working_pattern_weekdays_not_null | NOT NULL weekdays
 
 ## indexes
 CREATE INDEX access_request_due_idx ON nemura.access_request USING btree (organisation_id, state, due_on)
@@ -869,6 +1033,12 @@ CREATE UNIQUE INDEX identity_directory_pkey ON nemura.identity_directory USING b
 CREATE UNIQUE INDEX installation_pkey ON nemura.installation USING btree (singleton)
 CREATE UNIQUE INDEX invitation_code_key ON nemura.invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX invitation_pkey ON nemura.invitation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX leave_head_pkey ON nemura.leave_head USING btree (organisation_id, person_id, type_key, leave_year)
+CREATE INDEX leave_ledger_person_idx ON nemura.leave_ledger USING btree (organisation_id, person_id, type_key, leave_year, created_at)
+CREATE UNIQUE INDEX leave_ledger_pkey ON nemura.leave_ledger USING btree (organisation_id, id)
+CREATE INDEX leave_request_person_idx ON nemura.leave_request USING btree (organisation_id, person_id, start_date)
+CREATE UNIQUE INDEX leave_request_pkey ON nemura.leave_request USING btree (organisation_id, id)
+CREATE INDEX leave_request_state_idx ON nemura.leave_request USING btree (organisation_id, state, start_date)
 CREATE UNIQUE INDEX legal_hold_pkey ON nemura.legal_hold USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_pkey ON nemura.member USING btree (organisation_id, id)
 CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organisation_id)
@@ -908,10 +1078,14 @@ CREATE UNIQUE INDEX role_assignment_pkey ON nemura.role_assignment USING btree (
 CREATE INDEX session_member_idx ON nemura.session USING btree (organisation_id, member_id)
 CREATE UNIQUE INDEX session_pkey ON nemura.session USING btree (organisation_id, id)
 CREATE UNIQUE INDEX session_token_key ON nemura.session USING btree (organisation_id, token_hash)
+CREATE INDEX sick_notification_person_idx ON nemura.sick_notification USING btree (organisation_id, person_id, start_date)
+CREATE UNIQUE INDEX sick_notification_pkey ON nemura.sick_notification USING btree (organisation_id, id)
 CREATE UNIQUE INDEX tenant_directory_pkey ON nemura.tenant_directory USING btree (organisation_id)
 CREATE UNIQUE INDEX transfer_assessment_pkey ON nemura.transfer_assessment USING btree (organisation_id, id)
 CREATE INDEX work_pass_person_idx ON nemura.work_pass USING btree (organisation_id, person_id, expires_on)
 CREATE UNIQUE INDEX work_pass_pkey ON nemura.work_pass USING btree (organisation_id, id)
+CREATE INDEX working_pattern_person_idx ON nemura.working_pattern USING btree (organisation_id, person_id, effective_from)
+CREATE UNIQUE INDEX working_pattern_pkey ON nemura.working_pattern USING btree (organisation_id, id)
 
 ## triggers
 CREATE TRIGGER access_request_guard BEFORE DELETE OR UPDATE ON nemura.access_request FOR EACH ROW EXECUTE FUNCTION nemura.access_request_guard()
@@ -935,6 +1109,11 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.deletio
 CREATE TRIGGER feature_state_guard BEFORE DELETE OR UPDATE ON nemura.feature_state FOR EACH ROW EXECUTE FUNCTION nemura.feature_state_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.feature_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('feature_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('invitation', 'id')
+CREATE TRIGGER leave_ledger_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.leave_ledger FOR EACH ROW EXECUTE FUNCTION nemura.leave_ledger_guard()
+CREATE TRIGGER leave_ledger_no_truncate BEFORE TRUNCATE ON nemura.leave_ledger FOR EACH STATEMENT EXECUTE FUNCTION nemura.leave_ledger_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_ledger DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('leave_ledger', 'id')
+CREATE TRIGGER leave_request_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.leave_request FOR EACH ROW EXECUTE FUNCTION nemura.leave_request_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('leave_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.legal_hold DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('legal_hold', 'id')
 CREATE TRIGGER member_deactivated AFTER UPDATE OF deactivated_at ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.member_deactivated()
 CREATE TRIGGER member_no_delete BEFORE DELETE ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.members_no_delete()
@@ -971,10 +1150,14 @@ CREATE TRIGGER role_assignment_check BEFORE INSERT ON nemura.role_assignment FOR
 CREATE TRIGGER role_assignment_guard BEFORE DELETE OR UPDATE ON nemura.role_assignment FOR EACH ROW EXECUTE FUNCTION nemura.role_assignment_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.session DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('session', 'id')
 CREATE TRIGGER session_guard BEFORE DELETE OR UPDATE ON nemura.session FOR EACH ROW EXECUTE FUNCTION nemura.session_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.sick_notification DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('sick_notification', 'id')
+CREATE TRIGGER sick_notification_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.sick_notification FOR EACH ROW EXECUTE FUNCTION nemura.sick_notification_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.transfer_assessment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('transfer_assessment', 'id')
 CREATE TRIGGER transfer_assessment_append_only BEFORE DELETE OR UPDATE ON nemura.transfer_assessment FOR EACH ROW EXECUTE FUNCTION nemura.append_only()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.work_pass DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('work_pass', 'id')
 CREATE TRIGGER work_pass_append_only BEFORE DELETE OR UPDATE ON nemura.work_pass FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('A work pass')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.working_pattern DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('working_pattern', 'id')
+CREATE TRIGGER working_pattern_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.working_pattern FOR EACH ROW EXECUTE FUNCTION nemura.working_pattern_guard()
 
 ## policies (table | name | using | with check)
 access_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -989,6 +1172,9 @@ deletion_proof | tenant_isolation | (organisation_id = nemura.current_org()) | (
 deletion_report | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 feature_state | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 invitation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+leave_head | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+leave_ledger | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+leave_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 legal_hold | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -1007,8 +1193,10 @@ person_secret | tenant_isolation | (organisation_id = nemura.current_org()) | (o
 reporting_line | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 role_assignment | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 session | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+sick_notification | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 transfer_assessment | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 work_pass | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+working_pattern | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 
 ## functions (definition)
 CREATE OR REPLACE FUNCTION nemura.access_request_guard()
@@ -1270,6 +1458,69 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.leave_ledger_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  total numeric;
+BEGIN
+  IF TG_OP <> 'INSERT' THEN
+    RAISE EXCEPTION 'The leave ledger is append-only: a correction is a new entry' USING ERRCODE = 'NM142';
+  END IF;
+  IF NOT NEW.negative_ok AND NEW.amount < 0 THEN
+    SELECT coalesce(sum(amount), 0) INTO total FROM nemura.leave_ledger
+     WHERE organisation_id = NEW.organisation_id AND person_id = NEW.person_id AND type_key = NEW.type_key AND leave_year = NEW.leave_year;
+    IF total + NEW.amount < 0 THEN
+      RAISE EXCEPTION 'That would take the balance below zero' USING ERRCODE = 'NM143';
+    END IF;
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.leave_request_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'A leave request is evidence: it is cancelled, never deleted' USING ERRCODE = 'NM144';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.state <> 'pending' THEN
+      RAISE EXCEPTION 'A leave request starts pending' USING ERRCODE = 'NM144';
+    END IF;
+    PERFORM pg_advisory_xact_lock(hashtextextended(NEW.organisation_id::text || NEW.person_id::text, 0));
+    IF EXISTS (SELECT 1 FROM nemura.leave_request r WHERE r.organisation_id = NEW.organisation_id AND r.person_id = NEW.person_id AND r.state IN ('pending', 'approved')
+                 AND daterange(r.start_date, r.end_date, '[]') && daterange(NEW.start_date, NEW.end_date, '[]'))
+       OR EXISTS (SELECT 1 FROM nemura.sick_notification s WHERE s.organisation_id = NEW.organisation_id AND s.person_id = NEW.person_id
+                 AND daterange(s.start_date, s.end_date, '[]') && daterange(NEW.start_date, NEW.end_date, '[]')) THEN
+      RAISE EXCEPTION 'The person has leave requested, approved or sick on some of those days' USING ERRCODE = 'NM145';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.type_key IS DISTINCT FROM OLD.type_key OR NEW.leave_year IS DISTINCT FROM OLD.leave_year
+     OR NEW.start_date IS DISTINCT FROM OLD.start_date OR NEW.end_date IS DISTINCT FROM OLD.end_date OR NEW.start_half IS DISTINCT FROM OLD.start_half
+     OR NEW.end_half IS DISTINCT FROM OLD.end_half OR NEW.days IS DISTINCT FROM OLD.days OR NEW.note IS DISTINCT FROM OLD.note
+     OR NEW.requested_by IS DISTINCT FROM OLD.requested_by OR NEW.requested_at IS DISTINCT FROM OLD.requested_at THEN
+    RAISE EXCEPTION 'A leave request is evidence: only its decision changes' USING ERRCODE = 'NM144';
+  END IF;
+  IF NEW.state IS DISTINCT FROM OLD.state AND NOT ((OLD.state = 'pending' AND NEW.state IN ('approved', 'refused', 'cancelled')) OR (OLD.state = 'approved' AND NEW.state = 'cancelled')) THEN
+    RAISE EXCEPTION 'A % leave request cannot become %', OLD.state, NEW.state USING ERRCODE = 'NM144';
+  END IF;
+  IF OLD.decided_by IS NOT NULL AND NEW.state IN ('approved', 'refused') AND (NEW.decided_by IS DISTINCT FROM OLD.decided_by OR NEW.decided_at IS DISTINCT FROM OLD.decided_at OR NEW.decision_reason IS DISTINCT FROM OLD.decision_reason) THEN
+    RAISE EXCEPTION 'A decision is written once' USING ERRCODE = 'NM144';
+  END IF;
+  IF OLD.settled_at IS NOT NULL AND NEW.settled_at IS DISTINCT FROM OLD.settled_at THEN
+    RAISE EXCEPTION 'A settled request stays settled' USING ERRCODE = 'NM144';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.link_identity(p_issuer text, p_subject text, p_tenant text, p_member uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -1279,6 +1530,18 @@ AS $function$
 BEGIN
   INSERT INTO nemura.identity_directory (issuer, subject, tenant, organisation_id, member_id)
   VALUES (p_issuer, p_subject, p_tenant, nemura.require_org(), p_member);
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.lock_leave_head(p_person uuid, p_type text, p_year integer)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  INSERT INTO nemura.leave_head (person_id, type_key, leave_year) VALUES (p_person, p_type, p_year) ON CONFLICT DO NOTHING;
+  PERFORM 1 FROM nemura.leave_head WHERE organisation_id = nemura.current_org() AND person_id = p_person AND type_key = p_type AND leave_year = p_year FOR UPDATE;
 END
 $function$
 
@@ -1662,5 +1925,61 @@ CREATE OR REPLACE FUNCTION nemura.setup_done()
  STABLE SECURITY DEFINER
  SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
 AS $function$ SELECT coalesce((SELECT setup_completed_at IS NOT NULL FROM nemura.installation), false) $function$
+
+CREATE OR REPLACE FUNCTION nemura.sick_notification_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'A sick leave notification is evidence: it is never deleted' USING ERRCODE = 'NM146';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended(NEW.organisation_id::text || NEW.person_id::text, 0));
+    IF EXISTS (SELECT 1 FROM nemura.sick_notification s WHERE s.organisation_id = NEW.organisation_id AND s.person_id = NEW.person_id
+                 AND daterange(s.start_date, s.end_date, '[]') && daterange(NEW.start_date, NEW.end_date, '[]'))
+       OR EXISTS (SELECT 1 FROM nemura.leave_request r WHERE r.organisation_id = NEW.organisation_id AND r.person_id = NEW.person_id AND r.state IN ('pending', 'approved')
+                 AND daterange(r.start_date, r.end_date, '[]') && daterange(NEW.start_date, NEW.end_date, '[]')) THEN
+      RAISE EXCEPTION 'The person has sick leave or other leave on some of those days' USING ERRCODE = 'NM147';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.kind IS DISTINCT FROM OLD.kind OR NEW.leave_year IS DISTINCT FROM OLD.leave_year OR NEW.start_date IS DISTINCT FROM OLD.start_date
+     OR NEW.end_date IS DISTINCT FROM OLD.end_date OR NEW.days IS DISTINCT FROM OLD.days OR NEW.paid_days IS DISTINCT FROM OLD.paid_days OR NEW.unpaid_days IS DISTINCT FROM OLD.unpaid_days
+     OR NEW.late IS DISTINCT FROM OLD.late OR NEW.note IS DISTINCT FROM OLD.note OR NEW.notified_by IS DISTINCT FROM OLD.notified_by OR NEW.notified_at IS DISTINCT FROM OLD.notified_at THEN
+    RAISE EXCEPTION 'A sick leave notification is evidence: only its certificate and its verification are added' USING ERRCODE = 'NM146';
+  END IF;
+  IF OLD.certificate_id IS NOT NULL AND (NEW.certificate_id IS DISTINCT FROM OLD.certificate_id OR NEW.issuer IS DISTINCT FROM OLD.issuer OR NEW.certificate_added_at IS DISTINCT FROM OLD.certificate_added_at) THEN
+    RAISE EXCEPTION 'A certificate is given once' USING ERRCODE = 'NM146';
+  END IF;
+  IF OLD.verified_by IS NOT NULL AND (NEW.verified_by IS DISTINCT FROM OLD.verified_by OR NEW.verified_at IS DISTINCT FROM OLD.verified_at) THEN
+    RAISE EXCEPTION 'A certificate is verified once' USING ERRCODE = 'NM146';
+  END IF;
+  IF NEW.verified_by IS NOT NULL AND OLD.verified_by IS NULL AND EXISTS (SELECT 1 FROM nemura.person p WHERE p.organisation_id = NEW.organisation_id AND p.id = NEW.person_id AND p.member_id = NEW.verified_by) THEN
+    RAISE EXCEPTION 'Nobody verifies their own certificate' USING ERRCODE = 'NM148';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.working_pattern_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR (TG_OP = 'UPDATE' AND (NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.effective_from IS DISTINCT FROM OLD.effective_from
+     OR NEW.weekdays IS DISTINCT FROM OLD.weekdays OR NEW.hours_per_week IS DISTINCT FROM OLD.hours_per_week
+     OR (OLD.effective_to IS NOT NULL AND NEW.effective_to IS DISTINCT FROM OLD.effective_to))) THEN
+    RAISE EXCEPTION 'A working pattern is history: it can only be ended, once' USING ERRCODE = 'NM140';
+  END IF;
+  IF EXISTS (SELECT 1 FROM nemura.working_pattern w WHERE w.organisation_id = NEW.organisation_id AND w.person_id = NEW.person_id AND w.id <> NEW.id
+               AND daterange(w.effective_from, coalesce(w.effective_to, 'infinity'), '[)') && daterange(NEW.effective_from, coalesce(NEW.effective_to, 'infinity'), '[)')) THEN
+    RAISE EXCEPTION 'A person has one working pattern at a time' USING ERRCODE = 'NM141';
+  END IF;
+  RETURN NEW;
+END
+$function$
 
 

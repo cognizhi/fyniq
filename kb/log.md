@@ -685,3 +685,15 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | settings.brand: the logo on PDF reports (p1-organisation-chart 2.4)
 
 ## [2026-11-20] compile | home.md -> home.overview (the sidebar's counts, announced in words through one polite status region)
+
+## [2026-11-20] compile | claims.my-claims: the receipt forwarded to the claimant's own address (p1-expense-claims 8.1)
+
+## [2026-11-20] compile | nemura.my-leave from docs/user-guide/nemura/my-leave.md; nemura.home relinked (p1-nemura-leave-time slice 1)
+
+## [2026-11-20] compile | compliance.evidence: the PDF preview of an evidence file (p1-documents-evidence 1.3, 4.2)
+
+## [2026-11-20] compile | leave.apply recompiled, leave.approve new (p1-nemura-leave-time slice 2.1, 2.2)
+
+## [2026-11-20] compile | leave.report-sick recompiled (p1-nemura-leave-time 2.4)
+
+## [2026-11-20] compile | leave.approve and nemura.my-leave: the month at a glance, certificates to verify (p1-nemura-leave-time 2.3, 2.4)

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "evidence_type": {
+      "description": "What the file is; receipt by default.",
+      "examples": [
+        "receipt"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "file_id": {
+      "description": "Its attachment's id, from the same list.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "message_id": {
+      "description": "The message, from listMyInboundMessages: accepted mail at the caller's own email-in address.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "note": {
+      "description": "A short note.",
+      "examples": [
+        "Forwarded from the hotel"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    }
+  },
+  "required": [
+    "message_id",
+    "file_id"
+  ],
+  "title": "ClaimEvidenceFromMessage",
+  "type": "object"
+}

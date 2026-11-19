@@ -22315,6 +22315,26 @@ The file itself, in base64 with its name, type and SHA-256 (FR-DOC-01; PRD-001 r
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`
 
+### `GET /v1/evidence/{evidence_id}/preview`
+
+**Preview a PDF evidence file** (`getEvidencePreview`)
+
+The first page of a PDF evidence file as a PNG picture (FR-DOC-08; PRD-001 rev 0.321), drawn by the converter service in its own sandbox, so no parser of a PDF runs in the API: nothing in the file runs, no script, form or link. The picture is checked as any file is, its type decided from its content and scanned for malware, and comes with the SHA-256 of the PDF as stored (checked against its record first) and of the picture. For whoever may open the file, as getEvidenceFile is: any other file, and a removed one, is not found. A file that is not a PDF, or that the renderer cannot read (an encrypted one), is DOC-12; an installation with no converter answers 503, and the file can still be saved. Previews are drawn when asked and not kept; the audit trail records each as an opening, with both hashes. Side effects: an audit event of the opening, with both hashes. Never cached.
+
+- **Permission:** View on Evidence: add, supersede (rev 0.3). Needs a view of the file's record's row without a qualifier as well, or its own Employee's expense claim or bank account change.
+- **Parameters:**
+  - `evidence_id` (path, required): The file.
+- **Responses:**
+  - `200` OK [`EvidencePreview`](../../contracts/schemas/EvidencePreview.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `DOC-03` The malware scan flagged the file; `DOC-12` The file cannot be previewed.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `DOC-03`, `DOC-12`
+
 ### `GET /v1/exempt-statuses/{status_id}/evidence`
 
 **List an exempt status's files** (`listExemptStatusEvidence`)
@@ -22508,6 +22528,34 @@ Takes a file off the caller's own draft claim (FR-DOC-07). Once it is posted its
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `CLAIM-01`, `CLAIM-09`, `STORAGE-EVIDENCE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `POST /v1/expense-claims/{claim_id}/evidence:from-message`
+
+**Attach a receipt you forwarded to your claim** (`addExpenseClaimEvidenceFromMessage`)
+
+Attaches an attachment of mail at the caller's own email-in address, which they forwarded as a receipt (FR-AP-14, FR-DOC-12; PRD-001 rev 0.322), to the caller's own draft claim. The mail must be accepted: from the caller's own verified sign-in email, or from a sender they accepted. The file is checked again as any upload is (type from its content, malware scan, image metadata stripped, FR-DOC-08) and its source is recorded as email (FR-DOC-07). A message or file that is not the caller's, not accepted or not an attachment is EML-10. Side effects: the file in the staging store, its evidence row and its audit event. Only the claimant attaches. Needs If-Match with the claim's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing.
+
+- **Permission:** Create on Evidence: add, supersede (rev 0.3). Only the claimant, and only a file of mail at their own email-in address. AI and MCP clients only propose attaching a document (doc.attach).
+- **Parameters:**
+  - `claim_id` (path, required): The claim's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ClaimEvidenceFromMessage`](../../contracts/schemas/ClaimEvidenceFromMessage.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ClaimEvidence`](../../contracts/schemas/ClaimEvidence.schema.json)
+  - `201` Created [`ClaimEvidence`](../../contracts/schemas/ClaimEvidence.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `CLAIM-01` Not an expense claim.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open; `EML-10` Not an attachment of accepted mail at your own address.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `CLAIM-01`, `CLAIM-09`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `EML-10`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/gst-forecasts/{forecast_id}/evidence`
 

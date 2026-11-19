@@ -25,6 +25,7 @@ const CodeSenderNotAddress = "EML-09"
 
 // InboundFile is a received message's file, kept as untrusted data.
 type InboundFile struct {
+	ID        string `json:"id" format:"uuid" doc:"The file's ID, to attach it to a claim as a receipt." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31"`
 	Kind      string `json:"kind" enum:"body,attachment" doc:"The message's text, or an attachment." example:"attachment"`
 	FileName  string `json:"file_name" doc:"Its name, as sent: data, never a path." example:"INV-0042.pdf"`
 	MediaType string `json:"media_type" doc:"Its type, from its content." example:"application/pdf"`
@@ -133,7 +134,7 @@ func (a *API) inboundPage(ctx context.Context, u storage.UnitOfWork, in *inbound
 			v.ExpiresAt = &at
 		}
 		for _, x := range files {
-			v.Files = append(v.Files, InboundFile{Kind: x.Kind, FileName: x.FileName, MediaType: x.MediaType, Size: x.Size, Removed: x.RemovedAt != nil})
+			v.Files = append(v.Files, InboundFile{ID: x.ID.String(), Kind: x.Kind, FileName: x.FileName, MediaType: x.MediaType, Size: x.Size, Removed: x.RemovedAt != nil})
 		}
 		out.Items = append(out.Items, v)
 	}

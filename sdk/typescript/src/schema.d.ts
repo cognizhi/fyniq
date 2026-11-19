@@ -7221,6 +7221,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/evidence/{evidence_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview a PDF evidence file
+         * @description The first page of a PDF evidence file as a PNG picture (FR-DOC-08; PRD-001 rev 0.321), drawn by the converter service in its own sandbox, so no parser of a PDF runs in the API: nothing in the file runs, no script, form or link. The picture is checked as any file is, its type decided from its content and scanned for malware, and comes with the SHA-256 of the PDF as stored (checked against its record first) and of the picture. For whoever may open the file, as getEvidenceFile is: any other file, and a removed one, is not found. A file that is not a PDF, or that the renderer cannot read (an encrypted one), is DOC-12; an installation with no converter answers 503, and the file can still be saved. Previews are drawn when asked and not kept; the audit trail records each as an opening, with both hashes. Side effects: an audit event of the opening, with both hashes. Never cached.
+         */
+        get: operations["getEvidencePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/exempt-statuses": {
         parameters: {
             query?: never;
@@ -7488,6 +7508,26 @@ export interface paths {
          * @description Takes a file off the caller's own draft claim (FR-DOC-07). Once it is posted its evidence is append-only, and the database refuses. The row stays, marked removed, for the audit trail; the staged file is deleted by the next sweep. A line that names it then needs another receipt where one is required. Side effects: the removal and its audit event. Needs If-Match with the file's ETag. Prefer: return=preview checks it and saves nothing.
          */
         delete: operations["removeExpenseClaimEvidence"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/expense-claims/{claim_id}/evidence:from-message": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attach a receipt you forwarded to your claim
+         * @description Attaches an attachment of mail at the caller's own email-in address, which they forwarded as a receipt (FR-AP-14, FR-DOC-12; PRD-001 rev 0.322), to the caller's own draft claim. The mail must be accepted: from the caller's own verified sign-in email, or from a sender they accepted. The file is checked again as any upload is (type from its content, malware scan, image metadata stripped, FR-DOC-08) and its source is recorded as email (FR-DOC-07). A message or file that is not the caller's, not accepted or not an attachment is EML-10. Side effects: the file in the staging store, its evidence row and its audit event. Only the claimant attaches. Needs If-Match with the claim's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing.
+         */
+        post: operations["addExpenseClaimEvidenceFromMessage"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -26663,6 +26703,30 @@ export interface components {
              */
             version: number;
         };
+        ClaimEvidenceFromMessage: {
+            /**
+             * @description What the file is; receipt by default.
+             * @example receipt
+             */
+            evidence_type?: string;
+            /**
+             * Format: uuid
+             * @description Its attachment's id, from the same list.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31
+             */
+            file_id: string;
+            /**
+             * Format: uuid
+             * @description The message, from listMyInboundMessages: accepted mail at the caller's own email-in address.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+             */
+            message_id: string;
+            /**
+             * @description A short note.
+             * @example Forwarded from the hotel
+             */
+            note?: string;
+        };
         ClaimEvidencePage: {
             /** @description The files on this page, removed ones included. */
             items: components["schemas"]["ClaimEvidence"][];
@@ -33148,6 +33212,41 @@ export interface components {
              */
             next_cursor?: string;
         };
+        EvidencePreview: {
+            /**
+             * @description The picture, in base64: show it as an image, never by the file's name.
+             * @example iVBORw0KGgo=
+             */
+            content_base64: string;
+            /**
+             * Format: uuid
+             * @description The file this is the preview of.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+             */
+            id: string;
+            /**
+             * @description The preview's type: a PNG, decided from its content.
+             * @example image/png
+             * @enum {string}
+             */
+            media_type: "image/png";
+            /**
+             * @description The SHA-256 of the picture, so a preview is as provable as the file it came from.
+             * @example 2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae
+             */
+            preview_sha256: string;
+            /**
+             * Format: int64
+             * @description The preview's size in bytes.
+             * @example 48213
+             */
+            size_bytes: number;
+            /**
+             * @description The SHA-256 of the PDF as stored, which was checked against its record before it was drawn.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            source_sha256: string;
+        };
         EvidenceRecord: {
             /**
              * @description The kind of record.
@@ -36820,6 +36919,12 @@ export interface components {
              * @example INV-0042.pdf
              */
             file_name: string;
+            /**
+             * Format: uuid
+             * @description The file's ID, to attach it to a claim as a receipt.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31
+             */
+            id: string;
             /**
              * @description The message's text, or an attachment.
              * @example attachment
@@ -111497,6 +111602,103 @@ export interface operations {
             };
         };
     };
+    getEvidencePreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The file. */
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidencePreview"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `DOC-03` The malware scan flagged the file; `DOC-12` The file cannot be previewed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listExemptStatuses: {
         parameters: {
             query?: {
@@ -113940,6 +114142,158 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addExpenseClaimEvidenceFromMessage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The claim's ID. */
+                claim_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimEvidenceFromMessage"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimEvidence"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimEvidence"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `CLAIM-01` Not an expense claim. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open; `EML-10` Not an attachment of accepted mail at your own address. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

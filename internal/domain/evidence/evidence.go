@@ -41,6 +41,7 @@ const (
 	CodeMacro   = "DOC-08" // an office file with macros or ActiveX controls
 	CodeArchive = "DOC-09" // an office file whose archive is unreadable, too large or a compression bomb
 	CodeConvert = "DOC-11" // a HEIC photo the converter could not turn into a JPEG (DOC-10 is a missing required file)
+	CodePreview = "DOC-12" // a file whose preview cannot be made: not a PDF, or one the renderer cannot read (an encrypted one)
 )
 
 // Problem is a rule an upload breaks, in plain words (ENG-23).
@@ -569,4 +570,34 @@ func (f Files) Read(ctx context.Context, org uuid.UUID, ids []uuid.UUID) ([]port
 		out = append(out, ports.EmailAttachment{Name: e.FileName, ContentType: e.MediaType, Content: data})
 	}
 	return out, nil
+}
+
+// Preview renders the first page of a PDF to a PNG for the web app to show (FR-DOC-08's safe preview): the converter
+// draws it in its own sandbox, so no parser of a hostile PDF runs here, and what it returns is untrusted like any file,
+// so its type is decided from its content, it must be a PNG within the size limit, and it is scanned. A file that is not
+// a PDF, or that the renderer cannot read, is a Problem; a missing converter, or one that fails, is an error.
+func Preview(ctx context.Context, c Checker, data []byte) ([]byte, []Problem, error) {
+	if mt, ok := Sniff(data, ""); !ok || mt != PDF {
+		return nil, []Problem{{CodePreview, "file", "Only a PDF can be previewed.", "Save a copy of the file to open it."}}, nil
+	}
+	if c.Converter == nil {
+		return nil, nil, errors.New("no converter is configured, so no preview can be made")
+	}
+	out, err := c.Converter.Convert(ctx, ports.ConvertPreviewPNG, data)
+	if errors.Is(err, ports.ErrNotConvertible) {
+		return nil, []Problem{{CodePreview, "file", "The PDF could not be drawn: it may be encrypted or damaged.", "Save a copy of the file to open it."}}, nil
+	}
+	if err != nil {
+		return nil, nil, fmt.Errorf("the preview did not finish: %w", err)
+	}
+	if got, ok := Sniff(out.Data, ""); !ok || got != "image/png" || len(out.Data) > MaxBytes {
+		return nil, []Problem{{CodePreview, "file", "The PDF could not be drawn: it may be encrypted or damaged.", "Save a copy of the file to open it."}}, nil
+	}
+	if p, err := c.scan(ctx, "preview.png", out.Data); err != nil || p != nil {
+		if p != nil {
+			return nil, []Problem{*p}, nil
+		}
+		return nil, nil, err
+	}
+	return out.Data, nil, nil
 }

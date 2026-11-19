@@ -11,7 +11,7 @@ export function Home({ session, screen }: { session: Session; screen: "me" | "pe
   const key = screen === "people" ? "home.people" : "home.me";
   const roles = session.roles ?? [];
   return (
-    <Shell directory={team(roles)} features={admin(roles)}>
+    <Shell roles={roles} directory={team(roles)} features={admin(roles)}>
       <main className="nm-shell__main" id="main">
         <ReviewBanner screen={screen === "people" ? "nm-people-home" : "nm-my-home"} />
         <h1 className="fy-h1" title={helpText(key).tooltip}>{t(key)}</h1>

@@ -29,7 +29,7 @@ export function Directory({ roles }: { roles: readonly string[] }) {
   }, [state, q]);
   const open = team(roles);
   return (
-    <Shell directory={open} features={admin(roles)}>
+    <Shell roles={roles} directory={open} features={admin(roles)}>
       <main className="nm-shell__main" id="main">
         <ReviewBanner screen="nm-people" />
         <h1 className="fy-h1" title={helpText("directory.page").tooltip}>{t("directory.title")}</h1>

@@ -60,6 +60,12 @@ company policy (NM-LV-02), and a Part IV employee may carry unused leave forward
 
 Recommendation: **A**, as the default of the policy form; the company changes it there. It blocks nothing.
 
+**Decided 20 Nov 2026 (owner away; coordinator's standing instruction: take the recommended option for small and medium choices): A.** Built as
+`leave.DefaultCarryMonths` (12): unused annual leave is carried into the next year as a transfer with its last day, days taken in the new year use the carried
+days first, and the rest lapses as an expiry; encashment is off. The policy form's carry-forward and encashment fields are left to a later slice, and
+changing the default is then a policy change, not a code change. Why: it matches the statutory right of a Part IV employee, so the policy check never has to
+refuse it, and it gives the month-end accrual a clear base.
+
 ## Risks / Trade-offs
 
 - [A statutory count is wrong] → counts are pure functions over pack values with hand-pinned cases; a researched value needs a recorded decision; the

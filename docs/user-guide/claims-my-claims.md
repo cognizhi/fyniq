@@ -71,6 +71,23 @@ in Basic mode, a value someone chose for one shows under **Has advanced details*
 Above the category's receipt amount, a line cannot be submitted without its receipt. A file that
 is already on another record blocks the line until you say why it is not a duplicate.
 
+## Attach a receipt you forwarded
+
+You can email a receipt to an address of your own and attach it to a claim from there, without
+saving it to your device first.
+
+1. On a saved draft claim, find **Receipts forwarded to you**. If you have no address yet, type a
+   name for it (3 to 40 letters, digits, dots and hyphens) and select **Make my address**.
+2. Forward the receipt, as an email with the receipt attached, to your address. Mail from your own
+   sign-in email arrives at once. Mail from anyone else waits for you: select **Accept sender** to
+   accept it and the sender's later mail.
+3. Select **Attach** next to the receipt's file. Fyniq scans it again and strips image details such
+   as location, as it does for a file you upload, and records that it came by email.
+4. On the receipt's line, pick the file under **Its receipt**.
+
+Only an attachment of accepted mail at your own address attaches, and only to your own claim. If the
+company has not set up email-in, the section is not shown, and you attach the file from your device.
+
 ## Submit a claim
 
 1. Fix anything marked **Fix**. Lines marked **Review** can still be sent: the approver sees why.

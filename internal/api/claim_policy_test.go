@@ -173,6 +173,14 @@ var matrixClaimEvidence = map[string]func(e *env, tok string) (response, func() 
 			return len(e.call(http.MethodGet, "/v1/expense-claims/"+id+"/evidence", e.as(authz.Owner), nil).Body["items"].([]any)) == 0
 		}
 	},
+	"addExpenseClaimEvidenceFromMessage": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.ownClaimOf(uuid.MustParse(matrixApprover(e)))
+		r := e.call(http.MethodPost, "/v1/expense-claims/"+id+"/evidence:from-message", steppedUp(e, tok),
+			map[string]any{"message_id": uuid.NewString(), "file_id": uuid.NewString()}, "If-Match", "*")
+		return r, func() bool {
+			return len(e.call(http.MethodGet, "/v1/expense-claims/"+id+"/evidence", e.as(authz.Owner), nil).Body["items"].([]any)) == 0
+		}
+	},
 	"listExpenseClaimEvidence": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.ownClaimOf(uuid.MustParse(matrixApprover(e)))
 		return e.call(http.MethodGet, "/v1/expense-claims/"+id+"/evidence", steppedUp(e, tok), nil), nil

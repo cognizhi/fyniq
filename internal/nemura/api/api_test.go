@@ -22,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/checks"
 	"github.com/cognizhi/fyniq/internal/nemura/features"
+	"github.com/cognizhi/fyniq/internal/nemura/leave"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
 	"github.com/cognizhi/fyniq/internal/nemura/policy"
 )
@@ -114,9 +115,19 @@ func (f fakePeople) SetClassification(context.Context, Session, uuid.UUID, time.
 }
 
 // fakeFeatures answers the feature switches with whatever the test says.
-type fakeFeatures struct{ err error }
+type fakeFeatures struct {
+	err error
+	off bool // Leave is switched off
+}
 
 func (f fakeFeatures) List(context.Context, Session) (features.Switches, error) {
+	var l *leave.Refusal
+	if f.off {
+		return features.Switches{}, nil
+	}
+	if errors.As(f.err, &l) { // a refusal of the leave service is not the feature switches'
+		return features.Switches{"leave": {State: features.On}}, nil
+	}
 	return features.Switches{"leave": {State: features.On}}, f.err
 }
 func (f fakeFeatures) Set(context.Context, Session, string, string, string, []features.Arrangement) error {
@@ -182,6 +193,71 @@ func (f fakePacks) Checks(context.Context, Session, time.Time) ([]checks.Finding
 	return []checks.Finding{{Check: 3, Area: "People", Status: checks.Fail, Subject: "x", Message: "m"}}, f.err
 }
 
+// fakeLeave answers leave with whatever the test says.
+type fakeLeave struct{ err error }
+
+func (f fakeLeave) Own(context.Context, Session) (uuid.UUID, error) {
+	return uuid.MustParse("0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"), f.err
+}
+func (f fakeLeave) View(_ context.Context, _ Session, id uuid.UUID, year int) (LeaveView, error) {
+	return LeaveView{PersonID: id.String(), Year: year, Types: []LeaveType{}}, f.err
+}
+func (f fakeLeave) SetPattern(context.Context, Session, uuid.UUID, time.Time, leave.Pattern) error {
+	return f.err
+}
+func (f fakeLeave) Grant(context.Context, Session, uuid.UUID, int) (LeaveGrant, error) {
+	return LeaveGrant{Days: "7.00", Written: "7.00", Basis: []string{}, Sources: []string{}}, f.err
+}
+func (f fakeLeave) CarryForward(context.Context, Session, uuid.UUID, int) (string, error) {
+	return "0.00", f.err
+}
+
+// fakeRequests answers leave requests with whatever the test says, and remembers the scope it was called with.
+type fakeRequests struct {
+	err   error
+	scope *LeaveScope
+}
+
+func (f fakeRequests) Preview(context.Context, Session, LeaveAsk) (RequestPreview, error) {
+	return RequestPreview{Days: "5.00", Left: "9.00", Enough: true, Basis: "working_days", Counts: []DayCost{}, Away: []AwayPerson{}}, f.err
+}
+func (f fakeRequests) Apply(context.Context, Session, LeaveAsk) (string, string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80", "5.00", f.err
+}
+func (f fakeRequests) List(_ context.Context, _ Session, sc LeaveScope, _ string) ([]LeaveRequest, error) {
+	if f.scope != nil {
+		*f.scope = sc
+	}
+	return []LeaveRequest{}, f.err
+}
+func (f fakeRequests) Get(context.Context, Session, LeaveScope, uuid.UUID) (LeaveRequest, error) {
+	return LeaveRequest{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80", State: "pending"}, f.err
+}
+func (f fakeRequests) Decide(context.Context, Session, LeaveScope, uuid.UUID, bool, string) error {
+	return f.err
+}
+func (f fakeRequests) Calendar(context.Context, Session, LeaveScope, bool, time.Time) (LeaveCalendar, error) {
+	return LeaveCalendar{Month: "2026-05", People: []CalendarPerson{}}, f.err
+}
+func (f fakeRequests) Cancel(context.Context, Session, uuid.UUID) error { return f.err }
+func (f fakeRequests) Settle(context.Context, Session, time.Time) (int, string, error) {
+	return 1, "3.00", f.err
+}
+
+// fakeSick answers sick leave with whatever the test says.
+type fakeSick struct{ err error }
+
+func (f fakeSick) Notify(context.Context, Session, SickAsk) (SickNotified, error) {
+	return SickNotified{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90", Days: "3.00", Paid: "3.00", Unpaid: "0.00"}, f.err
+}
+func (f fakeSick) List(context.Context, Session, bool, bool) ([]SickNotification, error) {
+	return []SickNotification{}, f.err
+}
+func (f fakeSick) Certificate(context.Context, Session, uuid.UUID, bool, string, string, []byte) error {
+	return f.err
+}
+func (f fakeSick) Verify(context.Context, Session, uuid.UUID) error { return f.err }
+
 // fakeClients registers whatever it is told and answers with clientsErr.
 type fakeClients struct{ err error }
 
@@ -192,18 +268,20 @@ func (f fakeClients) List(context.Context, Session) ([]Client, error)  { return 
 func (f fakeClients) Revoke(context.Context, Session, uuid.UUID) error { return f.err }
 
 var (
-	passkeyErr, clientsErr, peopleErr, featuresErr, restrictedErr, packsErr error
-	peopleOwn, peopleReport                                                 bool
-	peopleClassified                                                        *bool
-	testRoles                                                               = []authz.Role{authz.HRAdmin}
-	testStepUp                                                              bool
-	testNow                                                                 = time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
+	passkeyErr, clientsErr, peopleErr, featuresErr, restrictedErr, packsErr, leaveErr, requestsErr error
+	requestsScope                                                                                  *LeaveScope
+	featuresOff                                                                                    bool
+	peopleOwn, peopleReport                                                                        bool
+	peopleClassified                                                                               *bool
+	testRoles                                                                                      = []authz.Role{authz.HRAdmin}
+	testStepUp                                                                                     bool
+	testNow                                                                                        = time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
 )
 
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -362,6 +440,7 @@ func TestEveryWriteAcceptsAnIdempotencyKey(t *testing.T) {
 // req: NM-ARC-03
 const policyBody = `{"effective_from":"2026-12-01","rules":{"annual_leave_days":[7],"sick_outpatient_days":[5,8,11,14],"sick_hospital_days":[15,30,45,60],"childcare_citizen_days":6,"extended_childcare_days":2,"childcare_non_citizen_days":2}}`
 const personBody = `{"id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","person":{"legal_name":"Ana Tan","employment_start":"2026-01-05"},"job":{"job_title":"CEO","worksite":"SG","employment_type":"full_time"}}`
+const patternBody = `{"effective_from":"2026-01-05","weekdays":[1,2,3,4,5],"hours_per_week":"44.0"}`
 const jobBody = `{"effective_from":"2026-09-01","job":{"job_title":"CEO","worksite":"SG","employment_type":"full_time"}}`
 
 const clientBody = `{"name":"Payroll bureau","scopes":["directory.read"],"algorithm":"ES256","public_key":{"kty":"EC","crv":"P-256","x":"a","y":"b"}}`
@@ -372,6 +451,7 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		signedIn           bool
 		err                error // what the passkey or client service answers
 		owner, stepUp      bool  // the person is the Owner, and confirmed with a passkey
+		featuresOff        bool  // Leave is switched off
 	}
 	triggers := map[string]trigger{ // code -> a request that returns it
 		CodeNotFound:           {method: "GET", path: "/v1/errors/NM_NOPE"},
@@ -393,6 +473,10 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodePersonNotFound:     {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", signedIn: true, err: &people.Refusal{Code: people.CodeNotFound, Message: "There is no such person in this organisation."}},
 		CodePersonHistory:      {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/job", body: jobBody, signedIn: true, err: &people.Refusal{Code: people.CodeHistory, Message: "That record is history."}},
 		CodePersonExists:       {method: "POST", path: "/v1/people", body: personBody, signedIn: true, err: ErrPersonExists},
+		CodeLeaveInvalid:       {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/working-pattern", body: patternBody, signedIn: true, err: &leave.Refusal{Code: leave.CodeInvalid, Message: "The working days are required."}},
+		CodeLeaveBalance:       {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026/carry-forward", signedIn: true, err: &leave.Refusal{Code: leave.CodeBalance, Message: "That is more than the balance."}},
+		CodeLeaveConflict:      {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/working-pattern", body: patternBody, signedIn: true, err: &leave.Refusal{Code: leave.CodeConflict, Message: "Overlaps."}},
+		CodeFeatureOff:         {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026", signedIn: true, featuresOff: true},
 		CodeClientExists:       {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
 	}
 	for _, c := range Catalogue {
@@ -401,13 +485,13 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 			t.Errorf("%s is in the catalogue and no test triggers it", c.Code)
 			continue
 		}
-		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr = tr.err, tr.err, tr.err, tr.err, tr.err
+		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr = tr.err, tr.err, tr.err, tr.err, tr.err, tr.err, tr.err
 		if tr.owner {
 			testRoles = []authz.Role{authz.Owner}
 		}
-		testStepUp = tr.stepUp
+		testStepUp, featuresOff = tr.stepUp, tr.featuresOff
 		_, mux := testAPI(t)
-		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, testRoles, testStepUp = nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false
+		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr, testRoles, testStepUp, featuresOff = nil, nil, nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false, false
 		req := httptest.NewRequest(tr.method, tr.path, strings.NewReader(tr.body))
 		if tr.body != "" {
 			req.Header.Set("Content-Type", "application/json")

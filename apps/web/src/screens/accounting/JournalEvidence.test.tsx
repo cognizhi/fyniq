@@ -92,6 +92,25 @@ describe("a journal's evidence", () => {
     vi.restoreAllMocks();
   });
 
+  // req: FR-DOC-08
+  it("previews a PDF as its first page and says so when the preview cannot be made, leaving the file to save", async () => {
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } },
+      "GET /v1/journals/j1/evidence": { status: 200, body: { items: [file({ id: "ev4", file_name: "AU-100.pdf", media_type: "application/pdf" }), file({ id: "ev5", file_name: "locked.pdf", media_type: "application/pdf" })] } },
+      "GET /v1/evidence/ev4/preview": { status: 200, body: { id: "ev4", media_type: "image/png", size_bytes: 8, source_sha256: "a".repeat(64), preview_sha256: "b".repeat(64), content_base64: "iVBORw0KGgo=" } },
+      "GET /v1/evidence/ev5/preview": { status: 422, body: { type: "about:blank", title: "The file cannot be previewed", status: 422, code: "DOC-12", detail: "The PDF could not be drawn: it may be encrypted or damaged.", fix: "Save a copy of the file to open it." } },
+    });
+    renderPage(page(auditor), at);
+    fireEvent.click(await screen.findByRole("button", { name: "Preview AU-100.pdf" }));
+    const picture = await screen.findByRole("img", { name: "AU-100.pdf, first page, as attached" });
+    expect(picture.getAttribute("src")).toBe("data:image/png;base64,iVBORw0KGgo=");
+    fireEvent.click(screen.getByRole("button", { name: "Preview locked.pdf" }));
+    expect(await screen.findByText(/may be encrypted or damaged/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Save locked.pdf" })).toBeTruthy();
+    await noViolations(document.body);
+  });
+
   it("names a saved file safely", () => {
     expect(safeName("AU-100.pdf", "x")).toBe("AU-100.pdf");
     expect(safeName("..\\..\\windows\\evil.exe", "x")).toBe("evil.exe");

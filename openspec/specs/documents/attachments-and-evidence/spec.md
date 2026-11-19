@@ -327,6 +327,12 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **WHEN** a PDF is previewed
 - **THEN** the preview is rendered server-side to images, without scripts, forms or external links
 
+#### Scenario: PDF preview through the converter (rev 0.321)
+- **GIVEN** the installation has a converter
+- **WHEN** someone who may open a PDF evidence file asks for its preview
+- **THEN** the converter draws the first page as a PNG whose type is decided from its content and which is scanned
+- **AND** the SHA-256 of the PDF as stored and of the picture are both audited; a file that is no PDF, or that the renderer cannot read, is refused in plain words, and with no converter the answer is 503 while the file can still be saved
+
 #### Scenario: File names are data
 - **WHEN** a file is downloaded
 - **THEN** its original file name is kept as data

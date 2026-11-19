@@ -419,6 +419,9 @@ var (
 	// GetEvidenceFile opens a file: the record's row decides it, as a search lists it, or the person's own claim (rev 0.188).
 	GetEvidenceFile = Policy{Operation: "getEvidenceFile", Capability: Evidence, Need: View, ByRecord: true,
 		Note: "Needs a view of the file's record's row without a qualifier as well, or its own Employee's expense claim or bank account change."}
+	// GetEvidencePreview shows the first page of a PDF as a picture (FR-DOC-08, rev 0.321): whoever may open the file.
+	GetEvidencePreview = Policy{Operation: "getEvidencePreview", Capability: Evidence, Need: View, ByRecord: true,
+		Note: "Needs a view of the file's record's row without a qualifier as well, or its own Employee's expense claim or bank account change."}
 	// Download links (SEC-24): asked for as a file is opened; the API's own link needs no session, its token is the right.
 	CreateEvidenceDownload = Policy{Operation: "createEvidenceDownload", Capability: Evidence, Need: View, ByRecord: true,
 		Note: "Needs a view of the file's record's row without a qualifier as well, or its own Employee's expense claim or bank account change."}
@@ -1299,6 +1302,10 @@ var (
 	// adding and removing to the claimant, and an Employee's reading to their own claims.
 	AddExpenseClaimEvidence = Policy{Operation: "addExpenseClaimEvidence", Capability: Evidence, Need: Create, Parent: ExpenseClaims,
 		Note: "Only the claimant attaches. AI and MCP clients only propose attaching a document (doc.attach)."}
+	// AddExpenseClaimEvidenceFromMessage attaches a receipt the caller forwarded to their own email-in address (FR-AP-14,
+	// FR-DOC-12; rev 0.322): the same rights as attaching one by upload, and the file comes from the caller's own mail.
+	AddExpenseClaimEvidenceFromMessage = Policy{Operation: "addExpenseClaimEvidenceFromMessage", Capability: Evidence, Need: Create, Parent: ExpenseClaims,
+		Note: "Only the claimant, and only a file of mail at their own email-in address. AI and MCP clients only propose attaching a document (doc.attach)."}
 	ListExpenseClaimEvidence = Policy{Operation: "listExpenseClaimEvidence", Capability: Evidence, Need: View, Parent: ExpenseClaims,
 		Note: "Needs the right to view expense claims as well: an Employee's own only."}
 	GetExpenseClaimEvidence = Policy{Operation: "getExpenseClaimEvidence", Capability: Evidence, Need: View, Parent: ExpenseClaims,
@@ -1988,7 +1995,7 @@ var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegra
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, RequestAccountMerge,
 	ListDimensions, CreateDimension, ReplaceDimension, ListDimensionValues, CreateDimensionValue, ReplaceDimensionValue, ListContacts, GetContact, GetContactSummary,
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
-	RevokeRole, RemoveMember, SearchEvidence, GetEvidenceRules, GetEvidenceFile, CreateEvidenceDownload, GetEvidenceDownload, SearchRecords, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
+	RevokeRole, RemoveMember, SearchEvidence, GetEvidenceRules, GetEvidenceFile, GetEvidencePreview, CreateEvidenceDownload, GetEvidenceDownload, SearchRecords, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
 	ObjectToOwnerSuccession, WithdrawOwnerSuccession, CompleteOwnerSuccession, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, GetHelpState, SetTourState, GetMyPreferences, SetMyPreferences, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetLedgerEntry, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, QueryMetrics, ListKpiInputs, SetKpiInput, ListChecks, GetCheck, RunChecks, SetCheckOwner, ReviewCheckItem, ReplayBackgroundWork, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
@@ -2027,7 +2034,7 @@ var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegra
 	RemoveMyBankChangeEvidence, ListClaimantBankChangeEvidence, GetClaimantBankChangeEvidence,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
-	AddExpenseClaimEvidence, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,
+	AddExpenseClaimEvidence, AddExpenseClaimEvidenceFromMessage, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,
 	ListDocumentTemplates, GetDocumentTemplate, GetDocumentTemplateCatalogue, ListDocumentTemplateVersions, GetDocumentTemplateVersion,
 	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate, PreviewDocumentTemplate,
 	ExportDocumentTemplates, ImportDocumentTemplates, ListDocumentTemplateDefaults, SetDocumentTemplateDefault, GetAppliedDocumentTemplate,
