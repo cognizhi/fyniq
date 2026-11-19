@@ -1,0 +1,5 @@
+{"object":"list","has_more":false,"data":[
+ {"id":"txn_payout1","object":"balance_transaction","amount":-9610,"available_on":1796000000,"created":1795990000,"currency":"sgd","description":"STRIPE PAYOUT","fee":0,"net":-9610,"reporting_category":"payout","source":"po_1","status":"available","type":"payout"},
+ {"id":"txn_charge2","object":"balance_transaction","amount":10000,"available_on":1795900000,"created":1795800100,"currency":"sgd","description":"Subscription creation","fee":390,"net":9610,"reporting_category":"charge","source":"ch_2","status":"available","type":"charge"},
+ {"id":"txn_charge1","object":"balance_transaction","amount":4900,"available_on":1795900000,"created":1795800000,"currency":"sgd","description":"Subscription update","fee":0,"net":4900,"reporting_category":"charge","source":"ch_1","status":"available","type":"charge"}
+]}
