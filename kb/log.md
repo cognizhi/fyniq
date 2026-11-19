@@ -735,3 +735,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.letters.request, nemura.letters.issue, nemura.letters.templates new (p1-nemura-self-service-letters 1.6)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/letters-kets.md, person.md -> nemura.letters.kets, nemura.person (key employment terms; p1-nemura-self-service-letters slice 2)
+
+## [2026-11-20] compile | settings.connected-apps recompiled: the Owner's view, last use and API clients (p1-mcp-first-party 3.3, 9.1, 9.2)

@@ -4,14 +4,14 @@ type: task
 title: Connect an AI app, and see what it did
 summary: Settings › Connected apps: allow AI apps for yourself, what an Owner allows, verified apps, disconnecting, waiting registrations and what the apps did
 sources:
-  - docs/user-guide/connected-apps.md sha256:cac2c5bdaca8925427413f6afb88b5b0a59c31e0144f2343d7ea45c61aac2919
+  - docs/user-guide/connected-apps.md sha256:e91c1c657bf2da9ec03912c513607bc03041b7e54aa8d55418e69321f8b6bfca
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-19
+compiled_at: 2026-11-20
 aliases:
   - connect Claude Code
   - connect Claude Desktop
@@ -54,6 +54,13 @@ aliases:
 - **What you have allowed**: each connected app, what it can read, when you allowed it and when to renew (after 90 days); **Disconnect** ends it at once.
 - **Waiting for an Owner**: apps that registered themselves and where each sends you to sign in; check that address first. An Owner approves one by adding its ID to the apps that may connect, or **Deny**s it.
 - **What the apps did**: which app read with which tool, and whether it was refused or limited.
+
+(src: docs/user-guide/connected-apps.md#what-you-see)
+
+## Owner's view, last use and API clients
+
+- Beside each app, Expert mode shows when it was last used. An Owner sees what everyone has allowed and can disconnect any person's app, which ends that person's tokens for it at once and touches nothing else of theirs.
+- Turning AI apps off ends every app's tokens, and taking one app off the allowed list ends that app's tokens, once the change is made. The page also lists the integration clients and personal access tokens with their class, access and end date; they are made and revoked under Settings, Integrations.
 
 (src: docs/user-guide/connected-apps.md#what-you-see)
 

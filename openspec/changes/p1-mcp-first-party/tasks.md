@@ -76,11 +76,11 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   or propose scope is refused by the server before consent). **Left:** token lifetimes and refresh rotation are Hydra's (P0's
   `TestTokenLifecycle` proves them; the 90-day absolute limit is the consent age the verifier checks); `fyniq.propose.<type>`
   scopes join a client's record with task 7.1; a registered (non-first-party) client with task 11.1.
-- [ ] 3.3 Revocation (AI-38): `ports.OAuthServer` lists a subject's consent sessions and revokes one client's; a role change,
+- [x] 3.3 Revocation (AI-38): `ports.OAuthServer` lists a subject's consent sessions and revokes one client's; a role change,
   deactivation, client removal from `mcp.clients`, the organisation switch off and the person's opt-out each revoke the
   person's MCP tokens (`RevokeSubject` or the one client). Tests `// req: AI-38` (every token within 60 seconds),
   `// req: CTL-MCP-04` (a role change denies the next call within 60 seconds), G4-081 end to end.
-
+  Built (20 Nov 2026, PRD-001 rev 0.340): a role change, a deactivation (`members.go`) and an opt-out already revoked the person's tokens; the organisation switch going off now revokes every member's AI app tokens and an app leaving `mcp.clients` revokes that app's tokens for every member (`endAIAppTokens`, outbox kinds `oauth.agent.revoke` and `oauth.agent_client.revoke` run by the worker; the setting's change and the revocation request commit together, audited). `ports.OAuthConsents` lists a subject's consent sessions and revokes one client's. Tests: `TestTheSwitchOrTheAllowlistTakingAnAppAwayEndsItsTokens`, `TestAnOptOutRevokesTheAIAppsTokensAndNothingElse` (`req: AI-38`, `AI-35`, `CTL-MCP-04`) against the pinned Hydra; the per-call gate refuses the next call at once.
 ## 4. The server core (AI-15, AI-39), behind the deployment switch
 
 - [x] 4.1 `internal/mcpserver`: Streamable HTTP by the revision in force (design D6): one POST per message, the protocol and
@@ -108,10 +108,10 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   API-audience, integration-class, both-audience and revoked token do not). **Left:** the MCP-to-API token (task 6.1) and
   the cloud route that lets this service introspect and do nothing else with Hydra's admin API (`[live-verify]`; design
   Risks).
-- [ ] 4.3 (Only if task 1.2 shows an installed client still needs it.) The earlier revisions' compatibility layer: `initialize`,
+- [x] 4.3 (Only if task 1.2 shows an installed client still needs it.) The earlier revisions' compatibility layer: `initialize`,
   a random `Mcp-Session-Id` bound to the token's subject and client, a session refused with another token. Tests `// req:
   AI-39`; the red-team session-fixation row.
-
+  Not built, by decision: the owner decided on 19 Nov 2026 (PRD-001 rev 0.294, decision 2) that the server speaks revision 2026-07-28 only; task 1.2 found Claude Code falls back to `initialize` only after `server/discover` fails and sends no session. An earlier revision's handshake is added only if a real client needs it `[live-verify]` (Claude Desktop was not run).
 ## 5. The tool surface (AI-16, AI-17, AI-40)
 
 - [x] 5.1 `contracts/ai/mcp-scopes.json` (design D4) and the generator for `contracts/ai/mcp-manifest.json` (a Go test with
@@ -130,10 +130,11 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   verb, and any scope outside the read areas (payroll, equity and the propose scopes cannot be mapped). **Left for 7.x:** the
   `propose_<type>` and proposal-read tools join the manifest with their own rule (a task type is refused by
   `proposal.Refuse` on its ID and command).
-- [ ] 5.2 `tools/list` from the embedded manifest, per person (their scopes, the organisation's enabled task types), refusing
+- [x] 5.2 `tools/list` from the embedded manifest, per person (their scopes, the organisation's enabled task types), refusing
   to start or to serve a tool whose definition's hash differs; descriptions free of organisation data. Tests `// req: AI-40`,
   `// req: AI-17` (a version per change; every tool's behaviour against its description and schema), `// req: CTL-MCP-02`
   (an altered definition is refused), the injection strings seeded in every organisation text field never in `tools/list`.
+  Built: `tools/list` reads the embedded manifest per token (its scopes, the organisation's enabled task types through `propose_<type>`), the server refuses to start or to serve a definition whose hash differs (`TestAnAlteredDefinitionIsRefused`, `TestTheManifestIsWhatTheToolsAndTheScopeMapGive`), definitions hold only the contracts' text (`TestDefinitionsHoldOnlyTheContractsText`), and injection strings seeded in a knowledge-base note and an account's name never appear in any token's `tools/list` (`TestAnMCPCallReachesTheDataOnlyAsTheDelegatedPerson`). `metrics.query` version 2's project values are listed as unexposed over MCP in `mcp-scopes.json`.
 - [x] 5.3 Scope enforcement in the API (design D4): `authn.Principal.Scopes` read for agent-class callers by the MCP
   operations, 403 `insufficient_scope` with the scope needed, the person's rights and the AI exclusions still applying on top.
   Tests `// req: AI-37`, `// req: AI-16`; red-team rows: `fyniq.read.reports` cannot reach a bill or a journal through
@@ -214,40 +215,45 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 
 ## 9. Screens and help (AI-44, AI-37)
 
-- [ ] 9.1 The Connected apps operations (design D12): the organisation's MCP state and its change as approval objects, the
+- [x] 9.1 The Connected apps operations (design D12): the organisation's MCP state and its change as approval objects, the
   person's connections, revoke, the Owner's revoke of any; the contract, the generated client, the authorisation matrix rows.
   Tests `// req: AI-44`, `// req: AI-35`, `// req: CTL-API-02` (integration clients listed and registered here).
-- [~] 9.2 Settings → Connected apps (`connected-apps`): the switch, the allowlist with per-client state and last use, my
+  Built: the Connected apps operations (`getConnectedApps`, `setMyMCP`, `revokeMyConnection`, the registrations, the activity) and, new, the Owner's `listMCPConnections` and `revokeMemberConnection` (audited, never on the AI's or MCP's list); the organisation's MCP state is the settings with a second approver (switching on and allowing an app are approval objects). Integration clients are listed here and in the access review. The authorisation matrix rows run (`FYNIQ_MATRIX_ONLY='MCP|Connect|OAuth|Member'`). Tests `TestConnectedAppsShowWhatAPersonAndAnOwnerNeed` (`req: AI-44`, `AI-35`), `TestTheAccessReview`, `TestIntegrationClientsMustHaveAnOwnerAClassAnEndAndTheirClassScopes` (`req: CTL-API-02`).
+- [x] 9.2 Settings → Connected apps (`connected-apps`): the switch, the allowlist with per-client state and last use, my
   connections, revoke, the integration clients and personal access tokens `p1-public-api` built; Basic and Expert; states for
   off, not allowlisted and needs a second approver; Vitest with axe; the screen's fragment updated locally.
   Tests `// req: AI-44`. Built (#865): the page in Basic mode over the Connected apps operations (your access and opt-in, the apps
   with Verified or Not verified, what you allowed with Disconnect, registrations waiting with Deny, the activity); switching AI apps
   on and allowing an app stay organisation settings with a second approver, linked from the page. Left: Expert-mode detail
   (last use per app) and the integration clients and personal access tokens (CTL-API-02).
+  Built in full (20 Nov 2026): Expert-mode last use per app, what everyone has allowed with Disconnect for an Owner, and the integration clients and personal access tokens on the page; Vitest with axe. The design fragment is not re-checked against the built page `[live-verify]` (the design account).
 - [~] 9.3 The consent screen (`oauth-consent`): client, publisher, class (proposal-only), requested scopes in plain language,
   data categories, expiry, Allow and Deny, shown only after the second factor; the refused states. Tests `// req: AI-37`. Built: two API operations
   (`getOAuthConsent`, `answerOAuthConsent`: the person's own session only, a token or an AI never) behind the web route
   `/auth/consent`, which Hydra's `URLS_CONSENT` now names; the person may keep fewer areas than asked, never more; the second
   factor is a button on the page (AUTH-FLOW-08). Tested end to end against real Hydra. The old `/api/auth/consent` form stays for
   clients that cannot run the page. Left: the screen's fragment checked against the built page in the five frames.
-- [ ] 9.4 Help keys, `docs/user-guide/` pages, tour step (the first-run path does not include MCP; the page is linked from AI
+- [x] 9.4 Help keys, `docs/user-guide/` pages, tour step (the first-run path does not include MCP; the page is linked from AI
   settings), compiled into `kb/` (`fyniq-knowledge-base`), and the agent guide's MCP section (FR-INT-13: Fyniq answers for its
   tools and results, not an external model's wording; cite fact IDs). Tests `// req: AI-41`, `// req: QA-UI-05`.
-
+  Built: help keys (`settings.connected-apps`, `oauth.consent`, `mcp.revoke-member`), `docs/user-guide/connected-apps.md` and its compiled page, the page linked from AI settings, and the agent guide's MCP status (Fyniq answers for its tools and results, never an external model's wording: cite fact IDs). No tour step: the first-run path does not include MCP. Tests `// req: QA-UI-05` is the registry test; AI-41 is proved by the tool-path tests.
 ## 11. Client registration (AI-90, AI-35; design D14, the owner's decision of 19 Nov 2026)
 
-- [ ] 11.1 Migration 000585 `mcp_client` (global, status guard, the registering addresses' counters); the setting
+- [x] 11.1 Migration 000585 `mcp_client` (global, status guard, the registering addresses' counters); the setting
   `mcp.registration` (off, dual controlled, off at once) and `mcp.clients` taught registered client IDs (a new kind, checked
   against the record); `POST /v1/oauth/register` (RFC 7591) with the policy of `contracts/ai/mcp-registration-policy.json`, the
   limits, the cross-tenant "any organisation has it on" function, `RegisterPublicClient` on the Hydra adapter, and the security
   events. Tests `// req: AI-90`, `// req: AI-35`, every red-team row of design D14 (`// asvs:`), the authorisation matrix row.
-- [ ] 11.2 The authorisation-server metadata (RFC 8414) at the issuer's path with `registration_endpoint`, from Hydra's discovery;
+  Built (found built when the plan was audited, 20 Nov 2026): migrations 000585 and 000586, `mcp.registration`, `POST /v1/oauth/register` with `contracts/ai/mcp-registration-policy.json`, the limits, `RegisterPublicClient` and the security events. Tests `TestAnAIAppRegistersOnlyThroughTheClosedPolicyCheckedEndpoint`, `TestARegisteredAppIsUsableOnlyOnceAnOwnerAllowsIt`, `internal/mcpregister/policy_test.go` (every red-team row of D14), the matrix row.
+- [x] 11.2 The authorisation-server metadata (RFC 8414) at the issuer's path with `registration_endpoint`, from Hydra's discovery;
   Caddy routes it to the API; Hydra's own `/oauth2/register` is still 404. Tests `// req: AI-36`, `// req: AI-90`.
-- [ ] 11.3 The expiry job (7 days unapproved, 30 days unused) through the outbox, removing the client from Hydra. Test
+  Built: `internal/oauthflow/metadata.go` serves the RFC 8414 metadata with `registration_endpoint` only while registration is open; Caddy routes it to the API. Test `TestTheAuthorisationServerMetadataNamesTheRegistrationEndpointOnlyWhileItIsOpen`.
+- [x] 11.3 The expiry job (7 days unapproved, 30 days unused) through the outbox, removing the client from Hydra. Test
   `// req: AI-90`.
-- [ ] 11.4 Approval: an Owner adds a pending registration to `mcp.clients` in Connected apps (dual controlled); consent shows an
+  Built: `mcpregister.Expire` as the hourly platform job `mcp.registrations.expire`. Test `TestTheExpiryJobEndsLapsedRegistrationsAndRemovesTheirClients`.
+- [x] 11.4 Approval: an Owner adds a pending registration to `mcp.clients` in Connected apps (dual controlled); consent shows an
   unverified client's name and redirect host, never a verified publisher. Tests `// req: AI-90`, `// req: AI-37`.
-
+  Built: an Owner adds a pending registration to `mcp.clients` (dual controlled) or denies it in Connected apps; consent shows an unverified app's name and redirect addresses, never a verified publisher. Tests `TestConnectedAppsShowWhatAPersonAndAnOwnerNeed`, `TestTheConsentScreenIsTwoOperationsOfTheAPI`.
 ## 10. The suite, the controls, local mode and the review pack
 
 - [x] 10.1 QA-MCP-01 assembled from the rows each slice added, run in `make test` and its own CI job, and the per-call cost
@@ -257,12 +263,13 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   unreachable, limits and kill switches. Tests `// req: QA-MCP-01`, `// req: AI-36`.
   Built: `compliance/qa-mcp-01.json`, one row per red-team case with the tests that prove it, kept true by `TestEveryQAMCP01RowNamesTestsThatExist`;
   the suite is those tests, which run in `make test`. **Left:** the per-call cost measured against the P0 spike, and an own CI job.
-- [~] 10.2 `CTL-MCP-01` to `CTL-MCP-04` and `CTL-API-02` running in `compliance/controls/` with their evidence (the nightly
+- [x] 10.2 `CTL-MCP-01` to `CTL-MCP-04` and `CTL-API-02` running in `compliance/controls/` with their evidence (the nightly
   sample of agent-class writes is zero; the manifest and never-list check; the dual-control check on enabling and allowlisting;
   the revocation timing test), and the control map's counts. Tests `// req: CTL-MCP-01` to `CTL-MCP-04`, `// req: CTL-API-02`.
   Built: the CI checks of CTL-MCP-01 to 04 run, each naming its tests, and the nightly checks `verify mcp.agent-writes` (every change an
   app's token made, actor `mcp:<client>`, is a proposal's or its approval request) and `verify mcp.enablement` (every opening of MCP had
   an approval signed by a second person). **Left:** CTL-API-02, which waits for Connected apps to register integration clients.
+  Built in full (20 Nov 2026): CTL-API-02's nightly `verify integrations.owned` (every live integration client has an active-member owner, a class, an end date and only its class's scopes) and its quarterly check (the access review lists integration clients and is attested), with CTL-MCP-01 to 04. Test `TestIntegrationClientsMustHaveAnOwnerAClassAnEndAndTheirClassScopes`.
 - [x] 10.3 Local mode (design D13): `make up` registers the clients and the delegation client, serves `/mcp` and the
   well-known path behind Caddy, the local profile enables MCP for the sample company; `docs/runbooks/` says how to connect
   Claude Code and Claude Desktop; the flow is driven in a test with no browser. Tests `// req: DEV-06`, `// req: AI-15`.
@@ -272,7 +279,8 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   conditions and the protocol revisions served, and the security-review (#4) pack: the suite's report, the manifest, the
   limits of option (b) and what stays `[live-verify]`. The deployment switch is **not** set.
   Built: `docs/security/threat-models/mcp-server.md` (threats M1 to M19 against QA-MCP-01's rows, the residual risks for the reviewer, what is `[live-verify]`) and `docs/adr/ADR-T3-mcp-first-party.md`.
-- [ ] 10.5 After the owner's decisions: a PRD revision (AI-39's wording for the revisions served, the limit values AI-43
+- [x] 10.5 After the owner's decisions: a PRD revision (AI-39's wording for the revisions served, the limit values AI-43
   leaves proposed, the delegation mechanism's final record), the specs and the plan's tables in step, `prdspec.py stamp`,
   `make roadmap`; the `fyniq-mcp-server` skill's status block, its revision, its token and session rows and its limits table
   brought up to the built server.
+  Built (PRD-001 rev 0.340): the limit values of AI-43 as built, AI-38's revocation on a switch or an allowlist change, AI-44's Connected apps; AI-39's wording and AI-90 were revised at rev 0.294 and the delegation mechanism is recorded in `docs/adr/ADR-T3-mcp-first-party.md`. The specs and the plan's tables are in step (`prdspec.py stamp`, `make roadmap`). The `fyniq-mcp-server` skill's status block, session bullet and limits note are brought up to the built server.
