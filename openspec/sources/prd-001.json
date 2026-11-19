@@ -211,7 +211,7 @@
       "capability": "ai/data-access"
     },
     {
-      "match": "AI-(0[6-9]|1[0-4]|3[0-3]|89)",
+      "match": "AI-(0[6-9]|1[0-4]|3[0-3]|89|9[12])",
       "capability": "ai/proposals"
     },
     {
