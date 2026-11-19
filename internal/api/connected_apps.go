@@ -13,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/mcpgate"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -76,6 +77,28 @@ type MCPRegistration struct {
 type MCPRegistrations struct {
 	Registrations []MCPRegistration `json:"registrations" nullable:"false" maxItems:"100" doc:"Newest first; an Owner adds one to the apps that may connect to approve it, or denies it."`
 }
+
+// MemberConnection is what a person allowed an AI app, as an Owner sees it.
+type MemberConnection struct {
+	UserID string `json:"user_id" format:"uuid" doc:"Whose connection it is." example:"0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e"`
+	Person string `json:"person" doc:"Their name." example:"Ah Kow"`
+	MyConnection
+}
+
+// MemberConnections are everyone's connections.
+type MemberConnections struct {
+	Connections []MemberConnection `json:"connections" nullable:"false" maxItems:"600" doc:"Each person's allowed AI apps, by person."`
+}
+
+type (
+	memberConnectionsOutput struct{ Body MemberConnections }
+	// MemberConnectionPath names a person's connection to an app.
+	MemberConnectionPath struct {
+		UserID   string `path:"user_id" format:"uuid" doc:"The person." example:"0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e"`
+		ClientID string `path:"client_id" maxLength:"64" pattern:"^[a-z0-9][a-z0-9-]*$" doc:"The app's client ID." example:"claude-code"`
+	}
+	revokeMemberConnectionInput struct{ MemberConnectionPath }
+)
 
 // MCPCallRow is one request an AI app made.
 type MCPCallRow struct {
@@ -191,6 +214,81 @@ func registerConnectedApps(a *API) {
 		}
 		return &noContent{}, nil
 	})
+
+	register(a, authz.ListMCPConnections, exempt(huma.Operation{
+		OperationID: "listMCPConnections", Method: http.MethodGet, Path: "/v1/connected-apps/connections", Tags: []string{"Connected apps"},
+		Summary: "See what everyone allowed AI apps",
+		Description: "For an Owner (AI-44): each member's allowed AI apps with the scopes they gave and when the consent must be renewed. Read-only; no side " +
+			"effects. Never on the AI's or MCP's tool list.",
+	}, "cursor", "A connection is a person and an app, so the list is a few dozen read whole; it is capped at 600 (AI-44)."), locks, func(ctx context.Context, _ *struct{}) (*memberConnectionsOutput, error) {
+		p, _ := authn.From(ctx)
+		out := &memberConnectionsOutput{Body: MemberConnections{Connections: []MemberConnection{}}}
+		if a.deps.OAuthConsents == nil {
+			return out, nil
+		}
+		var members []storage.Member
+		names := map[uuid.UUID]string{}
+		if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			if members, err = u.Members().List(ctx, a.deps.Clock.Now()); err != nil {
+				return err
+			}
+			names, err = memberNames(ctx, u, a.deps.Clock.Now())
+			return err
+		}); err != nil {
+			return nil, err
+		}
+		for _, m := range members {
+			consents, err := a.deps.OAuthConsents.AgentConsents(ctx, m.UserID.String())
+			if err != nil {
+				return nil, err
+			}
+			for _, c := range consents {
+				scopes := []MCPScopeName{}
+				for _, s := range c.Scopes {
+					scopes = append(scopes, MCPScopeName(s))
+				}
+				out.Body.Connections = append(out.Body.Connections, MemberConnection{UserID: m.UserID.String(), Person: names[m.UserID], MyConnection: MyConnection{
+					ClientID: c.ClientID, Name: c.ClientName, Scopes: scopes, GrantedAt: c.GrantedAt.UTC(), ExpiresAt: c.GrantedAt.UTC().Add(90 * 24 * time.Hour)}})
+			}
+		}
+		return out, nil
+	})
+
+	register(a, authz.RevokeMemberConnection, exempt(exempt(huma.Operation{
+		OperationID: "revokeMemberConnection", Method: http.MethodDelete, Path: "/v1/connected-apps/people/{user_id}/connections/{client_id}", Tags: []string{"Connected apps"},
+		Summary: "Disconnect a person's AI app", DefaultStatus: http.StatusNoContent,
+		Description: "An Owner revokes what one member allowed one AI app: its access and refresh tokens end at once (AI-44, AI-38). It narrows, so it is never held " +
+			"for a second person; idempotent. Only a member of this organisation. Side effects: the app's tokens at the OAuth server and an audit event. Never on " +
+			"the AI's or MCP's tool list.",
+	}, "Idempotency-Key", "A revocation is idempotent, so a retry is safe without a key (AI-44)."), "Prefer", "A revocation narrows and takes effect at once; a preview would only repeat the answer (AI-44)."),
+		append([]string{CodeNotFound, CodeConnectedNoUser, CodeInvalid}, locks...), func(ctx context.Context, in *revokeMemberConnectionInput) (*noContent, error) {
+			p, _ := authn.From(ctx)
+			user, err := uuid.Parse(in.UserID)
+			if err != nil || a.deps.OAuthConsents == nil {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "user_id", Message: "is not a person's ID", Fix: "Use an ID from the connections list"}})
+			}
+			var member bool
+			if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+				ms, err := u.Members().List(ctx, a.deps.Clock.Now())
+				for _, m := range ms {
+					member = member || m.UserID == user
+				}
+				if err != nil || !member {
+					return err
+				}
+				return u.Audit().Record(ctx, storage.AuditRecord{Action: "mcp.connection_revoked", ObjectType: "organisation", ObjectID: p.Organisation,
+					Changes: map[string][2]any{"user": {nil, user.String()}, "client": {nil, in.ClientID}}})
+			}); err != nil {
+				return nil, err
+			}
+			if !member {
+				return nil, ports.ErrNotFound
+			}
+			if err := a.deps.OAuthConsents.RevokeClientConsent(ctx, user.String(), in.ClientID); err != nil {
+				return nil, err
+			}
+			return &noContent{}, nil
+		})
 
 	register(a, authz.ListMCPRegistrations, exempt(huma.Operation{
 		OperationID: "listMCPRegistrations", Method: http.MethodGet, Path: "/v1/connected-apps/registrations", Tags: []string{"Connected apps"},

@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "client_id": {
+      "description": "The app's client ID.",
+      "examples": [
+        "claude-code"
+      ],
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "When the consent must be renewed: 90 days after you gave it (AI-37).",
+      "examples": [
+        "2027-02-17T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "granted_at": {
+      "description": "When you allowed it.",
+      "examples": [
+        "2026-11-19T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "name": {
+      "description": "The app's name.",
+      "examples": [
+        "Claude Code"
+      ],
+      "type": "string"
+    },
+    "person": {
+      "description": "Their name.",
+      "examples": [
+        "Ah Kow"
+      ],
+      "type": "string"
+    },
+    "scopes": {
+      "description": "What you allowed it.",
+      "items": {
+        "description": "A scope an AI app was granted.",
+        "examples": [
+          "fyniq.read.reports"
+        ],
+        "type": "string"
+      },
+      "maxItems": 30,
+      "type": "array"
+    },
+    "user_id": {
+      "description": "Whose connection it is.",
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "person",
+    "client_id",
+    "name",
+    "scopes",
+    "granted_at",
+    "expires_at"
+  ],
+  "title": "MemberConnection",
+  "type": "object"
+}

@@ -62,6 +62,26 @@ describe("Connected apps", () => {
     await waitFor(() => expect(calls()).toContain("POST /v1/connected-apps/registrations/mcp-0123456789abcdef0123/deny"));
   });
 
+  it("shows when each app was last used, everyone's connections to an Owner with a revoke, and the integration clients and tokens", async () => {
+    page({
+      "GET /v1/connected-apps/connections": { status: 200, body: { connections: [{ user_id: "u1", person: "Ah Kow", client_id: "claude-code", name: "Claude Code", scopes: ["openid"], granted_at: "2026-11-01T09:00:00Z", expires_at: "2027-01-30T09:00:00Z" }] } },
+      "DELETE /v1/connected-apps/people/u1/connections/claude-code": { status: 204 },
+      "GET /v1/integration-clients": { status: 200, body: { items: [{ id: "i1", name: "Reporting export", class: "integration", status: "live", expires_at: "2027-03-01T00:00:00Z", scopes: ["fyniq.read.reports"] }] } },
+      "GET /v1/personal-access-tokens/mine": { status: 200, body: { items: [{ id: "t1", name: "My script", class: "agent", status: "revoked", expires_at: "2027-01-01T00:00:00Z", scopes: ["fyniq.read.reports"] }] } },
+    });
+    renderPage(ConnectedApps, { path: "/settings/connected-apps" });
+    await waitFor(() => expect(screen.getByTestId("last-use-claude-code").textContent).toMatch(/^Last used /));
+    expect(screen.getByTestId("last-use-claude-desktop").textContent).toBe("Not used yet");
+    const everyone = await screen.findByRole("list", { name: "Everyone's connections" });
+    expect(within(everyone).getByText(/Ah Kow: Claude Code/)).toBeTruthy();
+    fireEvent.click(within(everyone).getByRole("button", { name: "Disconnect Claude Code for Ah Kow" }));
+    await waitFor(() => expect(calls()).toContain("DELETE /v1/connected-apps/people/u1/connections/claude-code"));
+    const keys = await screen.findByRole("list", { name: "Integration clients and tokens" });
+    expect(within(keys).getByText("Reporting export")).toBeTruthy();
+    expect(within(keys).getByText(/Agent \(proposes only\), revoked/)).toBeTruthy();
+    await noViolations(document.body);
+  });
+
   it("shows nothing waiting or done when the person may not see it", async () => {
     page({ "GET /v1/connected-apps/registrations": { status: 403, body: { code: "API-AUTHZ-01", detail: "no", title: "no", status: 403 } }, "GET /v1/connected-apps/activity": { status: 200, body: { calls: [] } } });
     renderPage(ConnectedApps, { path: "/settings/connected-apps" });

@@ -94,6 +94,26 @@ func TestConnectedAppsShowWhatAPersonAndAnOwnerNeed(t *testing.T) {
 		t.Errorf("another person's connections: %s", other.Raw)
 	}
 
+	// An Owner sees everyone's connections and revokes any member's; a person with no right to Connected apps does neither, and a stranger
+	// is no member (AI-44, AI-38).
+	everyone := e.call(http.MethodGet, "/v1/connected-apps/connections", weiling, nil)
+	if list, _ := everyone.Body["connections"].([]any); everyone.Status != 200 || len(list) != 1 || list[0].(map[string]any)["user_id"] != f.ahkow || list[0].(map[string]any)["client_id"] != "claude-code" {
+		t.Errorf("everyone's connections: %d %s", everyone.Status, everyone.Raw)
+	}
+	if r := e.call(http.MethodGet, "/v1/connected-apps/connections", staff, nil); r.Status != 403 {
+		t.Errorf("an Employee lists everyone's connections: %d", r.Status)
+	}
+	if r := e.call(http.MethodDelete, "/v1/connected-apps/people/"+f.ahkow+"/connections/claude-code", staff, nil); r.Status != 403 {
+		t.Errorf("an Employee revokes another's app: %d", r.Status)
+	}
+	if r := e.call(http.MethodDelete, "/v1/connected-apps/people/"+uuid.NewString()+"/connections/claude-code", weiling, nil); r.Status != 404 {
+		t.Errorf("a stranger's app: %d", r.Status)
+	}
+	if r := e.call(http.MethodDelete, "/v1/connected-apps/people/"+f.ahkow+"/connections/claude-code", weiling, nil); r.Status != 204 || len(consents.revoked) != 1 || consents.revoked[0] != f.ahkow+" claude-code" {
+		t.Errorf("an Owner's revoke: %d %v", r.Status, consents.revoked)
+	}
+	consents.revoked = nil
+
 	// A person disconnects their own app, only their own.
 	if r := e.call(http.MethodDelete, "/v1/connected-apps/connections/claude-code", ahkow, nil); r.Status != 204 {
 		t.Fatalf("disconnecting: %d %s", r.Status, r.Raw)

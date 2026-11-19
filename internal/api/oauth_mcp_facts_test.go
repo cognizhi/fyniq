@@ -564,3 +564,120 @@ func TestTheConsentScreenIsTwoOperationsOfTheAPI(t *testing.T) {
 	}
 	s.gate.code, s.gate.why = "", ""
 }
+
+// An organisation turning AI apps off, or taking one off its allowlist, ends the tokens its members' apps hold, once the setting's change
+// commits: the whole switch ends every AI app's tokens, an allowlist change only the removed app's, and a person's integration token is
+// left alone. The per-call gate refuses the next call at once either way; this ends the tokens at the OAuth server (AI-35, AI-38).
+// req: AI-35
+// req: AI-38
+// asvs: V10.4.9, V7.4.1
+func TestTheSwitchOrTheAllowlistTakingAnAppAwayEndsItsTokens(t *testing.T) {
+	s := startOAuth(t, 0)
+	ctx := context.Background()
+	f := foundersIn(s.e)
+	user := uuid.MustParse(f.ahkow)
+	s.e.tokens.mu.Lock()
+	p := s.e.tokens.m[s.user]
+	p.UserID, p.Organisation = user, s.e.books.Org
+	s.e.tokens.m[s.user] = p
+	s.e.tokens.mu.Unlock()
+	s.userID = user
+	s.e.api.deps.Outbox = &outbox.Dispatcher{Store: s.e.store, Queue: local.NewMemory(), Clock: s.clock}
+	if err := mcpgate.Register(ctx, s.admin, mcpAudience); err != nil {
+		t.Fatal(err)
+	}
+	connect := func() (map[string]any, map[string]any) {
+		q, verifier := pkceQuery("claude-code", "openid offline_access fyniq.read.reports")
+		q.Set("resource", mcpAudience)
+		_, agent, _ := s.walk(q, verifier, "http://localhost:3118/callback", url.Values{"resource": {mcpAudience}})
+		integration, err := s.admin.CreateClient(ctx, hydra.NewClient{Name: "Test integration " + uuid.NewString()[:8], Class: authn.ClassIntegration, Audiences: []string{apiAudience},
+			RedirectURIs: []string{callback}, Scopes: []string{"openid", "fyniq.read.accounting"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		other, refused := s.authorize(integration.ID, apiAudience, "openid fyniq.read.accounting", true, "accept")
+		if refused != "" || agent["access_token"] == nil {
+			t.Fatalf("the tokens: %q %v", refused, agent)
+		}
+		return agent, other
+	}
+	active := func(token any) bool {
+		in, err := s.admin.Introspect(ctx, token.(string))
+		return err == nil && in.Active
+	}
+	change := func(key, value string) {
+		t.Helper()
+		err := s.e.store.Do(storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: f.ahkow}}), s.e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := s.e.api.recordSetting(ctx, u, key, value, s.e.clock.Now().Format(time.DateOnly))
+			return err
+		})
+		if err != nil {
+			t.Fatalf("setting %s: %v", key, err)
+		}
+	}
+	done := map[uuid.UUID]bool{}
+	drain := func() {
+		t.Helper()
+		var rows []storage.OutboxRow
+		if err := s.e.store.Do(ctx, s.e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			rows, err = u.Sweeping().Due(ctx, s.clock.Now().Add(time.Hour), s.clock.Now().Add(time.Hour))
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		for _, r := range rows {
+			if done[r.ID] {
+				continue
+			}
+			done[r.ID] = true
+			switch r.Kind {
+			case oauthtokens.AgentKind:
+				if err := oauthtokens.AgentWork(s.admin)(ctx, s.e.books.Org, r); err != nil {
+					t.Fatal(err)
+				}
+			case oauthtokens.AgentClientKind:
+				if err := oauthtokens.AgentClientWork(s.admin)(ctx, s.e.books.Org, r); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+	}
+	s.e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := u.Settings().Record(ctx, "features.mcp", "false", "true", time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), 1); err != nil {
+			return err
+		}
+		_, err := u.Settings().Record(ctx, "mcp.clients", "", "claude-code,claude-desktop", time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), 1)
+		return err
+	})
+
+	// Taking claude-code off the allowlist ends its token and not the integration's.
+	agent, other := connect()
+	if !active(agent["access_token"]) || !active(other["access_token"]) {
+		t.Fatal("both tokens should be live")
+	}
+	change("mcp.clients", "claude-desktop")
+	drain()
+	if active(agent["access_token"]) {
+		t.Error("the app's token survives its removal from the allowlist")
+	}
+	if !active(other["access_token"]) {
+		t.Error("removing an app revoked a token that is not an AI app's")
+	}
+	// Adding an app revokes nothing.
+	agent, other = connect()
+	change("mcp.clients", "claude-desktop,claude-code")
+	drain()
+	if !active(agent["access_token"]) {
+		t.Error("allowing an app ended its token")
+	}
+	// Turning the switch off ends every AI app's tokens.
+	change("features.mcp", "false")
+	drain()
+	if active(agent["access_token"]) {
+		t.Error("the AI app's token survives the organisation's switch going off")
+	}
+	if !active(other["access_token"]) {
+		t.Error("the switch revoked a token that is not an AI app's")
+	}
+}

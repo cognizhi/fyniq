@@ -14,6 +14,9 @@ import { SettingsPage } from "./SettingsPage";
 type View = components["schemas"]["ConnectedAppsView"];
 type Registration = components["schemas"]["MCPRegistration"];
 type Call = components["schemas"]["MCPCallRow"];
+type Everyone = components["schemas"]["MemberConnection"];
+type Client = components["schemas"]["IntegrationClient"];
+type Token = components["schemas"]["PersonalAccessToken"];
 
 async function readApps(): Promise<View> {
   const { data, error } = await api.GET("/v1/connected-apps");
@@ -32,6 +35,27 @@ async function readActivity(): Promise<Call[]> {
   return error ? [] : data.calls;
 }
 
+// An Owner's view of everyone's activity, connections and the integration clients: the API decides who may see them, and a refusal is a quiet empty list.
+async function readEveryonesActivity(): Promise<Call[]> {
+  const { data, error } = await api.GET("/v1/connected-apps/activity", { params: { query: { all: true } } });
+  return error ? [] : data.calls;
+}
+
+async function readEveryone(): Promise<Everyone[]> {
+  const { data, error } = await api.GET("/v1/connected-apps/connections");
+  return error ? [] : data.connections;
+}
+
+async function readClients(): Promise<Client[]> {
+  const { data, error } = await api.GET("/v1/integration-clients", { params: { query: {} } });
+  return error ? [] : (data.items ?? []);
+}
+
+async function readMyTokens(): Promise<Token[]> {
+  const { data, error } = await api.GET("/v1/personal-access-tokens/mine", { params: { query: {} } });
+  return error ? [] : (data.items ?? []);
+}
+
 // ConnectedApps is Settings › Connected apps (docs/design/screens ConnectedApps; AI-44, AI-35, AI-90): the AI apps that work for
 // the person, what the organisation allows, what the person has allowed each, the registrations waiting for an Owner, and what the
 // apps did. Switching it on, allowing an app and opening registration are the organisation's settings, each with a second approver.
@@ -41,6 +65,10 @@ export function ConnectedApps() {
   const apps = useQuery({ queryKey: ["connected-apps"], queryFn: readApps });
   const waiting = useQuery({ queryKey: ["connected-apps", "registrations"], queryFn: readRegistrations });
   const activity = useQuery({ queryKey: ["connected-apps", "activity"], queryFn: readActivity });
+  const everyonesActivity = useQuery({ queryKey: ["connected-apps", "activity", "all"], queryFn: readEveryonesActivity });
+  const everyone = useQuery({ queryKey: ["connected-apps", "everyone"], queryFn: readEveryone });
+  const clients = useQuery({ queryKey: ["connected-apps", "integration-clients"], queryFn: readClients });
+  const tokens = useQuery({ queryKey: ["connected-apps", "tokens"], queryFn: readMyTokens });
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [busy, setBusy] = useState(false);
   const h = helpText("settings.connected-apps");
@@ -62,6 +90,20 @@ export function ConnectedApps() {
     if (r.error) setProblem(problemOf(r.error));
     else await refresh();
   };
+  const revokeFor = async (person: string, client: string) => {
+    setBusy(true);
+    setProblem(null);
+    const r = await api.DELETE("/v1/connected-apps/people/{user_id}/connections/{client_id}", { params: { path: { user_id: person, client_id: client } } });
+    setBusy(false);
+    if (r.error) setProblem(problemOf(r.error));
+    else await refresh();
+  };
+  // lastUse is when each app last made a call: everyone's for those who may see it, else the person's own.
+  const lastUse = new Map<string, string>();
+  for (const c of [...(activity.data ?? []), ...(everyonesActivity.data ?? [])]) {
+    const was = lastUse.get(c.app);
+    if (!was || c.at > was) lastUse.set(c.app, c.at);
+  }
   const deny = async (client: string) => {
     setBusy(true);
     setProblem(null);
@@ -131,6 +173,9 @@ export function ConnectedApps() {
                   <span className="fy-list__title">{a.name}</span>
                   <span className="fy-help">{a.verified ? `Published by ${a.publisher}` : "Registered itself: Fyniq has not verified who publishes it"}</span>
                 </span>
+                <span className="fy-help fy-expert-only" data-testid={`last-use-${a.id}`}>
+                  {lastUse.has(a.id) ? `Last used ${date(lastUse.get(a.id)!)}` : "Not used yet"}
+                </span>
                 {a.verified ? (
                   <span className="fy-chip fy-chip--info">
                     <Icon of={BadgeCheck} />
@@ -175,6 +220,58 @@ export function ConnectedApps() {
               ))}
             </ul>
           )}
+        </section>
+      )}
+      {(everyone.data?.length ?? 0) > 0 && (
+        <section className="fy-card" aria-labelledby={`${id}-everyone`}>
+          <div className="fy-card__head">
+            <h2 className="fy-h3" id={`${id}-everyone`}>
+              What everyone has allowed
+            </h2>
+          </div>
+          <ul className="fy-list" aria-label="Everyone's connections">
+            {everyone.data?.map((c) => (
+              <li className="fy-list__item" key={`${c.user_id}-${c.client_id}`}>
+                <span className="fy-list__main">
+                  <span className="fy-list__title">
+                    {c.person}: {c.name}
+                  </span>
+                  <span className="fy-help">
+                    Allowed {date(c.granted_at)}, renew by {date(c.expires_at)}. Access: {c.scopes.join(", ")}
+                  </span>
+                </span>
+                <Button variant="secondary" size="sm" disabled={busy} onClick={() => revokeFor(c.user_id, c.client_id)} aria-label={`Disconnect ${c.name} for ${c.person}`} title={helpText("mcp.revoke-member").tooltip}>
+                  <Icon of={Link2Off} />
+                  Disconnect
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {((clients.data?.length ?? 0) > 0 || (tokens.data?.length ?? 0) > 0) && (
+        <section className="fy-card" aria-labelledby={`${id}-keys`}>
+          <div className="fy-card__head">
+            <h2 className="fy-h3" id={`${id}-keys`}>
+              Integration clients and personal access tokens
+            </h2>
+          </div>
+          <div className="fy-card__body fy-stack fy-stack--2">
+            <p className="fy-secondary">These reach your company's books through the API, not through an AI app. Each acts as one member and never exceeds their rights; creating and revoking them is under Settings, Integrations.</p>
+          </div>
+          <ul className="fy-list" aria-label="Integration clients and tokens">
+            {[...(clients.data ?? []), ...(tokens.data ?? [])].map((c) => (
+              <li className="fy-list__item" key={c.id}>
+                <span className="fy-list__main">
+                  <span className="fy-list__title">{c.name}</span>
+                  <span className="fy-help">
+                    {c.class === "agent" ? "Agent (proposes only)" : "Integration"}, {c.status === "revoked" ? "revoked" : `until ${date(c.expires_at)}`}. Access: {c.scopes.join(", ")}
+                  </span>
+                </span>
+                <span className={`fy-chip ${c.status === "live" ? "fy-chip--success" : "fy-chip--neutral"}`}>{c.status === "live" ? "Live" : c.status === "expired" ? "Expired" : "Revoked"}</span>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
       {(waiting.data?.length ?? 0) > 0 && (
