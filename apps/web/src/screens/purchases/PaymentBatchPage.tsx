@@ -15,6 +15,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listBreakGlass } from "../approvals/BreakGlass";
+import { fileOfWriter, paymentFiles } from "../banking/paymentFiles";
 import { BatchStatus, batchName, batchPreparers, batchReleasers, type Batch } from "./PaymentBatches";
 
 type Payment = Batch["payments"][number];
@@ -241,6 +242,12 @@ function SendAgain({ batch, payment, onClose, onDone }: { batch: Batch; payment:
   );
 }
 
+// fileWords names the file a release's answer says it wrote, for the message that follows it.
+function fileWords(released: unknown): string {
+  const kind = fileOfWriter((released as { release?: { writer?: string } } | undefined)?.release?.writer ?? "");
+  return kind === "wise-batch" ? "Wise's batch payment file" : kind === "dbs-uff" ? "DBS IDEAL's UFF" : "the payment list";
+}
+
 // save keeps a file the browser downloads: the payment list, from its base64.
 function save(name: string, type: string, base64: string) {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
@@ -274,7 +281,6 @@ export function PaymentBatchPage() {
   const ask = helpText("batch.ask");
   const again = helpText("batch.reapprove");
   const release = helpText("batch.release");
-  const download = helpText("batch.download");
   const cancel = helpText("batch.cancel");
   const underGlass = helpText("batch.release-break-glass");
   const q = useQuery({
@@ -292,16 +298,19 @@ export function PaymentBatchPage() {
   const glass = useQuery({ queryKey: ["break-glass"], queryFn: listBreakGlass, enabled: releases && (b?.status === "draft" || b?.status === "waiting") });
   const mine = glass.data?.active?.started_by.id === session.user_id ? glass.data?.active : undefined;
   const released = b?.status === "released" || b?.status === "paid";
+  // The file the release wrote names itself (FR-BNK-12, rev 0.157): the payment list, Wise's batch file or DBS IDEAL's UFF.
+  const kind = b?.release ? fileOfWriter(b.release.writer) : undefined;
+  const download = kind ? helpText(paymentFiles[kind].downloadHelp) : { label: `Download ${b?.release?.file_name ?? "the payment file"}`, tooltip: helpText("batch.download").tooltip };
   const errors = (b?.checks ?? []).filter((c) => c.severity === "error");
 
-  const run = async (what: string, call: () => Promise<{ data?: unknown; error?: unknown }>, done: string) => {
+  const run = async (what: string, call: () => Promise<{ data?: unknown; error?: unknown }>, done: string | ((released: unknown) => string)) => {
     setBusy(true);
     setProblem(null);
     const out = await guarded(confirm, call);
     setBusy(false);
     setFailed(what);
     if (!out.data) return setProblem(problemOf(out.error));
-    setStatus(done);
+    setStatus(typeof done === "string" ? done : done(out.data));
     await refresh();
   };
   const header = () => ({ "If-Match": etag, "Idempotency-Key": newKey() });
@@ -320,11 +329,13 @@ export function PaymentBatchPage() {
     setProblem(null);
     const out = await guarded(confirm, () => api.GET("/v1/payment-batches/{batch_id}/file", { params: { path: { batch_id: b.id } } }));
     setBusy(false);
-    setFailed("The payment list was not downloaded");
+    setFailed("The payment file was not downloaded");
     if (!out.data) return setProblem(problemOf(out.error));
     save(out.data.file_name, out.data.media_type, out.data.content_base64);
     setFile({ name: out.data.file_name, sha256: out.data.sha256 });
-    setStatus(`Downloaded ${out.data.file_name}. Key each payment into your bank's bulk payment screen, check the count and total, then delete the file.`);
+    setStatus(
+      `Downloaded ${out.data.file_name}. ${kind === "wise-batch" ? "Upload it to Wise" : kind === "dbs-uff" ? "Upload it in DBS IDEAL" : "Key each payment into your bank's bulk payment screen"}, check the count and total, then delete the file.`,
+    );
   };
 
   if (q.isError) return <Refusal problem={problemOf(q.error)} title="The payment batch could not be shown" />;
@@ -369,7 +380,7 @@ export function PaymentBatchPage() {
                 void run(
                   "The batch was not released under break-glass",
                   () => api.POST("/v1/payment-batches/{batch_id}/break-glass-release", { params: { path: { batch_id: b.id }, header: header() } }),
-                  "Released under break-glass: its payments are posted. Download the payment list and pay it in the bank; another Owner reviews the break-glass.",
+                  (d) => `Released under break-glass: its payments are posted. Download ${fileWords(d)} and pay it in the bank; another Owner reviews the break-glass.`,
                 )
               }
               disabled={busy || errors.length > 0}
@@ -393,7 +404,7 @@ export function PaymentBatchPage() {
           {b.status === "approved" && !b.reapproval_needed && releases && (
             <Button
               variant="primary"
-              onClick={() => void run("The batch was not released", () => api.POST("/v1/payment-batches/{batch_id}/release", { params: { path: { batch_id: b.id }, header: header() } }), "Released: its payments are posted. Download the payment list and pay it in the bank.")}
+              onClick={() => void run("The batch was not released", () => api.POST("/v1/payment-batches/{batch_id}/release", { params: { path: { batch_id: b.id }, header: header() } }), (d) => `Released: its payments are posted. Download ${fileWords(d)} and pay it in the bank.`)}
               disabled={busy || errors.length > 0}
               title={release.tooltip}
             >
@@ -490,7 +501,7 @@ export function PaymentBatchPage() {
                       ))}
                     </ul>
                   </td>
-                  <td data-card="meta">{p.account ? `${p.account.bic} · ••••${p.account.account_number_last4}` : released ? "As the payment list says" : "No approved account"}</td>
+                  <td data-card="meta">{p.account ? `${p.account.bic} · ••••${p.account.account_number_last4}` : released ? "As the payment file says" : "No approved account"}</td>
                   <td data-card="amount" className="fy-num">
                     {formatAmount(p.amount.amount)}
                   </td>
@@ -516,10 +527,10 @@ export function PaymentBatchPage() {
       {b.release && (
         <section className="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="release-title">
           <h2 className="fy-h3" id="release-title">
-            Payment list
+            {kind ? paymentFiles[kind].words : "Payment file"}
           </h2>
           <p className="fy-small">
-            Released by {b.release.released_by.name ?? "a member"} on {dateTime(b.release.released_at)}. Key each payment into your bank's bulk payment screen; the batch is paid when the bank statement shows each one.
+            Released by {b.release.released_by.name ?? "a member"} on {dateTime(b.release.released_at)}. {kind === "wise-batch" ? "Upload it to Wise" : kind === "dbs-uff" ? "Upload it in DBS IDEAL" : "Key each payment into your bank's bulk payment screen"}; the batch is paid when the bank statement shows each one.
           </p>
           <p className="fy-small fy-secondary">
             {b.release.file_name} · SHA-256 <span className="fy-mono break-all">{b.release.sha256}</span>
