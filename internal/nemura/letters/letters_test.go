@@ -118,3 +118,41 @@ func TestTheLocalRendererIsDeterministicAndRefusesWhatItCannotDraw(t *testing.T)
 		t.Errorf("reference %s", got)
 	}
 }
+
+// The standard text of the key employment terms passes its own type's check, lists all seventeen items in the official order, and uses the pay fields that only this type may
+// show: any other type refuses them (NM-LTR-06, NM-LTR-01).
+// req: NM-LTR-06
+func TestTheStandardKeyEmploymentTermsUseThePayFieldsOnlyTheirTypeMayShow(t *testing.T) {
+	kets, _ := letters.TypeOf("kets")
+	if p := letters.Check(kets, letters.KETDefault); len(p) != 0 {
+		t.Fatalf("the standard text: %+v", p)
+	}
+	all := ""
+	for _, b := range letters.KETDefault {
+		all += b.Text + "\n"
+	}
+	last := -1
+	for _, want := range []string{"1. Employer", "2. Employee", "3. Job title", "5. Duration of employment", "8. Basic salary per salary period", "11. Overtime payment period", "14. Leave entitlements", "17. Notice period"} {
+		i := strings.Index(all, want)
+		if i < 0 || i <= last {
+			t.Errorf("%q is missing or out of order", want)
+		}
+		last = i
+	}
+	used := letters.FieldsUsed(letters.KETDefault)
+	for _, k := range letters.KETFields {
+		if !strings.Contains(strings.Join(used, ","), k) {
+			t.Errorf("the standard text does not use %s", k)
+		}
+	}
+	other, _ := letters.TypeOf("service_letter")
+	p := letters.Check(other, []letters.Block{{Kind: letters.Paragraph, Text: "{{terms.basic_salary}}"}, {Kind: letters.Signature, Text: "x"}})
+	if len(p) != 1 || !strings.Contains(p[0].Message, "pay term that only the key employment terms may show") {
+		t.Errorf("a pay field on another type: %+v", p)
+	}
+	for _, ty := range letters.Types {
+		if ty.Pay && ty.Key != "kets" {
+			t.Errorf("%s may show pay terms", ty.Key)
+		}
+	}
+}

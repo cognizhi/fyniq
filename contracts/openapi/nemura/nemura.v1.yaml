@@ -2072,6 +2072,25 @@ components:
         - year
         - types
       type: object
+    LetterAskForInputBody:
+      additionalProperties: false
+      properties:
+        purpose:
+          description: What the letter is for.
+          examples:
+            - The key employment terms for the new hire
+          maxLength: 300
+          minLength: 1
+          type: string
+        type:
+          description: The letter type's key.
+          examples:
+            - kets
+          type: string
+      required:
+        - type
+        - purpose
+      type: object
     LetterAskInputBody:
       additionalProperties: false
       properties:
@@ -3828,6 +3847,142 @@ components:
       required:
         - providers
         - setup_done
+      type: object
+    Terms:
+      additionalProperties: false
+      properties:
+        base:
+          $ref: "#/components/schemas/TermsBase"
+          description: The base terms.
+        effective_from:
+          description: The day these terms started.
+          examples:
+            - "2026-09-01"
+          format: date
+          type: string
+        effective_to:
+          description: The day they ended, when they have.
+          examples:
+            - "2027-01-01"
+          format: date
+          type: string
+        pay:
+          $ref: "#/components/schemas/TermsPay"
+          description: The pay terms; only the Payroll administrator and the Owner see them.
+      required:
+        - effective_from
+        - base
+      type: object
+    TermsBase:
+      additionalProperties: false
+      properties:
+        contract_end:
+          description: The last day of a fixed-term contract; empty for an open-ended one.
+          examples:
+            - "2027-08-31"
+          format: date
+          type: string
+        main_duties:
+          description: The main duties and responsibilities, as the contract states them.
+          examples:
+            - Builds and runs the payments platform.
+          maxLength: 1000
+          minLength: 1
+          type: string
+        medical_benefits:
+          description: Other medical benefits; empty is none.
+          examples:
+            - Group hospital and surgical insurance
+          maxLength: 500
+          type: string
+        notice_period:
+          description: The notice period for termination by either party.
+          examples:
+            - One month
+          maxLength: 300
+          minLength: 1
+          type: string
+      required:
+        - main_duties
+        - notice_period
+      type: object
+    TermsOutputBody:
+      additionalProperties: false
+      properties:
+        recorded:
+          description: Whether the person has terms on the day.
+          examples:
+            - true
+          type: boolean
+        terms:
+          $ref: "#/components/schemas/Terms"
+          description: The terms.
+      required:
+        - recorded
+        - terms
+      type: object
+    TermsPay:
+      additionalProperties: false
+      properties:
+        basic_salary:
+          description: The basic salary in dollars per salary period, as a decimal string.
+          examples:
+            - "4500.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        fixed_allowances:
+          description: Fixed allowances per salary period; empty is none.
+          examples:
+            - Transport 100.00
+          maxLength: 500
+          type: string
+        fixed_deductions:
+          description: Fixed deductions per salary period; empty is none.
+          examples:
+            - Dormitory 200.00
+          maxLength: 500
+          type: string
+        other_pay:
+          description: Other salary-related components such as bonuses; empty is none.
+          examples:
+            - A discretionary year-end bonus
+          maxLength: 500
+          type: string
+        overtime_period:
+          description: The overtime payment period, only when it differs from the salary period.
+          examples:
+            - Monthly, with the next salary
+          maxLength: 200
+          type: string
+        salary_period:
+          description: The salary period.
+          enum:
+            - hourly
+            - daily
+            - weekly
+            - fortnightly
+            - monthly
+          examples:
+            - monthly
+          type: string
+      type: object
+    TermsSetInputBody:
+      additionalProperties: false
+      properties:
+        base:
+          $ref: "#/components/schemas/TermsBase"
+          description: The base terms, for the people team; left out, the current ones carry forward.
+        effective_from:
+          description: The day the new terms start; the current ones end that day.
+          examples:
+            - "2026-09-01"
+          format: date
+          type: string
+        pay:
+          $ref: "#/components/schemas/TermsPay"
+          description: The pay terms, for the Payroll administrator and the Owner; left out, the current ones carry forward.
+      required:
+        - effective_from
       type: object
     UnpaidDecisionInputBody:
       additionalProperties: false
@@ -8620,6 +8775,81 @@ paths:
       summary: Pay out days of annual leave
       tags:
         - Leave
+  /v1/people/{id}/letters:
+    post:
+      description: "The people team asks for a letter about a person, such as their key employment terms: the published template is filled from the person's record, terms and the letterhead, and a fact the record does not hold is refused by name. Another member of the people team checks it and the Owner signs it. The HR officer, the HR administrator and the Owner. It is audited."
+      operationId: requestLetterFor
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person the letter is about.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person the letter is about.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LetterAskForInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterAskOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Ask for a letter about a person
+      tags:
+        - Letters
   /v1/people/{id}/nric:
     put:
       description: "Seals the NRIC or FIN with the key service and keeps its masked form: it is collected only for statutory filings, never shown in a list, never in a log or an event. The HR officer and the HR administrator. It is audited without the value."
@@ -8766,6 +8996,149 @@ paths:
       summary: Read a restricted field
       tags:
         - People
+  /v1/people/{id}/terms:
+    get:
+      description: The key employment terms Nemura holds for a person on a day. The people team reads the base terms; the Payroll administrator and the Owner read the pay terms as well. Anyone else is refused as if the person did not exist. It changes nothing.
+      operationId: getPersonTerms
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+        - description: The day to show the terms on; today when empty.
+          explode: false
+          in: query
+          name: as_of
+          schema:
+            description: The day to show the terms on; today when empty.
+            examples:
+              - "2026-06-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A person's key employment terms
+      tags:
+        - Letters
+    post:
+      description: Ends the current terms the day the new ones start and starts them. The HR officer, the HR administrator and the Owner write the base terms (main duties, notice period, medical benefits, contract end); the Payroll administrator and the Owner write the pay terms. A part the caller may not write carries forward; pay terms cannot be started before the base terms are. It is audited, and the audit event never holds the pay.
+      operationId: setPersonTerms
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TermsSetInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Start a person's key employment terms
+      tags:
+        - Letters
   /v1/people/{id}/work-passes:
     get:
       description: Lists the person's work passes, numbers masked, soonest to expire first. The people team (HR, the Payroll administrator, the Owner). It changes nothing.

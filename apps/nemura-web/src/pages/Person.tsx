@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
 import { ReviewBanner } from "../components/ReviewBanner";
+import { TermsPanel } from "../components/TermsPanel";
 import { helpText, t, textKeys } from "../i18n";
 import { Shell, admin, team } from "./Shell";
 
@@ -32,6 +33,7 @@ export function Person({ id, roles }: { id: string; roles: readonly string[] }) 
         {state.status === "loading" && <p role="status" className="fy-secondary">{t("person.loading")}</p>}
         {state.status === "missing" && <p role="alert" className="fy-secondary">{t("person.notfound")}</p>}
         {state.status === "ready" && <Record rec={state.rec} />}
+        {state.status === "ready" && <TermsPanel person={id} roles={roles} />}
         {state.status === "ready" && <a href={`/people/${id}/leave`}>{t("person.leave")}</a>}
         <a href="/people/directory">{t("person.back")}</a>
       </main>

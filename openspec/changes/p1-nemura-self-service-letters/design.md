@@ -44,8 +44,10 @@ the people assistant's drafts (`-assistant-external`); hiring and onboarding pla
 - **D7. KETs come from the person's terms.** A `person_terms` record, effective-dated, holds what the Employment Act's key employment terms need that the people
   record does not (main duties, working arrangement, the salary period, the basic salary and fixed allowances as restricted fields, overtime, medical benefits,
   probation, the notice period, the place of work); the KETs letter is generated from it and the record, issued as any letter and due within 14 days of the start
-  for an employee the Employment Act covers on a contract of two weeks or longer. Missing KETs are ✖ on Checks (N.1 #1). The KETs content is read from MOM into a
-  pack version, with its source, before the template is written.
+  for an employee the Employment Act covers on a contract of two weeks or longer. Missing KETs are ✖ on Checks (N.1 #1), with a reminder in the 3 days before. The 17
+  items are read from MOM's tripartite guidelines into `sg-people@2026.6` (`ket_items`, each with when it applies: always, only for a fixed-term contract, only if the
+  overtime payment period differs), with the days to issue them; the standard text lists them in MOM's order. The pay terms are the Payroll administrator's and the
+  Owner's to write and read (O3); an item that does not apply says so in words; a fact not recorded is named when the request is made, never guessed.
 - **D8. Self-service is the person's own scope.** My home reads the leave balance, the next public holiday, the open requests and the tiles; My details lets a person
   change contact details, emergency contacts and address directly, and change legal name, NRIC or FIN and residency only through a request with evidence that HR
   approves (the bank account keeps its own flow, NM-PPL-04). Requests are one list of letter requests, flexible work, details changes and general HR questions, each
@@ -77,6 +79,17 @@ Decided 20 Nov 2026 under the owner's standing instruction (the owner is away: t
 | B. Bundle Typst and fonts in the local image | Same output as production | A binary and fonts in a lean image; heavier local mode |
 
 **Decided: A.** Production uses the platform's service; the local limit is stated in the footer and the refusal.
+
+### O3. Who writes the pay terms of the KETs
+
+| Option | Pros | Cons |
+|---|---|---|
+| **A. The Payroll administrator and the Owner write and read the pay terms; the people team writes the rest** | Follows Appendix B's Pay row (HR roles have none); the audit event never holds pay; the people team cannot see pay by writing the KETs | The HR officer cannot finish the KETs alone: the request names the missing pay terms and payroll records them |
+| B. The HR officer writes everything | One person finishes the KETs | Gives HR the pay, which Appendix B withholds |
+| C. Pay terms come only from payroll (P1 later) | One source of pay | KETs would wait for `p1-nemura-payroll`, past the 14 days of the first hire |
+
+**Decided: A.** It keeps Appendix B intact and lets the first hire's KETs be issued before payroll exists; when payroll arrives, its pay record becomes the source and this
+form is read-only for a person it holds.
 
 ## Risks / Trade-offs
 

@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
@@ -20,6 +21,7 @@ import (
 // LettersService is letters behind the API (NM-LTR-01 to NM-LTR-03, NM-LTR-07): each call is one transaction for the caller's organisation, with the audit events of its
 // changes. Without a file store a letter cannot be checked, signed or read, and the call says so; the renderer is the local one or the platform's.
 type LettersService struct {
+	Packs    *PacksService // the country pack the key employment terms read; nil leaves the pack's facts out and names them when filling
 	Store    *Store
 	Clock    ports.Clock
 	Blobs    ports.BlobStore
@@ -110,6 +112,14 @@ func (l LettersService) Publish(ctx context.Context, s api.Session, draft uuid.U
 	return v, err
 }
 
+func (l LettersService) pack(at time.Time) pack.Version {
+	if l.Packs == nil {
+		return pack.Version{}
+	}
+	v, _ := l.Packs.inForce("sg-people", at)
+	return v
+}
+
 func (l LettersService) Request(ctx context.Context, s api.Session, typ, purpose string) (string, string, error) {
 	var id uuid.UUID
 	var due time.Time
@@ -119,10 +129,78 @@ func (l LettersService) Request(ctx context.Context, s api.Session, typ, purpose
 			return &people.Refusal{Code: people.CodeNotFound, Message: "Your login is linked to no person record: ask the people team to link it."}
 		}
 		var err error
-		id, due, err = RequestLetter(ctx, tx, s.Organisation, l.Clock.Now(), s.Member, LetterAsk{Person: person, Type: typ, Purpose: purpose})
+		id, due, err = RequestLetter(ctx, tx, s.Organisation, l.Clock.Now(), s.Member, l.pack(l.Clock.Now()), LetterAsk{Person: person, Type: typ, Purpose: purpose})
 		return err
 	})
 	return id.String(), day(due), err
+}
+
+// RequestFor is the people team asking for a letter about a person (NM-LTR-06 for the key employment terms).
+func (l LettersService) RequestFor(ctx context.Context, s api.Session, person uuid.UUID, typ, purpose string) (string, string, error) {
+	var id uuid.UUID
+	var due time.Time
+	err := l.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		if _, err := PersonOn(ctx, tx, person, l.Clock.Now()); err != nil {
+			return err
+		}
+		var err error
+		id, due, err = RequestLetter(ctx, tx, s.Organisation, l.Clock.Now(), s.Member, l.pack(l.Clock.Now()), LetterAsk{Person: person, Type: typ, Purpose: purpose})
+		return err
+	})
+	return id.String(), day(due), err
+}
+
+func dayStr(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return day(*t)
+}
+
+// Terms are a person's key employment terms on a day; the pay terms only when the caller may read them.
+func (l LettersService) Terms(ctx context.Context, s api.Session, person uuid.UUID, on time.Time, pay bool) (api.Terms, bool, error) {
+	var out api.Terms
+	var ok bool
+	err := l.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		if _, err := PersonOn(ctx, tx, person, on); err != nil {
+			return err
+		}
+		t, found, err := TermsOn(ctx, tx, person, on)
+		if err != nil || !found {
+			return err
+		}
+		ok = true
+		out = api.Terms{From: day(t.From), To: dayStr(t.To), Base: api.TermsBase{MainDuties: t.MainDuties, NoticePeriod: t.NoticePeriod, MedicalBenefits: t.MedicalBenefits, ContractEnd: dayStr(t.ContractEnd)}}
+		if pay {
+			out.Pay = &api.TermsPay{SalaryPeriod: t.SalaryPeriod, BasicSalary: t.BasicSalary, FixedAllowances: t.FixedAllowances, FixedDeductions: t.FixedDeductions, OvertimePeriod: t.OvertimePay, OtherPay: t.OtherPay}
+		}
+		return nil
+	})
+	return out, ok, err
+}
+
+// SetTerms starts a person's terms; a nil part carries forward.
+func (l LettersService) SetTerms(ctx context.Context, s api.Session, person uuid.UUID, from time.Time, base *api.TermsBase, pay *api.TermsPay) error {
+	return l.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		if _, err := PersonOn(ctx, tx, person, from); err != nil {
+			return err
+		}
+		t := Terms{From: from}
+		if base != nil {
+			t.MainDuties, t.NoticePeriod, t.MedicalBenefits = base.MainDuties, base.NoticePeriod, base.MedicalBenefits
+			if base.ContractEnd != "" {
+				d, err := time.Parse(time.DateOnly, base.ContractEnd)
+				if err != nil {
+					return &letters.Refusal{Code: letters.CodeInvalid, Message: "contract_end is not a date: write it as 2027-08-31."}
+				}
+				t.ContractEnd = &d
+			}
+		}
+		if pay != nil {
+			t.SalaryPeriod, t.BasicSalary, t.FixedAllowances, t.FixedDeductions, t.OvertimePay, t.OtherPay = pay.SalaryPeriod, pay.BasicSalary, pay.FixedAllowances, pay.FixedDeductions, pay.OvertimePeriod, pay.OtherPay
+		}
+		return SetTerms(ctx, tx, s.Organisation, l.Clock.Now(), s.Member, person, t, base != nil, pay != nil)
+	})
 }
 
 func (l LettersService) List(ctx context.Context, s api.Session, all bool, state string) ([]api.LetterRequest, error) {

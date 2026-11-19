@@ -53,3 +53,16 @@ func TestEachPeopleCheckIsTriggeredByAFixture(t *testing.T) {
 		t.Errorf("a decision for another version does not: %+v", got)
 	}
 }
+
+// N.1 #1: a person who started 14 or more days ago and has no issued key employment terms is a failure; in the three days before, a reminder; earlier, nothing (NM-LTR-06).
+// req: NM-LTR-06
+func TestAPersonWithNoKeyEmploymentTermsAfterFourteenDaysFails(t *testing.T) {
+	on := d("2026-12-01")
+	got := KETs([]KETDue{{"late", d("2026-11-10")}, {"exactly", d("2026-11-17")}, {"soon", d("2026-11-20")}, {"fresh", d("2026-11-30")}, {"edge", d("2026-11-18")}}, 14, on)
+	if len(got) != 4 || got[0].Subject != "edge" || got[0].Status != Due || got[1].Subject != "exactly" || got[1].Status != Fail || got[2].Subject != "late" || got[3].Subject != "soon" || got[3].Status != Due {
+		t.Fatalf("%+v", got)
+	}
+	if got[1].Check != 1 || got[1].Area != "Letters" || !strings.Contains(got[1].Message, "due 14 days after the start, on 2026-12-01") {
+		t.Errorf("the message: %+v", got[1])
+	}
+}

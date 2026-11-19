@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
@@ -89,6 +90,9 @@ type Letters interface {
 	SaveDraft(ctx context.Context, s Session, key string, blocks []LetterBlock, note string) (string, error)
 	Publish(ctx context.Context, s Session, draft uuid.UUID) (int, error)
 	Request(ctx context.Context, s Session, typ, purpose string) (id, due string, err error)
+	RequestFor(ctx context.Context, s Session, person uuid.UUID, typ, purpose string) (id, due string, err error)
+	Terms(ctx context.Context, s Session, person uuid.UUID, on time.Time, pay bool) (Terms, bool, error)
+	SetTerms(ctx context.Context, s Session, person uuid.UUID, from time.Time, base *TermsBase, pay *TermsPay) error
 	List(ctx context.Context, s Session, all bool, state string) ([]LetterRequest, error)
 	Check(ctx context.Context, s Session, id uuid.UUID) (reference, sha string, err error)
 	Draft(ctx context.Context, s Session, id uuid.UUID) (reference string, pdf []byte, err error)
@@ -100,6 +104,8 @@ type Letters interface {
 }
 
 func init() {
+	IdempotencyExempt["POST /v1/people/{id}/terms"] = "a repeat starts terms on the current ones' own start day, which is refused (NM_LETTER_CONFLICT)"
+	IdempotencyExempt["POST /v1/people/{id}/letters"] = "each request is its own record with its own date: the people team may ask for the same letter twice"
 	IdempotencyExempt["PUT /v1/letters/settings"] = "naturally idempotent: the same body leaves the same letterhead"
 	IdempotencyExempt["PUT /v1/letters/types/{key}"] = "naturally idempotent: the same body leaves the same setting"
 	IdempotencyExempt["PUT /v1/letters/types/{key}/template"] = "naturally idempotent: the same body leaves the same draft"
@@ -125,7 +131,7 @@ func lettersError(err error) error {
 
 // letterStaff reports which of the letter powers the caller's roles give: the people team checks and refuses and writes templates; the HR administrator and the Owner
 // approve templates and set the types and the letterhead; only the Owner (or a delegated signatory) signs.
-type letterPowers struct{ Team, Admin, Sign bool }
+type letterPowers struct{ Team, Admin, Sign, Pay bool }
 
 func (a *API) letterPowers(ctx context.Context, s Session) (letterPowers, error) {
 	roles, err := a.d.Sessions.RolesAt(ctx, s.Organisation, s.Member, a.d.Clock.Now())
@@ -139,8 +145,10 @@ func (a *API) letterPowers(ctx context.Context, s Session) (letterPowers, error)
 			p.Team = true
 		case authz.HRAdmin:
 			p.Team, p.Admin = true, true
+		case authz.PayrollAdmin:
+			p.Pay = true
 		case authz.Owner:
-			p.Team, p.Admin, p.Sign = true, true, true
+			p.Team, p.Admin, p.Sign, p.Pay = true, true, true, true
 		}
 	}
 	return p, nil
@@ -296,6 +304,7 @@ type letterDownloadInput struct {
 }
 
 func (a *API) registerLetters() {
+	a.registerTerms()
 	staff := func(ctx context.Context, cookie string, need func(letterPowers) bool, why string) (Session, letterPowers, error) {
 		s, err := a.signedIn(ctx, cookie)
 		if err != nil {
@@ -621,4 +630,154 @@ func lettersErrorOrNil(err error) error {
 		return nil
 	}
 	return lettersError(err)
+}
+
+// TermsBase are the key employment terms the people team writes (NM-LTR-06).
+type TermsBase struct {
+	MainDuties      string `json:"main_duties" minLength:"1" maxLength:"1000" doc:"The main duties and responsibilities, as the contract states them." example:"Builds and runs the payments platform."`
+	NoticePeriod    string `json:"notice_period" minLength:"1" maxLength:"300" doc:"The notice period for termination by either party." example:"One month"`
+	MedicalBenefits string `json:"medical_benefits,omitempty" maxLength:"500" doc:"Other medical benefits; empty is none." example:"Group hospital and surgical insurance"`
+	ContractEnd     string `json:"contract_end,omitempty" format:"date" doc:"The last day of a fixed-term contract; empty for an open-ended one." example:"2027-08-31"`
+}
+
+// TermsPay are the pay terms only the Payroll administrator and the Owner write and read (owner decision O3, 20 Nov 2026).
+type TermsPay struct {
+	SalaryPeriod    string `json:"salary_period,omitempty" enum:"hourly,daily,weekly,fortnightly,monthly" doc:"The salary period." example:"monthly"`
+	BasicSalary     string `json:"basic_salary,omitempty" pattern:"^[0-9]{1,14}(\\.[0-9]{1,2})?$" doc:"The basic salary in dollars per salary period, as a decimal string." example:"4500.00"`
+	FixedAllowances string `json:"fixed_allowances,omitempty" maxLength:"500" doc:"Fixed allowances per salary period; empty is none." example:"Transport 100.00"`
+	FixedDeductions string `json:"fixed_deductions,omitempty" maxLength:"500" doc:"Fixed deductions per salary period; empty is none." example:"Dormitory 200.00"`
+	OvertimePeriod  string `json:"overtime_period,omitempty" maxLength:"200" doc:"The overtime payment period, only when it differs from the salary period." example:"Monthly, with the next salary"`
+	OtherPay        string `json:"other_pay,omitempty" maxLength:"500" doc:"Other salary-related components such as bonuses; empty is none." example:"A discretionary year-end bonus"`
+}
+
+// Terms are a person's key employment terms on a day. Pay is present only for the Payroll administrator and the Owner.
+type Terms struct {
+	From string    `json:"effective_from" format:"date" doc:"The day these terms started." example:"2026-09-01"`
+	To   string    `json:"effective_to,omitempty" format:"date" doc:"The day they ended, when they have." example:"2027-01-01"`
+	Base TermsBase `json:"base" doc:"The base terms."`
+	Pay  *TermsPay `json:"pay,omitempty" doc:"The pay terms; only the Payroll administrator and the Owner see them."`
+}
+
+type termsOutput struct {
+	Body struct {
+		Recorded bool  `json:"recorded" doc:"Whether the person has terms on the day." example:"true"`
+		Terms    Terms `json:"terms" doc:"The terms."`
+	}
+}
+
+type termsGetInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	AsOf   string `query:"as_of" format:"date" required:"false" doc:"The day to show the terms on; today when empty." example:"2026-06-01"`
+}
+
+type termsSetInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Body   struct {
+		From string     `json:"effective_from" format:"date" doc:"The day the new terms start; the current ones end that day." example:"2026-09-01"`
+		Base *TermsBase `json:"base,omitempty" required:"false" doc:"The base terms, for the people team; left out, the current ones carry forward."`
+		Pay  *TermsPay  `json:"pay,omitempty" required:"false" doc:"The pay terms, for the Payroll administrator and the Owner; left out, the current ones carry forward."`
+	}
+}
+
+type letterAskForInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The person the letter is about." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Body   struct {
+		Type    string `json:"type" doc:"The letter type's key." example:"kets"`
+		Purpose string `json:"purpose" minLength:"1" maxLength:"300" doc:"What the letter is for." example:"The key employment terms for the new hire"`
+	}
+}
+
+func (a *API) registerTerms() {
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getPersonTerms", Method: "GET", Path: "/v1/people/{id}/terms", Tags: []string{"Letters"}, Summary: "A person's key employment terms",
+		Description: "The key employment terms Nemura holds for a person on a day. The people team reads the base terms; the Payroll administrator and the Owner read the pay terms as well. Anyone else is refused as if the person did not exist. It changes nothing.", Errors: []int{401, 403, 404},
+	}, func(ctx context.Context, in *termsGetInput) (*termsOutput, error) {
+		s, err := a.signedIn(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		p, err := a.letterPowers(ctx, s)
+		if err != nil {
+			return nil, err
+		}
+		if !p.Team && !p.Pay {
+			return nil, Err(CodeRoleRequired, "Only the people team, the Payroll administrator and the Owner see the key employment terms.")
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodePersonNotFound, "There is no such person in this organisation.")
+		}
+		on, err := a.asOf(in.AsOf)
+		if err != nil {
+			return nil, err
+		}
+		t, ok, err := a.d.Letters.Terms(ctx, s, id, on, p.Pay)
+		if err != nil {
+			return nil, lettersError(err)
+		}
+		out := &termsOutput{}
+		out.Body.Recorded, out.Body.Terms = ok, t
+		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "setPersonTerms", Method: "POST", Path: "/v1/people/{id}/terms", Tags: []string{"Letters"}, Summary: "Start a person's key employment terms",
+		Description: "Ends the current terms the day the new ones start and starts them. The HR officer, the HR administrator and the Owner write the base terms (main duties, notice period, medical benefits, contract end); the Payroll administrator and the Owner write the pay terms. A part the caller may not write carries forward; pay terms cannot be started before the base terms are. It is audited, and the audit event never holds the pay.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *termsSetInput) (*struct{}, error) {
+		s, err := a.signedIn(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		p, err := a.letterPowers(ctx, s)
+		if err != nil {
+			return nil, err
+		}
+		if in.Body.Base != nil && !p.Team {
+			return nil, Err(CodeRoleRequired, "Only the HR officer, the HR administrator and the Owner write the base terms.")
+		}
+		if in.Body.Pay != nil && !p.Pay {
+			return nil, Err(CodeRoleRequired, "Only the Payroll administrator and the Owner write the pay terms.")
+		}
+		if in.Body.Base == nil && in.Body.Pay == nil {
+			return nil, Err(CodeLetterInvalid, "Give the base terms, the pay terms or both.")
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodePersonNotFound, "There is no such person in this organisation.")
+		}
+		from, err := date("effective_from", in.Body.From, true)
+		if err != nil {
+			return nil, err
+		}
+		return nil, lettersErrorOrNil(a.d.Letters.SetTerms(ctx, s, id, *from, in.Body.Base, in.Body.Pay))
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "requestLetterFor", Method: "POST", Path: "/v1/people/{id}/letters", Tags: []string{"Letters"}, Summary: "Ask for a letter about a person",
+		Description: "The people team asks for a letter about a person, such as their key employment terms: the published template is filled from the person's record, terms and the letterhead, and a fact the record does not hold is refused by name. Another member of the people team checks it and the Owner signs it. The HR officer, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *letterAskForInput) (*letterAskOutput, error) {
+		s, err := a.signedIn(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		p, err := a.letterPowers(ctx, s)
+		if err != nil {
+			return nil, err
+		}
+		if !p.Team {
+			return nil, Err(CodeRoleRequired, "Only the people team and the Owner ask for a letter about someone else.")
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodePersonNotFound, "There is no such person in this organisation.")
+		}
+		rid, due, err := a.d.Letters.RequestFor(ctx, s, id, in.Body.Type, in.Body.Purpose)
+		if err != nil {
+			return nil, lettersError(err)
+		}
+		out := &letterAskOutput{}
+		out.Body.ID, out.Body.Due = rid, due
+		return out, nil
+	})
 }

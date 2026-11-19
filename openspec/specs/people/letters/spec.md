@@ -87,7 +87,7 @@ Source: PRD-002 §11 · Priority S · Phase P2
 - **THEN** both versions and their states stay traceable
 
 ### Requirement: NM-LTR-06 KETs
-KETs SHALL be generated from the offer and the record and issued within 14 days of the start for employment of 14 days or more (a contract of 2 weeks or longer, under the Employment Act), and missing KETs SHALL be ✖ on Checks.
+KETs SHALL be generated from the offer and the record and issued within 14 days of the start for employment of 14 days or more (under the Employment Act), with MOM's 17 items from the country pack, the pay terms written and read only by the Payroll administrator and the Owner, and missing KETs ✖ on Checks (⏰ in the 3 days before).
 
 Source: PRD-002 §11 · Priority M · Phase P1
 
