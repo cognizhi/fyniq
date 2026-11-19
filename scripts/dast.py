@@ -44,6 +44,7 @@ LEVELS = {"FAIL", "WARN", "IGNORE"}
 HIGH = "3"   # ZAP's riskcode for High
 PII = "10062"   # PII Disclosure: digits that pass a card number's checks
 UUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+HEXID = re.compile(r"\b[0-9a-fA-F]{32,}\b")   # a hash or a dashless ID
 
 
 def rules(path: Path = RULES) -> dict[str, str]:
@@ -62,9 +63,15 @@ def rules(path: Path = RULES) -> dict[str, str]:
 
 
 def only_in_ids(body: str, digits: str) -> bool:
-    """Whether digits appear in body, and only inside UUIDs: a record ID's last group of 12 hex digits is sometimes all
-    decimal, and ZAP's PII Disclosure reads it as a card number."""
-    return digits in body and digits not in UUID.sub("", body)
+    """Whether digits are only a record ID's: they stand nowhere in body outside UUIDs and long hex IDs (a UUID's last group
+    of 12 hex digits is sometimes all decimal, and ZAP's PII Disclosure reads it as a card number), and either appear in
+    one or, being 12 long, as a UUID's last group, are not in this response at all because its IDs are made on each call
+    (ZAP saw an earlier answer). An empty body, which could not be read, proves nothing."""
+    if not body:
+        return False
+    if digits in HEXID.sub("", UUID.sub("", body)):
+        return False
+    return digits in body or len(digits) == 12
 
 
 def findings(report: dict, levels: dict[str, str], fetch=None) -> list[scan.Finding]:
@@ -205,6 +212,14 @@ def self_test() -> int:
     loose = findings(pii, {PII: "FAIL"}, lambda uri: ids + ' "card": "587802228102"')
     assert [(f.rule, f.path, f.blocking) for f in loose] == [(PII, "/api/v1/periods", True)], loose
     assert [f.rule for f in findings(pii, {PII: "FAIL"})] == [PII]   # nothing to read: kept
+    assert findings(pii, {PII: "FAIL"}, lambda uri: "") != []   # an unreadable response proves nothing: kept
+    # The response ZAP saw had IDs this one lacks (made on each call): 12 digits, a UUID's last group, are dropped.
+    assert findings(pii, {PII: "FAIL"}, lambda uri: '{"id":"01928f6e-7a3b-7c41-9d2e-111111111111"}') == []
+    # A hash that holds the digits by chance is an ID too; 16 digits that are in no response are not a UUID's.
+    assert findings(pii, {PII: "FAIL"}, lambda uri: '{"sha":"ab' + "587802228102" + "c" * 30 + '"}') == []
+    wide = {"site": [{"@name": "http://localhost:8080", "alerts": [{"pluginid": PII, "name": "PII Disclosure", "riskcode": HIGH,
+        "instances": [{"uri": "http://localhost:8080/api/v1/periods", "evidence": "4111111111111111"}]}]}]}
+    assert [f.rule for f in findings(wide, {PII: "FAIL"}, lambda uri: ids)] == [PII]
     today = dt.date(2099, 1, 1)
     waiver = scan.Waiver("zap", "40012", "/s", "a reflected value the scan cannot tell apart", dt.date(2099, 2, 1))
     problems = scan.judge(got, [waiver], {"zap"}, today)
