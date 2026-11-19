@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:a37ee004d4468dd6c4f6c81af2533da6bd2a7f2a47802e8ee06f15cef5c9f1da
+  - docs/user-guide/organisation-settings.md sha256:e5e14b1a67922c3ab35222e1fa27f33d7362bb5f66b070391939432fa96ad9c7
 data_class: general
 taint: trusted
 status: draft
@@ -28,6 +28,8 @@ aliases:
   - turn off animations
   - motion
   - data protection officer
+  - personal access token
+  - API token
   - DPO contact
   - GST registration
   - GST registration number
@@ -357,6 +359,14 @@ The calendar itself: [[compliance.calendar]].
 - Changing the cap needs a second approver.
 
 (src: docs/user-guide/organisation-settings.md#break-glass-payment-cap)
+
+## Personal access tokens
+
+- A personal access token is a developer's own credential for Fyniq's API: it acts for the member who made it, never does more than that member may, and expires within 90 days. Because it may be pasted into an AI tool, it only reads until an Owner, with a second approver, makes it an integration.
+- **Personal access tokens**: off unless changed. While it is off, no member can make a token: asking for one is refused with the code `API-CLIENT-09`, which says to ask an Owner. Turning it on needs a second approver; turning it off takes effect at once and stops anyone making another. Tokens already made keep working until they expire or are revoked.
+- A token is made through the API by a person signed in to Fyniq who has just confirmed it is them; its secret is shown once.
+
+(src: docs/user-guide/organisation-settings.md#personal-access-tokens)
 
 ## Evidence rules
 

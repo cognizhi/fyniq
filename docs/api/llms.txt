@@ -840,6 +840,12 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/periods/{period_id}/variances/{account_id}/explanation` (explainVariance): Explain a variance
 - `GET /v1/periods/{period_id}/year-end` (getYearEnd): Get the year end of a period's financial year
 - `POST /v1/periods:open-year` (openFinancialYear): Open the next financial year
+- `GET /v1/personal-access-tokens` (listPersonalAccessTokens): List the organisation's personal access tokens
+- `POST /v1/personal-access-tokens` (createPersonalAccessToken): Create a personal access token
+- `GET /v1/personal-access-tokens/mine` (listMyPersonalAccessTokens): List your personal access tokens
+- `POST /v1/personal-access-tokens/mine/{personal_access_token_id}/revoke` (revokeMyPersonalAccessToken): Revoke your personal access token
+- `POST /v1/personal-access-tokens/{personal_access_token_id}/reclass` (requestPersonalAccessTokenReclass): Ask to reclass a personal access token as an integration
+- `POST /v1/personal-access-tokens/{personal_access_token_id}/revoke` (revokePersonalAccessToken): Revoke a member's personal access token
 - `GET /v1/planning/summary` (getPlanningSummary): Get the planning summary for Home
 - `GET /v1/platform/version` (getPlatformVersion): Get the platform version
 - `GET /v1/pre-incorporation-costs` (listPreIncorporationCosts): List costs paid before the books start

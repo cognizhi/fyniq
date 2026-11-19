@@ -52,7 +52,7 @@
 
 ## 3. Clients and contracts
 
-- [ ] 3.1 Client classes for integration clients and personal access tokens, issued by Hydra, with per-client limits and audit; personal access tokens are agent-class by default. Test `// req: FR-INT-02` (P1 part)
+- [x] 3.1 Client classes for integration clients and personal access tokens, issued by Hydra, with per-client limits and audit; personal access tokens are agent-class by default. Test `// req: FR-INT-02` (P1 part)
   (17 Nov 2026, in part: integration clients. `fyniq.api_client` (migrations 000432 and 000433) keeps what a client is
   to the organisation: its class, the member it acts for, its narrow scopes, networks, limits, key thumbprint and
   expiry; Hydra keeps the OAuth client and its tokens. An Administrator asks with `createIntegrationClient`; the Owner
@@ -63,8 +63,20 @@
   its networks; its own limits apply (FR-INT-16). `revokeIntegrationClient` is never held back, and the worker deletes
   the client from Hydra. Tests `TestIntegrationClients` (against Hydra), `TestTheIntrospectorTakesAnAPIClientFromItsRecord`,
   `TestScopesNarrowAClientToWholeAreas`, `TestAnIntegrationClientIsCheckedWhole`, `TestAttackAnAPIClientKeepsItsRules`
-  and the authorisation matrix; threat model `docs/security/threat-models/integration-clients.md`. **Left:** personal
-  access tokens (the table holds them already), the Connected apps screen, and Hydra in the dev cloud [live-verify].)
+  and the authorisation matrix; threat model `docs/security/threat-models/integration-clients.md`. **Left:** the Connected apps screen, and Hydra in the dev cloud [live-verify].)
+  (18 Nov 2026, personal access tokens: a client of Hydra whose secret Hydra generates, shows once and keeps as a hash
+  (`client_secret_basic`, client credentials, the API's audience); Fyniq never holds it. The developer exchanges client ID
+  and secret for access tokens of an hour (AI-38). Decision recorded, the recommended default: that secret is the
+  shown-once credential rather than a 90-day bearer token, which would break AI-38. A signed-in, stepped-up member makes
+  their own once the setting is on (`createPersonalAccessToken`, Appendix D's "Own MCP connection", expiry within 90 days, 30 by default, no
+  Idempotency-Key and no preview: a one-time secret), lists and revokes them (`listMyPersonalAccessTokens`,
+  `revokeMyPersonalAccessToken`); an Administrator lists and revokes any (`listPersonalAccessTokens`,
+  `revokePersonalAccessToken`, "Connected apps") and asks to reclass one (`requestPersonalAccessTokenReclass`: the Owner
+  approves with a second approver, `api_client.reclass`, executed by `executePersonalReclass` and `Reclass` in the storage
+  port). Class `agent` takes the AI column intersected with the member's roles: reads only today (proposals when `p1-ai-proposals` lands), no write whatever its scopes, until reclassed. No
+  migration was needed (000432 already held them). Tests `TestPersonalAccessTokens` (against Hydra),
+  `TestAPersonalAccessTokenIsCheckedWhole`, `TestAttackAnAPIClientKeepsItsRules` (the reclass) and the matrix rows; threat
+  model section 5. **Left:** a sweep of expired personal clients from Hydra by the worker [live-verify]; the access review lists no API clients yet (Connected apps, AI-46). **Owner's decisions (18 Nov 2026, PRD-001 rev 0.299):** a token can be made only once the organisation's setting `security.personal_access_tokens` is on (off by default; an Owner turns it on with a second approver; off at once; refused with `API-CLIENT-09` meanwhile; guide `organisation-settings.md`, kb recompiled), and a reclassed token may keep its shared secret (the recorded SEC-07 exception).)
 - [x] 3.2 JSON Schema for every resource, the published API reference, `llms.txt` and the agent guide, all generated from the contract. Test `// req: FR-INT-13`
   (19 Oct 2026: `make openapi` also writes a JSON Schema 2020-12 per resource to `contracts/schemas/`, and
   `docs/api/reference.md` and `docs/api/llms.txt`, from the same document as the contract;

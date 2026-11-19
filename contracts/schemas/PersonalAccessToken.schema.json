@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "class": {
+      "description": "Its client class (AI-34): agent until the Owner reclasses it as integration with a second approver. An agent only reads (and proposes, once the proposal operations arrive).",
+      "enum": [
+        "agent",
+        "integration"
+      ],
+      "examples": [
+        "agent"
+      ],
+      "type": "string"
+    },
+    "client_id": {
+      "description": "The OAuth client ID: the client_id of its token requests (client_credentials grant).",
+      "examples": [
+        "6f1c2b9e-3d4a-4c5b-8e7f-0a1b2c3d4e5f"
+      ],
+      "type": "string"
+    },
+    "created_at": {
+      "examples": [
+        "2026-11-17T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "When it stops: within 90 days of its creation.",
+      "examples": [
+        "2026-12-17T00:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name, for its owner.",
+      "examples": [
+        "Claude Code on my laptop"
+      ],
+      "type": "string"
+    },
+    "networks": {
+      "description": "The networks it may call from, as CIDR prefixes; none: anywhere.",
+      "items": {
+        "description": "A network, as a CIDR prefix.",
+        "examples": [
+          "203.0.113.0/24"
+        ],
+        "maxLength": 49,
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "owner_id": {
+      "description": "The member it acts for: it never does more than this member may do now.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reads_per_minute": {
+      "description": "Its own limit of reads a minute; none: the platform's 600.",
+      "examples": [
+        60
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "revoke_reason": {
+      "examples": [
+        "The laptop was lost."
+      ],
+      "type": "string"
+    },
+    "revoked_at": {
+      "examples": [
+        "2026-12-01T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "revoked_by": {
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    },
+    "scopes": {
+      "description": "Its narrow scopes: fyniq.read.\u003carea\u003e views an area, fyniq.write.\u003carea\u003e also prepares and posts in it once it is an integration. No scope approves or releases.",
+      "items": {
+        "description": "A narrow scope: fyniq.read.\u003carea\u003e or fyniq.write.\u003carea\u003e.",
+        "examples": [
+          "fyniq.read.accounting"
+        ],
+        "pattern": "^fyniq\\.(read|write)\\.[a-z]+$",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "status": {
+      "description": "live until it expires or is revoked.",
+      "enum": [
+        "live",
+        "expired",
+        "revoked"
+      ],
+      "examples": [
+        "live"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "writes_per_minute": {
+      "description": "Its own limit of writes a minute; none: the platform's 120.",
+      "examples": [
+        30
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "client_id",
+    "name",
+    "class",
+    "owner_id",
+    "scopes",
+    "networks",
+    "expires_at",
+    "status",
+    "version",
+    "created_at"
+  ],
+  "title": "PersonalAccessToken",
+  "type": "object"
+}

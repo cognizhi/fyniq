@@ -306,6 +306,33 @@ func (a *Admin) RegisterIntegration(ctx context.Context, c ports.IntegrationRegi
 	return out.ClientID, nil
 }
 
+// RegisterPersonal implements ports.OAuthClients: a confidential client with the client-credentials grant only, whose
+// secret Hydra generates, returns once and keeps as a hash (client_secret_basic), so a personal access token is hashed at
+// rest and shown once (FR-INT-02); its tokens name only the API's audience and live TokenLifespan (AI-38).
+func (a *Admin) RegisterPersonal(ctx context.Context, c ports.PersonalRegistration) (string, string, error) {
+	if c.Audience == "" || len(c.Scopes) == 0 {
+		return "", "", errors.New("hydra: a personal access token needs the API's audience and its scopes")
+	}
+	// #nosec G101 -- OAuth client metadata (its grant and how it authenticates), not a credential
+	body := map[string]any{"client_name": c.Name, "audience": []string{c.Audience}, "scope": strings.Join(c.Scopes, " "),
+		"grant_types": []string{"client_credentials"}, "response_types": []string{}, "token_endpoint_auth_method": "client_secret_basic",
+		"metadata": map[string]any{"class": c.Class, "organisation": c.Organisation, "kind": "personal"}}
+	if c.TokenLifespan > 0 {
+		body["client_credentials_grant_access_token_lifespan"] = c.TokenLifespan.String()
+	}
+	var out struct {
+		ClientID string `json:"client_id"`
+		Secret   string `json:"client_secret"`
+	}
+	if err := a.do(ctx, http.MethodPost, "/admin/clients", nil, body, nil, &out); err != nil {
+		return "", "", err
+	}
+	if out.ClientID == "" || out.Secret == "" {
+		return "", "", errors.New("hydra: the client was registered without an ID or a secret")
+	}
+	return out.ClientID, out.Secret, nil
+}
+
 // RemoveClient implements ports.OAuthClients: its tokens are deleted first, then the client.
 func (a *Admin) RemoveClient(ctx context.Context, clientID string) error {
 	if clientID == "" {

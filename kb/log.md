@@ -624,6 +624,10 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)
 
+## [2026-11-18] compile | settings.organisation: the Personal access tokens setting (security.personal_access_tokens, off until an Owner turns it on with a second approver; FR-INT-02)
+
+## [2026-11-18] compile | settings.change: personal access tokens join the settings that need a second approver
+
 ## [2026-11-18] compile | docs/user-guide/bills.md, journals.md → purchases.bills, accounting.journals (a HEIC photo is converted where the installation has a converter)
 
 ## [2026-11-18] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the largest evidence file setting)
@@ -659,6 +663,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | docs/user-guide/organisation-settings.md, integrations.md → settings.organisation (lost disputes: the expense limit setting), settings.integrations (a lost dispute's draft journal, resolving a set-aside event; p1-payment-providers, PRD rev 0.305)
 
 ## [2026-11-19] compile | kb/pages/task/settings-change.md re-hashed to the guide's new section (lost disputes); the page's content is unchanged
+
 ## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md, home.md → nemura.sign-in, nemura.home (the sign-in page and the landing, p1-nemura-platform slice 7a)
 
 ## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md → nemura.sign-in (joining with an invitation or the setup code)

@@ -13633,6 +13633,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/personal-access-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the organisation's personal access tokens
+         * @description Every member's personal access tokens (FR-INT-02, SEC-07), oldest first, a page at a time (FR-INT-10): each one's client ID, the member it acts for, its class, scopes, networks, expiry and status, revoked ones included, for the quarterly access review (FR-CTL-06). Never a secret. Read-only; no side effects.
+         */
+        get: operations["listPersonalAccessTokens"];
+        put?: never;
+        /**
+         * Create a personal access token
+         * @description Creates your own personal access token (FR-INT-02, AI-34): a client of Fyniq's OAuth server whose secret is generated there, shown to you once in this answer and kept only as a hash; Fyniq never holds it. With the client_id and the secret you ask the OAuth server's token endpoint for access tokens (grant_type=client_credentials, the client_id and secret as HTTP Basic credentials, and the audience returned here); each lives an hour. It acts for you and never does more than you may now; its scopes narrow that to whole areas, and no scope approves or releases. It expires within 90 days (30 when you name no expiry), and give its networks where you can. Its class is `agent` because a token may be pasted into an AI tool: an agent reads (and, once the proposal operations arrive, proposes) and cannot write, whatever its scopes, until the Owner reclasses it as an integration with a second approver (requestPersonalAccessTokenReclass). Every field is checked at once. Refused (API-CLIENT-09) while the organisation's "Personal access tokens" setting is off, as it is until an Owner turns it on with a second approver (golden rule 6). Side effects: the OAuth client and its record, and the audit event api_client.registered (never the secret). Needs a person signed in to Fyniq with step-up: an OAuth client, a token or the AI is refused, so no credential makes another. It takes no Idempotency-Key and no preview: a stored answer would keep the secret at rest. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["createPersonalAccessToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/personal-access-tokens/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your personal access tokens
+         * @description Your own personal access tokens (FR-INT-02), oldest first, a page at a time (FR-INT-10): each one's client ID, class, scopes, networks, own rate limits, expiry and status, revoked ones included. Never a secret. Read-only; no side effects.
+         */
+        get: operations["listMyPersonalAccessTokens"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/personal-access-tokens/mine/{personal_access_token_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke your personal access token
+         * @description Revokes one of your own personal access tokens at once (FR-INT-02, SEC-07): never held back. The API refuses its tokens from now, within the 30 seconds an introspection is trusted (AI-38), and the OAuth server then deletes the client and every token it obtained. It is kept, revoked, for the access review. Side effects: its new version, the audit event api_client.revoked with the reason, and the deletion queued for the worker. Another member's token is not found. Idempotent with Idempotency-Key; Prefer: return=preview shows the result and saves nothing. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["revokeMyPersonalAccessToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/personal-access-tokens/{personal_access_token_id}/reclass": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask to reclass a personal access token as an integration
+         * @description Asks to reclass a live personal access token from `agent` to `integration` (FR-INT-02, AI-34): from then on it may prepare and post in its write scopes' areas under the approval policies, as an integration client may, instead of only reading and proposing. It is dual controlled (golden rule 6): the answer is the approval request, which the Owner, who holds A on "Connected apps", approves with a second approver; the token is unchanged until then, and the approval lapses if the token is revoked first. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. Needs a person signed in with step-up. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["requestPersonalAccessTokenReclass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/personal-access-tokens/{personal_access_token_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a member's personal access token
+         * @description Revokes any member's personal access token at once (FR-INT-02, SEC-07): never held back for a second person, for a lost laptop or a member who left. The API refuses its tokens from now, within the 30 seconds an introspection is trusted (AI-38), and the OAuth server then deletes the client and every token it obtained. It is kept, revoked, for the access review. Side effects: its new version, the audit event api_client.revoked with the reason, and the deletion queued for the worker. Idempotent with Idempotency-Key; Prefer: return=preview shows the result and saves nothing. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["revokePersonalAccessToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/planning/summary": {
         parameters: {
             query?: never;
@@ -44852,6 +44956,226 @@ export interface components {
              * @example Wei Ling Tan
              */
             name?: string;
+        };
+        PersonalAccessToken: {
+            /**
+             * @description Its client class (AI-34): agent until the Owner reclasses it as integration with a second approver. An agent only reads (and proposes, once the proposal operations arrive).
+             * @example agent
+             * @enum {string}
+             */
+            class: "agent" | "integration";
+            /**
+             * @description The OAuth client ID: the client_id of its token requests (client_credentials grant).
+             * @example 6f1c2b9e-3d4a-4c5b-8e7f-0a1b2c3d4e5f
+             */
+            client_id: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-17T09:00:00Z
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When it stops: within 90 days of its creation.
+             * @example 2026-12-17T00:00:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: uuid
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d50
+             */
+            id: string;
+            /**
+             * @description Its name, for its owner.
+             * @example Claude Code on my laptop
+             */
+            name: string;
+            /** @description The networks it may call from, as CIDR prefixes; none: anywhere. */
+            networks: string[];
+            /**
+             * Format: uuid
+             * @description The member it acts for: it never does more than this member may do now.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            owner_id: string;
+            /**
+             * Format: int64
+             * @description Its own limit of reads a minute; none: the platform's 600.
+             * @example 60
+             */
+            reads_per_minute?: number;
+            /** @example The laptop was lost. */
+            revoke_reason?: string;
+            /**
+             * Format: date-time
+             * @example 2026-12-01T09:00:00Z
+             */
+            revoked_at?: string;
+            /** @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01 */
+            revoked_by?: string;
+            /** @description Its narrow scopes: fyniq.read.<area> views an area, fyniq.write.<area> also prepares and posts in it once it is an integration. No scope approves or releases. */
+            scopes: string[];
+            /**
+             * @description live until it expires or is revoked.
+             * @example live
+             * @enum {string}
+             */
+            status: "live" | "expired" | "revoked";
+            /**
+             * Format: int64
+             * @example 1
+             */
+            version: number;
+            /**
+             * Format: int64
+             * @description Its own limit of writes a minute; none: the platform's 120.
+             * @example 30
+             */
+            writes_per_minute?: number;
+        };
+        PersonalAccessTokenCreate: {
+            /**
+             * Format: date-time
+             * @description When it stops, within 90 days; 30 days from now when left out.
+             * @example 2026-12-17T00:00:00Z
+             */
+            expires_at?: string;
+            /**
+             * @description Its name, to tell your tokens apart.
+             * @example Claude Code on my laptop
+             */
+            name: string;
+            /** @description The networks it may call from, as CIDR prefixes; none: anywhere. Give them where you can (SEC-07). */
+            networks?: string[] | null;
+            /**
+             * Format: int64
+             * @description Its own limit of reads a minute, at most the platform's 600; none: the platform's.
+             * @example 60
+             */
+            reads_per_minute?: number;
+            /** @description Its narrow scopes, only what it needs: fyniq.read.<area> (reports, sales, purchases, banking, accounting, planning, compliance) or fyniq.write.<area> (sales, purchases, banking, accounting). It never does more than you may. */
+            scopes: string[] | null;
+            /**
+             * Format: int64
+             * @description Its own limit of writes a minute, at most the platform's 120; none: the platform's.
+             * @example 30
+             */
+            writes_per_minute?: number;
+        };
+        PersonalAccessTokenCreated: {
+            /**
+             * Format: int64
+             * @description How long each access token it obtains lives, in seconds (AI-38).
+             * @example 3600
+             */
+            access_token_seconds: number;
+            /**
+             * @description The audience to ask the OAuth server for: its access tokens are accepted by the API for this audience only.
+             * @example https://api.fyniq.example
+             */
+            audience: string;
+            /**
+             * @description Its client class (AI-34): agent until the Owner reclasses it as integration with a second approver. An agent only reads (and proposes, once the proposal operations arrive).
+             * @example agent
+             * @enum {string}
+             */
+            class: "agent" | "integration";
+            /**
+             * @description The OAuth client ID: the client_id of its token requests (client_credentials grant).
+             * @example 6f1c2b9e-3d4a-4c5b-8e7f-0a1b2c3d4e5f
+             */
+            client_id: string;
+            /**
+             * @description The secret that, with the client_id, obtains access tokens. Shown once and never again: Fyniq does not keep it and the OAuth server keeps only its hash. Store it as you would a password.
+             * @example 7Uv3uG2fT0y1-q9ZQ6c5pE8mJxA4rDkW
+             */
+            client_secret: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-17T09:00:00Z
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When it stops: within 90 days of its creation.
+             * @example 2026-12-17T00:00:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: uuid
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d50
+             */
+            id: string;
+            /**
+             * @description Its name, for its owner.
+             * @example Claude Code on my laptop
+             */
+            name: string;
+            /** @description The networks it may call from, as CIDR prefixes; none: anywhere. */
+            networks: string[];
+            /**
+             * Format: uuid
+             * @description The member it acts for: it never does more than this member may do now.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            owner_id: string;
+            /**
+             * Format: int64
+             * @description Its own limit of reads a minute; none: the platform's 600.
+             * @example 60
+             */
+            reads_per_minute?: number;
+            /** @example The laptop was lost. */
+            revoke_reason?: string;
+            /**
+             * Format: date-time
+             * @example 2026-12-01T09:00:00Z
+             */
+            revoked_at?: string;
+            /** @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01 */
+            revoked_by?: string;
+            /** @description Its narrow scopes: fyniq.read.<area> views an area, fyniq.write.<area> also prepares and posts in it once it is an integration. No scope approves or releases. */
+            scopes: string[];
+            /**
+             * @description live until it expires or is revoked.
+             * @example live
+             * @enum {string}
+             */
+            status: "live" | "expired" | "revoked";
+            /**
+             * Format: int64
+             * @example 1
+             */
+            version: number;
+            /**
+             * Format: int64
+             * @description Its own limit of writes a minute; none: the platform's 120.
+             * @example 30
+             */
+            writes_per_minute?: number;
+        };
+        PersonalAccessTokenList: {
+            /** @description The tokens, oldest first. */
+            items: components["schemas"]["PersonalAccessToken"][];
+            /**
+             * @description The cursor of the next page; none on the last.
+             * @example eyJhZnRlciI6IjEwMDAifQ
+             */
+            next_cursor?: string;
+        };
+        PersonalAccessTokenReclass: {
+            /**
+             * @description Why it should be an integration client: the Owner and a second approver read it.
+             * @example It feeds the nightly import.
+             */
+            reason: string;
+        };
+        PersonalAccessTokenRevoke: {
+            /**
+             * @description Why it is revoked, for the access review.
+             * @example The laptop was lost.
+             */
+            reason: string;
         };
         PersonalDataReport: {
             /** @description Each value held, with its class. */
@@ -160803,6 +161127,720 @@ export interface operations {
             };
             /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
             415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPersonalAccessTokens: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalAccessTokenList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createPersonalAccessToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalAccessTokenCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    "Cache-Control"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalAccessTokenCreated"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-CLIENT-09` Personal access tokens are off for this organisation. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CLIENT-01` The client's name is not valid; `API-CLIENT-02` Not a scope an API client may be granted; `API-CLIENT-03` Not a network in CIDR form; `API-CLIENT-04` The client's limit is outside the platform's; `API-CLIENT-05` The client's expiry is not within a year; `API-CLIENT-07` The client's member is not an active member with a role; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyPersonalAccessTokens: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalAccessTokenList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    revokeMyPersonalAccessToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The personal access token's ID in Fyniq. */
+                personal_access_token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalAccessTokenRevoke"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalAccessToken"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-CLIENT-08` The client is revoked already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestPersonalAccessTokenReclass: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The personal access token's ID in Fyniq. */
+                personal_access_token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalAccessTokenReclass"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-CLIENT-08` The client is revoked already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    revokePersonalAccessToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The personal access token's ID in Fyniq. */
+                personal_access_token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalAccessTokenRevoke"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalAccessToken"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-CLIENT-08` The client is revoked already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
