@@ -55,6 +55,7 @@ func Config(v string) huma.Config {
 		{Name: "Features", Description: "Each optional feature of an organisation: on, off or held by another system (NM-FEAT-01 to 05)."},
 		{Name: "Packs", Description: "Country packs with their sources, the company's policy on top and the people checks (NM-PACK-01 to 08)."},
 		{Name: "Leave", Description: "Working patterns, leave balances and the ledger behind them (NM-LV-01, NM-LV-02, NM-LV-13, NM-TIM-01)."},
+		{Name: "Assistant", Description: "The people assistant's settings and the drafts it proposed for a person to decide (NM-AI-01, NM-AI-04)."},
 		{Name: "Payroll", Description: "Pay groups, a person's pay, the year to date and one-off items: for the Payroll administrator and the Owner alone (NM-PAY-02, NM-PAY-03, FR-EMP-01)."},
 		{Name: "Onboarding", Description: "The task to invite new people to Fyniq, and a leaver's dates, checklist and leave settlement (NM-ONB-02, NM-ONB-03)."},
 		{Name: "Self-service", Description: "A person's own details and requests, and what waits for the people team (NM-ESS-03, NM-ESS-04)."},
