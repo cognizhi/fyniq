@@ -257,8 +257,7 @@ What the first five slices settled, where the build differed from the text above
 - **Rendered pages publish with the setting change (decision 3).** They are the setting's own words, so no second person
   is asked; a person's edit of one is never overwritten.
 - **Left from this design:** layer 1's cached index (task 2.3), the platform's check against the pack in force (task 3.3),
-  overlays flagged when a platform page changes (7.2), the findings and recompile operations, the screen and its guide page
-  (8.1, 8.2), the weekly semantic lint and the schedule (6.3), the answer-level evals (`[live-verify]`) and CTL-AI-08's
+  the recompile operation (8.1, 8.2), the weekly semantic lint and the schedule (6.3), the answer-level evals (`[live-verify]`) and CTL-AI-08's
   nightly and event checks (9.3).
 
 ## Migration plan

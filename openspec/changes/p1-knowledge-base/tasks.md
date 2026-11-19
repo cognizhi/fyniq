@@ -91,7 +91,7 @@ platform, or half model. Their tags are added when the rest is built, so the tra
   Built: migrations 000566/000567 (`kb_publication` as an approval object), the envelope, the policies (Owner holds A on the row: decision 6; Founder mode publishes alone with a review-log entry, Team mode asks another Owner), the deterministic gate before signing (lint and contradictions with settings), snapshot n+1 in the executing transaction.
 - [ ] 7.2 Edit, human-edited versions, rollback as a new version, overlays and their flag when the platform page changes;
   until a contradiction is resolved the assistant follows the setting or the pack and says so. Tests `// req: AI-56`.
-  **Built in part:** edit (a human-edited version), rollback as a new version and the draft-beside-human-edit rule. **Left:** overlays and their flag when the platform page changes, and the pack check of the gate.
+  **Built in part:** edit (a human-edited version), rollback as a new version, the draft-beside-human-edit rule, and the overlay flag: an overlay records the platform page's digest, the index says "Fyniq changed this page" when it moved and the assistant is told the overlay may be out of date. **Left:** the pack check of the gate (task 3.3's front-matter field, an owner decision).
 - [x] 7.3 The weekly review lists self-approved publications. Tests `// req: FM-3`.
   Built: a Founder-mode self-publication is a review-log entry in the weekly review (`ReviewSelfApproved`).
 
