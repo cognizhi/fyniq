@@ -1,5 +1,7 @@
 # Tasks
 
+**Status, 20 Nov 2026:** Fyniq's receiving side is built and tested (`p1-payroll-link` 2 to 5: the link with two approvers, the link's client and scopes, the person, bank-details, hold and pay-run operations, the inbox and the projection); nothing of Nemura's sender is built yet, only its copy of the envelope rule. What to build here first: 1.1 (the link record, its key, the second approver on API clients), then 2.1 and 2.2 (sign and send through the outbox to `/v1/people-link/projection-events` and `/hold-events`), then 3.1 (the approval envelope and `payroll.run.approved`, whose passkey challenge is the envelope's SHA-256 at Nemura's origin). Two open owner decisions shape it: `p1-payroll-link` design D3 (the approver's passkey is verified against Fyniq's own enrolment) and D11.
+
 Slices on `dev/integration` (no pull requests), after or alongside `p1-payroll-link` (which builds Fyniq's side). Ticked only when fully built, with a
 "Built:" note and a "**Left:**" note. Nemura's migrations are in `db/nemura/migrations` (continue from the highest number at the time). Contract
 fixtures stand in for pay runs until `p1-nemura-payroll` exists. `[live-verify]` marks what needs the cloud.
@@ -15,6 +17,7 @@ fixtures stand in for pay runs until `p1-nemura-payroll` exists. `[live-verify]`
 ## 2. Events and the inbox (NM-INT-01, 05, 10; FR-PPL-15)
 
 - [ ] 2.1 `internal/nemura/link`: the envelope and its canonical bytes tested against `contracts/peoplelink/` fixtures; the outbox signs at send time.
+  (Built in part, 20 Nov 2026: `internal/nemura/link` (canonical bytes, digest, Ed25519 signature, the six checks) passes the same fixtures as Fyniq's copy (`contracts/peoplelink/`). **Left:** the outbox signing at send time, the key custody (1.1), and the worker's egress call with the link client's token: the receiving side is built and described in `contracts/peoplelink/README.md`, so the sender can be written against it. Not tagged: NM-INT-10 needs the inbox and gap repair on Nemura's side too.)
 - [ ] 2.2 `people.person.upserted` (with the line manager and tombstones), `people.bank_details.changed`, `people.tax_hold.changed` (priority, design D5)
   and `leave.taken.changed`, with only Appendix E's fields: a test that no NRIC, FIN, medical, disciplinary or review field can reach an event.
 - [ ] 2.3 The inbox for `payroll.run.posted`, `payroll.payments.status` and `people.department.changed`: dedupe, versions, gap repair, replay window.
