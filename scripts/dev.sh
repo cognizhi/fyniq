@@ -17,6 +17,13 @@ mkdir -p .data/dev/bin
 
 SERVICES=(api ai mcp worker executor render)
 declare -A PORTS=([api]="${FYNIQ_API_PORT:-8081}" [ai]=8082 [mcp]=8083 [worker]=8084 [executor]=8085 [render]=8086)
+# PEOPLE=yes: Nemura's API too (PRD-002, p1-nemura-platform), on its own port. The role is environment, and every other
+# service ignores NEMURA_ROLE.
+if [ "${PEOPLE:-}" = yes ]; then
+  SERVICES+=(nemura)
+  PORTS[nemura]="${NEMURA_API_PORT:-8087}"
+  export NEMURA_ROLE=api
+fi
 
 # No VCS stamp (nothing reads it; the release build has none either) and no DWARF: a change relinks every
 # service, and these two make that about a third faster (NFR-DEVX-03). Stack traces are unaffected; to attach a
@@ -65,6 +72,9 @@ cat <<MSG
 Fyniq dev stack (FYNIQ_ENV=$FYNIQ_ENV, hot reload: $reload)
   Web        http://localhost:${FYNIQ_WEB_PORT:-5173}
   API        http://localhost:${PORTS[api]}/version
+MSG
+if [ "${PEOPLE:-}" = yes ]; then echo "  Nemura     http://localhost:${PORTS[nemura]}/version   (PEOPLE=yes)"; fi
+cat <<MSG
   Logs       .data/dev/*.log
   Sample     .data/seed/company.json
 Press Ctrl-C to stop the services (the dependencies keep running: make deps-down).

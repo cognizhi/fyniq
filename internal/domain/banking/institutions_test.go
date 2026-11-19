@@ -1,6 +1,8 @@
 package banking_test
 
 import (
+	"os"
+	"regexp"
 	"testing"
 
 	"github.com/cognizhi/fyniq/internal/domain/banking"
@@ -43,5 +45,34 @@ func TestAnAccountsBankIsRecognisedByName(t *testing.T) {
 	}
 	if banking.InstitutionName("revolut") != "" {
 		t.Error("a key on no list has a name")
+	}
+}
+
+// The web app suggests the banks of this list when a money account is added, so what is picked there is recognised here
+// (p1-payment-files task 1.3): its copy of the list is the same names in the same order.
+// req: FR-BNK-12
+func TestTheWebAppsListOfBanksIsFynisList(t *testing.T) {
+	src, err := os.ReadFile("../../../apps/web/src/screens/banking/paymentFiles.ts")
+	if err != nil {
+		t.Fatal(err)
+	}
+	block := regexp.MustCompile(`(?s)institutions = \[(.*?)\] as const`).FindSubmatch(src)
+	if block == nil {
+		t.Fatal("the web app's list of banks is not in paymentFiles.ts")
+	}
+	var web []string
+	for _, m := range regexp.MustCompile(`"([^"]+)"`).FindAllSubmatch(block[1], -1) {
+		web = append(web, string(m[1]))
+	}
+	if len(web) != len(banking.Institutions) {
+		t.Fatalf("the web app lists %d banks, Fyniq recognises %d", len(web), len(banking.Institutions))
+	}
+	for i, name := range web {
+		if name != banking.Institutions[i].Name {
+			t.Errorf("bank %d: the web app lists %q, Fyniq recognises %q", i+1, name, banking.Institutions[i].Name)
+		}
+		if banking.ProviderOf(name) != banking.Institutions[i].Key {
+			t.Errorf("%q is not recognised as %q", name, banking.Institutions[i].Key)
+		}
 	}
 }
