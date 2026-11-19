@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/project"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -42,7 +43,7 @@ const (
 
 // ClaimCodes are the codes the posting rule and the claim's own checks answer.
 var ClaimCodes = []string{claim.CodeClaimant, claim.CodeCategory, claim.CodeTooLong, claim.CodeReceipt, claim.CodeGSTCode, claim.CodeMileage,
-	claim.CodeMileageRate, claim.CodeReceiptRequired, claim.CodeLateReason, claim.CodeDuplicate, claim.CodeReceiptFile, claim.CodeClaimAdvance, claim.CodeSettleTo, ledger.CodeParty, ledger.CodeClaimLine, ledger.CodeClaimPaid, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency}
+	claim.CodeMileageRate, claim.CodeReceiptRequired, claim.CodeLateReason, claim.CodeDuplicate, claim.CodeReceiptFile, claim.CodeClaimAdvance, claim.CodeSettleTo, project.CodeMarkup, project.CodeLine, ledger.CodeParty, ledger.CodeClaimLine, ledger.CodeClaimPaid, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency}
 
 // ClaimApprovalCodes are the codes an approval of a claim's post may answer: the claimant's own, and the posting's.
 func ClaimApprovalCodes() []string {
@@ -76,6 +77,9 @@ type ExpenseClaimLine struct {
 	Duplicate   string `json:"duplicate_reason,omitempty" maxLength:"500" doc:"A receipt whose file is on another record: why it is not a duplicate. Required before submitting such a line; the approver sees it (UC-EXP-01)." example:"The hotel issued one invoice for both rooms; each of us claims their own night"`
 	// Dimensions (FR-DIM-01, FR-DIM-02; rev 0.171).
 	DimensionValueIDs []DimensionValueRef `json:"dimension_value_ids,omitempty" maxItems:"10" doc:"The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06); its cost carries them. A line whose category's account requires a dimension names a value of it, or the claim does not post when it is approved (DIM-05)."`
+	// A project cost billed on (FR-PRJ-08; rev 0.297).
+	Billable      bool   `json:"billable,omitempty" doc:"The line is a cost of a project that is billed on to its customer (FR-PRJ-08); it carries a project in dimension_value_ids, and the project's unbilled view lists it once the claim is posted, at its cost plus markup_percent." example:"true"`
+	MarkupPercent string `json:"markup_percent,omitempty" pattern:"^[0-9]{1,3}(\\.[0-9]{1,2})?$" doc:"The markup on the cost when it is billed on, a percentage from 0 to 999.99 with at most two decimals (RND-MARKUP). Only on a billable line." example:"10"`
 }
 
 // ExpenseClaimDraft is a claim as its claimant enters it.
@@ -209,6 +213,7 @@ func claimDraftOf(in ExpenseClaimDraft, base money.Currency) (claim.Draft, error
 		values, fps := valuesOf(l.DimensionValueIDs, at("dimension_value_ids"))
 		fields = append(fields, fps...)
 		line.Values = values
+		line.Billable, line.Markup = l.Billable, l.MarkupPercent
 		if l.ReceiptID != "" {
 			r, err := uuid.Parse(l.ReceiptID)
 			if err != nil {
@@ -287,7 +292,7 @@ func claimLinesOut(d claim.Draft, trips map[int]claim.Trip) []ExpenseClaimLine {
 	for i, l := range d.Lines {
 		if l.Kind == claim.LineMileage {
 			x := ExpenseClaimLine{Kind: claim.LineMileage, Date: dayText(l.Date), CategoryID: l.CategoryID.String(), Description: l.Description,
-				From: l.From, To: l.To, Return: l.Return, Vehicle: l.Vehicle, Distance: l.Distance.String(), DimensionValueIDs: valueRefs(l.Values)}
+				From: l.From, To: l.To, Return: l.Return, Vehicle: l.Vehicle, Distance: l.Distance.String(), DimensionValueIDs: valueRefs(l.Values), Billable: l.Billable, MarkupPercent: l.Markup}
 			if t, ok := trips[i]; ok {
 				amount, rate := moneyOut(t.Amount), moneyOut(t.Rate)
 				x.Amount, x.Rate, x.ClaimedKm = &amount, &rate, t.Km.String()
@@ -298,7 +303,7 @@ func claimLinesOut(d claim.Draft, trips map[int]claim.Trip) []ExpenseClaimLine {
 		amount := moneyOut(l.Amount)
 		x := ExpenseClaimLine{Kind: claim.LineReceipt, Date: dayText(l.Date), Merchant: l.Merchant, CategoryID: l.CategoryID.String(),
 			Description: l.Description, Amount: &amount, GSTCode: l.GSTCode, Attendees: l.Attendees, Document: l.Document,
-			AddressedTo: l.AddressedTo, Duplicate: l.DuplicateReason, DimensionValueIDs: valueRefs(l.Values)}
+			AddressedTo: l.AddressedTo, Duplicate: l.DuplicateReason, DimensionValueIDs: valueRefs(l.Values), Billable: l.Billable, MarkupPercent: l.Markup}
 		if l.ReceiptID != nil {
 			x.ReceiptID = l.ReceiptID.String()
 		}
@@ -697,6 +702,9 @@ func registerClaims(a *API) {
 				if err != nil {
 					return ExpenseClaim{}, err
 				}
+				if err := a.checkBillableClaimLines(ctx, u, d.Lines); err != nil {
+					return ExpenseClaim{}, err
+				}
 				d.ClaimantID = p.UserID
 				doc, err := a.claims.Create(ctx, p.Organisation, d)
 				if err != nil {
@@ -793,6 +801,9 @@ func registerClaims(a *API) {
 				}
 				d, err := claimDraftOf(in.Body, v.base)
 				if err != nil {
+					return ExpenseClaim{}, err
+				}
+				if err := a.checkBillableClaimLines(ctx, u, d.Lines); err != nil {
 					return ExpenseClaim{}, err
 				}
 				d.ClaimantID = p.UserID

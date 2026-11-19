@@ -124,6 +124,10 @@ type Line struct {
 	// its GST is claimed, under RND-GST-SHARE. Empty is 100.
 	BusinessShare string
 	Values        []uuid.UUID // its dimension values (FR-DIM-02), checked when it posts
+	// Billable marks a cost of a project that is billed on to its customer, with Markup, a percentage of the cost as typed (FR-PRJ-08;
+	// rev 0.297). Only a line that carries a project value is either; the API checks it.
+	Billable bool
+	Markup   string
 }
 
 // OrderRef names the line of a purchase order a bill's line bills, and the quantity of it (FR-AP-01; rev 0.87).
@@ -197,6 +201,9 @@ type payloadLine struct {
 	BusinessShare string `json:"business_share,omitempty"`
 	// The line's dimension values (FR-DIM-02).
 	DimensionValueIDs []uuid.UUID `json:"dimension_value_ids,omitempty"`
+	// Billable and Markup are a project cost's billing on (FR-PRJ-08).
+	Billable bool   `json:"billable,omitempty"`
+	Markup   string `json:"markup_percent,omitempty"`
 }
 
 func day(t time.Time) string {
@@ -236,7 +243,7 @@ func Encode(d Draft) ([]byte, error) {
 	}
 	for _, l := range d.Lines {
 		pl := payloadLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST,
-			SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom), BusinessShare: l.BusinessShare, DimensionValueIDs: l.Values}
+			SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom), BusinessShare: l.BusinessShare, DimensionValueIDs: l.Values, Billable: l.Billable, Markup: l.Markup}
 		if o := l.Order; o != nil {
 			pl.Order = &payloadOrder{PurchaseOrderID: o.PurchaseOrderID, Line: o.Line, Quantity: o.Quantity.String()}
 		}
@@ -325,7 +332,7 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 	}
 	for _, l := range p.Lines {
 		line := Line{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST, SpreadMonths: l.SpreadMonths,
-			BusinessShare: l.BusinessShare, Values: l.DimensionValueIDs}
+			BusinessShare: l.BusinessShare, Values: l.DimensionValueIDs, Billable: l.Billable, Markup: l.Markup}
 		if l.SpreadFrom != "" {
 			if line.SpreadFrom, err = time.Parse(time.DateOnly, l.SpreadFrom); err != nil {
 				return Draft{}, bad(fmt.Sprintf("the spread's first month %q", l.SpreadFrom))

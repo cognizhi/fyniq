@@ -83,6 +83,44 @@ function Group({ id, title, items, empty, mine }: { id: string; title: string; i
 // groups are the approval requests (yours to decide, yours waiting, others') and the weekly review
 // of high-risk actions; AI proposals, checks, mentions and deadlines join with their modules. A
 // request opens on its own page, whose Approve opens the confirmation: nothing here decides.
+// TimeToApprove lists the weeks of time sent to the person for the projects they manage (FR-PRJ-07, FR-UX-40a): a right that only
+// approves within a project arrives as an Inbox item, not as an area. Shown only with Projects and time on.
+function TimeToApprove() {
+  const { session } = useSignedIn();
+  const on = session.features?.projects === true && (session.roles ?? []).some((r) => r === "approver" || r === "controller");
+  const q = useQuery({
+    queryKey: ["timesheet-submissions", "waiting"],
+    enabled: on,
+    queryFn: async () => {
+      const r = await api.GET("/v1/timesheet-submissions", { params: { query: { whose: "waiting_for_me", page_size: 100 } } });
+      if (r.error) throw r.error;
+      return r.data.items;
+    },
+  });
+  const n = q.data?.length ?? 0;
+  if (!on || n === 0) return null;
+  return (
+    <section className="fy-card" aria-labelledby="time-to-approve">
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id="time-to-approve">
+          Time to approve
+        </h2>
+        <span className="fy-chip fy-chip--neutral">
+          <Icon of={ClockAlert} />
+          {n} {n === 1 ? "week" : "weeks"}
+        </span>
+      </div>
+      <Link className="fy-list__item" to="/projects/timesheet">
+        <span className="fy-list__main">
+          <span className="fy-list__title whitespace-normal">{q.data!.slice(0, 3).map((w) => `${w.person_name} (${w.project_name})`).join(", ")}</span>
+          <span className="fy-list__meta whitespace-normal">Weeks of time sent to you for the projects you manage.</span>
+        </span>
+        <Icon of={ChevronRight} />
+      </Link>
+    </section>
+  );
+}
+
 export function Inbox() {
   const { session } = useSignedIn();
   const [all, setAll] = useState(false);
@@ -184,6 +222,7 @@ export function Inbox() {
       <ControlsFailing />
       <ReviewsDue />
       <PoliciesToAcknowledge />
+      <TimeToApprove />
       {review.data && (
         <section className="fy-card" aria-labelledby="weekly-review">
           <div className="fy-card__head">

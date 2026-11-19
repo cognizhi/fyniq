@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billable": {
+      "description": "Whether the entry will be billable.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "elapsed_minutes": {
+      "description": "The whole minutes it has run, now.",
+      "examples": [
+        135
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "note": {
+      "description": "The note the entry will carry.",
+      "examples": [
+        "Data migration"
+      ],
+      "type": "string"
+    },
+    "project_id": {
+      "description": "The project.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "started_at": {
+      "description": "When it started, by the app's clock.",
+      "examples": [
+        "2026-11-17T09:00:00+08:00"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "task_id": {
+      "description": "The task.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e51"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "task_id",
+    "billable",
+    "started_at",
+    "elapsed_minutes"
+  ],
+  "title": "TimerView",
+  "type": "object"
+}

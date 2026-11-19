@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "can_decide": {
+      "description": "Whether the caller may approve or return it now: a submitted week of a project they manage, or any for the Controller, never their own.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "comment": {
+      "description": "What to fix, when it was returned.",
+      "examples": [
+        "Add what was done on Wednesday."
+      ],
+      "type": "string"
+    },
+    "decided_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-23T09:10:00+08:00"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "decided_by": {
+      "description": "Who decided it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e62"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "decided_by_name": {
+      "description": "Their name.",
+      "examples": [
+        "Wei Lim"
+      ],
+      "type": "string"
+    },
+    "entries": {
+      "description": "The entries in it, by day.",
+      "items": {
+        "$ref": "TimeEntry.schema.json"
+      },
+      "type": "array"
+    },
+    "id": {
+      "description": "The submission's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5101"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "minutes": {
+      "description": "The net minutes in it.",
+      "examples": [
+        2250
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "person_name": {
+      "description": "Their name.",
+      "examples": [
+        "Priya Nair"
+      ],
+      "type": "string"
+    },
+    "project_id": {
+      "description": "The project.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "project_name": {
+      "description": "Its name.",
+      "examples": [
+        "Acme rollout"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "submitted waits for a manager; approved locks its entries; returned sends them back with a comment.",
+      "enum": [
+        "submitted",
+        "approved",
+        "returned"
+      ],
+      "examples": [
+        "submitted"
+      ],
+      "type": "string"
+    },
+    "submitted_at": {
+      "description": "When it was sent.",
+      "examples": [
+        "2026-11-20T17:30:00+08:00"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "version": {
+      "description": "Its version, for If-Match.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "week_start": {
+      "description": "The Monday of the week.",
+      "examples": [
+        "2026-11-16"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "entries",
+    "id",
+    "project_id",
+    "project_name",
+    "user_id",
+    "person_name",
+    "week_start",
+    "status",
+    "submitted_at",
+    "minutes",
+    "can_decide",
+    "version"
+  ],
+  "title": "TimesheetSubmissionDetail",
+  "type": "object"
+}

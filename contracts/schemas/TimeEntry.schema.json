@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billable": {
+      "description": "Whether it is billed.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "id": {
+      "description": "The entry's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5001"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "minutes": {
+      "description": "Whole minutes, 1 to 1,440; a reversing entry has the opposite of the entry it reverses (below zero).",
+      "examples": [
+        135
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "note": {
+      "description": "What was done.",
+      "examples": [
+        "Migrated the customer tables"
+      ],
+      "type": "string"
+    },
+    "project_id": {
+      "description": "The project.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reverses_id": {
+      "description": "For a reversing entry, the approved entry it reverses.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5002"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "status": {
+      "description": "draft and returned entries can be changed; submitted and approved ones cannot.",
+      "enum": [
+        "draft",
+        "submitted",
+        "approved",
+        "returned"
+      ],
+      "examples": [
+        "draft"
+      ],
+      "type": "string"
+    },
+    "submission_id": {
+      "description": "The submission it was sent in.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5101"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "task_id": {
+      "description": "The task.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e51"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "version": {
+      "description": "Its version.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "work_date": {
+      "description": "The day the work was done.",
+      "examples": [
+        "2026-11-17"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "task_id",
+    "work_date",
+    "minutes",
+    "billable",
+    "status",
+    "version"
+  ],
+  "title": "TimeEntry",
+  "type": "object"
+}

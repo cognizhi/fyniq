@@ -50,12 +50,22 @@ export function Projects() {
           <h1 className="fy-h1">Projects</h1>
           <p className="fy-secondary">The work you track: its customer, how it is billed, who logs time on it and who approves that time.</p>
         </div>
-        {may && !off && (
+        {!off && (
           <div className="fy-pagehead__actions">
+            <Link className="fy-btn fy-btn--ghost" to="/projects/timesheet">
+              Timesheet
+            </Link>
+            {(session.roles ?? []).some((r) => r === "owner" || r === "payroll_administrator") && (
+              <Link className="fy-btn fy-btn--ghost" to="/projects/cost-rates">
+                Cost rates
+              </Link>
+            )}
+            {may && (
             <Button variant="primary" onClick={() => setAdding(true)} title={add.tooltip}>
               <Icon of={Plus} />
               {add.label}
             </Button>
+            )}
           </div>
         )}
       </div>
