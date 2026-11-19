@@ -33,3 +33,8 @@ var PurgeSchema []byte
 //
 //go:embed payroll.schema.json
 var PayrollMonthSchema []byte
+
+// PayrollRunSchema is payroll-run.schema.json (fyniq-payroll-run@1): a pay run of one wage month, each person's employee-month, the run's totals and its entry (p1-nemura-payroll).
+//
+//go:embed payroll-run.schema.json
+var PayrollRunSchema []byte

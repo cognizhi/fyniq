@@ -1,0 +1,126 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "march-with-an-off-cycle-bonus",
+ "why": "PRD-001 G.2 March employees and G4-002: the off-cycle S$4,000 is part of the same employee-month, its SDL 11.25 not 10.00 + 10.00",
+ "month": "2026-03-01",
+ "people": [
+  {
+   "id": "P0",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-01-01"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "7600.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "P1",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1969-01-01"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "P2",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1964-01-01"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "4000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    },
+    {
+     "key": "off",
+     "name": "Off-cycle bonus",
+     "amount": "4000.00",
+     "cpf_wages": true
+    }
+   ]
+  },
+  {
+   "id": "P3",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1959-01-01"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "3000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "P4",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1950-01-01"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "2500.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "P5",
+   "person": {
+    "residency": "foreigner",
+    "birth_date": "1990-01-01"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "9000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "P6",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-01-01"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "700.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  }
+ ]
+}

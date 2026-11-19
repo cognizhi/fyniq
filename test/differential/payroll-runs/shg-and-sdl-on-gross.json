@@ -1,0 +1,84 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "shg-and-sdl-on-gross",
+ "why": "SHG and SDL on the gross, an item that is not CPF wages included [verify] (FR-PAY-03, FR-PAY-04)",
+ "month": "2026-06-01",
+ "people": [
+  {
+   "id": "A",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20",
+    "shg_fund": "CDAC"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "1000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    },
+    {
+     "key": "t",
+     "name": "Allowance",
+     "amount": "1500.00",
+     "cpf_wages": false
+    }
+   ]
+  },
+  {
+   "id": "B",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20",
+    "shg_fund": "MBMF",
+    "shg_opt_out": true
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "7000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "C",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20",
+    "shg_fund": "SINDA"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "15000.01",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "D",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20",
+    "employee": false,
+    "shg_fund": "ECF"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  }
+ ]
+}

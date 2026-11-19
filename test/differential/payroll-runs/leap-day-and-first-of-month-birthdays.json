@@ -1,0 +1,88 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "leap-day-and-first-of-month-birthdays",
+ "why": "The age band changes the month after the birthday; a 29 February birthday is 1 March in a year with none [verify] (FR-PAY-02)",
+ "month": "2026-03-01",
+ "people": [
+  {
+   "id": "A",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1956-02-29"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "B",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1956-03-01"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "C",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1956-02-28"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "D",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1971-03-15"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "E",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1971-02-14"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  }
+ ]
+}
