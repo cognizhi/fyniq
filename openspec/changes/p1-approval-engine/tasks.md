@@ -98,7 +98,7 @@
   member's is resolved or overridden with a reason (TEAM-01, TEAM-06); `GET /v1/organisation` shows the mode. Tests:
   `TestTeamModeSwitchesAreDualControlled`, `TestASwitchBlocksWhenTheConflictsChange`, `TestAttackTeamModesAreApprovedSwitches`,
   `TestModes`, `TestASwitchWaitsForEveryConflict`. **Left:** Enterprise mode (TEAM-03 until its per-entity approval
-  matrices, SSO, SCIM and quarterly access reviews exist); the team-mode screen (5.1).)
+  matrices, SSO and SCIM exist: FR-ADM-02 puts them in Enterprise mode, a P2 build); the team-mode screen is built (5.1).)
 - [x] 3.2 FM-1 (two-person rule with step-up for both), FM-2 (self-approval at or below the threshold, flagged) and FM-3 (the weekly review task, escalating after 14 days). Tests `// req: FM-1`, `// req: FM-2` and `// req: FM-3`
   (20 Oct 2026: FM-1 for the objects built: `POST /v1/approvals/{id}/approve` and `/reject` sign the envelope whose
   hash the approver sends; the requester never signs (APR-01, and FY101 in the database); the signer holds A on the
@@ -151,12 +151,16 @@
   Tests `TestTheAccountantReviewsAClosedMonth` (G4-109), `TestAttackAnAccountantReviewKeepsItsRules`,
   `TestAQuarterWithoutTheAccountantsReviewWarns`, `accountantreview_test.go`, `AccountantReviews.test.tsx`. FM-6 arrives
   with wave 6 (built 18 Nov 2026, rule-based by rev 0.287: `internal/domain/unusual`, `TestUnusualItemsEnterTheWeeklyReview`). **Left:** notices to management when a query is raised, with the notification types.)
-- [ ] 3.5 The control check: period lock, approvals, segregation of duties and team mode together. Test `// req: FR-CTL-04`
-  **Left.**
+- [x] 3.5 The control check: period lock, approvals, segregation of duties and team mode together. Test `// req: FR-CTL-04`
+  (Built: `TestTheControlsHoldTogether` (`internal/api/controls_test.go`, `// req: FR-CTL-04`, FR-GL-07, FR-GL-08, FM-1, FM-2,
+  FM-4, SOD-6) runs one company's books through Founder mode's self-approval limit, a close attested by someone other than
+  the one who ran its checks, a closed month refusing every posting (even an approval that was waiting) and reopening on
+  another person's approval, then the switch to Standard mode asked by one founder and approved by the other, after which
+  a founder whose roles conflict no longer posts (SOD-6). Ticked 20 Nov 2026; it passes at this commit.)
 
 ## 4. Wire the waiting refusals
 
-- [ ] 4.1 Switch vendor bank details (FR-CT-03), account merges (FR-COA-04), pack activation (ENG-32), administrative changes (FR-ADM-04) and Owner changes (FR-ADM-09) from "refused until the engine lands" to approval through it, with each change's test extended
+- [x] 4.1 Switch vendor bank details (FR-CT-03), account merges (FR-COA-04), pack activation (ENG-32), administrative changes (FR-ADM-04) and Owner changes (FR-ADM-09) from "refused until the engine lands" to approval through it, with each change's test extended
   (20 Oct 2026: the two refusals that existed now ask for approval and answer 202 with the request: a change to a
   setting under FM-1 (SET-05 retired) and, after the founder bootstrap, a role assigned or revoked and an invitation
   (MEM-05 retired; the invitation's code is shown to the requester at once and works once approved). PRD rev 0.36
@@ -169,8 +173,13 @@
   features land.)
   (6 Nov 2026, rev 0.174: account merges go through the engine as the object type `account` with `account.merge`,
   asked for with C and approved with A on "Chart of accounts, dimensions"; dependencies: both accounts' versions and what
-  the account holds, each currency and dimension set (`p1-organisation-chart` task 3.2). **Left:** the rest of
-  FR-ADM-04 and Owner changes.)
+  the account holds, each currency and dimension set (`p1-organisation-chart` task 3.2).)
+  (20 Nov 2026, checked against the code: every item of FR-ADM-04 and the Owner changes now goes through the engine as an
+  object type of `approval.Operations`. Team mode (`team_mode`), approval policies (`approval_policy`, fixed for itself),
+  statutory parameters (`statutory_pack`), integrations (`connector`, `api_client`), AI settings (`ai_connection`,
+  `ai_data_policy`, `ai_route`, `kb_publication`) and the task catalogue (the setting `ai.task_types`: adding waits for a
+  second approver, `TestTaskTypesAreOffUntilEnabledUnderDualControl`), and Owner changes: roles and invitations
+  (`membership`, `member_invitation`) and an Owner's succession (FR-ADM-09, rev 0.181, `owner_succession_test.go`).)
 
 ## 5. Screens
 
@@ -187,7 +196,10 @@
   roles or named members, over the policy's ETag; the fixed policy stays fixed). Tests `TeamMode.test.tsx`.
   27 Oct 2026: bank-details-change, with vendors' bank details (`screens/contacts/BankDetails.tsx`; the approval page
   shows both numbers beside the letter). 6 Nov 2026: break-glass, its own page linked from team-mode (task 3.3).
-  **Left:** accountant-review, payment-batch and personal-approvals with their modules; Founder mode's other controls
-  (FM-4…7) as they are built; the Inbox's keyboard triage (J/K, A
-  opens the confirmation) with p1-app-shell 2.2.)
+  (20 Nov 2026, checked: accountant-review is built (`screens/accounting/AccountantReviews.tsx`, task 3.4), the batch's
+  approval part is `screens/purchases/PaymentBatchPage.tsx` (release, the approval's steps and break-glass), and FM-4 to
+  FM-7's screens are the close, reconciliation, review-log and accountant-review pages above.) **Left:** personal-approvals
+  (`/me/approve`): a line manager approves the claims of their reports, and Fyniq holds no line-manager relationship until
+  the people projection (FR-PPL-06, FR-EMP-01) is connected (the line manager's UAT script, `docs/uat/roles/line-manager.md`,
+  records it as "not available yet"); the Inbox's keyboard triage (J/K, A opens the confirmation) with p1-app-shell 2.2.)
 - [ ] 5.2 Finish with `make check` and `make test`
