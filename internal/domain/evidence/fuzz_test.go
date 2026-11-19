@@ -284,3 +284,40 @@ func TestAHEICPhotoIsConvertedWhereTheInstallationHasAConverter(t *testing.T) {
 		t.Errorf("a limit above 25 MB must not raise the cap: %+v", ps)
 	}
 }
+
+// A PDF's preview is drawn by the converter, never in the API: what comes back is untrusted, so it must be a PNG within
+// the limit and clean, and a file that is no PDF, an encrypted one and a converter that is down each answer plainly; the
+// preview is the same bytes the converter drew.
+// req: FR-DOC-08
+func TestAPDFPreviewIsAPictureTheConverterDrew(t *testing.T) {
+	ctx := context.Background()
+	pdf := []byte("%PDF-1.7\n1 0 obj\n<< >>\nendobj\n%%EOF\n")
+	pic := pngWithText()
+	drew := convert{out: ports.Converted{MediaType: "image/png", Data: pic}}
+
+	got, ps, err := Preview(ctx, Checker{Scanner: flagger{}, Converter: drew}, pdf)
+	if err != nil || len(ps) != 0 || !bytes.Equal(got, pic) {
+		t.Fatalf("a PDF: %d bytes %+v %v", len(got), ps, err)
+	}
+	for name, c := range map[string]struct {
+		data []byte
+		conv convert
+		code string
+		fail bool
+	}{
+		"a file that is no PDF":          {[]byte("name,amount\nx,1\n"), drew, CodePreview, false},
+		"a PDF the renderer cannot read": {pdf, convert{err: ports.ErrNotConvertible}, CodePreview, false},
+		"a renderer that is down":        {pdf, convert{err: errors.New("503")}, "", true},
+		"a picture that is not a PNG":    {pdf, convert{out: ports.Converted{MediaType: "image/png", Data: []byte("MZ not a picture")}}, CodePreview, false},
+		"a JPEG where a PNG was asked":   {pdf, convert{out: ports.Converted{MediaType: "image/jpeg", Data: jpegWithEXIF()}}, CodePreview, false},
+		"a picture the scan flags":       {pdf, convert{out: ports.Converted{MediaType: "image/png", Data: append(slices.Clone(pic), "MALWARE"...)}}, CodeMalware, false},
+	} {
+		_, ps, err := Preview(ctx, Checker{Scanner: flagger{}, Converter: c.conv}, c.data)
+		if c.fail != (err != nil) || c.code != "" && (len(ps) != 1 || ps[0].Code != c.code) {
+			t.Errorf("%s: %+v %v", name, ps, err)
+		}
+	}
+	if _, _, err := Preview(ctx, Checker{Scanner: flagger{}}, pdf); err == nil {
+		t.Error("no converter configured: a preview must be an error, never an empty picture")
+	}
+}

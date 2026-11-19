@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/succession"
@@ -225,6 +226,11 @@ var matrixSuccession = map[string]func(e *env, tok string) (response, func() boo
 	"getEvidenceFile": func(e *env, tok string) (response, func() bool) {
 		_, file := matrixBillEvidence(e)
 		return e.call(http.MethodGet, "/v1/evidence/"+file+"/file", tok, nil), nil
+	},
+	"getEvidencePreview": func(e *env, tok string) (response, func() bool) {
+		e.api.deps.Converter = local.StandInConverter{}
+		_, file := matrixBillEvidence(e)
+		return e.call(http.MethodGet, "/v1/evidence/"+file+"/preview", tok, nil), nil
 	},
 	// A download link (SEC-24): asked for as a file is opened; the API's own link is public, its token the right.
 	"createEvidenceDownload": func(e *env, tok string) (response, func() bool) {

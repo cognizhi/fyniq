@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "content_base64": {
+      "description": "The picture, in base64: show it as an image, never by the file's name.",
+      "examples": [
+        "iVBORw0KGgo="
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The file this is the preview of.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "media_type": {
+      "description": "The preview's type: a PNG, decided from its content.",
+      "enum": [
+        "image/png"
+      ],
+      "examples": [
+        "image/png"
+      ],
+      "type": "string"
+    },
+    "preview_sha256": {
+      "description": "The SHA-256 of the picture, so a preview is as provable as the file it came from.",
+      "examples": [
+        "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae"
+      ],
+      "type": "string"
+    },
+    "size_bytes": {
+      "description": "The preview's size in bytes.",
+      "examples": [
+        48213
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "source_sha256": {
+      "description": "The SHA-256 of the PDF as stored, which was checked against its record before it was drawn.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "media_type",
+    "size_bytes",
+    "source_sha256",
+    "preview_sha256",
+    "content_base64"
+  ],
+  "title": "EvidencePreview",
+  "type": "object"
+}

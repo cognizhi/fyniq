@@ -683,3 +683,4 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | settings.brand: the logo on PDF reports (p1-organisation-chart 2.4)
 
 ## [2026-11-20] compile | nemura.my-leave from docs/user-guide/nemura/my-leave.md; nemura.home relinked (p1-nemura-leave-time slice 1)
+## [2026-11-20] compile | compliance.evidence: the PDF preview of an evidence file (p1-documents-evidence 1.3, 4.2)
