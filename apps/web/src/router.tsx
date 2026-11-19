@@ -22,6 +22,7 @@ export const queryClient = new QueryClient({
 // load on demand and are preloaded on intent (NFR-PERF-UI-03).
 const screens: Record<RouteId, RouteComponent> = {
   home: Home,
+  enrol: lazyRouteComponent(() => import("./screens/Enrol"), "Enrol"),
   "sign-in": lazyRouteComponent(() => import("./screens/SignIn"), "SignIn"),
   install: lazyRouteComponent(() => import("./screens/Install"), "Install"),
   "document-view": lazyRouteComponent(() => import("./screens/public/DocumentView"), "DocumentView"),

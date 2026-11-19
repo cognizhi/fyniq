@@ -53,6 +53,7 @@ export type Entry = RouteFeature | ActionFeature | NavFeature;
 
 export const routes = [
   { kind: "route", id: "home", path: "/", mode: "basic", signedIn: true, help: "home.overview", guide: "home.overview" },
+  { kind: "route", id: "enrol", path: "/sign-in/enrol", mode: "basic", signedIn: true, help: "auth.enrol", guide: "auth.sign-in#set-up-how-you-confirm-its-you" },
   { kind: "route", id: "sign-in", path: "/sign-in", mode: "basic", signedIn: false, help: "auth.sign-in", guide: "auth.sign-in" },
   { kind: "route", id: "install", path: "/install", mode: "basic", signedIn: false, help: "installation.setup", guide: "installation.setup" },
   // The customer's view of a quote or invoice through the secure link its email carried (FR-AR-06, FR-AR-16): no sign-in.

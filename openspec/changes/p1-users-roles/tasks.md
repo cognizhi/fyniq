@@ -202,6 +202,11 @@
   the list of Super admins, besides the installation's connectors, announcements and sign-in providers that have their pages;
   (3) on users-roles, the columns the API does not return (email, last sign-in, MFA status, scopes), the default
   experience mode per invitation, and department scopes (see 2.1).)
+  (20 Nov 2026, mfa-enrolment, the first item of the Left above, is built: `screens/Enrol.tsx` at `/sign-in/enrol`, linked from Profile and
+  security: three steps, a passkey (or, where the browser cannot make one, the authenticator app the provider asks for), ten
+  recovery codes, and a second authenticator (recommended), each Done or To do from what the API holds, and "You are set up"
+  when the first two are done; guide `sign-in.md` (Set up how you confirm it's you), compiled into `auth.sign-in`; test
+  `enrol.test.tsx`. Not a first-run tour step: the founder's tour is at its seven.)
 - [x] 4.2 Run the walkthrough test for each role (QA-UI-08) on the workspaces these rights produce
   (20 Nov 2026, found built: `apps/web/journeys/walkthroughs.spec.ts` runs QA-UI-08 for each of the sixteen roles of §7.1
   in an organisation of its own: landing page, sidebar, Home blocks, Inbox, the "not part of your access" page and

@@ -705,3 +705,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | nemura.requests new; leave.approve: flexible work replies (p1-nemura-leave-time 3.3)
 ## [2026-11-20] compile | appearance.md -> preferences.appearance (Expert starts Compact)
+
+## [2026-11-20] compile | sign-in.md -> auth.sign-in (set up how you confirm it's you: the enrolment page)

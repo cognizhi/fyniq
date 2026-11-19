@@ -16,6 +16,10 @@
       "label": "Sign in",
       "tooltip": "Sign in with the provider your organisation uses."
     },
+    "auth.enrol": {
+      "label": "Set up how you confirm it's you",
+      "tooltip": "Three steps: a passkey, your recovery codes, and a second authenticator, so confirming it's you for approvals and payments takes a touch and losing a device never locks you out."
+    },
     "installation.setup": {
       "label": "Set up Fyniq",
       "tooltip": "The one-time setup of a new installation: the setup code, the first company and the recovery codes."
