@@ -24,8 +24,10 @@ func TestTheGoLintAgreesWithKbPyOnTheFixtures(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := c.LoadPacks(os.DirFS(filepath.Join(dir, "packs"))); err != nil {
-				t.Fatal(err)
+			for _, packs := range []string{"packs", filepath.Join("internal", "nemura", "packs")} { // Fyniq's and Nemura's own
+				if err := c.LoadPacks(os.DirFS(filepath.Join(dir, packs))); err != nil {
+					t.Fatal(err)
+				}
 			}
 			got := map[string]bool{}
 			for _, f := range knowledge.Lint(c) {
