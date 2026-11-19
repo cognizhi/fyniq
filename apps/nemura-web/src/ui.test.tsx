@@ -25,6 +25,7 @@ import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
 import { PayRunApproval } from "./pages/PayRunApproval";
+import { MyPay, Payslip } from "./pages/MyPay";
 import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
@@ -1304,8 +1305,59 @@ describe("approving a pay run", () => {
     expect(screen.queryByRole("button", { name: /Confirm with my passkey/ })).toBeNull();
   });
 
+  it("publishes the payslips of an approved version and says how many were made", async () => {
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: { ...run(0), latest: { ...version(2, 0), state: "approved" } } });
+    answer(`GET /v1/payroll/runs/${rid}/changes`, { status: 200, body: { ...changes, has_previous: false } });
+    answer(`POST /v1/payroll/runs/${rid}/payslips`, { status: 201, body: { published: 2 } });
+    render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(await screen.findByRole("button", { name: "Publish the payslips of version 2" }));
+    expect(await screen.findByText("Published: 2 payslips are in each person's My pay.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/payroll/runs/${rid}/payslips`)).toMatchObject({ version: 2 });
+  });
+
   it("is refused in words to anyone but the Payroll administrator and the Owner", () => {
     render(<PayRunApproval id={rid} roles={["hr_admin"]} member={other} />);
     expect(screen.getByRole("alert").textContent).toContain("Only the Payroll administrator and the Owner");
+  });
+});
+
+// req: NM-PAY-04, NM-ESS-02
+describe("my pay", () => {
+  const sid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f50";
+  const summary = { id: sid, month: "2026-06-01", payment_date: "2026-06-25", reference: "PS-202606-0001", net_salary: "3878.00", version: 2, corrected: false };
+  const view = { ...summary, sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", employer: "Acme Pte. Ltd.", employee: "Ben Lim", basic_salary: "4500.00", period_start: "2026-06-01", period_end: "2026-06-30",
+    allowances: [{ name: "Transport allowance", amount: "100.00" }], additional_payments: [{ name: "Monthly bonus", amount: "500.00" }], deductions: [{ name: "accommodation", amount: "200.00" }, { name: "Employee's CPF contribution", amount: "1020.00" }],
+    overtime_hours: "3", overtime_pay: "106.21" };
+
+  it("lists the person's payslips with the net salary, marks a corrected one and has no axe violation", async () => {
+    answer("GET /v1/me/payslips", { status: 200, body: { payslips: [summary, { ...summary, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f51", version: 1, corrected: true }] } });
+    const { container } = render(<MyPay roles={["employee"]} />);
+    expect((await screen.findAllByText("2026-06: net salary 3878.00, paid 2026-06-25")).length).toBe(2);
+    expect(screen.getByText("Corrected")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("says so when no payslip has been published", async () => {
+    answer("GET /v1/me/payslips", { status: 200, body: { payslips: [] } });
+    render(<MyPay roles={["employee"]} />);
+    expect(await screen.findByText("No payslip has been published for you yet.")).toBeTruthy();
+  });
+
+  it("shows MOM's items in order: the employer, the employee, the date of payment, the salary period, allowances, additional payments, overtime, deductions and the net salary", async () => {
+    answer(`GET /v1/me/payslips/${sid}`, { status: 200, body: view });
+    const { container } = render(<Payslip id={sid} roles={["employee"]} />);
+    expect(await screen.findByText("Acme Pte. Ltd.")).toBeTruthy();
+    for (const label of ["Employee", "Date of payment", "Salary period", "Basic salary", "Allowance: Transport allowance", "Additional payment: Monthly bonus", "Overtime hours worked", "Overtime pay", "Deduction: Employee's CPF contribution", "Net salary paid"]) {
+      expect(screen.getByText(label)).toBeTruthy();
+    }
+    expect(screen.queryByText("Overtime payment period")).toBeNull();
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("says there is no such payslip when it is not the person's", async () => {
+    answer(`GET /v1/me/payslips/${sid}`, { status: 404, body: { code: "NM_NOT_FOUND" } });
+    render(<Payslip id={sid} roles={["employee"]} />);
+    expect(await screen.findByText("There is no such payslip of yours.")).toBeTruthy();
   });
 });

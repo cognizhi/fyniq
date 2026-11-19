@@ -416,8 +416,8 @@ type RunLine struct {
 
 // RunItem is a pay item of a line with its class and its source.
 type RunItem struct {
-	Key, Name, Class, Amount, Why, SourceType, SourceID string
-	Mismatch                                            bool
+	Key, Name, Class, Amount, Why, SourceType, SourceID, Nature string
+	Mismatch                                                    bool
 }
 
 // RunTotals are a version's totals.
@@ -610,7 +610,7 @@ func lineOf(person uuid.UUID, name string, r payroll.Result, mb MonthBuild, comp
 		EmployerCost: cents(r.EmployerCost), Working: r.Working, Flags: r.Flags, Overridden: r.Overridden, Computed: computed}
 	for _, it := range r.Items {
 		src := mb.Sources[it.Key]
-		l.Items = append(l.Items, RunItem{Key: it.Key, Name: it.Name, Class: it.Class, Amount: cents(it.Amount), Why: it.Why, Mismatch: it.Mismatch, SourceType: src.Type, SourceID: src.ID})
+		l.Items = append(l.Items, RunItem{Key: it.Key, Name: it.Name, Class: it.Class, Amount: cents(it.Amount), Why: it.Why, Mismatch: it.Mismatch, SourceType: src.Type, SourceID: src.ID, Nature: it.Nature})
 	}
 	for _, d := range mb.Month.Deductions {
 		src := mb.Sources[d.Key]

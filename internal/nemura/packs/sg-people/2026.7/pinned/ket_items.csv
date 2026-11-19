@@ -1,0 +1,7 @@
+case,item,want_key,want_when,why,source
+the employer,1,employer_name,always,"MOM: item 1 is the name of the employer",mom-kets-guidelines
+basic salary,8,basic_salary,always,"MOM: item 8, basic salary per salary period",mom-kets-guidelines
+fixed-term duration,5,contract_duration,fixed_term,"MOM: item 5 only for employees on a fixed-term contract",mom-kets-guidelines
+overtime period,11,overtime_payment_period,if_different,"MOM: item 11 only if different from the salary period",mom-kets-guidelines
+notice period,17,notice_period,always,"MOM: item 17, the notice period",mom-kets-guidelines
+there is no item 18,18,none,none,"MOM lists 17 items",mom-kets-guidelines

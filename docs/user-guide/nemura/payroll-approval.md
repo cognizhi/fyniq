@@ -33,6 +33,7 @@ digest. The person who prepared a version cannot approve it: the database refuse
 
 - The approval is written once with what your passkey confirmed. A correction of an approved month is a new version that needs a reason; once approved, it supersedes the one before.
 - The one-off items, unpaid leave and overtime the version used are marked used by this run, so no later run takes them again.
+- Select **Publish the payslips** on an approved version to make each person's itemised payslip, with the PDF and its hash, in their **My pay**. A version is published once; a corrected version has its own. The employer's name is the letterhead's, so set it first.
 - Nothing is posted or paid by approving: posting to the books and paying are separate steps.
 
 ## Common problems
@@ -44,3 +45,4 @@ digest. The person who prepared a version cannot approve it: the database refuse
 ## Related
 
 - [Set up pay groups and record each person's pay](payroll-records.md)
+- [Read your payslips](my-pay.md)

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"time"
 
@@ -256,8 +257,47 @@ type RunChanges struct {
 	Unexplained   []RunUnexplained `json:"unexplained" doc:"What has no input behind it: for the approver to check."`
 }
 
+// PayslipItem is a named amount of a payslip.
+type PayslipItem struct {
+	Name   string `json:"name" doc:"As the payslip shows it." example:"Transport allowance"`
+	Amount string `json:"amount" doc:"Dollars." example:"100.00"`
+}
+
+// PayslipSummary is a payslip on the person's list.
+type PayslipSummary struct {
+	ID        string `json:"id" format:"uuid" doc:"The payslip." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f50"`
+	Month     string `json:"month" format:"date" doc:"The wage month." example:"2026-06-01"`
+	PayDate   string `json:"payment_date" format:"date" doc:"The date of payment." example:"2026-06-25"`
+	Reference string `json:"reference" doc:"Its reference." example:"PS-202606-0001"`
+	Net       string `json:"net_salary" doc:"The net salary paid." example:"4000.00"`
+	Version   int    `json:"version" doc:"The version of the pay run it was made from." example:"1"`
+	Corrected bool   `json:"corrected" doc:"True when a corrected version of the month has a payslip of its own: this one is superseded." example:"false"`
+}
+
+// PayslipView is a payslip with MOM's twelve items.
+type PayslipView struct {
+	PayslipSummary
+	SHA256         string        `json:"sha256" doc:"The SHA-256 of the exact PDF." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
+	Employer       string        `json:"employer" doc:"Item 1: the full name of the employer." example:"Acme Pte. Ltd."`
+	Employee       string        `json:"employee" doc:"Item 2: the full name of the employee." example:"Ben Lim"`
+	Basic          string        `json:"basic_salary" doc:"Item 4: the basic salary." example:"4500.00"`
+	PeriodStart    string        `json:"period_start" format:"date" doc:"Item 5: the start of the salary period." example:"2026-06-01"`
+	PeriodEnd      string        `json:"period_end" format:"date" doc:"Item 5: the end of the salary period." example:"2026-06-30"`
+	Allowances     []PayslipItem `json:"allowances" doc:"Item 6: fixed and ad-hoc allowances."`
+	Additional     []PayslipItem `json:"additional_payments" doc:"Item 7: bonuses, rest day pay, public holiday pay and other additional payments."`
+	Deductions     []PayslipItem `json:"deductions" doc:"Item 8: fixed deductions (the employee's CPF) and ad-hoc deductions (no-pay leave, absence)."`
+	OvertimeHours  string        `json:"overtime_hours,omitempty" doc:"Item 9: overtime hours worked." example:"3"`
+	OvertimePay    string        `json:"overtime_pay,omitempty" doc:"Item 10: overtime pay." example:"106.21"`
+	OvertimePeriod string        `json:"overtime_period,omitempty" doc:"Item 11: the overtime payment period, only if different from the salary period." example:"2026-06-01 to 2026-06-30"`
+	Reimbursements string        `json:"reimbursements,omitempty" doc:"Reimbursements paid with the salary, which are not part of it." example:"45.00"`
+}
+
 // Payroll is pay records behind the API.
 type Payroll interface {
+	PublishPayslips(ctx context.Context, s Session, run uuid.UUID, version int) (int, error)
+	MyPayslips(ctx context.Context, s Session) ([]PayslipSummary, error)
+	MyPayslip(ctx context.Context, s Session, id uuid.UUID) (PayslipView, error)
+	MyPayslipFile(ctx context.Context, s Session, id uuid.UUID) (reference string, pdf []byte, err error)
 	Approve(ctx context.Context, s Session, id uuid.UUID, version int, digest string) error
 	Changes(ctx context.Context, s Session, id uuid.UUID) (RunChanges, error)
 	StartRun(ctx context.Context, s Session, month time.Time, group uuid.UUID) (Run, error)
@@ -278,6 +318,7 @@ type Payroll interface {
 
 func init() {
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/approval"] = "a version is approved once: a repeat is refused (NM_PAYROLL_CONFLICT)"
+	IdempotencyExempt["POST /v1/payroll/runs/{id}/payslips"] = "a version's payslips are published once: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs"] = "a month has one run for a pay group: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/versions"] = "each calculation is its own version of the run, with its own digest"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/overrides"] = "each override is its own record with its own reason: a repeat replaces nothing and the next calculation applies both in order"
@@ -623,6 +664,41 @@ type runApprovalInput struct {
 
 type runChangesOutput struct{ Body RunChanges }
 
+type payslipsPublishInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The run." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"`
+	Body   struct {
+		Version int `json:"version" minimum:"1" doc:"The approved version to publish payslips for." example:"1"`
+	}
+}
+
+type payslipsPublishOutput struct {
+	Body struct {
+		Published int `json:"published" doc:"How many payslips were made: one for each person of the version." example:"12"`
+	}
+}
+
+type myPayslipsOutput struct {
+	Body struct {
+		Payslips []PayslipSummary `json:"payslips" doc:"The person's payslips, newest month first."`
+	}
+}
+
+type payslipIDInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The payslip." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f50"`
+}
+
+type payslipOutput struct{ Body PayslipView }
+
+type payslipFileOutput struct {
+	Body struct {
+		Reference     string `json:"reference" doc:"The payslip's reference." example:"PS-202606-0001"`
+		ContentType   string `json:"content_type" doc:"Always application/pdf." example:"application/pdf"`
+		ContentBase64 string `json:"content_base64" doc:"The PDF, base64-encoded; its SHA-256 is the payslip's."`
+	}
+}
+
 type overrideWithdrawInput struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
 	ID     string `path:"id" format:"uuid" doc:"The override." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f42"`
@@ -752,6 +828,83 @@ func (a *API) registerPayRuns() {
 		}
 		out := &createdOutput{}
 		out.Body.ID = oid
+		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "publishPayslips", Method: "POST", Path: "/v1/payroll/runs/{id}/payslips", Tags: []string{"Payroll"}, Summary: "Publish a run version's payslips",
+		Description: "Makes the itemised payslip of each person of an approved version: MOM's twelve items as data, the PDF drawn from them and its SHA-256, published to each person's My pay. Once for a version; a corrected version has its own. The employer's name is the letterhead's. The Payroll administrator and the Owner. It is audited without any amount.", Errors: []int{401, 403, 404, 409, 422, 503}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *payslipsPublishInput) (*payslipsPublishOutput, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such pay run.")
+		}
+		n, err := a.d.Payroll.PublishPayslips(ctx, s, id, in.Body.Version)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		out := &payslipsPublishOutput{}
+		out.Body.Published = n
+		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "listMyPayslips", Method: "GET", Path: "/v1/me/payslips", Tags: []string{"Payroll"}, Summary: "My payslips",
+		Description: "The signed-in person's own payslips, newest month first; a payslip a corrected version has replaced says so. A leaver's narrow account keeps this. It changes nothing.", Errors: []int{401, 404},
+	}, func(ctx context.Context, in *lettersInput) (*myPayslipsOutput, error) {
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		list, err := a.d.Payroll.MyPayslips(ctx, s)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		out := &myPayslipsOutput{}
+		out.Body.Payslips = list
+		if list == nil {
+			out.Body.Payslips = []PayslipSummary{}
+		}
+		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getMyPayslip", Method: "GET", Path: "/v1/me/payslips/{id}", Tags: []string{"Payroll"}, Summary: "One of my payslips",
+		Description: "One of the signed-in person's own payslips with MOM's twelve items. Anyone else's is as if it did not exist. A leaver's narrow account keeps this. It changes nothing.", Errors: []int{401, 404},
+	}, func(ctx context.Context, in *payslipIDInput) (*payslipOutput, error) {
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such payslip of yours.")
+		}
+		v, err := a.d.Payroll.MyPayslip(ctx, s, id)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		return &payslipOutput{Body: v}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getMyPayslipFile", Method: "GET", Path: "/v1/me/payslips/{id}/file", Tags: []string{"Payroll"}, Summary: "My payslip as a PDF",
+		Description: "The PDF of one of the signed-in person's own payslips, after the stored bytes are checked against the SHA-256 recorded when it was made: a changed byte is never served. A leaver's narrow account keeps this. It changes nothing.", Errors: []int{401, 404, 409, 503},
+	}, func(ctx context.Context, in *payslipIDInput) (*payslipFileOutput, error) {
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such payslip of yours.")
+		}
+		ref, pdf, err := a.d.Payroll.MyPayslipFile(ctx, s, id)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		out := &payslipFileOutput{}
+		out.Body.Reference, out.Body.ContentType, out.Body.ContentBase64 = ref, "application/pdf", base64.StdEncoding.EncodeToString(pdf)
 		return out, nil
 	})
 	huma.Register(a.API, huma.Operation{

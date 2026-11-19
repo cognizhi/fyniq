@@ -15,17 +15,17 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("the packs do not load: %v", err)
 	}
-	if len(versions) != 6 || versions[0].ID != "sg-people@2026.1" || versions[1].ID != "sg-people@2026.2" || versions[1].Supersedes != "sg-people@2026.1" || versions[2].ID != "sg-people@2026.3" || versions[2].Supersedes != "sg-people@2026.2" || versions[3].ID != "sg-people@2026.4" || versions[3].Supersedes != "sg-people@2026.3" || versions[4].ID != "sg-people@2026.5" || versions[4].Supersedes != "sg-people@2026.4" || versions[5].ID != "sg-people@2026.6" || versions[5].Supersedes != "sg-people@2026.5" {
+	if len(versions) != 7 || versions[0].ID != "sg-people@2026.1" || versions[1].ID != "sg-people@2026.2" || versions[1].Supersedes != "sg-people@2026.1" || versions[2].ID != "sg-people@2026.3" || versions[2].Supersedes != "sg-people@2026.2" || versions[3].ID != "sg-people@2026.4" || versions[3].Supersedes != "sg-people@2026.3" || versions[4].ID != "sg-people@2026.5" || versions[4].Supersedes != "sg-people@2026.4" || versions[5].ID != "sg-people@2026.6" || versions[5].Supersedes != "sg-people@2026.5" || versions[6].ID != "sg-people@2026.7" || versions[6].Supersedes != "sg-people@2026.6" {
 		t.Fatalf("%d versions", len(versions))
 	}
-	for _, old := range versions[:5] { // the first version is kept as it was: it still loads and its cases pass
+	for _, old := range versions[:6] { // the first version is kept as it was: it still loads and its cases pass
 		for _, r := range pack.RunPinned(old) {
 			if !r.Pass {
 				t.Errorf("%s %s: %s", old.ID, r.Case, r.Why)
 			}
 		}
 	}
-	v := versions[5]
+	v := versions[6]
 	cases := 0
 	for _, r := range pack.RunPinned(v) {
 		cases++
@@ -33,7 +33,7 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 			t.Errorf("%s %s: got %q, want %q (%s)", r.Table, r.Case, r.Got, r.Want, r.Why)
 		}
 	}
-	if cases < 58 {
+	if cases < 66 {
 		t.Errorf("only %d pinned cases", cases)
 	}
 	if got := pack.Unverified(v); len(got) < 40 {
@@ -90,7 +90,7 @@ func TestAWrongValueOrStatusIsRefused(t *testing.T) {
 // four weeks from 1 April 2025, and shared parental leave's six weeks then ten from 1 April 2026; a scheme's cap and claim window come with it (NM-LV-14).
 // req: NM-PACK-06
 func TestParentalLeaveSchemesAreKeyedByTheChildsBirthDate(t *testing.T) {
-	v, err := pack.Load(Files(), "sg-people/2026.6")
+	v, err := pack.Load(Files(), "sg-people/2026.7")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,5 +245,29 @@ func TestTheKeyEmploymentTermsAreInTheSixthVersionOnly(t *testing.T) {
 	}
 	if _, ok := pack.TimingDays(v5, "kets_days_after_start", on); ok {
 		t.Error("the fifth version holds the KETs days")
+	}
+}
+
+// The itemised payslip's twelve items are in sg-people@2026.7 and not before, with three working days to give it when it cannot be given with the payment (NM-PAY-04).
+// req: NM-PACK-06, NM-PAY-04
+func TestThePayslipItemsAreInTheSeventhVersionOnly(t *testing.T) {
+	v7, err := pack.Load(Files(), "sg-people/2026.7")
+	if err != nil {
+		t.Fatal(err)
+	}
+	v6, err := pack.Load(Files(), "sg-people/2026.6")
+	if err != nil {
+		t.Fatal(err)
+	}
+	items := pack.PayslipItems(v7)
+	if len(items) != 12 || items[0].Key != "employer_name" || items[11].Key != "net_salary" || items[3].Key != "basic_salary" || items[10].When != "if_different" || items[5].When != "if_applicable" {
+		t.Fatalf("items: %+v", items)
+	}
+	on, _ := pack.ParseDate("2026-11-20")
+	if n, ok := pack.TimingDays(v7, "payslip_working_days_after_payment", on); !ok || n != 3 {
+		t.Errorf("days: %d %v", n, ok)
+	}
+	if len(pack.PayslipItems(v6)) != 0 {
+		t.Error("the sixth version holds the payslip items")
 	}
 }

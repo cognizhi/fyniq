@@ -501,6 +501,17 @@ nemura_api | column nemura.pay_run_version.state | INSERT
 nemura_api | column nemura.pay_run_version.state | UPDATE
 nemura_api | column nemura.pay_run_version.supersedes | INSERT
 nemura_api | column nemura.pay_run_version.version | INSERT
+nemura_api | column nemura.payslip.blob_key | INSERT
+nemura_api | column nemura.payslip.data | INSERT
+nemura_api | column nemura.payslip.id | INSERT
+nemura_api | column nemura.payslip.month | INSERT
+nemura_api | column nemura.payslip.pay_date | INSERT
+nemura_api | column nemura.payslip.person_id | INSERT
+nemura_api | column nemura.payslip.published_at | INSERT
+nemura_api | column nemura.payslip.published_by | INSERT
+nemura_api | column nemura.payslip.reference | INSERT
+nemura_api | column nemura.payslip.sha256 | INSERT
+nemura_api | column nemura.payslip.version_id | INSERT
 nemura_api | column nemura.person.employment_start | INSERT
 nemura_api | column nemura.person.id | INSERT
 nemura_api | column nemura.person.leaving_date | INSERT
@@ -745,6 +756,7 @@ nemura_api | table nemura.pay_run | SELECT
 nemura_api | table nemura.pay_run_line | SELECT
 nemura_api | table nemura.pay_run_override | SELECT
 nemura_api | table nemura.pay_run_version | SELECT
+nemura_api | table nemura.payslip | SELECT
 nemura_api | table nemura.person | SELECT
 nemura_api | table nemura.person_classification | SELECT
 nemura_api | table nemura.person_contact | SELECT
@@ -855,6 +867,7 @@ nemura_readonly | table nemura.pay_run | SELECT
 nemura_readonly | table nemura.pay_run_line | SELECT
 nemura_readonly | table nemura.pay_run_override | SELECT
 nemura_readonly | table nemura.pay_run_version | SELECT
+nemura_readonly | table nemura.payslip | SELECT
 nemura_readonly | table nemura.person | SELECT
 nemura_readonly | table nemura.person_classification | SELECT
 nemura_readonly | table nemura.person_contact | SELECT
@@ -972,6 +985,7 @@ nemura_worker | table nemura.pay_run | SELECT
 nemura_worker | table nemura.pay_run_line | SELECT
 nemura_worker | table nemura.pay_run_override | SELECT
 nemura_worker | table nemura.pay_run_version | SELECT
+nemura_worker | table nemura.payslip | SELECT
 nemura_worker | table nemura.person | SELECT
 nemura_worker | table nemura.person_classification | SELECT
 nemura_worker | table nemura.person_contact | SELECT

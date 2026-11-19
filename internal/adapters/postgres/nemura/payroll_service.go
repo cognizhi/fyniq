@@ -12,6 +12,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	nemurapacks "github.com/cognizhi/fyniq/internal/nemura/packs"
 	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -22,6 +23,9 @@ type PayrollService struct {
 	Store *Store
 	Clock ports.Clock
 	Packs *PacksService // the people pack, for the overtime multiple; nil falls back to the Employment Act's 1.5
+	// Blobs and Renderer make and keep payslips; without them publishing answers NM_UNAVAILABLE and a payslip is never read.
+	Blobs    ports.BlobStore
+	Renderer letters.Renderer
 }
 
 var _ api.Payroll = PayrollService{}
@@ -366,4 +370,79 @@ func cents2(d *apd.Decimal) string {
 		panic(err)
 	}
 	return out.Text('f')
+}
+
+// PublishPayslips makes the payslips of an approved version (NM-PAY-04).
+func (p PayrollService) PublishPayslips(ctx context.Context, s api.Session, run uuid.UUID, version int) (int, error) {
+	var n int
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		n, err = PublishPayslips(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, run, version, p.Renderer, p.Blobs)
+		return err
+	})
+	return n, err
+}
+
+func summaryOf(r PayslipRow) api.PayslipSummary {
+	return api.PayslipSummary{ID: r.ID.String(), Month: day(r.Month), PayDate: day(r.PayDate), Reference: r.Reference, Net: r.Net, Version: r.Number, Corrected: r.Superseded}
+}
+
+// MyPayslips lists the payslips of the person the session is.
+func (p PayrollService) MyPayslips(ctx context.Context, s api.Session) ([]api.PayslipSummary, error) {
+	out := []api.PayslipSummary{}
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		if _, err := OwnPerson(ctx, tx, s.Member); err != nil {
+			return err
+		}
+		rows, err := OwnPayslips(ctx, tx, s.Member)
+		for _, r := range rows {
+			out = append(out, summaryOf(r))
+		}
+		return err
+	})
+	return out, err
+}
+
+// MyPayslip is one of the person's own payslips with its twelve items.
+func (p PayrollService) MyPayslip(ctx context.Context, s api.Session, id uuid.UUID) (api.PayslipView, error) {
+	var out api.PayslipView
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		rows, err := OwnPayslips(ctx, tx, s.Member)
+		if err != nil {
+			return err
+		}
+		for _, r := range rows {
+			if r.ID != id {
+				continue
+			}
+			items := func(in []payroll.PayItem) []api.PayslipItem {
+				o := []api.PayslipItem{}
+				for _, x := range in {
+					o = append(o, api.PayslipItem{Name: x.Name, Amount: x.Amount})
+				}
+				return o
+			}
+			d := r.Data
+			out = api.PayslipView{PayslipSummary: summaryOf(r), SHA256: r.SHA256, Employer: d.Employer, Employee: d.Employee, Basic: d.Basic, PeriodStart: d.PeriodStart, PeriodEnd: d.PeriodEnd,
+				Allowances: items(d.Allowances), Additional: items(d.Additional), Deductions: items(d.Deductions), OvertimeHours: d.OvertimeHours, OvertimePay: d.OvertimePay, OvertimePeriod: d.OvertimePeriod, Reimbursements: d.Reimbursements}
+			return nil
+		}
+		return &payroll.Refusal{Code: payroll.CodeNotFound, Message: "There is no such payslip of yours."}
+	})
+	return out, err
+}
+
+// MyPayslipFile is the PDF of one of the person's own payslips, after its bytes are checked against its hash.
+func (p PayrollService) MyPayslipFile(ctx context.Context, s api.Session, id uuid.UUID) (string, []byte, error) {
+	if p.Blobs == nil {
+		return "", nil, api.ErrUnavailable
+	}
+	var ref string
+	var pdf []byte
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		ref, pdf, err = ReadPayslip(ctx, tx, p.Blobs, s.Member, id)
+		return err
+	})
+	return ref, pdf, err
 }

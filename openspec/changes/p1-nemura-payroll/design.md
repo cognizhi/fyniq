@@ -117,3 +117,10 @@ value stays tagged for confirmation.
 ## Migration plan
 
 Additive migrations from the next number (check the directory: the link agent shares the sequence); no data to migrate. The payroll feature is off until an organisation switches it on.
+
+## Decisions made while building the payslips (slice 4)
+
+- **O6 Publishing is a step after approval.** The Payroll administrator or the Owner publishes the payslips of an approved version with one action, once for each version; a corrected version has its own and the first is marked corrected. Why: it is what the person sees, so it is deliberate; the deadline check (NM-PAY-10 payment states, check N.1 #9) arrives with the payment states (slice 5), because the clock runs from the confirmed payment.
+- **O7 The payslip is data and a PDF.** The twelve items are stored as JSON beside the PDF the renderer draws from them, and the PDF's SHA-256 is checked on every read. Why: MOM's twelve items are the pack's list (`sg-people@2026.7` `payslip_items`); the data is what the page shows and the PDF is the document issued. The release build has no renderer yet, so publishing answers NM_UNAVAILABLE there (`[live-verify]` production renderer).
+- **O8 Ad-hoc and fixed items.** Allowances are the fixed pay items and the one-offs whose nature is `allowance`; other one-offs (bonus, commission) are additional payments; the employee's CPF and the self-help group fund are deductions with the fixed and ad-hoc ones and no-pay leave. A payslip whose items do not add up to the net is refused, never rounded.
+- **O9 A leaver reads theirs through the narrow account** (NM-ESS-06), and nobody else's: another login finds no such payslip.
