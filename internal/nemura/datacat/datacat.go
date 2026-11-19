@@ -38,6 +38,20 @@ var Categories = []Category{
 		Columns:   []string{"identity_directory.subject", "passkey.name", "owner_recovery.operators"},
 	},
 	{
+		Key: "people-records", What: "A person's legal and preferred name, work email, phone, start and leaving, with their job, manager and department history",
+		Purpose:    "To run employment: who works here, in what role and under whom, and to meet the employer's record-keeping duties (Employment Act)",
+		Capability: "People records (not restricted)",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "MOM: employment records of a former employee are kept for 1 year after they leave"},
+		Columns:    []string{"person.legal_name", "person.preferred_name", "person.work_email", "person.phone", "person.leaving_reason"},
+	},
+	{
+		Key: "legal-classification", What: "A person's legal classification: contract of service or for service, Employment Act cover and Part IV class, residency and the date residence began, and date of birth",
+		Purpose:    "To apply the right statutory rules to the person (leave, hours, retirement and re-employment) and no others",
+		Capability: "People records (not restricted)",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"},
+		Columns:    []string{"person_classification.birth_date", "person_classification.pr_start_date"},
+	},
+	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
 		Purpose:    "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)",
 		Capability: "Own file beyond routine release (NM-SEC-07)",
@@ -68,6 +82,8 @@ var NotPersonal = map[string]string{
 	"identity_directory.issuer":    "the identity provider's address, not a person",
 	"identity_directory.tenant":    "the identity provider's tenant for the organisation, not a person",
 	"api_client.name":              "the name of a system that calls the API (a company or product), not a person",
+	"person_job.job_title":         "the title of a role, not a person's data on its own",
+	"person_job.department":        "the name of a department",
 	"outbox.payload":               "the task's payload: ids only, never pay or bank details (ADR-N5)",
 }
 

@@ -98,7 +98,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	if err != nil {
 		return err
 	}
-	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, Clock: deps.Clock,
+	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, People: nemura.PeopleService{Store: store, Clock: deps.Clock}, Features: nemura.FeatureService{Store: store, Clock: deps.Clock}, Clock: deps.Clock,
 		CookieNames: []string{auth.SessionCookie(true), auth.SessionCookie(false)}}
 	if provider != nil {
 		d.SignIn = signInInfo{provider: provider, store: store}

@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { t } from "./i18n";
+import { Features } from "./pages/Features";
+import { Directory } from "./pages/Directory";
 import { Home } from "./pages/Home";
 import { Join } from "./pages/Join";
 import { NotFound } from "./pages/NotFound";
+import { Person } from "./pages/Person";
 import { SignIn } from "./pages/SignIn";
 import { navigate } from "./route";
-import { routes } from "./registry";
+import { matchRoute } from "./registry";
 import { useSession } from "./session";
 
 // joinKind is the kind of code the join page asks for, from its address: setup, recovery, or (anything else) an invitation.
@@ -29,7 +32,8 @@ function usePathname(): string {
 export function App() {
   const path = usePathname();
   const state = useSession();
-  const route = routes.find((r) => r.path === path);
+  const matched = matchRoute(path);
+  const route = matched?.route;
   const signedOut = state.status === "none";
   const landing = state.status === "in" ? state.session.landing : "/sign-in";
   useEffect(() => {
@@ -44,6 +48,9 @@ export function App() {
     if (path === "/join") return <Join kind={joinKind()} />;
     if (path === "/sign-in") return <SignIn returnTo={landing === "/sign-in" ? "/" : landing} />;
     if (!route) return <NotFound home={landing} />;
+    if (state.status === "in" && route.id === "people-directory") return <Directory roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "features") return <Features roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "person") return <Person id={matched?.params.id ?? ""} roles={state.session.roles ?? []} />;
     if (state.status === "in") return <Home session={state.session} screen={route.id === "people-home" ? "people" : "me"} />;
     return null;
   })();

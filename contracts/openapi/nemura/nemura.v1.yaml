@@ -4,6 +4,74 @@
 # info.version follows the platform version (release-please updates it).
 components:
   schemas:
+    ChangeJobInputBody:
+      additionalProperties: false
+      properties:
+        effective_from:
+          description: The day the new job record starts; the current one ends that day.
+          examples:
+            - "2026-09-01"
+          format: date
+          type: string
+        job:
+          $ref: "#/components/schemas/JobInput"
+          description: The new job record.
+      required:
+        - effective_from
+        - job
+      type: object
+    Classification:
+      additionalProperties: false
+      properties:
+        birth_date:
+          description: Date of birth, for the retirement and re-employment cohort.
+          examples:
+            - "1980-03-04"
+          format: date
+          type: string
+        contract_type:
+          description: A contract of service (an employee) or for service (a contractor, who gets no statutory employee entitlement).
+          enum:
+            - service
+            - for_service
+          examples:
+            - service
+          type: string
+        ea_covered:
+          description: Whether the Employment Act covers the person.
+          examples:
+            - true
+          type: boolean
+        part_iv_class:
+          description: The Part IV class, which needs Employment Act cover.
+          enum:
+            - none
+            - workman
+            - non_workman
+          examples:
+            - none
+          type: string
+        pr_start_date:
+          description: "The day permanent residence began: for a permanent resident only."
+          examples:
+            - "2024-05-01"
+          format: date
+          type: string
+        residency:
+          description: Citizen, permanent resident or foreigner.
+          enum:
+            - citizen
+            - permanent_resident
+            - foreigner
+          examples:
+            - citizen
+          type: string
+      required:
+        - contract_type
+        - ea_covered
+        - part_iv_class
+        - residency
+      type: object
     Client:
       additionalProperties: false
       properties:
@@ -143,6 +211,91 @@ components:
         - algorithm
         - public_key
       type: object
+    CreatePersonInputBody:
+      additionalProperties: false
+      properties:
+        classification:
+          $ref: "#/components/schemas/Classification"
+          description: Their legal classification, from their start date.
+        id:
+          description: The new person's ID, chosen by the caller so a repeat is refused, not done twice.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        job:
+          $ref: "#/components/schemas/JobInput"
+          description: Their first job, from their start date.
+        person:
+          $ref: "#/components/schemas/PersonInput"
+          description: Their own fields.
+      required:
+        - id
+        - person
+        - job
+      type: object
+    DirectoryEntry:
+      additionalProperties: false
+      properties:
+        department:
+          description: Their department on the day asked.
+          examples:
+            - Engineering
+          type: string
+        id:
+          description: The person's ID.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        job_title:
+          description: Their job title on the day asked.
+          examples:
+            - Engineer
+          type: string
+        manager_id:
+          description: Their line manager's ID on the day asked.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e62
+          format: uuid
+          type: string
+        manager_name:
+          description: Their line manager's name.
+          examples:
+            - Ben Lim
+          type: string
+        name:
+          description: The legal name.
+          examples:
+            - Ana Tan
+          type: string
+        preferred_name:
+          description: The name they go by.
+          examples:
+            - Anna
+          type: string
+        work_email:
+          description: Their work email.
+          examples:
+            - ana@acme.example
+          type: string
+      required:
+        - id
+        - name
+      type: object
+    DirectoryOutputBody:
+      additionalProperties: false
+      properties:
+        people:
+          description: Everyone who works for the organisation on the day, by name.
+          items:
+            $ref: "#/components/schemas/DirectoryEntry"
+          type:
+            - array
+            - "null"
+      required:
+        - people
+      type: object
     ErrorsOutputBody:
       additionalProperties: false
       properties:
@@ -155,6 +308,69 @@ components:
             - "null"
       required:
         - codes
+      type: object
+    Feature:
+      additionalProperties: false
+      properties:
+        external_system:
+          description: The system that holds its data, when external.
+          examples:
+            - Acme Payroll
+          type: string
+        id:
+          description: The feature's key.
+          examples:
+            - leave
+          type: string
+        name:
+          description: As the screen names it.
+          examples:
+            - Leave
+          type: string
+        needs:
+          description: The features that must be on, or external, for this one to be on.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        phase:
+          description: When it is built; a feature of a later phase cannot be switched on yet.
+          enum:
+            - P1
+            - P2
+            - P3
+          examples:
+            - P1
+          type: string
+        state:
+          description: On, off, or held by another system.
+          enum:
+            - "on"
+            - "off"
+            - external
+          examples:
+            - "on"
+          type: string
+      required:
+        - id
+        - name
+        - phase
+        - state
+        - needs
+      type: object
+    FeaturesOutputBody:
+      additionalProperties: false
+      properties:
+        features:
+          description: Every optional feature, in the order the screen shows them. People records is always on and is not listed.
+          items:
+            $ref: "#/components/schemas/Feature"
+          type:
+            - array
+            - "null"
+      required:
+        - features
       type: object
     FieldProblem:
       additionalProperties: false
@@ -201,6 +417,174 @@ components:
       required:
         - service
         - version
+      type: object
+    Item:
+      additionalProperties: false
+      properties:
+        arrangement:
+          description: How it will be handled instead.
+          examples:
+            - Approved in the old system until 31 Jan
+          maxLength: 500
+          type: string
+        what:
+          description: The outstanding thing, as the refusal named it.
+          examples:
+            - leave requests waiting for approval
+          type: string
+      required:
+        - what
+        - arrangement
+      type: object
+    Job:
+      additionalProperties: false
+      properties:
+        department:
+          description: The department.
+          examples:
+            - Engineering
+          type: string
+        effective_from:
+          description: The day this job record starts.
+          examples:
+            - "2026-04-01"
+          format: date
+          type: string
+        effective_to:
+          description: The day it ends (the day the next starts); empty while current.
+          examples:
+            - "2026-09-01"
+          format: date
+          type: string
+        employment_type:
+          description: The kind of employment.
+          enum:
+            - full_time
+            - part_time
+            - contract
+            - intern
+          examples:
+            - full_time
+          type: string
+        job_title:
+          description: The job title.
+          examples:
+            - Senior Engineer
+          type: string
+        manager_id:
+          description: The line manager's person ID.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e62
+          format: uuid
+          type: string
+        worksite:
+          description: The worksite's country code and optional region.
+          examples:
+            - SG
+          type: string
+      required:
+        - effective_from
+        - job_title
+        - worksite
+        - employment_type
+      type: object
+    JobInput:
+      additionalProperties: false
+      properties:
+        department:
+          description: The department.
+          examples:
+            - Engineering
+          maxLength: 200
+          type: string
+        employment_type:
+          description: The kind of employment.
+          enum:
+            - full_time
+            - part_time
+            - contract
+            - intern
+          examples:
+            - full_time
+          type: string
+        job_title:
+          description: The job title.
+          examples:
+            - Engineer
+          maxLength: 200
+          minLength: 1
+          type: string
+        manager_id:
+          description: The line manager's person ID.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e62
+          format: uuid
+          type: string
+        worksite:
+          description: The worksite's country code and optional region.
+          examples:
+            - SG
+          type: string
+      required:
+        - job_title
+        - worksite
+        - employment_type
+      type: object
+    PersonInput:
+      additionalProperties: false
+      properties:
+        employment_start:
+          description: The first day of employment.
+          examples:
+            - "2026-01-05"
+          format: date
+          type: string
+        leaving_date:
+          description: The last day, once it is known.
+          examples:
+            - "2026-12-31"
+          format: date
+          type: string
+        leaving_reason:
+          description: Why they left.
+          examples:
+            - Resigned
+          maxLength: 500
+          type: string
+        legal_name:
+          description: The legal name.
+          examples:
+            - Ana Tan
+          maxLength: 200
+          minLength: 1
+          type: string
+        phone:
+          description: The phone number.
+          examples:
+            - +65 6000 0000
+          maxLength: 40
+          type: string
+        preferred_name:
+          description: The name they go by.
+          examples:
+            - Anna
+          maxLength: 200
+          type: string
+        probation_end:
+          description: The day probation ends.
+          examples:
+            - "2026-04-05"
+          format: date
+          type: string
+        work_email:
+          description: The work email.
+          examples:
+            - ana@acme.example
+          maxLength: 254
+          type: string
+      required:
+        - legal_name
+        - employment_start
       type: object
     Problem:
       additionalProperties: false
@@ -268,6 +652,80 @@ components:
         - id
         - name
       type: object
+    Record:
+      additionalProperties: false
+      properties:
+        classification:
+          $ref: "#/components/schemas/Classification"
+          description: Their legal classification on the day asked; only the people team sees it.
+        employment_start:
+          description: The first day of employment.
+          examples:
+            - "2026-01-05"
+          format: date
+          type: string
+        has_login:
+          description: Whether the person has a login to Nemura.
+          examples:
+            - true
+          type: boolean
+        id:
+          description: The person's ID.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        jobs:
+          description: Their job history, oldest first.
+          items:
+            $ref: "#/components/schemas/Job"
+          type:
+            - array
+            - "null"
+        leaving_date:
+          description: The last day, once it is known.
+          examples:
+            - "2026-12-31"
+          format: date
+          type: string
+        leaving_reason:
+          description: Why they left.
+          examples:
+            - Resigned
+          type: string
+        legal_name:
+          description: The legal name.
+          examples:
+            - Ana Tan
+          type: string
+        phone:
+          description: The phone number.
+          examples:
+            - +65 6000 0000
+          type: string
+        preferred_name:
+          description: The name they go by.
+          examples:
+            - Anna
+          type: string
+        probation_end:
+          description: The day probation ends.
+          examples:
+            - "2026-04-05"
+          format: date
+          type: string
+        work_email:
+          description: The work email.
+          examples:
+            - ana@acme.example
+          type: string
+      required:
+        - id
+        - legal_name
+        - employment_start
+        - has_login
+        - jobs
+      type: object
     RegisterInputBody:
       additionalProperties: false
       properties:
@@ -332,6 +790,50 @@ components:
         - member_id
         - roles
         - landing
+      type: object
+    SetClassificationInputBody:
+      additionalProperties: false
+      properties:
+        classification:
+          $ref: "#/components/schemas/Classification"
+          description: The new classification.
+        effective_from:
+          description: The day the new classification starts; the current one ends that day.
+          examples:
+            - "2026-09-01"
+          format: date
+          type: string
+      required:
+        - effective_from
+        - classification
+      type: object
+    SetFeatureInputBody:
+      additionalProperties: false
+      properties:
+        arrangements:
+          description: A replacement arrangement for each outstanding thing, when the feature is switched off or handed to another system.
+          items:
+            $ref: "#/components/schemas/Item"
+          type:
+            - array
+            - "null"
+        external_system:
+          description: "The system that holds the data: when the state is external, and only then."
+          examples:
+            - Acme Payroll
+          maxLength: 100
+          type: string
+        state:
+          description: The state to set.
+          enum:
+            - "on"
+            - "off"
+            - external
+          examples:
+            - "on"
+          type: string
+      required:
+        - state
       type: object
     SignInOutputBody:
       additionalProperties: false
@@ -601,6 +1103,117 @@ paths:
       summary: One stable error code
       tags:
         - Platform
+  /v1/features:
+    get:
+      description: "Lists each optional feature and its state: on, off, or external (another system holds its data), with what it needs. Anyone who may see the settings (HR officer, HR administrator, Payroll administrator, Administrator, Owner). It changes nothing."
+      operationId: listFeatures
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeaturesOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: The feature switches
+      tags:
+        - Features
+  /v1/features/{feature}:
+    put:
+      description: Sets a feature on, off or external. A feature another needs cannot be switched off, and one that needs another cannot be switched on without it (NM_FEATURE_REQUIRED); a feature of a later phase and Payroll, which needs the Owner and a second approver, cannot be switched on yet (NM_FEATURE_UNAVAILABLE); switching off with work still open needs a replacement arrangement for each (NM_FEATURE_OBLIGATIONS_OPEN). Switching off keeps the records. The HR administrator or the Owner. It is audited.
+      operationId: setFeature
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The feature's key.
+          in: path
+          name: feature
+          required: true
+          schema:
+            description: The feature's key.
+            examples:
+              - leave
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetFeatureInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Switch a feature
+      tags:
+        - Features
   /v1/info:
     get:
       description: "Names the service and its build. It needs no sign-in and changes nothing: a client uses it to check that it is talking to Nemura's API and which version."
@@ -716,6 +1329,384 @@ paths:
       summary: Start registering a passkey
       tags:
         - Session
+  /v1/people:
+    get:
+      description: "Lists everyone who works for the organisation on a day (today when none is given): name, job title, department, work email and line manager, nothing restricted. Every signed-in person may read it (Appendix B: Directory and org chart). It changes nothing."
+      operationId: listPeople
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The day to show people and their jobs on; today when empty.
+          explode: false
+          in: query
+          name: as_of
+          schema:
+            description: The day to show people and their jobs on; today when empty.
+            examples:
+              - "2026-06-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectoryOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: The directory and org chart
+      tags:
+        - People
+    post:
+      description: "Adds a person with their first job and, when given, their legal classification, both from their start date. The caller chooses the ID, so a repeat is refused (NM_PERSON_EXISTS). The HR officer and the HR administrator create people (Appendix B: People records). It is audited."
+      operationId: createPerson
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePersonInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Add a person
+      tags:
+        - People
+  /v1/people/{id}:
+    get:
+      description: Returns a person's record with their job history and, for the people team only, their legal classification on a day. The people team (HR, Payroll administrator, Owner) reads anyone; a person reads their own record without the classification; a line manager reads their reports'. Anyone else is refused as if the person did not exist. It changes nothing.
+      operationId: getPerson
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+        - description: The day to show the job and classification on; today when empty.
+          explode: false
+          in: query
+          name: as_of
+          schema:
+            description: The day to show the job and classification on; today when empty.
+            examples:
+              - "2026-06-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Record"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A person's record
+      tags:
+        - People
+    put:
+      description: Changes a person's name, contact, probation end or leaving date and reason. The start date and the login are set once; the job and the classification are history and change through their own operations. The HR officer and the HR administrator. It is audited.
+      operationId: updatePerson
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonInput"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Change a person's own fields
+      tags:
+        - People
+  /v1/people/{id}/classification:
+    post:
+      description: Ends the current classification the day the new one starts and starts it. A contractor (a contract for service) is not covered by the Employment Act; a Part IV class needs cover; a permanent resident has the date residence began (NM-PPL-08). The HR officer and the HR administrator. It is audited; the date of birth never enters the audit event.
+      operationId: setPersonClassification
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetClassificationInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Set a person's legal classification
+      tags:
+        - People
+  /v1/people/{id}/job:
+    post:
+      description: Ends the person's current job record the day the new one starts and starts it, so job title, department, worksite, employment type and line manager are history, never edited. A day on or before the current record's start is refused (NM_PERSON_HISTORY). The HR officer and the HR administrator. It is audited.
+      operationId: changePersonJob
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeJobInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Change a person's job, manager or department
+      tags:
+        - People
   /v1/session:
     get:
       description: Returns the person the session cookie names, the organisation they are in, the roles they hold today and the page they land on. Roles are read again on each request, so a change is seen at once. It changes nothing; without a valid session it is NM_UNAUTHENTICATED.
@@ -892,5 +1883,9 @@ tags:
     name: API clients
   - description: "What the sign-in page shows: the providers on offer and whether first-run setup is done."
     name: Sign-in
+  - description: "The people record: the directory everyone sees, and each person's record, job history and legal classification (NM-PPL-01, NM-PPL-06, NM-PPL-08)."
+    name: People
+  - description: "Each optional feature of an organisation: on, off or held by another system (NM-FEAT-01 to 05)."
+    name: Features
   - description: Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02).
     name: Session

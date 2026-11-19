@@ -20,6 +20,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/nemura/apiclient"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
+	"github.com/cognizhi/fyniq/internal/nemura/features"
+	"github.com/cognizhi/fyniq/internal/nemura/people"
 )
 
 var update = flag.Bool("update", false, "rewrite contracts/openapi/nemura/nemura.v1.yaml from the code (make openapi)")
@@ -79,6 +81,46 @@ func (fakeSignIn) Providers() []Provider {
 }
 func (f fakeSignIn) SetupDone(context.Context) (bool, error) { return f.done, nil }
 
+// fakePeople answers the people record with whatever the test says, and remembers what it was asked.
+type fakePeople struct {
+	err         error
+	own, report bool
+	classified  *bool
+}
+
+func (f fakePeople) Directory(context.Context, Session, time.Time) ([]DirectoryEntry, error) {
+	return []DirectoryEntry{{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", Name: "Ana Tan", JobTitle: "CEO"}}, f.err
+}
+func (f fakePeople) Relation(context.Context, Session, uuid.UUID) (bool, bool, error) {
+	return f.own, f.report, f.err
+}
+func (f fakePeople) Get(_ context.Context, _ Session, id uuid.UUID, _ time.Time, classification bool) (Record, error) {
+	if f.classified != nil {
+		*f.classified = classification
+	}
+	return Record{ID: id.String(), LegalName: "Ana Tan", Jobs: []Job{}}, f.err
+}
+func (f fakePeople) Create(context.Context, Session, uuid.UUID, people.Person, people.Job, *people.Classification) error {
+	return f.err
+}
+func (f fakePeople) Update(context.Context, Session, uuid.UUID, people.Person) error { return f.err }
+func (f fakePeople) ChangeJob(context.Context, Session, uuid.UUID, time.Time, people.Job) error {
+	return f.err
+}
+func (f fakePeople) SetClassification(context.Context, Session, uuid.UUID, time.Time, people.Classification) error {
+	return f.err
+}
+
+// fakeFeatures answers the feature switches with whatever the test says.
+type fakeFeatures struct{ err error }
+
+func (f fakeFeatures) List(context.Context, Session) (features.Switches, error) {
+	return features.Switches{"leave": {State: features.On}}, f.err
+}
+func (f fakeFeatures) Set(context.Context, Session, string, string, string, []features.Arrangement) error {
+	return f.err
+}
+
 // fakeClients registers whatever it is told and answers with clientsErr.
 type fakeClients struct{ err error }
 
@@ -89,16 +131,18 @@ func (f fakeClients) List(context.Context, Session) ([]Client, error)  { return 
 func (f fakeClients) Revoke(context.Context, Session, uuid.UUID) error { return f.err }
 
 var (
-	passkeyErr, clientsErr error
-	testRoles              = []authz.Role{authz.HRAdmin}
-	testStepUp             bool
-	testNow                = time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
+	passkeyErr, clientsErr, peopleErr, featuresErr error
+	peopleOwn, peopleReport                        bool
+	peopleClassified                               *bool
+	testRoles                                      = []authz.Role{authz.HRAdmin}
+	testStepUp                                     bool
+	testNow                                        = time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
 )
 
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -255,6 +299,9 @@ func TestEveryWriteAcceptsAnIdempotencyKey(t *testing.T) {
 // Every code of the catalogue is triggered by an operation, returns RFC 9457 problem details with the code, a plain detail and a
 // fix, and the catalogue is served as the document says.
 // req: NM-ARC-03
+const personBody = `{"id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","person":{"legal_name":"Ana Tan","employment_start":"2026-01-05"},"job":{"job_title":"CEO","worksite":"SG","employment_type":"full_time"}}`
+const jobBody = `{"effective_from":"2026-09-01","job":{"job_title":"CEO","worksite":"SG","employment_type":"full_time"}}`
+
 const clientBody = `{"name":"Payroll bureau","scopes":["directory.read"],"algorithm":"ES256","public_key":{"kty":"EC","crv":"P-256","x":"a","y":"b"}}`
 
 func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
@@ -265,17 +312,25 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		owner, stepUp      bool  // the person is the Owner, and confirmed with a passkey
 	}
 	triggers := map[string]trigger{ // code -> a request that returns it
-		CodeNotFound:        {method: "GET", path: "/v1/errors/NM_NOPE"},
-		CodeInvalid:         {method: "GET", path: "/v1/errors/not-a-code"},
-		CodeUnauthenticated: {method: "GET", path: "/v1/session"},
-		CodePasskeyRefused:  {method: "POST", path: "/v1/session/step-up/confirm", body: `{"credential":{}}`, signedIn: true, err: ErrPasskeyRefused},
-		CodeNoCeremony:      {method: "POST", path: "/v1/session/step-up/confirm", body: `{"credential":{}}`, signedIn: true, err: ErrNoCeremony},
-		CodeNoPasskey:       {method: "POST", path: "/v1/session/step-up", signedIn: true, err: ErrNoPasskey},
-		CodeRoleRequired:    {method: "GET", path: "/v1/api-clients", signedIn: true},
-		CodeStepUp:          {method: "DELETE", path: "/v1/api-clients/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e60", signedIn: true, owner: true},
-		CodeClientInvalid:   {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeInvalid, Message: "The scope \"x\" does not exist."}},
-		CodeUnavailable:     {method: "GET", path: "/v1/api-clients", signedIn: true, owner: true, err: ErrUnavailable},
-		CodeClientExists:    {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
+		CodeNotFound:           {method: "GET", path: "/v1/errors/NM_NOPE"},
+		CodeInvalid:            {method: "GET", path: "/v1/errors/not-a-code"},
+		CodeUnauthenticated:    {method: "GET", path: "/v1/session"},
+		CodePasskeyRefused:     {method: "POST", path: "/v1/session/step-up/confirm", body: `{"credential":{}}`, signedIn: true, err: ErrPasskeyRefused},
+		CodeNoCeremony:         {method: "POST", path: "/v1/session/step-up/confirm", body: `{"credential":{}}`, signedIn: true, err: ErrNoCeremony},
+		CodeNoPasskey:          {method: "POST", path: "/v1/session/step-up", signedIn: true, err: ErrNoPasskey},
+		CodeRoleRequired:       {method: "GET", path: "/v1/api-clients", signedIn: true},
+		CodeStepUp:             {method: "DELETE", path: "/v1/api-clients/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e60", signedIn: true, owner: true},
+		CodeClientInvalid:      {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeInvalid, Message: "The scope \"x\" does not exist."}},
+		CodeUnavailable:        {method: "GET", path: "/v1/api-clients", signedIn: true, owner: true, err: ErrUnavailable},
+		CodeFeatureRequired:    {method: "PUT", path: "/v1/features/leave", body: `{"state":"off"}`, signedIn: true, err: &features.Refusal{Code: features.CodeRequired, Message: "Payroll needs Leave."}},
+		CodeFeatureUnavailable: {method: "PUT", path: "/v1/features/hiring", body: `{"state":"on"}`, signedIn: true, err: &features.Refusal{Code: features.CodeUnavailable, Message: "Hiring is built in P2."}},
+		CodeFeatureObligations: {method: "PUT", path: "/v1/features/leave", body: `{"state":"off"}`, signedIn: true, err: &features.Refusal{Code: features.CodeObligations, Message: "Work is still open."}},
+		CodeFeatureInvalid:     {method: "PUT", path: "/v1/features/magic", body: `{"state":"on"}`, signedIn: true, err: &features.Refusal{Code: features.CodeInvalid, Message: "No such feature."}},
+		CodePersonInvalid:      {method: "POST", path: "/v1/people", body: personBody, signedIn: true, err: &people.Refusal{Code: people.CodeInvalid, Message: "The legal name is required: enter it."}},
+		CodePersonNotFound:     {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", signedIn: true, err: &people.Refusal{Code: people.CodeNotFound, Message: "There is no such person in this organisation."}},
+		CodePersonHistory:      {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/job", body: jobBody, signedIn: true, err: &people.Refusal{Code: people.CodeHistory, Message: "That record is history."}},
+		CodePersonExists:       {method: "POST", path: "/v1/people", body: personBody, signedIn: true, err: ErrPersonExists},
+		CodeClientExists:       {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
 	}
 	for _, c := range Catalogue {
 		tr, ok := triggers[c.Code]
@@ -283,13 +338,13 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 			t.Errorf("%s is in the catalogue and no test triggers it", c.Code)
 			continue
 		}
-		passkeyErr, clientsErr = tr.err, tr.err
+		passkeyErr, clientsErr, peopleErr, featuresErr = tr.err, tr.err, tr.err, tr.err
 		if tr.owner {
 			testRoles = []authz.Role{authz.Owner}
 		}
 		testStepUp = tr.stepUp
 		_, mux := testAPI(t)
-		passkeyErr, clientsErr, testRoles, testStepUp = nil, nil, []authz.Role{authz.HRAdmin}, false
+		passkeyErr, clientsErr, peopleErr, featuresErr, testRoles, testStepUp = nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false
 		req := httptest.NewRequest(tr.method, tr.path, strings.NewReader(tr.body))
 		if tr.body != "" {
 			req.Header.Set("Content-Type", "application/json")
@@ -515,5 +570,98 @@ func TestTheSignInPageLearnsTheProvidersAndWhetherSetupIsDone(t *testing.T) {
 	mux2.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/v1/sign-in", nil))
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"providers":[]`) {
 		t.Errorf("no provider wired: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+// The directory is for everyone and shows nothing restricted; a person's record is the people team's (with the classification), their own, or
+// their manager's for a report (without it), and anyone else is told there is no such person; only the HR officer and administrator write
+// (NM-PPL-01, NM-PPL-06, NM-PPL-08, NM-SEC-02).
+// req: NM-PPL-06
+// asvs: V8.2.1, V8.3.1
+func TestThePeopleRecordIsReadByTheRightPeopleAndWrittenByHR(t *testing.T) {
+	const id = "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"
+	do := func(roles []authz.Role, own, report bool, method, path, body string) (*httptest.ResponseRecorder, bool) {
+		testRoles, peopleOwn, peopleReport = roles, own, report
+		var classified bool
+		peopleClassified = &classified
+		defer func() {
+			testRoles, peopleOwn, peopleReport, peopleClassified = []authz.Role{authz.HRAdmin}, false, false, nil
+		}()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec, classified
+	}
+	employee, manager := []authz.Role{authz.Employee}, []authz.Role{authz.LineManager}
+	for _, tc := range []struct {
+		name         string
+		roles        []authz.Role
+		own, report  bool
+		method, path string
+		body         string
+		want         int
+		classified   bool
+	}{
+		{"the directory, an employee", employee, false, false, "GET", "/v1/people", "", 200, false},
+		{"a stranger's record, an employee", employee, false, false, "GET", id, "", 404, false},
+		{"their own record, an employee", employee, true, false, "GET", id, "", 200, false},
+		{"a report's record, a manager", manager, false, true, "GET", id, "", 200, false},
+		{"another's record, a manager", manager, false, false, "GET", id, "", 404, false},
+		{"anyone's record, HR officer", []authz.Role{authz.HROfficer}, false, false, "GET", id, "", 200, true},
+		{"anyone's record, Payroll administrator", []authz.Role{authz.PayrollAdmin}, false, false, "GET", id, "", 200, true},
+		{"anyone's record, Owner", []authz.Role{authz.Owner}, false, false, "GET", id, "", 200, true},
+		{"adding a person, an employee", employee, false, false, "POST", "/v1/people", personBody, 403, false},
+		{"adding a person, a manager", manager, false, false, "POST", "/v1/people", personBody, 403, false},
+		{"adding a person, Payroll administrator", []authz.Role{authz.PayrollAdmin}, false, false, "POST", "/v1/people", personBody, 403, false},
+		{"adding a person, HR officer", []authz.Role{authz.HROfficer}, false, false, "POST", "/v1/people", personBody, 201, false},
+		{"adding a person, HR administrator", []authz.Role{authz.HRAdmin}, false, false, "POST", "/v1/people", personBody, 201, false},
+		{"changing a job, an employee", employee, false, false, "POST", id + "/job", jobBody, 403, false},
+		{"changing a job, HR administrator", []authz.Role{authz.HRAdmin}, false, false, "POST", id + "/job", jobBody, 201, false},
+		{"a bad date, HR administrator", []authz.Role{authz.HRAdmin}, false, false, "POST", id + "/job", `{"effective_from":"1 Sept","job":{"job_title":"CEO","worksite":"SG","employment_type":"full_time"}}`, 422, false},
+	} {
+		rec, classified := do(tc.roles, tc.own, tc.report, tc.method, tc.path, tc.body)
+		if rec.Code != tc.want || (tc.want == 200 && tc.method == "GET" && tc.path != "/v1/people" && classified != tc.classified) {
+			t.Errorf("%s: %d %s (classification asked: %v)", tc.name, rec.Code, rec.Body.String(), classified)
+		}
+	}
+	rec, _ := do(employee, false, false, "GET", "/v1/people", "")
+	if strings.Contains(rec.Body.String(), "birth") || strings.Contains(rec.Body.String(), "classification") || strings.Contains(rec.Body.String(), "phone") {
+		t.Errorf("the directory shows more than it should: %s", rec.Body.String())
+	}
+}
+
+// The feature switches are seen by whoever may see the settings and changed only by the HR administrator and the Owner (Appendix B).
+// req: NM-FEAT-01
+// asvs: V8.2.1
+func TestOnlyTheHRAdministratorAndTheOwnerSwitchFeatures(t *testing.T) {
+	do := func(roles []authz.Role, method, path, body string) int {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for _, tc := range []struct {
+		roles []authz.Role
+		list  int
+		set   int
+	}{
+		{[]authz.Role{authz.Employee}, 403, 403}, {[]authz.Role{authz.LineManager}, 403, 403},
+		{[]authz.Role{authz.HROfficer}, 200, 403}, {[]authz.Role{authz.PayrollAdmin}, 200, 403}, {[]authz.Role{authz.Administrator}, 200, 403},
+		{[]authz.Role{authz.HRAdmin}, 200, 204}, {[]authz.Role{authz.Owner}, 200, 204},
+	} {
+		if got := do(tc.roles, "GET", "/v1/features", ""); got != tc.list {
+			t.Errorf("%v listing: %d, want %d", tc.roles, got, tc.list)
+		}
+		if got := do(tc.roles, "PUT", "/v1/features/leave", `{"state":"on"}`); got != tc.set {
+			t.Errorf("%v switching: %d, want %d", tc.roles, got, tc.set)
+		}
 	}
 }

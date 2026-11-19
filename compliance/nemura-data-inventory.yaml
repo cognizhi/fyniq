@@ -22,6 +22,24 @@ classes:
     protection: "A global table no application role can read, reached only through functions that return the caller's own memberships; tokens and codes kept only as SHA-256"
     transfers: "The identity provider: the flow sign-in, assessed when it is outside Singapore (CMP-PD-06)"
     columns: [identity_directory.subject, passkey.name, owner_recovery.operators]
+  - key: people-records
+    what: "A person's legal and preferred name, work email, phone, start and leaving, with their job, manager and department history"
+    why: "To run employment: who works here, in what role and under whom, and to meet the employer's record-keeping duties (Employment Act)"
+    where: "Nemura's database, in Singapore"
+    who: "Appendix B's people records (not restricted): HR officer and administrator, Payroll administrator, the Owner, a line manager for their reports; everyone sees the directory"
+    retention: "MOM: employment records of a former employee are kept for 1 year after they leave"
+    protection: "Row-level security per organisation; every change is audited; job history is never edited, only ended"
+    transfers: "None"
+    columns: [person.legal_name, person.preferred_name, person.work_email, person.phone, person.leaving_reason]
+  - key: legal-classification
+    what: "A person's legal classification: contract of service or for service, Employment Act cover and Part IV class, residency and the date residence began, and date of birth"
+    why: "To apply the right statutory rules to the person (leave, hours, retirement and re-employment) and no others"
+    where: "Nemura's database, in Singapore"
+    who: "Appendix B's people records (not restricted): HR officer and administrator, Payroll administrator, the Owner; never the directory"
+    retention: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"
+    protection: "Row-level security per organisation; every change is audited; the audit event never carries the date of birth"
+    transfers: "None"
+    columns: [person_classification.birth_date, person_classification.pr_start_date]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"

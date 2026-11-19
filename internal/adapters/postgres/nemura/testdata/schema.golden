@@ -7,6 +7,7 @@ audit_chain | nemura_migrator | true | true
 audit_event | nemura_migrator | true | true
 deletion_proof | nemura_migrator | true | true
 deletion_report | nemura_migrator | true | true
+feature_state | nemura_migrator | true | true
 identity_directory | nemura_migrator | false | false
 installation | nemura_migrator | false | false
 invitation | nemura_migrator | true | true
@@ -17,6 +18,9 @@ outbox | nemura_migrator | true | true
 owner_recovery | nemura_migrator | true | true
 passkey | nemura_migrator | true | true
 passkey_challenge | nemura_migrator | true | true
+person | nemura_migrator | true | true
+person_classification | nemura_migrator | true | true
+person_job | nemura_migrator | true | true
 reporting_line | nemura_migrator | true | true
 role_assignment | nemura_migrator | true | true
 session | nemura_migrator | true | true
@@ -95,6 +99,13 @@ deletion_report | review_by | date | true |
 deletion_report | state | text | true | 'pending'::text
 deletion_report | reviewed_by | uuid | false | 
 deletion_report | reviewed_on | date | false | 
+feature_state | organisation_id | uuid | true | nemura.current_org()
+feature_state | id | uuid | true | uuidv7()
+feature_state | feature | text | true | 
+feature_state | state | text | true | 
+feature_state | external_system | text | false | 
+feature_state | changed_by | uuid | true | 
+feature_state | changed_at | timestamp with time zone | true | now()
 identity_directory | issuer | text | true | 
 identity_directory | subject | text | true | 
 identity_directory | tenant | text | true | 
@@ -178,6 +189,41 @@ passkey_challenge | challenge | bytea | true |
 passkey_challenge | created_at | timestamp with time zone | true | now()
 passkey_challenge | expires_at | timestamp with time zone | true | 
 passkey_challenge | used_at | timestamp with time zone | false | 
+person | organisation_id | uuid | true | nemura.current_org()
+person | id | uuid | true | uuidv7()
+person | member_id | uuid | false | 
+person | legal_name | text | true | 
+person | preferred_name | text | false | 
+person | work_email | text | false | 
+person | phone | text | false | 
+person | employment_start | date | true | 
+person | probation_end | date | false | 
+person | leaving_date | date | false | 
+person | leaving_reason | text | false | 
+person | created_at | timestamp with time zone | true | now()
+person_classification | organisation_id | uuid | true | nemura.current_org()
+person_classification | id | uuid | true | uuidv7()
+person_classification | person_id | uuid | true | 
+person_classification | effective_from | date | true | 
+person_classification | effective_to | date | false | 
+person_classification | contract_type | text | true | 
+person_classification | ea_covered | boolean | true | 
+person_classification | part_iv_class | text | true | 'none'::text
+person_classification | residency | text | true | 
+person_classification | pr_start_date | date | false | 
+person_classification | birth_date | date | false | 
+person_classification | created_at | timestamp with time zone | true | now()
+person_job | organisation_id | uuid | true | nemura.current_org()
+person_job | id | uuid | true | uuidv7()
+person_job | person_id | uuid | true | 
+person_job | effective_from | date | true | 
+person_job | effective_to | date | false | 
+person_job | job_title | text | true | 
+person_job | department | text | false | 
+person_job | worksite | text | true | 'SG'::text
+person_job | employment_type | text | true | 
+person_job | manager_person_id | uuid | false | 
+person_job | created_at | timestamp with time zone | true | now()
 reporting_line | organisation_id | uuid | true | nemura.current_org()
 reporting_line | id | uuid | true | uuidv7()
 reporting_line | report_id | uuid | true | 
@@ -331,6 +377,20 @@ deletion_report | deletion_report_reviewer_fkey | FOREIGN KEY (organisation_id, 
 deletion_report | deletion_report_state_known | CHECK ((state = ANY (ARRAY['pending'::text, 'reviewed'::text, 'deleted'::text])))
 deletion_report | deletion_report_state_not_null | NOT NULL state
 deletion_report | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+feature_state | feature_state_changed_at_not_null | NOT NULL changed_at
+feature_state | feature_state_changed_by_fkey | FOREIGN KEY (organisation_id, changed_by) REFERENCES nemura.member(organisation_id, id)
+feature_state | feature_state_changed_by_not_null | NOT NULL changed_by
+feature_state | feature_state_external_named | CHECK (((state = 'external'::text) = ((external_system IS NOT NULL) AND ((length(btrim(external_system)) >= 1) AND (length(btrim(external_system)) <= 100)))))
+feature_state | feature_state_feature_key | UNIQUE (organisation_id, feature)
+feature_state | feature_state_feature_known | CHECK ((feature = ANY (ARRAY['leave'::text, 'payroll'::text, 'self_service'::text, 'letters'::text, 'hiring'::text, 'performance'::text, 'onboarding'::text, 'time'::text])))
+feature_state | feature_state_feature_not_null | NOT NULL feature
+feature_state | feature_state_id_not_null | NOT NULL id
+feature_state | feature_state_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+feature_state | feature_state_organisation_id_not_null | NOT NULL organisation_id
+feature_state | feature_state_pkey | PRIMARY KEY (organisation_id, id)
+feature_state | feature_state_state_known | CHECK ((state = ANY (ARRAY['on'::text, 'off'::text, 'external'::text])))
+feature_state | feature_state_state_not_null | NOT NULL state
+feature_state | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 identity_directory | identity_directory_active_not_null | NOT NULL active
 identity_directory | identity_directory_issuer_length | CHECK (((length(issuer) >= 1) AND (length(issuer) <= 500)))
 identity_directory | identity_directory_issuer_not_null | NOT NULL issuer
@@ -464,6 +524,60 @@ passkey_challenge | passkey_challenge_purpose_known | CHECK ((purpose = ANY (ARR
 passkey_challenge | passkey_challenge_purpose_not_null | NOT NULL purpose
 passkey_challenge | passkey_challenge_session_fkey | FOREIGN KEY (organisation_id, session_id) REFERENCES nemura.session(organisation_id, id)
 passkey_challenge | passkey_challenge_session_id_not_null | NOT NULL session_id
+person | person_created_at_not_null | NOT NULL created_at
+person | person_employment_start_not_null | NOT NULL employment_start
+person | person_id_not_null | NOT NULL id
+person | person_leaving_after_start | CHECK (((leaving_date IS NULL) OR (leaving_date >= employment_start)))
+person | person_leaving_reason_length | CHECK (((leaving_reason IS NULL) OR (length(leaving_reason) <= 500)))
+person | person_legal_name_length | CHECK (((length(btrim(legal_name)) >= 1) AND (length(btrim(legal_name)) <= 200)))
+person | person_legal_name_not_null | NOT NULL legal_name
+person | person_member_fkey | FOREIGN KEY (organisation_id, member_id) REFERENCES nemura.member(organisation_id, id)
+person | person_member_key | UNIQUE (organisation_id, member_id)
+person | person_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+person | person_organisation_id_not_null | NOT NULL organisation_id
+person | person_phone_length | CHECK (((phone IS NULL) OR (length(phone) <= 40)))
+person | person_pkey | PRIMARY KEY (organisation_id, id)
+person | person_preferred_name_length | CHECK (((preferred_name IS NULL) OR ((length(btrim(preferred_name)) >= 1) AND (length(btrim(preferred_name)) <= 200))))
+person | person_probation_after_start | CHECK (((probation_end IS NULL) OR (probation_end >= employment_start)))
+person | person_work_email_shape | CHECK (((work_email IS NULL) OR ((length(work_email) <= 254) AND (work_email ~ '^[^@\s]+@[^@\s]+$'::text))))
+person | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+person_classification | person_classification_contract_known | CHECK ((contract_type = ANY (ARRAY['service'::text, 'for_service'::text])))
+person_classification | person_classification_contract_type_not_null | NOT NULL contract_type
+person_classification | person_classification_contractor_not_covered | CHECK (((contract_type = 'service'::text) OR (NOT ea_covered)))
+person_classification | person_classification_created_at_not_null | NOT NULL created_at
+person_classification | person_classification_dates | CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))
+person_classification | person_classification_ea_covered_not_null | NOT NULL ea_covered
+person_classification | person_classification_effective_from_not_null | NOT NULL effective_from
+person_classification | person_classification_id_not_null | NOT NULL id
+person_classification | person_classification_organisation_id_not_null | NOT NULL organisation_id
+person_classification | person_classification_part_iv_class_not_null | NOT NULL part_iv_class
+person_classification | person_classification_part_iv_known | CHECK ((part_iv_class = ANY (ARRAY['none'::text, 'workman'::text, 'non_workman'::text])))
+person_classification | person_classification_part_iv_needs_cover | CHECK (((part_iv_class = 'none'::text) OR ea_covered))
+person_classification | person_classification_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+person_classification | person_classification_person_id_not_null | NOT NULL person_id
+person_classification | person_classification_pkey | PRIMARY KEY (organisation_id, id)
+person_classification | person_classification_pr_start_for_pr | CHECK (((residency = 'permanent_resident'::text) = (pr_start_date IS NOT NULL)))
+person_classification | person_classification_residency_known | CHECK ((residency = ANY (ARRAY['citizen'::text, 'permanent_resident'::text, 'foreigner'::text])))
+person_classification | person_classification_residency_not_null | NOT NULL residency
+person_classification | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+person_job | person_job_created_at_not_null | NOT NULL created_at
+person_job | person_job_dates | CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))
+person_job | person_job_department_length | CHECK (((department IS NULL) OR ((length(btrim(department)) >= 1) AND (length(btrim(department)) <= 200))))
+person_job | person_job_effective_from_not_null | NOT NULL effective_from
+person_job | person_job_employment_type_not_null | NOT NULL employment_type
+person_job | person_job_id_not_null | NOT NULL id
+person_job | person_job_job_title_not_null | NOT NULL job_title
+person_job | person_job_manager_fkey | FOREIGN KEY (organisation_id, manager_person_id) REFERENCES nemura.person(organisation_id, id)
+person_job | person_job_not_own_manager | CHECK ((manager_person_id IS DISTINCT FROM person_id))
+person_job | person_job_organisation_id_not_null | NOT NULL organisation_id
+person_job | person_job_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+person_job | person_job_person_id_not_null | NOT NULL person_id
+person_job | person_job_pkey | PRIMARY KEY (organisation_id, id)
+person_job | person_job_title_length | CHECK (((length(btrim(job_title)) >= 1) AND (length(btrim(job_title)) <= 200)))
+person_job | person_job_type_known | CHECK ((employment_type = ANY (ARRAY['full_time'::text, 'part_time'::text, 'contract'::text, 'intern'::text])))
+person_job | person_job_worksite_not_null | NOT NULL worksite
+person_job | person_job_worksite_shape | CHECK ((worksite ~ '^[A-Z]{2}(-[A-Z0-9]{1,8})?$'::text))
+person_job | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 reporting_line | reporting_line_created_at_not_null | NOT NULL created_at
 reporting_line | reporting_line_dates | CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))
 reporting_line | reporting_line_effective_from_not_null | NOT NULL effective_from
@@ -543,6 +657,8 @@ CREATE UNIQUE INDEX audit_event_pkey ON nemura.audit_event USING btree (organisa
 CREATE UNIQUE INDEX audit_event_seq_key ON nemura.audit_event USING btree (organisation_id, seq)
 CREATE UNIQUE INDEX deletion_proof_pkey ON nemura.deletion_proof USING btree (organisation_id, id)
 CREATE UNIQUE INDEX deletion_report_pkey ON nemura.deletion_report USING btree (organisation_id, id)
+CREATE UNIQUE INDEX feature_state_feature_key ON nemura.feature_state USING btree (organisation_id, feature)
+CREATE UNIQUE INDEX feature_state_pkey ON nemura.feature_state USING btree (organisation_id, id)
 CREATE UNIQUE INDEX identity_directory_member_key ON nemura.identity_directory USING btree (organisation_id, member_id, issuer, tenant)
 CREATE UNIQUE INDEX identity_directory_pkey ON nemura.identity_directory USING btree (issuer, subject, tenant, organisation_id)
 CREATE UNIQUE INDEX installation_pkey ON nemura.installation USING btree (singleton)
@@ -562,6 +678,13 @@ CREATE INDEX passkey_challenge_session_idx ON nemura.passkey_challenge USING btr
 CREATE UNIQUE INDEX passkey_credential_key ON nemura.passkey USING btree (organisation_id, credential_id)
 CREATE INDEX passkey_member_idx ON nemura.passkey USING btree (organisation_id, member_id)
 CREATE UNIQUE INDEX passkey_pkey ON nemura.passkey USING btree (organisation_id, id)
+CREATE INDEX person_classification_person_idx ON nemura.person_classification USING btree (organisation_id, person_id, effective_from)
+CREATE UNIQUE INDEX person_classification_pkey ON nemura.person_classification USING btree (organisation_id, id)
+CREATE INDEX person_job_person_idx ON nemura.person_job USING btree (organisation_id, person_id, effective_from)
+CREATE UNIQUE INDEX person_job_pkey ON nemura.person_job USING btree (organisation_id, id)
+CREATE UNIQUE INDEX person_member_key ON nemura.person USING btree (organisation_id, member_id)
+CREATE INDEX person_name_idx ON nemura.person USING btree (organisation_id, lower(legal_name))
+CREATE UNIQUE INDEX person_pkey ON nemura.person USING btree (organisation_id, id)
 CREATE INDEX reporting_line_manager_idx ON nemura.reporting_line USING btree (organisation_id, manager_id, effective_from)
 CREATE UNIQUE INDEX reporting_line_once ON nemura.reporting_line USING btree (organisation_id, report_id, manager_id, effective_from)
 CREATE UNIQUE INDEX reporting_line_pkey ON nemura.reporting_line USING btree (organisation_id, id)
@@ -589,6 +712,8 @@ CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON nemura.audit_eve
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON nemura.audit_event FOR EACH STATEMENT EXECUTE FUNCTION nemura.audit_immutable()
 CREATE TRIGGER deletion_proof_append_only BEFORE DELETE OR UPDATE ON nemura.deletion_proof FOR EACH ROW EXECUTE FUNCTION nemura.append_only()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.deletion_report DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('deletion_report', 'id')
+CREATE TRIGGER feature_state_guard BEFORE DELETE OR UPDATE ON nemura.feature_state FOR EACH ROW EXECUTE FUNCTION nemura.feature_state_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.feature_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('feature_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('invitation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.legal_hold DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('legal_hold', 'id')
 CREATE TRIGGER member_deactivated AFTER UPDATE OF deactivated_at ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.member_deactivated()
@@ -604,6 +729,12 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.owner_r
 CREATE TRIGGER passkey_guard BEFORE DELETE OR UPDATE ON nemura.passkey FOR EACH ROW EXECUTE FUNCTION nemura.passkey_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.passkey DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('passkey', 'id')
 CREATE TRIGGER passkey_challenge_guard BEFORE DELETE OR UPDATE ON nemura.passkey_challenge FOR EACH ROW EXECUTE FUNCTION nemura.passkey_challenge_guard()
+CREATE TRIGGER person_guard BEFORE DELETE OR UPDATE ON nemura.person FOR EACH ROW EXECUTE FUNCTION nemura.person_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.person DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('person', 'id')
+CREATE TRIGGER person_classification_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.person_classification FOR EACH ROW EXECUTE FUNCTION nemura.person_classification_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.person_classification DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('person_classification', 'id')
+CREATE TRIGGER person_job_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.person_job FOR EACH ROW EXECUTE FUNCTION nemura.person_job_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.person_job DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('person_job', 'id')
 CREATE TRIGGER reporting_line_guard BEFORE DELETE OR UPDATE ON nemura.reporting_line FOR EACH ROW EXECUTE FUNCTION nemura.reporting_line_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.reporting_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('reporting_line', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('role_assignment', 'id')
@@ -623,6 +754,7 @@ audit_chain | tenant_isolation | (organisation_id = nemura.current_org()) | (org
 audit_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 deletion_proof | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 deletion_report | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+feature_state | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 invitation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 legal_hold | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -631,6 +763,9 @@ outbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisa
 owner_recovery | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 passkey | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 passkey_challenge | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+person | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+person_classification | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+person_job | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 reporting_line | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 role_assignment | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 session | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -783,6 +918,19 @@ CREATE OR REPLACE FUNCTION nemura.current_person()
  STABLE PARALLEL SAFE
 AS $function$
   SELECT CAST(nullif(pg_catalog.current_setting('app.person_id', true), '') AS pg_catalog.uuid)
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.feature_state_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.feature IS DISTINCT FROM OLD.feature THEN
+    RAISE EXCEPTION 'A feature switch is changed, never removed or renamed' USING ERRCODE = 'NM125';
+  END IF;
+  RETURN NEW;
+END
 $function$
 
 CREATE OR REPLACE FUNCTION nemura.has_role(wanted text)
@@ -983,6 +1131,62 @@ BEGIN
   END IF;
   IF NEW.sign_count < OLD.sign_count AND NEW.sign_count <> 0 THEN
     RAISE EXCEPTION 'A passkey''s signature counter never goes back: the authenticator may be cloned' USING ERRCODE = 'NM103';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.person_classification_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR (TG_OP = 'UPDATE' AND (NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.effective_from IS DISTINCT FROM OLD.effective_from
+     OR NEW.contract_type IS DISTINCT FROM OLD.contract_type OR NEW.ea_covered IS DISTINCT FROM OLD.ea_covered OR NEW.part_iv_class IS DISTINCT FROM OLD.part_iv_class
+     OR NEW.residency IS DISTINCT FROM OLD.residency OR NEW.pr_start_date IS DISTINCT FROM OLD.pr_start_date OR NEW.birth_date IS DISTINCT FROM OLD.birth_date
+     OR (OLD.effective_to IS NOT NULL AND NEW.effective_to IS DISTINCT FROM OLD.effective_to))) THEN
+    RAISE EXCEPTION 'A classification is history: it can only be ended, once' USING ERRCODE = 'NM123';
+  END IF;
+  IF EXISTS (SELECT 1 FROM nemura.person_classification c
+              WHERE c.organisation_id = NEW.organisation_id AND c.person_id = NEW.person_id AND c.id <> NEW.id
+                AND daterange(c.effective_from, coalesce(c.effective_to, 'infinity'), '[)') && daterange(NEW.effective_from, coalesce(NEW.effective_to, 'infinity'), '[)')) THEN
+    RAISE EXCEPTION 'A person has one classification at a time' USING ERRCODE = 'NM124';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.person_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.employment_start IS DISTINCT FROM OLD.employment_start OR NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR (OLD.member_id IS NOT NULL AND NEW.member_id IS DISTINCT FROM OLD.member_id) THEN
+    RAISE EXCEPTION 'A person is never deleted, and their start date and login are set once' USING ERRCODE = 'NM120';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.person_job_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR (TG_OP = 'UPDATE' AND (NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.effective_from IS DISTINCT FROM OLD.effective_from
+     OR NEW.job_title IS DISTINCT FROM OLD.job_title OR NEW.department IS DISTINCT FROM OLD.department OR NEW.worksite IS DISTINCT FROM OLD.worksite
+     OR NEW.employment_type IS DISTINCT FROM OLD.employment_type OR NEW.manager_person_id IS DISTINCT FROM OLD.manager_person_id
+     OR (OLD.effective_to IS NOT NULL AND NEW.effective_to IS DISTINCT FROM OLD.effective_to))) THEN
+    RAISE EXCEPTION 'A job record is history: it can only be ended, once' USING ERRCODE = 'NM121';
+  END IF;
+  IF EXISTS (SELECT 1 FROM nemura.person_job j
+              WHERE j.organisation_id = NEW.organisation_id AND j.person_id = NEW.person_id AND j.id <> NEW.id
+                AND daterange(j.effective_from, coalesce(j.effective_to, 'infinity'), '[)') && daterange(NEW.effective_from, coalesce(NEW.effective_to, 'infinity'), '[)')) THEN
+    RAISE EXCEPTION 'A person has one job record at a time' USING ERRCODE = 'NM122';
   END IF;
   RETURN NEW;
 END
