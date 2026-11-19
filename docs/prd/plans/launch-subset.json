@@ -169,6 +169,7 @@
     "access/roles-and-segregation: Permission matrix: Document templates: edit, publish",
     "access/roles-and-segregation: Permission matrix: Timesheets and project time",
     "access/roles-and-segregation: Permission matrix: Project reports and cost rates",
+    "access/roles-and-segregation: Permission matrix: Project cost rates, person level",
     "access/roles-and-segregation: Permission matrix: Bank data, payment-provider and ticketing connections",
     "access/roles-and-segregation: Permission matrix: Journals",
     "access/roles-and-segregation: Permission matrix: Pay runs, employee data",

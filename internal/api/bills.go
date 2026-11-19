@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/project"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -45,7 +46,7 @@ const (
 
 // BillCodes are the codes the posting rules and the bill's own checks answer.
 var BillCodes = []string{bill.CodeSupplier, bill.CodeGSTCode, bill.CodeDueDate, bill.CodeTooLong, ledger.CodeBillTotal, ledger.CodeSystemRole,
-	ledger.CodeRuleAccount, ledger.CodeLineCurrency, ledger.CodeSpread, bill.CodeInputTax, bill.CodeBusinessShare, ledger.CodeClaimShare,
+	ledger.CodeRuleAccount, ledger.CodeLineCurrency, ledger.CodeSpread, bill.CodeInputTax, bill.CodeBusinessShare, project.CodeMarkup, project.CodeLine, ledger.CodeClaimShare,
 	bill.CodeNature, ledger.CodeWithholding}
 
 // BillApprovalCodes are the codes an approval of a bill's post or void may answer: SOD-3, and the posting's own.
@@ -69,6 +70,9 @@ type BillLineDraft struct {
 	// A line made from a purchase order (FR-AP-01; rev 0.87).
 	Order *BillLineOrder `json:"order,omitempty" doc:"The purchase order line it bills, and how much of it, for a line made from an order: billPurchaseOrder sets it. A posted bill never takes more of a line than is left (PO-13)."`
 	// Input tax (FR-AP-20; rev 0.89).
+	// A project cost billed on (FR-PRJ-08; rev 0.297).
+	Billable      bool   `json:"billable,omitempty" doc:"The line is a cost of a project that is billed on to its customer (FR-PRJ-08). It carries a project in dimension_value_ids; the project's unbilled view then lists it once the bill is posted, at its cost plus markup_percent." example:"true"`
+	MarkupPercent string `json:"markup_percent,omitempty" pattern:"^[0-9]{1,3}(\\.[0-9]{1,2})?$" doc:"The markup on the cost when it is billed on, a percentage from 0 to 999.99 with at most two decimals; the markup is rounded to the cent half away from zero (RND-MARKUP). Only on a billable line." example:"10"`
 	BusinessShare string `json:"business_share,omitempty" pattern:"^(100(\\.0{1,2})?|[0-9]{1,2}(\\.[0-9]{1,2})?)$" doc:"The percentage of the purchase used for the business, with at most two decimals (FR-AP-20). Only that share of the line's GST is claimed, rounded half up to the cent (RND-GST-SHARE); the rest stays in the cost, and 0 claims none (a private purchase). Left out, 100." example:"60"`
 }
 
@@ -431,6 +435,7 @@ func billDraftOf(in BillDraft, base money.Currency) (bill.Draft, error) {
 			line.StatedGST = &s
 		}
 		line.SpreadMonths, line.BusinessShare = l.SpreadMonths, l.BusinessShare
+		line.Billable, line.Markup = l.Billable, l.MarkupPercent
 		if o := l.Order; o != nil {
 			oid, err := uuid.Parse(o.PurchaseOrderID)
 			q, qerr := money.ParseQuantity(o.Quantity, at("order.quantity"))
@@ -769,6 +774,7 @@ func billLinesOut(d bill.Draft) []BillLineDraft {
 			bl.StatedGST = &Money{Amount: l.StatedGST.String(), Currency: l.StatedGST.Currency().Code}
 		}
 		bl.SpreadMonths, bl.SpreadFrom, bl.BusinessShare = l.SpreadMonths, dayText(l.SpreadFrom), l.BusinessShare
+		bl.Billable, bl.MarkupPercent = l.Billable, l.Markup
 		if o := l.Order; o != nil {
 			bl.Order = &BillLineOrder{PurchaseOrderID: o.PurchaseOrderID.String(), Line: o.Line, Quantity: o.Quantity.String()}
 		}
@@ -1286,6 +1292,9 @@ func registerBills(a *API) {
 				if err != nil {
 					return Bill{}, err
 				}
+				if err := a.checkBillableLines(ctx, u, d.Lines); err != nil {
+					return Bill{}, err
+				}
 				create := a.bills.Create
 				if in.Body.Kind == "vendor_credit" {
 					create = a.bills.CreateCredit
@@ -1387,6 +1396,9 @@ func registerBills(a *API) {
 				}
 				d, err := billDraftOf(in.Body, base)
 				if err != nil {
+					return Bill{}, err
+				}
+				if err := a.checkBillableLines(ctx, u, d.Lines); err != nil {
 					return Bill{}, err
 				}
 				after, err := a.bills.Revise(ctx, p.Organisation, id, d)
@@ -1523,6 +1535,9 @@ func registerBills(a *API) {
 			}
 			d, err := billDraftOf(in.Body.BillDraft, v.base)
 			if err != nil {
+				return BillEdited{}, err
+			}
+			if err := a.checkBillableLines(ctx, u, d.Lines); err != nil {
 				return BillEdited{}, err
 			}
 			if err := a.gateBillEdit(ctx, u, p, doc, d); err != nil {

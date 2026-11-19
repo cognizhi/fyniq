@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "days": {
+      "description": "The seven days.",
+      "items": {
+        "$ref": "TimesheetDay.schema.json"
+      },
+      "type": "array"
+    },
+    "entries": {
+      "description": "The week's entries, by day.",
+      "items": {
+        "$ref": "TimeEntry.schema.json"
+      },
+      "type": "array"
+    },
+    "projects": {
+      "description": "The projects the person is on, with their tasks in use.",
+      "items": {
+        "$ref": "TimesheetProject.schema.json"
+      },
+      "type": "array"
+    },
+    "submissions": {
+      "description": "What was submitted for the week, newest first.",
+      "items": {
+        "$ref": "TimesheetSubmission.schema.json"
+      },
+      "type": "array"
+    },
+    "timer": {
+      "$ref": "TimerView.schema.json",
+      "description": "The running timer, if any."
+    },
+    "total_minutes": {
+      "description": "The net minutes of the week.",
+      "examples": [
+        2250
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "week_end": {
+      "description": "The Sunday.",
+      "examples": [
+        "2026-11-22"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "week_start": {
+      "description": "The Monday.",
+      "examples": [
+        "2026-11-16"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "week_start",
+    "week_end",
+    "days",
+    "entries",
+    "submissions",
+    "projects",
+    "total_minutes"
+  ],
+  "title": "Timesheet",
+  "type": "object"
+}

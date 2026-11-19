@@ -1,4 +1,4 @@
-# squawk lints every migration in db/migrations (PRD-001 §12.2; `make test`).
+# squawk lints every migration in db/migrations and in Nemura's own stream, db/nemura/migrations (PRD-001 §12.2; `make test`).
 # goose runs each migration in one transaction.
 assume_in_transaction = true
 pg_version = "18.0"
