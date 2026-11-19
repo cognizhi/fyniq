@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "The day.",
+      "examples": [
+        "2026-11-17"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "holiday": {
+      "description": "The public holiday it is, from the statutory calendar's pack.",
+      "examples": [
+        "Deepavali"
+      ],
+      "type": "string"
+    },
+    "minutes": {
+      "description": "The net minutes entered on it, reversing entries counted.",
+      "examples": [
+        480
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "missing": {
+      "description": "true for a working day, up to today, with no time entered (FR-PRJ-05).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "weekday": {
+      "description": "Its name.",
+      "enum": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun"
+      ],
+      "examples": [
+        "Tue"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "weekday",
+    "missing",
+    "minutes"
+  ],
+  "title": "TimesheetDay",
+  "type": "object"
+}

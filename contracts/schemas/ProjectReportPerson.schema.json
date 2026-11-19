@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "available_minutes": {
+      "description": "The weekdays of the window less public holidays, at 8 hours a day (a working pattern and leave join with FR-PPL-07).",
+      "examples": [
+        10080
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "billable_minutes": {
+      "description": "Billable minutes.",
+      "examples": [
+        8000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "cost": {
+      "description": "Their time at their own cost rate: only for the Owner and the Payroll administrator (FR-PAY-13).",
+      "examples": [
+        "9000.00"
+      ],
+      "type": "string"
+    },
+    "minutes": {
+      "description": "Approved net minutes.",
+      "examples": [
+        9000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "person_name": {
+      "description": "Their name.",
+      "examples": [
+        "Priya Nair"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "utilisation": {
+      "description": "Billable over available, a percentage to one decimal.",
+      "examples": [
+        "79.4"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "person_name",
+    "minutes",
+    "billable_minutes",
+    "available_minutes",
+    "utilisation"
+  ],
+  "title": "ProjectReportPerson",
+  "type": "object"
+}

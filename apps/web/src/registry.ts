@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Bot, BriefcaseBusiness, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, ScrollText, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Bot, BriefcaseBusiness, Building, CalendarClock, Clock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, ScrollText, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -75,6 +75,10 @@ export const routes = [
   // Projects and time (FR-PRJ-01; p1-projects), off until the organisation switches them on (FR-ORG-06).
   { kind: "route", id: "projects", path: "/projects", mode: "basic", signedIn: true, help: "projects.overview", guide: "projects.projects" },
   { kind: "route", id: "project-record", path: "/projects/$projectId", mode: "basic", signedIn: true, help: "projects.record", guide: "projects.projects#set-up-a-project" },
+  { kind: "route", id: "my-time", path: "/me/time", mode: "basic", signedIn: true, help: "time.my-time", guide: "projects.time" },
+  { kind: "route", id: "timesheet", path: "/projects/timesheet", mode: "basic", signedIn: true, help: "time.timesheet", guide: "projects.time#approve-the-teams-time" },
+  { kind: "route", id: "cost-rates", path: "/projects/cost-rates", mode: "expert", signedIn: true, help: "rates.cost-page", guide: "projects.rates#enter-cost-rates" },
+  { kind: "route", id: "project-reports", path: "/reports/projects", mode: "expert", signedIn: true, help: "reports.projects", guide: "projects.reports" },
   { kind: "route", id: "global-search", path: "/search", mode: "basic", signedIn: true, help: "shell.search", guide: "shell.search" },
   // The user guide, built from docs/user-guide/ (FR-UX-32).
   { kind: "route", id: "help", path: "/help", mode: "basic", signedIn: true, help: "help.guide", guide: "help.guide" },
@@ -320,6 +324,16 @@ export const actions = [
   { kind: "action", id: "project.new", mode: "basic", help: "project.new", guide: "projects.projects#add-a-project" },
   { kind: "action", id: "project.people", mode: "basic", help: "project.people", guide: "projects.projects#say-who-is-on-a-project-and-who-approves-its-time" },
   { kind: "action", id: "project.task-add", mode: "basic", help: "project.task-add", guide: "projects.projects#add-tasks" },
+  { kind: "action", id: "time.grid", mode: "basic", help: "time.grid", guide: "projects.time#log-your-week" },
+  { kind: "action", id: "time.timer", mode: "basic", help: "time.timer", guide: "projects.time#use-the-timer" },
+  { kind: "action", id: "time.submit", mode: "basic", help: "time.submit", guide: "projects.time#send-the-week-for-approval" },
+  { kind: "action", id: "time.approve", mode: "basic", help: "time.approve", guide: "projects.time#approve-the-teams-time" },
+  { kind: "action", id: "time.correct", mode: "basic", help: "time.correct", guide: "projects.time#correct-approved-time" },
+  { kind: "action", id: "time.missing", mode: "basic", help: "time.missing", guide: "projects.time#days-with-no-time" },
+  { kind: "action", id: "project.billable", mode: "expert", help: "project.billable", guide: "projects.costs#bill-a-cost-on-to-the-customer" },
+  { kind: "action", id: "rates.cost", mode: "expert", help: "rates.cost", guide: "projects.rates#enter-cost-rates" },
+  { kind: "action", id: "rates.billing", mode: "basic", help: "rates.billing", guide: "projects.rates#enter-billing-rates" },
+  { kind: "action", id: "rates.time-cost", mode: "basic", help: "rates.time-cost", guide: "projects.rates#what-time-costs-and-who-sees-it" },
   { kind: "action", id: "claim.line-dimensions", mode: "basic", help: "claim.line-dimensions", guide: "claims.my-claims#say-which-team-or-project-it-was-for" },
   { kind: "action", id: "claim.keep-as-loan", mode: "basic", help: "claim.keep-as-loan", guide: "claims.my-claims#keep-it-as-a-loan-to-the-company" },
   { kind: "action", id: "access-review.attest", mode: "expert", help: "access-review.attest", guide: "settings.access-review#attest-the-quarter" },
@@ -750,6 +764,7 @@ export const actions = [
 export const nav = [
   { kind: "nav", id: "nav.home", route: "/", icon: House, group: "main", roles: "all", bottom: true, mode: "basic", help: "home.overview", guide: "home.overview" },
   { kind: "nav", id: "nav.my-claims", route: "/me/claims", icon: Wallet, group: "personal", roles: ["employee"], mode: "basic", help: "claims.my-claims", guide: "claims.my-claims" },
+  { kind: "nav", id: "nav.my-time", route: "/me/time", icon: Clock, group: "personal", roles: ["employee"], feature: "projects", mode: "basic", help: "time.my-time", guide: "projects.time" },
   { kind: "nav", id: "nav.my-shares", route: "/me/shares", icon: ChartPie, group: "personal", roles: ["employee"], mode: "basic", help: "equity.my-shares", guide: "equity.register#my-shares-and-options" },
   { kind: "nav", id: "nav.money-i-put-in", route: "/me/money-i-put-in", icon: HandCoins, group: "personal", roles: ["owner"], mode: "basic", help: "founders.money-i-put-in", guide: "equity.founders-money#see-what-the-company-owes-you" },
   { kind: "nav", id: "nav.inbox", route: "/inbox", icon: Inbox, group: "main", roles: "all", bottom: true, mode: "basic", help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },

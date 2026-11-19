@@ -10,6 +10,7 @@ import { AdvancedDetails, type AdvancedDetail } from "../../components/AdvancedD
 import { month } from "../../format/date";
 import { useSignedIn } from "../../session";
 import { DimensionFields, useDimensionDetails } from "../accounting/lines";
+import { BillableFields } from "../projects/BillableFields";
 
 type GSTCode = components["schemas"]["PurchaseGSTCodes"]["codes"][number];
 export type LineOrder = components["schemas"]["BillLineOrder"];
@@ -28,6 +29,8 @@ export interface Line {
   order?: LineOrder; // the purchase order line it bills (FR-AP-01), kept as the order made it
   business_share?: string; // the percentage used for the business (FR-AP-20); blank for all of it
   dimension_value_ids: string[]; // its dimension values (FR-DIM-02): at most one of each dimension
+  billable?: boolean; // a cost of a project billed on to its customer (FR-PRJ-08)
+  markup_percent?: string; // the markup on it, a percentage; blank for none
 }
 
 let keys = 0;
@@ -159,6 +162,14 @@ export function BillLines({ id, lines, onChange, editable, errors, currency, bas
                 className="fy-field"
                 disabled={!editable}
                 expertOnly
+              />
+              <BillableFields
+                ids={l.dimension_value_ids}
+                billable={l.billable}
+                markup={l.markup_percent}
+                onChange={(n) => setLine(l.key, n)}
+                error={errors[`${l.key}.markup_percent`]}
+                disabled={!editable}
               />
               <div className="fy-field">
                 <label className="fy-label" htmlFor={`${l.key}-net`}>

@@ -14,6 +14,7 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { billingNames, hours, keepers, statusNames, type ProjectTask } from "./data";
 import { ProjectForm } from "./ProjectForm";
+import { ProjectRates } from "./ProjectRates";
 import { FeatureOff } from "./Projects";
 
 // TaskForm adds a task to a project, or renames one, changes whether it is billable, or puts it out of use (FR-PRJ-05).
@@ -301,6 +302,7 @@ export function ProjectRecord() {
               </div>
             )}
           </section>
+          <ProjectRates project={projectId} billed={p.billing_method !== "internal"} may={may} />
         </>
       )}
       {p && <ProjectForm editing={editing ? p : null} onClose={() => setEditing(false)} onSaved={() => undefined} />}

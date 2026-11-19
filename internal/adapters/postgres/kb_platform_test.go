@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"sync"
 	"testing"
 	"testing/fstest"
 
@@ -91,10 +92,24 @@ func loadKB(t *testing.T, rel knowledge.Release) {
 	}
 }
 
+// kbStores keeps one store a test and role: a store holds a connection until the test ends, and a page a call would run the
+// database out of connections once the knowledge base has about a hundred pages.
+var kbStores sync.Map
+
 func readKB[T any](t *testing.T, role string, fn func(storage.KnowledgeBase) (T, error)) T {
 	t.Helper()
 	var out T
-	if err := store(t, role).Do(context.Background(), uuid.New(), func(ctx context.Context, u storage.UnitOfWork) error {
+	type key struct {
+		t    *testing.T
+		role string
+	}
+	st, ok := kbStores.Load(key{t, role})
+	if !ok {
+		st = store(t, role)
+		kbStores.Store(key{t, role}, st)
+		t.Cleanup(func() { kbStores.Delete(key{t, role}) })
+	}
+	if err := st.(*postgres.Store).Do(context.Background(), uuid.New(), func(ctx context.Context, u storage.UnitOfWork) error {
 		var err error
 		out, err = fn(u.KnowledgeBase())
 		return err

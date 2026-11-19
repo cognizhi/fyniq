@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The project's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "customer_id": {
+      "description": "The customer whose projects it is for.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "effective_from": {
+      "description": "The first day it applies.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "hourly_rate": {
+      "description": "The price of an hour in the currency.",
+      "examples": [
+        "150.00"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The rate's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5301"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "project_id": {
+      "description": "The project it is for.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "role": {
+      "description": "The role it is for.",
+      "examples": [
+        "Consultant"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The person it is for; absent for a role or everyone.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "effective_from",
+    "hourly_rate",
+    "currency"
+  ],
+  "title": "BillingRate",
+  "type": "object"
+}

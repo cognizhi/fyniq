@@ -3,6 +3,7 @@ package archtest
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -76,5 +77,27 @@ func TestNemuraServicesAreInThePeopleProfile(t *testing.T) {
 	}
 	if found == 0 {
 		t.Fatal("no Nemura service in the local stack")
+	}
+}
+
+// Both test databases, Fyniq's (pgtest) and Nemura's (nemuratest), run the PostgreSQL image of the local stack, so a test
+// proves what `make up` runs. The pin is a string in each file because the Nemura helper cannot import Fyniq's.
+func TestTheTestDatabasesRunTheLocalStacksPostgres(t *testing.T) {
+	root := repoRoot(t)
+	pin := regexp.MustCompile(`postgres:[0-9][^"\s]*@sha256:[0-9a-f]{64}`)
+	var found []string
+	for _, f := range []string{"deploy/local/compose.yaml", "internal/adapters/postgres/pgtest/pgtest.go", "internal/adapters/postgres/nemura/nemuratest/nemuratest.go"} {
+		src, err := os.ReadFile(filepath.Join(root, f))
+		if err != nil {
+			t.Fatal(err)
+		}
+		m := pin.Find(src)
+		if m == nil {
+			t.Fatalf("%s pins no PostgreSQL image", f)
+		}
+		found = append(found, string(m))
+	}
+	if found[0] != found[1] || found[0] != found[2] {
+		t.Errorf("the PostgreSQL pins differ: compose %s, pgtest %s, nemuratest %s", found[0], found[1], found[2])
 	}
 }
