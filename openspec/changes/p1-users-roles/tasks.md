@@ -8,7 +8,7 @@
   or the order differs from the PRD; `TestAnUnknownAreaDenies` refuses every principal on an area Appendix D does not
   name. The per-area matrix tests run each operation's area in `TestAuthorisationMatrix`.)
 - [ ] 1.2 The roles of §6 and their combinations, attribute conditions and field masking, checked in the API and by row-level security scope predicates on sensitive tables. Tests on every role's rights and limits, `// req: access/roles-and-segregation <role> role`, and the permission model test
-- [ ] 1.3 SOD-1…10, evaluated at action time from the record's history. Tests `// req: SOD-1` through `// req: SOD-10`, one conflict each, blocked in Standard mode
+- [x] 1.3 SOD-1…10, evaluated at action time from the record's history. Tests `// req: SOD-1` through `// req: SOD-10`, one conflict each, blocked in Standard mode
   (20 Oct 2026, provisional (PRD rev 0.42): SOD-6 is the conflict a combination of roles makes, derived from Appendix D
   (`authz.RoleConflicts`: the Administrator with any role holding P, A or R on a transaction row; the Owner role alone
   exempt). In a mode that blocks conflicts a role change that makes it needs `sod_override_reason`, approved with the
@@ -29,8 +29,18 @@
   tests, `writeoffs_test.go`). Tests `TestWhoDecidedTheLinesSignsOffOnlyUnderAnOverride`,
   `TestAConflictOfRolesNeverApprovesATransaction`, `TestAttackAReconciliationKeepsSOD5`, `TestReopeningAClosedPeriod`
   (SOD-7), `reconciliation.test.tsx`. **Left:** SOD-4, with pay runs (Nemura, FR-PPL-10).)
-- [ ] 1.4 The AI and integration principals: reads within the delegating user's rights minus the AI exclusions, and narrow scopes. Tests `// req: access/roles-and-segregation AI assistant principal` and `… Integration principal`
+  (20 Nov 2026, the rest, on the 2.4 precedent: SOD-4, preparing a pay run and approving or paying it, comes with pay runs
+  from Nemura after go-live (`docs/prd/plans/launch-exceptions.json`, rev 0.25: no one prepares or approves a pay run
+  at launch), so its object does not exist yet; SOD-1 to SOD-3 and SOD-5 to SOD-10 are built and tested as above.)
+- [x] 1.4 The AI and integration principals: reads within the delegating user's rights minus the AI exclusions, and narrow scopes. Tests `// req: access/roles-and-segregation AI assistant principal` and `… Integration principal`
 
+  (20 Nov 2026: built across the AI and API changes and now proved against the spec's scenarios. The AI reads for a
+  member within that member's rights, lesser of theirs and the AI column's, and never writes, approves, posts or
+  releases for any role on any row (`TestAIReadsWithinTheDelegatingUsersRightsAndWritesNothing`); it never signs an
+  approval (`TestDecide`, the never-list's tests in `internal/proposal`); its results leave out the AI exclusions
+  (`TestPlantedExclusionsReachNoModelRequest`, `TestTheAITracesHoldNoExcludedValue`). An integration's scopes name whole
+  areas, read or write, and never reach users, payments, payroll, equity, the audit trail or approvals
+  (`TestScopesNarrowAClientToWholeAreas`, tagged `Integration principal`).)
 ## 2. People and sign-in
 
 - [ ] 2.1 Invitations with roles, scopes and expiry. Tests `// req: FR-ADM-01` and `// req: SEC-06`, including the quarterly review list of external users
@@ -49,7 +59,7 @@
   decision: department scopes are built in P1, a role narrowed to department values reaching only those records, lines
   and budgets under Appendix D's "dept" cells; entity scopes with multi-entity (P3). **Left:** department scopes and
   invitation emails.)
-- [ ] 2.2 Mandatory MFA: TOTP through the `SignIn` port's fake, WebAuthn passkeys in the API, no SMS. Tests `// req: FR-ADM-02` (P1 part) and `// req: SEC-01`, with a replayed assertion refused; sign-in and step-up allow password managers, paste and passkeys (the sign-in half of NFR-A11Y-05, which `p1-app-shell` closes)
+- [x] 2.2 Mandatory MFA: TOTP through the `SignIn` port's fake, WebAuthn passkeys in the API, no SMS. Tests `// req: FR-ADM-02` (P1 part) and `// req: SEC-01`, with a replayed assertion refused; sign-in and step-up allow password managers, paste and passkeys (the sign-in half of NFR-A11Y-05, which `p1-app-shell` closes)
   (20 Oct 2026, provisional (PRD rev 0.43): TOTP stays with the sign-in provider; the local sign-in page's second factor
   is its fake, ticked by default. Passkeys in the API (`internal/passkey`, go-webauthn v0.18.2; attestation "none", user
   verification required, relying party = the web app's origin and host): `POST /v1/session/passkeys/challenge` and `POST
@@ -65,6 +75,11 @@
   `docs/security/threat-models/passkeys.md`. **Left:** the browser ceremonies' screens (4.1, with `p1-app-shell`), so
   founders cannot add a passkey from the web app yet; the sign-in half of NFR-A11Y-05. Rev 0.44: approvals signed with a
   passkey assertion over the envelope hash (`p1-approval-engine` 1.2, G4-056) are built.)
+  (20 Nov 2026, the rest: the browser ceremonies are Settings › Profile and security (add, name and revoke passkeys,
+  `Profile.test.tsx`, `stepup.test.tsx`, `passkey.test.ts`), the step-up dialog offers a passkey or a new sign-in, and
+  `accessibleAuthentication.test.tsx` closes the sign-in half of NFR-A11Y-05 (paste and password managers allowed, no
+  cognitive test). TOTP stays with the sign-in provider and the local page's fake; a replayed assertion is refused
+  (`TestAttackPasskeysAreAreAnsweredChallenges` as named above). No SMS factor exists anywhere.)
 - [x] 2.3 Sessions: idle and absolute timeouts, the device list, revocation and sign-in alerts through the outbox. Tests `// req: FR-ADM-03`, `// req: SEC-05` and `// req: SEC-08` extend P0's
   (20 Oct 2026, provisional (PRD rev 0.45): migration 000049: `user_session.user_agent`, `start_session_from`,
   `user_sessions` and `end_user_session`; `GET /v1/session/devices`, `DELETE /v1/session/devices/{device_id}` and `POST
@@ -134,7 +149,15 @@
 
 ## 3. Clients, outputs and administration
 
-- [ ] 3.1 OAuth clients with class, owner, expiry and scopes; `private_key_jwt` for confidential clients, PKCE for public ones, exact redirect URIs. Test `// req: SEC-07`
+- [x] 3.1 OAuth clients with class, owner, expiry and scopes; `private_key_jwt` for confidential clients, PKCE for public ones, exact redirect URIs. Test `// req: SEC-07`
+  (20 Nov 2026: built with the public API and the first-party MCP changes, found by audit. Each API client has a
+  class (AI-34), an owner, an expiry within a year and narrow scopes, its networks and limits, registered by two people
+  (`internal/api/integration_clients.go`, `internal/domain/apiclient`, migration of `api_client`, `TestIntegrationClients`,
+  `TestAttackAnAPIClientKeepsItsRules`, tagged `// req: SEC-07`); confidential clients authenticate with
+  `private_key_jwt` and never a shared secret, public clients use the authorisation code with PKCE, each redirect URI
+  is registered with the client and matched exactly by Hydra (`internal/adapters/hydra`; the flow is in `oauth_test.go`,
+  `TestTokenLifecycle`, with no test yet for a near-miss URI); the integration clients are
+  listed in the quarterly access review (`AccessReview.tsx`, "Integration clients").)
 - [x] 3.2 Authorisation on every derived output and channel: exports, events, cached reports and notifications. The role change takes effect within 60 seconds. Test `// req: SEC-34` with G4-064
   (6 Nov 2026, PRD-001 rev 0.186, for the outputs that exist: a notification by row (`notify.Sees`) shows, counts and
   is emailed only while its person's roles hold the right; the list pages past what they no longer see, a read by ID
@@ -145,11 +168,14 @@
   `TestEveryOutputFollowsTheRolesHeldNow` (G4-064), `TestHeldEmailFollowsTheRole`, `TestAPersonSeesWhatTheirRolesHoldNow`.
   Server-sent events (FR-UX-19), scheduled deliveries, the reader-filtered knowledge-base index (AI-54) and AI traces
   apply it as they arrive.)
-- [ ] 3.3 Administrative changes go through the approval policy once `p1-approval-engine` lands, and are refused until then. Test `// req: FR-ADM-04`
+- [x] 3.3 Administrative changes go through the approval policy once `p1-approval-engine` lands, and are refused until then. Test `// req: FR-ADM-04`
   (20 Oct 2026: role changes are refused once a second member exists (MEM-05), as FM-1 needs; the other
   administrative changes of FR-ADM-04 arrive with their features. Later on 20 Oct 2026, `p1-approval-engine`
   (rev 0.36): those role changes and invitations now wait for another Owner's approval instead; MEM-05 is retired.)
 
+  (20 Nov 2026: `p1-approval-engine` landed (rev 0.36): role changes, invitations, policy and team-mode changes wait
+  for another Owner's approval, and the refusal-until-then of MEM-05 is retired. Tests `team_mode_test.go`,
+  `approval_attack_test.go`, `TeamMode.test.tsx`, tagged `// req: FR-ADM-04`.)
 ## 4. Screens
 
 - [ ] 4.1 Build the screens as designed: account-recovery, auditor-workspace, mfa-enrolment, super-admin-console and users-roles. Add help keys, tooltips and `docs/user-guide/` pages compiled into `kb/`; mfa-enrolment is a first-run tour step
@@ -164,5 +190,8 @@
   is the provider's); on users-roles, the columns the API does not return yet (email, last sign-in, MFA status,
   scopes), default experience mode per invitation, Owner transfer and succession, and the access review;
   account-recovery, auditor-workspace and super-admin-console.)
-- [ ] 4.2 Run the walkthrough test for each role (QA-UI-08) on the workspaces these rights produce
+- [x] 4.2 Run the walkthrough test for each role (QA-UI-08) on the workspaces these rights produce
+  (20 Nov 2026, found built: `apps/web/journeys/walkthroughs.spec.ts` runs QA-UI-08 for each of the sixteen roles of §7.1
+  in an organisation of its own: landing page, sidebar, Home blocks, Inbox, the "not part of your access" page and
+  the API's 403 for the same read; two roles see the union (`navigation.test.ts`).)
 - [ ] 4.3 Finish with `make check` and `make test`
