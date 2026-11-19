@@ -2,11 +2,17 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/nemura/apiclient"
+	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/link"
 	"github.com/cognizhi/fyniq/internal/nemura/linkauth"
 	"github.com/cognizhi/fyniq/internal/nemura/payroll"
@@ -119,5 +125,189 @@ func (a *API) registerLink() {
 		out := &linkEventOutput{}
 		out.Body.EventID, out.Body.Outcome = in.Body.Header.EventID, outcome
 		return out, nil
+	})
+}
+
+// LinkView is the organisation's link to Fyniq as the people team sees it. Nothing in it is secret: the two public keys Fyniq needs to link, and the IDs of the clients.
+type LinkView struct {
+	State              string // none, proposed, active, suspended, unlinking or unlinked
+	Epoch              int
+	FyniqOrganisation  uuid.UUID
+	NemuraOrganisation uuid.UUID
+	LinkKey            []byte          // Nemura's Ed25519 public key for what it sends
+	ClientKey          json.RawMessage // the JWK of Nemura's client key, which Fyniq registers
+	PeerClientID       string          // the ID Fyniq's client has at Nemura's OAuth server
+	FyniqClientID      string          // the ID Nemura's client has at Fyniq's OAuth server, once linked
+	ProposedBy         uuid.UUID
+}
+
+// LinkAdmin is how the people team makes the link (PRD-002 NM-ARC-04): an Owner proposes, another Owner or Administrator approves with Fyniq's half.
+type LinkAdmin interface {
+	Current(ctx context.Context, s Session) (LinkView, error)
+	Propose(ctx context.Context, s Session, fyniqOrganisation uuid.UUID) (LinkView, error)
+	Approve(ctx context.Context, s Session, fyniqKey []byte, fyniqClientID string, clientKey json.RawMessage) (LinkView, error)
+}
+
+func init() {
+	IdempotencyExempt["POST /v1/link/proposal"] = "a link is proposed once: a second proposal while one is live is refused (NM_LINK_STATE)"
+	IdempotencyExempt["POST /v1/link/approval"] = "a proposal is approved once: a second approval finds it active (NM_LINK_STATE)"
+}
+
+// LinkState is the link as the API shows it.
+type LinkState struct {
+	State              string         `json:"state" enum:"none,proposed,active,suspended,unlinking,unlinked" doc:"none: never linked; proposed: Nemura made its keys and waits for Fyniq's half; active: linked; unlinked is final, and a later link starts at a higher epoch." example:"proposed"`
+	Epoch              int            `json:"epoch,omitempty" doc:"The link's epoch: every event carries it and an earlier one is refused." example:"1"`
+	NemuraOrganisation string         `json:"nemura_organisation_id,omitempty" format:"uuid" doc:"This organisation: what Fyniq is told when it links." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
+	FyniqOrganisation  string         `json:"fyniq_organisation_id,omitempty" format:"uuid" doc:"The Fyniq organisation the link is to." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
+	LinkKey            string         `json:"link_key,omitempty" doc:"Nemura's Ed25519 public key for the link's envelopes, 32 bytes as base64url without padding: give it to Fyniq when it links." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"`
+	ClientKey          map[string]any `json:"client_public_key,omitempty" doc:"The public half of the key Nemura's client signs its token request to Fyniq's OAuth server with, as a JWK: give it to Fyniq when it links. Never the private key."`
+	PeerClientID       string         `json:"nemura_client_id,omitempty" doc:"The ID Fyniq's client will have at Nemura's OAuth server: give it to Fyniq when it links." example:"fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
+	FyniqClientID      string         `json:"fyniq_oauth_client_id,omitempty" doc:"The ID Nemura's client has at Fyniq's OAuth server, once the link is approved." example:"4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11"`
+}
+
+func linkStateOf(v LinkView) LinkState {
+	out := LinkState{State: v.State, Epoch: v.Epoch, PeerClientID: v.PeerClientID, FyniqClientID: v.FyniqClientID}
+	if v.State == "" {
+		out.State = "none"
+	}
+	if v.NemuraOrganisation != uuid.Nil {
+		out.NemuraOrganisation = v.NemuraOrganisation.String()
+	}
+	if v.FyniqOrganisation != uuid.Nil {
+		out.FyniqOrganisation = v.FyniqOrganisation.String()
+	}
+	if len(v.LinkKey) > 0 {
+		out.LinkKey = base64.RawURLEncoding.EncodeToString(v.LinkKey)
+	}
+	_ = json.Unmarshal(v.ClientKey, &out.ClientKey)
+	return out
+}
+
+type linkShowInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+}
+
+type linkProposeInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	Body   struct {
+		FyniqOrganisation string `json:"fyniq_organisation_id" format:"uuid" doc:"The Fyniq organisation to link to." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
+	}
+}
+
+type linkApproveInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	Body   struct {
+		FyniqKey      string         `json:"fyniq_link_key" minLength:"43" maxLength:"43" doc:"Fyniq's Ed25519 public key for what it sends, 32 bytes as base64url without padding: shown on Fyniq's People and HR page." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"`
+		FyniqClientID string         `json:"fyniq_oauth_client_id" minLength:"1" maxLength:"200" doc:"The ID Nemura's client has at Fyniq's OAuth server: shown on Fyniq's People and HR page." example:"4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11"`
+		ClientKey     map[string]any `json:"fyniq_client_public_key" doc:"The public half of the key Fyniq's own client signs its token request to Nemura's OAuth server with, as a JWK: Nemura registers it for Fyniq's client. Never the private key."`
+	}
+}
+
+type linkStateOutput struct{ Body LinkState }
+
+// linkAdminError turns what the ceremony answered into a problem.
+func linkAdminError(err error) error {
+	var pr *payroll.Refusal
+	switch {
+	case errors.As(err, &pr) && pr.Code == "NM_LINK_SECOND_APPROVER":
+		return Err(CodeLinkApprover, pr.Message)
+	case errors.As(err, &pr) && pr.Code == "NM_LINK_STEP_UP":
+		return Err(CodeStepUp, pr.Message)
+	case errors.As(err, &pr) && (pr.Code == "NM_LINK_STATE" || pr.Code == payroll.CodeConflict):
+		return Err(CodeLinkState, pr.Message)
+	case errors.As(err, &pr):
+		return Err(CodeInvalid, pr.Message)
+	case errors.Is(err, ErrUnavailable):
+		return Err(CodeUnavailable, "The link to Fyniq needs Nemura's own OAuth server, which this deployment has not set up.")
+	}
+	var ar *apiclient.Refusal
+	if errors.As(err, &ar) {
+		return Err(CodeClientInvalid, ar.Message)
+	}
+	return huma.Error500InternalServerError("The link could not be changed.")
+}
+
+// linkRole checks the person holds one of the roles the link's page is for, and reads the link.
+func (a *API) linkRole(ctx context.Context, cookie string, roles ...authz.Role) (Session, error) {
+	s, err := a.signedIn(ctx, cookie)
+	if err != nil {
+		return Session{}, err
+	}
+	held, err := a.d.Sessions.RolesAt(ctx, s.Organisation, s.Member, a.d.Clock.Now())
+	if err != nil {
+		return Session{}, huma.Error500InternalServerError("The roles could not be read.")
+	}
+	if !slices.ContainsFunc(roles, func(r authz.Role) bool { return slices.Contains(held, r) }) {
+		return Session{}, Err(CodeRoleRequired, "Only an Owner or an Administrator sees the link to Fyniq, and only an Owner starts it.")
+	}
+	return s, nil
+}
+
+func (a *API) registerLinkAdmin() {
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getLink", Method: http.MethodGet, Path: "/v1/link", Tags: []string{"Link"}, Summary: "Show the link to Fyniq",
+		Description: "The state of the organisation's link to Fyniq, its epoch, and what Fyniq needs to link: Nemura's envelope key and the ID Fyniq's client will have here (the client's public key is shown by the proposal only). Only an Owner or an Administrator. Never a private key. It changes nothing.",
+		Errors:      []int{401, 403, 503},
+	}, func(ctx context.Context, in *linkShowInput) (*linkStateOutput, error) {
+		s, err := a.linkRole(ctx, in.Cookie, authz.Owner, authz.Administrator)
+		if err != nil {
+			return nil, err
+		}
+		if a.d.LinkAdmin == nil {
+			return nil, Err(CodeUnavailable, "The link to Fyniq is not set up in this deployment.")
+		}
+		v, err := a.d.LinkAdmin.Current(ctx, s)
+		if err != nil {
+			return nil, linkAdminError(err)
+		}
+		return &linkStateOutput{Body: linkStateOf(v)}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "proposeLink", Method: http.MethodPost, Path: "/v1/link/proposal", Tags: []string{"Link"}, Summary: "Start the link to Fyniq",
+		Description: "The first of three steps (PRD-002 NM-ARC-04). Only an Owner, confirmed with a passkey in the last five minutes, names the Fyniq organisation. Nemura makes its two keys and the ID Fyniq's client will have here and keeps the link as proposed; the answer holds what to give Fyniq. The private keys are kept for the worker and are never shown. Audited. It is on the never-list for the AI and MCP surfaces.",
+		Errors:      []int{401, 403, 409, 422, 503}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *linkProposeInput) (*linkStateOutput, error) {
+		s, err := a.linkRole(ctx, in.Cookie, authz.Owner)
+		if err != nil {
+			return nil, err
+		}
+		if a.d.LinkAdmin == nil {
+			return nil, Err(CodeUnavailable, "The link to Fyniq is not set up in this deployment.")
+		}
+		org, perr := uuid.Parse(in.Body.FyniqOrganisation)
+		if perr != nil {
+			return nil, Err(CodeInvalid, "fyniq_organisation_id is not an ID.", FieldProblem{Code: CodeInvalid, Field: "body.fyniq_organisation_id", Message: "is not an ID", Fix: "Copy the organisation's ID from Fyniq's People and HR page."})
+		}
+		v, err := a.d.LinkAdmin.Propose(ctx, s, org)
+		if err != nil {
+			return nil, linkAdminError(err)
+		}
+		return &linkStateOutput{Body: linkStateOf(v)}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "approveLink", Method: http.MethodPost, Path: "/v1/link/approval", Tags: []string{"Link"}, Summary: "Approve the link to Fyniq with Fyniq's half",
+		Description: "The last of three steps: another Owner or an Administrator than the one who proposed, confirmed with a passkey in the last five minutes, gives Fyniq's envelope key, its client's ID and the public half of its client key. Nemura registers Fyniq's client at its own OAuth server with the one scope that reaches the event inbox, under the ID chosen at the proposal, and the link is active at its epoch. Audited. It is on the never-list for the AI and MCP surfaces.",
+		Errors:      []int{401, 403, 409, 422, 503},
+	}, func(ctx context.Context, in *linkApproveInput) (*linkStateOutput, error) {
+		s, err := a.linkRole(ctx, in.Cookie, authz.Owner, authz.Administrator)
+		if err != nil {
+			return nil, err
+		}
+		if a.d.LinkAdmin == nil {
+			return nil, Err(CodeUnavailable, "The link to Fyniq is not set up in this deployment.")
+		}
+		key, kerr := base64.RawURLEncoding.DecodeString(in.Body.FyniqKey)
+		if kerr != nil || len(key) != 32 {
+			return nil, Err(CodeInvalid, "fyniq_link_key is not an Ed25519 public key.", FieldProblem{Code: CodeInvalid, Field: "body.fyniq_link_key", Message: "is not 32 bytes as base64url without padding", Fix: "Copy the key from Fyniq's People and HR page."})
+		}
+		jwk, merr := json.Marshal(in.Body.ClientKey)
+		if merr != nil {
+			return nil, Err(CodeInvalid, "fyniq_client_public_key is not a JWK.")
+		}
+		v, err := a.d.LinkAdmin.Approve(ctx, s, key, in.Body.FyniqClientID, jwk)
+		if err != nil {
+			return nil, linkAdminError(err)
+		}
+		return &linkStateOutput{Body: linkStateOf(v)}, nil
 	})
 }

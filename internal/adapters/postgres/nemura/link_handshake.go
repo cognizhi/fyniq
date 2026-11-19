@@ -268,3 +268,50 @@ func (c LinkService) Receive(ctx context.Context, caller linkauth.Caller, raw []
 	}
 	return outcome, refused
 }
+
+// LinkAdminService is the people team's door to the link, as the API's pages call it: it shows the link, proposes it and approves it, over LinkService's own steps.
+type LinkAdminService struct{ LinkService }
+
+var _ api.LinkAdmin = LinkAdminService{}
+
+func (c LinkAdminService) view(ctx context.Context, org uuid.UUID) (api.LinkView, error) {
+	var out api.LinkView
+	err := c.Store.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
+		l, err := LiveLink(ctx, tx)
+		if noLink(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		out = api.LinkView{State: l.State, Epoch: l.Epoch, FyniqOrganisation: l.FyniqOrganisation, NemuraOrganisation: org, LinkKey: l.Public, PeerClientID: l.PeerClientID,
+			FyniqClientID: l.FyniqClientID, ProposedBy: l.ProposedBy}
+		return nil
+	})
+	return out, err
+}
+
+// Current is the live link, or one with no state when there is none. The public half of the client key is shown by the proposal only: it sits in the secret table, whose columns the API cannot read, and
+// widening that grant, even to the one public column, is the owners' decision (p1-nemura-fyniq-link, open).
+func (c LinkAdminService) Current(ctx context.Context, s api.Session) (api.LinkView, error) {
+	return c.view(ctx, s.Organisation)
+}
+
+// Propose starts the link and shows it.
+func (c LinkAdminService) Propose(ctx context.Context, s api.Session, fyniqOrg uuid.UUID) (api.LinkView, error) {
+	offer, err := c.LinkService.Propose(ctx, s, fyniqOrg)
+	if err != nil {
+		return api.LinkView{}, err
+	}
+	v, err := c.view(ctx, s.Organisation)
+	v.ClientKey = offer.ClientKey // shown once, with the proposal
+	return v, err
+}
+
+// Approve completes the link with Fyniq's half and shows it.
+func (c LinkAdminService) Approve(ctx context.Context, s api.Session, fyniqKey []byte, fyniqClientID string, clientKey json.RawMessage) (api.LinkView, error) {
+	if err := c.Activate(ctx, s, ed25519.PublicKey(fyniqKey), fyniqClientID, clientKey); err != nil {
+		return api.LinkView{}, err
+	}
+	return c.view(ctx, s.Organisation)
+}

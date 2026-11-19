@@ -143,6 +143,8 @@ type Deps struct {
 	// LinkAuth and Link are the link's event inbox (PRD-002 NM-INT-10): the bearer token of Fyniq's client, and what receives its events. Nil: the deployment has no link.
 	LinkAuth LinkAuthenticator
 	Link     LinkInbox
+	// LinkAdmin is how the people team proposes and approves the link; nil: the deployment has none.
+	LinkAdmin LinkAdmin
 	// Idempotency stores the Idempotency-Keys of writes; nil turns the header off (a deployment with no database for it never runs).
 	Idempotency Idempotency
 	Assistant   AssistantAdmin
@@ -184,6 +186,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerOnboarding()
 	a.registerPayroll()
 	a.registerLink()
+	a.registerLinkAdmin()
 	a.registerAssistant()
 	a.registerSignIn()
 	return a
