@@ -50,7 +50,7 @@ type PackVersion struct {
 // Finding is one thing a check found.
 type Finding struct {
 	Check   int    `json:"check" doc:"The row of Appendix C N.1." example:"3"`
-	Area    string `json:"area" doc:"People or Packs." example:"People"`
+	Area    string `json:"area" doc:"People, Packs or Leave." example:"People"`
 	Status  string `json:"status" enum:"fail,warn,due" doc:"Fail blocks, warn needs a look, due is coming up." example:"fail"`
 	Subject string `json:"subject" doc:"What it is about: a person's ID or a pack version." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
 	Message string `json:"message" doc:"What is wrong and how to fix it, in plain words." example:"A work pass expires on 2026-12-20: record the renewed pass or the leaving date."`

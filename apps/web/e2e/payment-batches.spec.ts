@@ -79,6 +79,12 @@ async function batches(page: Page) {
         return json(200, { items: [] });
       case "GET /v1/banners":
         return json(200, { items: [] });
+      case "GET /v1/invoices": // the sidebar's badges (experience/navigation): nothing waits
+      case "GET /v1/bill-reminders":
+      case "GET /v1/bank-lines":
+        return json(200, { items: [] });
+      case "GET /v1/compliance/calendar":
+        return json(200, { deadlines: [] });
       case "GET /v1/break-glass": // a releaser's page asks whether their own break-glass is on (FM-8): none is
         return json(200, { items: [], cap: { amount: "20000.00", currency: "SGD" }, you_may_start: false });
       case "GET /v1/payment-batches":

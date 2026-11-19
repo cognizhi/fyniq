@@ -73,13 +73,14 @@ export function ShortcutSheet({ open, onOpenChange, session, mode }: { open: boo
               </Dialog.Close>
             </div>
             <Dialog.Description className="fy-secondary">
-              Shortcuts never fire while you type in a field. {settings.on ? "" : "Your single-character shortcuts are off: Ctrl+K and Ctrl+J still work."}
+              Shortcuts never fire while you type in a field. {settings.on ? "" : "Your single-character shortcuts are off: Ctrl+K, Ctrl+J and Alt+Shift+M still work."}
             </Dialog.Description>
             <Group
               title="Everywhere"
               rows={[
                 [<kbd className="fy-kbd">Ctrl K</kbd>, "Search and commands (⌘K on a Mac)"],
                 [<kbd className="fy-kbd">Ctrl J</kbd>, "The assistant (⌘J on a Mac)"],
+                [<kbd className="fy-kbd">Alt Shift M</kbd>, `Switch to ${mode === "basic" ? "Expert" : "Basic"} mode (Option Shift M on a Mac)`],
                 ...list.filter((s) => s.group === "sheet").map(row),
               ]}
             />

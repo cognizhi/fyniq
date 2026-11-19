@@ -292,7 +292,29 @@ func (p *PacksService) Checks(ctx context.Context, s api.Session, on time.Time) 
 		out = append(out, checks.WorkPasses(passes, on)...)
 		if v, ok := p.inForce("sg-people", on); ok {
 			out = append(out, checks.Calendar(v, on)...)
+			waiting, negative, err := LeaveFacts(ctx, tx)
+			if err != nil {
+				return err
+			}
+			out = append(out, checks.LeaveWaiting(v, waiting, negative, on)...)
+			if limit, ok := pack.PartIV(v, "overtime_hours_per_month", on); ok {
+				months, err := OvertimeMonths(ctx, tx)
+				if err != nil {
+					return err
+				}
+				out = append(out, checks.OvertimeOverLimit(months, limit)...)
+			}
 		}
+		claims, err := GovClaimFacts(ctx, tx)
+		if err != nil {
+			return err
+		}
+		out = append(out, checks.GovClaims(claims, on)...)
+		flex, err := FlexFacts(ctx, tx)
+		if err != nil {
+			return err
+		}
+		out = append(out, checks.FlexReplies(flex, on)...)
 		rules, version, from, found, err := PolicyOn(ctx, tx, on)
 		if err != nil || !found {
 			return err

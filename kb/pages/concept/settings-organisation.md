@@ -4,14 +4,14 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:e5e14b1a67922c3ab35222e1fa27f33d7362bb5f66b070391939432fa96ad9c7
+  - docs/user-guide/organisation-settings.md sha256:281dfc4fc00da885abc73ab88025bb8ec54ded93216cc529a0676c2be4954dd3
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-19
+compiled_at: 2026-11-20
 aliases:
   - company secretary assistant
   - scheduled agent
@@ -168,6 +168,16 @@ The calendar itself: [[compliance.calendar]].
 - Each person can still choose **Reduce motion** in the Appearance menu, and a device set to reduce motion always wins.
 
 (src: docs/user-guide/organisation-settings.md#motion)
+
+## Default mode by role
+
+- Each person works in **Basic** or **Expert** mode, and their own choice, kept on the server, is the same on every device; until someone chooses, their roles decide.
+- An Administrator can change the starting mode of each role under **Starting mode for the** … settings: Basic or Expert.
+- The shipped starting modes are Basic for the Owner, Administrator, Bookkeeper, AR and AP specialists, Approver, Employee, Payment releaser, Company secretary, Compliance officer and Board viewer, and Expert for the Accountant, Finance controller, Tax agent, Auditor and Payroll administrator.
+- A person with several roles starts in Expert if any of their roles starts there, except that **the Owner wins**: an Owner starts in the Owner's mode, Basic by default.
+- A change takes effect for people who have not chosen yet; nobody who chose a mode is moved. The mode only changes what is shown, never what a person may do.
+
+(src: docs/user-guide/organisation-settings.md#default-mode-by-role)
 
 ## AI routes
 

@@ -1,7 +1,7 @@
 import { Menu } from "@base-ui/react/menu";
 import { Activity, Check, Contrast, Monitor, Moon, Rows3, Sun, SunMoon } from "lucide-react";
 import type { ReactNode } from "react";
-import { setAppearance, useAppearance, type Appearance } from "../appearance";
+import { setAppearance, useAppearance, useDensity, type Appearance } from "../appearance";
 import { buttonVariants } from "../components/ui/button";
 import { helpText } from "../i18n";
 import { cn } from "../lib/utils";
@@ -20,10 +20,11 @@ type Choice = { id: Parameters<typeof entry>[0]; field: keyof Appearance; option
 
 function Group({ id, field, options }: Choice) {
   const a = useAppearance();
+  const density = useDensity();
   const e = entry(id);
   const h = helpText(e.help);
   return (
-    <Menu.RadioGroup value={a[field]} onValueChange={(v) => setAppearance({ [field]: v } as Partial<Appearance>)}>
+    <Menu.RadioGroup value={field === "density" ? density : a[field]} onValueChange={(v) => setAppearance({ [field]: v } as Partial<Appearance>)}>
       <Menu.GroupLabel className="px-2 pt-2 pb-1 text-xs font-medium text-muted-foreground">
         {h.label}
         {e.mode === "expert" && <span className="ms-2 rounded-sm border border-border px-1 text-xs">Expert</span>}
@@ -103,6 +104,7 @@ export function AppearanceMenu({ className }: { className?: string }) {
 // AppShell, the More sheet).
 export function AppearanceChoices() {
   const a = useAppearance();
+  const density = useDensity();
   return (
     <div className="fy-stack fy-stack--3">
       {groups.map((g) => {
@@ -117,7 +119,7 @@ export function AppearanceChoices() {
             </span>
             <div className="fy-segmented" role="radiogroup" aria-labelledby={`more-${g.id}`} title={h.tooltip}>
               {g.options.map((o, i) => {
-                const on = a[g.field] === o.value;
+                const on = (g.field === "density" ? density : a[g.field]) === o.value;
                 return (
                   <button key={o.value} type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1} data-value={o.value} onClick={() => pick(o.value)}
                     onKeyDown={(ev) => {

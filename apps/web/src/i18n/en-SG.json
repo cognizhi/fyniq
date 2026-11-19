@@ -127,6 +127,10 @@
       "label": "Experience mode",
       "tooltip": "Basic shows the essentials; Expert adds accounts, settings and every detail. It changes only what you see, never what you may do."
     },
+    "shell.formats": {
+      "label": "Numbers and dates",
+      "tooltip": "How amounts, counts and dates are written for you: for example 1,234.56 or 1.234,56, and 12 Oct 2026 or 2026-10-12. It changes only how they look: amounts stay exact, and what you copy is always the plain decimal."
+    },
     "settings.overview": {
       "label": "Settings",
       "tooltip": "Your own settings, and the organisation's that your roles let you see."

@@ -1,0 +1,6 @@
+case,date,want,why,source
+Christmas Day 2026,2026-12-25,Christmas Day,"MOM: 25 December 2026, Friday",mom-public-holidays
+the day after is none,2026-12-26,none,"Not in MOM's list",mom-public-holidays
+Chinese New Year 2027 second day,2027-02-07,Chinese New Year,"MOM: 6 and 7 February 2027",mom-public-holidays
+Vesak Day 2027,2027-05-20,Vesak Day,"MOM: 20 May 2027, Thursday",mom-public-holidays
+Deepavali 2026,2026-11-08,Deepavali,"MOM: 8 November 2026, Sunday",mom-public-holidays

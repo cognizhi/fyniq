@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contrast": {
+      "description": "Standard or more contrast, or the device's setting; absent: system.",
+      "enum": [
+        "standard",
+        "more",
+        "system"
+      ],
+      "examples": [
+        "system"
+      ],
+      "type": "string"
+    },
+    "date_format": {
+      "description": "How dates are written on screen: 12 Oct 2026 (d_mmm_yyyy), 12/10/2026 (dd_mm_yyyy), 10/12/2026 (mm_dd_yyyy) or 2026-10-12 (iso), in the organisation's time zone (NFR-L10N-01); absent: d_mmm_yyyy.",
+      "enum": [
+        "d_mmm_yyyy",
+        "dd_mm_yyyy",
+        "mm_dd_yyyy",
+        "iso"
+      ],
+      "examples": [
+        "d_mmm_yyyy"
+      ],
+      "type": "string"
+    },
+    "default_mode": {
+      "description": "The mode in force while the caller has not chosen: from the organisation's starting mode for each of their roles, the Owner's winning when they hold it (FR-UX-27).",
+      "enum": [
+        "basic",
+        "expert"
+      ],
+      "examples": [
+        "basic"
+      ],
+      "type": "string"
+    },
+    "density": {
+      "description": "The row height of lists and tables; absent: comfortable.",
+      "enum": [
+        "comfortable",
+        "compact"
+      ],
+      "examples": [
+        "comfortable"
+      ],
+      "type": "string"
+    },
+    "etag": {
+      "description": "The preferences' version, for If-Match.",
+      "examples": [
+        "\"9f1c2b7a\""
+      ],
+      "type": "string"
+    },
+    "ledger_view": {
+      "description": "Plain view or Accountant view where a screen offers both, in Expert mode (FR-UX-08); absent: plain.",
+      "enum": [
+        "plain",
+        "accountant"
+      ],
+      "examples": [
+        "plain"
+      ],
+      "type": "string"
+    },
+    "mode": {
+      "description": "The experience mode the caller chose; absent until they choose, when default_mode applies.",
+      "enum": [
+        "basic",
+        "expert"
+      ],
+      "examples": [
+        "expert"
+      ],
+      "type": "string"
+    },
+    "motion": {
+      "description": "Whether transitions run; the organisation's switch and the device's reduced-motion setting always win; absent: on.",
+      "enum": [
+        "on",
+        "reduce"
+      ],
+      "examples": [
+        "on"
+      ],
+      "type": "string"
+    },
+    "negative_format": {
+      "description": "How negative amounts are written on screen: −1,234.56 (minus) or (1,234.56) (parentheses); the sign or the brackets always show, so colour is never the only cue; absent: minus.",
+      "enum": [
+        "minus",
+        "parentheses"
+      ],
+      "examples": [
+        "minus"
+      ],
+      "type": "string"
+    },
+    "number_format": {
+      "description": "How amounts and counts are written on screen: 1,234.56 (comma_dot), 1.234,56 (dot_comma), 1 234,56 (space_comma) or 1 234.56 (space_dot). Amounts stay exact decimal strings everywhere else (NFR-L10N-01); absent: comma_dot.",
+      "enum": [
+        "comma_dot",
+        "dot_comma",
+        "space_comma",
+        "space_dot"
+      ],
+      "examples": [
+        "comma_dot"
+      ],
+      "type": "string"
+    },
+    "set_at": {
+      "description": "When the caller last saved their preferences, if ever.",
+      "examples": [
+        "2026-11-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "shortcut_keys": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "The keys the caller chose for a shortcut, by its name on the shortcut sheet; a shortcut not listed keeps its usual keys (FR-UX-06).",
+      "type": "object"
+    },
+    "shortcuts_on": {
+      "description": "Whether the single-key shortcuts are on (WCAG 2.2 SC 2.1.4); absent: on.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "theme": {
+      "description": "Light, dark or the device's setting (FR-UX-38); absent: system.",
+      "enum": [
+        "light",
+        "dark",
+        "system"
+      ],
+      "examples": [
+        "system"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "default_mode",
+    "etag"
+  ],
+  "title": "MyPreferences",
+  "type": "object"
+}

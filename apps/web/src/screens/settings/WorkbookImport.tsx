@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatCount } from "../../format/amount";
 import { Link } from "@tanstack/react-router";
 import { CircleCheck, CircleX, Download, FileSpreadsheet, Hourglass, PenLine, PlayCircle, Save, ShieldCheck, TriangleAlert, Upload } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
@@ -229,7 +230,7 @@ function UploadWorkbook({ m, etag, report, parallel }: { m: Migration; etag: str
                 {sheets.map((s) => (
                   <tr key={s.sheet}>
                     <td>{s.sheet}</td>
-                    <td className="fy-num">{s.rows.toLocaleString("en-SG")}</td>
+                    <td className="fy-num">{formatCount(s.rows)}</td>
                     <td>
                       {s.errors > 0 ? (
                         <span className="fy-chip fy-chip--critical">
@@ -498,7 +499,7 @@ function Commit3({ m, mapping, commit }: { m: Migration; mapping: { map: Mapping
             <div className="fy-banner__text">
               <span className="fy-strong">Waiting for an Owner who did not ask to approve the commit</span>
               <span className="fy-small">
-                {commit.total.toLocaleString("en-SG")} records planned ({commit.path === "clean_start" ? "a clean start" : "the year's history"}).{" "}
+                {formatCount(commit.total)} records planned ({commit.path === "clean_start" ? "a clean start" : "the year's history"}).{" "}
                 {commit.approval_id && (
                   <Link to="/approvals/$approvalId" params={{ approvalId: commit.approval_id }}>
                     Open the approval
@@ -512,14 +513,14 @@ function Commit3({ m, mapping, commit }: { m: Migration; mapping: { map: Mapping
           <>
             <div className="fy-stack fy-stack--2">
               <span className="fy-label" id="m3-progress">
-                {shown.done.toLocaleString("en-SG")} of {shown.total.toLocaleString("en-SG")} records imported
+                {formatCount(shown.done)} of {formatCount(shown.total)} records imported
               </span>
               <progress className="w-full" aria-labelledby="m3-progress" max={Math.max(shown.total, 1)} value={shown.done} />
             </div>
             <ul className="fy-row fy-row--wrap gap-2" aria-label="Imported by kind">
               {commit.kinds.map((k) => (
                 <li key={k.kind} className="fy-tag">
-                  {kindName(k.kind)} {k.done.toLocaleString("en-SG")}
+                  {kindName(k.kind)} {formatCount(k.done)}
                 </li>
               ))}
             </ul>
@@ -673,14 +674,14 @@ function Parity({ m, rec, etag, parallel }: { m: Migration; rec: Reconciliation;
       <div className="fy-grid fy-grid--4 gap-3 p-4">
         <div className="fy-tile">
           <span className="fy-tile__label">Figures compared</span>
-          <span className="fy-tile__value fy-num">{rec.figures.toLocaleString("en-SG")}</span>
+          <span className="fy-tile__value fy-num">{formatCount(rec.figures)}</span>
           <span className="fy-tile__meta">
             {rec.accounts} accounts, through {rec.through}
           </span>
         </div>
         <div className="fy-tile">
           <span className="fy-tile__label">Match to the cent</span>
-          <span className="fy-tile__value fy-num">{(rec.figures - rec.differences.length).toLocaleString("en-SG")}</span>
+          <span className="fy-tile__value fy-num">{formatCount(rec.figures - rec.differences.length)}</span>
         </div>
         <div className="fy-tile">
           <span className="fy-tile__label">Differ</span>

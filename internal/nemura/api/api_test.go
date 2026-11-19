@@ -236,9 +236,84 @@ func (f fakeRequests) Get(context.Context, Session, LeaveScope, uuid.UUID) (Leav
 func (f fakeRequests) Decide(context.Context, Session, LeaveScope, uuid.UUID, bool, string) error {
 	return f.err
 }
+func (f fakeRequests) Calendar(context.Context, Session, LeaveScope, bool, time.Time) (LeaveCalendar, error) {
+	return LeaveCalendar{Month: "2026-05", People: []CalendarPerson{}}, f.err
+}
 func (f fakeRequests) Cancel(context.Context, Session, uuid.UUID) error { return f.err }
 func (f fakeRequests) Settle(context.Context, Session, time.Time) (int, string, error) {
 	return 1, "3.00", f.err
+}
+
+// fakeSick answers sick leave with whatever the test says.
+type fakeSick struct{ err error }
+
+func (f fakeSick) Notify(context.Context, Session, SickAsk) (SickNotified, error) {
+	return SickNotified{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90", Days: "3.00", Paid: "3.00", Unpaid: "0.00"}, f.err
+}
+func (f fakeSick) List(context.Context, Session, bool, bool) ([]SickNotification, error) {
+	return []SickNotification{}, f.err
+}
+func (f fakeSick) Certificate(context.Context, Session, uuid.UUID, bool, string, string, []byte) error {
+	return f.err
+}
+func (f fakeSick) Verify(context.Context, Session, uuid.UUID) error { return f.err }
+
+// fakeGovernment answers government-paid leave with whatever the test says.
+type fakeGovernment struct{ err error }
+
+func (f fakeGovernment) Record(context.Context, Session, uuid.UUID, GovAsk) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e94", f.err
+}
+func (f fakeGovernment) List(context.Context, Session) ([]GovBlock, error) {
+	return []GovBlock{}, f.err
+}
+func (f fakeGovernment) File(context.Context, Session, uuid.UUID, string, time.Time, string) (string, bool, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e95", false, f.err
+}
+func (f fakeGovernment) Event(context.Context, Session, uuid.UUID, string, string, time.Time, string) error {
+	return f.err
+}
+
+// fakeFlex answers flexible work requests with whatever the test says.
+type fakeFlex struct{ err error }
+
+func (f fakeFlex) Request(context.Context, Session, FlexAsk) (string, string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0", "2027-01-20", f.err
+}
+func (f fakeFlex) List(context.Context, Session, bool) ([]FlexRequest, error) {
+	return []FlexRequest{}, f.err
+}
+func (f fakeFlex) Reply(context.Context, Session, uuid.UUID, string, string) error { return f.err }
+func (f fakeFlex) Withdraw(context.Context, Session, uuid.UUID) error              { return f.err }
+
+// fakeTime answers hours worked and pay inputs with whatever the test says.
+type fakeTime struct{ err error }
+
+func (f fakeTime) RecordOvertime(context.Context, Session, OvertimeAsk) (string, bool, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1eb0", false, f.err
+}
+func (f fakeTime) Overtime(context.Context, Session, LeaveScope, string) ([]OvertimeRecord, error) {
+	return []OvertimeRecord{}, f.err
+}
+func (f fakeTime) DecideOvertime(context.Context, Session, LeaveScope, uuid.UUID, bool, string) error {
+	return f.err
+}
+func (f fakeTime) PayInputs(context.Context, Session, time.Time) ([]PayInput, error) {
+	return []PayInput{}, f.err
+}
+func (f fakeTime) DecideUnpaid(context.Context, Session, uuid.UUID, string) (string, error) {
+	return "2.00", f.err
+}
+func (f fakeTime) DraftAccrual(context.Context, Session, time.Time) (int, error) { return 1, f.err }
+func (f fakeTime) Accruals(context.Context, Session, time.Time) ([]AccrualLine, error) {
+	return []AccrualLine{}, f.err
+}
+func (f fakeTime) ApproveAccrual(context.Context, Session, time.Time) (int, error) { return 1, f.err }
+func (f fakeTime) Availability(context.Context, Session, uuid.UUID, time.Time, time.Time) (Availability, error) {
+	return Availability{WorkingDays: "21.00", AwayDays: "0.00", HoursPerDay: "8.80", Hours: "184.80"}, f.err
+}
+func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.Time, string) error {
+	return f.err
 }
 
 // fakeClients registers whatever it is told and answers with clientsErr.
@@ -264,7 +339,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }

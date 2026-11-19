@@ -1,0 +1,5 @@
+months_from,outpatient_days,hospital_days,effective_from,effective_to,status,source
+3,5,15,2026-01-01,,researched,mom-sick-leave
+4,8,30,2026-01-01,,researched,mom-sick-leave
+5,11,45,2026-01-01,,researched,mom-sick-leave
+6,14,60,2026-01-01,,researched,mom-sick-leave

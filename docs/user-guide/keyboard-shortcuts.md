@@ -3,7 +3,7 @@ key: shell.shortcuts
 title: Use Fyniq from the keyboard
 mode: basic
 roles: [all]
-requirements: [FR-UX-06, FR-UX-03]
+requirements: [FR-UX-06, FR-UX-03, FR-UX-23]
 ---
 
 # Use Fyniq from the keyboard
@@ -14,8 +14,9 @@ Fyniq has keys to go to each area, to start each kind of record and to move thro
 **?** to see every shortcut you can use, or open **Keyboard shortcuts** from the command palette.
 Shortcuts never fire while you type in a field.
 
-In Basic mode, three work: Ctrl+K (⌘K on a Mac) for search and commands, Ctrl+J (⌘J) for the
-assistant, and **?** for the shortcut sheet. Expert mode adds the rest below.
+In Basic mode, four work: Ctrl+K (⌘K on a Mac) for search and commands, Ctrl+J (⌘J) for the
+assistant, **Alt+Shift+M** (Option+Shift+M) to switch between Basic and Expert mode, and **?** for the shortcut
+sheet. Expert mode adds the rest below.
 
 ## Go to an area
 
@@ -49,14 +50,13 @@ the same as the page's own button.
 Single-character shortcuts can get in the way if you use speech input or press keys by accident.
 
 1. Press **?**, or open **Settings › Profile and security › Keyboard**.
-2. Turn **Single-character shortcuts** off. Ctrl+K and Ctrl+J still work.
+2. Turn **Single-character shortcuts** off. Ctrl+K, Ctrl+J and Alt+Shift+M still work.
 3. Or select **Change the keys**, type one key or two for any shortcut, such as G B, and select
    **Save the keys**. Fyniq says when two shortcuts would share keys, or when one key would start
    another's two.
 4. **Use the usual keys** puts them back.
 
-Your choice applies to you only. Until it is saved with your profile, it is kept in this browser, so
-set it again in another browser.
+Your choice applies to you only. Fyniq keeps it with your profile, so it is the same on every device you sign in on.
 
 ## The Inbox's keys
 

@@ -4,7 +4,8 @@ import { ShieldCheck, Sparkles } from "lucide-react";
 import { createContext, useContext, useEffect } from "react";
 import { DeviceRoot } from "./components/ui/dialog";
 import { api, type Organisation, type Session } from "./api/client";
-import { setOrganisationMotion } from "./appearance";
+import { setAppearanceMode, setOrganisationMotion } from "./appearance";
+import { adopt } from "./preferences";
 import { helpText } from "./i18n";
 import { setMode, useMode } from "./mode";
 import { nav, routes, type Mode } from "./registry";
@@ -46,6 +47,8 @@ export async function whereTo(): Promise<Shell> {
   if (!session.user_id) return { kind: "sign-in", to: "/sign-in" };
   // The organisation's motion applies before any page is drawn (FR-UX-38): Off renders final states at once.
   setOrganisationMotion(session.motion);
+  // The person's own preferences, the same on every device, and the organisation's time zone (FR-UX-23, NFR-L10N-01).
+  adopt(session);
   // A session with no second factor may read only itself (API-AUTHZ-07): its organisation waits.
   const { data: organisation } = session.organisation_id && session.step_up_method ? await api.GET("/v1/organisation") : { data: undefined };
   return { kind: "signed-in", session, organisation };
@@ -139,6 +142,11 @@ export function SignedIn() {
     const el = device?.current;
     if (el) el.dataset.mode = mode;
   }, [device, mode]);
+
+  // The look follows the mode for its density: Comfortable in Basic, Compact in Expert unless the person chose (experience/modes).
+  useEffect(() => {
+    if (session) setAppearanceMode(mode);
+  }, [session, mode]);
 
   useEffect(() => {
     // Moving between the signed-out pages is a page load, so nothing secret survives in memory.

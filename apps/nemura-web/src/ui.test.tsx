@@ -1,12 +1,16 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import axe from "axe-core";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { App } from "./App";
 import { ReviewBanner } from "./components/ReviewBanner";
 import { Home } from "./pages/Home";
 import { NewPerson } from "./pages/NewPerson";
 import { ApplyLeave } from "./pages/ApplyLeave";
+import { GovernmentLeave } from "./pages/GovernmentLeave";
 import { MyLeave } from "./pages/MyLeave";
+import { PeopleTiles } from "./components/PeopleTiles";
+import { MyRequests } from "./pages/MyRequests";
+import { ReportSick } from "./pages/ReportSick";
 import { TeamLeave } from "./pages/TeamLeave";
 import { Packs } from "./pages/Packs";
 import { Policy } from "./pages/Policy";
@@ -404,7 +408,10 @@ describe("the country pack and the leave policy", () => {
 });
 
 // req: NM-LV-02, NM-TIM-01, NM-LV-13
+const emptyCalendar = () => answer("GET /v1/leave-calendar", { status: 200, body: { month: "2026-05", people: [] } });
+
 describe("my leave", () => {
+  beforeEach(emptyCalendar);
   const view = { person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", year: 2026, working_pattern: { effective_from: "2026-01-05", weekdays: [1, 2, 3, 4, 5], hours_per_week: "44.0" },
     types: [{ key: "annual", name: "Annual leave", counting: "working_days", balance: { entitled: "7.00", taken: "2.00", booked: "1.00", expired: "0.00", encashed: "0.00", left: "4.00" },
       basis: ["Year of service 1: 7 days a year, 12 completed months of 12."], sources: ["sg-people@2026.2 annual_leave"], carried_until: "2027-12-31" }] };
@@ -469,6 +476,7 @@ describe("my leave", () => {
 
 // req: NM-LV-03, NM-LV-04, NM-LV-05
 describe("applying for and approving leave", () => {
+  beforeEach(emptyCalendar);
   const preview = { days: "4.00", left_after: "10.00", enough: true, counting: "working_days",
     days_counted: [{ date: "2026-04-01", cost: "1.00" }, { date: "2026-04-03", cost: "0.00", why: "Good Friday" }, { date: "2026-04-04", cost: "0.00", why: "a rest day" }],
     away: [{ name: "Ben Lim", from: "2026-04-06", to: "2026-04-08" }] };
@@ -530,5 +538,266 @@ describe("applying for and approving leave", () => {
   it("is routed from the address, and the team link is for approvers", () => {
     expect(matchRoute("/me/leave/new")?.route.id).toBe("apply-leave");
     expect(matchRoute("/people/leave")?.route.id).toBe("team-leave");
+  });
+});
+
+// req: NM-LV-12, NM-LV-06
+describe("telling the company you are sick", () => {
+  const notice = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90", days: "3.00", paid_days: "3.00", unpaid_days: "0.00", late: false, person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", person_name: "Ben Lim",
+    kind: "outpatient", from: "2026-05-04", to: "2026-05-06", has_certificate: false, verified: false };
+
+  it("tells the company, shows the paid and unpaid days and flags a late notice", async () => {
+    answer("GET /v1/sick-leave", { status: 200, body: { notifications: [] } });
+    answer("POST /v1/me/sick-leave", { status: 201, body: { id: notice.id, days: "10.00", paid_days: "5.00", unpaid_days: "5.00", late: true } });
+    const { container } = render(<ReportSick roles={["employee"]} />);
+    await screen.findByText("You have not told the company about any sick leave.");
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("First day"), { target: { value: "2026-05-11" } });
+    fireEvent.submit(container.querySelector("form.fy-stack") as HTMLFormElement);
+    expect(await screen.findByText(/10\.00 working days: 5\.00 are paid sick leave and 5\.00 are beyond your limit/)).toBeTruthy();
+    expect(screen.getByText(/marked late/)).toBeTruthy();
+  });
+
+  it("gives the certificate once, then shows who issued it and that it waits for verification", async () => {
+    answer("GET /v1/sick-leave", { status: 200, body: { notifications: [notice] } });
+    answer(`POST /v1/sick-leave/${notice.id}/certificate`, { status: 201 });
+    render(<ReportSick roles={["employee"]} />);
+    await screen.findByText("2026-05-04 to 2026-05-06: 3.00 days, 3.00 paid");
+    const { fireEvent, waitFor: wait } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Who issued it"), { target: { value: "Raffles Medical Clinic" } });
+    const file = new File(["jpeg bytes"], "mc.jpg", { type: "image/jpeg" });
+    fireEvent.change(screen.getByLabelText("Photo or e-MC file"), { target: { files: [file] } });
+    fireEvent.submit(screen.getByRole("form", { name: /Give the medical certificate/ }));
+    await wait(() => expect(calls).toContain(`POST /v1/sick-leave/${notice.id}/certificate`));
+  });
+
+  it("shows a certificate already given and whether it is verified", async () => {
+    answer("GET /v1/sick-leave", { status: 200, body: { notifications: [{ ...notice, has_certificate: true, issuer: "Raffles Medical Clinic", verified: true }] } });
+    render(<ReportSick roles={["employee"]} />);
+    expect(await screen.findByText(/Certificate given by Raffles Medical Clinic\. Verified by the people team\./)).toBeTruthy();
+    expect(screen.queryByLabelText("Who issued it")).toBeNull();
+  });
+
+  it("lets the people team verify a certificate that waits, and no one else sees the list", async () => {
+    answer("GET /v1/leave-requests", { status: 200, body: { requests: [] } });
+    answer("GET /v1/leave-calendar", { status: 200, body: { month: "2026-05", people: [] } });
+    answer("GET /v1/sick-leave", { status: 200, body: { notifications: [{ ...notice, has_certificate: true, issuer: "Raffles Medical Clinic" }] } });
+    answer(`POST /v1/sick-leave/${notice.id}/verification`, { status: 204 });
+    const { unmount } = render(<TeamLeave roles={["hr_officer"]} />);
+    expect(await screen.findByText("Issued by Raffles Medical Clinic")).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+    expect(await screen.findByText("Verified.")).toBeTruthy();
+    unmount();
+    render(<TeamLeave roles={["line_manager"]} />);
+    await screen.findByText("No request is waiting.");
+    expect(screen.queryByText("Certificates to verify")).toBeNull();
+    expect(calls.filter((c) => c === "GET /v1/sick-leave").length).toBe(3); // the people team's page asked twice (certificates, sick days beyond the limit) and reloaded once; the manager's page did not
+  });
+
+  it("is routed from the address", () => {
+    expect(matchRoute("/me/leave/sick")?.route.id).toBe("report-sick");
+  });
+});
+
+// req: NM-LV-05
+describe("the team calendar", () => {
+  const person = { person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", name: "Ben Lim", weekdays: [1, 2, 3, 4, 5], entries: [
+    { date: "2026-05-04", kind: "away", label: "Away" }, { date: "2026-05-01", kind: "holiday", label: "Labour Day" }, { date: "2026-05-05", kind: "leave", label: "Annual leave" }] };
+
+  it("shows a letter for each day, the full words for a screen reader, and rest days apart", async () => {
+    answer("GET /v1/leave-calendar", { status: 200, body: { month: "2026-05", people: [person] } });
+    const { LeaveCalendar } = await import("./components/LeaveCalendar");
+    const { container } = render(<LeaveCalendar start="2026-05" />);
+    const away = await screen.findByLabelText("Ben Lim on 2026-05-04: Away");
+    expect(away.textContent).toBe("A");
+    expect(screen.getByLabelText("Ben Lim on 2026-05-01: Labour Day").textContent).toBe("H");
+    expect(screen.getByLabelText("Ben Lim on 2026-05-05: Annual leave").textContent).toBe("L");
+    expect(screen.getByLabelText("Ben Lim on 2026-05-02: rest day").textContent).toBe("·");
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("says when nobody is in view, and moves between months", async () => {
+    answer("GET /v1/leave-calendar", { status: 200, body: { month: "2026-05", people: [] } });
+    const year = String(new Date().getFullYear());
+    answer(`GET /v1/me/leave/${year}`, { status: 200, body: { person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", year: Number(year), types: [] } });
+    render(<MyLeave roles={["employee"]} />);
+    expect(await screen.findByText("Nobody you may see is in the calendar.")).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Next month" }));
+    await screen.findByText("Nobody you may see is in the calendar.");
+    expect(calls.filter((c) => c === "GET /v1/leave-calendar").length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// req: NM-LV-07, NM-LV-14
+describe("government-paid leave and its claims", () => {
+  const block = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e94", person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", person_name: "Ben Lim", scheme: "paternity", from: "2026-06-10", to: "2026-07-07", days: 28,
+    claim_deadline: "2026-10-07", guide_maximum: "10000.00", claims: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e95", amount: "6000.00", received: "2500.00", filed_on: "2026-07-20", reference: "GPL-001", state: "part_paid", over_guide: false }] };
+
+  it("shows each block with its deadline, the guide maximum and its claims, and records a receipt", async () => {
+    answer("GET /v1/government-paid-leave", { status: 200, body: { blocks: [block] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: block.person_id, name: "Ben Lim", job_title: "Engineer" }] } });
+    answer(`POST /v1/government-paid-claims/${block.claims[0]?.id}/events`, { status: 201 });
+    const { container } = render(<GovernmentLeave roles={["hr_admin"]} />);
+    expect(await screen.findByText("File the claim by 2026-10-07.")).toBeTruthy();
+    expect(screen.getByText(/at most S\$ 10000\.00; the portal decides/)).toBeTruthy();
+    expect(screen.getByText(/S\$ 6000\.00 filed on 2026-07-20, S\$ 2500\.00 received: part paid/)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Amount received (S$)"), { target: { value: "3500.00" } });
+    fireEvent.change(screen.getByLabelText("On"), { target: { value: "2026-08-20" } });
+    fireEvent.submit(screen.getByRole("form", { name: /Answer to the claim filed on 2026-07-20/ }));
+    expect(await screen.findByText("Saved.")).toBeTruthy();
+    expect(calls).toContain(`POST /v1/government-paid-claims/${block.claims[0]?.id}/events`);
+  });
+
+  it("records a block for a child and shows the API's refusal in words", async () => {
+    answer("GET /v1/government-paid-leave", { status: 200, body: { blocks: [] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: block.person_id, name: "Ben Lim" }] } });
+    answer(`GET /v1/people/${block.person_id}/dependants`, { status: 200, body: { dependants: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71", relationship: "child", birth_date: "2026-06-10", adoption_intent: false, citizenship: "citizen", effective_from: "2026-07-01" }] } });
+    answer(`POST /v1/people/${block.person_id}/government-paid-leave`, { status: 422, body: { code: "NM_LEAVE_INVALID", detail: "The person had served fewer than 3 months before the child's birth." } });
+    render(<GovernmentLeave roles={["hr_officer"]} />);
+    await screen.findByText("No government-paid leave is recorded.");
+    const { fireEvent } = await import("@testing-library/react");
+    await screen.findByRole("option", { name: "Ben Lim" });
+    fireEvent.change(screen.getByLabelText("Person"), { target: { value: block.person_id } });
+    await screen.findByRole("option", { name: "child, born 2026-06-10" });
+    fireEvent.change(screen.getByLabelText("Child"), { target: { value: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71" } });
+    fireEvent.change(screen.getByLabelText("First day"), { target: { value: "2026-06-10" } });
+    fireEvent.change(screen.getByLabelText("Last day"), { target: { value: "2026-07-07" } });
+    fireEvent.submit(screen.getByRole("heading", { name: "Record a block of leave" }).closest("form") as HTMLFormElement);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/fewer than 3 months/);
+  });
+
+  it("offers Payroll no way to change anything", async () => {
+    answer("GET /v1/government-paid-leave", { status: 200, body: { blocks: [block] } });
+    render(<GovernmentLeave roles={["payroll_admin"]} />);
+    await screen.findByText("File the claim by 2026-10-07.");
+    expect(screen.queryByRole("button", { name: "Record claim" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Record leave" })).toBeNull();
+  });
+
+  it("is routed from the address", () => {
+    expect(matchRoute("/people/leave/government-paid")?.route.id).toBe("government-leave");
+  });
+});
+
+// req: NM-LV-10
+describe("flexible work requests", () => {
+  const flex = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0", person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", person_name: "Ben Lim", arrangement: "flexi_time", from: "2027-01-04", reason: "School run on Tuesdays.", state: "received", received_on: "2026-11-20", reply_due: "2027-01-20" };
+  const leaveReq = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80", person_id: flex.person_id, person_name: "Ben Lim", type: "annual", from: "2026-12-21", to: "2026-12-24", start_half: false, end_half: false, days: "4.00", state: "pending", requested_at: "2026-11-20T09:00:00Z" };
+
+  it("shows own leave and flexible work with the reply deadline, sends a formal request and withdraws one", async () => {
+    answer("GET /v1/leave-requests", { status: 200, body: { requests: [leaveReq] } });
+    answer("GET /v1/flexible-work-requests", { status: 200, body: { requests: [flex] } });
+    answer("POST /v1/me/flexible-work-requests", { status: 201, body: { id: flex.id, reply_due: "2027-01-20" } });
+    answer(`POST /v1/flexible-work-requests/${flex.id}/withdrawal`, { status: 204 });
+    answer(`POST /v1/leave-requests/${leaveReq.id}/cancellation`, { status: 204 });
+    const { container } = render(<MyRequests roles={["employee"]} />);
+    expect(await screen.findByText(/When I work \(flexi-time\) from 2027-01-04: Waiting\. The company's written reply is due by 2027-01-20\./)).toBeTruthy();
+    expect(screen.getByText("2026-12-21 to 2026-12-24: 4.00 days, Waiting")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Starting on"), { target: { value: "2027-02-01" } });
+    fireEvent.change(screen.getByLabelText("Why"), { target: { value: "Work from home on Fridays." } });
+    fireEvent.submit(screen.getByRole("heading", { name: "Make a formal flexible work request" }).closest("form") as HTMLFormElement);
+    expect(await screen.findByText("Sent. Your formal request is dated today, and the company must answer in writing by 2027-01-20.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw" }));
+    expect(await screen.findByText("Withdrawn.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(calls).toContain(`POST /v1/leave-requests/${leaveReq.id}/cancellation`));
+  });
+
+  it("shows the written reply of an answered request", async () => {
+    answer("GET /v1/leave-requests", { status: 200, body: { requests: [] } });
+    answer("GET /v1/flexible-work-requests", { status: 200, body: { requests: [{ ...flex, state: "replied", outcome: "alternative", written_reply: "We can offer a 9am start on Tuesdays." }] } });
+    render(<MyRequests roles={["employee"]} />);
+    expect(await screen.findByText("The company's reply: We can offer a 9am start on Tuesdays.")).toBeTruthy();
+    expect(screen.getByText(/an alternative was offered/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Withdraw" })).toBeNull();
+  });
+
+  it("lets the people team answer a request in writing, and shows the refusal for a missing reason", async () => {
+    answer("GET /v1/leave-requests", { status: 200, body: { requests: [] } });
+    answer("GET /v1/leave-calendar", { status: 200, body: { month: "2026-11", people: [] } });
+    answer("GET /v1/sick-leave", { status: 200, body: { notifications: [] } });
+    answer("GET /v1/flexible-work-requests", { status: 200, body: { requests: [flex] } });
+    answer(`POST /v1/flexible-work-requests/${flex.id}/reply`, { status: 422, body: { code: "NM_LEAVE_INVALID", detail: "A refusal or an alternative gives its reason: write the business grounds, so the person can understand the decision." } });
+    render(<TeamLeave roles={["hr_officer"]} />);
+    expect(await screen.findByText("flexi_time from 2027-01-04: School run on Tuesdays.".replace("flexi_time", "When I work (flexi-time)"))).toBeTruthy();
+    expect(screen.getByText(/Reply due: 2027-01-20/)).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Outcome"), { target: { value: "rejected" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send reply" }));
+    expect((await screen.findAllByRole("alert")).map((a) => a.textContent).join(" ")).toMatch(/gives its reason/);
+    answer(`POST /v1/flexible-work-requests/${flex.id}/reply`, { status: 204 });
+    fireEvent.change(screen.getByLabelText("Written reply to Ben Lim"), { target: { value: "The team cannot cover Tuesday afternoons during the release." } });
+    fireEvent.click(screen.getByRole("button", { name: "Send reply" }));
+    expect(await screen.findByText("Replied. The record of the written reply is kept.")).toBeTruthy();
+  });
+
+  it("is routed from the address", () => {
+    expect(matchRoute("/me/requests")?.route.id).toBe("my-requests");
+  });
+});
+
+// req: NM-TIM-04, NM-LV-08, NM-LV-09
+describe("hours worked, pay inputs, unpaid sick days and the accrual", () => {
+  const rec = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1eb0", person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", person_name: "Ben Lim", date: "2026-10-08", kind: "overtime", hours: "3.00", over_limit: true, state: "pending", used_by_pay_run: false };
+
+  it("records hours worked and says plainly when they pass the monthly limit", async () => {
+    answer("GET /v1/leave-requests", { status: 200, body: { requests: [] } });
+    answer("GET /v1/flexible-work-requests", { status: 200, body: { requests: [] } });
+    answer("GET /v1/overtime", { status: 200, body: { records: [{ ...rec, state: "approved", over_limit: false }] } });
+    answer("POST /v1/me/overtime", { status: 201, body: { id: rec.id, over_limit: true } });
+    const { container } = render(<MyRequests roles={["employee"]} />);
+    expect(await screen.findByText("2026-10-08: Overtime, 3.00 hours, Approved")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Day worked"), { target: { value: "2026-10-09" } });
+    fireEvent.change(screen.getByLabelText("Hours worked"), { target: { value: "3" } });
+    fireEvent.click(screen.getByRole("button", { name: "Record the hours" }));
+    expect(await screen.findByText(/beyond the monthly limit\. It stays recorded and is paid/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Kind of work"), { target: { value: "rest_day" } });
+    expect(screen.getByLabelText("Whose request was it?")).toBeTruthy();
+  });
+
+  it("lets an approver decide hours, and the people team decide sick days, read the inputs and run the accrual", async () => {
+    answer("GET /v1/leave-requests", { status: 200, body: { requests: [] } });
+    answer("GET /v1/leave-calendar", { status: 200, body: { month: "2026-11", people: [] } });
+    answer("GET /v1/flexible-work-requests", { status: 200, body: { requests: [] } });
+    answer("GET /v1/overtime", { status: 200, body: { records: [rec] } });
+    answer(`POST /v1/overtime/${rec.id}/decision`, { status: 204 });
+    answer("GET /v1/sick-leave", { status: 200, body: { notifications: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90", days: "2.00", paid_days: "0.00", unpaid_days: "2.00", late: false, person_id: rec.person_id, person_name: "Ben Lim", kind: "outpatient", from: "2026-03-02", to: "2026-03-03", has_certificate: false, verified: false }] } });
+    answer("POST /v1/sick-leave/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90/unpaid-decision", { status: 200, body: { days: "2.00" } });
+    answer("GET /v1/pay-inputs", { status: 200, body: { inputs: [{ id: "i1", person_id: rec.person_id, person_name: "Ben Lim", kind: "encashment", quantity: "2.00", unit: "days", from: "2026-11-30", to: "2026-11-30", source_type: "leave_ledger", source_id: "s1" }] } });
+    answer("GET /v1/leave/accruals", { status: 200, body: { lines: [{ id: "a1", person_id: rec.person_id, person_name: "Ben Lim", state: "draft", carried_days: "4.00", annual_left: "18.00" }] } });
+    answer("POST /v1/leave/accruals", { status: 201, body: { lines: 1 } });
+    const { container } = render(<TeamLeave roles={["hr_admin"]} />);
+    expect(await screen.findByText(/Ben Lim: 2026-10-08, Overtime, 3\.00 hours/)).toBeTruthy();
+    expect(screen.getByText("Beyond the monthly limit.")).toBeTruthy();
+    expect(await screen.findByText("Ben Lim: 2026-03-02 to 2026-03-03, 2.00 days beyond the limit")).toBeTruthy();
+    expect(await screen.findByText("Ben Lim: encashed annual leave, 2.00 days, 2026-11-30 to 2026-11-30")).toBeTruthy();
+    expect(await screen.findByText(/Ben Lim: 4\.00 days carried forward untaken, 18\.00 days of annual leave left, draft/)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+    expect(await screen.findByText("Approved.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Unpaid leave" }));
+    expect(await screen.findByText("Decided.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Draft the month" }));
+    expect(await screen.findByText("Drafted.")).toBeTruthy();
+  });
+
+  it("shows the people team's tiles and a dash where a figure is not theirs to see", async () => {
+    answer("GET /v1/leave-requests", { status: 200, body: { requests: [{ id: "r1" }, { id: "r2" }] } });
+    answer("GET /v1/checks", { status: 200, body: { findings: [{ check: 5, area: "Requests", status: "due", subject: "x", message: "m" }] } });
+    render(<PeopleTiles />);
+    expect(await screen.findByText("2")).toBeTruthy();
+    expect(await screen.findByText("1")).toBeTruthy();
+    expect(screen.getAllByText("–").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole("link", { name: /Leave requests waiting/ }).getAttribute("href")).toBe("/people/leave");
   });
 });

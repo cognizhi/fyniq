@@ -163,13 +163,14 @@ Source: PRD-001 §6.2
 - **THEN** it is refused
 
 ### Requirement: Payment releaser role
-The Payment releaser (treasury) SHALL release approved payment batches to the bank and manage bank connections, and SHALL NOT create or approve the payments they release in Standard mode.
+The Payment releaser (treasury) SHALL release approved payment batches to the bank, and SHALL NOT create or approve the payments they release, or prepare or approve a bank connection, in Standard mode (rev 0.324, owner to confirm: Appendix D gives them no right on connections).
 
 Source: PRD-001 §6.2
 
 #### Scenario: Payment releaser rights
 - **WHEN** the Payment releaser acts
-- **THEN** they can release approved payment batches to the bank and manage bank connections
+- **THEN** they can release approved payment batches to the bank
+- **AND** they hold no right on bank connections, which the Administrator prepares and the Owner approves with a second approver (rev 0.324)
 
 #### Scenario: Payment releaser limits
 - **GIVEN** Standard mode
@@ -241,13 +242,13 @@ Source: PRD-001 §6.2
 - **THEN** it is refused
 
 ### Requirement: Tax agent role
-The Tax agent / external accountant SHALL have the Accountant's rights plus GST and tax working papers, through time-boxed access, and SHALL NOT administer users.
+The Tax agent / external accountant SHALL have the rights Appendix D gives them, the GST and tax working papers among them, through time-boxed access, and SHALL NOT administer users (rev 0.324, owner to confirm: not the Accountant's rights as a whole).
 
 Source: PRD-001 §6.2
 
 #### Scenario: Tax agent rights
 - **WHEN** the Tax agent acts within their access
-- **THEN** they have the Accountant's rights plus GST and tax working papers
+- **THEN** they have the rights Appendix D gives the Tax agent: the GST return, the statutory parameters' working papers, the chart, journals, evidence and the statutory calendar's items to prepare, and the rest of the books to view
 - **AND** the access is time-boxed
 
 #### Scenario: No user administration

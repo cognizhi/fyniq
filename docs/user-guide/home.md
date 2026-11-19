@@ -3,7 +3,7 @@ key: home.overview
 title: The Home page and finding your way around
 mode: basic
 roles: [all]
-requirements: [FR-UX-01, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03, FR-PLN-03, REL-05, FR-INT-11]
+requirements: [FR-UX-01, FR-UX-21, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03, FR-PLN-03, REL-05, FR-INT-11]
 status: draft            # written with the app shell's first slice (P1); reviewed when the shell's screens are built
 ---
 
@@ -101,11 +101,19 @@ first there:
 - **DPO**: data requests to answer and breaches still open.
 
 The Auditor lands on **Reports**, where **Your engagement** says until when their read-only access lasts and opens the
-journals, the evidence and the audit trail.
+trial balance and the general ledger, the journals, who has access, the evidence and the audit trail.
 
 A row whose list your roles cannot read is left out rather than shown as nothing to do. With several roles you see
 each row once. The Owner, the Controller, the Accountant and the Tax agent read the same work from the pulse card, the
 tiles and the Inbox, so the card does not show for them alone.
+
+### The sidebar's counts
+
+Some items in the sidebar carry a count: the **Inbox** (requests waiting for you to approve), **Sales** (invoices
+overdue), **Purchases** (bills due), **Banking** (bank lines to categorise) and **Compliance** (statutory deadlines
+due). Each is counted from the list it opens and read again every minute, so it follows what you may read: an item
+whose list your roles cannot read shows no count. A screen reader hears each in words, such as "Inbox, 3 approvals
+waiting", and when a count changes it says so once, in words, such as "3 approvals waiting", without moving your focus.
 
 ### Upcoming deadlines
 

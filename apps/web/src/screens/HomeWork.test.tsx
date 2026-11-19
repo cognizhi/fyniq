@@ -84,6 +84,10 @@ describe("Home's work by role", () => {
     const card = await screen.findByRole("region", { name: "Your engagement" });
     expect(await within(card).findByText(/Read-only, until 31 Jan 2027/)).toBeTruthy();
     expect(within(card).getByRole("link", { name: /Audit trail/ }).getAttribute("href")).toBe("/compliance/audit-trail");
+    // What the design's auditor workspace lists: the trial balance, the general ledger, the journals, the access list.
+    for (const [name, href] of [[/Trial balance/, "/reports/statements/tb"], [/General ledger/, "/reports/general-ledger"], [/Journals/, "/accounting/journals"], [/Who has access/, "/settings/access-review"]] as const) {
+      expect(within(card).getByRole("link", { name }).getAttribute("href")).toBe(href);
+    }
     await noViolations(document.body);
     unmount();
     renderPage(() => <As roles={["accountant"]}><AuditorAccess /></As>, { path: "/reports" });

@@ -1,4 +1,5 @@
 import { Dialog as Primitive } from "@base-ui/react/dialog";
+import { useStatusPhrase } from "./status";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Archive, Bell, CheckCheck, ListChecks, Mail, MailOpen, Settings, ShieldAlert, Stamp, X, type LucideIcon } from "lucide-react";
@@ -103,6 +104,7 @@ export function NotificationBell() {
   const count = useQuery({ queryKey: ["notifications", "count"], queryFn: () => listNotifications("unread"), refetchInterval: every });
   const list = useQuery({ queryKey: ["notifications", show], queryFn: () => listNotifications(show), enabled: open });
   const unread = count.data?.unread ?? 0;
+  const status = useStatusPhrase(count.data === undefined ? null : unread > 0 ? `${unread} unread ${unread === 1 ? "notification" : "notifications"}` : "");
   const changed = () => queries.invalidateQueries({ queryKey: ["notifications"] });
   const markAll = async () => {
     setFailed(null);
@@ -127,9 +129,7 @@ export function NotificationBell() {
           </span>
         )}
       </button>
-      <span className="fy-sr" role="status" aria-live="polite">
-        {unread > 0 ? `${unread} unread ${unread === 1 ? "notification" : "notifications"}` : ""}
-      </span>
+      {status}
       <Primitive.Root open={open} onOpenChange={setOpen}>
         <Primitive.Portal container={device ?? undefined}>
           <Primitive.Backdrop className="fixed inset-0 z-(--z-modal) bg-scrim" />

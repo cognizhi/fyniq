@@ -62,6 +62,26 @@
   organisation's motion setting and default modes by role. Personal preferences change only the
   person's own state and are audited as preference changes.
 
+## Decisions taken while building (20 Nov 2026, the owner away: the recommended option each time)
+
+- **Preferences are one append-only row per save, per member and organisation** (`user_preference`, migration 000700), read with the
+  session and saved with `PATCH /v1/preferences` (partial, `reset` takes a field back to its default, If-Match). Rejected: a row per
+  preference (many tiny writes, no atomic state) and a document in `localStorage` only (the same mode on every device is FR-UX-23).
+  The browser keeps a copy to draw the sign-in page and the first paint, and uploads a choice it holds that the server lacks, once.
+- **The Administrator's default per role is one organisation setting per role** (`experience.default_mode.<role>`), not under dual
+  control: it changes only what is shown, never a right. The Owner's setting wins for a person who holds the Owner role.
+- **The mode switches from the keyboard with Alt+Shift+M**, a chord with modifiers, so SC 2.1.4's single-character rule does not apply
+  and it works in both modes and inside a field.
+- **Number and date formats are four choices each, and negatives two**, not free patterns: each is testable end to end (display, copy,
+  paste), and a free pattern could re-round an amount. The time zone is the organisation's, never the person's.
+- **One polite, atomic status region for the shell's counts** (`shell/status.tsx`); sources say a phrase, the first count of a page is
+  not announced. Badges are counted from the list each opens, by the API, so they follow the person's rights.
+- **FR-UX-19's transport, when built: polling the change feed, not server-sent events.** Under NFR-COST-02 a held-open request keeps
+  an instance billed while a tab is visible; a cursor read every 20 seconds while visible, stopped after 5 minutes hidden, costs only
+  while a person is working and works through every proxy. The feed and its cursor are the same either way, so a measured switch to
+  server-sent events changes the web app's reader only. Not built in this change's slices: it needs a measurement in the cloud
+  (`[live-verify]`).
+
 ## Risks / Trade-offs
 
 - [The 250 KB initial-JavaScript budget against a heavy grid and component kit] → The grid, charts

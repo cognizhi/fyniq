@@ -6,7 +6,7 @@ import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
 import { Button } from "../../components/ui/button";
-import { formatAmount } from "../../format/amount";
+import { formatAmount, formatCount } from "../../format/amount";
 import { date, month as monthText } from "../../format/date";
 import { percent } from "../../format/decimal";
 import { helpText } from "../../i18n";
@@ -42,7 +42,7 @@ function tokens(t: Totals): number {
   return t.input_tokens + t.output_tokens + t.cache_read_tokens + t.cache_write_tokens;
 }
 
-const count = (n: number) => n.toLocaleString("en-SG");
+const count = (n: number) => formatCount(n);
 
 // AIUsage is Settings › AI › Usage and budgets (docs/design/screens AiUsage; AI-77, AI-73, AI-13): what the assistant
 // and the agents used and cost in a month, by agent, connection and model, and person, against the budgets. Costs are

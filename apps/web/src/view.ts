@@ -1,11 +1,11 @@
 import { useSyncExternalStore } from "react";
+import { persist } from "./preferenceSink";
 import type { Mode } from "./registry";
 
 // Plain view and Accountant view (FR-UX-08, §7.8): the same figures, as "Money in / Money out / Category" or as
 // "Debit / Credit / Account". Each person chooses in Expert mode; Basic mode always uses the Plain view.
 //
-// Provisional, like the mode: the choice is kept in this browser's storage until the preferences operation stores it on
-// the server (p1-app-shell task 4.1).
+// Kept like the mode: on the server as the person's own preference (FR-UX-23; preferences.ts) and in this browser's storage.
 
 export type LedgerView = "plain" | "accountant";
 
@@ -27,11 +27,24 @@ function current(): LedgerView {
   return chosen ?? "plain";
 }
 
+// theChosenView is the person's own choice, if they made one.
+export function theChosenView(): LedgerView | null {
+  current();
+  return chosen;
+}
+
 export function setLedgerView(v: LedgerView): void {
+  applyLedgerView(v);
+  persist({ ledger_view: v });
+}
+
+// applyLedgerView applies a view without sending it: the person's choice as the server has it.
+export function applyLedgerView(v: LedgerView | null): void {
   chosen = v;
   loaded = true;
   try {
-    window.localStorage.setItem(storageKey, v);
+    if (v) window.localStorage.setItem(storageKey, v);
+    else window.localStorage.removeItem(storageKey);
   } catch {
     // storage may be off; the choice still applies to this page
   }

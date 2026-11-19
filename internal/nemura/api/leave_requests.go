@@ -75,6 +75,27 @@ type LeaveRequest struct {
 	Reason    string `json:"decision_reason,omitempty" doc:"The approver's reason; a refusal always has one." example:"The release freezes that week."`
 }
 
+// CalendarEntry is one day of one person's month in the team calendar.
+type CalendarEntry struct {
+	Date  string `json:"date" format:"date" doc:"The day." example:"2026-05-04"`
+	Kind  string `json:"kind" enum:"holiday,away,leave,pending,sick" doc:"A public holiday as the person observes it; away with no type; approved leave with its type; a request waiting; sick leave (the person and the HR officer and administrator only)." example:"away"`
+	Label string `json:"label" doc:"The holiday's name, the leave type, or Away." example:"Away"`
+}
+
+// CalendarPerson is a person's month.
+type CalendarPerson struct {
+	PersonID string          `json:"person_id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Name     string          `json:"name" doc:"Their name." example:"Ben Lim"`
+	Weekdays []int           `json:"weekdays" doc:"The days they work, ISO: 1 Monday to 7 Sunday; none when no pattern is set." example:"[1,2,3,4,5]"`
+	Entries  []CalendarEntry `json:"entries" doc:"What falls on their days this month, by date."`
+}
+
+// LeaveCalendar is the team calendar of a month.
+type LeaveCalendar struct {
+	Month  string           `json:"month" doc:"The month, as 2026-05." example:"2026-05"`
+	People []CalendarPerson `json:"people" doc:"The people the caller may see: themselves, their reports, their team (as Away), and everyone for the people team."`
+}
+
 // LeaveRequests is leave requests behind the API: the API decides the scope, the service reads and writes in one transaction and audits.
 type LeaveRequests interface {
 	Preview(ctx context.Context, s Session, a LeaveAsk) (RequestPreview, error)
@@ -84,6 +105,8 @@ type LeaveRequests interface {
 	Decide(ctx context.Context, s Session, sc LeaveScope, id uuid.UUID, approve bool, reason string) error
 	Cancel(ctx context.Context, s Session, id uuid.UUID) error
 	Settle(ctx context.Context, s Session, on time.Time) (requests int, days string, err error)
+	// Calendar is the month of the people the caller may see; sickAll is whether they may see sick leave as such (the HR officer and the HR administrator).
+	Calendar(ctx context.Context, s Session, sc LeaveScope, sickAll bool, month time.Time) (LeaveCalendar, error)
 }
 
 func init() {
@@ -111,6 +134,7 @@ type appliedOutput struct {
 type requestListInput struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
 	State  string `query:"state" enum:"pending,approved,refused,cancelled" doc:"Only requests in this state; all when absent." example:"pending"`
+	Mine   bool   `query:"mine" doc:"Only the caller's own, whatever else their roles let them read." example:"true"`
 }
 
 type requestListOutput struct {
@@ -134,6 +158,13 @@ type decisionInput struct {
 		Reason   string `json:"reason,omitempty" maxLength:"500" doc:"Why; required to refuse." example:"The release freezes that week."`
 	}
 }
+
+type calendarInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	Month  string `query:"month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The month, as 2026-05; this month when absent." example:"2026-05"`
+}
+
+type calendarOutput struct{ Body LeaveCalendar }
 
 type settleInput struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
@@ -231,6 +262,9 @@ func (a *API) registerLeaveRequests() {
 		if err != nil {
 			return nil, err
 		}
+		if in.Mine {
+			sc = LeaveScope{}
+		}
 		list, err := a.d.Requests.List(ctx, s, sc, in.State)
 		if err != nil {
 			return nil, requestsError(err)
@@ -238,6 +272,35 @@ func (a *API) registerLeaveRequests() {
 		out := &requestListOutput{}
 		out.Body.Requests = list
 		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getLeaveCalendar", Method: "GET", Path: "/v1/leave-calendar", Tags: []string{"Leave"}, Summary: "The team leave calendar of a month",
+		Description: "Shows who is away in a month: the caller's own leave, their reports' with its type for a line manager, everyone's for the people team, and the others in their team (the same manager or department) as Away with no type. Sick leave is shown as such to the person and to the HR officer and the HR administrator only, and as Away to everyone else. Each person's public holidays are those they observe by their working pattern. It changes nothing.",
+		Errors:      []int{401, 409, 422},
+	}, func(ctx context.Context, in *calendarInput) (*calendarOutput, error) {
+		s, err := ask(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		month := a.d.Clock.Now()
+		if in.Month != "" {
+			if month, err = time.Parse("2006-01", in.Month); err != nil {
+				return nil, Err(CodeLeaveInvalid, "month is not a month: write it as 2026-05.")
+			}
+		}
+		sc, err := a.leaveScope(ctx, s)
+		if err != nil {
+			return nil, err
+		}
+		sickAll, err := a.sickTeam(ctx, s)
+		if err != nil {
+			return nil, err
+		}
+		cal, err := a.d.Requests.Calendar(ctx, s, sc, sickAll, month)
+		if err != nil {
+			return nil, requestsError(err)
+		}
+		return &calendarOutput{Body: cal}, nil
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "getLeaveRequest", Method: "GET", Path: "/v1/leave-requests/{id}", Tags: []string{"Leave"}, Summary: "A leave request",

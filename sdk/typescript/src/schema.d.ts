@@ -13953,6 +13953,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get your preferences
+         * @description The caller's own preferences in this organisation, the same on every device (FR-UX-23): the experience mode, the Plain or Accountant view, the theme, contrast, density and motion, the keyboard shortcuts and the number and date formats, with the mode they start in while they have not chosen (FR-UX-27). Presentation only: none of it changes what the caller may do. A caller who is not a person gets the defaults. Read-only; no side effects.
+         */
+        get: operations["getMyPreferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Save your preferences
+         * @description Saves the caller's own preferences (FR-UX-23): the choices it names are set, those in reset go back to their defaults, and the rest stay. Presentation only, and the only thing a mode switch writes. Side effects: the new state and its audit event. Needs If-Match with the preferences' etag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        patch: operations["setMyPreferences"];
+        trace?: never;
+    };
     "/v1/project-invoice-drafts": {
         parameters: {
             query?: never;
@@ -42160,6 +42184,88 @@ export interface components {
              */
             version: number;
         };
+        MyPreferences: {
+            /**
+             * @description Standard or more contrast, or the device's setting; absent: system.
+             * @example system
+             * @enum {string}
+             */
+            contrast?: "standard" | "more" | "system";
+            /**
+             * @description How dates are written on screen: 12 Oct 2026 (d_mmm_yyyy), 12/10/2026 (dd_mm_yyyy), 10/12/2026 (mm_dd_yyyy) or 2026-10-12 (iso), in the organisation's time zone (NFR-L10N-01); absent: d_mmm_yyyy.
+             * @example d_mmm_yyyy
+             * @enum {string}
+             */
+            date_format?: "d_mmm_yyyy" | "dd_mm_yyyy" | "mm_dd_yyyy" | "iso";
+            /**
+             * @description The mode in force while the caller has not chosen: from the organisation's starting mode for each of their roles, the Owner's winning when they hold it (FR-UX-27).
+             * @example basic
+             * @enum {string}
+             */
+            default_mode: "basic" | "expert";
+            /**
+             * @description The row height of lists and tables; absent: comfortable.
+             * @example comfortable
+             * @enum {string}
+             */
+            density?: "comfortable" | "compact";
+            /**
+             * @description The preferences' version, for If-Match.
+             * @example "9f1c2b7a"
+             */
+            etag: string;
+            /**
+             * @description Plain view or Accountant view where a screen offers both, in Expert mode (FR-UX-08); absent: plain.
+             * @example plain
+             * @enum {string}
+             */
+            ledger_view?: "plain" | "accountant";
+            /**
+             * @description The experience mode the caller chose; absent until they choose, when default_mode applies.
+             * @example expert
+             * @enum {string}
+             */
+            mode?: "basic" | "expert";
+            /**
+             * @description Whether transitions run; the organisation's switch and the device's reduced-motion setting always win; absent: on.
+             * @example on
+             * @enum {string}
+             */
+            motion?: "on" | "reduce";
+            /**
+             * @description How negative amounts are written on screen: −1,234.56 (minus) or (1,234.56) (parentheses); the sign or the brackets always show, so colour is never the only cue; absent: minus.
+             * @example minus
+             * @enum {string}
+             */
+            negative_format?: "minus" | "parentheses";
+            /**
+             * @description How amounts and counts are written on screen: 1,234.56 (comma_dot), 1.234,56 (dot_comma), 1 234,56 (space_comma) or 1 234.56 (space_dot). Amounts stay exact decimal strings everywhere else (NFR-L10N-01); absent: comma_dot.
+             * @example comma_dot
+             * @enum {string}
+             */
+            number_format?: "comma_dot" | "dot_comma" | "space_comma" | "space_dot";
+            /**
+             * Format: date-time
+             * @description When the caller last saved their preferences, if ever.
+             * @example 2026-11-20T09:30:00Z
+             */
+            set_at?: string;
+            /** @description The keys the caller chose for a shortcut, by its name on the shortcut sheet; a shortcut not listed keeps its usual keys (FR-UX-06). */
+            shortcut_keys?: {
+                [key: string]: string;
+            };
+            /**
+             * @description Whether the single-key shortcuts are on (WCAG 2.2 SC 2.1.4); absent: on.
+             * @example true
+             */
+            shortcuts_on?: boolean;
+            /**
+             * @description Light, dark or the device's setting (FR-UX-38); absent: system.
+             * @example system
+             * @enum {string}
+             */
+            theme?: "light" | "dark" | "system";
+        };
         MyRecoveryCodes: {
             /** @description Ten recovery codes, each usable once. They are shown once: print them or keep them in a password manager. With an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator (SEC-35). Your earlier unused codes no longer work. */
             recovery_codes: string[] | null;
@@ -46090,6 +46196,78 @@ export interface components {
             owed: components["schemas"]["PreIncorporationCostOwed"][];
             /** @description Every cost the founders paid, whatever the page or filter. */
             total: components["schemas"]["Money"];
+        };
+        PreferenceChange: {
+            /**
+             * @description Set the contrast.
+             * @example more
+             * @enum {string}
+             */
+            contrast?: "standard" | "more" | "system";
+            /**
+             * @description Set the date format.
+             * @example iso
+             * @enum {string}
+             */
+            date_format?: "d_mmm_yyyy" | "dd_mm_yyyy" | "mm_dd_yyyy" | "iso";
+            /**
+             * @description Set the density.
+             * @example compact
+             * @enum {string}
+             */
+            density?: "comfortable" | "compact";
+            /**
+             * @description Set the Plain or Accountant view.
+             * @example accountant
+             * @enum {string}
+             */
+            ledger_view?: "plain" | "accountant";
+            /**
+             * @description Set the experience mode.
+             * @example expert
+             * @enum {string}
+             */
+            mode?: "basic" | "expert";
+            /**
+             * @description Set the motion.
+             * @example reduce
+             * @enum {string}
+             */
+            motion?: "on" | "reduce";
+            /**
+             * @description Set how negative amounts are written.
+             * @example parentheses
+             * @enum {string}
+             */
+            negative_format?: "minus" | "parentheses";
+            /**
+             * @description Set the number format.
+             * @example dot_comma
+             * @enum {string}
+             */
+            number_format?: "comma_dot" | "dot_comma" | "space_comma" | "space_dot";
+            /**
+             * @description The choices to take back to their defaults: mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format or negative_format.
+             * @example [
+             *       "theme"
+             *     ]
+             */
+            reset?: string[] | null;
+            /** @description Replace the keys the caller chose, as a whole: 1 to 12 printable characters each, at most 64 shortcuts. Send an empty object to clear them. */
+            shortcut_keys?: {
+                [key: string]: string;
+            };
+            /**
+             * @description Turn the single-key shortcuts on or off.
+             * @example false
+             */
+            shortcuts_on?: boolean;
+            /**
+             * @description Set the theme.
+             * @example dark
+             * @enum {string}
+             */
+            theme?: "light" | "dark" | "system";
         };
         PrepareReconciliationInputBody: {
             /**
@@ -50475,6 +50653,8 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
              */
             organisation_id?: string;
+            /** @description Your own preferences in that organisation, with the mode you start in (FR-UX-23, FR-UX-27), so the web app draws the first page the way you chose; absent when you are a member of none. */
+            preferences?: components["schemas"]["MyPreferences"];
             /**
              * @description The sign-in provider of a browser session (FR-ADM-08); absent for a local dev token.
              * @example google
@@ -50499,6 +50679,11 @@ export interface components {
              * @example false
              */
             super_admin: boolean;
+            /**
+             * @description The IANA time zone the organisation's days are counted in, which the web app writes dates and times in (NFR-L10N-01); absent when you are a member of none.
+             * @example Asia/Singapore
+             */
+            time_zone?: string;
             /**
              * Format: uuid
              * @description Your Fyniq user; absent until you have one (a new installation before setup, or before you accept an invitation).
@@ -163715,6 +163900,253 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-05` Not a cost before the books start. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPreferences"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setMyPreferences: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreferenceChange"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPreferences"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PRF-01` Not a value for this preference; `PRF-02` Not valid shortcut keys; `PRF-03` Not a preference that can be reset; `PRF-04` Not a person with preferences of their own. */
             422: {
                 headers: {
                     [name: string]: unknown;

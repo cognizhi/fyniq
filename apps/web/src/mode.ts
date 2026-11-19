@@ -1,13 +1,14 @@
 import { useSyncExternalStore } from "react";
+import { persist } from "./preferenceSink";
 import type { Mode } from "./registry";
 
 // The experience mode (PRD-001 §7.8; FR-UX-23, FR-UX-24, FR-UX-27): Basic shows the essentials,
 // Expert adds the rest. It is presentation only: it never changes what a person may do, what the
 // API checks or the request an action sends.
 //
-// Provisional (20 Oct 2026): the choice is kept in this browser's storage, like the appearance,
-// until the preferences operation stores it on the server (p1-app-shell task 4.1). Until a person
-// chooses, their roles decide (FR-UX-27).
+// The choice is kept on the server as the person's own preference, the same on every device (FR-UX-23;
+// preferences.ts), and in this browser's storage so the first page is drawn before the session answers. Until a person
+// chooses, the organisation's starting mode for their roles decides (FR-UX-27), as the session reports it.
 
 // Roles that start in Expert, unless the person is also an Owner: the Owner wins (FR-UX-27).
 const expertRoles = new Set(["accountant", "controller", "tax_agent", "auditor", "payroll_administrator"]);
@@ -40,21 +41,44 @@ function current(): Mode | null {
   return chosen;
 }
 
+// setMode is the person's choice: it applies at once, and is kept on the server.
 export function setMode(m: Mode): void {
+  applyMode(m);
+  persist({ mode: m });
+}
+
+// applyMode applies a mode without sending it: the person's choice as the server has it.
+export function applyMode(m: Mode | null): void {
   chosen = m;
   loaded = true;
   try {
-    window.localStorage.setItem(storageKey, m);
+    if (m) window.localStorage.setItem(storageKey, m);
+    else window.localStorage.removeItem(storageKey);
   } catch {
     // storage may be off; the choice still applies to this page
   }
   for (const l of listeners) l();
 }
 
+// startingMode is the mode the organisation starts a person in while they have not chosen (the session's default_mode).
+let starting: Mode | null = null;
+
+export function setStartingMode(m: Mode | null): void {
+  if (m === starting) return;
+  starting = m;
+  for (const l of listeners) l();
+}
+
+// theChosenMode is the person's own choice, if they made one.
+export function theChosenMode(): Mode | null {
+  return current();
+}
+
 // forgetMode drops the stored choice (tests, and a person who wants the default back).
 export function forgetMode(): void {
   chosen = null;
   loaded = false;
+  starting = null;
   try {
     window.localStorage.removeItem(storageKey);
   } catch {
@@ -71,5 +95,6 @@ function subscribe(l: () => void): () => void {
 // useMode is the person's mode: their choice, or their roles' default.
 export function useMode(roles: readonly string[] | null | undefined): Mode {
   const c = useSyncExternalStore(subscribe, current);
-  return c ?? defaultMode(roles);
+  const s = useSyncExternalStore(subscribe, () => starting);
+  return c ?? s ?? defaultMode(roles);
 }

@@ -1,0 +1,3 @@
+rule,days,effective_from,effective_to,status,source
+salary_days_after_period,7,2026-01-01,,researched,mom-paying-salary
+overtime_days_after_period,14,2026-01-01,,researched,mom-paying-salary

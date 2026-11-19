@@ -85,3 +85,117 @@ func UnverifiedInUse(version string, used []pack.Ref, decided []Decision) []Find
 	}
 	return out
 }
+
+// GovClaim is a block of government-paid leave with whether any claim for it has been filed.
+type GovClaim struct {
+	Person   string
+	Scheme   string
+	Deadline time.Time
+	Filed    bool
+}
+
+// GovClaims is N.1 #10 (NM-LV-07): a reimbursement claim not filed 30 days before its deadline is ⏰, and once the deadline has passed the message says so.
+func GovClaims(claims []GovClaim, on time.Time) []Finding {
+	var out []Finding
+	for _, c := range claims {
+		if c.Filed {
+			continue
+		}
+		days := int(c.Deadline.Sub(on).Hours() / 24)
+		switch {
+		case days < 0:
+			out = append(out, Finding{10, "Leave", Due, c.Person, fmt.Sprintf("The reimbursement claim for %s leave had to be filed by %s and none is recorded: file it on the Government-Paid Leave portal if it is still open, or record why it was not.", c.Scheme, c.Deadline.Format(time.DateOnly))})
+		case days <= 30:
+			out = append(out, Finding{10, "Leave", Due, c.Person, fmt.Sprintf("The reimbursement claim for %s leave must be filed by %s, in %d days: file it on the Government-Paid Leave portal and record it here.", c.Scheme, c.Deadline.Format(time.DateOnly), days)})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
+	return out
+}
+
+// Waiting is a leave request that has not been decided.
+type Waiting struct {
+	Person    string
+	Requested time.Time
+}
+
+// workingDaysSince counts the working days after a day up to and including another, leaving out weekends and the public holidays of the pack.
+func workingDaysSince(v pack.Version, from, to time.Time) int {
+	n := 0
+	for d := from.AddDate(0, 0, 1); !d.After(to); d = d.AddDate(0, 0, 1) {
+		if d.Weekday() == time.Saturday || d.Weekday() == time.Sunday {
+			continue
+		}
+		if _, holiday := pack.PublicHoliday(v, d); holiday {
+			continue
+		}
+		n++
+	}
+	return n
+}
+
+// Negative is a balance below zero in a leave type that does not allow it.
+type Negative struct {
+	Person, Type string
+	Year         int
+	Left         string
+}
+
+// LeaveWaiting is N.1 #4 (NM-LV-02, NM-LV-04): a balance below zero for a type that does not allow it, or a leave request that has waited more than 3 working days
+// for its approver, is ⚠.
+func LeaveWaiting(v pack.Version, waiting []Waiting, negative []Negative, on time.Time) []Finding {
+	var out []Finding
+	for _, n := range negative {
+		out = append(out, Finding{4, "Leave", Warn, n.Person, fmt.Sprintf("The %s balance for %d is %s days, below zero, and that leave type does not allow it: correct the ledger with a correcting entry.", n.Type, n.Year, n.Left)})
+	}
+	for _, w := range waiting {
+		if days := workingDaysSince(v, w.Requested, on); days > 3 {
+			out = append(out, Finding{4, "Leave", Warn, w.Person, fmt.Sprintf("A leave request has waited %d working days for its approver: ask the person's manager to decide it, or decide it as the people team.", days)})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
+	return out
+}
+
+// FlexRequest is a flexible work request that has not been answered in writing.
+type FlexRequest struct {
+	Person string
+	Due    time.Time
+}
+
+// FlexReplies is N.1 #5 (NM-LV-10): a flexible work request with no written reply is ⏰ from 14 days before its two months are up, and says so once they are.
+func FlexReplies(waiting []FlexRequest, on time.Time) []Finding {
+	var out []Finding
+	for _, w := range waiting {
+		days := int(w.Due.Sub(on).Hours() / 24)
+		switch {
+		case days < 0:
+			out = append(out, Finding{5, "Requests", Due, w.Person, fmt.Sprintf("A flexible work request had to be answered in writing by %s and has no reply: reply now, with the business grounds if you refuse.", w.Due.Format(time.DateOnly))})
+		case days <= 14:
+			out = append(out, Finding{5, "Requests", Due, w.Person, fmt.Sprintf("A flexible work request must be answered in writing by %s, in %d days: reply, with the business grounds if you refuse.", w.Due.Format(time.DateOnly), days)})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
+	return out
+}
+
+// OvertimeMonth is a person's overtime recorded in a month, in hundredths of an hour.
+type OvertimeMonth struct {
+	Person string
+	Month  time.Time
+	Hours  int
+}
+
+// OvertimeOverLimit is N.1 #16 (NM-TIM-04): a Part IV employee's overtime in a month beyond the pack's monthly limit is ⚠. The hours stay recorded and are paid; HR acts on
+// them with an exemption or a change of pattern.
+func OvertimeOverLimit(months []OvertimeMonth, limitHours int) []Finding {
+	var out []Finding
+	for _, m := range months {
+		if m.Hours > limitHours*100 {
+			out = append(out, Finding{16, "Time", Warn, m.Person, fmt.Sprintf("Overtime in %s is %d.%02d hours, beyond the monthly limit of %d: the hours stay recorded and are paid, so apply for an overtime exemption or change the person's working pattern.",
+				m.Month.Format("January 2006"), m.Hours/100, m.Hours%100, limitHours)})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
+	return out
+}

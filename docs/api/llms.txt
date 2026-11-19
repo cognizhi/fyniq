@@ -860,6 +860,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/pre-incorporation-costs/{cost_id}/evidence` (addPreIncorporationCostEvidence): Attach a receipt to a cost paid before the books start
 - `GET /v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}` (getPreIncorporationCostEvidence): Get a cost's receipt file
 - `DELETE /v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}` (removePreIncorporationCostEvidence): Remove a receipt from a cost that needs a decision
+- `GET /v1/preferences` (getMyPreferences): Get your preferences
+- `PATCH /v1/preferences` (setMyPreferences): Save your preferences
 - `POST /v1/project-invoice-drafts` (draftProjectInvoice): Draft an invoice from a project's unbilled work
 - `POST /v1/project-milestones` (createProjectMilestone): Add a milestone or a retainer period
 - `POST /v1/project-milestones/{milestone_id}/accept` (acceptProjectMilestone): Record the customer's acceptance of a milestone

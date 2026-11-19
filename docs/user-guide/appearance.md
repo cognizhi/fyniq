@@ -16,7 +16,7 @@ things move on screen. The choices change only how Fyniq looks for you, never yo
 
 ## Before you start
 
-- For now your choices are kept in this browser. On another computer or browser, choose them again.
+- Fyniq keeps your choices with your profile, so they are the same on every device you sign in on.
 
 ## Steps
 
@@ -36,7 +36,7 @@ Choose **High contrast** for stronger text and borders, **Standard** for the usu
 ### Density
 
 Choose **Comfortable** (rows 40 px high) or **Compact** (rows 32 px high, to see more at once).
-Density is an Expert choice: Basic mode always uses Comfortable.
+Density is an Expert choice: Basic mode always uses Comfortable, and Expert mode starts with Compact until you choose.
 
 ### Motion
 

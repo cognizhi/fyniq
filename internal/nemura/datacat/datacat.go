@@ -66,11 +66,25 @@ var Categories = []Category{
 		Columns:    []string{"person_dependant.birth_date"},
 	},
 	{
-		Key: "leave-records", What: "A person's working pattern, their leave ledger (each grant, use, reservation and correction by type and year, with its note) and their leave requests, with the person's note and the approver's reason",
+		Key: "leave-records", What: "A person's working pattern, their leave ledger (each grant, use, reservation and correction by type and year, with its note) their leave requests, with the person's note and the approver's reason, and their government-paid leave with the claims filed for it and what the portal answered, their hours worked on special days and what leave gives their pay",
 		Purpose:    "To keep an exact balance of leave, to show how it was worked out, and to meet the employer's record-keeping duties for leave (Employment Act)",
 		Capability: "Leave records (own and reports)",
 		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "MOM: employment records, leave included, of a former employee are kept for 1 year after they leave"},
-		Columns:    []string{"leave_ledger.note", "leave_request.note", "leave_request.decision_reason"},
+		Columns:    []string{"leave_ledger.note", "leave_request.note", "leave_request.decision_reason", "gov_claim_event.note", "overtime_entry.note", "overtime_entry.decision_reason", "pay_input.note"},
+	},
+	{
+		Key: "sick-leave", What: "A person's notice that they were sick: the days, whether outpatient or hospitalisation, their note, and a pointer to the medical certificate (a restricted document) with who issued it and who verified it",
+		Purpose:    "To record sick leave against the statutory ceiling, to check the certificate (Employment Act) and to pay what is due",
+		Capability: "Medical certificates and notes",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "MOM: employment records, sick leave included, of a former employee are kept for 1 year after they leave"},
+		Columns:    []string{"sick_notification.note", "sick_notification.issuer"},
+	},
+	{
+		Key: "flexible-work", What: "A person's formal request for a flexible work arrangement, their reason, and the employer's written reply with the grounds for a refusal",
+		Purpose:    "To answer a request in writing within the time the Tripartite Guidelines give, and to keep the written reply the guidelines ask the employer to keep",
+		Capability: "Leave requests",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: the written reply is evidence the employer followed the guidelines"},
+		Columns:    []string{"flex_request.reason", "flex_request.outcome", "flex_request.written_reply"},
 	},
 	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
