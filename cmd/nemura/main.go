@@ -6,6 +6,7 @@
 //	NEMURA_ROLE=api nemura          the REST API (this release: the HTTP shell and its database check)
 //	NEMURA_ROLE=migrate nemura up   apply Nemura's migrations under nemura_migrator, then exit
 //	NEMURA_ROLE=migrate nemura status   list the migrations and whether each is applied
+//	NEMURA_ROLE=migrate nemura setup-code   create the one-time first-run setup code and print it, once
 //	nemura --version                what the build is
 //	nemura healthcheck              probe the running role's /readyz (a distroless image has no shell or curl)
 //
@@ -26,7 +27,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/httpserver"
-	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/identity"
 	"github.com/cognizhi/fyniq/internal/nemura/outbox"
 	"github.com/cognizhi/fyniq/internal/nemura/role"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -103,8 +104,7 @@ func routes(r role.Role, s *httpserver.Server, deps app.Deps, getenv func(string
 	if r == role.Worker {
 		return workerRoutes(s, deps, getenv, store)
 	}
-	api.New(s) // the public API under /v1 (NM-ARC-03)
-	return nil
+	return apiRoutes(s, deps, getenv, store)
 }
 
 // workerRoutes is the worker class (ADR-T7): POST /tasks delivers one outbox row's work, POST /tick sweeps the rows that never
@@ -124,8 +124,8 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 
 // migrate is the migrate role: `up` applies every pending migration, `status` lists them.
 func migrate(ctx context.Context, getenv func(string) string, args []string) error {
-	if len(args) != 1 || (args[0] != "up" && args[0] != "status") {
-		return fmt.Errorf("usage: NEMURA_ROLE=migrate nemura up | nemura status")
+	if len(args) != 1 || (args[0] != "up" && args[0] != "status" && args[0] != "setup-code") {
+		return fmt.Errorf("usage: NEMURA_ROLE=migrate nemura up | nemura status | nemura setup-code")
 	}
 	url, err := databaseURL(role.Migrate, getenv)
 	if err != nil {
@@ -133,6 +133,16 @@ func migrate(ctx context.Context, getenv func(string) string, args []string) err
 	}
 	if args[0] == "status" {
 		return nemura.MigrationStatus(ctx, url, os.Stdout)
+	}
+	if args[0] == "setup-code" {
+		// A new code replaces an unused one; once setup is done the database refuses (NM100).
+		display, hash := identity.NewSetupCode()
+		if err := nemura.SetSetupCode(ctx, url, hash); err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stderr, "The one-time setup code (it is shown once; keep it until setup is done):")
+		fmt.Println(display)
+		return nil
 	}
 	if before != nil {
 		if err := before(ctx); err != nil {

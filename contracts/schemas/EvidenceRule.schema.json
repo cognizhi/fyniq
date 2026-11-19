@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "area": {
+      "description": "The group of activities it belongs to.",
+      "enum": [
+        "purchases",
+        "journals",
+        "filings",
+        "equity",
+        "governance"
+      ],
+      "examples": [
+        "purchases"
+      ],
+      "type": "string"
+    },
+    "built": {
+      "description": "Whether its module exists, so the rule is enforced now; otherwise it starts to apply with its module.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "key": {
+      "description": "The activity.",
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "The activity in a sentence.",
+      "examples": [
+        "Bill"
+      ],
+      "type": "string"
+    },
+    "level": {
+      "description": "How its evidence counts today: the organisation's setting where there is one, else the table's default.",
+      "enum": [
+        "required",
+        "recommended",
+        "optional"
+      ],
+      "examples": [
+        "required"
+      ],
+      "type": "string"
+    },
+    "recommended": {
+      "description": "What is recommended; a missing item is a warning.",
+      "items": {
+        "$ref": "EvidenceRuleItem.schema.json"
+      },
+      "type": "array"
+    },
+    "required": {
+      "description": "What it needs; a missing item blocks completing it while its level is required.",
+      "items": {
+        "$ref": "EvidenceRuleItem.schema.json"
+      },
+      "type": "array"
+    },
+    "setting": {
+      "description": "The organisation setting that holds its level (FR-ORG-08), changed under dual control; none when its module fixes it.",
+      "examples": [
+        "evidence.bill"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "area",
+    "label",
+    "level",
+    "built",
+    "required",
+    "recommended"
+  ],
+  "title": "EvidenceRule",
+  "type": "object"
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry_id": {
+      "description": "The time entry.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e71"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "minutes": {
+      "description": "Net minutes; a reversing entry is negative.",
+      "examples": [
+        150
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "person_name": {
+      "description": "Their name.",
+      "examples": [
+        "Priya Nair"
+      ],
+      "type": "string"
+    },
+    "rate": {
+      "description": "The billing rate an hour on that day, in the project's currency; absent when no billing rate covers the day, and then the entry cannot be invoiced.",
+      "examples": [
+        "150.00"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "value": {
+      "description": "RND-TIME of the minutes at the rate, per entry.",
+      "examples": [
+        "375.00"
+      ],
+      "type": "string"
+    },
+    "work_date": {
+      "description": "The day worked.",
+      "examples": [
+        "2026-10-13"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "entry_id",
+    "user_id",
+    "person_name",
+    "work_date",
+    "minutes"
+  ],
+  "title": "UnbilledTime",
+  "type": "object"
+}

@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billing_method": {
+      "description": "How the project bills: only a time-and-materials project bills its time; a fixed fee bills by milestone, a retainer draws time down, and an internal project bills nothing.",
+      "enum": [
+        "time_and_materials",
+        "fixed_fee",
+        "retainer",
+        "internal"
+      ],
+      "examples": [
+        "time_and_materials"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "The project's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "expense_value": {
+      "$ref": "Money.schema.json",
+      "description": "The expenses' billable total."
+    },
+    "expenses": {
+      "description": "Posted billable costs in the project's currency, at cost plus markup.",
+      "items": {
+        "$ref": "UnbilledExpense.schema.json"
+      },
+      "type": "array"
+    },
+    "expenses_in_other_currencies": {
+      "description": "Billable costs in another currency: they are not on the project's invoice.",
+      "items": {
+        "$ref": "UnbilledExpense.schema.json"
+      },
+      "type": "array"
+    },
+    "has_customer": {
+      "description": "false when the project has no customer, so no invoice can be drafted.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "project_id": {
+      "description": "The project.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "time": {
+      "description": "Priced approved billable time not yet on a posted invoice, by day.",
+      "items": {
+        "$ref": "UnbilledTime.schema.json"
+      },
+      "type": "array"
+    },
+    "time_value": {
+      "$ref": "Money.schema.json",
+      "description": "The priced time's value."
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "What an invoice of it all comes to before GST."
+    },
+    "unpriced_time": {
+      "description": "Approved billable time that no billing rate covers: enter a rate from the day (setBillingRate) to bill it.",
+      "items": {
+        "$ref": "UnbilledTime.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "project_id",
+    "billing_method",
+    "currency",
+    "has_customer",
+    "time",
+    "unpriced_time",
+    "expenses",
+    "expenses_in_other_currencies",
+    "time_value",
+    "expense_value",
+    "total"
+  ],
+  "title": "ProjectUnbilled",
+  "type": "object"
+}

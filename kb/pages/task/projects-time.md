@@ -4,7 +4,7 @@ type: task
 title: Log your time and approve your team's
 summary: How to log time in the week grid or with the timer, send the week, who approves it, and how to correct approved time
 sources:
-  - docs/user-guide/projects-time.md sha256:2953342f1500fe43eca4045f25d90218d9d489a952789109eb8fc2861700c809
+  - docs/user-guide/projects-time.md sha256:66e01c0eb8b235bae5b7e386d8ab36700d68dcce7f905eb28b65d2549dae71bf
 data_class: general
 taint: trusted
 status: draft
@@ -50,5 +50,11 @@ aliases:
 
 - Approved time never changes: **Correct it** adds a reversing entry with the opposite time, the right time is entered as a new entry,
   and the week is sent again. (src: docs/user-guide/projects-time.md#correct-approved-time)
+
+## Days with no time
+
+- A weekday up to today with no time shows as missing, public holidays excluded. On Friday at 4 pm Singapore time each person on an active project
+  gets one notice naming their own missing weekdays for the week; nobody sees whose time is missing through it, and nothing is sent while Projects
+  and time are off. (src: docs/user-guide/projects-time.md#days-with-no-time)
 
 Related: [[projects.projects]], [[projects.rates]].

@@ -69,3 +69,56 @@ func TestTheProjectChecksWarnOfBudgetsWaitingWeeksAndClosedWeeks(t *testing.T) {
 		t.Errorf("over the hours budget: %s", r.Raw)
 	}
 }
+
+// C.2 #40 (FR-PRJ-10): approved time on a time-and-materials project that is on no posted invoice 30 days after the end of its month is
+// listed with the project; invoicing it clears the check, and a month that ended less than 30 days ago is not late.
+// req: FR-PRJ-10
+// req: FR-CTL-01
+func TestTheCheckForApprovedTimeNotInvoiced(t *testing.T) {
+	e := newEnv(t)
+	e.projectsOn()
+	acc := e.as(authz.Accountant)
+	wei := e.joinedIn(e.books.Org, "Wei Inv", "approver")
+	priya := e.joinedIn(e.books.Org, "Priya Inv", "employee")
+	una := e.joinedIn(e.books.Org, "Una Inv", "controller")
+	p := e.call(http.MethodPost, "/v1/projects", acc, map[string]any{"code": "INV-1", "name": "Invoiced late", "currency": "SGD", "billing_method": "time_and_materials", "customer_id": e.customer(),
+		"people": []map[string]any{{"user_id": wei.String(), "manager": true}, {"user_id": priya.String()}}})
+	pid := p.str("id")
+	task := e.call(http.MethodPost, "/v1/project-tasks", acc, map[string]any{"project_id": pid, "name": "Work"}).str("id")
+	e.call(http.MethodPost, "/v1/billing-rates", acc, map[string]any{"project_id": pid, "effective_from": "2026-01-01", "hourly_rate": "20"}, "Idempotency-Key", uuid.NewString())
+	result := func() response {
+		e.runCatalogue()
+		return e.call(http.MethodGet, "/v1/checks/projects.time-not-invoiced", e.as(authz.Controller), nil)
+	}
+	if r := result(); r.str("status") != "ok" {
+		t.Fatalf("nothing approved yet: %s", r.Raw)
+	}
+	tok := e.person(priya, authz.Employee)
+	// 3 August 2026 week: its month ended 31 August, 30 days later is 30 September, before today (15 October 2026).
+	if r := e.saveWeek(tok, "2026-08-03", map[string]any{"project_id": pid, "task_id": task, "work_date": "2026-08-04", "minutes": 120}); r.Status != 200 {
+		t.Fatalf("saving the week: %d %s", r.Status, r.Raw)
+	}
+	_, tag := e.weekOf(tok, "2026-08-03")
+	s := e.call(http.MethodPost, "/v1/timesheet/2026-08-03/submit", tok, map[string]any{}, "If-Match", tag, "Idempotency-Key", uuid.NewString()).Body["submissions"].([]any)[0].(map[string]any)
+	ctl := e.person(una, authz.Controller)
+	etag := e.call(http.MethodGet, "/v1/timesheet-submissions/"+s["id"].(string), ctl, nil).Header.Get("ETag")
+	if a := e.call(http.MethodPost, "/v1/timesheet-submissions/"+s["id"].(string)+"/approve", ctl, map[string]any{}, "If-Match", etag, "Idempotency-Key", uuid.NewString()); a.Status != 200 {
+		t.Fatalf("approving: %d %s", a.Status, a.Raw)
+	}
+	if r := result(); r.str("status") != "warning" || !strings.Contains(r.Raw, "1 approved entry not invoiced, the oldest from 2026-08-04") {
+		t.Errorf("late time: %s", r.Raw)
+	}
+	d := e.call(http.MethodPost, "/v1/project-invoice-drafts", acc, map[string]any{"project_id": pid, "revenue_account_id": e.books.Sales.ID.String()}, "Idempotency-Key", uuid.NewString())
+	if d.Status != 201 {
+		t.Fatalf("drafting: %d %s", d.Status, d.Raw)
+	}
+	if r := result(); r.str("status") != "warning" {
+		t.Errorf("a draft invoice bills nothing: %s", r.Raw)
+	}
+	if i := e.call(http.MethodPost, "/v1/invoices/"+d.str("id")+"/issue", acc, nil, "If-Match", d.Header.Get("ETag")); i.Status != 200 {
+		t.Fatalf("issuing: %d %s", i.Status, i.Raw)
+	}
+	if r := result(); r.str("status") != "ok" {
+		t.Errorf("invoiced time clears the check: %s", r.Raw)
+	}
+}

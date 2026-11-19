@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/projectbilling"
 	"github.com/cognizhi/fyniq/internal/domain/projectrate"
 	"github.com/cognizhi/fyniq/internal/domain/projectreport"
 	"github.com/cognizhi/fyniq/internal/domain/timesheet"
@@ -39,6 +40,10 @@ var projectChecks = []Definition{
 		Explain: "A week submitted more than 7 days ago that its manager has not decided, or one returned more than 7 days ago that its person has not fixed " +
 			"and sent again, keeps time out of the project's figures and out of invoices.",
 		Rules: "FR-PRJ-05, FR-PRJ-07", Owner: "controller", View: viewTimesheets, Module: "features.projects", Triggers: onTime, Run: timesheetProblems},
+	{Key: "projects.time-not-invoiced", Ref: "C.2 #40", Area: "Projects", Worst: Warning, Title: "Approved time is invoiced within 30 days of its month",
+		Explain: "Approved, billable time on a time-and-materials project that is still on no posted invoice 30 days after the end of the month it was " +
+			"worked in is listed with the project, so work is not left unbilled. Draft the invoice from the project's unbilled work, or enter the billing rate it lacks.",
+		Rules: "FR-PRJ-10", Owner: "controller", View: viewTimesheets, Module: "features.projects", Triggers: onTime, Run: timeNotInvoiced},
 	{Key: "projects.closed-weeks", Ref: "C.2 #41", Area: "Projects", Worst: Warning, Title: "Every closed week has approved time",
 		Explain: "For each of the last four weeks that ended, a person on a project who entered no time, or whose time is not approved yet, is listed, so " +
 			"utilisation, profitability and invoices are not worked out from half a month of time.",
@@ -200,4 +205,45 @@ func closedWeeksNeedApprovedTime(ctx context.Context, u storage.UnitOfWork, e *E
 		return Fine("Every closed week of the last four has approved time"), nil
 	}
 	return Found(Warning, items, fmt.Sprintf("%d closed week(s) with missing or unapproved time", len(items)), "Enter the missing time, then send the week; managers approve what is waiting"), nil
+}
+
+// invoiceWithinDays is how long after the end of its month approved time may wait to be invoiced (C.2 #40).
+const invoiceWithinDays = 30
+
+// timeNotInvoiced lists each time-and-materials project with approved billable time not on a posted invoice 30 days after the end of the month
+// it was worked in (C.2 #40, FR-PRJ-10).
+func timeNotInvoiced(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	ps, err := u.Projects().List(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	var items []Item
+	for _, p := range ps {
+		if !p.Configured || p.BillingMethod != storage.BillingTimeAndMaterials {
+			continue
+		}
+		un, err := projectbilling.Of(ctx, u, p, e.Base)
+		if err != nil {
+			return Result{}, err
+		}
+		late, oldest := 0, time.Time{}
+		for _, t := range append(slices.Clone(un.Time), un.Unpriced...) {
+			end := time.Date(t.Date.Year(), t.Date.Month()+1, 0, 0, 0, 0, 0, time.UTC)
+			if end.AddDate(0, 0, invoiceWithinDays).Before(e.Today) {
+				late++
+				if oldest.IsZero() || t.Date.Before(oldest) {
+					oldest = t.Date
+				}
+			}
+		}
+		if late > 0 {
+			items = append(items, Item{Kind: "document", ID: p.ID.String(), Label: p.Code + " " + p.Name,
+				Detail: fmt.Sprintf("%d approved entr%s not invoiced, the oldest from %s", late, map[bool]string{true: "y", false: "ies"}[late == 1], oldest.Format(time.DateOnly))})
+		}
+	}
+	if len(items) == 0 {
+		return Fine("No approved time waits more than 30 days after its month to be invoiced"), nil
+	}
+	return Found(Warning, items, fmt.Sprintf("%d project(s) with approved time left uninvoiced", len(items)),
+		"Open the project's unbilled work and draft its invoice, or enter the billing rate the time lacks"), nil
 }
