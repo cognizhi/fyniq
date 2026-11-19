@@ -783,6 +783,30 @@
     "status": "draft"
   },
   {
+    "file": "projects-billing.md",
+    "key": "projects.billing",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "ar_specialist",
+      "approver"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "projects-costs.md",
+    "key": "projects.costs",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "approver",
+      "employee"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "projects-projects.md",
     "key": "projects.projects",
     "roles": [
@@ -794,6 +818,44 @@
       "auditor",
       "tax_agent",
       "employee"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "projects-rates.md",
+    "key": "projects.rates",
+    "roles": [
+      "owner",
+      "payroll_administrator",
+      "accountant",
+      "controller",
+      "approver",
+      "auditor"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "projects-reports.md",
+    "key": "projects.reports",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "approver",
+      "auditor",
+      "ar_specialist"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "projects-time.md",
+    "key": "projects.time",
+    "roles": [
+      "employee",
+      "approver",
+      "controller",
+      "accountant",
+      "owner"
     ],
     "status": "draft"
   },
