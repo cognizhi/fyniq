@@ -120,7 +120,7 @@
   `profile-and-security.md`'s Keyboard section. Tests `shell/keyboard.test.tsx`, `categorise.test.tsx`. **Left:** the
   shortcut stored server-side with the mode (task 4.1); the mode-toggle shortcut (FR-UX-23).)
 
-  (20 Nov 2026, PRD-001 rev 0.321: the shortcut sheet's on switch and each person's keys are kept on the server with
+  (20 Nov 2026, PRD-001 rev 0.326: the shortcut sheet's on switch and each person's keys are kept on the server with
   the other preferences, and the mode-toggle shortcut (Alt+Shift+M, FR-UX-23) is built. **Left:** side peeks and the
   split view, the Trace panel from Home's tiles and the other reports.)
 ## 3. Grids, records and correctness
@@ -140,7 +140,7 @@
   same figures, and under Settings › Profile and security. Guide `banking.md`, compiled. Tests
   `LedgerViewToggle.test.tsx`, `categorise.test.tsx`. **Left:** the view on the grids still to come (journal lines,
   budgets, opening balances) as each is built.)
-  (20 Nov 2026, PRD-001 rev 0.321: the Plain or Accountant view is kept on the server with the other preferences.
+  (20 Nov 2026, PRD-001 rev 0.326: the Plain or Accountant view is kept on the server with the other preferences.
   **Left:** the sample company to explore, the checklist's later steps, the view on the grids still to come.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
   (17 Nov 2026, in part, for the launch gate: no hard delete (FR-UX-14). `TestEachRoleHoldsExactlyItsGrants` refuses a
@@ -199,7 +199,7 @@
   a field is Expert's in Basic now even with a value, unless its account or category requires it or it carries an
   error to fix. Guides `invoices.md`, `bills.md`, `claims-my-claims.md`, compiled. Tests `AdvancedDetails.test.tsx`,
   `invoices.test.tsx`.)
-  (20 Nov 2026, PRD-001 rev 0.321, the server half: `user_preference` (migration 000700; append-only, audited, under
+  (20 Nov 2026, PRD-001 rev 0.326, the server half: `user_preference` (migration 000700; append-only, audited, under
   row-level security and with the members' foreign key) keeps each person's mode, Plain or Accountant view, theme,
   contrast, density, motion, shortcuts' switch and keys, number format, date format and way of writing negatives, the
   same on every device. `GET` and `PATCH /v1/preferences` (`getMyPreferences`, `setMyPreferences`; If-Match,
@@ -291,7 +291,7 @@
   **Left:** the sticky first column's scrolling comes with the grid (3.1).)
 - [ ] 5.3 Externalised strings with per-user formats and the organisation's time zone, and the page-load, interaction and bundle budgets measured in CI. Tests `// req: NFR-L10N-01`, `// req: NFR-PERF-UI-01` and `// req: NFR-PERF-UI-03`
 
-  (20 Nov 2026, PRD-001 rev 0.321, NFR-L10N-01: each person's number format (1,234.56, 1.234,56, 1 234,56, 1 234.56), date
+  (20 Nov 2026, PRD-001 rev 0.326, NFR-L10N-01: each person's number format (1,234.56, 1.234,56, 1 234,56, 1 234.56), date
   format (12 Oct 2026, 12/10/2026, 10/12/2026, 2026-10-12) and way of writing negatives are chosen in Settings › Profile
   and security and kept on the server; every date and time is written in the organisation's time zone, which the
   session carries (`format/locale.ts`: only characters move, and a calendar day with no time is never moved by a zone);
