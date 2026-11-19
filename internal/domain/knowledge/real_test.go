@@ -2,6 +2,7 @@ package knowledge_test
 
 import (
 	"maps"
+	"os"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -23,6 +24,10 @@ func TestTheShippedKnowledgeBaseLintsClean(t *testing.T) {
 		t.Fatalf("read %d pages and %d guide pages: the release ships 90 and 77", len(c.Pages), len(c.Guide))
 	}
 	if err := c.LoadPacks(packs.FS); err != nil {
+		t.Fatal(err)
+	}
+	// Nemura's own packs sit in Nemura's lane (internal/nemura/packs), which nothing outside it may import: read the directory.
+	if err := c.LoadPacks(os.DirFS("../../nemura/packs")); err != nil {
 		t.Fatal(err)
 	}
 	for _, f := range knowledge.Lint(c) {
@@ -91,5 +96,26 @@ func TestAPageIsFlaggedWhenANewerPackVersionExists(t *testing.T) {
 	delete(gone, "sg-deadlines/2026.1/pack.toml")
 	if got := rules(gone); got["kb/pages/concept/compliance-calendar.md"] != knowledge.RulePackGone {
 		t.Errorf("a pack version that is not there: %v", got)
+	}
+}
+
+// Packs are read from more than one directory (Fyniq's and Nemura's), their versions add up, and a page of either app is flagged when a newer version of
+// the pack it declares appears (kb-schema@2; AI-53).
+func TestPacksOfTwoDirectoriesAddUp(t *testing.T) {
+	var c knowledge.Corpus
+	for _, fsys := range []fstest.MapFS{
+		{"sg-gst/2026.1/pack.toml": {Data: []byte("x")}, "sg-gst/2026.2/pack.toml": {Data: []byte("x")}},
+		{"sg-people/2026.1/pack.toml": {Data: []byte("x")}, "sg-people/2026.2/pack.toml": {Data: []byte("x")}},
+		{"sg-gst/2026.2/pack.toml": {Data: []byte("x")}}, // a version seen twice is one version
+	} {
+		if err := c.LoadPacks(fsys); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(c.PackVersions["sg-gst"]) != 2 || len(c.PackVersions["sg-people"]) != 2 {
+		t.Errorf("versions: %v", c.PackVersions)
+	}
+	if err := c.LoadPacks(fstest.MapFS{}); err != nil || len(c.PackVersions["sg-people"]) != 2 {
+		t.Errorf("an empty directory takes nothing away: %v %v", err, c.PackVersions)
 	}
 }

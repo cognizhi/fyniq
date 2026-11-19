@@ -55,7 +55,7 @@ packs:                                    # kb-schema@2: the statutory pack vers
   - sg-gst@2026.3
 ```
 
-`packs` lists each statutory pack (`packs/<pack>/<year>.<n>/`) a page states a value from: a rate, a threshold, a
+`packs` lists each statutory pack (`packs/<pack>/<year>.<n>/`, or Nemura's own in `internal/nemura/packs/<pack>/<year>.<n>/`) a page states a value from: a rate, a threshold, a
 deadline or a rule with effective dates. Each line is `<pack>@<year>.<n>` and names a version that exists. The lint
 (`make kb-lint`, `make kb-stale`) flags the page as out of date when a newer version of the pack exists (`KB-PACK-STALE`,
 AI-53): recompile it from its sources and the new pack, then set `packs` to the new version. A page that states no

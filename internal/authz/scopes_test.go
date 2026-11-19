@@ -7,6 +7,7 @@ import "testing"
 // and nothing approves or releases. Rows outside every area are never reached, whatever the scopes.
 // req: FR-INT-02
 // req: AI-34
+// req: access/roles-and-segregation Integration principal
 // asvs: V8.2.1, V8.2.2
 func TestScopesNarrowAClientToWholeAreas(t *testing.T) {
 	read, write := []string{"fyniq.read.accounting"}, []string{"fyniq.write.sales"}

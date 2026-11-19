@@ -249,6 +249,11 @@
   75th percentile Largest Contentful Paint of eight cold loads of Home, the invoices, the Inbox and Settings under 1.5 s,
   the slowest interaction's next paint under 200 ms (the mode switch, the palette, the Help menu), and a change of route
   whose data is cached under 300 ms; it logs what it measured (locally, at half the CPU: 1.3 s, 48 ms, 35 ms). **Left:**
-  NFR-L10N-01's externalised strings and per-user formats.)
+  NFR-L10N-01's externalised strings and per-user formats.
+  (20 Nov 2026, the bundle budget measured (NFR-PERF-UI-03): `e2e/bundle.spec.ts` gzips what index.html loads before the
+  first paint: 333 KB, 83 KB over the PRD's 250 KB (the 172 KB of 20 Oct has grown with the screens): index 96, framework
+  147 (react-dom, Base UI, TanStack), the help catalogue 34, icons 22, the registry 17. The test holds a ceiling of 340 KB
+  so it cannot grow, and checks the command palette's library stays out of the initial load. **Left:** lower it to 250 KB
+  by loading the help catalogue on demand, Trace, Recovery and the report tiles' code lazily, then tag NFR-PERF-UI-03.)
 - [ ] 6.1 Build the 18 shell screens as designed. Each has help keys, a `docs/user-guide/` page compiled into `kb/`, and a tour step where it is on the first-run path
 - [ ] 6.2 Finish with `make check`, `make test` and `make test-e2e`

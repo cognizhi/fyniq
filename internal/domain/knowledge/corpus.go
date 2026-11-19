@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -49,10 +50,14 @@ func (v PackVersion) less(w PackVersion) bool {
 
 var packVersionDir = regexp.MustCompile(`^(\d{4})\.(\d+)$`)
 
-// LoadPacks reads which versions of each statutory pack exist, from the packs directory (packs/<pack>/<year>.<n>/). A
-// directory that is not there means no pack exists.
+// LoadPacks reads which versions of each statutory pack exist, from a packs directory (packs/<pack>/<year>.<n>/), and
+// adds them to those already read: a release has Fyniq's packs and Nemura's own (internal/nemura/packs), each in its
+// own directory, so a page of either app can declare the version it read. A directory that is not there means no pack
+// exists in it.
 func (c *Corpus) LoadPacks(packs fs.FS) error {
-	c.PackVersions = map[string][]PackVersion{}
+	if c.PackVersions == nil {
+		c.PackVersions = map[string][]PackVersion{}
+	}
 	entries, err := fs.ReadDir(packs, ".")
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -72,7 +77,9 @@ func (c *Corpus) LoadPacks(packs fs.FS) error {
 			if m := packVersionDir.FindStringSubmatch(v.Name()); m != nil && v.IsDir() {
 				y, _ := strconv.Atoi(m[1])
 				n, _ := strconv.Atoi(m[2])
-				c.PackVersions[e.Name()] = append(c.PackVersions[e.Name()], PackVersion{y, n})
+				if pv := (PackVersion{y, n}); !slices.Contains(c.PackVersions[e.Name()], pv) {
+					c.PackVersions[e.Name()] = append(c.PackVersions[e.Name()], pv)
+				}
 			}
 		}
 		sort.Slice(c.PackVersions[e.Name()], func(i, j int) bool { return c.PackVersions[e.Name()][i].less(c.PackVersions[e.Name()][j]) })
