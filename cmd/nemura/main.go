@@ -27,6 +27,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/httpserver"
+	"github.com/cognizhi/fyniq/internal/nemura/alert"
 	"github.com/cognizhi/fyniq/internal/nemura/identity"
 	"github.com/cognizhi/fyniq/internal/nemura/outbox"
 	"github.com/cognizhi/fyniq/internal/nemura/role"
@@ -59,6 +60,10 @@ func run(args []string, getenv func(string) string) int {
 	}
 	r, err := role.Parse(getenv(role.Env))
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "nemura: %v\n", err)
+		return 2
+	}
+	if err := checkRegion(getenv, flavour); err != nil {
 		fmt.Fprintf(os.Stderr, "nemura: %v\n", err)
 		return 2
 	}
@@ -115,9 +120,11 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 	if err != nil {
 		return err
 	}
-	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock}
+	// The pay-day path's failure alert (NM-NFR-05): the sweep raises a notice for each person to tell about a dead pay-day job, and the worker
+	// delivers it. The local build and a deployment with no channel yet log it; email and in-app delivery arrive with notifications.
+	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock, Raise: store.RaisePayDayAlerts}
 	s.Handle("POST /tasks", &outbox.Handler{Class: outbox.ClassWorker, Store: store, Tokens: tokens, Clock: deps.Clock,
-		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{}})
+		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{alert.KindNotify: alert.Work(alert.LogNotifier{}, deps.Clock)}})
 	s.Handle("POST /tick", outbox.Tick{Dispatcher: disp, Tokens: tokens, Class: outbox.ClassWorker})
 	return nil
 }
