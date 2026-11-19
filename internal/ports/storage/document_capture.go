@@ -39,8 +39,10 @@ type DocumentCapture struct {
 	// MessageID and InboundFileID name the accepted email message and its file the document came from; nil for an upload or a paste.
 	MessageID, InboundFileID *uuid.UUID
 	// OwnerUserID is the member whose own address it arrived at: only they see it. Nil: the organisation's address, an upload or a paste.
-	OwnerUserID                 *uuid.UUID
-	CapturedBy                  string
+	OwnerUserID *uuid.UUID
+	CapturedBy  string
+	// NRICFlagged is whether the file's text shows an NRIC or FIN in full (FR-DOC-09): it is never sent to a model, and its evidence carries the flag.
+	NRICFlagged                 bool
 	Status                      string
 	Kind                        string
 	Reading                     json.RawMessage
@@ -67,6 +69,7 @@ type NewDocumentCapture struct {
 	Size                                                             int64
 	MessageID, InboundFileID, OwnerUserID, DuplicateOf               *uuid.UUID
 	At                                                               time.Time
+	NRICFlagged                                                      bool
 }
 
 // CapturedReading is what a reading made: the kind it found, the reading and its checks, as the model answered and the platform checked.
@@ -88,6 +91,8 @@ type DocumentCaptures interface {
 	Lock(ctx context.Context, id uuid.UUID) (DocumentCapture, error)
 	// List is a page of the captures viewer may see, newest first: the organisation's and their own, never another member's. status "" is any.
 	List(ctx context.Context, viewer uuid.UUID, status string, before uuid.UUID, limit int) ([]DocumentCapture, error)
+	// OfInboundFile is the capture of an accepted message's file, if it was adopted already.
+	OfInboundFile(ctx context.Context, file uuid.UUID) (DocumentCapture, bool, error)
 	// OfHash is the live capture of the same file viewer may see, if any.
 	OfHash(ctx context.Context, viewer uuid.UUID, sha256 string) (DocumentCapture, bool, error)
 	// Reading moves a capture that is Reading to Read with what was read.

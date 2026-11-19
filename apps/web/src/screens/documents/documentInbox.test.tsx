@@ -59,7 +59,6 @@ const reads = {
 };
 
 // req: FR-DOC-14
-// req: FR-DOC-12
 // req: FR-AP-04
 describe("Purchases › Document inbox", () => {
   it("lists the captured files with their state and shows the reading apart, in the AI's card, with what was doubted; axe finds nothing", async () => {
@@ -118,6 +117,15 @@ describe("Purchases › Document inbox", () => {
     fireEvent.change(screen.getByLabelText("Account of line 1"), { target: { value: "a6120" } });
     fireEvent.click(screen.getByRole("button", { name: "Save draft bill" }));
     expect(await screen.findByText(/refused as a duplicate/)).toBeTruthy();
+  });
+
+  it("says a document with an identity number in full is not read, and offers no reading of it", async () => {
+    answer({ ...reads, "GET /v1/captures": { status: 200, body: { items: [capture({ id: "c3", file_name: "ic.pdf", status: "received", kind: undefined, reading: undefined, checks: undefined, nric_flagged: true })] } } });
+    renderPage(DocumentInbox, { path: "/purchases/documents", session: accountant, organisation, mode: "basic" });
+    fireEvent.click(await screen.findByRole("button", { name: "Open ic.pdf" }));
+    expect(await screen.findByText("It shows an NRIC or FIN in full")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Have it read" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Dismiss" })).toBeTruthy();
   });
 
   it("offers no upload, read or draft to someone who may not enter bills", async () => {

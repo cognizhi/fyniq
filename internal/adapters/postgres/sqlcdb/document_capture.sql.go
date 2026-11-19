@@ -42,6 +42,30 @@ func (q *Queries) CaptureOfHash(ctx context.Context, arg CaptureOfHashParams) ([
 	return items, nil
 }
 
+const captureOfInboundFile = `-- name: CaptureOfInboundFile :many
+SELECT id FROM fyniq.document_capture WHERE inbound_file_id = $1 LIMIT 1
+`
+
+func (q *Queries) CaptureOfInboundFile(ctx context.Context, inboundFileID *uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, captureOfInboundFile, inboundFileID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const dismissDocumentCapture = `-- name: DismissDocumentCapture :one
 UPDATE fyniq.document_capture SET status = 'dismissed', dismissed_by = $1, dismissed_at = $2, dismiss_reason = $3,
   version = version + 1
@@ -100,7 +124,7 @@ func (q *Queries) DraftDocumentCapture(ctx context.Context, arg DraftDocumentCap
 
 const getDocumentCapture = `-- name: GetDocumentCapture :one
 SELECT id, source, file_name, media_type, size_bytes, sha256, blob_key, message_id, inbound_file_id, owner_user_id, captured_by, status, kind, reading, reading_model,
-  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version
+  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged
 FROM fyniq.document_capture WHERE id = $1
 `
 
@@ -135,6 +159,7 @@ type GetDocumentCaptureRow struct {
 	LastError     *string
 	CreatedAt     time.Time
 	Version       int32
+	NricFlagged   bool
 }
 
 func (q *Queries) GetDocumentCapture(ctx context.Context, id uuid.UUID) (GetDocumentCaptureRow, error) {
@@ -171,14 +196,15 @@ func (q *Queries) GetDocumentCapture(ctx context.Context, id uuid.UUID) (GetDocu
 		&i.LastError,
 		&i.CreatedAt,
 		&i.Version,
+		&i.NricFlagged,
 	)
 	return i, err
 }
 
 const insertDocumentCapture = `-- name: InsertDocumentCapture :one
-INSERT INTO fyniq.document_capture (source, file_name, media_type, size_bytes, sha256, blob_key, message_id, inbound_file_id, owner_user_id, captured_by, status, duplicate_of, created_at)
+INSERT INTO fyniq.document_capture (source, file_name, media_type, size_bytes, sha256, blob_key, message_id, inbound_file_id, owner_user_id, captured_by, status, duplicate_of, created_at, nric_flagged)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
-  $9, $10, $11, $12, $13)
+  $9, $10, $11, $12, $13, $14)
 RETURNING id
 `
 
@@ -196,6 +222,7 @@ type InsertDocumentCaptureParams struct {
 	Status        string
 	DuplicateOf   *uuid.UUID
 	CreatedAt     time.Time
+	NricFlagged   bool
 }
 
 func (q *Queries) InsertDocumentCapture(ctx context.Context, arg InsertDocumentCaptureParams) (uuid.UUID, error) {
@@ -213,6 +240,7 @@ func (q *Queries) InsertDocumentCapture(ctx context.Context, arg InsertDocumentC
 		arg.Status,
 		arg.DuplicateOf,
 		arg.CreatedAt,
+		arg.NricFlagged,
 	)
 	var id uuid.UUID
 	err := row.Scan(&id)
@@ -221,7 +249,7 @@ func (q *Queries) InsertDocumentCapture(ctx context.Context, arg InsertDocumentC
 
 const listDocumentCaptures = `-- name: ListDocumentCaptures :many
 SELECT id, source, file_name, media_type, size_bytes, sha256, blob_key, message_id, inbound_file_id, owner_user_id, captured_by, status, kind, reading, reading_model,
-  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version
+  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged
 FROM fyniq.document_capture
 WHERE ($1::text = '' OR status = $1::text)
   AND (owner_user_id IS NULL OR owner_user_id = $2::uuid)
@@ -267,6 +295,7 @@ type ListDocumentCapturesRow struct {
 	LastError     *string
 	CreatedAt     time.Time
 	Version       int32
+	NricFlagged   bool
 }
 
 func (q *Queries) ListDocumentCaptures(ctx context.Context, arg ListDocumentCapturesParams) ([]ListDocumentCapturesRow, error) {
@@ -314,6 +343,7 @@ func (q *Queries) ListDocumentCaptures(ctx context.Context, arg ListDocumentCapt
 			&i.LastError,
 			&i.CreatedAt,
 			&i.Version,
+			&i.NricFlagged,
 		); err != nil {
 			return nil, err
 		}
@@ -327,7 +357,7 @@ func (q *Queries) ListDocumentCaptures(ctx context.Context, arg ListDocumentCapt
 
 const lockDocumentCapture = `-- name: LockDocumentCapture :one
 SELECT id, source, file_name, media_type, size_bytes, sha256, blob_key, message_id, inbound_file_id, owner_user_id, captured_by, status, kind, reading, reading_model,
-  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version
+  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged
 FROM fyniq.document_capture WHERE id = $1 FOR UPDATE
 `
 
@@ -362,6 +392,7 @@ type LockDocumentCaptureRow struct {
 	LastError     *string
 	CreatedAt     time.Time
 	Version       int32
+	NricFlagged   bool
 }
 
 func (q *Queries) LockDocumentCapture(ctx context.Context, id uuid.UUID) (LockDocumentCaptureRow, error) {
@@ -398,6 +429,7 @@ func (q *Queries) LockDocumentCapture(ctx context.Context, id uuid.UUID) (LockDo
 		&i.LastError,
 		&i.CreatedAt,
 		&i.Version,
+		&i.NricFlagged,
 	)
 	return i, err
 }

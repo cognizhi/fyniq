@@ -43,6 +43,7 @@ const (
 	CodeCaptureDuplicate = "CAP-02" // the bill duplicates one already entered
 	CodeCaptureType      = "CAP-03" // the file is not one the model reads (a PDF or a photo)
 	CodeCaptureReading   = "CAP-04" // the document could not be read, as the answer says
+	CodeCaptureAdopted   = "CAP-05" // the mail's file is in the inbox already
 )
 
 // CaptureDraft is the draft a person made of a captured document.
@@ -80,6 +81,7 @@ type DocumentCapture struct {
 	CapturedBy string    `json:"captured_by" doc:"Who captured it: an actor of the audit trail." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	CreatedAt  time.Time `json:"created_at" doc:"When it was captured." example:"2026-11-20T09:00:00Z"`
 	Own        bool      `json:"own" doc:"true when it arrived at the caller's own email-in address: only they see it." example:"false"`
+	NRIC       bool      `json:"nric_flagged" doc:"true when its text shows an NRIC or FIN in full (FR-DOC-09): it is never sent to a model, so it is not read; mask it and capture it again, or type the bill in." example:"false"`
 	MessageID  string    `json:"message_id,omitempty" format:"uuid" doc:"The accepted mail it came from." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f33"`
 	// What the model read, apart from the file and labelled so: it never decides a figure, a GST eligibility or a posting.
 	ReadingIs     string             `json:"reading_is,omitempty" doc:"Always the model's reading: untrusted data to check against the document, never a figure Fyniq decided." example:"the model's reading"`
@@ -209,7 +211,7 @@ func docCaptureETag(c storage.DocumentCapture) string { return etag(c.Version, c
 // captureOf is a capture as the API shows it; supplier is the contact its reading matches, nil when none.
 func (a *API) captureOf(c storage.DocumentCapture, viewer uuid.UUID, supplier *CaptureSupplier) DocumentCapture {
 	out := DocumentCapture{ID: c.ID.String(), Source: c.Source, FileName: c.FileName, MediaType: c.MediaType, Size: c.Size, SHA256: c.SHA256, Status: c.Status, Kind: c.Kind,
-		CapturedBy: c.CapturedBy, CreatedAt: c.CreatedAt.UTC(), Own: c.OwnerUserID != nil && *c.OwnerUserID == viewer, ReadAt: c.ReadAt, Model: c.ReadingModel, Readings: c.Readings,
+		CapturedBy: c.CapturedBy, CreatedAt: c.CreatedAt.UTC(), Own: c.OwnerUserID != nil && *c.OwnerUserID == viewer, NRIC: c.NRICFlagged, ReadAt: c.ReadAt, Model: c.ReadingModel, Readings: c.Readings,
 		Supplier: supplier, DismissReason: c.DismissReason, Note: c.LastError, Version: c.Version}
 	if c.MessageID != nil {
 		out.MessageID = c.MessageID.String()
@@ -363,7 +365,14 @@ func mediaReadable(mt string) bool {
 // capturing adds file, already checked as any upload is, to the inbox in u; a file the inbox holds already is a duplicate of it.
 func (a *API) capturing(ctx context.Context, u storage.UnitOfWork, p authn.Principal, file evidence.File, source, key string, message, inboundFile, owner *uuid.UUID) (storage.DocumentCapture, error) {
 	n := storage.NewDocumentCapture{Source: source, FileName: file.Name, MediaType: file.MediaType, Size: int64(len(file.Data)), SHA256: file.SHA256, BlobKey: key,
-		CapturedBy: uploader(ctx), Status: storage.CaptureReceived, MessageID: message, InboundFileID: inboundFile, OwnerUserID: owner, At: a.deps.Clock.Now()}
+		CapturedBy: uploader(ctx), Status: storage.CaptureReceived, MessageID: message, InboundFileID: inboundFile, OwnerUserID: owner, At: a.deps.Clock.Now(), NRICFlagged: file.NRIC}
+	if inboundFile != nil {
+		if _, ok, err := u.DocumentCaptures().OfInboundFile(ctx, *inboundFile); err != nil {
+			return storage.DocumentCapture{}, err
+		} else if ok {
+			return storage.DocumentCapture{}, problem(CodeCaptureAdopted, "That mail's file is in the document inbox already.", "Open it from the inbox")
+		}
+	}
 	if earlier, ok, err := u.DocumentCaptures().OfHash(ctx, p.UserID, file.SHA256); err != nil {
 		return storage.DocumentCapture{}, err
 	} else if ok {
@@ -416,7 +425,7 @@ func registerDocumentCaptures(a *API) {
 			"caller's own. A quarantined or rejected message is never captured, and a member's own mail is only theirs to adopt; any other is EML-10. The file " +
 			"is checked again as any upload is, and each attachment is adopted once. Side effects: the capture and its audit event. Idempotent with " +
 			"Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
-	}, append([]string{CodeUnavailable, CodeMessageFile, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeInvalid}, locks...),
+	}, append([]string{CodeUnavailable, CodeMessageFile, CodeCaptureAdopted, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeInvalid}, locks...),
 		func(ctx context.Context, in *captureFromMessageInput) (*captureOutput, error) {
 			p, _ := authn.From(ctx)
 			messageID, err := parseID("body.message_id", in.Body.MessageID)
@@ -609,7 +618,7 @@ func registerDocumentCaptures(a *API) {
 			if err := checkIfMatch(in.IfMatch, docCaptureETag(c)); err != nil {
 				return DocumentCapture{}, err
 			}
-			if !slices.Contains([]string{storage.CaptureReceived, storage.CaptureRead, storage.CaptureFailed, storage.CaptureDuplicate}, c.Status) {
+			if !slices.Contains([]string{storage.CaptureReceived, storage.CaptureReading, storage.CaptureRead, storage.CaptureFailed, storage.CaptureDuplicate}, c.Status) {
 				return DocumentCapture{}, problem(CodeCaptureState, "A document that is "+c.Status+" cannot be dismissed.", "Only a document waiting in the inbox is dismissed")
 			}
 			d, err := u.DocumentCaptures().Dismiss(ctx, c.ID, c.Version, p.UserID, strings.TrimSpace(in.Body.Reason), a.deps.Clock.Now())
@@ -765,6 +774,12 @@ func (a *API) readDocument(ctx context.Context, p authn.Principal, id uuid.UUID,
 	if a.deps.Staging == nil {
 		return storage.DocumentCapture{}, problem(CodeUnavailable, "No file store is configured here.", "Ask your administrator to configure one (FR-DOC-01).")
 	}
+	// Everything that can be refused is checked before the status moves to Reading, so a refusal leaves the document as it was: the prompt, the
+	// file's state and what it is.
+	prompt, err := assistant.DefaultPrompt("document_capture")
+	if err != nil {
+		return storage.DocumentCapture{}, err
+	}
 	var c storage.DocumentCapture
 	if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		var err error
@@ -777,26 +792,38 @@ func (a *API) readDocument(ctx context.Context, p authn.Principal, id uuid.UUID,
 		if !slices.Contains([]string{storage.CaptureReceived, storage.CaptureFailed, storage.CaptureRead}, c.Status) {
 			return problem(CodeCaptureState, "A document that is "+c.Status+" is not read.", "Only a document waiting in the inbox is read")
 		}
+		if c.NRICFlagged {
+			return problem(CodeCaptureType, "It shows an NRIC or FIN in full, which never goes to a model, so it is not read.", "Mask the number and capture it again, or type the bill in by hand")
+		}
 		if !mediaReadable(c.MediaType) {
 			return problem(CodeCaptureType, "Only a PDF or a photo can be read, and this is "+c.MediaType+".", "Type the bill in by hand")
 		}
-		c, err = u.DocumentCaptures().Status(ctx, c.ID, c.Version, storage.CaptureReading, "")
-		return err
+		return nil
 	}); err != nil {
 		return storage.DocumentCapture{}, err
 	}
 	r, err := a.deps.Staging.Get(ctx, c.BlobKey)
 	if err != nil {
 		logFailure(ctx, err)
-		return storage.DocumentCapture{}, a.failCapture(ctx, p, id, "The file is no longer kept, so it could not be read.", nil)
+		return storage.DocumentCapture{}, problem(CodeUnavailable, "The file is no longer kept, so it could not be read.", "Capture it again")
 	}
 	data, err := io.ReadAll(io.LimitReader(r, evidence.MaxBytes+1))
 	_ = r.Close()
 	if err != nil {
-		return storage.DocumentCapture{}, a.failCapture(ctx, p, id, "The file could not be read in full.", nil)
+		return storage.DocumentCapture{}, problem(CodeUnavailable, "The file could not be read in full.", "Try again")
 	}
-	prompt, err := assistant.DefaultPrompt("document_capture")
-	if err != nil {
+	// From here on every way out ends the reading in a status: Read, or Failed with why.
+	if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		cur, err := u.DocumentCaptures().Lock(ctx, id)
+		if err != nil {
+			return err
+		}
+		if cur.Version != c.Version {
+			return problem(CodeStale, "The document changed while it was being prepared.", "Open it again")
+		}
+		c, err = u.DocumentCaptures().Status(ctx, cur.ID, cur.Version, storage.CaptureReading, "")
+		return err
+	}); err != nil {
 		return storage.DocumentCapture{}, err
 	}
 	part := ports.ModelPart{Kind: ports.PartImage, MediaType: c.MediaType, Data: data}
@@ -844,7 +871,8 @@ func (a *API) readDocument(ctx context.Context, p authn.Principal, id uuid.UUID,
 			Prompt: prompt.Name(), Checks: checks, At: a.deps.Clock.Now()})
 		return err
 	}); err != nil {
-		return storage.DocumentCapture{}, err
+		logFailure(ctx, err)
+		return storage.DocumentCapture{}, a.failCapture(ctx, p, id, "The reading could not be kept: ask for it again.", nil)
 	}
 	return out, nil
 }
@@ -990,7 +1018,7 @@ func (a *API) draftFromCapture(ctx context.Context, captureID, ifMatch, key, pre
 			evType = "receipt"
 		}
 		if _, err := u.Evidence().Attach(ctx, storage.NewEvidence{DocumentID: doc.ID, EvidenceType: evType, Note: "Captured in the document inbox", FileName: c.FileName, MediaType: c.MediaType,
-			Size: int64(len(data)), SHA256: c.SHA256, OriginalSHA256: c.SHA256, Source: source, DataClass: storage.ClassGeneral, StagingKey: evKey, UploadedBy: uploader(ctx)}); err != nil {
+			Size: int64(len(data)), SHA256: c.SHA256, OriginalSHA256: c.SHA256, NRICFlagged: c.NRICFlagged, Source: source, DataClass: storage.ClassGeneral, StagingKey: evKey, UploadedBy: uploader(ctx)}); err != nil {
 			return CaptureDrafted{}, err
 		}
 		done, err := u.DocumentCaptures().Drafted(ctx, c.ID, c.Version, kind, doc.ID, p.UserID, a.deps.Clock.Now())

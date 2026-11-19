@@ -32,6 +32,8 @@ A Bookkeeper, an AP specialist or an Accountant captures, reads and drafts.
   it never decides a figure, whether GST is claimable, or what is posted.
 - Fyniq adds its own checks: the lines and GST add up to the total, the dates are real, the GST registration number looks like
   one, and what a tax invoice must show but this document does not.
+- A document that shows an NRIC or FIN in full is kept but never read: that number does not go to the model. Mask it and capture it
+  again, or type the bill in.
 - A document that tells the model to do something is stopped, and fails with the reason. A PDF or a photo only is read; type
   anything else in by hand.
 - **Read it again** reads it afresh when the first reading was wrong.

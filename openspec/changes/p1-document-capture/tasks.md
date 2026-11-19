@@ -38,12 +38,14 @@
 ## 4. The screen, the guide, the evals
 
 - [x] 4.1 `document-inbox` with its help keys and the guide compiled into `kb/`; Vitest with axe (design D9). Tests
-  `// req: FR-DOC-14`.
+  `// req: FR-DOC-14`. (The requirements the pipeline only partly builds, FR-DOC-12 and FR-AP-12, are not tagged: bank matching,
+  dimensions and terms are left.)
   As built: `DocumentInbox` at `/purchases/documents` (linked from Bills): upload and paste, the list by state, the file beside the
   model's reading in the AI's card with each field's confidence and what Fyniq checked, Have it read / Read it again / Dismiss, and the
   bill form filled from the reading (supplier matched, the account always the person's, amounts as decimal strings); no upload or draft
   for those who may not enter bills. The guide is `docs/user-guide/document-inbox.md`, compiled to `kb/pages/task/documents-inbox.md`.
-  **Left:** the claim form for a receipt (the API's `draftClaimFromCapture` is built and tested), the pending-mail list with
-  one-click adoption, and the matches to bank or card lines (3.3).
+- [ ] 4.3 The web form for a draft claim from a receipt (the API's `draftClaimFromCapture` is built and tested), the list of accepted mail
+  waiting to be adopted with one-click adoption (the API's `captureFromMessage` is built and tested), and the nic flag's words on the
+  row.
 - [ ] 4.2 The `capture` eval suite and the red team's injected document; the threat model `email-in.md` grows (design D10).
   Tests `// req: QA-AI-02`, `// req: AI-18`.

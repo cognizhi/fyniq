@@ -27,12 +27,10 @@ func (undoNote) Undo(_ context.Context, _ storage.UnitOfWork, done proposal.Exec
 	return proposal.Execution{Records: append([]string{"undone-by:" + as.User.String()}, done.Records...), Entries: []string{}}, nil
 }
 
-// An executed proposal is undone by a person in one action (AI-31, AI-91): only one that executed, whose task type can be undone, by someone who holds the
+// An executed proposal is undone by a person in one action (AI-31, AI-91; not tagged: no real task type reverses anything yet, so the mechanism is proved on a test-only undoable type): only one that executed, whose task type can be undone, by someone who holds the
 // right its command needs, once, while its records are as the execution left them; the undo runs as that person, is kept in an append-only record, is
 // audited, and the proposal stays Executed. The AI reaches none of it. The month's approval quality is read by the Owner and the DPO from the
 // proposals' own records, with the decider's first look; the review is signed once, after the month, after step-up (CTL-AI-07, AI-92).
-// req: AI-31
-// req: AI-91
 // req: CTL-AI-07
 // req: AI-92
 // asvs: V8.2.2, V8.3.1

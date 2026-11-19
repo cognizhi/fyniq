@@ -768,3 +768,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | docs/user-guide/nemura/payroll-approval.md -> nemura.payroll-approval (payment states, p1-nemura-payroll 5.2)
 ## [2026-11-20] compile | members-and-roles.md -> settings.members (the department-scoped P&L)
+
+## [2026-11-20] compile | documents.inbox: files showing an NRIC in full are not read

@@ -3,7 +3,10 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -74,10 +77,8 @@ func (e *env) capture(tok, name string, file []byte, headers ...string) response
 // kept apart from the file, labelled the model's, with the platform's checks and the supplier it matches; a document that makes the model repeat an
 // instruction is stopped by screening and fails with why, changing nothing; the person's draft is made as them from the reading they corrected, the file attached as its evidence, and nothing is posted;
 // a document is drafted once; a bill that duplicates one is refused unless the person says why.
-// req: FR-DOC-12
 // req: FR-DOC-14
 // req: FR-AP-04
-// req: FR-AP-12
 // req: AI-18
 // asvs: V8.2.2
 func TestADocumentIsCapturedReadAndDraftedByAPerson(t *testing.T) {
@@ -183,7 +184,6 @@ func TestADocumentIsCapturedReadAndDraftedByAPerson(t *testing.T) {
 // What cannot be read says so and keeps the file: a CSV is not read, an answer that is not a reading fails the document with why, a reading
 // is read again only on request and only from a state that allows it, and a dismissed document is final.
 // req: FR-DOC-14
-// req: FR-DOC-12
 // asvs: V8.2.2
 func TestADocumentThatCannotBeReadSaysWhy(t *testing.T) {
 	e, model := captureEnv(t, ports.ModelResponse{Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "Sure! I paid it."}}, StopReason: ports.StopEnd},
@@ -223,7 +223,19 @@ func TestADocumentThatCannotBeReadSaysWhy(t *testing.T) {
 	if x := e.call(http.MethodPost, "/v1/captures/"+pdf.str("id")+"/read", acc, nil, "If-Match", dis.Header.Get("ETag")); x.Status != http.StatusConflict || x.str("code") != CodeCaptureState {
 		t.Errorf("reading a dismissed document: %d %s", x.Status, x.Raw)
 	}
-	_ = uuid.Nil
+	// A document stuck in Reading, as a crash mid-call would leave it, is not stranded: a person dismisses it.
+	stuck := e.capture(acc, "stuck.pdf", []byte("%PDF-1.7\n% stuck\n"))
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.DocumentCaptures().Status(ctx, uuid.MustParse(stuck.str("id")), 1, storage.CaptureReading, "")
+		return err
+	})
+	cur := e.call(http.MethodGet, "/v1/captures/"+stuck.str("id"), acc, nil)
+	if cur.str("status") != "reading" {
+		t.Fatalf("the stuck document: %s", cur.Raw)
+	}
+	if d := e.call(http.MethodPost, "/v1/captures/"+stuck.str("id")+"/dismiss", acc, map[string]any{"reason": "A reading that never ended"}, "If-Match", cur.Header.Get("ETag")); d.Status != http.StatusOK || d.str("status") != "dismissed" {
+		t.Errorf("dismissing a document stuck in Reading: %d %s", d.Status, d.Raw)
+	}
 }
 
 // capturesOf counts the organisation's captures, as an Accountant sees them.
@@ -314,7 +326,6 @@ var matrixCaptures = map[string]func(e *env, tok string) (response, func() bool)
 
 // A supplier's defaults are suggested from its posted bills and kept on its contact once a person confirms them with the draft (FR-AP-12): the account
 // and GST code its lines used most, or the contact's own; saving them needs the right to change contacts and never replaces a default the contact holds.
-// req: FR-AP-12
 func TestASuppliersDefaultsAreSuggestedFromItsBillsAndSavedOnConfirmation(t *testing.T) {
 	e, _ := captureEnv(t, captureReading("AU-3001", "109.00", nil), captureReading("AU-3002", "109.00", nil))
 	acc := e.as(authz.Accountant)
@@ -346,5 +357,126 @@ func TestASuppliersDefaultsAreSuggestedFromItsBillsAndSavedOnConfirmation(t *tes
 	r2 := read("second")
 	if d := r2.Body["supplier"].(map[string]any)["defaults"].(map[string]any); d["saved_on_contact"] != true {
 		t.Errorf("the saved defaults: %v", d)
+	}
+}
+
+// Mail accepted at an email-in address is captured by a person's action, from the organisation's address or their own (FR-DOC-12, FR-INT-22): a
+// quarantined message's file is refused (EML-10), an accepted attachment is captured with source email, adopting the same file twice is refused,
+// another member's own mail is refused and is not found in their inbox, and the organisation's mail is theirs to see. A file that shows an NRIC in
+// full is captured but never read (FR-DOC-09, AI-02).
+// req: FR-DOC-14
+// asvs: V8.2.2
+func TestAcceptedMailIsCapturedByAPersonAndAnotherMembersMailIsNot(t *testing.T) {
+	e, model := captureEnv(t, captureReading("AU-4001", "109.00", nil))
+	f := foundersIn(e)
+	acc := e.as(authz.Accountant)
+	admin := e.as(authz.Administrator)
+	name := "bills-" + uuid.NewString()[:6]
+	if r := e.call(http.MethodPut, "/v1/organisation/email/capture-addresses/organisation", admin, map[string]any{"name": name}, "If-Match", `"none"`); r.Status != 200 {
+		t.Fatalf("naming the organisation's address: %d %s", r.Status, r.Raw)
+	}
+	ann, annTok := uuid.New(), ""
+	annUser := e.joinedIn(e.books.Org, "Ann Mail", "accountant")
+	annTok = f.as(annUser.String(), authz.Accountant)
+	ben := e.joinedIn(e.books.Org, "Ben Mail", "accountant")
+	benTok := f.as(ben.String(), authz.Accountant)
+	_ = ann
+	if r := e.call(http.MethodPut, "/v1/organisation/email/capture-addresses/mine", annTok, map[string]any{"name": "ann-" + uuid.NewString()[:6]}, "If-Match", `"none"`); r.Status != 200 {
+		t.Fatalf("Ann's own address: %d %s", r.Status, r.Raw)
+	}
+	// A message with one attachment at each address, accepted or quarantined, as the worker leaves it.
+	staging := e.api.deps.Staging
+	type mail struct{ message, file string }
+	arrive := func(who *uuid.UUID, status string, body []byte) mail {
+		t.Helper()
+		var m storage.InboundMessage
+		var f storage.InboundFile
+		e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+			live, err := u.CaptureAddresses().Live(ctx)
+			if err != nil {
+				return err
+			}
+			var addr storage.CaptureAddress
+			for _, a := range live {
+				if a.Kind == storage.CaptureDocuments && ((who == nil && a.UserID == nil) || (who != nil && a.UserID != nil && *a.UserID == *who)) {
+					addr = a
+				}
+			}
+			m, _, err = u.InboundMessages().Receive(ctx, storage.NewInboundMessage{AddressID: addr.ID, Provider: "mailpit", ProviderID: uuid.NewString(), Sender: "ar@supplier.example",
+				Subject: "Invoice", ReceivedAt: e.clock.Now()})
+			return err
+		})
+		key := "inbound/" + e.books.Org.String() + "/" + m.ID.String() + "/" + uuid.NewString()
+		if err := staging.Put(context.Background(), key, bytes.NewReader(body)); err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(body)
+		w := workerStore(t)
+		if err := w.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			if _, err := u.InboundMessages().Fetched(ctx, m.ID, storage.InboundFetch{SPF: "pass", DKIM: "pass", DMARC: "pass", Status: status}, e.clock.Now()); err != nil {
+				return err
+			}
+			var err error
+			f, err = u.InboundMessages().AddFile(ctx, storage.InboundFile{MessageID: m.ID, Kind: storage.InboundAttachment, FileName: "INV.pdf", MediaType: "application/pdf",
+				Size: int64(len(body)), SHA256: hex.EncodeToString(sum[:]), OriginalSHA256: hex.EncodeToString(sum[:]), BlobKey: key, StoredAt: e.clock.Now()})
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return mail{m.ID.String(), f.ID.String()}
+	}
+	adopt := func(tok string, m mail) response {
+		return e.call(http.MethodPost, "/v1/captures/from-message", tok, map[string]any{"message_id": m.message, "file_id": m.file}, "Idempotency-Key", uuid.NewString())
+	}
+
+	org := arrive(nil, storage.InboundAccepted, []byte("%PDF-1.7\n% mail invoice AU-4001\n"))
+	quarantined := arrive(nil, storage.InboundQuarantined, []byte("%PDF-1.7\n% stranger\n"))
+	mine := arrive(&annUser, storage.InboundAccepted, []byte("%PDF-1.7\n% Ann's own\n"))
+	// A quarantined message's file is refused; an accepted one is captured with its source, and only once.
+	if r := adopt(acc, quarantined); r.Status != http.StatusUnprocessableEntity || r.str("code") != CodeMessageFile {
+		t.Errorf("adopting a quarantined file: %d %s", r.Status, r.Raw)
+	}
+	got := adopt(acc, org)
+	if got.Status != http.StatusCreated || got.str("source") != "email" || got.str("status") != "received" || got.str("message_id") != org.message {
+		t.Fatalf("adopting accepted mail: %d %s", got.Status, got.Raw)
+	}
+	if r := adopt(acc, org); r.Status != http.StatusConflict || r.str("code") != CodeCaptureAdopted {
+		t.Errorf("adopting the same file twice: %d %s", r.Status, r.Raw)
+	}
+	// Ann's own mail: another member cannot adopt it, and Ann's capture of it is hers alone.
+	if r := adopt(benTok, mine); r.Status != http.StatusUnprocessableEntity || r.str("code") != CodeMessageFile {
+		t.Errorf("Ben adopting Ann's own mail: %d %s", r.Status, r.Raw)
+	}
+	own := adopt(annTok, mine)
+	if own.Status != http.StatusCreated || own.Body["own"] != true {
+		t.Fatalf("Ann adopting her own mail: %d %s", own.Status, own.Raw)
+	}
+	if r := e.call(http.MethodGet, "/v1/captures/"+own.str("id"), benTok, nil); r.Status != http.StatusNotFound {
+		t.Errorf("Ben reading Ann's capture: %d %s", r.Status, r.Raw)
+	}
+	for _, c := range e.call(http.MethodGet, "/v1/captures", benTok, nil).Body["items"].([]any) {
+		if c.(map[string]any)["id"] == own.str("id") {
+			t.Error("Ann's own capture is in Ben's inbox")
+		}
+	}
+	// The organisation's captured mail is anyone's to see and read; the model gets the file.
+	if r := e.call(http.MethodGet, "/v1/captures/"+got.str("id"), benTok, nil); r.Status != http.StatusOK {
+		t.Errorf("Ben reading the organisation's capture: %d %s", r.Status, r.Raw)
+	}
+	read := e.call(http.MethodPost, "/v1/captures/"+got.str("id")+"/read", benTok, nil, "If-Match", got.Header.Get("ETag"))
+	if read.Status != http.StatusOK || len(model.requests) != 1 {
+		t.Errorf("reading mail: %d %s (%d requests)", read.Status, read.Raw, len(model.requests))
+	}
+	// A file that shows an NRIC in full is captured, flagged, and never read.
+	nric := e.capture(acc, "ic.pdf", []byte("%PDF-1.7\n(Employee NRIC S1234567D)\n"))
+	if nric.Status != http.StatusCreated || nric.Body["nric_flagged"] != true {
+		t.Fatalf("capturing a file with an NRIC: %d %s", nric.Status, nric.Raw)
+	}
+	if r := e.call(http.MethodPost, "/v1/captures/"+nric.str("id")+"/read", acc, nil, "If-Match", nric.Header.Get("ETag")); r.Status != http.StatusUnprocessableEntity || r.str("code") != CodeCaptureType ||
+		!strings.Contains(r.str("detail"), "NRIC") || len(model.requests) != 1 {
+		t.Errorf("reading a file with an NRIC: %d %s (%d requests)", r.Status, r.Raw, len(model.requests))
+	}
+	if r := e.call(http.MethodGet, "/v1/captures/"+nric.str("id"), acc, nil); r.str("status") != "received" {
+		t.Errorf("the refused document's status: %s", r.Raw)
 	}
 }

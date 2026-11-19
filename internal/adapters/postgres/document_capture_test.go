@@ -19,7 +19,6 @@ import (
 // reading, read, drafted (or dismissed); a failed one is read again; what the file is never changes; a row is never deleted; a drafted or
 // dismissed one is final; only the API writes, and a reading cannot be recorded without the capture being Reading first.
 // req: FR-DOC-14
-// req: FR-DOC-12
 // asvs: V8.2.2
 func TestTheDocumentInboxKeepsTheLifecycleInTheDatabase(t *testing.T) {
 	ctx := context.Background()

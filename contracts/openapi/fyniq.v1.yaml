@@ -23007,6 +23007,11 @@ components:
           examples:
             - "Only a PDF or a photo can be read: type the bill in"
           type: string
+        nric_flagged:
+          description: "true when its text shows an NRIC or FIN in full (FR-DOC-09): it is never sent to a model, so it is not read; mask it and capture it again, or type the bill in."
+          examples:
+            - false
+          type: boolean
         own:
           description: "true when it arrived at the caller's own email-in address: only they see it."
           examples:
@@ -23085,6 +23090,7 @@ components:
         - captured_by
         - created_at
         - own
+        - nric_flagged
         - readings
         - version
       type: object
@@ -87451,7 +87457,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAP-05` That mail's file is in the inbox already; `STORAGE-LOCK-01` Another change is in progress."
         "422":
           content:
             application/problem+json:
@@ -87512,6 +87518,7 @@ paths:
         - API-INPUT-02
         - API-RATE-01
         - API-UNAVAILABLE-01
+        - CAP-05
         - EML-10
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01

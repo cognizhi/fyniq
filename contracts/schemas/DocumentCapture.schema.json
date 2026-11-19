@@ -125,6 +125,13 @@
       ],
       "type": "string"
     },
+    "nric_flagged": {
+      "description": "true when its text shows an NRIC or FIN in full (FR-DOC-09): it is never sent to a model, so it is not read; mask it and capture it again, or type the bill in.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "own": {
       "description": "true when it arrived at the caller's own email-in address: only they see it.",
       "examples": [
@@ -226,6 +233,7 @@
     "captured_by",
     "created_at",
     "own",
+    "nric_flagged",
     "readings",
     "version"
   ],

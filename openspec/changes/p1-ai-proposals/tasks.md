@@ -24,12 +24,15 @@
 
 ## 2. Undo, tier 3 and approval quality
 
-- [x] 2.1 Undo (design D4): `proposal.Undoer`, `undoAIProposal`, the append-only record. Tests `// req: AI-31`, `// req: AI-91`.
+- [x] 2.1 Undo's machinery (design D4): `proposal.Undoer`, `undoAIProposal`, the append-only record. Not tagged `AI-31`/`AI-91`: no real
+  task type reverses anything yet (see 2.1a).
   As built (migration 000952): `POST /v1/ai/proposal-undos` runs as the person (the command's right, as to do it themselves) through the command's
   own `Undo`, in one transaction, once, only for an Executed proposal whose command implements `Undoer` (AI-UNDO-01 to 04), and keeps who, when,
   why and what was reversed in `ai_proposal_undo` (append-only, FY951), audited; the proposal stays Executed. No real task type implements
   `Undoer` yet: the drafts are not undoable by design, and the posting and master-data types add it as they are built (tests use a test-only
   undoable type). **Left:** the Undo button on the proposal review (web) and its guide text.
+- [ ] 2.1a Each posting or master-data task type's own `Undo`, with its attack test (a reversing entry, a restored master-data version); the
+  requirements AI-31 and AI-91 are proved when the first of them is built.
 - [x] 2.2 Tier 3 in the engine (design D5): `proposalSteps` gives a tier-3 request two steps; the engine already refuses a second signature by
   the same person and the requester's own above tier 1. Proved on a request built with two steps (no catalogue loads a tier-3 type, and none
   is added for the test). Tests `// req: AI-09`, `// req: AI-92`.

@@ -20,7 +20,6 @@ var today = time.Date(2026, 11, 20, 0, 0, 0, 0, time.UTC)
 
 // A reading is the shape the model was given and nothing more: a kind Fyniq knows, amounts as decimal strings and each confidence from 0 to 1;
 // one that does not fit is refused whole, and text in a field is only a value.
-// req: FR-DOC-12
 // req: AI-18
 func TestAReadingIsParsedStrictly(t *testing.T) {
 	r, err := Parse([]byte(good))
@@ -49,7 +48,6 @@ func TestAReadingIsParsedStrictly(t *testing.T) {
 
 // The platform checks a reading itself and only ever lowers a confidence: the lines and GST add up to the total, the GST number looks like
 // one, the IRAS particulars a tax invoice shows are named when missing, and a foreign document that states GST needs its SGD amount.
-// req: FR-DOC-12
 // req: FR-AR-05
 // req: FR-AP-20
 func TestThePlatformChecksAReadingAndOnlyLowersConfidence(t *testing.T) {
@@ -102,7 +100,6 @@ func contains(s []string, x string) bool {
 }
 
 // A supplier's name is compared without its punctuation, its case and the words that only name the kind of company.
-// req: FR-AP-12
 func TestNamesAreComparedWithoutTheirCompanySuffix(t *testing.T) {
 	for _, pair := range [][2]string{{"Acme Software Pte. Ltd.", "ACME SOFTWARE PTE LTD"}, {"Acme Software", "acme  software, Pte Ltd"}, {"Tom & Jerry's Pte Ltd", "Tom and Jerrys"}} {
 		if Name(pair[0]) != Name(pair[1]) {

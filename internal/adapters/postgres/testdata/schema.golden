@@ -1133,6 +1133,7 @@ document_capture | dismiss_reason | text | null |
 document_capture | last_error | text | null | 
 document_capture | created_at | timestamp with time zone | not null | 
 document_capture | version | integer | not null | 1
+document_capture | nric_flagged | boolean | not null | false
 document_link | organisation_id | uuid | not null | current_org()
 document_link | id | uuid | not null | uuidv7()
 document_link | document_id | uuid | not null | 
@@ -4650,6 +4651,7 @@ document_capture | document_capture_id_not_null | NOT NULL id
 document_capture | document_capture_kind_known | CHECK ((kind = ANY (ARRAY['bill'::text, 'receipt'::text, 'sales_invoice'::text, 'statement'::text, 'contract'::text, 'other'::text])))
 document_capture | document_capture_lengths | CHECK ((((length(file_name) >= 1) AND (length(file_name) <= 255)) AND ((length(media_type) >= 3) AND (length(media_type) <= 100)) AND ((size_bytes >= 1) AND (size_bytes <= 26214400)) AND (sha256 ~ '^[0-9a-f]{64}$'::text) AND ((length(captured_by) >= 3) AND (length(captured_by) <= 120)) AND (blob_key ~ '^capture/[0-9a-f-]{36}/[0-9a-f-]{36}$'::text) AND (length(dismiss_reason) <= 500) AND (length(last_error) <= 500) AND (length(reading_model) <= 200) AND (length(reading_prompt) <= 60) AND ((readings >= 0) AND (readings <= 20))))
 document_capture | document_capture_media_type_not_null | NOT NULL media_type
+document_capture | document_capture_nric_flagged_not_null | NOT NULL nric_flagged
 document_capture | document_capture_organisation_id_not_null | NOT NULL organisation_id
 document_capture | document_capture_pkey | PRIMARY KEY (organisation_id, id)
 document_capture | document_capture_reading_size | CHECK (((pg_column_size(reading) <= 262144) AND (pg_column_size(checks) <= 65536)))
@@ -9413,7 +9415,7 @@ dimension_set_immutable() → trigger | security invoker | v | search_path=pg_ca
 director_fee_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9daec9315e14c374e3cf180c55d2bc30
 director_repayment_released() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 94e8022147006b17a7b6345fba8d6c28
 director_settlement_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4e36a69f4eacb9c20ca242008162b4cc
-document_capture_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0cad3e7e5afd627ff9a9d73b2db7ea72
+document_capture_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e23cfa94988fe93428d69e9086cf4234
 document_edit_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9021d44439340dedd71761b90b4fe669
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 047cbe8b3eb5adba27f972e530a29a07
 document_link_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88e84bdb34f498a2ef91479f46bfcd43

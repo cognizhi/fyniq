@@ -1430,6 +1430,7 @@ type FyniqDocumentCapture struct {
 	LastError      *string
 	CreatedAt      time.Time
 	Version        int32
+	NricFlagged    bool
 }
 
 type FyniqDocumentLink struct {

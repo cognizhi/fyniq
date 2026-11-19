@@ -15,7 +15,6 @@ import (
 )
 
 // An undo, a first view and a month's review are appended and never changed or deleted (FY951): each once, with the API alone writing them.
-// req: AI-31
 // req: CTL-AI-07
 // asvs: V8.2.2
 func TestUndosViewsAndReviewsAreAppendOnly(t *testing.T) {

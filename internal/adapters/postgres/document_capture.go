@@ -19,7 +19,7 @@ type docCaptures struct{ u *unitOfWork }
 
 func toDocCapture(r sqlcdb.GetDocumentCaptureRow) storage.DocumentCapture {
 	return storage.DocumentCapture{ID: r.ID, Source: r.Source, FileName: r.FileName, MediaType: r.MediaType, Size: r.SizeBytes, SHA256: r.Sha256, BlobKey: r.BlobKey,
-		MessageID: r.MessageID, InboundFileID: r.InboundFileID, OwnerUserID: r.OwnerUserID, CapturedBy: r.CapturedBy, Status: r.Status, Kind: str(r.Kind), Reading: r.Reading,
+		MessageID: r.MessageID, InboundFileID: r.InboundFileID, OwnerUserID: r.OwnerUserID, CapturedBy: r.CapturedBy, NRICFlagged: r.NricFlagged, Status: r.Status, Kind: str(r.Kind), Reading: r.Reading,
 		ReadingModel: str(r.ReadingModel), ReadingPrompt: str(r.ReadingPrompt), Readings: int(r.Readings), ReadAt: r.ReadAt, Checks: r.Checks, DuplicateOf: r.DuplicateOf,
 		DraftKind: str(r.DraftKind), DraftID: r.DraftID, DraftedBy: r.DraftedBy, DraftedAt: r.DraftedAt, DismissedBy: r.DismissedBy, DismissedAt: r.DismissedAt,
 		DismissReason: str(r.DismissReason), LastError: str(r.LastError), CreatedAt: r.CreatedAt, Version: int(r.Version)}
@@ -31,7 +31,7 @@ func (r docCaptures) Capture(ctx context.Context, n storage.NewDocumentCapture) 
 	}
 	id, err := r.u.q.InsertDocumentCapture(ctx, sqlcdb.InsertDocumentCaptureParams{Source: n.Source, FileName: n.FileName, MediaType: n.MediaType, SizeBytes: n.Size, Sha256: n.SHA256,
 		BlobKey: n.BlobKey, MessageID: n.MessageID, InboundFileID: n.InboundFileID, OwnerUserID: n.OwnerUserID, CapturedBy: n.CapturedBy, Status: n.Status, DuplicateOf: n.DuplicateOf,
-		CreatedAt: n.At})
+		CreatedAt: n.At, NricFlagged: n.NRICFlagged})
 	if err != nil {
 		return storage.DocumentCapture{}, mapError(err)
 	}
@@ -78,6 +78,18 @@ func (r docCaptures) List(ctx context.Context, viewer uuid.UUID, status string, 
 		out = append(out, toDocCapture(sqlcdb.GetDocumentCaptureRow(x)))
 	}
 	return out, nil
+}
+
+func (r docCaptures) OfInboundFile(ctx context.Context, file uuid.UUID) (storage.DocumentCapture, bool, error) {
+	if err := r.u.check(); err != nil {
+		return storage.DocumentCapture{}, false, err
+	}
+	ids, err := r.u.q.CaptureOfInboundFile(ctx, &file)
+	if err != nil || len(ids) == 0 {
+		return storage.DocumentCapture{}, false, mapError(err)
+	}
+	c, err := r.Get(ctx, ids[0])
+	return c, err == nil, err
 }
 
 func (r docCaptures) OfHash(ctx context.Context, viewer uuid.UUID, sha256 string) (storage.DocumentCapture, bool, error) {
