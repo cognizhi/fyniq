@@ -245,7 +245,7 @@ func cpf(r *Result, m Month, p Packs) error {
 	}
 	r.AWSubject = aw
 	subject := add(r.OWSubject, r.AWSubject)
-	tw := subject // the month's total wages, for the wage band: the wages subject to CPF, as the sg-cpf pack defines them, so a true-up's shortfall is in them and additional wages above the ceiling are not
+	tw := subject // [verify] the month's total wages, for the wage band (the CPF Board's page says only "Total Wages payable in a calendar month"; the choice matters only when wages paid pass S$750 and wages subject to CPF do not): the wages subject to CPF, as the sg-cpf pack defines them, so a true-up's shortfall is in them and additional wages above the ceiling are not
 	step(r, "FR-PAY-02", "Wages subject to CPF %s = ordinary %s + additional %s; the group is %s and the age %d.", cents(subject), cents(r.OWSubject), cents(r.AWSubject), group, age)
 	if tw.Cmp(D("750")) <= 0 {
 		a, err := pack.CPFLowWagesOn(p.CPF, r.Month, group, age, tw)

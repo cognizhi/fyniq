@@ -1,0 +1,36 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "band-on-wages-subject-to-cpf",
+ "why": "[verify] Wages paid pass S$750 but wages subject to CPF do not: the band is chosen on the wages subject to CPF (the sg-cpf pack's definition of total wages); the CPF Board's page does not settle it",
+ "month": "2026-06-01",
+ "people": [
+  {
+   "id": "A",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "103.77",
+     "cpf_wages": true
+    },
+    {
+     "key": "c",
+     "name": "Commission",
+     "amount": "20000.00",
+     "cpf_wages": true,
+     "for_month": "2026-06-01",
+     "payable_on": "2026-07-28"
+    }
+   ],
+   "ytd": {
+    "ow": "101500",
+    "aw_subject": "0",
+    "aw_paid": "0"
+   }
+  }
+ ]
+}

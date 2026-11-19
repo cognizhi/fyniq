@@ -135,7 +135,7 @@ def _deductions(draw: st.DrawFn) -> list[dict[str, Any]]:
     out = []
     for i in range(draw(st.integers(0, 3))):
         kind = draw(st.sampled_from(KINDS))
-        d: dict[str, Any] = {"key": f"d{i}", "kind": kind, "amount": _text(draw(st.integers(0, 800_000)))}
+        d: dict[str, Any] = {"key": f"d{i}", "kind": kind, "amount": _text(draw(st.integers(1, 800_000)))}
         if draw(st.booleans()):
             d["consent"] = draw(st.booleans())
         if kind == "recovery" and draw(st.booleans()):

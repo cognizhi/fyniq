@@ -136,3 +136,20 @@ func TestARefundIsWorkedOutInTheGraduatedRangeToo(t *testing.T) {
 	fEq(t, "refund wages", r.Refund.Wages, "961.66")
 	fEq(t, "refund employee share", r.Refund.Employee, "192.33")
 }
+
+// [verify] The band is the month's wages subject to CPF (the sg-cpf pack's definition of total wages), so S$103.77 of ordinary wages with S$20,000 of additional wages the
+// annual ceiling leaves no room for stay in the graduated range: 17% of 103.77 = 17.64 -> 18, nothing by the employee, and not the full 37% (38, the employee 20) the
+// S$20,103.77 paid would give. The CPF Board's page does not say which wages choose the band; the accountant confirms.
+// req: FR-PAY-02
+func TestTheBandIsChosenOnTheWagesSubjectToCPFNotThoseAboveTheCeiling(t *testing.T) {
+	m := payroll.Month{Month: fDay(2026, 6, 1), Person: fCitizen(), Items: []payroll.Item{fBasic("103.77"),
+		{Key: "c", Name: "Commission", Amount: fDec("20000.00"), CPFWages: true, ForMonth: fDay(2026, 6, 1), PayableOn: fDay(2026, 7, 28)}},
+		YTD: payroll.YearToDate{Known: true, OW: fDec("101500"), AWSubject: fDec("0"), AWPaid: fDec("0")}}
+	r, err := payroll.Calculate(m, oraclePacks(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fEq(t, "additional wages subject", r.AWSubject, "0")
+	fEq(t, "CPF total", r.CPF.Total, "18")
+	fEq(t, "CPF employee", r.CPF.Employee, "0")
+}

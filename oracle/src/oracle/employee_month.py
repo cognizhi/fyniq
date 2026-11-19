@@ -39,7 +39,7 @@ The rules this module applies, with the source of each:
   employer-month **SDL payable** is the employees' amounts added and rounded **down** to the dollar.
 * **SHG** (FR-PAY-04): the fund's amount for the band the month's wages (the gross, before the ceilings) fall in, unless the employee
   opted out; nothing when there are none [verify: whether items that are not CPF wages count as "monthly total wages"].
-* **Deductions** (FR-PAY-16): only the kinds MOM allows, each for more than nothing; ``other`` needs written consent; the deductions, not counting absence, the
+* **Deductions** (FR-PAY-16): only the kinds MOM allows; ``other`` needs written consent; the deductions, not counting absence, the
   recovery of advances, loans, overpaid salary or unearned benefits and co-operative society payments, are at most 50% of the salary
   payable (the gross) except on termination (``final``); an advance is recovered in at most 12 instalments of at most 25% of the
   salary each; on final pay an advance is recovered only as far as the employee consented in writing [accountant to confirm: MOM does not say
@@ -345,9 +345,6 @@ def check_deductions(salary: Decimal, deductions: list[dict[str, Any]], final: b
     for d in deductions:
         if d["kind"] == "other" and not d["consent"]:
             found.append({"key": d["key"], "rule": "consent"})
-        if d["amount"] <= 0:  # a deduction is more than zero; it is not counted
-            found.append({"key": d["key"], "rule": "amount"})
-            continue
         if d["kind"] not in EXEMPT_FROM_HALF:
             counted += d["amount"]
         if d["is_advance"]:

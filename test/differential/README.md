@@ -1676,7 +1676,7 @@ Rules the sources leave open, decided in the oracle and marked for confirmation 
 - **Joint election** is the full employer rate with graduated employee rates (F/G); the person record has no switch for F/F. `[verify]`
 - **No start date** for a permanent resident is read as past the second year; a month in the start month is in the first year. `[verify]`
 - **SDL** and **SHG** are on the gross, before the ceilings, items that are not CPF wages included; SHG is nothing when there are no wages. `[verify]`
-- **Graduated band** is chosen on the wages subject to CPF (after the ceilings and a true-up), as the sg-cpf pack defines total wages. `[verify]`
+- **Graduated band** (an engine behaviour change on an open rule, tagged in `calc.go`; the CPF Board page checked 20 Nov 2026 says only "Total Wages payable in a calendar month") is chosen on the wages subject to CPF (after the ceilings and a true-up), as the sg-cpf pack defines total wages. `[verify]`
 - **Wage class** is judged against the wage month: pay for another month's employment is additional wages. `[verify]`
 - **A 29 February birthday** is 1 March in a year with none, so the age band changes the month after that. `[verify]`
 - **Final pay**: an advance is recovered only with consent; the 12-instalment and 25% limits are not applied on it. `[accountant to confirm]`

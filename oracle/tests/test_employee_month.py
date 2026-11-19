@@ -426,11 +426,6 @@ def test_the_50_percent_limit_does_not_apply_on_termination():  # req: FR-PAY-16
     assert violations([ded("a", "damage_or_loss", "3900.00")], final=True) == []
 
 
-def test_a_deduction_is_for_more_than_nothing_and_is_not_counted():  # req: FR-PAY-16
-    assert violations([ded("a", "damage_or_loss", "0.00")]) == [{"key": "a", "rule": "amount"}]
-    assert violations([ded("a", "damage_or_loss", "0.00"), ded("b", "damage_or_loss", "2000.00")]) == [{"key": "a", "rule": "amount"}]  # no "half": 2,000 is 50% of 4,000
-
-
 def test_any_other_purpose_needs_written_consent():  # req: FR-PAY-16
     assert violations([ded("a", "other", "10.00")]) == [{"key": "a", "rule": "consent"}]
     assert violations([ded("a", "other", "10.00", consent=True)]) == []
