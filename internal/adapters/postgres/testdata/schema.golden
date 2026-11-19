@@ -354,6 +354,7 @@ ai_proposal | finished_at | timestamp with time zone | null |
 ai_proposal | proposed_at | timestamp with time zone | not null | 
 ai_proposal | expires_at | timestamp with time zone | not null | 
 ai_proposal | version | integer | not null | 1
+ai_proposal | mcp_app | text | null | 
 ai_qualification | organisation_id | uuid | not null | current_org()
 ai_qualification | id | uuid | not null | uuidv7()
 ai_qualification | agent | text | not null | 
@@ -1641,6 +1642,39 @@ ledger_purged_entry | reverses_entry_id | uuid | null |
 ledger_purged_entry | boundary | date | not null | 
 ledger_revision | organisation_id | uuid | not null | current_org()
 ledger_revision | revision | bigint | not null | 0
+mcp_call | organisation_id | uuid | not null | current_org()
+mcp_call | id | uuid | not null | uuidv7()
+mcp_call | user_id | uuid | not null | 
+mcp_call | app | text | not null | 
+mcp_call | app_version | text | not null | ''::text
+mcp_call | token_id | text | not null | ''::text
+mcp_call | tool | text | not null | 
+mcp_call | input_sha256 | text | not null | ''::text
+mcp_call | output_sha256 | text | not null | ''::text
+mcp_call | facts | integer | not null | 0
+mcp_call | duration_ms | integer | not null | 0
+mcp_call | outcome | text | not null | 
+mcp_call | code | text | not null | ''::text
+mcp_call | network | text | not null | ''::text
+mcp_call | at | timestamp with time zone | not null | 
+mcp_client | client_id | text | not null | 
+mcp_client | name | text | not null | 
+mcp_client | redirect_uris | text[] | not null | 
+mcp_client | status | text | not null | 'pending'::text
+mcp_client | network | text | not null | ''::text
+mcp_client | registered_at | timestamp with time zone | not null | 
+mcp_client | decided_at | timestamp with time zone | null | 
+mcp_client | last_used_at | timestamp with time zone | null | 
+mcp_seen | organisation_id | uuid | not null | current_org()
+mcp_seen | user_id | uuid | not null | 
+mcp_seen | kind | text | not null | 
+mcp_seen | value | text | not null | 
+mcp_seen | first_seen | timestamp with time zone | not null | 
+mcp_user_optin | organisation_id | uuid | not null | current_org()
+mcp_user_optin | id | uuid | not null | uuidv7()
+mcp_user_optin | user_id | uuid | not null | 
+mcp_user_optin | opted_in | boolean | not null | 
+mcp_user_optin | set_at | timestamp with time zone | not null | 
 member_invitation | organisation_id | uuid | not null | current_org()
 member_invitation | id | uuid | not null | uuidv7()
 member_invitation | code_hash | bytea | not null | 
@@ -2203,6 +2237,16 @@ psp_balance | connector_id | uuid | not null |
 psp_balance | currency | text | not null | 
 psp_balance | amount | numeric(20,4) | not null | 
 psp_balance | taken_at | timestamp with time zone | not null | 
+psp_dispute_credit | organisation_id | uuid | not null | current_org()
+psp_dispute_credit | id | uuid | not null | uuidv7()
+psp_dispute_credit | connector_id | uuid | not null | 
+psp_dispute_credit | dispute_id | text | not null | 
+psp_dispute_credit | credit_note_id | uuid | not null | 
+psp_dispute_credit | refund_id | uuid | not null | 
+psp_dispute_credit | currency | text | not null | 
+psp_dispute_credit | amount | numeric(20,4) | not null | 
+psp_dispute_credit | created_by | text | not null | 
+psp_dispute_credit | created_at | timestamp with time zone | not null | 
 psp_dispute_loss | organisation_id | uuid | not null | current_org()
 psp_dispute_loss | id | uuid | not null | uuidv7()
 psp_dispute_loss | connector_id | uuid | not null | 
@@ -3190,9 +3234,10 @@ ai_proposal | ai_proposal_expiry | CHECK (((expires_at > proposed_at) AND (expir
 ai_proposal | ai_proposal_id_not_null | NOT NULL id
 ai_proposal | ai_proposal_item_count_not_null | NOT NULL item_count
 ai_proposal | ai_proposal_items | CHECK ((((item_count >= 0) AND (item_count <= 100)) AND ((approved_items IS NULL) OR ((item_count > 0) AND ((cardinality(approved_items) >= 1) AND (cardinality(approved_items) <= item_count)) AND (1 <= ALL (approved_items)) AND (item_count >= ALL (approved_items))))))
+ai_proposal | ai_proposal_mcp_app | CHECK (((mcp_app IS NULL) OR (mcp_app ~ '^[a-z0-9][a-z0-9-]{0,63}$'::text)))
 ai_proposal | ai_proposal_model_not_null | NOT NULL model
 ai_proposal | ai_proposal_organisation_id_not_null | NOT NULL organisation_id
-ai_proposal | ai_proposal_originator | CHECK (((agent ~ '^[a-z][a-z_]{1,40}$'::text) AND (num_nonnulls(turn_id, run_id) = 1) AND ((length(model) >= 1) AND (length(model) <= 200)) AND (prompt ~ '^[a-z][a-z_]{1,30}@[1-9][0-9]{0,3}$'::text) AND (tools_sha256 ~ '^[0-9a-f]{64}$'::text)))
+ai_proposal | ai_proposal_originator | CHECK (((agent ~ '^[a-z][a-z_]{1,40}$'::text) AND (num_nonnulls(turn_id, run_id, mcp_app) = 1) AND ((length(model) >= 1) AND (length(model) <= 200)) AND (prompt ~ '^[a-z][a-z_]{1,30}@[1-9][0-9]{0,3}$'::text) AND (tools_sha256 ~ '^[0-9a-f]{64}$'::text)))
 ai_proposal | ai_proposal_payload | CHECK ((((length(payload) >= 2) AND (length(payload) <= 65536)) AND (jsonb_typeof((payload)::jsonb) = 'object'::text) AND (payload_sha256 = encode(sha256(convert_to(payload, 'UTF8'::name)), 'hex'::text))))
 ai_proposal | ai_proposal_payload_not_null | NOT NULL payload
 ai_proposal | ai_proposal_payload_sha256_not_null | NOT NULL payload_sha256
@@ -3496,7 +3541,7 @@ approval_request | approval_request_expiry | CHECK (((expires_at > requested_at)
 approval_request | approval_request_id_not_null | NOT NULL id
 approval_request | approval_request_key_length | CHECK (((length(object_key) >= 1) AND (length(object_key) <= 100)))
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
-approval_request | approval_request_mfa_known | CHECK (((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])) OR ((object_type = 'ai_proposal'::text) AND (requester_mfa_method = ANY (ARRAY['ai_turn'::text, 'ai_run'::text])))))
+approval_request | approval_request_mfa_known | CHECK (((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])) OR ((object_type = 'ai_proposal'::text) AND (requester_mfa_method = ANY (ARRAY['ai_turn'::text, 'ai_run'::text, 'mcp_token'::text])))))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
 approval_request | approval_request_object_known | CHECK (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'membership'::text) AND (operation = 'member.remove'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))) OR ((object_type = 'claimant_bank_change'::text) AND (operation = 'claimant_bank_change.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.reapprove'::text))) OR ((object_type = 'contact_member_link'::text) AND (operation = 'contact_member_link.change'::text))) OR ((object_type = 'director_fee'::text) AND (operation = 'director_fee.post'::text))) OR ((object_type = 'director_settlement'::text) AND (operation = 'director_settlement.approve'::text))) OR ((object_type = 'director_repayment'::text) AND (operation = 'director_repayment.void'::text))) OR ((object_type = 'account'::text) AND (operation = 'account.merge'::text))) OR ((object_type = 'bank_reconciliation'::text) AND (operation = 'bank_reconciliation.sign'::text))) OR ((object_type = 'holder_record'::text) AND (operation = 'holder_record.record'::text))) OR ((object_type = 'share_class'::text) AND (operation = 'share_class.record'::text))) OR ((object_type = 'equity_transaction'::text) AND (operation = 'equity_transaction.approve'::text))) OR ((object_type = 'instrument'::text) AND (operation = 'instrument.record'::text))) OR ((object_type = 'instrument_template'::text) AND (operation = 'instrument_template.enable'::text))) OR ((object_type = 'option_pool'::text) AND (operation = 'option_pool.record'::text))) OR ((object_type = 'option_grant'::text) AND (operation = 'option_grant.record'::text))) OR ((object_type = 'option_event'::text) AND (operation = 'option_event.record'::text))) OR ((object_type = 'round_scenario'::text) AND (operation = 'round_scenario.approve'::text))) OR ((object_type = 'investor_right'::text) AND (operation = 'investor_right.record'::text))) OR ((object_type = 'controller_entry'::text) AND (operation = 'controller_entry.record'::text))) OR ((object_type = 'budget'::text) AND (operation = 'budget.record'::text))) OR ((object_type = 'migration_commit'::text) AND (operation = 'migration.commit'::text))) OR ((object_type = 'tenant_export'::text) AND (operation = 'tenant_export.prepare'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.create'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.change'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.credential'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.enable'::text))) OR ((object_type = 'ai_data_policy'::text) AND (operation = 'ai_data_policy.change'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.allow_model'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.price'::text))) OR ((object_type = 'ai_route'::text) AND (operation = 'ai_route.change'::text))) OR ((object_type = 'ai_proposal'::text) AND (operation = 'ai_proposal.execute'::text))) OR ((object_type = 'corporate_detail'::text) AND (operation = 'corporate_detail.record'::text))) OR ((object_type = 'corporate_officer'::text) AND (operation = 'corporate_officer.record'::text))) OR ((object_type = 'nominee_entry'::text) AND (operation = 'nominee_entry.record'::text))) OR ((object_type = 'statements_approval'::text) AND (operation = 'statements_approval.record'::text))) OR ((object_type = 'corporate_document'::text) AND (operation = 'corporate_document.record'::text))) OR ((object_type = 'api_client'::text) AND (operation = 'api_client.create'::text))) OR ((object_type = 'api_client'::text) AND (operation = 'api_client.reclass'::text))) OR ((object_type = 'kb_publication'::text) AND (operation = 'kb_publication.publish'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
@@ -5274,6 +5319,56 @@ ledger_revision | ledger_revision_organisation_fkey | FOREIGN KEY (organisation_
 ledger_revision | ledger_revision_organisation_id_not_null | NOT NULL organisation_id
 ledger_revision | ledger_revision_pkey | PRIMARY KEY (organisation_id)
 ledger_revision | ledger_revision_revision_not_null | NOT NULL revision
+mcp_call | mcp_call_app | CHECK (((app ~ '^[a-z0-9][a-z0-9-]{0,63}$'::text) AND (length(app_version) <= 200)))
+mcp_call | mcp_call_app_not_null | NOT NULL app
+mcp_call | mcp_call_app_version_not_null | NOT NULL app_version
+mcp_call | mcp_call_at_not_null | NOT NULL at
+mcp_call | mcp_call_code | CHECK ((code ~ '^([A-Z][A-Z0-9-]{1,40})?$'::text))
+mcp_call | mcp_call_code_not_null | NOT NULL code
+mcp_call | mcp_call_counts | CHECK (((facts >= 0) AND (duration_ms >= 0)))
+mcp_call | mcp_call_duration_ms_not_null | NOT NULL duration_ms
+mcp_call | mcp_call_facts_not_null | NOT NULL facts
+mcp_call | mcp_call_hashes | CHECK (((input_sha256 ~ '^([0-9a-f]{64})?$'::text) AND (output_sha256 ~ '^([0-9a-f]{64})?$'::text) AND (token_id ~ '^([0-9a-f]{16})?$'::text)))
+mcp_call | mcp_call_id_not_null | NOT NULL id
+mcp_call | mcp_call_input_sha256_not_null | NOT NULL input_sha256
+mcp_call | mcp_call_network | CHECK ((length(network) <= 64))
+mcp_call | mcp_call_network_not_null | NOT NULL network
+mcp_call | mcp_call_organisation_id_not_null | NOT NULL organisation_id
+mcp_call | mcp_call_outcome | CHECK (((outcome = ANY (ARRAY['read'::text, 'refused'::text, 'limited'::text, 'failed'::text])) AND ((outcome = 'read'::text) = (code = ''::text))))
+mcp_call | mcp_call_outcome_not_null | NOT NULL outcome
+mcp_call | mcp_call_output_sha256_not_null | NOT NULL output_sha256
+mcp_call | mcp_call_pkey | PRIMARY KEY (organisation_id, id)
+mcp_call | mcp_call_token_id_not_null | NOT NULL token_id
+mcp_call | mcp_call_tool | CHECK ((tool ~ '^[a-z_]+(\.[a-z_]+)?$'::text))
+mcp_call | mcp_call_tool_not_null | NOT NULL tool
+mcp_call | mcp_call_user_id_not_null | NOT NULL user_id
+mcp_client | mcp_client_client_id_not_null | NOT NULL client_id
+mcp_client | mcp_client_id | CHECK ((client_id ~ '^mcp-[0-9a-f]{20}$'::text))
+mcp_client | mcp_client_name | CHECK (((length(name) >= 1) AND (length(name) <= 100)))
+mcp_client | mcp_client_name_not_null | NOT NULL name
+mcp_client | mcp_client_network | CHECK ((length(network) <= 64))
+mcp_client | mcp_client_network_not_null | NOT NULL network
+mcp_client | mcp_client_pkey | PRIMARY KEY (client_id)
+mcp_client | mcp_client_redirect_uris_not_null | NOT NULL redirect_uris
+mcp_client | mcp_client_registered_at_not_null | NOT NULL registered_at
+mcp_client | mcp_client_status | CHECK (((status = ANY (ARRAY['pending'::text, 'approved'::text, 'denied'::text, 'expired'::text])) AND ((status = 'pending'::text) = (decided_at IS NULL))))
+mcp_client | mcp_client_status_not_null | NOT NULL status
+mcp_client | mcp_client_uris | CHECK (((cardinality(redirect_uris) >= 1) AND (cardinality(redirect_uris) <= 5)))
+mcp_seen | mcp_seen_first_seen_not_null | NOT NULL first_seen
+mcp_seen | mcp_seen_kind | CHECK (((kind = ANY (ARRAY['app'::text, 'network'::text])) AND ((length(value) >= 1) AND (length(value) <= 64))))
+mcp_seen | mcp_seen_kind_not_null | NOT NULL kind
+mcp_seen | mcp_seen_organisation_id_not_null | NOT NULL organisation_id
+mcp_seen | mcp_seen_pkey | PRIMARY KEY (organisation_id, user_id, kind, value)
+mcp_seen | mcp_seen_user_id_not_null | NOT NULL user_id
+mcp_seen | mcp_seen_value_not_null | NOT NULL value
+mcp_user_optin | mcp_user_optin_id_not_null | NOT NULL id
+mcp_user_optin | mcp_user_optin_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+mcp_user_optin | mcp_user_optin_opted_in_not_null | NOT NULL opted_in
+mcp_user_optin | mcp_user_optin_organisation_id_not_null | NOT NULL organisation_id
+mcp_user_optin | mcp_user_optin_pkey | PRIMARY KEY (organisation_id, id)
+mcp_user_optin | mcp_user_optin_set_at_not_null | NOT NULL set_at
+mcp_user_optin | mcp_user_optin_user_id_not_null | NOT NULL user_id
+mcp_user_optin | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 member_invitation | member_invitation_accepted_by_fkey | FOREIGN KEY (accepted_by) REFERENCES app_user(user_id)
 member_invitation | member_invitation_code_hash_not_null | NOT NULL code_hash
 member_invitation | member_invitation_code_key | UNIQUE (organisation_id, code_hash)
@@ -5656,7 +5751,7 @@ organisation_setting | organisation_setting_recorded_at_not_null | NOT NULL reco
 organisation_setting | organisation_setting_region_fixed | CHECK ((key <> 'data.region'::text))
 organisation_setting | organisation_setting_value_length | CHECK (
 CASE
-    WHEN (key = ANY (ARRAY['ai.exclusions'::text, 'ai.task_types'::text])) THEN (length(value) <= 4000)
+    WHEN (key = ANY (ARRAY['ai.exclusions'::text, 'ai.task_types'::text, 'mcp.clients'::text])) THEN (length(value) <= 4000)
     ELSE ((length(value) >= 1) AND (length(value) <= 200))
 END)
 organisation_setting | organisation_setting_value_not_null | NOT NULL value
@@ -6216,6 +6311,26 @@ psp_balance | psp_balance_organisation_id_not_null | NOT NULL organisation_id
 psp_balance | psp_balance_pkey | PRIMARY KEY (organisation_id, id)
 psp_balance | psp_balance_taken_at_not_null | NOT NULL taken_at
 psp_balance | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_dispute_credit | psp_dispute_credit_amount | CHECK (((amount <> 'NaN'::numeric) AND (amount > (0)::numeric)))
+psp_dispute_credit | psp_dispute_credit_amount_not_null | NOT NULL amount
+psp_dispute_credit | psp_dispute_credit_by_form | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+psp_dispute_credit | psp_dispute_credit_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_dispute_credit | psp_dispute_credit_connector_id_not_null | NOT NULL connector_id
+psp_dispute_credit | psp_dispute_credit_created_at_not_null | NOT NULL created_at
+psp_dispute_credit | psp_dispute_credit_created_by_not_null | NOT NULL created_by
+psp_dispute_credit | psp_dispute_credit_credit_fkey | FOREIGN KEY (organisation_id, credit_note_id) REFERENCES document(organisation_id, id)
+psp_dispute_credit | psp_dispute_credit_credit_note_id_not_null | NOT NULL credit_note_id
+psp_dispute_credit | psp_dispute_credit_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+psp_dispute_credit | psp_dispute_credit_currency_not_null | NOT NULL currency
+psp_dispute_credit | psp_dispute_credit_dispute_id_not_null | NOT NULL dispute_id
+psp_dispute_credit | psp_dispute_credit_id_not_null | NOT NULL id
+psp_dispute_credit | psp_dispute_credit_lengths | CHECK (((length(dispute_id) >= 1) AND (length(dispute_id) <= 255)))
+psp_dispute_credit | psp_dispute_credit_once | UNIQUE (organisation_id, connector_id, dispute_id)
+psp_dispute_credit | psp_dispute_credit_organisation_id_not_null | NOT NULL organisation_id
+psp_dispute_credit | psp_dispute_credit_pkey | PRIMARY KEY (organisation_id, id)
+psp_dispute_credit | psp_dispute_credit_refund_fkey | FOREIGN KEY (organisation_id, refund_id) REFERENCES document(organisation_id, id)
+psp_dispute_credit | psp_dispute_credit_refund_id_not_null | NOT NULL refund_id
+psp_dispute_credit | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 psp_dispute_loss | psp_dispute_loss_accepted_overstated_revenue_not_null | NOT NULL accepted_overstated_revenue
 psp_dispute_loss | psp_dispute_loss_amount | CHECK (((amount <> 'NaN'::numeric) AND (amount > (0)::numeric)))
 psp_dispute_loss | psp_dispute_loss_amount_not_null | NOT NULL amount
@@ -7118,6 +7233,11 @@ CREATE INDEX kb_platform_page_search ON fyniq.kb_platform_page USING gin (search
 CREATE INDEX kb_platform_page_title_trgm ON fyniq.kb_platform_page USING gin (lower(title) fyniq_ext.gin_trgm_ops)
 CREATE INDEX kb_platform_source_search ON fyniq.kb_platform_source USING gin (search)
 CREATE INDEX ledger_purged_entry_source_idx ON fyniq.ledger_purged_entry USING btree (organisation_id, source_id)
+CREATE INDEX mcp_call_of_user ON fyniq.mcp_call USING btree (organisation_id, user_id, app, at DESC)
+CREATE INDEX mcp_call_recent ON fyniq.mcp_call USING btree (organisation_id, at DESC)
+CREATE INDEX mcp_client_network_recent ON fyniq.mcp_client USING btree (network, registered_at)
+CREATE INDEX mcp_client_pending ON fyniq.mcp_client USING btree (status, registered_at)
+CREATE INDEX mcp_user_optin_latest ON fyniq.mcp_user_optin USING btree (organisation_id, user_id, set_at)
 CREATE INDEX migration_archive_run ON fyniq.migration_archive USING btree (organisation_id, run_id)
 CREATE INDEX migration_commit_approval ON fyniq.migration_commit USING btree (organisation_id, approval_id)
 CREATE INDEX migration_commit_mapping ON fyniq.migration_commit USING btree (organisation_id, mapping_id)
@@ -7430,6 +7550,10 @@ CREATE UNIQUE INDEX ledger_boundary_pkey ON fyniq.ledger_boundary USING btree (o
 CREATE UNIQUE INDEX ledger_purged_entry_identity_key ON fyniq.ledger_purged_entry USING btree (organisation_id, posting_identity)
 CREATE UNIQUE INDEX ledger_purged_entry_pkey ON fyniq.ledger_purged_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (organisation_id)
+CREATE UNIQUE INDEX mcp_call_pkey ON fyniq.mcp_call USING btree (organisation_id, id)
+CREATE UNIQUE INDEX mcp_client_pkey ON fyniq.mcp_client USING btree (client_id)
+CREATE UNIQUE INDEX mcp_seen_pkey ON fyniq.mcp_seen USING btree (organisation_id, user_id, kind, value)
+CREATE UNIQUE INDEX mcp_user_optin_pkey ON fyniq.mcp_user_optin USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_invitation_code_key ON fyniq.member_invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX member_invitation_pkey ON fyniq.member_invitation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX migration_archive_file ON fyniq.migration_archive USING btree (organisation_id, file_id)
@@ -7521,6 +7645,8 @@ CREATE UNIQUE INDEX project_task_project_key ON fyniq.project_task USING btree (
 CREATE UNIQUE INDEX psp_account_id_key ON fyniq.psp_account USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_account_pkey ON fyniq.psp_account USING btree (organisation_id, money_account_id)
 CREATE UNIQUE INDEX psp_balance_pkey ON fyniq.psp_balance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_dispute_credit_once ON fyniq.psp_dispute_credit USING btree (organisation_id, connector_id, dispute_id)
+CREATE UNIQUE INDEX psp_dispute_credit_pkey ON fyniq.psp_dispute_credit USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_dispute_loss_once ON fyniq.psp_dispute_loss USING btree (organisation_id, connector_id, dispute_id)
 CREATE UNIQUE INDEX psp_dispute_loss_pkey ON fyniq.psp_dispute_loss USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_event_once ON fyniq.psp_event USING btree (organisation_id, connector_id, event_id)
@@ -7666,6 +7792,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.kb_page_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_page_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.kb_snapshot DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_snapshot', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ledger_boundary DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ledger_boundary', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.mcp_user_optin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('mcp_user_optin', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_archive DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
@@ -7695,6 +7822,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_acknowledge
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_draft DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_draft', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_balance', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_dispute_credit DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_dispute_credit', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_dispute_loss DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_dispute_loss', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.quote_outcome DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('quote_outcome', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_bill_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'recurring_bill_id')
@@ -8056,6 +8184,14 @@ CREATE TRIGGER ledger_boundary_no_truncate BEFORE TRUNCATE ON fyniq.ledger_bound
 CREATE TRIGGER ledger_purged_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.ledger_purged_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER ledger_purged_entry_no_truncate BEFORE TRUNCATE ON fyniq.ledger_purged_entry FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER ledger_revision_guard BEFORE DELETE OR UPDATE ON fyniq.ledger_revision FOR EACH ROW EXECUTE FUNCTION ledger_revision_guard()
+CREATE TRIGGER mcp_call_guard BEFORE DELETE OR UPDATE ON fyniq.mcp_call FOR EACH ROW EXECUTE FUNCTION mcp_call_guard()
+CREATE TRIGGER mcp_call_no_truncate BEFORE TRUNCATE ON fyniq.mcp_call FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER mcp_client_guard BEFORE DELETE OR UPDATE ON fyniq.mcp_client FOR EACH ROW EXECUTE FUNCTION mcp_client_guard()
+CREATE TRIGGER mcp_client_no_truncate BEFORE TRUNCATE ON fyniq.mcp_client FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER mcp_seen_guard BEFORE DELETE OR UPDATE ON fyniq.mcp_seen FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER mcp_seen_no_truncate BEFORE TRUNCATE ON fyniq.mcp_seen FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER mcp_user_optin_guard BEFORE DELETE OR UPDATE ON fyniq.mcp_user_optin FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER mcp_user_optin_no_truncate BEFORE TRUNCATE ON fyniq.mcp_user_optin FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER member_invitation_guard BEFORE UPDATE ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION member_invitation_guard()
 CREATE TRIGGER membership_guard BEFORE INSERT OR UPDATE ON fyniq.user_membership FOR EACH ROW EXECUTE FUNCTION membership_guard()
 CREATE TRIGGER migration_archive_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_archive FOR EACH ROW EXECUTE FUNCTION migration_archive_guard()
@@ -8163,6 +8299,8 @@ CREATE TRIGGER project_milestone_guard BEFORE INSERT OR DELETE OR UPDATE ON fyni
 CREATE TRIGGER project_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_task FOR EACH ROW EXECUTE FUNCTION project_part_guard()
 CREATE TRIGGER psp_balance_guard BEFORE DELETE OR UPDATE ON fyniq.psp_balance FOR EACH ROW EXECUTE FUNCTION psp_balance_guard()
 CREATE TRIGGER psp_balance_no_truncate BEFORE TRUNCATE ON fyniq.psp_balance FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_dispute_credit_guard BEFORE DELETE OR UPDATE ON fyniq.psp_dispute_credit FOR EACH ROW EXECUTE FUNCTION psp_dispute_credit_guard()
+CREATE TRIGGER psp_dispute_credit_no_truncate BEFORE TRUNCATE ON fyniq.psp_dispute_credit FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_dispute_loss_guard BEFORE DELETE OR UPDATE ON fyniq.psp_dispute_loss FOR EACH ROW EXECUTE FUNCTION psp_dispute_loss_guard()
 CREATE TRIGGER psp_dispute_loss_no_truncate BEFORE TRUNCATE ON fyniq.psp_dispute_loss FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_event_guard BEFORE DELETE OR UPDATE ON fyniq.psp_event FOR EACH ROW EXECUTE FUNCTION psp_event_guard()
@@ -8353,6 +8491,9 @@ kpi_input | tenant_isolation | * | (organisation_id = current_org()) | (organisa
 ledger_boundary | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_purged_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+mcp_call | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+mcp_seen | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+mcp_user_optin | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 member_invitation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_archive | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_commit | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8405,6 +8546,7 @@ project_milestone | tenant_isolation | * | (organisation_id = current_org()) | (
 project_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_dispute_credit | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_dispute_loss | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_payout | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8585,6 +8727,10 @@ kpi_input | enabled | forced
 ledger_boundary | enabled | forced
 ledger_purged_entry | enabled | forced
 ledger_revision | enabled | forced
+mcp_call | enabled | forced
+mcp_client | disabled | not forced
+mcp_seen | enabled | forced
+mcp_user_optin | enabled | forced
 member_invitation | enabled | forced
 migration_archive | enabled | forced
 migration_commit | enabled | forced
@@ -8638,6 +8784,7 @@ project_milestone | enabled | forced
 project_task | enabled | forced
 psp_account | enabled | forced
 psp_balance | enabled | forced
+psp_dispute_credit | enabled | forced
 psp_dispute_loss | enabled | forced
 psp_event | enabled | forced
 psp_payout | enabled | forced
@@ -8713,7 +8860,7 @@ ai_grant_for(p_org uuid, p_hash bytea, p_now timestamp with time zone, OUT user_
 ai_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 89cefe0e7ebcddb2f2f6e35ced93bf85
 ai_model_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 68783d56f55071fa6eeb49ac53beb8b4
 ai_price_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10ea79dafbe968082a5dc082542e5997
-ai_proposal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27f4524c74a647735c5530bab38797ed
+ai_proposal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | adaece36c12c8c9ab536ee89b710e317
 ai_proposal_voids() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c7d7323484cb27ff32906a3bca55d133
 ai_purge_conversations(p_before timestamp with time zone, OUT conversations integer, OUT turns integer) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7fe0af9f8f3135d573b9063e73a9ab00
 ai_qualification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abd6e63a09026b84d1a5ee96d11e0233
@@ -8730,11 +8877,11 @@ api_client_guard() → trigger | security definer | v | search_path=pg_catalog, 
 apply_installation_change(p_change uuid, p_connector text, p_id uuid, p_step text, p_at timestamp with time zone) → void | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8e8cf04d98279cfd8fcd5307219c31ac
 approval_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cf2f3a845eb3f3f37b28ac86827d4dd0
 approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
-approval_request_ai_requester() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f1be4be8adcdee6035d841ecd10fe81e
+approval_request_ai_requester() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d672fb5bb2d84b143a84c9d5499ff4c
 approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3359e1c6e373efc4111560e22c9c455
 approval_request_voided() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8a52518e632c789b205db97d82662924
 approval_rules_valid(p_rules jsonb) → boolean | security invoker | i | search_path=pg_catalog, fyniq, pg_temp | 2f1658d0c494b984aaf4d99dd4b8e89d
-approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a65158e2f90c1cf29aa13ce54cab1188
+approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 102271dad94b050dac62a7689b6cc955
 approval_steps_met(p_org uuid, p_request uuid, p_hash bytea, p_steps jsonb, p_upto integer) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 87283a918dece8cd6ce8b836a822f76d
 approval_steps_valid(p_steps jsonb) → boolean | security invoker | i | search_path=pg_catalog, pg_temp | d50ae4849ebdf5e7511ee70dc98ccfd3
 approval_void_pending(p_type text, p_key text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d881befb6ede26f4ea128fc16cd228d
@@ -8920,6 +9067,17 @@ ledger_revision_guard() → trigger | security invoker | v | search_path=pg_cata
 link_identity(p_session bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ca318a9298b9116b53e6571480a735ac
 live_session_user(p_session bytea, p_now timestamp with time zone) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1e4b8368d23fd003bc4e7f03c591ed49
 lock_ledger() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 15857e366d7360fc986394bc521e4b89
+mcp_call_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9ae38d57b2db57a9ab37cc2174f3ff6
+mcp_client_decide(p_id text, p_status text, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 34b0fc42a9925263ac6fa9ae3e06ba9c
+mcp_client_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ebf00f0b6b57286caeb84e5a76b6afb7
+mcp_client_register(p_id text, p_name text, p_uris text[], p_network text, p_now timestamp with time zone, p_per_hour integer, p_per_day integer, p_pending_cap integer) → text | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8315a52b29eb9f0647161f136eff4a3f
+mcp_client_status(p_id text) → text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 3a40b7172b86f1e46d079c4c69042bdb
+mcp_client_touch(p_id text, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 92fedf837b7f15c35a80c5c53f8fe80a
+mcp_clients_expire(p_now timestamp with time zone, p_pending interval, p_unused interval) → SETOF text | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a832de9100b181f8e9fed224a1b95c3b
+mcp_clients_named(p_ids text[]) → SETOF mcp_client | security definer | s | search_path=pg_catalog, fyniq, pg_temp | b5b3eca3e61d3118d0dea22776dd853b
+mcp_clients_pending() → SETOF mcp_client | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4c562e36eec5a6f3140f98101328a5f3
+mcp_purge_calls(p_before timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b9fb6462aed784046e564c4fc8006bb5
+mcp_registration_open(p_now timestamp with time zone) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 354766d8448266a6f1bde09a79437dc8
 member_emails() → TABLE(user_id uuid, email text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | de5d5500c1abd3c22db2454f742d293e
 member_invitation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bbbd3cfc69b3ef2e3f033c058258160c
 member_names() → TABLE(user_id uuid, display_name text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9cbac1cf633afffdb29757fcd8b4615f
@@ -8978,6 +9136,7 @@ project_guard() → trigger | security invoker | v | search_path=pg_catalog, fyn
 project_milestone_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b8dc234f6537bead909f4c0fcb746635
 project_part_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abaebce4c4cd3919837dd8db7382ce2a
 psp_balance_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 718c45d122dfe60b1f6507609c283752
+psp_dispute_credit_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3ff52623e3d9977b1183a6afe837b287
 psp_dispute_loss_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0624664dfa2f00777a7eee9eb2377308
 psp_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 795487512cdc896caeba25ce58b8402a
 psp_payout_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c1040a9a3046d2137cdb49737f962685

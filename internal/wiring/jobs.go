@@ -41,6 +41,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/kbcompile"
 	"github.com/cognizhi/fyniq/internal/logging"
+	"github.com/cognizhi/fyniq/internal/mcpregister"
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/notify/reminders"
@@ -88,6 +89,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		kbcompile.LintJob: k.KBLint(), // AI-52: the weekly deterministic lint of every organisation's knowledge base, as the compiler
+		mcpregister.ExpireJob: func(ctx context.Context) error { // AI-90: the AI apps' registrations that lapsed
+			_, err := mcpregister.Expire(ctx, k.Store, k.OAuthClients, clock.Now(), slog.Default())
+			return err
+		},
 		proposal.ExpireJob: func(ctx context.Context) error { // §9.5: the AI's proposals past their expiry, undecided
 			_, err := proposal.ExpireAll(ctx, k.Store, clock)
 			return err

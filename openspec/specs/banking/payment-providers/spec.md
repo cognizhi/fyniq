@@ -232,6 +232,22 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **WHEN** a lost dispute above it is written off as an expense
 - **THEN** the request must confirm that the invoice's revenue stays as invoiced and give a reason, which are recorded with the draft
 
+#### Scenario: A credit note settled against a lost dispute (rev 0.308)
+- **GIVEN** a lost dispute whose invoice is known and an issued credit note for it, in the base currency
+- **WHEN** a person with the right to post on Invoices settles the credit against the dispute
+- **THEN** the posting rule dispute_settlement@1 posts Dr accounts receivable · Cr the provider account's disputes clearing account, for the credit's amount, as a refund records money paid back
+- **AND** the oracle and the engine agree on it to the cent, and no manual journal touches accounts receivable
+
+#### Scenario: The credit is settled once and within the dispute
+- **GIVEN** a credit above the disputed amount, or a dispute whose credit was settled already
+- **WHEN** a person settles it
+- **THEN** the request is refused in plain words, and what stays held, the dispute fee, is written off by the draft journal
+
+#### Scenario: The provider payouts screen (rev 0.308)
+- **WHEN** a person opens Payouts in Expert mode
+- **THEN** each provider shows its clearing balance against the provider's, each payout is broken down with its nets-to-zero check, and the disputes show both routes
+- **AND** an event Fyniq parked is marked as dealt with, with a reason, on the same page
+
 ### Requirement: FR-PSP-05 Fees and their GST
 The system SHALL expense provider fees once, per transaction, from the provider's data, and SHALL claim input GST on them only where the provider charges GST and issues a tax invoice.
 

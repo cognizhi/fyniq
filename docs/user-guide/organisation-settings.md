@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-UX-27, CMP-PD-01, FM-8, FR-INT-02, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32]
+requirements: [FR-UX-27, CMP-PD-01, FM-8, FR-INT-02, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32, AI-35, AI-43, AI-90]
 status: draft
 ---
 
@@ -137,7 +137,7 @@ takes, such as INV-0042.
 
 - Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when
   incoming-funds alerts expire, the AI assistant, the AI's access to pay, the fields it never reads, its limits and
-  the changes it may propose, details in notification email, the sign-out after inactivity and personal access tokens need a second approver before they change: they show
+  the changes it may propose, AI apps and the limits on them, details in notification email, the sign-out after inactivity and personal access tokens need a second approver before they change: they show
   **Needs a second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
@@ -158,6 +158,7 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
 | Projects and time | Off | Off until you track time or costs by project |
 | Portals for customers and investors | Off | Off until there are customers or investors to invite |
 | AI assistant | Off | AI stays off until an Owner turns it on with a second approver; switching it off takes effect at once |
+| AI apps through MCP | Off | No AI app reaches your books until an Owner turns it on with a second approver; see [AI apps through MCP](#ai-apps-through-mcp) |
 
 ## Motion
 
@@ -226,6 +227,37 @@ what is shown, never what a person may do.
 - Some changes can never be proposed, whatever is set here: approving or rejecting anything, payments, payee bank
   details, users, roles and team mode, approval policies, the AI's own settings, statutory parameters, reopening a
   period, voiding or deleting, filing with an authority, exporting the company's data, and the audit trail.
+
+## AI apps through MCP
+
+- Some AI apps, such as Claude Code or Claude Desktop, can work with your books on a person's behalf over the Model
+  Context Protocol (MCP), using the same read tools as the assistant in Fyniq. They can read what that person may read,
+  and propose changes for a person to approve in Fyniq; they cannot approve, pay, export or change settings.
+- **AI apps through MCP**: off unless changed. Turning it on needs a second approver; turning it off takes effect at
+  once and cuts every AI app off.
+- **AI apps that may connect**: none unless changed. Enter the apps to allow, such as `claude-code`, separated by
+  commas. You can list the apps this release has registered, and an app that registered itself, by the ID shown when it
+  asked; an app that is not listed cannot connect. Adding an app needs a second approver. Taking one off takes effect at
+  once, with no second approver, and cuts that app off.
+- **AI apps may register themselves**: off unless changed. An AI app can ask to be registered, on its own, only while an
+  Owner has turned this on with a second approver. A registered app is limited to the default read access, is not
+  verified, and cannot connect until an Owner adds it to the apps that may connect. A registration nobody approves
+  expires after 7 days, and an approved app nobody uses after 30. Turning it off takes effect at once.
+- Each person also has to opt in before an app can act for them, and sees what the app may read when they allow it.
+- This release only holds these settings. No AI app can connect until the MCP server is opened for the deployment, which
+  is done separately, after a security review.
+
+## AI app limits
+
+- An AI app works within limits, so a script or a slip cannot run up load or cost. Each needs a second approver to
+  change, and each has a highest value the platform allows.
+- **Requests a person's AI app may make a minute**: 60 unless changed, from 1 to 600. **Reads and proposals an hour**:
+  600 unless changed, from 1 to 10,000. **A day**: 5,000 unless changed, from 1 to 100,000. Past one, the app is told
+  to wait and works again once it eases.
+- **Proposals an AI app may make for a person in an hour**: 30 unless changed, from 1 to 1,000.
+- **The most rows one answer may hold**: 500 unless changed, from 1 to 5,000. **The most kilobytes**: 256 unless
+  changed, from 16 to 1,024. A tool's own limits are lower; an answer larger than a limit is cut, and what was left out is
+  counted and said.
 
 ## Company secretary assistant
 

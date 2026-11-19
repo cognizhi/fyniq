@@ -13,15 +13,16 @@ import (
 )
 
 const aIProposalsPage = `-- name: AIProposalsPage :many
-SELECT organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version FROM fyniq.ai_proposal
+SELECT organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version, mcp_app FROM fyniq.ai_proposal
 WHERE (cardinality($1::text[]) = 0 OR status = ANY ($1::text[]))
   AND ($2::uuid IS NULL OR requested_by = $2::uuid)
   AND ($3::uuid IS NULL OR turn_id = $3::uuid)
   AND ($4::uuid IS NULL OR run_id = $4::uuid)
   AND ($5::text = '' OR agent = $5::text)
-  AND ($6::uuid = '00000000-0000-0000-0000-000000000000'::uuid OR id < $6::uuid)
+  AND ($6::timestamptz IS NULL OR proposed_at >= $6::timestamptz)
+  AND ($7::uuid = '00000000-0000-0000-0000-000000000000'::uuid OR id < $7::uuid)
 ORDER BY id DESC
-LIMIT $7
+LIMIT $8
 `
 
 type AIProposalsPageParams struct {
@@ -30,6 +31,7 @@ type AIProposalsPageParams struct {
 	TurnID      *uuid.UUID
 	RunID       *uuid.UUID
 	Agent       string
+	Since       *time.Time
 	After       uuid.UUID
 	MaxRows     int32
 }
@@ -41,6 +43,7 @@ func (q *Queries) AIProposalsPage(ctx context.Context, arg AIProposalsPageParams
 		arg.TurnID,
 		arg.RunID,
 		arg.Agent,
+		arg.Since,
 		arg.After,
 		arg.MaxRows,
 	)
@@ -88,6 +91,7 @@ func (q *Queries) AIProposalsPage(ctx context.Context, arg AIProposalsPageParams
 			&i.ProposedAt,
 			&i.ExpiresAt,
 			&i.Version,
+			&i.McpApp,
 		); err != nil {
 			return nil, err
 		}
@@ -104,7 +108,7 @@ UPDATE fyniq.ai_proposal SET status = 'approved', decided_by = $1, decided_at = 
   approved_items = $3, approved_payload = $4, approved_sha256 = $5,
   version = version + 1
 WHERE id = $6 AND version = $7
-RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version
+RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version, mcp_app
 `
 
 type ApproveAIProposalParams struct {
@@ -165,6 +169,7 @@ func (q *Queries) ApproveAIProposal(ctx context.Context, arg ApproveAIProposalPa
 		&i.ProposedAt,
 		&i.ExpiresAt,
 		&i.Version,
+		&i.McpApp,
 	)
 	return i, err
 }
@@ -172,7 +177,7 @@ func (q *Queries) ApproveAIProposal(ctx context.Context, arg ApproveAIProposalPa
 const expireAIProposal = `-- name: ExpireAIProposal :one
 UPDATE fyniq.ai_proposal SET status = 'expired', decided_at = $1, version = version + 1
 WHERE id = $2 AND version = $3
-RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version
+RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version, mcp_app
 `
 
 type ExpireAIProposalParams struct {
@@ -221,6 +226,7 @@ func (q *Queries) ExpireAIProposal(ctx context.Context, arg ExpireAIProposalPara
 		&i.ProposedAt,
 		&i.ExpiresAt,
 		&i.Version,
+		&i.McpApp,
 	)
 	return i, err
 }
@@ -229,7 +235,7 @@ const finishAIProposal = `-- name: FinishAIProposal :one
 UPDATE fyniq.ai_proposal SET status = $1, reason = $2, execution = $3,
   finished_at = $4, version = version + 1
 WHERE id = $5 AND version = $6
-RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version
+RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version, mcp_app
 `
 
 type FinishAIProposalParams struct {
@@ -288,12 +294,13 @@ func (q *Queries) FinishAIProposal(ctx context.Context, arg FinishAIProposalPara
 		&i.ProposedAt,
 		&i.ExpiresAt,
 		&i.Version,
+		&i.McpApp,
 	)
 	return i, err
 }
 
 const getAIProposal = `-- name: GetAIProposal :one
-SELECT organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version FROM fyniq.ai_proposal WHERE id = $1
+SELECT organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version, mcp_app FROM fyniq.ai_proposal WHERE id = $1
 `
 
 func (q *Queries) GetAIProposal(ctx context.Context, id uuid.UUID) (FyniqAiProposal, error) {
@@ -336,17 +343,18 @@ func (q *Queries) GetAIProposal(ctx context.Context, id uuid.UUID) (FyniqAiPropo
 		&i.ProposedAt,
 		&i.ExpiresAt,
 		&i.Version,
+		&i.McpApp,
 	)
 	return i, err
 }
 
 const insertAIProposal = `-- name: InsertAIProposal :one
 INSERT INTO fyniq.ai_proposal (task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, risk_tier,
-  required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, proposed_at, expires_at)
+  required_approvals, agent, requested_by, turn_id, run_id, mcp_app, model, prompt, tools_sha256, proposed_at, expires_at)
 VALUES ($1, $2, $3, $4, $5, $6,
   $7, $8, $9, $10, $11, $12,
-  $13, $14, $15, $16, $17, $18, $19)
-RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version
+  $13, $14, $15, $16, $17, $18, $19, $20)
+RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version, mcp_app
 `
 
 type InsertAIProposalParams struct {
@@ -364,6 +372,7 @@ type InsertAIProposalParams struct {
 	RequestedBy       uuid.UUID
 	TurnID            *uuid.UUID
 	RunID             *uuid.UUID
+	McpApp            *string
 	Model             string
 	Prompt            string
 	ToolsSha256       string
@@ -387,6 +396,7 @@ func (q *Queries) InsertAIProposal(ctx context.Context, arg InsertAIProposalPara
 		arg.RequestedBy,
 		arg.TurnID,
 		arg.RunID,
+		arg.McpApp,
 		arg.Model,
 		arg.Prompt,
 		arg.ToolsSha256,
@@ -431,6 +441,7 @@ func (q *Queries) InsertAIProposal(ctx context.Context, arg InsertAIProposalPara
 		&i.ProposedAt,
 		&i.ExpiresAt,
 		&i.Version,
+		&i.McpApp,
 	)
 	return i, err
 }
@@ -438,7 +449,7 @@ func (q *Queries) InsertAIProposal(ctx context.Context, arg InsertAIProposalPara
 const invalidAIProposal = `-- name: InvalidAIProposal :one
 UPDATE fyniq.ai_proposal SET status = 'invalid', reason = $1, version = version + 1
 WHERE id = $2 AND version = $3
-RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version
+RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version, mcp_app
 `
 
 type InvalidAIProposalParams struct {
@@ -487,6 +498,7 @@ func (q *Queries) InvalidAIProposal(ctx context.Context, arg InvalidAIProposalPa
 		&i.ProposedAt,
 		&i.ExpiresAt,
 		&i.Version,
+		&i.McpApp,
 	)
 	return i, err
 }
@@ -495,7 +507,7 @@ const pendingAIProposal = `-- name: PendingAIProposal :one
 UPDATE fyniq.ai_proposal SET status = 'pending', impact = $1, base_versions = $2,
   approval_request_id = $3, version = version + 1
 WHERE id = $4 AND version = $5
-RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version
+RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version, mcp_app
 `
 
 type PendingAIProposalParams struct {
@@ -552,6 +564,7 @@ func (q *Queries) PendingAIProposal(ctx context.Context, arg PendingAIProposalPa
 		&i.ProposedAt,
 		&i.ExpiresAt,
 		&i.Version,
+		&i.McpApp,
 	)
 	return i, err
 }
@@ -560,7 +573,7 @@ const rejectAIProposal = `-- name: RejectAIProposal :one
 UPDATE fyniq.ai_proposal SET status = 'rejected', decided_by = $1, decided_at = $2,
   reason = $3, version = version + 1
 WHERE id = $4 AND version = $5
-RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version
+RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version, mcp_app
 `
 
 type RejectAIProposalParams struct {
@@ -617,6 +630,7 @@ func (q *Queries) RejectAIProposal(ctx context.Context, arg RejectAIProposalPara
 		&i.ProposedAt,
 		&i.ExpiresAt,
 		&i.Version,
+		&i.McpApp,
 	)
 	return i, err
 }
@@ -624,7 +638,7 @@ func (q *Queries) RejectAIProposal(ctx context.Context, arg RejectAIProposalPara
 const startAIProposal = `-- name: StartAIProposal :one
 UPDATE fyniq.ai_proposal SET status = 'executing', started_at = $1, version = version + 1
 WHERE id = $2 AND version = $3
-RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version
+RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version, mcp_app
 `
 
 type StartAIProposalParams struct {
@@ -673,6 +687,7 @@ func (q *Queries) StartAIProposal(ctx context.Context, arg StartAIProposalParams
 		&i.ProposedAt,
 		&i.ExpiresAt,
 		&i.Version,
+		&i.McpApp,
 	)
 	return i, err
 }
@@ -681,7 +696,7 @@ const supersedeAIProposal = `-- name: SupersedeAIProposal :one
 UPDATE fyniq.ai_proposal SET status = 'superseded', superseded_by = $1, decided_at = $2,
   version = version + 1
 WHERE id = $3 AND version = $4
-RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version
+RETURNING organisation_id, id, task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, impact, base_versions, risk_tier, required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, status, reason, approval_request_id, decided_by, decided_at, approved_items, approved_payload, approved_sha256, superseded_by, execution, started_at, finished_at, proposed_at, expires_at, version, mcp_app
 `
 
 type SupersedeAIProposalParams struct {
@@ -736,6 +751,7 @@ func (q *Queries) SupersedeAIProposal(ctx context.Context, arg SupersedeAIPropos
 		&i.ProposedAt,
 		&i.ExpiresAt,
 		&i.Version,
+		&i.McpApp,
 	)
 	return i, err
 }

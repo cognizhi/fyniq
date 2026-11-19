@@ -957,6 +957,66 @@ components:
         - human_edited
         - note_version
       type: object
+    MCPToolCall:
+      additionalProperties: false
+      properties:
+        app:
+          description: "The OAuth client the MCP token was issued to: its name on the organisation's allowlist."
+          examples:
+            - claude-code
+          maxLength: 64
+          minLength: 1
+          type: string
+        app_version:
+          description: The client as it reports itself (its user agent).
+          examples:
+            - claude-code/2.1.327
+          maxLength: 200
+          type: string
+        input:
+          additionalProperties: {}
+          description: The input the client gave it, checked against the tool's input schema.
+          type: object
+        ip:
+          description: The client's address, as the MCP service saw it; kept only as its network.
+          examples:
+            - 203.0.113.7
+          maxLength: 45
+          type: string
+        token_id:
+          description: "The MCP token's identity: the first 16 hex characters of its SHA-256."
+          examples:
+            - 0123456789abcdef
+          maxLength: 16
+          pattern: ^[0-9a-f]{16}$
+          type: string
+        tool:
+          description: "The tool, by its name in the MCP manifest: a read tool of the registry, a proposal tool (propose_<task type>), or a read of the person's own proposals."
+          enum:
+            - calc
+            - checks.explain
+            - checks.list
+            - kb.index
+            - kb.read
+            - kb.search
+            - lineage.explain
+            - metrics.query
+            - packs.get
+            - records.get
+            - records.search
+            - proposals.list
+            - proposals.get
+            - propose_sec_create_task
+            - propose_sec_draft_document
+            - propose_sec_draft_reminder
+          examples:
+            - records.search
+          type: string
+      required:
+        - app
+        - tool
+        - input
+      type: object
     ModelMessage:
       additionalProperties: false
       properties:
@@ -1085,6 +1145,16 @@ components:
           description: What went wrong this time, in plain English.
           examples:
             - The journal is posted, not a draft.
+          type: string
+        error:
+          description: An OAuth error code, on a client registration's refusal (RFC 7591).
+          examples:
+            - invalid_redirect_uri
+          type: string
+        error_description:
+          description: The same, in words.
+          examples:
+            - The redirect URI is not exact.
           type: string
         errors:
           description: Every invalid field, all at once.
@@ -1652,6 +1722,83 @@ paths:
         - STORAGE-KNOWLEDGE-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
+  /internal/v1/mcp/tool-calls:
+    post:
+      description: "Runs one read tool for the person an MCP client acts for (AI-16, AI-36): the caller is the MCP service, with its own service token and the delegated API token it obtained for that person. The tool must be one the MCP manifest exposes; the token must hold every scope this tool and this input need (403 with the scopes in the X-Fyniq-Needed-Scopes header); the organisation's switch, the allowlist and the person's opt-in must allow the app, checked on every call. The tool then runs as the person, with the AI exclusions and masking, and its result is cut to the tool's limits and the organisation's size ceiling, with an NRIC or a bank number masked. Nothing is written. Never reachable by the AI service or a turn's token."
+      operationId: callMCPTool
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MCPToolCall"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIToolResult"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Too Many Requests
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+        "504":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Gateway Timeout
+      summary: Run a read tool for an MCP client
+      tags:
+        - Assistant
+      x-fyniq-error-codes:
+        - AI-SCREEN-02
+        - AI-TOOL-01
+        - AI-TOOL-03
+        - AI-TOOL-04
+        - API-AUTH-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - MCP-CALL-02
+        - MCP-CALL-03
+        - MCP-GATE-01
+        - MCP-GATE-02
+        - MCP-GATE-03
+        - MCP-LIMIT-01
+        - MCP-SCOPE-01
   /internal/v1/model-calls:
     post:
       description: "Runs the agent's route for the turn's person (AI-74, AI-76): the AI switch, the budgets (AI-86), the data-class policy for the classes the AI service names and every class the turn has read (AI-83), failover only to an eligible step, and the record of every attempt in the AI activity log (AI-12). The provider keys stay in the API (PRD-001 §9.3 rev 0.277)."

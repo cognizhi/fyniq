@@ -10,5 +10,14 @@ evidence: "Tool manifest"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-mcp-first-party"
+    status: running
+    how: "test TestTheManifestIsWhatTheToolsAndTheScopeMapGive"
+    evidence: "contracts/ai/mcp-manifest.json is what the registry and the scope map give, each definition pinned by its SHA-256, so a change to a tool, its schema or its scope shows in the pull request; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestThePlantedToolsThatBreakTheNeverListFailTheBuild"
+    evidence: "a planted tool that writes, approves, pays, exports, changes a setting, files, voids or reopens, runs outside the API, is open-world or needs payroll or equity fails the build; the shipped surface is the registry minus the never-list, default-deny; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestAnAlteredDefinitionIsRefused"
+    evidence: "an altered description, schema, annotation or scope, a tool added or dropped or an edited pin is refused before the server serves anything; CI artefact test-report (90 days)"

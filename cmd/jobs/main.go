@@ -64,6 +64,9 @@ func main() {
 		kit.Release = controls.Release{Tag: version.Release, Repository: version.Repository} // CMP-01: the CI checks' release
 		// REL-05: every exported report names the version and the commit.
 		kit.Stamp = sheet.Stamp(version.Version, version.Commit)
+		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" { // AI-90: the job that removes lapsed AI app registrations; none: they are only marked
+			kit.OAuthClients = wiring.Hydra(admin)
+		}
 		defer kit.Store.Close()
 		switch args[0] {
 		case "audit-anchor":

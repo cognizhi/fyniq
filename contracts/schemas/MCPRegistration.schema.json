@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "Its client ID.",
+      "examples": [
+        "mcp-0123456789abcdef0123"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The name it gave itself: Fyniq has not verified it.",
+      "examples": [
+        "Acme Books Assistant"
+      ],
+      "type": "string"
+    },
+    "redirect_uris": {
+      "description": "Where it sends you to sign in: check this before you allow it.",
+      "items": {
+        "description": "An exact https or loopback redirect URI.",
+        "examples": [
+          "https://acme.example/oauth/callback"
+        ],
+        "type": "string"
+      },
+      "maxItems": 5,
+      "type": "array"
+    },
+    "registered_at": {
+      "description": "When it registered.",
+      "examples": [
+        "2026-11-19T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "redirect_uris",
+    "registered_at"
+  ],
+  "title": "MCPRegistration",
+  "type": "object"
+}

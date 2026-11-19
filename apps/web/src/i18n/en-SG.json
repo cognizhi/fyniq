@@ -859,6 +859,14 @@
       "label": "AI activity",
       "tooltip": "Every model call the AI made: for whom, on which connection and model, what happened, the tokens and the cost. Yours, or everyone's for the Owner and the DPO."
     },
+    "oauth.consent": {
+      "label": "Connect an app",
+      "tooltip": "An AI app asks to read your company's books as you. Check who it is and what it asks for, keep only the areas you want, then allow or deny. It can only read and suggest."
+    },
+    "settings.connected-apps": {
+      "label": "Connected apps",
+      "tooltip": "AI apps, such as Claude Code, that work for you: what the organisation allows, what you have allowed each, and what they did. They read as you and can only propose changes."
+    },
     "settings.ai-plan": {
       "label": "Use your own AI plan",
       "tooltip": "Running your own assistant chats on your own provider plan. Not offered yet: the assistant uses the organisation's own connections."
@@ -1302,6 +1310,22 @@
     "banking.auto-reconciled": {
       "label": "Auto-reconciled",
       "tooltip": "What Fyniq reconciled by itself, why and when; undo any of it while its month is open."
+    },
+    "banking.payouts": {
+      "label": "Payouts",
+      "tooltip": "Each payment provider's payouts broken into the charges, refunds, disputes and fees they settle, with its clearing account checked against what the provider says it holds."
+    },
+    "psp.dispute-loss": {
+      "label": "Write it off",
+      "tooltip": "Prepare the draft journal that writes a lost dispute off to the dispute loss account. Nothing posts until the draft is posted under Journals."
+    },
+    "psp.dispute-credit": {
+      "label": "Settle a credit note",
+      "tooltip": "Clear an issued credit note's credit against the money a lost dispute holds, instead of writing the invoice's revenue off as an expense."
+    },
+    "psp.event-resolve": {
+      "label": "Mark as dealt with",
+      "tooltip": "Record that you looked at an event Fyniq could not place, and what you did. It posts and fetches nothing."
     },
     "bank-rule.auto-apply": {
       "label": "Ask to apply by itself",

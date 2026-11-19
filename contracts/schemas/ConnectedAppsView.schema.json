@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "access": {
+      "$ref": "MCPAccess.schema.json",
+      "description": "Your opt-in, the organisation's switch and its allowlist."
+    },
+    "apps": {
+      "description": "The apps this release pre-registers and those the organisation's allowlist names.",
+      "items": {
+        "$ref": "ConnectedApp.schema.json"
+      },
+      "maxItems": 60,
+      "type": "array"
+    },
+    "connections": {
+      "description": "What you have allowed AI apps.",
+      "items": {
+        "$ref": "MyConnection.schema.json"
+      },
+      "maxItems": 60,
+      "type": "array"
+    },
+    "registration_on": {
+      "description": "Whether an Owner has turned on registration of AI apps (mcp.registration).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "access",
+    "registration_on",
+    "apps",
+    "connections"
+  ],
+  "title": "ConnectedAppsView",
+  "type": "object"
+}

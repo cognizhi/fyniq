@@ -847,5 +847,13 @@ def test_payment_providers_month_nets_to_the_unpaid_charge():
     # off (the owner's decision of 19 Nov 2026), so 1055 nets to zero again and clearing is left with 96.10 - 65.00 = 31.10:
     # the provider's balance not yet paid out in G4-041 (3 charges, 1 payout, 2 disputes).
     assert _lines(r, "JNL-0001") == [("5045", "SGD", "65.00", "65.00"), ("1055", "SGD", "-65.00", "-65.00")]
-    # 1055 nets to zero twice (50.00 + 15.00 - 65.00; 50.00 + 15.00 - 65.00) and is left out; 4010 is 3 x 100.00; 5040 is 3 x 3.90.
-    assert r["trial_balance"] == {"2026-10": {"1020": "192.20", "1050": "31.10", "4010": "-300.00", "5040": "11.70", "5045": "65.00"}}
+    # A third dispute, of an invoice of 100.00 paid into clearing (RC-0001): 100.00 and its fee 15.00 to 1055; the invoice is
+    # credited by CN-0001 (Dr 4010, Cr 1100 100.00, so 1100 is credited with the customer's credit); DS-0001 settles that credit
+    # against the money the provider took (rev 0.308, dispute_settlement@1): Dr 1100 100.00, Cr 1055 100.00, the legs of a customer
+    # refund with the disputes clearing account in the place of the money account, never a manual journal on 1100; the fee of 15.00
+    # is written off by JNL-0002: Dr 5045, Cr 1055. 1100 and 1055 net to zero; 4010 is 3 x 100.00 and the invoice less its credit
+    # note, nothing; clearing is 31.10 + 100.00 (RC-0001) - 100.00 - 15.00 = 16.10; 5045 is 65.00 + 15.00.
+    assert _lines(r, "DS-0001") == [("1055", "SGD", "-100.00", "-100.00"), ("1100", "SGD", "100.00", "100.00")]
+    assert _lines(r, "CN-0001") == [("1100", "SGD", "-100.00", "-100.00"), ("4010", "SGD", "100.00", "100.00")]
+    # 1055 nets to zero three times and is left out; 4010 is 3 x 100.00; 5040 is 3 x 3.90.
+    assert r["trial_balance"] == {"2026-10": {"1020": "192.20", "1050": "16.10", "4010": "-300.00", "5040": "11.70", "5045": "80.00"}}

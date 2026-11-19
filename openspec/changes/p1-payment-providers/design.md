@@ -130,7 +130,7 @@ pressed the button, the preview (`Plan`), the weekly sample (FM-3) and undo, and
 | Refund | credit note on the mirrored invoice (Model B) and a customer refund from clearing | credit note + `customer_refund@1` | task 3.2 |
 | Dispute opened (funds and fee withdrawn) | Dr disputes clearing · Cr clearing, GST code `NA` | `bank_transaction@1` | exact, when the account has a disputes account |
 | Dispute won (funds and fee reinstated) | Dr clearing · Cr disputes clearing | `bank_transaction@1` | exact |
-| Dispute lost | nothing by itself; a person asks for a draft journal Dr the dispute loss account · Cr disputes clearing, posted under Journals with its own approval (D9) | manual journal | a person |
+| Dispute lost | nothing by itself; a person asks for a draft journal Dr the dispute loss account · Cr disputes clearing, posted under Journals with its own approval (D9), or settles an issued credit note's credit: Dr 1100 · Cr disputes clearing | manual journal; `dispute_settlement@1` | a person |
 
 - The audit trail names the connector and the provider's reference, and a locked period or any refusal of the rules leaves
   the line for a person with the reason, as every auto-reconcile does.
@@ -205,11 +205,16 @@ mirrored.
   S$100, finding the customer's invoice and crediting it costs more than the revenue it corrects (the charges in G4-041 are
   S$100). Above it the request must confirm that the invoice's revenue stays as invoiced and give a reason, which are kept with
   the draft. The accountant confirms the amount and the GST of both routes.
-- **Credit note when the invoice is known: decided, not built.** A credit note reverses the revenue and GST and leaves a
-  customer credit on accounts receivable. Settling that credit against disputes clearing needs a posting that exists nowhere:
-  a customer refund pays from a money account (`customer_refund@1` refuses any other), and a manual journal cannot touch
-  accounts receivable (INV-07). It needs a **new posting rule** (a dispute settlement against a customer credit, Dr 1100 ·
-  Cr disputes clearing) with the oracle's half. Left as follow-up task 4.5.
+- **Credit note when the invoice is known: built (task 4.5, rev 0.308).** A credit note reverses the revenue and GST and leaves a
+  customer credit on accounts receivable. A customer refund pays from a money account (`customer_refund@1` refuses any other)
+  and a manual journal cannot touch accounts receivable (INV-07), so settling that credit against disputes clearing is the new
+  rule `dispute_settlement@1`: a rule version of the customer refund document, Dr 1100 · Cr the provider account's disputes
+  account, which holds no money, in the base currency only (a foreign credit's carrying amount would need a realised-FX rule
+  the dispute has no evidence for; such a dispute is written off by journal). The person issues the credit note first, through
+  the existing flow and its approval; `settleDisputeCredit` settles its credit, at most the disputed amount, once per dispute
+  (`psp_dispute_credit`), on a dispute that is open and fully posted. What stays held, the fee, is written off by the draft
+  journal. The oracle has the other half (`dispute_settlement`, `settings.dispute_accounts`) and the golden scenario has the
+  third dispute. The GST of the credit note is the invoice's own reversal; the accountant confirms it.
 
 ### D10. Migrations, 000620 to 000639
 
@@ -219,6 +224,7 @@ mirrored.
 | 000622 | `psp_account` (a provider money account's setup and how far the sweep is complete), `psp_txn`, `psp_payout`, `psp_balance` |
 | 000624 | `psp_customer`, `psp_subscription`, `psp_invoice` (collection state, the one mapping of a provider invoice to its document) |
 | 000626 to 000639 | spare |
+| 000640 | `psp_dispute_credit` (a lost dispute's credit settled once; follow-up 4.5) |
 
 Every table has `organisation_id`, `FORCE ROW LEVEL SECURITY` and grants for `fyniq_api` and the worker role only; payloads
 are sealed, so a leak of the table is not a leak of customer data. Each saved change is audited in the same transaction.
@@ -257,7 +263,7 @@ transaction (set once) and a payout's standing.
    lag), and posting from the webhook request (provider I/O and a posting in one request). Until it is built, the events of
    invoices, credit notes, subscriptions and customers are known and post nothing. Follow-up tasks 4.1 to 4.4.
 2. **A lost dispute is expensed up to a named limit and credited when the invoice is known** (D9): built for the expense, with
-   `psp.dispute_expense_limit` at S$100.00 by default; the credit-note route waits for a new posting rule (task 4.5).
+   `psp.dispute_expense_limit` at S$100.00 by default; the credit-note route is built too (`dispute_settlement@1`, task 4.5, rev 0.308).
 3. **A provider account is set up by one person with a right on "Bank data… connections"**, as built (audited with the old and new
    accounts; the setup only chooses internal accounts, each posting stays within the per-line cap and is undone like any
    auto-reconciliation). Not chosen: a second person's approval.

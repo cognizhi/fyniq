@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reaches": {
+      "description": "In plain words.",
+      "examples": [
+        "Reports and key figures"
+      ],
+      "type": "string"
+    },
+    "scope": {
+      "examples": [
+        "fyniq.read.reports"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "scope",
+    "reaches"
+  ],
+  "title": "ConsentCategory",
+  "type": "object"
+}

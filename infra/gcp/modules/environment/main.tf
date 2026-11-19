@@ -218,7 +218,7 @@ locals {
   hydra_env = {
     URLS_SELF_ISSUER        = "${var.public_origin}/oauth/"
     URLS_LOGIN              = "${var.public_origin}/api/auth/login"
-    URLS_CONSENT            = "${var.public_origin}/api/auth/consent"
+    URLS_CONSENT            = "${var.public_origin}/auth/consent"
     OAUTH2_PKCE_ENFORCED    = "true"   # the authorisation code with PKCE only (AI-36)
     STRATEGIES_ACCESS_TOKEN = "opaque" # introspected, so revocation is seen (AI-38)
     TTL_ACCESS_TOKEN        = "1h"     # at most 60 minutes (AI-38)

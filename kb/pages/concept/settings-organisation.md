@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:281dfc4fc00da885abc73ab88025bb8ec54ded93216cc529a0676c2be4954dd3
+  - docs/user-guide/organisation-settings.md sha256:a33c8f5555677c3fdf09e9c2b71ee34a625534a6c6cfb0dd10515f6818a20b94
 data_class: general
 taint: trusted
 status: draft
@@ -20,6 +20,10 @@ aliases:
   - AI payroll access
   - AI task types
   - changes the AI may propose
+  - AI apps through MCP
+  - connect Claude Code
+  - connect Claude Desktop
+  - AI app limits
   - let the AI propose changes
   - assistant limits
   - too many questions
@@ -158,6 +162,7 @@ The calendar itself: [[compliance.calendar]].
 - Switching a feature off hides it from menus and pages.
 - Recommended: **Multi-currency** on; **Payroll**, **Projects and time** and **Portals for customers and investors** off.
 - The **AI assistant** is off until an Owner turns it on with a second approver; switching it off takes effect at once ([[settings.ai]]).
+- **AI apps through MCP** is off until an Owner turns it on with a second approver; switching it off takes effect at once.
 
 (src: docs/user-guide/organisation-settings.md#features)
 
@@ -212,6 +217,26 @@ The calendar itself: [[compliance.calendar]].
 - Some changes can never be proposed, whatever is set here: approving or rejecting anything, payments, payee bank details, users, roles and team mode, approval policies, the AI's own settings, statutory parameters, reopening a period, voiding or deleting, filing with an authority, exporting the company's data, and the audit trail.
 
 (src: docs/user-guide/organisation-settings.md#ai-task-types)
+
+## AI apps through MCP
+
+- Some AI apps, such as Claude Code or Claude Desktop, can work with the books on a person's behalf over the Model Context Protocol (MCP), using the same read tools as the assistant in Fyniq. They can read what that person may read and propose changes for a person to approve in Fyniq; they cannot approve, pay, export or change settings.
+- **AI apps through MCP**: off unless changed. Turning it on needs a second approver; turning it off takes effect at once and cuts every AI app off.
+- **AI apps that may connect**: none unless changed. Enter the apps to allow, such as `claude-code`, separated by commas; you can list the apps the release has registered, and an app that registered itself by the ID shown when it asked, and an app that is not listed cannot connect. Adding an app needs a second approver; taking one off takes effect at once, with no second approver, and cuts that app off.
+- **AI apps may register themselves**: off unless changed. An AI app can ask to be registered, on its own, only while an Owner has turned this on with a second approver. A registered app is limited to the default read access, is not verified, and cannot connect until an Owner adds it to the apps that may connect. A registration nobody approves expires after 7 days, and an approved app nobody uses after 30. Turning it off takes effect at once.
+- Each person also has to opt in before an app can act for them, and sees what the app may read when they allow it.
+- The release only holds these settings: no AI app can connect until the MCP server is opened for the deployment, separately, after a security review. Each person connects and disconnects apps under **Connected apps** ([[settings.connected-apps]]).
+
+(src: docs/user-guide/organisation-settings.md#ai-apps-through-mcp)
+
+## AI app limits
+
+- An AI app works within limits, so a script or a slip cannot run up load or cost; each needs a second approver to change and has a highest value the platform allows.
+- **Requests a person's AI app may make a minute**: 60 unless changed, from 1 to 600. **Reads and proposals an hour**: 600 unless changed, from 1 to 10,000. **A day**: 5,000 unless changed, from 1 to 100,000. Past one, the app is told to wait and works again once it eases.
+- **Proposals an AI app may make for a person in an hour**: 30 unless changed, from 1 to 1,000.
+- **The most rows one answer may hold**: 500 unless changed, from 1 to 5,000. **The most kilobytes**: 256 unless changed, from 16 to 1,024. A tool's own limits are lower; an answer larger than a limit is cut, and what was left out is counted and said.
+
+(src: docs/user-guide/organisation-settings.md#ai-app-limits)
 
 ## Company secretary assistant
 

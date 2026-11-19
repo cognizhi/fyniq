@@ -455,6 +455,7 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"psp_txn.net":                  func(t *testing.T, b porttest.Books, v string) error { return rawPSPTxn(t, b, "net", v) },
 	"psp_payout.amount":            func(t *testing.T, b porttest.Books, v string) error { return rawPSPPayout(t, b, v) },
 	"psp_balance.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawPSPBalance(t, b, v) },
+	"psp_dispute_credit.amount":    func(t *testing.T, b porttest.Books, v string) error { return rawPSPDisputeCredit(t, b, v) },
 	"psp_dispute_loss.amount":      func(t *testing.T, b porttest.Books, v string) error { return rawPSPDisputeLoss(t, b, v) },
 	"payment_batch_release.total":  func(t *testing.T, b porttest.Books, v string) error { return rawRelease(t, b, v) },
 	"break_glass.cap":              func(t *testing.T, b porttest.Books, v string) error { return rawBreakGlassCap(t, b, v) },
@@ -1560,6 +1561,18 @@ func rawPSPDisputeLoss(t *testing.T, b porttest.Books, value string) error {
 	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.psp_dispute_loss (connector_id, dispute_id, document_id, currency, amount, created_by, created_at)
 VALUES ($1, 'dp_1', $2, 'SGD', $3::numeric, 'user:x', now())`, uuid.New(), uuid.New(), value)
+		return err
+	})
+}
+
+func rawPSPDisputeCredit(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c := shortConn(t, "fyniq_api")
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.psp_dispute_credit (connector_id, dispute_id, credit_note_id, refund_id, currency, amount, created_by, created_at)
+VALUES ($1, 'dp_1', $2, $3, 'SGD', $4::numeric, 'user:x', now())`, uuid.New(), uuid.New(), uuid.New(), value)
 		return err
 	})
 }

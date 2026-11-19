@@ -89,3 +89,37 @@ func RemoveClientWork(o ports.OAuthClients) outbox.Work {
 		return o.RemoveClient(ctx, r.ClientID)
 	}
 }
+
+// AgentKind is the outbox kind that revokes what a person granted AI apps, run by the worker class (AI-35, AI-38).
+const AgentKind = "oauth.agent.revoke"
+
+// ActionAgentRevokeRequested is the audit action recorded with the change that asked for it.
+const ActionAgentRevokeRequested = "oauth.agent_tokens.revoke_requested"
+
+// RevokeAgents asks, in the unit of work u, for every token of subject held by an AI app to be revoked once u commits, and records
+// why in the organisation's audit trail: their web session and integrations are left alone.
+func RevokeAgents(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org uuid.UUID, subject, reason string) error {
+	if subject == "" || reason == "" {
+		return errors.New("tokens: a revocation needs a subject and a reason")
+	}
+	b, err := json.Marshal(payload{Subject: subject, Reason: reason})
+	if err != nil {
+		return err
+	}
+	if _, err := d.Enqueue(ctx, u, org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: AgentKind, Payload: b}); err != nil {
+		return err
+	}
+	return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionAgentRevokeRequested, ObjectType: "organisation", ObjectID: org,
+		Changes: map[string][2]any{"subject": {nil, subject}, "reason": {nil, reason}}})
+}
+
+// AgentWork is the worker's handler of AgentKind.
+func AgentWork(o ports.OAuthConsents) outbox.Work {
+	return func(ctx context.Context, _ uuid.UUID, row storage.OutboxRow) error {
+		var p payload
+		if err := json.Unmarshal(row.Payload, &p); err != nil || p.Subject == "" {
+			return fmt.Errorf("tokens: outbox row %s is not an AI app revocation", row.ID)
+		}
+		return o.RevokeAgentConsents(ctx, p.Subject)
+	}
+}

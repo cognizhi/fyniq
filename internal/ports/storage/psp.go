@@ -223,6 +223,31 @@ type NewPSPDisputeLoss struct {
 	At                        time.Time
 }
 
+// PSPDisputeCredit records that a lost dispute was settled against a customer credit: the credit note and the refund document
+// (dispute_settlement@1), once per dispute.
+type PSPDisputeCredit struct {
+	ID           uuid.UUID
+	ConnectorID  uuid.UUID
+	DisputeID    string
+	CreditNoteID uuid.UUID
+	RefundID     uuid.UUID
+	Currency     string
+	Amount       Decimal
+	CreatedBy    string
+	CreatedAt    time.Time
+}
+
+// NewPSPDisputeCredit is a dispute settlement to record.
+type NewPSPDisputeCredit struct {
+	ConnectorID  uuid.UUID
+	DisputeID    string
+	CreditNoteID uuid.UUID
+	RefundID     uuid.UUID
+	Currency     string
+	Amount       Decimal
+	At           time.Time
+}
+
 // PSPLedger is the organisation's payment-provider records. Each change is audited in the same transaction (AUD-01).
 type PSPLedger interface {
 	Accounts(ctx context.Context) ([]PSPAccount, error)
@@ -256,6 +281,11 @@ type PSPLedger interface {
 	RecordDisputeLoss(ctx context.Context, n NewPSPDisputeLoss) (PSPDisputeLoss, error)
 	// DisputeLosses are a connector's prepared dispute losses.
 	DisputeLosses(ctx context.Context, connector uuid.UUID) ([]PSPDisputeLoss, error)
+
+	// RecordDisputeCredit records the settlement of a lost dispute against a customer credit; CodeDuplicate when it was settled.
+	RecordDisputeCredit(ctx context.Context, n NewPSPDisputeCredit) (PSPDisputeCredit, error)
+	// DisputeCredits are a connector's recorded dispute settlements.
+	DisputeCredits(ctx context.Context, connector uuid.UUID) ([]PSPDisputeCredit, error)
 
 	// RecordBalance adds a reading of the provider's balance.
 	RecordBalance(ctx context.Context, connector uuid.UUID, currency string, amount Decimal, at time.Time) (PSPBalance, error)

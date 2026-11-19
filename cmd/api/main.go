@@ -26,6 +26,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/mailhooks"
 	"github.com/cognizhi/fyniq/internal/notify"
+	"github.com/cognizhi/fyniq/internal/oauthflow"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -46,8 +47,10 @@ var (
 	// webOrigin is the web app's origin as the browser sees it, "" when the flavour has none configured: the passkey
 	// ceremonies are bound to it (FR-ADM-02).
 	webOrigin     func() string
-	registerOAuth func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions)
+	registerOAuth func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, store storage.Store)
 	// oauthAudience is the API's audience at the OAuth server: the audience of every integration client's tokens.
+	// consentFlow is the consent app's flow, set by registerOAuth, which the API's contract operations for the web app's consent screen use.
+	consentFlow   *oauthflow.Flow
 	oauthAudience = func() string { return os.Getenv("FYNIQ_API_AUDIENCE") }
 )
 
@@ -62,8 +65,9 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		Release: compliance.Release{Tag: version.Release, Repository: version.Repository}}
 	kit, err := wiring.Build(context.Background(), "api", deps.Clock)
 	var sessions storage.Sessions
+	var store storage.Store
 	if err == nil {
-		sessions = kit.Store
+		sessions, store = kit.Store, kit.Store
 	}
 	if newAuthenticator != nil {
 		d.Auth = newAuthenticator(deps.Clock, sessions)
@@ -83,7 +87,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		d.SignIn = registerSignIn(s, deps.Clock, sessions, hooks)
 	}
 	if registerOAuth != nil {
-		registerOAuth(s, deps.Clock, sessions)
+		registerOAuth(s, deps.Clock, sessions, store)
 	}
 	if webOrigin != nil {
 		d.Origin = webOrigin()
@@ -92,6 +96,9 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		fmt.Fprintln(os.Stderr, "api: serving without a database or background work:", err)
 		api.New(s, d) // without a store it accepts no credentials: the document only
 		return nil
+	}
+	if consentFlow != nil {
+		d.Consent = *consentFlow
 	}
 	d.Store, d.Installation = kit.Store, kit.Store
 	// The internal API takes the AI service's service tokens (p1-ai-assistant design D4): HMAC locally, Google's OIDC
@@ -119,6 +126,9 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	d.KBCompiler = kit.KBCompiler() != nil
 	if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" { // FR-INT-02: integration clients, registered with the OAuth server
 		d.OAuthClients, d.APIAudience = wiring.Hydra(admin), oauthAudience()
+		// AI apps may register themselves (AI-90), only where the MCP server is on and an Owner has turned it on.
+		d.OAuthConsents = wiring.Hydra(admin)
+		d.MCPClients, d.MCPAudience, d.MCPServerOn = kit.Store, os.Getenv("FYNIQ_MCP_AUDIENCE"), os.Getenv("FYNIQ_MCP_SERVER") == "on"
 	}
 	// The connectors (FR-INT-20, rev 0.139): the release's catalogue, the store their keys go to, and the runtime the
 	// connection test goes through.

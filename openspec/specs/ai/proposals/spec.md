@@ -544,7 +544,7 @@ Source: PRD-001 §9.5 · Priority M · Phase P1
 - **THEN** the bulk approval is not allowed
 
 ### Requirement: AI-89 A proposal is an approval request
-A Pending proposal SHALL be at once an `ai_proposal` request of the approval engine, signing its payload hash, requested by the person who asked and authenticated by their live turn instead of a fresh step-up; that person MAY sign their own tier-1 proposal; both exceptions SHALL hold for `ai_proposal` alone, in the database too.
+A Pending proposal SHALL be at once an `ai_proposal` request of the approval engine, signing its payload hash, requested by the person who asked and authenticated by their live turn instead of a fresh step-up, who MAY sign their own tier-1 proposal; both exceptions SHALL hold for `ai_proposal` alone, in the database too. An AI app's proposal over MCP SHALL be requested by its delegation and never signed by it (rev 0.303).
 
 Source: PRD-001 §9.5 · Priority M · Phase P1
 
@@ -571,6 +571,18 @@ Source: PRD-001 §9.5 · Priority M · Phase P1
 - **WHEN** its proposal becomes Pending
 - **THEN** its requester is that Owner, authenticated by the run's own grant (`ai_run`) in place of a live turn, for `ai_proposal` requests from a run alone
 - **AND** that Owner may sign its tier-1 proposal, as for a turn (rev 0.281)
+
+#### Scenario: An AI app's proposal is requested by its delegation, and never signed by it (rev 0.303)
+- **GIVEN** an AI app proposes over MCP for a person who opted in
+- **WHEN** its proposal becomes Pending
+- **THEN** its requester is that person, authenticated by the app's delegation (`mcp_token`), for `ai_proposal` requests from an app alone
+- **AND** an agent-class token reaches no approval operation
+
+#### Scenario: The person signs an app's tier-1 proposal only on a fresh step-up (rev 0.303)
+- **GIVEN** a tier-1 proposal an AI app made for a person
+- **WHEN** that person signs it on a step-up taken before the app proposed it
+- **THEN** the signature is refused, in the database too
+- **AND** a signature on a step-up taken after it, or another member's, is allowed, and the person's signature of a tier-2 or tier-3 proposal is refused
 
 ### Requirement: AI-33 Approval-quality metrics
 The system SHALL measure approval quality per task type and approver, to guard against rubber-stamping (per IMDA's agentic-AI framework).

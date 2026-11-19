@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -99,12 +100,19 @@ type PreparedRefund struct {
 	Credit   Credit
 	Customer storage.Contact
 	Deposit  *deposit.Open
+	// Dispute is set when the refund's account is a payment provider's disputes clearing account, which holds no money: the
+	// credit is settled against the money the provider took back in a lost dispute (dispute_settlement@1, FR-PSP-04).
+	Dispute bool
 }
 
-// Rule is the rule version a prepared refund posts with: deposit_refund@1 for a deposit, else customer_refund@1.
+// Rule is the rule version a prepared refund posts with: deposit_refund@1 for a deposit, dispute_settlement@1 for a credit
+// settled against a provider's disputes clearing account, else customer_refund@1.
 func (p PreparedRefund) Rule() string {
 	if p.Deposit != nil {
 		return ledger.RuleDepositRefund
+	}
+	if p.Dispute {
+		return ledger.RuleDisputeSettlement
 	}
 	return ledger.RuleCustomerRefund
 }
@@ -181,6 +189,15 @@ func PrepareRefund(ctx context.Context, u storage.UnitOfWork, doc storage.Docume
 			left := c.Carrying
 			r.Credit.Clears = &left
 		}
+	}
+	if acc, ok := s.Accounts[d.AccountID]; ok && !acc.Money {
+		accounts, err := u.PSP().Accounts(ctx)
+		if err != nil {
+			return PreparedRefund{}, nil, err
+		}
+		out.Dispute = slices.ContainsFunc(accounts, func(a storage.PSPAccount) bool {
+			return a.DisputesAccountID != nil && *a.DisputesAccountID == d.AccountID
+		})
 	}
 	out.Refund = r
 	return out, probs, nil
