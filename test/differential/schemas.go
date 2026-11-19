@@ -28,3 +28,8 @@ var FeasibilitySchema []byte
 //
 //go:embed purge.schema.json
 var PurgeSchema []byte
+
+// PayrollMonthSchema is payroll.schema.json (fyniq-payroll-month@1): an employee-month the Go engine of Nemura's payroll and the oracle both work out (p1-nemura-payroll).
+//
+//go:embed payroll.schema.json
+var PayrollMonthSchema []byte
