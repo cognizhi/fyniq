@@ -750,6 +750,16 @@
     "payroll.nature.commission": "Commission",
     "payroll.nature.allowance": "Allowance",
     "payroll.nature.other": "Other",
+    "askai.title": "Ask the assistant",
+    "askai.can": "I can answer questions about your own leave balance, your pay day, what a rule of the Singapore pack says and what a line of your payslip is. I say where each answer comes from.",
+    "askai.cannot": "I never approve, change, issue or pay anything, and I never read anyone's pay or records but your own. For those, ask the people team.",
+    "askai.you": "You asked: {question}",
+    "askai.ai": "AI answer",
+    "askai.sources": "Source: {sources}",
+    "askai.question": "Your question",
+    "askai.send": "Ask",
+    "askai.hr": "Ask the people team instead",
+    "askai.failed": "The assistant could not answer that. It may be off: the Owner turns it on in the assistant's settings.",
     "assistant.title": "The people assistant",
     "assistant.lead": "The assistant answers questions from a person's own records and the pack, and drafts letters and replies for the people team to edit and approve. It is off until the Owner turns it on.",
     "assistant.never": "What it never does",
@@ -1133,6 +1143,10 @@
     "assistant.page": {
       "label": "The people assistant",
       "tooltip": "What the assistant may draft, off until the Owner turns it on, and the drafts it proposed for a person to approve. It never approves, issues, pays or changes a record."
+    },
+    "askai.page": {
+      "label": "Ask the assistant",
+      "tooltip": "Ask about your own leave, your pay day, a rule of the Singapore pack or a line of your payslip. Each answer says where it comes from; the assistant never approves, changes or pays anything."
     },
     "mypay.page": {
       "label": "My pay",

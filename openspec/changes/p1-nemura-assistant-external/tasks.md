@@ -12,8 +12,8 @@ Load before each slice: `fyniq-ai-proposals`, `fyniq-security-compliance`, `fyni
 
 ## 2. Questions (slice 2)
 
-- [ ] 2.1 Read tools in the asking person's session (my leave balances and requests, my pay day, the policy and pack answers with their rule and `[verify]` flag, a payslip line's rule), grounding (every figure from a tool result in the turn) and the model port with the scripted model. `// req: NM-AI-02, NM-AI-03, NM-AI-06`
-- [ ] 2.2 `nm-ask` and the ask endpoint; no pay figure in any model input; "to confirm with HR" for a rule marked to be verified; the knowledge base's people pages cited. `// req: NM-AI-03, NM-AI-06`
+- [x] 2.1 Read tools in the asking person's session (my leave balances and requests, my pay day, the policy and pack answers with their rule and `[verify]` flag, a payslip line's rule), grounding (every figure from a tool result in the turn) and the model port with the scripted model. `// req: NM-AI-02, NM-AI-03, NM-AI-06`
+- [x] 2.2 `nm-ask` and the ask endpoint; no pay figure in any model input; "to confirm with HR" for a rule marked to be verified; the knowledge base's people pages cited. `// req: NM-AI-03, NM-AI-06`
 
 ## 3. Drafts and the executor (slice 3)
 

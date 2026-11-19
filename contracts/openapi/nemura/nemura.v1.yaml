@@ -4,6 +4,40 @@
 # info.version follows the platform version (release-please updates it).
 components:
   schemas:
+    AIAnswer:
+      additionalProperties: false
+      properties:
+        dropped:
+          description: How many tools the model named that were refused.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        refused:
+          description: "True when the question asks for something the assistant never does: it approves, changes, issues, pays and reads another person's records never."
+          examples:
+            - false
+          type: boolean
+        segments:
+          description: The answer, sentence by sentence.
+          items:
+            $ref: "#/components/schemas/AISegment"
+          type:
+            - array
+            - "null"
+        tools:
+          description: The read tools that ran, all as the person asking.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+      required:
+        - segments
+        - tools
+        - refused
+        - dropped
+      type: object
     AIDecision:
       additionalProperties: false
       properties:
@@ -122,6 +156,25 @@ components:
         - expired
         - created_at
         - expires_at
+      type: object
+    AISegment:
+      additionalProperties: false
+      properties:
+        sources:
+          description: "Where it comes from: your own record, a pack version and its official source, or a rule."
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        text:
+          description: A sentence. Every figure in it came from a tool in this turn; one that did not is replaced by 'an unverified figure'.
+          examples:
+            - You have 8.50 days left.
+          type: string
+      required:
+        - text
+        - sources
       type: object
     AISettings:
       additionalProperties: false
@@ -475,6 +528,19 @@ components:
         - number
         - issued_on
         - expires_on
+      type: object
+    AiAskInputBody:
+      additionalProperties: false
+      properties:
+        question:
+          description: "What to ask: about your own leave balance, your pay day, a rule of the Singapore pack or a line of your payslip."
+          examples:
+            - How much leave do I have left?
+          maxLength: 1000
+          minLength: 1
+          type: string
+      required:
+        - question
       type: object
     AiProposalsOutputBody:
       additionalProperties: false
@@ -7532,6 +7598,65 @@ paths:
       summary: Revoke an API client
       tags:
         - API clients
+  /v1/assistant/ask:
+    post:
+      description: Answers a question about the signed-in person's own leave balance, their pay day, a rule of the Singapore pack (cited, with a note to confirm it with HR when it has not been verified a second time) or what a line of their payslip is, as a rule with no figure. The read tools run as the person asking, so the assistant reads what they can and nothing else; no pay figure and no sealed field reaches a model, and every figure of the answer came from a tool in this turn. A question that asks it to approve, change, issue, pay or read another person's records is refused in words. The assistant must be on. The question is not stored; the audit event names the tools that ran. It changes nothing.
+      operationId: askAssistant
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiAskInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIAnswer"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Ask the people assistant
+      tags:
+        - Assistant
   /v1/assistant/proposals:
     get:
       description: The drafts the assistant proposed, newest first, with what it proposed, who it acted for and where each is. The HR officer, the HR administrator and the Owner. It changes nothing.

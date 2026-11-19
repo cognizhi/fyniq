@@ -38,3 +38,4 @@ a self-help group fund, no-pay leave and any other), your overtime hours, overti
 ## Related
 
 - [Read and approve a pay run](payroll-approval.md)
+- [Ask the assistant about your leave, pay day and payslip](ask-assistant.md)

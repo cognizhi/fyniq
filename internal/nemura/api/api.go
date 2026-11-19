@@ -138,6 +138,7 @@ type Deps struct {
 	Onboarding  Onboarding
 	Payroll     Payroll
 	Assistant   AssistantAdmin
+	Asker       Asker
 	SignIn      SignInInfo
 	Clock       ports.Clock
 	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
