@@ -1,0 +1,34 @@
+<!-- fyniq-screen {"nav": "me", "title": "My details", "mode": "basic", "persona": "employee", "heights": {"compact": 2300, "medium": 1500, "expanded": 1300}} -->
+<div class="fy-page fy-page--narrow fy-enter">
+  <section class="nm-hero" aria-labelledby="det-title">
+    <h1 class="nm-hero__title" id="det-title">My details</h1>
+    <p class="nm-hero__sub">Contact details and emergency contacts save at once. A new legal name, residency or NRIC or FIN needs your evidence and the people team's approval.</p>
+  </section>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="contact-title">
+    <h2 class="fy-h2" id="contact-title">Contact details</h2>
+    <label class="fy-field"><span>Phone</span><input class="fy-input" value="+65 9123 4567"></label>
+    <label class="fy-field"><span>Personal email</span><input class="fy-input" value="ben@example.com"></label>
+    <label class="fy-field"><span>Home address</span><input class="fy-input" value="1 Raffles Place #20-01"></label>
+    <label class="fy-field"><span>Postal code</span><input class="fy-input" value="048616"></label>
+    <button class="fy-btn fy-btn--primary" type="button">Save my details</button>
+  </section>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="em-title">
+    <h2 class="fy-h2" id="em-title">Emergency contacts</h2>
+    <ul class="fy-list">
+      <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="phone-call" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Mei Lim, spouse</span><span class="fy-list__meta">Mobile on file</span></span><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Remove</button></li>
+    </ul>
+    <div class="fy-row"><button class="fy-btn fy-btn--secondary" type="button"><i data-icon="plus"></i>Add an emergency contact</button><button class="fy-btn fy-btn--primary" type="button">Save my emergency contacts</button></div>
+  </section>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="chg-title">
+    <h2 class="fy-h2" id="chg-title">Ask to change my legal name, residency or NRIC or FIN</h2>
+    <p class="fy-small fy-muted">Attach the document that shows the change. Never type an NRIC or FIN number: say what changed, and the people team records the number.</p>
+    <label class="fy-field"><span>What changes</span><select class="fy-input"><option>Legal name</option><option>Residency</option><option>NRIC or FIN</option></select></label>
+    <label class="fy-field"><span>New legal name, as on your identity document</span><input class="fy-input"></label>
+    <label class="fy-field"><span>What changed and why</span><input class="fy-input"></label>
+    <label class="fy-field"><span>Evidence</span><input class="fy-input" type="file"></label>
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Send the request</button>
+  </section>
+</div>

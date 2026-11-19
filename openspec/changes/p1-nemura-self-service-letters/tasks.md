@@ -39,8 +39,12 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations`, `fyniq
 ## 3. Self-service and the leaver's account (slice 3)
 
 - [ ] 3.1 My home (NM-ESS-01): the tiles, the balance, the next public holiday, the open requests. Screen `nm-my-home`.
-- [ ] 3.2 My details (NM-ESS-03): direct changes and changes with evidence and HR approval; the audit shows what changed and never a sealed value.
-- [ ] 3.3 Requests (NM-ESS-04): one list with type, status, due date and reply for letters, flexible work, details changes and HR questions. Screen `nm-my-requests`.
+- [x] 3.2 My details (NM-ESS-03): migration 000025; contact details, the address and up to three emergency contacts save at once and are audited by field name, never by
+  value; legal name, residency and NRIC or FIN go through a request with evidence that another HR member decides (decision O4). `// req: NM-ESS-03`
+- [x] 3.3 Requests (NM-ESS-04): one list with the type, the step (received, with HR, ready, closed), the due day and the reply for letters, flexible work, changes of details
+  and questions to HR; the people team's queue and replies; withdrawal. Screens `nm-my-details`, `nm-people-requests`, and `nm-ask`'s "ask HR" at `/me/ask/hr`. `// req: NM-ESS-04`
+  Left in 3.2 and 3.3: the notices to the person and the people team are queued and logged until notifications deliver them; due days are constants, not company settings;
+  a change of residency needs the person's legal classification to exist first.
 - [ ] 3.4 The leaver's narrow account (NM-ESS-06, D9), re-issue of a lost document. Screen `nm-leaver-home`.
 - [ ] 3.5 Verify.
 

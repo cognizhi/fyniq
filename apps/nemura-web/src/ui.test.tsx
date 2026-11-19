@@ -22,6 +22,10 @@ import { Directory } from "./pages/Directory";
 import { Join } from "./pages/Join";
 import { Person } from "./pages/Person";
 import { TermsPanel } from "./components/TermsPanel";
+import { MyDetails } from "./pages/MyDetails";
+import { AskQuestion } from "./pages/AskQuestion";
+import { PeopleRequests } from "./pages/PeopleRequests";
+import { RequestSteps } from "./components/RequestSteps";
 import { matchRoute } from "./registry";
 import { SignIn, signInURL } from "./pages/SignIn";
 import { reviewsFor, review, type Register } from "./review";
@@ -947,5 +951,86 @@ describe("key employment terms", () => {
   it("draws nothing for a person who is not the people team or payroll", () => {
     const { container } = render(<TermsPanel person={person} roles={["employee"]} />);
     expect(container.textContent).toBe("");
+  });
+});
+
+// req: NM-ESS-03, NM-ESS-04
+describe("self-service", () => {
+  const rid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0";
+
+  it("lets a person change their contact details and emergency contacts and ask for a change that needs evidence", async () => {
+    answer("GET /v1/me/details", { status: 200, body: { phone: "+65 9123 4567", emergency_contacts: [{ name: "Mei Lim", relationship: "spouse", phone: "9123 4567" }] } });
+    answer("PUT /v1/me/details", { status: 204, body: undefined });
+    answer("PUT /v1/me/emergency-contacts", { status: 204, body: undefined });
+    answer("POST /v1/me/details-changes", { status: 201, body: { id: rid, due_on: "2026-11-27" } });
+    const { container } = render(<MyDetails roles={["employee"]} />);
+    expect(await screen.findByDisplayValue("Mei Lim")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Personal email"), { target: { value: "ben@example.com" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Contact details" }));
+    expect(await screen.findByText("Saved.")).toBeTruthy();
+    expect(bodies.get("PUT /v1/me/details")).toMatchObject({ personal_email: "ben@example.com", phone: "+65 9123 4567" });
+    fireEvent.click(screen.getByRole("button", { name: "Add an emergency contact" }));
+    expect(screen.getByLabelText("Name of emergency contact 2")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove emergency contact 2" }));
+    fireEvent.submit(screen.getByRole("form", { name: "Emergency contacts" }));
+    expect(await screen.findByText("Your emergency contacts are saved.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("What changes"), { target: { value: "nric_fin" } });
+    expect(screen.getByText(/NRIC or FIN number is not typed here/)).toBeTruthy();
+    expect(screen.queryByLabelText("New legal name, as on your identity document")).toBeNull();
+    fireEvent.change(screen.getByLabelText("What changed and why"), { target: { value: "My FIN became an NRIC." } });
+    fireEvent.change(screen.getByLabelText("Evidence"), { target: { files: [new File(["%PDF"], "nric.pdf", { type: "application/pdf" })] } });
+    fireEvent.submit(screen.getByRole("form", { name: "Ask to change my legal name, residency or NRIC or FIN" }));
+    expect(await screen.findByText("Sent. The people team decides it by 2026-11-27.")).toBeTruthy();
+    expect(bodies.get("POST /v1/me/details-changes")).toMatchObject({ kind: "nric_fin", evidence: { title: "nric.pdf", content_type: "application/pdf" } });
+  });
+
+  it("lets a person ask the people team a question", async () => {
+    answer("POST /v1/me/questions", { status: 201, body: { id: rid, due_on: "2026-11-25" } });
+    const { container } = render(<AskQuestion roles={["employee"]} />);
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Your question"), { target: { value: "When is my review?" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Ask a question" }));
+    expect(await screen.findByText("Sent. The people team answers by 2026-11-25.")).toBeTruthy();
+  });
+
+  it("shows every request with its step and reply, and withdraws one nobody has answered", async () => {
+    const row = { id: rid, kind: "question", title: "question", state: "open", step: "received", asked_at: "2026-11-20T10:00:00Z", due_on: "2026-11-25" };
+    answer("GET /v1/me/requests", { status: 200, body: { requests: [row, { ...row, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef1", kind: "details_change", title: "legal_name", state: "refused", step: "closed", reply: "Not legible." },
+      { ...row, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef2", kind: "letter", title: "employment_confirmation", state: "issued", step: "ready" }] } });
+    answer(`POST /v1/me/requests/${rid}/withdrawal`, { status: 204, body: undefined });
+    const { container } = render(<RequestSteps />);
+    expect(await screen.findByText("Question to the people team")).toBeTruthy();
+    expect(screen.getByText("Change of details: Legal name")).toBeTruthy();
+    expect(screen.getByText("Reply: Not legible.")).toBeTruthy();
+    expect(screen.getByText("Ready")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "Withdraw" })).toHaveLength(1);
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw" }));
+    expect(await screen.findByText("Withdrawn.")).toBeTruthy();
+    expect(calls).toContain(`POST /v1/me/requests/${rid}/withdrawal`);
+  });
+
+  it("lets the people team read the evidence, approve or refuse a change and answer a question", async () => {
+    const base = { kind: "details_change", state: "requested", step: "received", asked_at: "2026-11-20T10:00:00Z", due_on: "2026-11-27", person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", person: "Ben Lim" };
+    answer("GET /v1/requests/queue", { status: 200, body: { queue: [{ ...base, id: rid, title: "legal_name", change_kind: "legal_name", evidence_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9", detail: "Deed poll." },
+      { ...base, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef1", kind: "question", state: "open", title: "question", detail: "When is my review?" }] } });
+    answer(`POST /v1/details-changes/${rid}/decision`, { status: 204, body: undefined });
+    answer("POST /v1/questions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef1/reply", { status: 204, body: undefined });
+    const { container } = render(<PeopleRequests roles={["hr_officer"]} />);
+    expect(await screen.findByText("Deed poll.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Read the evidence" }).getAttribute("href")).toBe("/api/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/documents/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9");
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Reason for refusing Ben Lim's request"), { target: { value: "Not legible." } });
+    fireEvent.click(screen.getByRole("button", { name: "Refuse Ben Lim's change" }));
+    expect(await screen.findByText("Refused. The person sees the reason.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/details-changes/${rid}/decision`)).toMatchObject({ approve: false, reason: "Not legible." });
+    fireEvent.change(screen.getByLabelText("Answer to Ben Lim"), { target: { value: "Next month." } });
+    fireEvent.click(screen.getByRole("button", { name: "Send the answer to Ben Lim" }));
+    expect(await screen.findByText("Answered.")).toBeTruthy();
   });
 });

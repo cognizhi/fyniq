@@ -6245,13 +6245,75 @@
     "What it can and cannot do",
     "Common questions",
     "Conversation with cited answers (AI badge)",
-    "Ask Sarah instead (a request to HR)",
+    "Ask Sarah instead (a request to HR: route /me/ask/hr)",
     "Composer"
    ],
    "states": [
     "rule to confirm with HR",
     "question outside the person's rights"
    ]
+  },
+  {
+    "id": "nm-my-details",
+    "file": "NmMyDetails",
+    "title": "My details",
+    "canvas": "nemura-me",
+    "module": "Self-service",
+    "route": "/me/details",
+    "kind": "form",
+    "phase": "P1",
+    "roles": [
+      "Employee"
+    ],
+    "mode": "basic",
+    "requirements": [
+      "NM-ESS-03",
+      "NM-ESS-04"
+    ],
+    "purpose": "Change contact details and emergency contacts at once, and ask for a change of legal name, residency or NRIC or FIN with evidence.",
+    "content": [
+      "Contact details (saved at once)",
+      "Emergency contacts (up to three)",
+      "Ask to change a legal name, residency or NRIC or FIN",
+      "Evidence upload",
+      "What needs approval and why"
+    ],
+    "states": [
+      "saved",
+      "waiting for approval"
+    ]
+  },
+  {
+    "id": "nm-people-requests",
+    "file": "NmPeopleRequests",
+    "title": "Requests",
+    "canvas": "nemura-team",
+    "module": "People team",
+    "route": "/people/requests",
+    "kind": "list",
+    "phase": "P1",
+    "roles": [
+      "HR officer",
+      "HR administrator",
+      "Owner"
+    ],
+    "mode": "basic",
+    "requirements": [
+      "NM-ESS-03",
+      "NM-ESS-04"
+    ],
+    "purpose": "Decide the changes of details people asked for, with their evidence, and answer their questions.",
+    "content": [
+      "Queue soonest due first",
+      "Change of details with its evidence",
+      "Approve or refuse with a reason",
+      "Questions and answers",
+      "Never your own request"
+    ],
+    "states": [
+      "empty queue",
+      "your own request (cannot decide)"
+    ]
   },
   {
    "id": "nm-report-sick",
