@@ -53,3 +53,10 @@ var (
 	GetProjectReport       = Policy{Operation: "getProjectReport", Capability: ProjectReports, Need: View}
 	ListProjectTimeEntries = Policy{Operation: "listProjectTimeEntries", Capability: ProjectReports, Need: View}
 )
+
+// Billing a project's work (FR-PRJ-10): the unbilled view is read under "Project reports and cost rates" and shows hours and billing rates,
+// never a cost rate; the draft invoice is made through the ordinary invoice command, so it needs the right to create invoices as well.
+var (
+	GetProjectUnbilled  = Policy{Operation: "getProjectUnbilled", Capability: ProjectReports, Need: View}
+	DraftProjectInvoice = Policy{Operation: "draftProjectInvoice", Capability: Invoices, Need: Create, Parent: ProjectReports}
+)

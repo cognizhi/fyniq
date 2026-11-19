@@ -28,6 +28,8 @@ rule of design D4); **API ↔ database** (`fyniq_api`, RLS per organisation, the
 | T5 | person ↔ API | Tampering: time logged on a project the person is not on, a closed project, or a task out of use; billable time on an internal project | Time billed that was never agreed | Medium |
 | T6 | any ↔ API | A module switched off (FR-ORG-06) still answers, or a tenant reads another's projects | Hidden features used; cross-tenant disclosure | Low |
 | T7 | person ↔ API | Tampering: two sessions save one week at once, or a stale save overwrites newer time | Lost updates | Medium |
+| T8 | AR specialist ↔ API ↔ database | Tampering: work billed twice (two draft invoices naming the same time or cost), billed work marked by a forged payload, or a marked line edited away | Revenue overstated; a customer billed twice | Medium |
+| T9 | person ↔ API | Information disclosure: the unbilled view or the report shows a person's cost rate; a manager reads another project's unbilled work | Payroll data disclosed | Medium |
 
 ## 3. Mitigations and the test that proves each
 
@@ -40,6 +42,8 @@ rule of design D4); **API ↔ database** (`fyniq_api`, RLS per organisation, the
 | T5 | `CheckWeek` and `time_entry_guard` (membership, task in use, closed, internal) | `TestAWeekIsCheckedWithEveryProblemAtOnce`, `TestAWeekOfTime…` |
 | T6 | Every operation answers `PRJ-09` while the switch is off; `FORCE ROW LEVEL SECURITY` on every table | `TestProjectsRefuseWhileSwitchedOff`, `TestAProjectIsADimensionValueWithAttributes`, `TestEveryTenantTableForcesRowLevelSecurity` |
 | T7 | `If-Match` with the week's ETag; every entry change at its version | `TestAWeekOfTime…` (stale and missing ETags) |
+| T8 | The marks are written only by the `project_billing_follows_invoice` trigger when an invoice is posted, and refuse (FY606, `STORAGE-BILL-01`) time that is not approved billable time of the project, a cost that is not a posted bill or claim, and work already billed; no role may write the table; a void releases the work | `TestTwoInvoicesNeverBillTheSameWork`, `TestAProjectBillsItsUnbilledWorkOnceThroughADraftInvoice`, `TestEachRoleHoldsExactlyItsGrants` |
+| T9 | The unbilled view carries hours and billing rates only; the report values cost at the viewer's tier; a manager reads only their projects | `TestProjectReportsComeFromThePostedLedgerAndApprovedTime`, the matrix rows `getProjectUnbilled` and `draftProjectInvoice` |
 
 ## 4. Residual risk
 

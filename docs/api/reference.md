@@ -2588,6 +2588,32 @@ Enters a person's cost rate from a day, or the standard rate when no person is n
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `PRJ-09`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RATE-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/project-invoice-drafts`
+
+**Draft an invoice from a project's unbilled work** (`draftProjectInvoice`)
+
+Makes a draft invoice to the project's customer through the ordinary invoice command (createInvoice): one line a person and rate for the time, one line a cost for the costs at cost plus markup, each carrying the project, on the revenue account and GST code given (FR-PRJ-10). The draft remembers what it bills: posting the invoice marks those time entries and cost lines billed, and voiding it releases them, so a piece of work is billed once. It needs the right to create invoices and to see project reports. Refused with PRJ-12 for an internal project, PRJ-13 when there is nothing to bill or the project has no customer, and PRJ-09 while Projects and time are switched off. Side effects: the draft invoice and its audit event; nothing posts until the invoice is issued. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Invoices, credit notes
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`DraftProjectInvoiceBody`](../../contracts/schemas/DraftProjectInvoiceBody.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Invoice`](../../contracts/schemas/Invoice.schema.json)
+  - `201` Created [`Invoice`](../../contracts/schemas/Invoice.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PRJ-12` An internal project is never billed; `PRJ-13` Nothing is ready to bill on the project, or the project has no customer; `STORAGE-BILL-01` That work is already billed, or is not billable work of the project.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-08` An average rate never sets a GST amount; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid; `PRJ-11` A billable line needs a project; `PRJ-14` The invoice needs a revenue account and a GST code.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `FX-08`, `INVOICE-05`, `INVOICE-06`, `INVOICE-07`, `INVOICE-08`, `INVOICE-09`, `INVOICE-15`, `INVOICE-16`, `LEDGER-22`, `LEDGER-23`, `LEDGER-24`, `LEDGER-28`, `LEDGER-31`, `LEDGER-32`, `LEDGER-33`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `PRJ-09`, `PRJ-11`, `PRJ-12`, `PRJ-13`, `PRJ-14`, `STORAGE-BILL-01`
+
 ### `GET /v1/project-people`
 
 **List the members a project can name** (`listProjectPeople`)
@@ -2842,6 +2868,25 @@ The project's approved entries between two days, reversing entries included, by 
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
+
+### `GET /v1/projects/{project_id}/unbilled`
+
+**What a project can bill now** (`getProjectUnbilled`)
+
+Approved, billable time not yet on a posted invoice, valued at the billing rate of each day (RND-TIME per entry), and posted billable costs of its bills and claims at cost plus markup (RND-MARKUP), with the totals (FR-PRJ-10). Only a time-and-materials project bills its time: a fixed fee bills by milestone, a retainer draws time down, and an internal project bills nothing. Time without a billing rate is listed apart. Hours and billing rates only, never a cost rate. A person who reads only the projects they manage gets 404 for another. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+
+- **Permission:** View on Project reports and cost rates (rev 0.8)
+- **Parameters:**
+  - `project_id` (path, required): The project's ID.
+- **Responses:**
+  - `200` OK [`ProjectUnbilled`](../../contracts/schemas/ProjectUnbilled.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
 
 ### `GET /v1/reports/projects`
 

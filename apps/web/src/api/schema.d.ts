@@ -13405,6 +13405,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/project-invoice-drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft an invoice from a project's unbilled work
+         * @description Makes a draft invoice to the project's customer through the ordinary invoice command (createInvoice): one line a person and rate for the time, one line a cost for the costs at cost plus markup, each carrying the project, on the revenue account and GST code given (FR-PRJ-10). The draft remembers what it bills: posting the invoice marks those time entries and cost lines billed, and voiding it releases them, so a piece of work is billed once. It needs the right to create invoices and to see project reports. Refused with PRJ-12 for an internal project, PRJ-13 when there is nothing to bill or the project has no customer, and PRJ-09 while Projects and time are switched off. Side effects: the draft invoice and its audit event; nothing posts until the invoice is issued. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["draftProjectInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/project-people": {
         parameters: {
             query?: never;
@@ -13585,6 +13605,26 @@ export interface paths {
          * @description The project's approved entries between two days, reversing entries included, by day: the drill-down of its hours and cost (FR-PRJ-12). Hours only, never a rate or a cost. A person who reads only the projects they are on gets 404 for another one. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
          */
         get: operations["listProjectTimeEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_id}/unbilled": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What a project can bill now
+         * @description Approved, billable time not yet on a posted invoice, valued at the billing rate of each day (RND-TIME per entry), and posted billable costs of its bills and claims at cost plus markup (RND-MARKUP), with the totals (FR-PRJ-10). Only a time-and-materials project bills its time: a fixed fee bills by milestone, a retainer draws time down, and an internal project bills nothing. Time without a billing rate is listed apart. Hours and billing rates only, never a cost rate. A person who reads only the projects they manage gets 404 for another. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+         */
+        get: operations["getProjectUnbilled"];
         put?: never;
         post?: never;
         delete?: never;
@@ -31369,6 +31409,49 @@ export interface components {
             /** @description Fyniq's two assessments, then the organisation's own, oldest first. */
             items: components["schemas"]["DPIAView"][];
         };
+        DraftProjectExpense: {
+            /**
+             * Format: uuid
+             * @description The posted bill or claim.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e81
+             */
+            document_id: string;
+            /**
+             * Format: int64
+             * @description The line's place in its document, from 0.
+             * @example 0
+             */
+            line: number;
+        };
+        DraftProjectInvoiceBody: {
+            /**
+             * Format: date
+             * @description The invoice's date. Left out, the organisation's today.
+             * @example 2026-10-31
+             */
+            date?: string;
+            /** @description The costs to bill. Left out, all of those in the project's currency. */
+            expenses?: components["schemas"]["DraftProjectExpense"][] | null;
+            /**
+             * @description The GST code of the invoice's lines. Left out, SR, standard-rated; choose OS or ZR where it applies [verify with the tax agent].
+             * @example SR
+             */
+            gst_code?: string;
+            /**
+             * Format: uuid
+             * @description The project to bill.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+             */
+            project_id: string;
+            /**
+             * Format: uuid
+             * @description The revenue account the invoice's lines earn.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d62
+             */
+            revenue_account_id: string;
+            /** @description The priced time entries to bill. Left out, all of them. */
+            time_entry_ids?: string[] | null;
+        };
         EmailDocument: {
             /**
              * @description The address to send it to; left out, the customer's billing email.
@@ -45079,6 +45162,44 @@ export interface components {
              */
             next_cursor?: string;
         };
+        ProjectUnbilled: {
+            /**
+             * @description How the project bills: only a time-and-materials project bills its time; a fixed fee bills by milestone, a retainer draws time down, and an internal project bills nothing.
+             * @example time_and_materials
+             * @enum {string}
+             */
+            billing_method: "time_and_materials" | "fixed_fee" | "retainer" | "internal";
+            /**
+             * @description The project's currency.
+             * @example SGD
+             */
+            currency: string;
+            /** @description The expenses' billable total. */
+            expense_value: components["schemas"]["Money"];
+            /** @description Posted billable costs in the project's currency, at cost plus markup. */
+            expenses: components["schemas"]["UnbilledExpense"][];
+            /** @description Billable costs in another currency: they are not on the project's invoice. */
+            expenses_in_other_currencies: components["schemas"]["UnbilledExpense"][];
+            /**
+             * @description false when the project has no customer, so no invoice can be drafted.
+             * @example true
+             */
+            has_customer: boolean;
+            /**
+             * Format: uuid
+             * @description The project.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+             */
+            project_id: string;
+            /** @description Priced approved billable time not yet on a posted invoice, by day. */
+            time: components["schemas"]["UnbilledTime"][];
+            /** @description The priced time's value. */
+            time_value: components["schemas"]["Money"];
+            /** @description What an invoice of it all comes to before GST. */
+            total: components["schemas"]["Money"];
+            /** @description Approved billable time that no billing rate covers: enter a rate from the day (setBillingRate) to bill it. */
+            unpriced_time: components["schemas"]["UnbilledTime"][];
+        };
         PublicAnswer: {
             /**
              * Format: date
@@ -52016,6 +52137,94 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b90
              */
             next_cursor?: string;
+        };
+        UnbilledExpense: {
+            /** @description The cost plus the markup: what is billed. */
+            billable: components["schemas"]["Money"];
+            /** @description The cost before GST, in the document's currency. */
+            cost: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The cost's date.
+             * @example 2026-10-14
+             */
+            date?: string;
+            /**
+             * Format: uuid
+             * @description The posted bill or claim.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e81
+             */
+            document_id: string;
+            /**
+             * @description What it is.
+             * @example Venue hire
+             */
+            label?: string;
+            /**
+             * Format: int64
+             * @description The line's place in its document, from 0.
+             * @example 0
+             */
+            line: number;
+            /** @description RND-MARKUP of the cost at the markup percentage. */
+            markup: components["schemas"]["Money"];
+            /**
+             * @description The markup on it.
+             * @example 10
+             */
+            markup_percent?: string;
+            /**
+             * @description The document's number.
+             * @example BILL-0007
+             */
+            number?: string;
+            /**
+             * @description What the cost is on.
+             * @example bill
+             * @enum {string}
+             */
+            source: "bill" | "claim";
+        };
+        UnbilledTime: {
+            /**
+             * Format: uuid
+             * @description The time entry.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e71
+             */
+            entry_id: string;
+            /**
+             * Format: int64
+             * @description Net minutes; a reversing entry is negative.
+             * @example 150
+             */
+            minutes: number;
+            /**
+             * @description Their name.
+             * @example Priya Nair
+             */
+            person_name: string;
+            /**
+             * @description The billing rate an hour on that day, in the project's currency; absent when no billing rate covers the day, and then the entry cannot be invoiced.
+             * @example 150.00
+             */
+            rate?: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+             */
+            user_id: string;
+            /**
+             * @description RND-TIME of the minutes at the rate, per entry.
+             * @example 375.00
+             */
+            value?: string;
+            /**
+             * Format: date
+             * @description The day worked.
+             * @example 2026-10-13
+             */
+            work_date: string;
         };
         UnregisteredLine: {
             /**
@@ -158150,6 +158359,153 @@ export interface operations {
             };
         };
     };
+    draftProjectInvoice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftProjectInvoiceBody"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PRJ-12` An internal project is never billed; `PRJ-13` Nothing is ready to bill on the project, or the project has no customer; `STORAGE-BILL-01` That work is already billed, or is not billable work of the project. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-08` An average rate never sets a GST amount; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid; `PRJ-11` A billable line needs a project; `PRJ-14` The invoice needs a revenue account and a GST code. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listProjectPeople: {
         parameters: {
             query?: {
@@ -159367,6 +159723,93 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getProjectUnbilled: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project's ID. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectUnbilled"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

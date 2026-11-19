@@ -196,6 +196,20 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** time and costs are recorded on an internal or non-billable project
 - **THEN** they are not billed
 
+#### Scenario: The unbilled view and the draft invoice (rev 0.298)
+- **GIVEN** a time-and-materials project with a customer, approved billable time and posted billable costs
+- **WHEN** the unbilled work is drafted into an invoice
+- **THEN** time is valued at the billing rate of each day (RND-TIME per entry) and each cost at its cost plus markup (RND-MARKUP)
+- **AND** an ordinary draft invoice is made to the customer through the invoice command, each line carrying the project
+
+#### Scenario: Work is billed once (rev 0.298)
+- **WHEN** an invoice made from a project's unbilled work is posted
+- **THEN** its time entries and cost lines are marked billed by the database, a voided invoice releases them, and no second invoice can be posted for the same work
+
+#### Scenario: Approved time not invoiced (rev 0.298)
+- **WHEN** approved billable time on a time-and-materials project is on no posted invoice 30 days after the end of its month
+- **THEN** C.2 #40 warns and names the project
+
 ### Requirement: FR-PRJ-11 Revenue over time for fixed-fee projects
 When the accountant elects it, the system SHALL recognise revenue over time for fixed-fee projects by cost-to-cost progress, with a contract asset and contract liability, through a monthly journal proposed for approval.
 

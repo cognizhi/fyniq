@@ -2652,6 +2652,17 @@ type FyniqProject struct {
 	ChangedAt      time.Time
 }
 
+type FyniqProjectBilledItem struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Kind           string
+	RefID          uuid.UUID
+	LineNo         int32
+	InvoiceID      uuid.UUID
+	CreatedAt      time.Time
+}
+
 type FyniqProjectMember struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -134,6 +134,8 @@ type UnitOfWork interface {
 	Timesheets() Timesheets
 	// Rates are cost rates and billing rates (FR-PRJ-06).
 	Rates() Rates
+	// Billing is what projects have billed to their customers (FR-PRJ-10).
+	Billing() Billing
 	// ClaimPlaces are the members' saved places for mileage claims (FR-AP-16).
 	ClaimPlaces() ClaimPlaces
 	// AssetSources are the bill lines and bank lines registered assets came from (FR-FA-01).
