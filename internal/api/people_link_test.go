@@ -490,11 +490,12 @@ func TestTheAskAtReleaseGivesUpAfterFiveSeconds(t *testing.T) {
 		t.Fatal(err)
 	}
 	asker := &linksend.HoldAsker{HTTP: srv.Client(), APIURL: srv.URL, TokenURL: srv.URL + "/oauth2/token", Audience: "nemura-api", Clock: clock.System{}}
-	start := time.Now()
+	start := clock.System{}.Now()
 	if _, err := asker.Ask(context.Background(), k, uuid.New()); err == nil {
 		t.Fatal("a Nemura that never answers gave an answer")
 	}
-	if took := time.Since(start); took < 4*time.Second || took > 8*time.Second {
+	took := clock.System{}.Now().Sub(start)
+	if took < 4*time.Second || took > 8*time.Second {
 		t.Errorf("the ask gave up after %s, want about 5s", took)
 	}
 }

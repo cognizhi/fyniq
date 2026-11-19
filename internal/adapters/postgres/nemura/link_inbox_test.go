@@ -609,8 +609,16 @@ func TestTheLinkPageShowsTheProposalAndTheActiveLinkWithoutAnyPrivateKey(t *test
 	if v, err := svc.Current(ctx, owner); err != nil || v.State != "" {
 		t.Fatalf("before any proposal: %+v %v", v, err)
 	}
+	// A client registered before the link is listed with it, for the two approvers to review (NM-ARC-04).
+	before := nemura.APIClientService{Store: store(t, "nemura_api"), OAuth: oauth, Clock: clock.NewFrozen(now)}
+	if _, err := before.Register(ctx, owner, "Payroll bureau", []string{"directory.read"}, "ES256", json.RawMessage(jwk)); err != nil {
+		t.Fatal(err)
+	}
 	fyniqOrg := uuid.New()
 	v, err := svc.Propose(ctx, owner, fyniqOrg)
+	if len(v.Clients) != 1 || v.Clients[0].Name != "Payroll bureau" || strings.Contains(fmt.Sprint(v.Clients), "kty") {
+		t.Errorf("the clients listed with the proposal: %+v", v.Clients)
+	}
 	if err != nil || v.State != "proposed" || v.FyniqOrganisation != fyniqOrg || len(v.LinkKey) != 32 || !strings.Contains(string(v.ClientKey), "EC") || strings.Contains(string(v.ClientKey), `"d"`) || v.PeerClientID == "" {
 		t.Fatalf("the proposal: %+v %v", v, err)
 	}

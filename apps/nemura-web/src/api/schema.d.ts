@@ -5435,6 +5435,8 @@ export interface components {
             outcome: "applied" | "ignored_older" | "duplicate";
         };
         LinkState: {
+            /** @description The organisation's live API clients as the link is made: they were registered before it, by one Owner alone, and the two people who approve it review them. Never a key. */
+            api_clients?: components["schemas"]["Client"][] | null;
             /** @description The public half of the key Nemura's client signs its token request to Fyniq's OAuth server with, as a JWK: give it to Fyniq when it links. Never the private key. */
             client_public_key?: {
                 [key: string]: unknown;

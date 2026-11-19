@@ -154,6 +154,8 @@ type LinkView struct {
 	PeerAskClientID    string          // the ID Fyniq's read-only client for the ask at release has there
 	FyniqClientID      string          // the ID Nemura's client has at Fyniq's OAuth server, once linked
 	ProposedBy         uuid.UUID
+	// Clients are the organisation's live API clients, listed so that the two people who approve the link see what already has a way in (PRD-002 NM-ARC-04): from the day the link exists a new one needs a second approver.
+	Clients []Client
 }
 
 // LinkAdmin is how the people team makes the link (PRD-002 NM-ARC-04): an Owner proposes, another Owner or Administrator approves with Fyniq's half.
@@ -178,6 +180,7 @@ type LinkState struct {
 	ClientKey          map[string]any `json:"client_public_key,omitempty" doc:"The public half of the key Nemura's client signs its token request to Fyniq's OAuth server with, as a JWK: give it to Fyniq when it links. Never the private key."`
 	PeerAskClientID    string         `json:"nemura_ask_client_id,omitempty" doc:"The ID Fyniq's read-only client, which asks whether a person is held at the release of a payment, will have at Nemura's OAuth server: give it to Fyniq when it links." example:"fyniq-ask-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
 	PeerClientID       string         `json:"nemura_client_id,omitempty" doc:"The ID Fyniq's client will have at Nemura's OAuth server: give it to Fyniq when it links." example:"fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
+	Clients            []Client       `json:"api_clients,omitempty" doc:"The organisation's live API clients as the link is made: they were registered before it, by one Owner alone, and the two people who approve it review them. Never a key."`
 	FyniqClientID      string         `json:"fyniq_oauth_client_id,omitempty" doc:"The ID Nemura's client has at Fyniq's OAuth server, once the link is approved." example:"4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11"`
 }
 
@@ -186,6 +189,7 @@ func linkStateOf(v LinkView) LinkState {
 	if v.State == "" {
 		out.State = "none"
 	}
+	out.Clients = v.Clients
 	if v.NemuraOrganisation != uuid.Nil {
 		out.NemuraOrganisation = v.NemuraOrganisation.String()
 	}

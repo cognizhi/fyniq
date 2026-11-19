@@ -300,7 +300,15 @@ func (c LinkAdminService) view(ctx context.Context, org uuid.UUID) (api.LinkView
 		if err != nil {
 			return err
 		}
-		out = api.LinkView{State: l.State, Epoch: l.Epoch, FyniqOrganisation: l.FyniqOrganisation, NemuraOrganisation: org, LinkKey: l.Public, PeerClientID: l.PeerClientID, PeerAskClientID: l.PeerAskClientID,
+		cs, err := APIClients(ctx, tx) // reviewed with the link: what already has a way in
+		if err != nil {
+			return err
+		}
+		clients := []api.Client{}
+		for _, k := range cs {
+			clients = append(clients, api.Client{ID: k.ID.String(), Name: k.Name, Scopes: k.Scopes, ClientID: k.ClientID, Audience: apiclient.Audience})
+		}
+		out = api.LinkView{Clients: clients, State: l.State, Epoch: l.Epoch, FyniqOrganisation: l.FyniqOrganisation, NemuraOrganisation: org, LinkKey: l.Public, PeerClientID: l.PeerClientID, PeerAskClientID: l.PeerAskClientID,
 			FyniqClientID: l.FyniqClientID, ProposedBy: l.ProposedBy}
 		return nil
 	})
