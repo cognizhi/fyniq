@@ -212,22 +212,26 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 8. Privacy and records (slice 8)
 
-- [ ] 8.1 The data-category registry (D12) and `compliance/nemura-data-inventory.yaml`: key, what it holds, purpose,
+- [x] 8.1 The data-category registry (D12) and `compliance/nemura-data-inventory.yaml`: key, what it holds, purpose,
   restricting right, retention rule, export and erase hooks; the completeness test over Nemura's schema golden file;
   the register of transfers outside Singapore with their assessments (CMP-PD-06). Tests `// req: NM-SEC-03` (a
   purpose per type, an inventory entry per type, a transfer refused without a current assessment).
-- [ ] 8.2 Retention (NM-SEC-04, NM-SEC-05): a schedule per record type with its reason; the minimum periods read
+  (Built, 19 Nov 2026: `internal/nemura/datacat`, `compliance/nemura-data-inventory.yaml`, `TestTheInventoryIsComplete` and `TestTheInventoryFileIsTheRegistry`, the transfer assessments (`TestPersonalDataLeavesSingaporeOnlyAfterAnAssessment`). `// req: NM-SEC-03`.)
+- [x] 8.2 Retention (NM-SEC-04, NM-SEC-05): a schedule per record type with its reason; the minimum periods read
   from the pack when it exists and refused to go below; the deletion job that produces a report for review with a
   default 30-day review date, ✖ after it, legal holds skipped and listed, and a proof event for each deletion;
   never silent. Tests `// req: NM-SEC-05` for the job, the review date, the hold and the proof; `// req: NM-SEC-04`
   for the refusal below a minimum (**Left:** the Singapore pack's own values, reviewed with
   `p1-nemura-records-packs`; a test of this engine with a stub pack minimum is what is tagged here).
+  (Built, 19 Nov 2026: migration 000006 `legal_hold`, `deletion_report`, `deletion_proof`; `internal/nemura/retention`; `ReportDueDeletions`, `ReviewDeletionReport`, `RunReviewedDeletion`; `TestADueDeletionIsReportedReviewedHeldAndProved`, `TestARetentionPeriodNeverGoesBelowTheMinimum`, `TestALegalHoldKeepsWhatItNames`. `// req: NM-SEC-05` and `// req: NM-SEC-04` (the engine, with a stub minimum). **Left:** the Singapore pack's own periods, in `p1-nemura-records-packs`.)
 - [ ] 8.3 Access to one's own file (NM-SEC-07, CMP-PD-04) and `nm-access-request` built to its fragment: a tracked
   request with a due date at 30 days or a written notice within them, HR's review of each category (release, redact
   other people's data, withhold with a recorded exception), the written outcome, withdrawal never deleting
   records the law requires, and the overdue state for Checks to read later. The PDPC exception stays
   `[verify the current edition with the DPO]`. Tests `// req: NM-SEC-07`; the page's journey; axe.
-- [ ] 8.4 Verify: `make check`, `make test`, `make kb-lint`, the controls (`make controls`) for the new entries.
+  (Built in part, 19 Nov 2026: the request lifecycle in migration 000006, `internal/nemura/accessreq` and `privacy.go` (`TestAnAccessRequestIsTrackedDecidedAnsweredAndKept`, `// req: NM-SEC-07`). **Left, so unticked:** the API operations and the page `nm-access-request`, with the web app (7.x).)
+- [x] 8.4 Verify: `make check`, `make test`, `make kb-lint`, the controls (`make controls`) for the new entries.
+  (Done for the engine: `make check`, `make db-lint`, the controls and `make kb-lint` unchanged, no user-guide page yet.)
 
 ## 9. My pay, performance and the pay-day alert (slice 9)
 
