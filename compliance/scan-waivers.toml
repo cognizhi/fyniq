@@ -221,6 +221,13 @@ expires = 2027-04-15
 [[waiver]]
 tool = "gosec"
 rule = "G101"
+path = "internal/mcpregister/policy.go"
+reason = "refusedFields maps the names of registration fields the server refuses (client_secret, registration_access_token and the like) to the words of the refusal; it holds no credential, only field names (a false positive on the names)."
+expires = 2027-05-31
+
+[[waiver]]
+tool = "gosec"
+rule = "G101"
 path = "internal/adapters/postgres/nemura/bootstrap_local.go"
 reason = "LocalPassword is the password of Nemura's throw-away local and test database roles, compiled only into the local build (DEV-07) and valid nowhere else (SEC-12)."
 expires = 2027-04-15
