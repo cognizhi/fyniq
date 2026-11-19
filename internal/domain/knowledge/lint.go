@@ -5,6 +5,7 @@ import (
 	"path"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -30,6 +31,9 @@ const (
 	RuleSourceBanned = "KB-SOURCE-BANNED" // an internal document as a source
 	RuleSourceGone   = "KB-SOURCE-GONE"   // a source that does not exist
 	RuleStale        = "KB-STALE"         // a source changed since the page was compiled
+	RulePackLine     = "KB-PACK-LINE"     // a packs field that is not a list of "<pack>@<year>.<n>"
+	RulePackGone     = "KB-PACK-GONE"     // a pack version that does not exist
+	RulePackStale    = "KB-PACK-STALE"    // a newer version of a pack than the one the page read (AI-53)
 	RulePublishDraft = "KB-PUBLISH-DRAFT" // a published page compiled from a draft source
 	RuleTitle        = "KB-TITLE"         // warning: a body that does not start with its title
 	RuleSectionCite  = "KB-SECTION-CITE"  // a section that cites no source
@@ -132,6 +136,28 @@ func Lint(c Corpus) []Finding {
 		}
 		if p.Status == "published" && p.Taint == "untrusted" {
 			add(RuleUntrusted, p.File, "an untrusted page stays draft until approved (AI-54)")
+		}
+		if c.PackVersions != nil {
+			_, listed := p.front.lists["packs"]
+			if _, scalar := p.front.scalars["packs"]; scalar || listed && len(p.Packs) == 0 {
+				add(RulePackLine, p.File, "packs must be a non-empty list of '<pack>@<year>.<n>' lines")
+			}
+			for _, item := range p.Packs {
+				m := packRe.FindStringSubmatch(item)
+				if m == nil {
+					add(RulePackLine, p.File, "packs line must be '<pack>@<year>.<n>': "+item)
+					continue
+				}
+				y, _ := strconv.Atoi(m[2])
+				n, _ := strconv.Atoi(m[3])
+				declared, known := PackVersion{y, n}, c.PackVersions[m[1]]
+				switch {
+				case !slices.Contains(known, declared):
+					add(RulePackGone, p.File, "pack not found: "+item)
+				case declared.less(known[len(known)-1]):
+					add(RulePackStale, p.File, fmt.Sprintf("pack %s is out of date: the page read %s, the newest is %s@%s; recompile it", m[1], item, m[1], known[len(known)-1]))
+				}
+			}
 		}
 		texts := map[string]string{}
 		var corpus []string

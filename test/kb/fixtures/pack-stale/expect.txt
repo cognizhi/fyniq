@@ -1,0 +1,1 @@
+error KB-PACK-STALE kb/pages/task/a.md

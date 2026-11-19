@@ -10,7 +10,7 @@ taint: trusted
 status: published
 human_edited: false
 compiled_by: test model
-schema: kb-schema@1
+schema: kb-schema@2
 compiled_at: 2026-11-18
 ---
 # Thing B

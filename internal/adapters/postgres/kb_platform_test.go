@@ -47,7 +47,7 @@ func kbRelease(t *testing.T) knowledge.Release {
 			out += "  - docs/user-guide/" + s + " sha256:" + hex.EncodeToString(sum[:]) + "\n"
 			body += "- A fact. (src: docs/user-guide/" + s + "#terms)\n"
 		}
-		return out + "data_class: " + class + "\ntaint: trusted\nstatus: " + status + "\nhuman_edited: false\ncompiled_by: test\nschema: kb-schema@1\ncompiled_at: 2026-11-18\n---\n" + body +
+		return out + "data_class: " + class + "\ntaint: trusted\nstatus: " + status + "\nhuman_edited: false\ncompiled_by: test\nschema: kb-schema@2\ncompiled_at: 2026-11-18\n---\n" + body +
 			"- See [[p.open]], [[p.owner]], [[p.both]], [[p.payroll]], [[p.draft]], [[p.acc]].\n"
 	}
 	pages := map[string]string{
