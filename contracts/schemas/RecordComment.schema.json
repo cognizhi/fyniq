@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "author": {
+      "$ref": "Person.schema.json",
+      "description": "Who wrote it."
+    },
+    "body": {
+      "description": "What they wrote, as plain text with line breaks.",
+      "examples": [
+        "The GST on this line looks high: please check the supplier's invoice."
+      ],
+      "type": "string"
+    },
+    "created_at": {
+      "description": "When it was written.",
+      "examples": [
+        "2026-11-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The comment's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "mentions": {
+      "description": "The members it mentions: each could see the record when it was written, and was told.",
+      "items": {
+        "$ref": "Person.schema.json"
+      },
+      "type": "array"
+    },
+    "record_id": {
+      "description": "The record it is on.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "record_type": {
+      "description": "The kind of record it is on.",
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "record_type",
+    "record_id",
+    "author",
+    "body",
+    "mentions",
+    "created_at"
+  ],
+  "title": "RecordComment",
+  "type": "object"
+}

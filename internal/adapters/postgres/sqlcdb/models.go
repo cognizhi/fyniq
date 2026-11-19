@@ -3136,6 +3136,17 @@ type FyniqRateLimitWindow struct {
 	Used           int32
 }
 
+type FyniqRecordComment struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RecordType     string
+	RecordID       uuid.UUID
+	Author         uuid.UUID
+	Body           string
+	Mentions       []uuid.UUID
+	CreatedAt      time.Time
+}
+
 type FyniqRecoveryConfirmation struct {
 	ID                     uuid.UUID
 	UserID                 uuid.UUID

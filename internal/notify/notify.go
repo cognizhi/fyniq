@@ -92,8 +92,13 @@ var Catalogue = []Type{
 	{Key: "jobs.failed", Label: "A background job failed", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
 	{Key: AIBudgetType, Label: "An AI budget reached 80% this month", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
 	{Key: ExportReadyType, Label: "Your export is ready", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
+	{Key: CommentMentionType, Label: "Someone mentioned you in a comment", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: TestType, Label: "A test notification you sent", Category: Operations, Severity: "info", Email: storage.EmailImmediate},
 }
+
+// CommentMentionType tells a member that a comment on a record mentions them (FR-UX-13): only a member who may see the record is
+// ever mentioned.
+const CommentMentionType = "comment.mention"
 
 // AIBudgetType is the notice to the Owners that an AI budget reached 80% of its amount this month (AI-77): at 100% no
 // call it cannot cover is admitted.

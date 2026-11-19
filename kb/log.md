@@ -784,3 +784,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | ai.proposals: approval quality
 
 ## [2026-11-20] compile | members.roles, members.invite, members.remove: an Approver narrowed to departments, budgets, records and invitations
+
+## [2026-11-20] compile | records.comments: comments and mentions on a record

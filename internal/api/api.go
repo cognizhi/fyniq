@@ -259,6 +259,7 @@ func Config(version string) huma.Config {
 		{Name: "AI", Description: "The AI's configuration: connections to model providers, their credentials and billing (AI-72, AI-73, AI-79), dual controlled; never reachable by the AI or over MCP (§9.6)."},
 		{Name: "Assistant", Description: "Ask the books in plain words: a person's own conversations with the assistant, answered as them through the read tools, every figure from a fact (AI-P1, AI-08); never reachable by the AI or over MCP (§9.6)."},
 		{Name: "Import", Description: "The generic import (FR-MIG-03): each entity's template, laid out as the workbook's sheet for it, as CSV or XLSX, and the import of a file filled in it, with its dry run; each row entered through its own command, in any organisation, under the entity's own right."},
+		{Name: "Records", Description: "What belongs to any record: the comments and @mentions on a record, which only members who may see it read, write or are offered (FR-UX-13)."},
 		{Name: "Planning", Description: "Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08)."},
 		{Name: "Audit trail", Description: "The audit trail (PRD-001 §11.5): the explorer and its export (FR-CTL-03, AUD-07), and Verify integrity for a range of days (AUD-03). Every saved change, sign-in, sensitive read and export is in it."},
 		{Name: "Checks", Description: "The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05)."},
@@ -398,6 +399,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerHelpState(a)
 	registerPreferences(a)
 	registerSavedItems(a)
+	registerRecordComments(a)
 	registerInstallationConsole(a)
 	registerMCPOptIn(a)
 	registerConnectedApps(a)
@@ -874,30 +876,37 @@ func (a *API) approverScope(ctx context.Context, p authn.Principal) authn.Depart
 		if err != nil {
 			return err
 		}
-		held := 0
-		out = authn.DepartmentScope{Narrowed: true}
-		for _, r := range assigned {
-			if r.Role != string(authz.Approver) {
-				continue
-			}
-			held++
-			if len(r.DepartmentValues) == 0 {
-				out.Narrowed = false
-			}
-			for _, v := range r.DepartmentValues {
-				if !slices.Contains(out.Values, v) {
-					out.Values = append(out.Values, v)
-				}
-			}
-		}
-		if held == 0 {
-			out = authn.DepartmentScope{}
-		}
+		out = approverScopeOf(assigned)
 		return nil
 	})
 	if err != nil {
 		a.deps.Log.WarnContext(ctx, "api.approver_scope_unread", "error", err.Error(), "request_id", requestID(ctx))
 		return authn.DepartmentScope{Narrowed: true}
+	}
+	return out
+}
+
+// approverScopeOf is what the Approver assignments among a person's live roles are narrowed to: narrowed when there is one and
+// every one carries department values, which are then the values of all of them.
+func approverScopeOf(assigned []storage.RoleAssignment) authn.DepartmentScope {
+	out := authn.DepartmentScope{Narrowed: true}
+	held := 0
+	for _, r := range assigned {
+		if r.Role != string(authz.Approver) {
+			continue
+		}
+		held++
+		if len(r.DepartmentValues) == 0 {
+			out.Narrowed = false
+		}
+		for _, v := range r.DepartmentValues {
+			if !slices.Contains(out.Values, v) {
+				out.Values = append(out.Values, v)
+			}
+		}
+	}
+	if held == 0 {
+		return authn.DepartmentScope{}
 	}
 	return out
 }

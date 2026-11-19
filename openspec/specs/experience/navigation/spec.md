@@ -272,6 +272,7 @@ Source: PRD-001 §7.3
 #### Scenario: Right panel
 - **WHEN** a record page opens
 - **THEN** a collapsible right panel shows the checks for this record, AI suggestions and context
+- **AND** the panel's open or closed state is the person's own, kept in their browser (rev 0.376)
 
 ### Requirement: Usability acceptance
 Fyniq SHALL pass the usability acceptance tests UX-T1 to UX-T7 at their targets.
@@ -564,6 +565,12 @@ Source: PRD-001 §7.2 · Priority S · Phase P1
 - **WHEN** a user comments on a record and @mentions a colleague
 - **THEN** the comment is kept on the record
 - **AND** the colleague is notified
+
+#### Scenario: Only members who may see the record are offered and told (rev 0.376)
+- **GIVEN** a record some member's roles do not let them see
+- **WHEN** a user types @ on its comments
+- **THEN** that member is not offered, a mention of them is refused as a name that is no member's would be, and a record the user may not see is not found
+- **AND** a comment is never changed or removed
 
 ### Requirement: FR-UX-14 Undo-friendly safety
 Nothing SHALL be hard-deleted by any user action; only the audited retention purge of §11.9 removes data.

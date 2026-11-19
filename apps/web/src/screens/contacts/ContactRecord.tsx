@@ -4,6 +4,8 @@ import { ChevronRight, History } from "lucide-react";
 import { useId } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
+import { RecordComments } from "../../components/RecordComments";
+import { RecordFrame, RecordHeader } from "../../components/RecordFrame";
 import { Refusal } from "../../components/Refusal";
 import { formatAmount } from "../../format/amount";
 import { date } from "../../format/date";
@@ -114,7 +116,8 @@ function Ageing({ rows, label }: { rows: Row[]; label: string }) {
 
 // ContactRecord is Contacts › one contact (docs/design/screens ContactRecord; FR-CT-01, FR-CT-02, PRD-001 rev 0.185):
 // what they owe and are owed, what was invoiced and billed in the financial year, the ageing, and their latest
-// documents.
+// documents, in the record page anatomy (header, tabs and a panel; FR-UX-13): the figures are Details, the documents Related and
+// the comments Activity.
 export function ContactRecord() {
   const { contactId } = useParams({ strict: false }) as { contactId: string };
   const id = useId();
@@ -138,57 +141,63 @@ export function ContactRecord() {
   const c = contact.data;
   const s = summary.data;
   if (contact.isError) return <Refusal problem={problemOf(contact.error)} title="The contact could not be read" />;
+  const kind = [c?.customer ? "Customer" : "", c?.vendor ? "Vendor" : ""].filter(Boolean).join(" · ");
   return (
-    <div className="fy-page fy-enter">
-      <nav className="fy-breadcrumb" aria-label="Breadcrumb">
-        <Link to="/contacts">Contacts</Link>
-        <Icon of={ChevronRight} />
-        <span>{c?.legal_name ?? "A contact"}</span>
-      </nav>
-      <div className="fy-pagehead">
-        <div className="fy-pagehead__text">
-          <h1 className="fy-h1">{c?.legal_name ?? "Contact"}</h1>
-          <p className="fy-secondary">
-            {[c?.customer ? "Customer" : "", c?.vendor ? "Vendor" : "", c?.uen_or_tax_id ?? "", c?.billing_email ?? ""].filter(Boolean).join(" · ")}
-          </p>
-        </div>
-        {c && (
-          <div className="fy-pagehead__actions">
-            <AskAboutThis context={{ kind: "contact", id: contactId, label: c.legal_name.slice(0, 200) }} />
-          </div>
-        )}
-      </div>
-      {summary.isError && <Refusal problem={problemOf(summary.error)} title="The balances could not be read" />}
-      {s && (
-        <>
-          <div className="fy-grid fy-grid--4 gap-3" role="group" aria-label={h.label}>
-            {c?.customer !== false && <Tile label="Owed to us" value={totals(s.receivable)} meta="Open invoices less unapplied credits" />}
-            {c?.vendor !== false && <Tile label="We owe" value={totals(s.payable)} meta="Open bills less unapplied credits" />}
-            {s.invoiced && <Tile label="Invoiced this financial year" value={money(s.invoiced)} meta="Less credit notes, GST included" />}
-            {s.billed && <Tile label="Billed this financial year" value={money(s.billed)} meta="Less vendor credits, GST included" />}
-          </div>
-          {s.year && (
-            <p className="fy-small fy-muted">
-              As at {date(s.as_at)}; the financial year runs {date(s.year.from)} to {date(s.year.to)}.
-            </p>
-          )}
-          {(s.receivable.length > 0 || s.payable.length > 0) && (
-            <section className="fy-card" aria-labelledby={`${id}-ageing`}>
-              <div className="fy-card__head">
-                <h2 className="fy-h3" id={`${id}-ageing`}>
-                  By days past due
-                </h2>
-              </div>
-              <div className="fy-card__body fy-stack fy-stack--3">
-                <Ageing rows={s.receivable} label="What they owe us" />
-                <Ageing rows={s.payable as Row[]} label="What we owe them" />
-              </div>
-            </section>
-          )}
+    <RecordFrame
+      header={
+        <RecordHeader
+          breadcrumb={
+            <nav className="fy-breadcrumb" aria-label="Breadcrumb">
+              <Link to="/contacts">Contacts</Link>
+              <Icon of={ChevronRight} />
+              <span>{c?.legal_name ?? "A contact"}</span>
+            </nav>
+          }
+          title={c?.legal_name ?? "Contact"}
+          number={[kind, c?.uen_or_tax_id ?? "", c?.billing_email ?? ""].filter(Boolean).join(" · ")}
+          primary={c && <AskAboutThis context={{ kind: "contact", id: contactId, label: c.legal_name.slice(0, 200) }} />}
+        />
+      }
+      tabs={{
+        details: (
+          <>
+            {summary.isError && <Refusal problem={problemOf(summary.error)} title="The balances could not be read" />}
+            {s && (
+              <>
+                <div className="fy-grid fy-grid--4 gap-3" role="group" aria-label={h.label}>
+                  {c?.customer !== false && <Tile label="Owed to us" value={totals(s.receivable)} meta="Open invoices less unapplied credits" />}
+                  {c?.vendor !== false && <Tile label="We owe" value={totals(s.payable)} meta="Open bills less unapplied credits" />}
+                  {s.invoiced && <Tile label="Invoiced this financial year" value={money(s.invoiced)} meta="Less credit notes, GST included" />}
+                  {s.billed && <Tile label="Billed this financial year" value={money(s.billed)} meta="Less vendor credits, GST included" />}
+                </div>
+                {s.year && (
+                  <p className="fy-small fy-muted">
+                    As at {date(s.as_at)}; the financial year runs {date(s.year.from)} to {date(s.year.to)}.
+                  </p>
+                )}
+                {(s.receivable.length > 0 || s.payable.length > 0) && (
+                  <section className="fy-card" aria-labelledby={`${id}-ageing`}>
+                    <div className="fy-card__head">
+                      <h2 className="fy-h3" id={`${id}-ageing`}>
+                        By days past due
+                      </h2>
+                    </div>
+                    <div className="fy-card__body fy-stack fy-stack--3">
+                      <Ageing rows={s.receivable} label="What they owe us" />
+                      <Ageing rows={s.payable as Row[]} label="What we owe them" />
+                    </div>
+                  </section>
+                )}
+              </>
+            )}
+          </>
+        ),
+        activity: <RecordComments recordType="contact" recordId={contactId} />,
+        related: s && (
           <section className="fy-card" aria-labelledby={`${id}-activity`}>
             <div className="fy-card__head">
               <h2 className="fy-h3" id={`${id}-activity`}>
-                Activity
+                Documents
               </h2>
             </div>
             {s.timeline.length === 0 ? (
@@ -224,8 +233,8 @@ export function ContactRecord() {
               </ul>
             )}
           </section>
-        </>
-      )}
-    </div>
+        ),
+      }}
+    />
   );
 }

@@ -18797,6 +18797,88 @@ The template for importing opening balances, as a draft (FR-MIG-03, design D9; r
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+## Records
+
+What belongs to any record: the comments and @mentions on a record, which only members who may see it read, write or are offered (FR-UX-13).
+
+### `GET /v1/records/{record_type}/{record_id}/comments`
+
+**List a record's comments** (`listRecordComments`)
+
+The comments on an invoice, credit note, bill, vendor credit, journal, expense claim, quote, sales order, purchase order or contact, oldest first, a page at a time (FR-UX-13). Whoever may see the record reads them; for a record the caller may not see, the answer is 404, as it is for one that does not exist (SEC-34). Read-only; no side effects.
+
+- **Permission:** View on Own notifications and preferences (rev 0.6). Needs a view of the record's own Appendix D row without a qualifier; a record the caller may not see is not found.
+- **Parameters:**
+  - `record_type` (path, required): The kind of record.
+  - `record_id` (path, required): The record's ID.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`RecordCommentPage`](../../contracts/schemas/RecordCommentPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `CMT-03` A record that takes no comments.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `CMT-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/records/{record_type}/{record_id}/comments`
+
+**Comment on a record** (`addRecordComment`)
+
+Adds a comment, as the caller, to the record's thread, and mentions members by user ID (FR-UX-13). Whoever may see the record comments; each person mentioned must be able to see it too, or the comment is refused, as though they were not a member, and only those mentioned are told. A comment is never changed or removed: answer a mistake with another comment. Side effects: the comment, its audit event and a notification to each person mentioned. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Own notifications and preferences (rev 0.6). Needs a view of the record's own row; only a member who may see the record is mentioned, and only they are told.
+- **Parameters:**
+  - `record_type` (path, required): The kind of record.
+  - `record_id` (path, required): The record's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`NewRecordComment`](../../contracts/schemas/NewRecordComment.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`RecordComment`](../../contracts/schemas/RecordComment.schema.json)
+  - `201` Created [`RecordComment`](../../contracts/schemas/RecordComment.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CMT-01` Not a comment; `CMT-02` A mention that does not fit; `CMT-03` A record that takes no comments; `CMT-04` Not a person who comments.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CMT-01`, `CMT-02`, `CMT-03`, `CMT-04`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/records/{record_type}/{record_id}/mentionable`
+
+**List the members who may be mentioned on a record** (`listRecordMentionable`)
+
+The active members who may see the record, by name (FR-UX-13), the caller left out, a page at a time; q keeps those whose name, or a word of it, starts with it. Only members who may open the record are listed, so a name is never offered for a record its owner may not see; for a record the caller may not see, the answer is 404. Read-only; no side effects.
+
+- **Permission:** View on Own notifications and preferences (rev 0.6). Lists only the members who may see the record: a name is never offered for a record its owner may not open.
+- **Parameters:**
+  - `record_type` (path, required): The kind of record.
+  - `record_id` (path, required): The record's ID.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `q` (query): Only members whose name starts with, or has a word that starts with, this; every one who may see the record when left out.
+- **Responses:**
+  - `200` OK [`MentionablePage`](../../contracts/schemas/MentionablePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `CMT-03` A record that takes no comments.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `CMT-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Planning
 
 Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08).

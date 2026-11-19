@@ -78,6 +78,13 @@
   `AppFrame.test.tsx`. **Left:** the badges of Accounting (the close status), Equity (ACRA tasks due), Projects (over
   budget) and Payroll (due status), with their modules' work; the Inbox's count of its other groups; the record page
   anatomy, the organisation switcher, the Finance | People switch, the Approver's My department and the Auditor's workspace.)
+  (20 Nov 2026, PRD-001 rev 0.376, the record page anatomy in part: the shared frame, `RecordFrame` and `RecordHeader` (`components/RecordFrame.tsx`):
+  the header (number, status chip, contact, key amounts, primary actions and a "⋯" menu), the six tabs in the spec's order (an arrow-key tablist with Home
+  and End, a tab with nothing to show left out) and a right panel that collapses (its state the person's own, in the browser). The contact record is its
+  first page (figures as Details, documents as Related, comments as Activity); `RecordFrame.test.tsx`, a Storybook story and axe. **Left:** laying out the
+  invoice, bill, transaction, journal, pay run and asset pages in it, with their Ledger impact and Attachments tabs and the right panel's checks and AI
+  suggestions (each page's existing cards move into the tabs); the organisation switcher, the Finance | People switch, the Approver's My department and
+  the Auditor's workspace.)
 - [ ] 2.2 The command palette, global search in PostgreSQL under row-level security, and Inbox triage whose approve shortcut opens the confirmation. Tests `// req: FR-UX-01`, `// req: FR-UX-02` and `// req: FR-UX-03`
   (20 Oct 2026, in part: the Inbox lists the approval requests and the weekly review; a request opens on its own page,
   and only its confirmation decides (FR-UX-03). The command palette leaves out pages of one record. **Left:** global
@@ -158,6 +165,16 @@
   `saveditem_test.go`, `SavedMenu.test.tsx`. **Left:** FR-UX-13's comments and @mentions (a comment on any record needs each
   mentioned person's right to see it, the record kinds' visibility map, notifications and a panel on each record page) and
   moving the lists' filters into their addresses so a view keeps them.)
+  (20 Nov 2026, PRD-001 rev 0.376, FR-UX-13: comments and @mentions. `record_comment` (migration 000708; append-only, audited, under row-level
+  security), `GET`/`POST /v1/records/{record_type}/{record_id}/comments` and `GET .../mentionable`, on an invoice, credit note, bill,
+  vendor credit, journal, expense claim, quote, sales order, purchase order or contact. A member reads, writes and is mentioned on a
+  record only if they may see it (its own Appendix D row, the Approver's limit-qualified right, an Employee's own claim, an Approver narrowed to
+  departments their departments' only); an unseen record is not found, the offered names are the members who may open it, and a refused mention
+  says the same for a non-member and one who may not see it. A mention tells that member alone (`comment.mention`). The panel is
+  `RecordComments` (an @ combobox-like list, 2,000 characters, announced in the status region): the contact's Activity tab, and a Comments card
+  on demand on bills, invoices and journals. Guide `comments-and-mentions.md`, compiled into `records.comments`. Tests
+  `TestMembersCommentOnRecordsAndMentionOnlyWhoMaySeeThem`, `TestAttackCommentsKeepTheirThreadAndTheirTenant`, `comment_test.go`, `RecordComments.test.tsx`.
+  **Left:** moving the lists' filters into their addresses so a view keeps them; comments on accounts, items, pay runs and assets with their record pages.)
 - [ ] 3.4 The live-update feed with `If-Match` conflicts, clipboard fidelity, the polite status region, no optimistic money (lint rule) and no re-rounding. Tests `// req: FR-UX-19`, `// req: FR-UX-20`, `// req: FR-UX-21`, `// req: FR-UX-22` and `// req: RND-DISPLAY`, plus the in-app notification entry `// req: FR-UX-15` (P1 part)
   (6 Nov 2026, PRD-001 rev 0.193, clipboard fidelity: `installClipboard` (started with the app) rewrites a copy of text on
   screen so each displayed amount is a plain decimal with an ASCII minus (`clipboardText`), and reads a paste into any
