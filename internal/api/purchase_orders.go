@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/project"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -63,6 +64,7 @@ type PurchaseOrderDraft struct {
 	Currency   string                   `json:"currency" pattern:"^[A-Z]{3}$" doc:"The order's currency." example:"SGD"`
 	Lines      []PurchaseOrderLineDraft `json:"lines" maxItems:"200" doc:"What is ordered."`
 	Notes      string                   `json:"notes,omitempty" maxLength:"2000" doc:"Notes kept with the order." example:"Deliver to level 3"`
+	ProjectID  string                   `json:"project_id,omitempty" format:"uuid" doc:"The project the order is for (FR-PRJ-08): a bill made from the order carries it as a project value on each line, so the cost is the project's. A project of the organisation that is not closed; refused with PRJ-09 while Projects and time are off." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"`
 }
 
 // PurchaseOrderLine is a line of an order as it stands: what it comes to and what bills take of it.
@@ -103,6 +105,7 @@ type PurchaseOrder struct {
 	Currency      string              `json:"currency" doc:"The order's currency." example:"SGD"`
 	Lines         []PurchaseOrderLine `json:"lines" nullable:"false" doc:"Its lines, with what they come to and what bills take of them."`
 	Notes         string              `json:"notes,omitempty" doc:"Its notes." example:"Deliver to level 3"`
+	ProjectID     string              `json:"project_id,omitempty" format:"uuid" doc:"The project the order is for, when it has one." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"`
 	Net           Money               `json:"net" doc:"Every line's amount, in its currency."`
 	GST           Money               `json:"gst" doc:"The GST expected, in its currency."`
 	Total         Money               `json:"total" doc:"Net and GST, in its currency."`
@@ -232,6 +235,13 @@ func orderStatus(s storage.DocumentStatus) string {
 func orderDraftOf(in PurchaseOrderDraft) (purchaseorder.Draft, error) {
 	var fields []FieldProblem
 	d := purchaseorder.Draft{Reference: strings.TrimSpace(in.Reference), Notes: in.Notes}
+	if in.ProjectID != "" {
+		id, err := uuid.Parse(in.ProjectID)
+		if err != nil {
+			return d, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.project_id", Message: "is not an ID", Fix: "Send the project's ID"}})
+		}
+		d.ProjectID = id
+	}
 	if in.SupplierID != "" {
 		id, err := uuid.Parse(in.SupplierID)
 		if err != nil {
@@ -332,6 +342,9 @@ func (a *API) orderOf(ctx context.Context, u storage.UnitOfWork, v orderView, do
 		Date: dayText(d.Date), ExpectedOn: dayText(d.ExpectedOn), Currency: d.Currency.Code, Notes: d.Notes, Lines: []PurchaseOrderLine{},
 		Net: moneyOut(p.Net), GST: moneyOut(p.GST), Total: moneyOut(p.Total), Checks: []BillCheck{}, Bills: []PurchaseOrderBill{},
 		PreparedBy: personOf(doc.SavedBy), ApprovedBy: personOf(doc.PostedBy), ApprovedAt: utc(doc.PostedAt)}
+	if d.ProjectID != uuid.Nil {
+		out.ProjectID = d.ProjectID.String()
+	}
 	if d.SupplierID != uuid.Nil {
 		out.Supplier = &BillSupplier{ID: d.SupplierID.String()}
 		if c, err := u.Contacts().Get(ctx, d.SupplierID); err == nil {
@@ -513,7 +526,7 @@ func registerPurchaseOrders(a *API) {
 			"what stops it being approved. It posts nothing, ever. Side effects: the document and its audit event. Idempotent with " +
 			"Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, append([]string{CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeInvalid,
-		purchaseorder.CodeTooLong, money.CodeNotDecimal, money.CodePrecision, money.CodeRange, money.CodeCurrency}, locks...),
+		purchaseorder.CodeTooLong, money.CodeNotDecimal, money.CodePrecision, money.CodeRange, money.CodeCurrency, project.CodeLine, CodeProjectsOff}, locks...),
 		func(ctx context.Context, in *orderCreateInput) (*orderWriteOutput, error) {
 			d, err := orderDraftOf(in.Body)
 			if err != nil {
@@ -521,6 +534,9 @@ func registerPurchaseOrders(a *API) {
 			}
 			p, _ := authn.From(ctx)
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (PurchaseOrder, error) {
+				if err := a.checkOrderProject(ctx, u, d); err != nil {
+					return PurchaseOrder{}, err
+				}
 				doc, err := a.orders.Create(ctx, p.Organisation, d)
 				if err != nil {
 					return PurchaseOrder{}, err
@@ -581,7 +597,7 @@ func registerPurchaseOrders(a *API) {
 			"raise another (PO-10). Side effects: the new version and its audit event. Needs If-Match with the order's ETag. Prefer: " +
 			"return=preview checks it and saves nothing.",
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, purchaseorder.CodeNotOrder,
-		purchaseorder.CodeNotDraft, purchaseorder.CodeTooLong, money.CodeNotDecimal, money.CodePrecision, money.CodeRange, money.CodeCurrency}, locks...),
+		purchaseorder.CodeNotDraft, purchaseorder.CodeTooLong, money.CodeNotDecimal, money.CodePrecision, money.CodeRange, money.CodeCurrency, project.CodeLine, CodeProjectsOff}, locks...),
 		func(ctx context.Context, in *orderReplaceInput) (*orderWriteOutput, error) {
 			id, err := parseID("purchase_order_id", in.PurchaseOrderID)
 			if err != nil {
@@ -594,6 +610,9 @@ func registerPurchaseOrders(a *API) {
 			p, _ := authn.From(ctx)
 			w, err := write(ctx, a, "", in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (PurchaseOrder, error) {
 				if _, _, _, err := a.lockOrder(ctx, u, id, in.IfMatch); err != nil {
+					return PurchaseOrder{}, err
+				}
+				if err := a.checkOrderProject(ctx, u, d); err != nil {
 					return PurchaseOrder{}, err
 				}
 				doc, err := a.orders.Revise(ctx, p.Organisation, id, d)

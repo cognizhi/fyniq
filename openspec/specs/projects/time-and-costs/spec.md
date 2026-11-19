@@ -62,6 +62,12 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** it is corrected
 - **THEN** the correction is a reversing entry
 
+#### Scenario: Time is whole minutes, one timer, one week at a time
+- **WHEN** time is entered
+- **THEN** it is whole minutes, 1 to 1,440 an entry, on a task of a project the person is on, and never billable on an internal project
+- **AND** the timer runs one at a time and stops into a draft entry of the nearest whole minute, half up, at least one (RND-TIME)
+- **AND** a week is Monday to Sunday and is saved and audited as one
+
 ### Requirement: FR-PRJ-06 Cost and billing rates
 The system SHALL keep an effective-dated cost rate per person and effective-dated billing rates in the project's currency, and SHALL treat a person's payroll-derived cost rate as payroll data (FR-PAY-13, AUD-05).
 
@@ -84,6 +90,11 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** they see time at cost
 - **THEN** it is at a role or department average rate computed over at least 3 people, or else at an Owner-set standard rate
 - **AND** per-person profitability shows hours, not person-level cost
+
+#### Scenario: Who enters a person-level rate
+- **WHEN** a person-level cost rate is entered or read
+- **THEN** only the Owner and the Payroll administrator may, through the Appendix D row for project cost rates
+- **AND** until payroll supplies one the rate is typed in, and a payroll-derived rate replaces it later
 
 #### Scenario: Billing rates
 - **WHEN** billing rates are set
@@ -109,6 +120,12 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** a project manager tries to approve their own time
 - **THEN** the approval is refused
 
+#### Scenario: Naming a manager gives no right
+- **GIVEN** a member named a manager of a project who holds neither the Approver nor the Controller role
+- **WHEN** they try to approve the project's time
+- **THEN** it is refused, and the project warns of the manager
+- **AND** the Controller approves any project's time and the Approver only the projects they manage, never their own
+
 ### Requirement: FR-PRJ-08 Costs on projects
 Bills, claims, mileage, card spend and journals SHALL carry the project dimension, and the system SHALL support billable expenses with an optional markup and purchase orders per project.
 
@@ -125,6 +142,16 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 #### Scenario: Purchase orders per project
 - **WHEN** a purchase order is raised for a project
 - **THEN** it is recorded against that project
+
+#### Scenario: A billable line needs a project (rev 0.297)
+- **WHEN** a bill line or a claim line is billable or has a markup
+- **THEN** it carries a project value, a markup is a percentage from 0 to 999.99 with at most two decimals, and a markup belongs to a billable line
+- **AND** otherwise it is refused with a plain message naming the line
+
+#### Scenario: A purchase order's project (rev 0.297)
+- **GIVEN** a purchase order for a project
+- **WHEN** a bill is made from it
+- **THEN** each of the bill's lines carries the project as a project value
 
 ### Requirement: FR-PRJ-09 Budgets and change orders
 The system SHALL keep budgets in hours and money per task, with burn, forecast at completion and alerts at 80% and 100% (settings), and change orders (P2) that change the budget, the fee and the estimate at completion.
@@ -231,6 +258,20 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** Acme's profitability is shown
 - **THEN** Acme's cost counts staff cost once (time at cost)
 - **AND** the tagged salary appears on a separate reconciliation line, not in direct costs
+
+#### Scenario: Lines tagged with no project (rev 0.296)
+- **WHEN** the project report is shown to someone who sees every project
+- **THEN** a row for lines tagged with no project is shown, so every project plus that row equals the revenue and expense accounts' totals
+
+#### Scenario: Cost by tier in the report (rev 0.296)
+- **WHEN** the report shows time at cost
+- **THEN** a person's own rate is used only for the Owner and the Payroll administrator
+- **AND** others see the role average over at least three people or the standard rate, and the AR specialist sees revenue and hours only
+
+#### Scenario: Project checks (rev 0.296)
+- **GIVEN** a project over its hours budget, a week submitted or returned more than 7 days ago, or a closed week with no approved time
+- **WHEN** the checks run
+- **THEN** C.1 #26, C.1 #27 and C.2 #41 each warn, name the project or week, and say how to fix it
 
 #### Scenario: Pattern change, leave across a holiday
 - **GIVEN** a part-timer whose working pattern changes mid-month, and a leave interval that spans a public holiday and is later cancelled in part

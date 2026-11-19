@@ -59,4 +59,4 @@ aliases:
   of use, and lines already tagged stay. Set it back to **Active** to reopen it.
   (src: docs/user-guide/projects-projects.md#close-a-project)
 
-Related: [[claims.make-a-claim]], [[accounting.chart]], [[settings.organisation]].
+Related: [[projects.time]], [[claims.make-a-claim]], [[accounting.chart]], [[settings.organisation]].
