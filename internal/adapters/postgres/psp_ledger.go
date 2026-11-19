@@ -72,7 +72,7 @@ func (l pspLedger) SaveAccount(ctx context.Context, n storage.NewPSPAccount, ver
 			return storage.PSPAccount{}, &storage.Error{Code: storage.CodeVersion, Message: "the account moved on"}
 		}
 		r, err := l.u.q.UpdatePSPAccount(ctx, sqlcdb.UpdatePSPAccountParams{PayoutAccountID: n.PayoutAccountID, FeeAccountID: n.FeeAccountID,
-			DisputesAccountID: n.DisputesAccountID, MoneyAccountID: n.MoneyAccountID, Version: int32(version)}) // checked above
+			DisputesAccountID: n.DisputesAccountID, MoneyAccountID: n.MoneyAccountID, Version: int32(version)}) // #nosec G115 -- a version, checked against MaxInt32 above
 		if errors.Is(err, pgx.ErrNoRows) {
 			return storage.PSPAccount{}, &storage.Error{Code: storage.CodeVersion, Message: "the provider account was changed by someone else: read it again"}
 		}
