@@ -3,7 +3,7 @@ key: nemura.leave.approve
 title: Approve or refuse leave
 mode: basic
 roles: [line_manager, hr_officer, hr_admin, owner]
-requirements: [NM-LV-04, NM-LV-05]
+requirements: [NM-LV-04, NM-LV-05, NM-LV-06, NM-LV-12]
 ---
 
 # Approve or refuse leave
@@ -26,6 +26,20 @@ Payroll administrator can read them. Nobody decides their own request: another a
 3. Select **Approve**. To refuse, write the reason in the box beside the buttons first, then select **Refuse**. A refusal
    without a reason is not accepted: the person is told why.
 4. The decision is audited, the person is told, and a refusal gives the reserved days back to their balance.
+
+## The month at a glance
+
+Under the requests, **The month at a glance** shows a row for each person you may see and a column for each day. A letter marks
+the day: **A** away, **L** leave, **P** a request waiting, **S** sick leave and **H** a public holiday as that person observes
+it (a holiday on a rest day moves to their next working day). A dot is a rest day. You see the type of leave for your reports,
+and for everyone if you are in the people team; for the others in your team the calendar says **Away** and nothing more. Sick
+leave is shown as such only to the person and to the HR officer and the HR administrator.
+
+## Verify medical certificates
+
+The HR officer and the HR administrator also see **Certificates to verify**. Select **Verify** once you have checked a
+certificate. It is verified once, and never by the person it is about. A manager cannot refuse a certified sick day the person is
+entitled to, and does not see the certificate.
 
 ## Common problems
 

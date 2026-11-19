@@ -4,7 +4,7 @@ type: task
 title: Approve or refuse leave in Nemura
 summary: Who sees and decides leave requests in Nemura, how to approve or refuse with a reason, and why nobody decides their own
 sources:
-  - docs/user-guide/nemura/leave-approve.md sha256:7d7d653201bf3c1e4846f2826f9ae24ec6b2d8442dcecc89d5ca9669a85d65de
+  - docs/user-guide/nemura/leave-approve.md sha256:19053276bd71b744e50157ed049d7e6f6096ff638118f8df5f62c5397495771e
 data_class: general
 taint: trusted
 status: published
@@ -36,6 +36,19 @@ aliases:
 4. The decision is audited, the person is told, and a refusal gives the reserved days back.
 
 (src: docs/user-guide/nemura/leave-approve.md#steps)
+
+## The month at a glance
+
+- A row for each person in view and a column for each day: **A** away, **L** leave, **P** a request waiting, **S** sick leave, **H** a public holiday as that person observes it, and a dot for a rest day.
+- A manager sees the type for their reports, the people team for everyone, and the others in the team show **Away** only; sick leave is shown as such only to the person and the HR officer and the HR administrator.
+
+(src: docs/user-guide/nemura/leave-approve.md#the-month-at-a-glance)
+
+## Verify medical certificates
+
+- The HR officer and the HR administrator see **Certificates to verify** and select **Verify** once a certificate is checked: once, and never for their own. A manager cannot refuse a certified sick day and does not see the certificate. See [[leave.report-sick]].
+
+(src: docs/user-guide/nemura/leave-approve.md#verify-medical-certificates)
 
 ## When it looks wrong
 

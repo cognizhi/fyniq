@@ -236,10 +236,27 @@ func (f fakeRequests) Get(context.Context, Session, LeaveScope, uuid.UUID) (Leav
 func (f fakeRequests) Decide(context.Context, Session, LeaveScope, uuid.UUID, bool, string) error {
 	return f.err
 }
+func (f fakeRequests) Calendar(context.Context, Session, LeaveScope, bool, time.Time) (LeaveCalendar, error) {
+	return LeaveCalendar{Month: "2026-05", People: []CalendarPerson{}}, f.err
+}
 func (f fakeRequests) Cancel(context.Context, Session, uuid.UUID) error { return f.err }
 func (f fakeRequests) Settle(context.Context, Session, time.Time) (int, string, error) {
 	return 1, "3.00", f.err
 }
+
+// fakeSick answers sick leave with whatever the test says.
+type fakeSick struct{ err error }
+
+func (f fakeSick) Notify(context.Context, Session, SickAsk) (SickNotified, error) {
+	return SickNotified{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90", Days: "3.00", Paid: "3.00", Unpaid: "0.00"}, f.err
+}
+func (f fakeSick) List(context.Context, Session, bool, bool) ([]SickNotification, error) {
+	return []SickNotification{}, f.err
+}
+func (f fakeSick) Certificate(context.Context, Session, uuid.UUID, bool, string, string, []byte) error {
+	return f.err
+}
+func (f fakeSick) Verify(context.Context, Session, uuid.UUID) error { return f.err }
 
 // fakeClients registers whatever it is told and answers with clientsErr.
 type fakeClients struct{ err error }
@@ -264,7 +281,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }

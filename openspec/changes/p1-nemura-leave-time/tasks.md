@@ -35,10 +35,15 @@ Load before each slice: `fyniq-feature-change`, `fyniq-sg-statutory` (1, 3), `fy
 - [x] 2.2 Approval (NM-LV-04, D6): the line manager for reports, HR officer, HR administrator and Owner for anyone, never one's own (database check), a reason
   for a refusal, every decision audited, a notice queued (logged until notifications deliver); taken leave settled by the people team (`POST /v1/leave/settlement`).
   Left: HR approving where a type needs it (no such type yet); the worker job that settles (slice 4); notice delivery.
-- [ ] 2.3 The team calendar (NM-LV-05): per month, holidays per person, "Away" for those without the right; screens `nm-apply-leave`, `nm-team-leave`.
-- [ ] 2.4 Sick leave (NM-LV-06, 12, D5): notified, one ceiling, the step-up by date of absence, the certificate as a restricted document, HR's verification;
-  screen `nm-report-sick`. `// req: NM-LV-06, NM-LV-12`
-- [ ] 2.5 Verify as slice 1, plus the attack tests: a manager reading a non-report's leave type, a second request on the last day.
+- [x] 2.3 The team calendar (NM-LV-05): per month, each person's holidays as their pattern observes them, "Away" for those without the right to the type, sick
+  leave as such only to the person and the HR officer and administrator; on `nm-team-leave` and `nm-my-leave`, with `nm-apply-leave`'s "away in your team".
+  Left: filters by team (the view is scoped by role and by manager or department); holidays per worksite (Singapore only).
+- [x] 2.4 Sick leave (NM-LV-06, 12, D5): notified, one shared ceiling, the step-up by date of absence, the unpaid days recorded, the 48-hour flag, the
+  certificate as a restricted document the HR officer and administrator see, HR's verification (once, never one's own); migration 000017; screen
+  `nm-report-sick`. `// req: NM-LV-06, NM-LV-12`
+  Left: the consultation-fee reimbursement route (FR-AP-17 or manual) and the sick-leave fee check (slice 3's claims); notice delivery.
+- [x] 2.5 Verify as slice 1, plus the attack tests: a manager reading a non-report's leave type and a report's sick leave, a stranger's read of a request, ten
+  requests on the last days, a person deciding or verifying their own, the type hidden in the calendar from teammates.
 
 ## 3. Government-paid leave and flexible work (slice 3)
 

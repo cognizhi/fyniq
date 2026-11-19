@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
+import { LeaveCalendar } from "../components/LeaveCalendar";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
 import { Shell, admin, team } from "./Shell";
@@ -69,7 +70,9 @@ export function MyLeave({ roles, personId }: { roles: readonly string[]; personI
             <PatternForm id={personId ?? ""} saved={async (m) => { setNote(m); await load(); }} />
           </section>
         )}
+        {!personId && <LeaveCalendar />}
         {!personId && <a href="/me/leave/new">{t("leave.apply")}</a>}
+        {!personId && <a href="/me/leave/sick">{t("nav.sick")}</a>}
         {personId && <a href={`/people/${personId}`}>{t("leave.back")}</a>}
       </main>
     </Shell>

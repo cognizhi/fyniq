@@ -4,7 +4,7 @@ type: task
 title: See a Nemura leave balance and how it was worked out
 summary: What the My leave page shows, how annual leave is pro-rated and carried forward, what the people team can do on it, and what common refusals mean
 sources:
-  - docs/user-guide/nemura/my-leave.md sha256:61688fec0fd2fe29d8d2f160f14debe154a25c7eb9a0636abd266e8cc9a5246a
+  - docs/user-guide/nemura/my-leave.md sha256:d4cb8a9736aba560547efb770eee243ba2cf6ae86ed9161c0d3f46072527b645
 data_class: general
 taint: trusted
 status: published
@@ -33,7 +33,7 @@ aliases:
 1. Sign in ([[nemura.sign-in]]); Leave must be switched on, by the Owner or the HR administrator under **Features** ([[nemura.features]]).
 2. Select **My leave** and read the table and **How it was worked out**.
 3. The statute's annual leave days are pro-rated by completed months of service in the year and rounded to a whole day: under one half down, a half or more up.
-4. **Previous year** and **Next year** move between years.
+4. **Previous year** and **Next year** move between years. **The month at a glance** shows the person and their team for a month with a letter for away, leave, a request waiting, sick leave or a public holiday; where the type of someone's leave is not theirs to see it says **Away**.
 5. Unused annual leave is carried forward and can be taken until the end of the twelfth month after the year ends; days taken in the new year use the carried days first, and the rest expires.
 
 (src: docs/user-guide/nemura/my-leave.md#steps)

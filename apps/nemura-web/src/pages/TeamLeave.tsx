@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
+import { LeaveCalendar } from "../components/LeaveCalendar";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
 import { Shell, admin, team } from "./Shell";
 
 type Request = components["schemas"]["LeaveRequest"];
+type Sick = components["schemas"]["SickNotification"];
 type State = { status: "loading" } | { status: "failed" } | { status: "ready"; list: Request[] };
 const problem = (e: unknown): string => (e as { detail?: string } | undefined)?.detail ?? t("team.failed");
 
@@ -15,6 +17,8 @@ export function TeamLeave({ roles }: { roles: readonly string[] }) {
   const [state, set] = useState<State>({ status: "loading" });
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [sick, setSick] = useState<Sick[]>([]);
+  const peopleTeam = roles.some((r) => ["hr_officer", "hr_admin"].includes(r));
   const load = async () => {
     try {
       const { data } = await api.GET("/v1/leave-requests");
@@ -23,9 +27,25 @@ export function TeamLeave({ roles }: { roles: readonly string[] }) {
       set({ status: "failed" });
     }
   };
+  const loadSick = async () => {
+    if (!peopleTeam) return;
+    try {
+      const { data } = await api.GET("/v1/sick-leave", { params: { query: { unverified: true } } });
+      setSick(data?.notifications ?? []);
+    } catch {
+      setSick([]);
+    }
+  };
   useEffect(() => {
     void load();
+    void loadSick();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const verify = async (n: Sick) => {
+    const { error } = await api.POST("/v1/sick-leave/{id}/verification", { params: { path: { id: n.id } } });
+    setNote(error ? { ok: false, text: problem(error) } : { ok: true, text: t("team.verified") });
+    if (!error) await loadSick();
+  };
   const decide = async (r: Request, decision: "approve" | "refuse") => {
     const { error } = await api.POST("/v1/leave-requests/{id}/decision", { params: { path: { id: r.id } }, body: { decision, reason: reasons[r.id] ?? "" } });
     setNote(error ? { ok: false, text: problem(error) } : { ok: true, text: t(decision === "approve" ? "team.approved" : "team.refused") });
@@ -111,6 +131,40 @@ export function TeamLeave({ roles }: { roles: readonly string[] }) {
             </section>
           </>
         )}
+        {peopleTeam && (
+          <section className="fy-stack fy-stack--2" aria-labelledby="sick-h">
+            <h2 className="fy-h2" id="sick-h">{t("team.sickTitle")}</h2>
+            {sick.length === 0 ? (
+              <p className="fy-secondary">{t("team.noSick")}</p>
+            ) : (
+              <table className="fy-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{t("team.col.person")}</th>
+                    <th scope="col">{t("team.col.dates")}</th>
+                    <th scope="col">{t("team.col.days")}</th>
+                    <th scope="col">{t("team.col.certificate")}</th>
+                    <th scope="col">{t("team.col.decide")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sick.map((n) => (
+                    <tr key={n.id}>
+                      <td>{n.person_name}</td>
+                      <td>{t("team.dates", { from: n.from, to: n.to })}</td>
+                      <td className="fy-num">{n.days}</td>
+                      <td>{t("team.issuedBy", { issuer: n.issuer ?? "" })}</td>
+                      <td>
+                        <button className="fy-btn fy-btn--primary" type="button" onClick={() => verify(n)}>{t("team.verify")}</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+        )}
+        <LeaveCalendar />
       </main>
     </Shell>
   );

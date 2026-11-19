@@ -73,6 +73,13 @@ var Categories = []Category{
 		Columns:    []string{"leave_ledger.note", "leave_request.note", "leave_request.decision_reason"},
 	},
 	{
+		Key: "sick-leave", What: "A person's notice that they were sick: the days, whether outpatient or hospitalisation, their note, and a pointer to the medical certificate (a restricted document) with who issued it and who verified it",
+		Purpose:    "To record sick leave against the statutory ceiling, to check the certificate (Employment Act) and to pay what is due",
+		Capability: "Medical certificates and notes",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "MOM: employment records, sick leave included, of a former employee are kept for 1 year after they leave"},
+		Columns:    []string{"sick_notification.note", "sick_notification.issuer"},
+	},
+	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
 		Purpose:    "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)",
 		Capability: "Own file beyond routine release (NM-SEC-07)",

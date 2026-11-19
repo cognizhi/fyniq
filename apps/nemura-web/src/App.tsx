@@ -7,6 +7,7 @@ import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Home } from "./pages/Home";
 import { Join } from "./pages/Join";
+import { ReportSick } from "./pages/ReportSick";
 import { ApplyLeave } from "./pages/ApplyLeave";
 import { TeamLeave } from "./pages/TeamLeave";
 import { MyLeave } from "./pages/MyLeave";
@@ -60,6 +61,7 @@ export function App() {
     if (state.status === "in" && route.id === "policy") return <Policy roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "features") return <Features roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "apply-leave") return <ApplyLeave roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "report-sick") return <ReportSick roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "team-leave") return <TeamLeave roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "my-leave") return <MyLeave roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "person-leave") return <MyLeave roles={state.session.roles ?? []} personId={matched?.params.id ?? ""} />;

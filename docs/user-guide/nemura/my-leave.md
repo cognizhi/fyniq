@@ -26,7 +26,9 @@ calendar year. Annual leave is counted in your working days, set by your **worki
 1. Select **My leave**. The page opens on this year.
 2. Read the table, then **How it was worked out**. The statute's annual leave days are pro-rated by your completed
    months of service in the year, then rounded to a whole day: under one half down, a half or more up.
-3. Select **Previous year** or **Next year** to see another year.
+3. Select **Previous year** or **Next year** to see another year. Under the table, **The month at a glance** shows you and your team
+   for a month: a letter marks away, leave, a request waiting, sick leave or a public holiday. Where you may not see the type
+   of someone's leave it says **Away**.
 4. Unused annual leave is carried into the next year and can be taken until the end of the twelfth month after the year
    ends; days you take in the new year use the carried days first, and what is not used then expires.
 

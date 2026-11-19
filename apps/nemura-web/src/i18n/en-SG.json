@@ -295,7 +295,54 @@
     "state.pending": "Waiting",
     "state.approved": "Approved",
     "state.refused": "Refused",
-    "state.cancelled": "Withdrawn"
+    "state.cancelled": "Withdrawn",
+    "nav.sick": "Tell us you're sick",
+    "sick.title": "Tell us you're sick",
+    "sick.lead": "Sick leave is not applied for: tell the company, and give the medical certificate when you are back. Nobody approves it.",
+    "sick.kind": "Kind of sick leave",
+    "sick.kind.outpatient": "Outpatient",
+    "sick.kind.hospitalisation": "Hospitalisation",
+    "sick.from": "First day",
+    "sick.to": "Last day",
+    "sick.note": "Anything to add?",
+    "sick.send": "Tell the company",
+    "sick.told": "The company has been told. {days} working days: {paid} are paid sick leave and {unpaid} are beyond your limit.",
+    "sick.late": "It was told more than 48 hours after the first day, so it is marked late.",
+    "sick.mine": "Your notices",
+    "sick.none": "You have not told the company about any sick leave.",
+    "sick.line": "{from} to {to}: {days} days, {paid} paid",
+    "sick.certificate": "Give the medical certificate",
+    "sick.issuer": "Who issued it",
+    "sick.file": "Photo or e-MC file",
+    "sick.give": "Give the certificate",
+    "sick.given": "Certificate given by {issuer}.",
+    "sick.verified": "Verified by the people team.",
+    "sick.waiting": "Waiting for the people team to verify.",
+    "sick.saved": "Saved.",
+    "sick.failed": "We could not save that. Check your connection and try again.",
+    "sick.back": "Back to my leave",
+    "team.sickTitle": "Certificates to verify",
+    "team.noSick": "No certificate is waiting.",
+    "team.col.certificate": "Certificate",
+    "team.verify": "Verify",
+    "team.verified": "Verified.",
+    "team.issuedBy": "Issued by {issuer}",
+    "calendar.title": "The month at a glance",
+    "calendar.previous": "Previous month",
+    "calendar.next": "Next month",
+    "calendar.month": "Month",
+    "calendar.person": "Person",
+    "calendar.none": "Nobody you may see is in the calendar.",
+    "calendar.loading": "Loading the calendar.",
+    "calendar.failed": "The calendar could not be shown.",
+    "calendar.cell": "{name} on {date}: {label}",
+    "calendar.kind.away": "A",
+    "calendar.kind.leave": "L",
+    "calendar.kind.pending": "P",
+    "calendar.kind.sick": "S",
+    "calendar.kind.holiday": "H",
+    "calendar.key": "A is away, L is leave, P is a request waiting, S is sick leave and H is a public holiday.",
+    "calendar.restDay": "rest day"
   },
   "help": {
     "signin.page": {
@@ -357,6 +404,10 @@
     "team.page": {
       "label": "Team leave",
       "tooltip": "Approve or refuse the leave your reports asked for. A refusal needs a reason; you cannot decide your own request."
+    },
+    "sick.page": {
+      "label": "Tell us you're sick",
+      "tooltip": "Tell the company you are sick: no approval. Paid days come out of the sick leave limit in force each day; give the medical certificate when you are back."
     }
   }
 }

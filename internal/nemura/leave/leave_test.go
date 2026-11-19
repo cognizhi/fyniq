@@ -222,3 +222,47 @@ func TestARequestCostsItsChargeableDays(t *testing.T) {
 		t.Error("a year with no holidays published")
 	}
 }
+
+// Sick leave is taken against the ceiling in force on each day of absence, with outpatient and hospitalisation sharing one: an outpatient day uses both, the
+// ceiling steps up at 3, 4, 5 and 6 months of service, a day beyond it or before three months is unpaid, and a late notice is flagged and never refused.
+// req: NM-LV-12
+func TestSickLeaveSharesOneCeilingAndStepsUpWithService(t *testing.T) {
+	v := version(t)
+	days := func(dates ...string) []leave.Counted {
+		var out []leave.Counted
+		for _, s := range dates {
+			out = append(out, leave.Counted{Date: s, Cost: 100})
+		}
+		return out
+	}
+	// Started 2026-01-05: at 2026-04-06 the person has three completed months, so the ceiling is 5 outpatient and 15 hospitalisation days.
+	a := leave.SickAllocate(v, d("2026-01-05"), leave.Outpatient, days("2026-04-06", "2026-04-07"), 0, 0)
+	if a.Paid != 200 || a.Unpaid != 0 || a.Outpatient != 500 || a.Hospital != 1500 {
+		t.Errorf("three months: %+v", a)
+	}
+	// Two days short of three months: unpaid.
+	if a := leave.SickAllocate(v, d("2026-01-05"), leave.Outpatient, days("2026-04-03"), 0, 0); a.Paid != 0 || a.Unpaid != 100 || a.Outpatient != 0 {
+		t.Errorf("before three months: %+v", a)
+	}
+	// Four of five outpatient days used: of three days, one is paid and two are unpaid; the hospitalisation ceiling is untouched.
+	if a := leave.SickAllocate(v, d("2026-01-05"), leave.Outpatient, days("2026-04-06", "2026-04-07", "2026-04-08"), 400, 400); a.Paid != 100 || a.Unpaid != 200 {
+		t.Errorf("beyond the outpatient ceiling: %+v", a)
+	}
+	// Hospitalisation days are limited only by the hospitalisation ceiling, which the outpatient days used share: 15 less 14 used leaves one.
+	if a := leave.SickAllocate(v, d("2026-01-05"), leave.Hospitalisation, days("2026-04-06", "2026-04-07"), 500, 1400); a.Paid != 100 || a.Unpaid != 100 {
+		t.Errorf("the shared ceiling: %+v", a)
+	}
+	// The ceiling steps up on the date of absence: the last day of the stretch is in the fourth month (8 and 30).
+	a = leave.SickAllocate(v, d("2026-01-05"), leave.Outpatient, days("2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-11", "2026-05-12"), 0, 0)
+	if a.Paid != 700 || a.Outpatient != 800 || a.Hospital != 3000 {
+		t.Errorf("stepping up: %+v", a)
+	}
+	// A half day costs half.
+	if a := leave.SickAllocate(v, d("2025-01-06"), leave.Outpatient, []leave.Counted{{Date: "2026-04-06", Cost: 50}}, 1400, 1400); a.Paid != 0 || a.Unpaid != 50 {
+		t.Errorf("a half day beyond the ceiling: %+v", a)
+	}
+	// The 48 hours: told by the end of the day after the first day is on time.
+	if leave.LateNotice(d("2026-04-06"), d("2026-04-07").Add(23*time.Hour)) || !leave.LateNotice(d("2026-04-06"), d("2026-04-08")) {
+		t.Error("the 48 hours")
+	}
+}

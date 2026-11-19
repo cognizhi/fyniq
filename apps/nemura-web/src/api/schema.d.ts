@@ -228,6 +228,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/leave-calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The team leave calendar of a month
+         * @description Shows who is away in a month: the caller's own leave, their reports' with its type for a line manager, everyone's for the people team, and the others in their team (the same manager or department) as Away with no type. Sick leave is shown as such to the person and to the HR officer and the HR administrator only, and as Away to everyone else. Each person's public holidays are those they observe by their working pattern. It changes nothing.
+         */
+        get: operations["getLeaveCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/leave-requests": {
         parameters: {
             query?: never;
@@ -382,6 +402,26 @@ export interface paths {
         get: operations["getMyLeave"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/sick-leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tell the company you are sick
+         * @description Records the signed-in person's sick leave: no approval. Each working day is taken against the paid ceiling in force on that day, outpatient and hospitalisation sharing one; days beyond it are recorded as unpaid for the people team to decide on. A notice later than 48 hours after the first day is flagged and accepted. It is audited and the people team is told.
+         */
+        post: operations["notifySickLeave"];
         delete?: never;
         options?: never;
         head?: never;
@@ -892,6 +932,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sick-leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sick leave notifications the caller may read
+         * @description Lists the caller's own notifications; the HR officer and the HR administrator read everyone's (Appendix B: Medical certificates and notes). A line manager, Payroll and the Owner read none of another person's: the team calendar shows them "Away". It changes nothing.
+         */
+        get: operations["listSickLeave"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sick-leave/{id}/certificate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give the medical certificate
+         * @description Stores the certificate (a photo or e-MC of up to 5 MB) as a restricted document of the person, seen by the HR officer and the HR administrator only, and records who issued it. The person gives their own; the people team may give it for them. It is given once (NM_LEAVE_CONFLICT). It is audited.
+         */
+        post: operations["addSickCertificate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sick-leave/{id}/verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify a medical certificate
+         * @description The HR officer or the HR administrator records that they verified the certificate, once, and never their own. A manager cannot refuse a certified day the person is entitled to. It is audited.
+         */
+        post: operations["verifySickCertificate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sign-in": {
         parameters: {
             query?: never;
@@ -1071,12 +1171,74 @@ export interface components {
              */
             state: "proposed" | "approved" | "refused" | "confirmed";
         };
+        CalendarEntry: {
+            /**
+             * Format: date
+             * @description The day.
+             * @example 2026-05-04
+             */
+            date: string;
+            /**
+             * @description A public holiday as the person observes it; away with no type; approved leave with its type; a request waiting; sick leave (the person and the HR officer and administrator only).
+             * @example away
+             * @enum {string}
+             */
+            kind: "holiday" | "away" | "leave" | "pending" | "sick";
+            /**
+             * @description The holiday's name, the leave type, or Away.
+             * @example Away
+             */
+            label: string;
+        };
+        CalendarPerson: {
+            /** @description What falls on their days this month, by date. */
+            entries: components["schemas"]["CalendarEntry"][] | null;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            name: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description The days they work, ISO: 1 Monday to 7 Sunday; none when no pattern is set.
+             * @example [
+             *       1,
+             *       2,
+             *       3,
+             *       4,
+             *       5
+             *     ]
+             */
+            weekdays: number[] | null;
+        };
         CarryOutputBody: {
             /**
              * @description The days carried into the next year; zero when nothing was unused or all was carried already.
              * @example 5.00
              */
             carried: string;
+        };
+        CertificateInputBody: {
+            /**
+             * @description The photo or e-MC, base64, up to 5 MB.
+             * @example /9j/4AAQ
+             */
+            content_base64: string;
+            /**
+             * @description The file's media type.
+             * @example image/jpeg
+             */
+            content_type: string;
+            /**
+             * @description The clinic, hospital or doctor on the certificate.
+             * @example Raffles Medical Clinic
+             */
+            issuer: string;
         };
         ChangeJobInputBody: {
             /**
@@ -1707,6 +1869,15 @@ export interface components {
              * @example 3.00
              */
             taken: string;
+        };
+        LeaveCalendar: {
+            /**
+             * @description The month, as 2026-05.
+             * @example 2026-05
+             */
+            month: string;
+            /** @description The people the caller may see: themselves, their reports, their team (as Away), and everyone for the people team. */
+            people: components["schemas"]["CalendarPerson"][] | null;
         };
         LeaveGrant: {
             /** @description The steps of the calculation. */
@@ -2367,6 +2538,140 @@ export interface components {
              * @example 1
              */
             requests: number;
+        };
+        SickAsk: {
+            /**
+             * Format: date
+             * @description The first day of absence.
+             * @example 2026-05-04
+             */
+            from: string;
+            /**
+             * @description Outpatient or hospitalisation sick leave; they share one yearly ceiling.
+             * @example outpatient
+             * @enum {string}
+             */
+            kind: "outpatient" | "hospitalisation";
+            /**
+             * @description A note for the people team.
+             * @example Back on Thursday.
+             */
+            note?: string;
+            /**
+             * Format: date
+             * @description The last day; the same as the first for one day.
+             * @example 2026-05-06
+             */
+            to: string;
+        };
+        SickListOutputBody: {
+            /** @description The notifications the caller may read, newest first. */
+            notifications: components["schemas"]["SickNotification"][] | null;
+        };
+        SickNotification: {
+            /**
+             * @description The working days of the absence.
+             * @example 3.00
+             */
+            days: string;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-05-04
+             */
+            from: string;
+            /**
+             * @description Whether a certificate was given.
+             * @example true
+             */
+            has_certificate: boolean;
+            /**
+             * Format: uuid
+             * @description The notification.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
+             */
+            id: string;
+            /**
+             * @description Who issued the certificate.
+             * @example Raffles Medical Clinic
+             */
+            issuer?: string;
+            /**
+             * @description The kind of sick leave.
+             * @example outpatient
+             * @enum {string}
+             */
+            kind: "outpatient" | "hospitalisation";
+            /**
+             * @description Whether it was told more than 48 hours after the first day: it is recorded and accepted.
+             * @example false
+             */
+            late: boolean;
+            /**
+             * @description The person's note.
+             * @example Back on Thursday.
+             */
+            note?: string;
+            /**
+             * @description Days within the year's ceiling: paid sick leave.
+             * @example 3.00
+             */
+            paid_days: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person_name: string;
+            /**
+             * Format: date
+             * @description The last day.
+             * @example 2026-05-06
+             */
+            to: string;
+            /**
+             * @description Days beyond the ceiling, or before three months' service, which the people team decides on.
+             * @example 0.00
+             */
+            unpaid_days: string;
+            /**
+             * @description Whether the people team verified the certificate.
+             * @example false
+             */
+            verified: boolean;
+        };
+        SickNotified: {
+            /**
+             * @description The working days of the absence.
+             * @example 3.00
+             */
+            days: string;
+            /**
+             * Format: uuid
+             * @description The notification.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
+             */
+            id: string;
+            /**
+             * @description Whether it was told more than 48 hours after the first day: it is recorded and accepted.
+             * @example false
+             */
+            late: boolean;
+            /**
+             * @description Days within the year's ceiling: paid sick leave.
+             * @example 3.00
+             */
+            paid_days: string;
+            /**
+             * @description Days beyond the ceiling, or before three months' service, which the people team decides on.
+             * @example 0.00
+             */
+            unpaid_days: string;
         };
         SignInOutputBody: {
             /** @description The providers people may sign in with, in the order to offer them. */
@@ -3116,6 +3421,68 @@ export interface operations {
             };
         };
     };
+    getLeaveCalendar: {
+        parameters: {
+            query?: {
+                /** @description The month, as 2026-05; this month when absent. */
+                month?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveCalendar"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listLeaveRequests: {
         parameters: {
             query?: {
@@ -3638,6 +4005,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LeaveView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    notifySickLeave: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SickAsk"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SickNotified"];
                 };
             };
             /** @description Unauthorized */
@@ -5787,6 +6226,237 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSickLeave: {
+        parameters: {
+            query?: {
+                /** @description Only notifications whose certificate waits to be verified (the people team). */
+                unverified?: boolean;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SickListOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addSickCertificate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The notification. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CertificateInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    verifySickCertificate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

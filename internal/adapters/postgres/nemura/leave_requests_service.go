@@ -171,3 +171,27 @@ func (l LeaveRequestService) Settle(ctx context.Context, s api.Session, on time.
 	})
 	return n, days.String(), err
 }
+
+func (l LeaveRequestService) Calendar(ctx context.Context, s api.Session, sc api.LeaveScope, sickAll bool, month time.Time) (api.LeaveCalendar, error) {
+	out := api.LeaveCalendar{Month: month.Format("2006-01"), People: []api.CalendarPerson{}}
+	err := l.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		first := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
+		v, ok := l.Packs.inForce("sg-people", first)
+		if !ok {
+			return &leave.Refusal{Code: leave.CodeInvalid, Message: "No country pack covers that month: choose a month from 2026 on."}
+		}
+		people, err := LeaveCalendar(ctx, tx, v, CalendarView{Member: s.Member, On: first, All: sc.All, Reports: sc.Reports, SickAll: sickAll}, month)
+		for _, p := range people {
+			cp := api.CalendarPerson{PersonID: p.ID.String(), Name: p.Name, Weekdays: p.Weekdays, Entries: []api.CalendarEntry{}}
+			if cp.Weekdays == nil {
+				cp.Weekdays = []int{}
+			}
+			for _, e := range p.Entries {
+				cp.Entries = append(cp.Entries, api.CalendarEntry{Date: day(e.Date), Kind: e.Kind, Label: e.Label})
+			}
+			out.People = append(out.People, cp)
+		}
+		return err
+	})
+	return out, err
+}

@@ -225,6 +225,77 @@ components:
         - account_masked
         - state
       type: object
+    CalendarEntry:
+      additionalProperties: false
+      properties:
+        date:
+          description: The day.
+          examples:
+            - "2026-05-04"
+          format: date
+          type: string
+        kind:
+          description: A public holiday as the person observes it; away with no type; approved leave with its type; a request waiting; sick leave (the person and the HR officer and administrator only).
+          enum:
+            - holiday
+            - away
+            - leave
+            - pending
+            - sick
+          examples:
+            - away
+          type: string
+        label:
+          description: The holiday's name, the leave type, or Away.
+          examples:
+            - Away
+          type: string
+      required:
+        - date
+        - kind
+        - label
+      type: object
+    CalendarPerson:
+      additionalProperties: false
+      properties:
+        entries:
+          description: What falls on their days this month, by date.
+          items:
+            $ref: "#/components/schemas/CalendarEntry"
+          type:
+            - array
+            - "null"
+        name:
+          description: Their name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        weekdays:
+          description: "The days they work, ISO: 1 Monday to 7 Sunday; none when no pattern is set."
+          examples:
+            - - 1
+              - 2
+              - 3
+              - 4
+              - 5
+          items:
+            format: int64
+            type: integer
+          type:
+            - array
+            - "null"
+      required:
+        - person_id
+        - name
+        - weekdays
+        - entries
+      type: object
     CarryOutputBody:
       additionalProperties: false
       properties:
@@ -235,6 +306,31 @@ components:
           type: string
       required:
         - carried
+      type: object
+    CertificateInputBody:
+      additionalProperties: false
+      properties:
+        content_base64:
+          description: The photo or e-MC, base64, up to 5 MB.
+          examples:
+            - /9j/4AAQ
+          type: string
+        content_type:
+          description: The file's media type.
+          examples:
+            - image/jpeg
+          type: string
+        issuer:
+          description: The clinic, hospital or doctor on the certificate.
+          examples:
+            - Raffles Medical Clinic
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - issuer
+        - content_type
+        - content_base64
       type: object
     ChangeJobInputBody:
       additionalProperties: false
@@ -1158,6 +1254,25 @@ components:
         - expired
         - encashed
         - left
+      type: object
+    LeaveCalendar:
+      additionalProperties: false
+      properties:
+        month:
+          description: The month, as 2026-05.
+          examples:
+            - 2026-05
+          type: string
+        people:
+          description: "The people the caller may see: themselves, their reports, their team (as Away), and everyone for the people team."
+          items:
+            $ref: "#/components/schemas/CalendarPerson"
+          type:
+            - array
+            - "null"
+      required:
+        - month
+        - people
       type: object
     LeaveGrant:
       additionalProperties: false
@@ -2140,6 +2255,183 @@ components:
         - requests
         - days
       type: object
+    SickAsk:
+      additionalProperties: false
+      properties:
+        from:
+          description: The first day of absence.
+          examples:
+            - "2026-05-04"
+          format: date
+          type: string
+        kind:
+          description: Outpatient or hospitalisation sick leave; they share one yearly ceiling.
+          enum:
+            - outpatient
+            - hospitalisation
+          examples:
+            - outpatient
+          type: string
+        note:
+          description: A note for the people team.
+          examples:
+            - Back on Thursday.
+          maxLength: 500
+          type: string
+        to:
+          description: The last day; the same as the first for one day.
+          examples:
+            - "2026-05-06"
+          format: date
+          type: string
+      required:
+        - kind
+        - from
+        - to
+      type: object
+    SickListOutputBody:
+      additionalProperties: false
+      properties:
+        notifications:
+          description: The notifications the caller may read, newest first.
+          items:
+            $ref: "#/components/schemas/SickNotification"
+          type:
+            - array
+            - "null"
+      required:
+        - notifications
+      type: object
+    SickNotification:
+      additionalProperties: false
+      properties:
+        days:
+          description: The working days of the absence.
+          examples:
+            - "3.00"
+          type: string
+        from:
+          description: The first day.
+          examples:
+            - "2026-05-04"
+          format: date
+          type: string
+        has_certificate:
+          description: Whether a certificate was given.
+          examples:
+            - true
+          type: boolean
+        id:
+          description: The notification.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
+          format: uuid
+          type: string
+        issuer:
+          description: Who issued the certificate.
+          examples:
+            - Raffles Medical Clinic
+          type: string
+        kind:
+          description: The kind of sick leave.
+          enum:
+            - outpatient
+            - hospitalisation
+          examples:
+            - outpatient
+          type: string
+        late:
+          description: "Whether it was told more than 48 hours after the first day: it is recorded and accepted."
+          examples:
+            - false
+          type: boolean
+        note:
+          description: The person's note.
+          examples:
+            - Back on Thursday.
+          type: string
+        paid_days:
+          description: "Days within the year's ceiling: paid sick leave."
+          examples:
+            - "3.00"
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        person_name:
+          description: Their name.
+          examples:
+            - Ben Lim
+          type: string
+        to:
+          description: The last day.
+          examples:
+            - "2026-05-06"
+          format: date
+          type: string
+        unpaid_days:
+          description: Days beyond the ceiling, or before three months' service, which the people team decides on.
+          examples:
+            - "0.00"
+          type: string
+        verified:
+          description: Whether the people team verified the certificate.
+          examples:
+            - false
+          type: boolean
+      required:
+        - person_id
+        - person_name
+        - kind
+        - from
+        - to
+        - has_certificate
+        - verified
+        - id
+        - days
+        - paid_days
+        - unpaid_days
+        - late
+      type: object
+    SickNotified:
+      additionalProperties: false
+      properties:
+        days:
+          description: The working days of the absence.
+          examples:
+            - "3.00"
+          type: string
+        id:
+          description: The notification.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
+          format: uuid
+          type: string
+        late:
+          description: "Whether it was told more than 48 hours after the first day: it is recorded and accepted."
+          examples:
+            - false
+          type: boolean
+        paid_days:
+          description: "Days within the year's ceiling: paid sick leave."
+          examples:
+            - "3.00"
+          type: string
+        unpaid_days:
+          description: Days beyond the ceiling, or before three months' service, which the people team decides on.
+          examples:
+            - "0.00"
+          type: string
+      required:
+        - id
+        - days
+        - paid_days
+        - unpaid_days
+        - late
+      type: object
     SignInOutputBody:
       additionalProperties: false
       properties:
@@ -2810,6 +3102,63 @@ paths:
       summary: What this service is
       tags:
         - Platform
+  /v1/leave-calendar:
+    get:
+      description: "Shows who is away in a month: the caller's own leave, their reports' with its type for a line manager, everyone's for the people team, and the others in their team (the same manager or department) as Away with no type. Sick leave is shown as such to the person and to the HR officer and the HR administrator only, and as Away to everyone else. Each person's public holidays are those they observe by their working pattern. It changes nothing."
+      operationId: getLeaveCalendar
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The month, as 2026-05; this month when absent.
+          explode: false
+          in: query
+          name: month
+          schema:
+            description: The month, as 2026-05; this month when absent.
+            examples:
+              - 2026-05
+            pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaveCalendar"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: The team leave calendar of a month
+      tags:
+        - Leave
   /v1/leave-requests:
     get:
       description: "Lists the requests in the caller's scope, newest first: their own, their reports' for a line manager, everyone's for the people team, the Owner and the Payroll administrator (Appendix B: Leave requests). Nobody sees a request outside their scope. It changes nothing."
@@ -3304,6 +3653,65 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Internal Server Error
       summary: My leave in a year
+      tags:
+        - Leave
+  /v1/me/sick-leave:
+    post:
+      description: "Records the signed-in person's sick leave: no approval. Each working day is taken against the paid ceiling in force on that day, outpatient and hospitalisation sharing one; days beyond it are recorded as unpaid for the people team to decide on. A notice later than 48 hours after the first day is flagged and accepted. It is audited and the people team is told."
+      operationId: notifySickLeave
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SickAsk"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SickNotified"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Tell the company you are sick
       tags:
         - Leave
   /v1/packs:
@@ -5212,6 +5620,204 @@ paths:
       summary: Confirm the session with a passkey
       tags:
         - Session
+  /v1/sick-leave:
+    get:
+      description: "Lists the caller's own notifications; the HR officer and the HR administrator read everyone's (Appendix B: Medical certificates and notes). A line manager, Payroll and the Owner read none of another person's: the team calendar shows them \"Away\". It changes nothing."
+      operationId: listSickLeave
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: Only notifications whose certificate waits to be verified (the people team).
+          explode: false
+          in: query
+          name: unverified
+          schema:
+            description: Only notifications whose certificate waits to be verified (the people team).
+            examples:
+              - true
+            type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SickListOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Sick leave notifications the caller may read
+      tags:
+        - Leave
+  /v1/sick-leave/{id}/certificate:
+    post:
+      description: Stores the certificate (a photo or e-MC of up to 5 MB) as a restricted document of the person, seen by the HR officer and the HR administrator only, and records who issued it. The person gives their own; the people team may give it for them. It is given once (NM_LEAVE_CONFLICT). It is audited.
+      operationId: addSickCertificate
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The notification.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The notification.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CertificateInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Request Entity Too Large
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Give the medical certificate
+      tags:
+        - Leave
+  /v1/sick-leave/{id}/verification:
+    post:
+      description: The HR officer or the HR administrator records that they verified the certificate, once, and never their own. A manager cannot refuse a certified day the person is entitled to. It is audited.
+      operationId: verifySickCertificate
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Verify a medical certificate
+      tags:
+        - Leave
   /v1/sign-in:
     get:
       description: Lists the sign-in providers people may use, in order, and whether first-run setup is done. It needs no sign-in, shows nothing of any organisation and changes nothing; a browser signs in by going to /auth/signin with a provider's ID.

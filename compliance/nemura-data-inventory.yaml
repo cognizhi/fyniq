@@ -67,6 +67,15 @@ classes:
     protection: "Row-level security; the ledger is append-only and every entry is audited; the notes are never in the audit event, and the approver's reason is its reason (never a diagnosis: leave requests carry no medical detail)"
     transfers: "None"
     columns: [leave_ledger.note, leave_request.note, leave_request.decision_reason]
+  - key: sick-leave
+    what: "A person's notice that they were sick: the days, whether outpatient or hospitalisation, their note, and a pointer to the medical certificate (a restricted document) with who issued it and who verified it"
+    why: "To record sick leave against the statutory ceiling, to check the certificate (Employment Act) and to pay what is due"
+    where: "Nemura's database, in Singapore; the certificate in Nemura's file store, in Singapore"
+    who: "Appendix B's Medical certificates and notes row: the HR officer and the HR administrator; the person their own notice; a line manager, Payroll and the Owner see only that the person is away"
+    retention: "MOM: employment records, sick leave included, of a former employee are kept for 1 year after they leave"
+    protection: "Row-level security; a notification is evidence that takes a certificate and a verification once; the audit event carries the days and never the kind or the note; the certificate is a restricted document"
+    transfers: "None"
+    columns: [sick_notification.note, sick_notification.issuer]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"
