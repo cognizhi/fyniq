@@ -11,6 +11,7 @@ const (
 	CodeInvalid  = "NM_LEAVE_INVALID"
 	CodeBalance  = "NM_LEAVE_BALANCE"
 	CodeConflict = "NM_LEAVE_CONFLICT"
+	CodeNotFound = "NM_NOT_FOUND"
 )
 
 // Refusal is a plain refusal with a stable code.

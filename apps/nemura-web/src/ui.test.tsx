@@ -5,7 +5,9 @@ import { App } from "./App";
 import { ReviewBanner } from "./components/ReviewBanner";
 import { Home } from "./pages/Home";
 import { NewPerson } from "./pages/NewPerson";
+import { ApplyLeave } from "./pages/ApplyLeave";
 import { MyLeave } from "./pages/MyLeave";
+import { TeamLeave } from "./pages/TeamLeave";
 import { Packs } from "./pages/Packs";
 import { Policy } from "./pages/Policy";
 import { Features } from "./pages/Features";
@@ -462,5 +464,71 @@ describe("my leave", () => {
     expect(matchRoute("/me/leave")?.route.id).toBe("my-leave");
     expect(matchRoute("/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave")?.route.id).toBe("person-leave");
     expect(matchRoute("/people/directory")?.route.id).toBe("people-directory");
+  });
+});
+
+// req: NM-LV-03, NM-LV-04, NM-LV-05
+describe("applying for and approving leave", () => {
+  const preview = { days: "4.00", left_after: "10.00", enough: true, counting: "working_days",
+    days_counted: [{ date: "2026-04-01", cost: "1.00" }, { date: "2026-04-03", cost: "0.00", why: "Good Friday" }, { date: "2026-04-04", cost: "0.00", why: "a rest day" }],
+    away: [{ name: "Ben Lim", from: "2026-04-06", to: "2026-04-08" }] };
+
+  it("shows the cost day by day, the balance after it and who is away, then sends the request", async () => {
+    answer("POST /v1/me/leave-requests/preview", { status: 200, body: preview });
+    answer("POST /v1/me/leave-requests", { status: 201, body: { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80", days: "4.00" } });
+    const { container } = render(<ApplyLeave roles={["employee"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    expect(screen.getByRole("button", { name: "Send to my manager" }).hasAttribute("disabled")).toBe(true);
+    fireEvent.change(screen.getByLabelText("First day"), { target: { value: "2026-04-01" } });
+    expect(await screen.findByText("This request costs 4.00 days. After it you have 10.00 days left.")).toBeTruthy();
+    expect(screen.getByText("Good Friday")).toBeTruthy();
+    expect(screen.getByText("Ben Lim: 2026-04-06 to 2026-04-08")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    fireEvent.click(screen.getByRole("button", { name: "Send to my manager" }));
+    expect(await screen.findByText(/Sent\. Your manager has been told, and 4\.00 days are reserved/)).toBeTruthy();
+    expect(calls).toContain("POST /v1/me/leave-requests");
+  });
+
+  it("refuses to send a request beyond the balance and says so", async () => {
+    answer("POST /v1/me/leave-requests/preview", { status: 200, body: { ...preview, enough: false, left_after: "-2.00" } });
+    render(<ApplyLeave roles={["employee"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("First day"), { target: { value: "2026-04-01" } });
+    expect((await screen.findByRole("alert")).textContent).toMatch(/more than your balance: after it you would have -2\.00 days/);
+    expect(screen.getByRole("button", { name: "Send to my manager" }).hasAttribute("disabled")).toBe(true);
+  });
+
+  it("shows the API's refusal in words, such as a missing working pattern", async () => {
+    answer("POST /v1/me/leave-requests/preview", { status: 422, body: { code: "NM_LEAVE_INVALID", detail: "No working pattern is set for you on the first day: ask the people team to set it, so your days can be counted." } });
+    render(<ApplyLeave roles={["employee"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("First day"), { target: { value: "2026-04-01" } });
+    expect((await screen.findByRole("alert")).textContent).toMatch(/No working pattern is set/);
+  });
+
+  const pending = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80", person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", person_name: "Ben Lim", type: "annual", from: "2026-04-06", to: "2026-04-08", start_half: false, end_half: false, days: "3.00", note: "Family", state: "pending", requested_at: "2026-03-30T09:00:00Z" };
+  const refused = { ...pending, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e81", person_name: "Cy Wong", state: "refused", decision_reason: "The release freezes that week." };
+
+  it("lists what waits and what was decided, approves, and needs a reason to refuse", async () => {
+    answer("GET /v1/leave-requests", { status: 200, body: { requests: [pending, refused] } });
+    answer(`POST /v1/leave-requests/${pending.id}/decision`, { status: 204 });
+    const { container } = render(<TeamLeave roles={["line_manager"]} />);
+    expect(await screen.findByText("Ben Lim")).toBeTruthy();
+    expect(screen.getByText("The release freezes that week.")).toBeTruthy();
+    expect(screen.getByText("Refused")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    answer(`POST /v1/leave-requests/${pending.id}/decision`, { status: 422, body: { code: "NM_LEAVE_INVALID", detail: "A refusal needs a reason of up to 500 characters: tell the person why." } });
+    fireEvent.click(screen.getByRole("button", { name: "Refuse" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/needs a reason/);
+    answer(`POST /v1/leave-requests/${pending.id}/decision`, { status: 204 });
+    fireEvent.change(screen.getByLabelText("Reason for refusing Ben Lim"), { target: { value: "Too many away." } });
+    fireEvent.click(screen.getByRole("button", { name: "Refuse" }));
+    expect(await screen.findByText("Refused, and the person is told why.")).toBeTruthy();
+  });
+
+  it("is routed from the address, and the team link is for approvers", () => {
+    expect(matchRoute("/me/leave/new")?.route.id).toBe("apply-leave");
+    expect(matchRoute("/people/leave")?.route.id).toBe("team-leave");
   });
 });

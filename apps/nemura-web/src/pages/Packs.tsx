@@ -20,7 +20,7 @@ export function Packs({ roles }: { roles: readonly string[] }) {
     void reload();
   }, []);
   return (
-    <Shell directory={team(roles)} features={admin(roles)}>
+    <Shell roles={roles} directory={team(roles)} features={admin(roles)}>
       <main className="nm-shell__main" id="main">
         <ReviewBanner screen="nm-country-pack" />
         <h1 className="fy-h1" title={helpText("packs.page").tooltip}>{t("packs.title")}</h1>

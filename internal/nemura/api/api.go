@@ -119,6 +119,7 @@ type Deps struct {
 	Restricted Restricted
 	Packs      Packs
 	Leave      Leave
+	Requests   LeaveRequests
 	SignIn     SignInInfo
 	Clock      ports.Clock
 	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
@@ -143,6 +144,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerRestricted()
 	a.registerPacks()
 	a.registerLeave()
+	a.registerLeaveRequests()
 	a.registerSignIn()
 	return a
 }

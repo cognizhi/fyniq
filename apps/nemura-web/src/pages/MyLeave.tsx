@@ -45,7 +45,7 @@ export function MyLeave({ roles, personId }: { roles: readonly string[]; personI
     await load();
   };
   return (
-    <Shell directory={team(roles)} features={admin(roles)}>
+    <Shell roles={roles} directory={team(roles)} features={admin(roles)}>
       <main className="nm-shell__main" id="main">
         <ReviewBanner screen="nm-my-leave" />
         <h1 className="fy-h1" title={helpText("leave.page").tooltip}>{t(personId ? "leave.personTitle" : "leave.title")}</h1>
@@ -69,6 +69,7 @@ export function MyLeave({ roles, personId }: { roles: readonly string[]; personI
             <PatternForm id={personId ?? ""} saved={async (m) => { setNote(m); await load(); }} />
           </section>
         )}
+        {!personId && <a href="/me/leave/new">{t("leave.apply")}</a>}
         {personId && <a href={`/people/${personId}`}>{t("leave.back")}</a>}
       </main>
     </Shell>

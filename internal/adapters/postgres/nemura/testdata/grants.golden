@@ -89,6 +89,22 @@ nemura_api | column nemura.leave_ledger.person_id | INSERT
 nemura_api | column nemura.leave_ledger.request_id | INSERT
 nemura_api | column nemura.leave_ledger.source | INSERT
 nemura_api | column nemura.leave_ledger.type_key | INSERT
+nemura_api | column nemura.leave_request.days | INSERT
+nemura_api | column nemura.leave_request.decided_at | UPDATE
+nemura_api | column nemura.leave_request.decided_by | UPDATE
+nemura_api | column nemura.leave_request.decision_reason | UPDATE
+nemura_api | column nemura.leave_request.end_date | INSERT
+nemura_api | column nemura.leave_request.end_half | INSERT
+nemura_api | column nemura.leave_request.id | INSERT
+nemura_api | column nemura.leave_request.leave_year | INSERT
+nemura_api | column nemura.leave_request.note | INSERT
+nemura_api | column nemura.leave_request.person_id | INSERT
+nemura_api | column nemura.leave_request.requested_by | INSERT
+nemura_api | column nemura.leave_request.settled_at | UPDATE
+nemura_api | column nemura.leave_request.start_date | INSERT
+nemura_api | column nemura.leave_request.start_half | INSERT
+nemura_api | column nemura.leave_request.state | UPDATE
+nemura_api | column nemura.leave_request.type_key | INSERT
 nemura_api | column nemura.legal_hold.id | INSERT
 nemura_api | column nemura.legal_hold.placed_by | INSERT
 nemura_api | column nemura.legal_hold.placed_on | INSERT
@@ -279,6 +295,7 @@ nemura_api | table nemura.feature_state | SELECT
 nemura_api | table nemura.invitation | SELECT
 nemura_api | table nemura.leave_head | SELECT
 nemura_api | table nemura.leave_ledger | SELECT
+nemura_api | table nemura.leave_request | SELECT
 nemura_api | table nemura.legal_hold | SELECT
 nemura_api | table nemura.member | SELECT
 nemura_api | table nemura.organisation | SELECT
@@ -354,6 +371,7 @@ nemura_readonly | table nemura.feature_state | SELECT
 nemura_readonly | table nemura.invitation | SELECT
 nemura_readonly | table nemura.leave_head | SELECT
 nemura_readonly | table nemura.leave_ledger | SELECT
+nemura_readonly | table nemura.leave_request | SELECT
 nemura_readonly | table nemura.legal_hold | SELECT
 nemura_readonly | table nemura.member | SELECT
 nemura_readonly | table nemura.organisation | SELECT
@@ -431,6 +449,7 @@ nemura_worker | table nemura.feature_state | SELECT
 nemura_worker | table nemura.invitation | SELECT
 nemura_worker | table nemura.leave_head | SELECT
 nemura_worker | table nemura.leave_ledger | SELECT
+nemura_worker | table nemura.leave_request | SELECT
 nemura_worker | table nemura.legal_hold | SELECT
 nemura_worker | table nemura.member | SELECT
 nemura_worker | table nemura.organisation | SELECT

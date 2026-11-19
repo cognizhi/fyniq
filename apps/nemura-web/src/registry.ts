@@ -32,6 +32,8 @@ export const registry: Entry[] = [
   { kind: "route", id: "join", path: "/join", signedIn: false, screen: "nm-join", mode: "basic", help: "join.page", guide: "nemura.sign-in#joining-with-a-code" },
   { kind: "route", id: "my-home", path: "/me", signedIn: true, screen: "nm-my-home", mode: "basic", help: "home.me", guide: "nemura.home" },
   { kind: "route", id: "my-leave", path: "/me/leave", signedIn: true, screen: "nm-my-leave", mode: "basic", help: "leave.page", guide: "nemura.my-leave" },
+  { kind: "route", id: "apply-leave", path: "/me/leave/new", signedIn: true, screen: "nm-apply-leave", mode: "basic", help: "apply.page", guide: "nemura.leave.apply" },
+  { kind: "route", id: "team-leave", path: "/people/leave", signedIn: true, screen: "nm-team-leave", mode: "basic", help: "team.page", guide: "nemura.leave.approve" },
   { kind: "route", id: "people-home", path: "/people", signedIn: true, screen: "nm-people-home", mode: "expert", help: "home.people", guide: "nemura.home" },
   { kind: "route", id: "person-new", path: "/people/new", signedIn: true, screen: "nm-people", mode: "basic", help: "new.page", guide: "nemura.people" },
   { kind: "route", id: "people-directory", path: "/people/directory", signedIn: true, screen: "nm-people", mode: "basic", help: "directory.page", guide: "nemura.people" },

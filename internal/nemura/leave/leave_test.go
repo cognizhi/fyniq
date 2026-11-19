@@ -159,3 +159,66 @@ func TestUnusedLeaveCarriesForwardAndLapses(t *testing.T) {
 		t.Errorf("all carried days were used: %s", got)
 	}
 }
+
+// The days a request costs: working days by the person's pattern, public holidays and rest days left out, a holiday on a rest day moved to the next working day,
+// half days on the ends, calendar days for a continuous block, and a refusal when the holidays are not published or nothing is left to charge.
+// req: NM-LV-03, NM-LV-11, NM-LV-05
+func TestARequestCostsItsChargeableDays(t *testing.T) {
+	v := version(t)
+	week := leave.Pattern{Weekdays: []int{1, 2, 3, 4, 5}, HoursPerWeek: 440}
+	count := func(p leave.Pattern, basis, from, to string, sh, eh bool) (leave.Charge, error) {
+		return leave.Count(v, p, basis, d(from), d(to), sh, eh)
+	}
+	// 2026-04-01 is a Wednesday: Wed to Tue over Good Friday (3 April): Wed, Thu, Mon, Tue.
+	c, err := count(week, leave.WorkingDays, "2026-04-01", "2026-04-07", false, false)
+	if err != nil || c.Days != leave.Whole(4) || len(c.Skipped) != 3 {
+		t.Fatalf("over Good Friday and a weekend: %+v %v", c, err)
+	}
+	if c.Skipped[0].Date != "2026-04-03" || c.Skipped[0].Why != "Good Friday" || c.Skipped[1].Why != "a rest day" {
+		t.Errorf("skipped %+v", c.Skipped)
+	}
+	// Half days count on the first and the last day only, and only where the day costs something.
+	if c, _ := count(week, leave.WorkingDays, "2026-04-01", "2026-04-02", true, true); c.Days != 100 {
+		t.Errorf("two half days: %s", c.Days)
+	}
+	if c, _ := count(week, leave.WorkingDays, "2026-04-01", "2026-04-02", true, false); c.Days != 150 {
+		t.Errorf("a half first day: %s", c.Days)
+	}
+	if c, _ := count(week, leave.WorkingDays, "2026-04-02", "2026-04-06", false, true); c.Days != 150 {
+		t.Errorf("a half last day over Good Friday and a weekend: %s", c.Days)
+	}
+	// Deepavali 2026 is Sunday 8 November: for someone who works Monday to Friday, Monday 9 November is the holiday; a person who works Sunday has the Sunday.
+	if c, err := count(week, leave.WorkingDays, "2026-11-09", "2026-11-09", false, false); err == nil {
+		t.Errorf("the observed holiday cost %s", c.Days)
+	}
+	if c, err := count(week, leave.WorkingDays, "2026-11-10", "2026-11-10", false, false); err != nil || c.Days != 100 {
+		t.Errorf("the day after: %+v %v", c, err)
+	}
+	sunday := leave.Pattern{Weekdays: []int{7, 1, 2, 3, 4}, HoursPerWeek: 400}
+	if c, err := count(sunday, leave.WorkingDays, "2026-11-08", "2026-11-09", false, false); err != nil || c.Days != 100 || c.Skipped[0].Why != "Deepavali" {
+		t.Errorf("a Sunday worker's Deepavali: %+v %v", c, err)
+	}
+	// A four-day week: Friday is a rest day, so a holiday on Friday 3 April moves to Monday 6 April.
+	four := leave.Pattern{Weekdays: []int{1, 2, 3, 4}, HoursPerWeek: 350}
+	if c, _ := count(four, leave.WorkingDays, "2026-04-06", "2026-04-06", false, false); c.Days != 0 {
+		// refused above with err; the day is the observed holiday
+		t.Errorf("observed Monday cost %s", c.Days)
+	}
+	// A continuous block counts every calendar day (16 weeks is 112 days).
+	if c, err := count(week, leave.CalendarDays, "2026-04-01", "2026-07-21", false, false); err != nil || c.Days != leave.Whole(112) {
+		t.Errorf("a 16-week block: %s %v", c.Days, err)
+	}
+	// Refusals: backwards, too long, nothing to charge, holidays not published.
+	if _, err := count(week, leave.WorkingDays, "2026-04-07", "2026-04-01", false, false); err == nil {
+		t.Error("backwards")
+	}
+	if _, err := count(week, leave.CalendarDays, "2026-01-01", "2027-06-01", false, false); err == nil {
+		t.Error("longer than a year")
+	}
+	if _, err := count(week, leave.WorkingDays, "2026-04-04", "2026-04-05", false, false); err == nil {
+		t.Error("a weekend costs nothing")
+	}
+	if _, err := count(week, leave.WorkingDays, "2028-03-01", "2028-03-02", false, false); err == nil {
+		t.Error("a year with no holidays published")
+	}
+}

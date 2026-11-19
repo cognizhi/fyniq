@@ -21,7 +21,7 @@ export function Features({ roles }: { roles: readonly string[] }) {
     void reload();
   }, []);
   return (
-    <Shell directory={team(roles)} features={admin(roles)}>
+    <Shell roles={roles} directory={team(roles)} features={admin(roles)}>
       <main className="nm-shell__main" id="main">
         <ReviewBanner screen="nm-features" />
         <h1 className="fy-h1" title={helpText("features.page").tooltip}>{t("features.title")}</h1>

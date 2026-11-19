@@ -15,6 +15,7 @@ installation | nemura_migrator | false | false
 invitation | nemura_migrator | true | true
 leave_head | nemura_migrator | true | true
 leave_ledger | nemura_migrator | true | true
+leave_request | nemura_migrator | true | true
 legal_hold | nemura_migrator | true | true
 member | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
@@ -172,6 +173,24 @@ leave_ledger | source | text | true |
 leave_ledger | note | text | false | 
 leave_ledger | created_by | uuid | true | 
 leave_ledger | created_at | timestamp with time zone | true | now()
+leave_request | organisation_id | uuid | true | nemura.current_org()
+leave_request | id | uuid | true | uuidv7()
+leave_request | person_id | uuid | true | 
+leave_request | type_key | text | true | 
+leave_request | leave_year | integer | true | 
+leave_request | start_date | date | true | 
+leave_request | end_date | date | true | 
+leave_request | start_half | boolean | true | false
+leave_request | end_half | boolean | true | false
+leave_request | days | numeric(8,2) | true | 
+leave_request | note | text | false | 
+leave_request | state | text | true | 'pending'::text
+leave_request | requested_by | uuid | true | 
+leave_request | requested_at | timestamp with time zone | true | now()
+leave_request | decided_by | uuid | false | 
+leave_request | decided_at | timestamp with time zone | false | 
+leave_request | decision_reason | text | false | 
+leave_request | settled_at | timestamp with time zone | false | 
 legal_hold | organisation_id | uuid | true | nemura.current_org()
 legal_hold | id | uuid | true | uuidv7()
 legal_hold | record_type | text | true | 
@@ -591,11 +610,40 @@ leave_ledger | leave_ledger_note_length | CHECK (((note IS NULL) OR (length(note
 leave_ledger | leave_ledger_organisation_id_not_null | NOT NULL organisation_id
 leave_ledger | leave_ledger_person_id_not_null | NOT NULL person_id
 leave_ledger | leave_ledger_pkey | PRIMARY KEY (organisation_id, id)
+leave_ledger | leave_ledger_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES nemura.leave_request(organisation_id, id) NOT VALID
 leave_ledger | leave_ledger_sign | CHECK ((((kind = ANY (ARRAY['grant'::text, 'accrual'::text, 'release'::text])) AND (amount > (0)::numeric)) OR ((kind = ANY (ARRAY['reservation'::text, 'use'::text, 'expiry'::text, 'encashment'::text])) AND (amount < (0)::numeric)) OR (kind = ANY (ARRAY['transfer'::text, 'correction'::text]))))
 leave_ledger | leave_ledger_source_length | CHECK (((length(btrim(source)) >= 1) AND (length(btrim(source)) <= 200)))
 leave_ledger | leave_ledger_source_not_null | NOT NULL source
 leave_ledger | leave_ledger_type_key_not_null | NOT NULL type_key
 leave_ledger | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+leave_request | leave_request_dates | CHECK (((end_date >= start_date) AND (EXTRACT(year FROM start_date) = (leave_year)::numeric) AND (EXTRACT(year FROM end_date) = (leave_year)::numeric)))
+leave_request | leave_request_days | CHECK ((days > (0)::numeric))
+leave_request | leave_request_days_not_null | NOT NULL days
+leave_request | leave_request_decided_by_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
+leave_request | leave_request_decided_whole | CHECK ((((state = 'pending'::text) = (decided_by IS NULL)) AND ((state = 'pending'::text) = (decided_at IS NULL))))
+leave_request | leave_request_end_date_not_null | NOT NULL end_date
+leave_request | leave_request_end_half_not_null | NOT NULL end_half
+leave_request | leave_request_id_not_null | NOT NULL id
+leave_request | leave_request_leave_year_not_null | NOT NULL leave_year
+leave_request | leave_request_no_self_decision | CHECK (((state <> ALL (ARRAY['approved'::text, 'refused'::text])) OR (decided_by <> requested_by)))
+leave_request | leave_request_note_length | CHECK (((note IS NULL) OR (length(note) <= 500)))
+leave_request | leave_request_organisation_id_not_null | NOT NULL organisation_id
+leave_request | leave_request_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+leave_request | leave_request_person_id_not_null | NOT NULL person_id
+leave_request | leave_request_pkey | PRIMARY KEY (organisation_id, id)
+leave_request | leave_request_reason_length | CHECK (((decision_reason IS NULL) OR (length(decision_reason) <= 500)))
+leave_request | leave_request_refusal_reason | CHECK (((state <> 'refused'::text) OR (length(btrim(COALESCE(decision_reason, ''::text))) > 0)))
+leave_request | leave_request_requested_at_not_null | NOT NULL requested_at
+leave_request | leave_request_requested_by_fkey | FOREIGN KEY (organisation_id, requested_by) REFERENCES nemura.member(organisation_id, id)
+leave_request | leave_request_requested_by_not_null | NOT NULL requested_by
+leave_request | leave_request_settled_approved | CHECK (((settled_at IS NULL) OR (state = 'approved'::text)))
+leave_request | leave_request_start_date_not_null | NOT NULL start_date
+leave_request | leave_request_start_half_not_null | NOT NULL start_half
+leave_request | leave_request_state_known | CHECK ((state = ANY (ARRAY['pending'::text, 'approved'::text, 'refused'::text, 'cancelled'::text])))
+leave_request | leave_request_state_not_null | NOT NULL state
+leave_request | leave_request_type_key | CHECK ((type_key ~ '^[a-z][a-z0-9_.]{1,60}$'::text))
+leave_request | leave_request_type_key_not_null | NOT NULL type_key
+leave_request | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 legal_hold | legal_hold_dates | CHECK (((released_on IS NULL) OR (released_on >= placed_on)))
 legal_hold | legal_hold_id_not_null | NOT NULL id
 legal_hold | legal_hold_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
@@ -942,6 +990,9 @@ CREATE UNIQUE INDEX invitation_pkey ON nemura.invitation USING btree (organisati
 CREATE UNIQUE INDEX leave_head_pkey ON nemura.leave_head USING btree (organisation_id, person_id, type_key, leave_year)
 CREATE INDEX leave_ledger_person_idx ON nemura.leave_ledger USING btree (organisation_id, person_id, type_key, leave_year, created_at)
 CREATE UNIQUE INDEX leave_ledger_pkey ON nemura.leave_ledger USING btree (organisation_id, id)
+CREATE INDEX leave_request_person_idx ON nemura.leave_request USING btree (organisation_id, person_id, start_date)
+CREATE UNIQUE INDEX leave_request_pkey ON nemura.leave_request USING btree (organisation_id, id)
+CREATE INDEX leave_request_state_idx ON nemura.leave_request USING btree (organisation_id, state, start_date)
 CREATE UNIQUE INDEX legal_hold_pkey ON nemura.legal_hold USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_pkey ON nemura.member USING btree (organisation_id, id)
 CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organisation_id)
@@ -1013,6 +1064,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.invitat
 CREATE TRIGGER leave_ledger_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.leave_ledger FOR EACH ROW EXECUTE FUNCTION nemura.leave_ledger_guard()
 CREATE TRIGGER leave_ledger_no_truncate BEFORE TRUNCATE ON nemura.leave_ledger FOR EACH STATEMENT EXECUTE FUNCTION nemura.leave_ledger_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_ledger DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('leave_ledger', 'id')
+CREATE TRIGGER leave_request_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.leave_request FOR EACH ROW EXECUTE FUNCTION nemura.leave_request_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('leave_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.legal_hold DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('legal_hold', 'id')
 CREATE TRIGGER member_deactivated AFTER UPDATE OF deactivated_at ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.member_deactivated()
 CREATE TRIGGER member_no_delete BEFORE DELETE ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.members_no_delete()
@@ -1071,6 +1124,7 @@ feature_state | tenant_isolation | (organisation_id = nemura.current_org()) | (o
 invitation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_head | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_ledger | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+leave_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 legal_hold | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -1370,6 +1424,45 @@ BEGIN
     IF total + NEW.amount < 0 THEN
       RAISE EXCEPTION 'That would take the balance below zero' USING ERRCODE = 'NM143';
     END IF;
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.leave_request_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'A leave request is evidence: it is cancelled, never deleted' USING ERRCODE = 'NM144';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.state <> 'pending' THEN
+      RAISE EXCEPTION 'A leave request starts pending' USING ERRCODE = 'NM144';
+    END IF;
+    PERFORM pg_advisory_xact_lock(hashtextextended(NEW.organisation_id::text || NEW.person_id::text, 0));
+    IF EXISTS (SELECT 1 FROM nemura.leave_request r WHERE r.organisation_id = NEW.organisation_id AND r.person_id = NEW.person_id AND r.state IN ('pending', 'approved')
+                 AND daterange(r.start_date, r.end_date, '[]') && daterange(NEW.start_date, NEW.end_date, '[]')) THEN
+      RAISE EXCEPTION 'The person has leave requested or approved on some of those days' USING ERRCODE = 'NM145';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.type_key IS DISTINCT FROM OLD.type_key OR NEW.leave_year IS DISTINCT FROM OLD.leave_year
+     OR NEW.start_date IS DISTINCT FROM OLD.start_date OR NEW.end_date IS DISTINCT FROM OLD.end_date OR NEW.start_half IS DISTINCT FROM OLD.start_half
+     OR NEW.end_half IS DISTINCT FROM OLD.end_half OR NEW.days IS DISTINCT FROM OLD.days OR NEW.note IS DISTINCT FROM OLD.note
+     OR NEW.requested_by IS DISTINCT FROM OLD.requested_by OR NEW.requested_at IS DISTINCT FROM OLD.requested_at THEN
+    RAISE EXCEPTION 'A leave request is evidence: only its decision changes' USING ERRCODE = 'NM144';
+  END IF;
+  IF NEW.state IS DISTINCT FROM OLD.state AND NOT ((OLD.state = 'pending' AND NEW.state IN ('approved', 'refused', 'cancelled')) OR (OLD.state = 'approved' AND NEW.state = 'cancelled')) THEN
+    RAISE EXCEPTION 'A % leave request cannot become %', OLD.state, NEW.state USING ERRCODE = 'NM144';
+  END IF;
+  IF OLD.decided_by IS NOT NULL AND NEW.state IN ('approved', 'refused') AND (NEW.decided_by IS DISTINCT FROM OLD.decided_by OR NEW.decided_at IS DISTINCT FROM OLD.decided_at OR NEW.decision_reason IS DISTINCT FROM OLD.decision_reason) THEN
+    RAISE EXCEPTION 'A decision is written once' USING ERRCODE = 'NM144';
+  END IF;
+  IF OLD.settled_at IS NOT NULL AND NEW.settled_at IS DISTINCT FROM OLD.settled_at THEN
+    RAISE EXCEPTION 'A settled request stays settled' USING ERRCODE = 'NM144';
   END IF;
   RETURN NEW;
 END

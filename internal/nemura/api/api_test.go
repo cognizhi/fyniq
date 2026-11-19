@@ -212,6 +212,35 @@ func (f fakeLeave) CarryForward(context.Context, Session, uuid.UUID, int) (strin
 	return "0.00", f.err
 }
 
+// fakeRequests answers leave requests with whatever the test says, and remembers the scope it was called with.
+type fakeRequests struct {
+	err   error
+	scope *LeaveScope
+}
+
+func (f fakeRequests) Preview(context.Context, Session, LeaveAsk) (RequestPreview, error) {
+	return RequestPreview{Days: "5.00", Left: "9.00", Enough: true, Basis: "working_days", Counts: []DayCost{}, Away: []AwayPerson{}}, f.err
+}
+func (f fakeRequests) Apply(context.Context, Session, LeaveAsk) (string, string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80", "5.00", f.err
+}
+func (f fakeRequests) List(_ context.Context, _ Session, sc LeaveScope, _ string) ([]LeaveRequest, error) {
+	if f.scope != nil {
+		*f.scope = sc
+	}
+	return []LeaveRequest{}, f.err
+}
+func (f fakeRequests) Get(context.Context, Session, LeaveScope, uuid.UUID) (LeaveRequest, error) {
+	return LeaveRequest{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80", State: "pending"}, f.err
+}
+func (f fakeRequests) Decide(context.Context, Session, LeaveScope, uuid.UUID, bool, string) error {
+	return f.err
+}
+func (f fakeRequests) Cancel(context.Context, Session, uuid.UUID) error { return f.err }
+func (f fakeRequests) Settle(context.Context, Session, time.Time) (int, string, error) {
+	return 1, "3.00", f.err
+}
+
 // fakeClients registers whatever it is told and answers with clientsErr.
 type fakeClients struct{ err error }
 
@@ -222,19 +251,20 @@ func (f fakeClients) List(context.Context, Session) ([]Client, error)  { return 
 func (f fakeClients) Revoke(context.Context, Session, uuid.UUID) error { return f.err }
 
 var (
-	passkeyErr, clientsErr, peopleErr, featuresErr, restrictedErr, packsErr, leaveErr error
-	featuresOff                                                                       bool
-	peopleOwn, peopleReport                                                           bool
-	peopleClassified                                                                  *bool
-	testRoles                                                                         = []authz.Role{authz.HRAdmin}
-	testStepUp                                                                        bool
-	testNow                                                                           = time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
+	passkeyErr, clientsErr, peopleErr, featuresErr, restrictedErr, packsErr, leaveErr, requestsErr error
+	requestsScope                                                                                  *LeaveScope
+	featuresOff                                                                                    bool
+	peopleOwn, peopleReport                                                                        bool
+	peopleClassified                                                                               *bool
+	testRoles                                                                                      = []authz.Role{authz.HRAdmin}
+	testStepUp                                                                                     bool
+	testNow                                                                                        = time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
 )
 
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -438,13 +468,13 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 			t.Errorf("%s is in the catalogue and no test triggers it", c.Code)
 			continue
 		}
-		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr = tr.err, tr.err, tr.err, tr.err, tr.err, tr.err
+		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr = tr.err, tr.err, tr.err, tr.err, tr.err, tr.err, tr.err
 		if tr.owner {
 			testRoles = []authz.Role{authz.Owner}
 		}
 		testStepUp, featuresOff = tr.stepUp, tr.featuresOff
 		_, mux := testAPI(t)
-		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, testRoles, testStepUp, featuresOff = nil, nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false, false
+		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr, testRoles, testStepUp, featuresOff = nil, nil, nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false, false
 		req := httptest.NewRequest(tr.method, tr.path, strings.NewReader(tr.body))
 		if tr.body != "" {
 			req.Header.Set("Content-Type", "application/json")

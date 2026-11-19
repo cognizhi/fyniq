@@ -28,9 +28,13 @@ Load before each slice: `fyniq-feature-change`, `fyniq-sg-statutory` (1, 3), `fy
 
 ## 2. Applying, approving, the calendar and sick leave (slice 2)
 
-- [ ] 2.1 Apply (NM-LV-03): the chargeable intervals by pattern and calendar (D3), the balance after the request, the clash warning, the refusal beyond the
-  balance, the reservation in one transaction (D2) with a concurrent test. `// req: NM-LV-03`
-- [ ] 2.2 Approval (NM-LV-04, D6): the line manager, HR where the type needs it, a reason for a refusal, every decision audited, a notice queued.
+- [x] 2.1 Apply (NM-LV-03): the chargeable days by pattern and calendar (D3: holidays observed on the next working day, half days, calendar counting for
+  blocks), the balance after the request, who in the team is away, the refusal beyond the balance, the reservation in one transaction (D2) with a concurrent test;
+  migration 000016 (`leave_request`, evidence, one way through its states, no overlap). `// req: NM-LV-03`
+  Left: the attachment (only sick leave has one, 2.4); the half day is first and last day only; types other than annual (slice 3 and company types).
+- [x] 2.2 Approval (NM-LV-04, D6): the line manager for reports, HR officer, HR administrator and Owner for anyone, never one's own (database check), a reason
+  for a refusal, every decision audited, a notice queued (logged until notifications deliver); taken leave settled by the people team (`POST /v1/leave/settlement`).
+  Left: HR approving where a type needs it (no such type yet); the worker job that settles (slice 4); notice delivery.
 - [ ] 2.3 The team calendar (NM-LV-05): per month, holidays per person, "Away" for those without the right; screens `nm-apply-leave`, `nm-team-leave`.
 - [ ] 2.4 Sick leave (NM-LV-06, 12, D5): notified, one ceiling, the step-up by date of absence, the certificate as a restricted document, HR's verification;
   screen `nm-report-sick`. `// req: NM-LV-06, NM-LV-12`

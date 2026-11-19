@@ -2,56 +2,55 @@
 key: leave.apply
 type: task
 title: Apply for leave in Nemura
-summary: How an employee applies for leave in Nemura, half days, the balance and clash check, and who approves it
+summary: How an employee asks for annual leave in Nemura, what the form shows before it is sent, how the days are counted and reserved, and what happens next
 sources:
-  - docs/user-guide/nemura/leave-apply.md sha256:29964dc8ea42c0863b52ea46265c8348332b27bac9b344d485301e5aaacff47a
+  - docs/user-guide/nemura/leave-apply.md sha256:fbac1061de4298344d9f1d80c09ae71768462582a996d8be3dbf42ff252b9c01
 data_class: general
 taint: trusted
-status: draft
+status: published
 human_edited: false
-compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
+compiled_by: claude-sonnet-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-10-14
+compiled_at: 2026-11-20
 aliases:
   - annual leave
   - take a day off
   - half day leave
   - leave request
+  - request leave
 ---
 
 # Apply for leave in Nemura
 
 ## Where
 
-- Leave is asked for from **My leave** or the **Apply for leave** tile on the Nemura home; the
-  form shows the balance after the request and who else in the team is away.
-  (src: docs/user-guide/nemura/leave-apply.md#what-it-is)
-- Half days are possible (morning or afternoon); have any document the type needs, such as a
-  medical certificate, ready. (src: docs/user-guide/nemura/leave-apply.md#before-you-start)
+- Annual leave is asked for from **Apply for leave**, reached from **My leave** ([[nemura.my-leave]]). Before sending, the form shows what the request costs day by day, the balance after it and who else in the team is away. (src: docs/user-guide/nemura/leave-apply.md#what-it-is)
+- Annual leave must be granted for the year first, and the people team must have set the working pattern so the days can be counted. A half day is allowed on the first day, the last day or both. (src: docs/user-guide/nemura/leave-apply.md#before-you-start)
 
 ## Steps
 
-1. Open **Apply for leave** and choose the type under **What kind of leave?**.
-2. Under **When?**, pick the days and **Full day**, **Morning only** or **Afternoon only**.
-3. Check the balance after the request; for types counted in working days, public holidays and
-   rest days are not counted.
-4. A clash with someone in the team is a warning only.
-5. Add a note under **Anything to add?** and select **Send to** (the button names the manager).
+1. Open **Apply for leave** and choose the **First day** and the **Last day** (leave the last day empty for one day).
+2. Tick **Only half of the first day** or **Only half of the last day** for a half day.
+3. Read **How the days were counted**: public holidays and rest days cost nothing, and a holiday on a rest day moves to the next working day. Check the balance after the request.
+4. **Away in your team on those days** shows names and dates, never the type; it is information only.
+5. Add a note and select **Send to my manager**.
 
 (src: docs/user-guide/nemura/leave-apply.md#steps)
 
 ## After sending
 
-- The line manager approves or refuses; a refusal always gives a reason.
-- HR is told, and approves too for some types, such as long unpaid leave.
-- The team calendar shows the person as **Away**; only people with the right see the type.
+- The line manager approves or refuses; a refusal always comes with a reason and the days come back ([[leave.approve]]).
+- The days are reserved when the request is sent, so two requests cannot both take the last days.
+- A request still waiting, or an approved one before it starts, can be cancelled; leave that has started is corrected by the people team.
 
 (src: docs/user-guide/nemura/leave-apply.md#what-happens-next)
 
 ## Common problems
 
-- A request beyond the balance is refused unless the type allows a negative balance.
-- A clash is only a warning; a note can help the manager.
+- A request beyond the balance is refused and the days left are named.
+- Leave already asked for on some of the days: cancel it first or choose other days.
+- A request over the new year is asked for each year on its own.
+- No working pattern set: ask the people team.
 
 (src: docs/user-guide/nemura/leave-apply.md#common-problems)
 
