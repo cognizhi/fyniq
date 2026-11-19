@@ -114,11 +114,12 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 5. Identity, the token issuer and sign-in with no Fyniq (slice 5)
 
-- [ ] 5.1 Members and identities: `member`, `user_identity` (issuer, subject, tenant; never matched on email alone,
+- [x] 5.1 Members and identities: `member`, `user_identity` (issuer, subject, tenant; never matched on email alone,
   NM-INT-12's rule), invitations with a one-time code and expiry, and first-run setup that makes the first
   organisation's Owner with a one-time setup code (as FR-ADM-06; a `make` command with a `## description` and a
   row in AGENTS.md's table). Tests: one person in two organisations; a matching email with a different subject is
   not the same person; a used or expired code is refused.
+  (Built, 19 Nov 2026: migration 000007, `internal/nemura/identity`, `internal/adapters/postgres/nemura/identity.go`, `make people-setup-code` and the migrate role's `setup-code`; `TestFirstRunSetupWorksOnceWithTheDeploymentsCode`, `TestPeopleAreMatchedByIssuerSubjectAndTenant`, `TestAnInvitationWorksOnceAndOnlyItsHashIsKept`. `// req: NM-ARC-01` is tagged on setup and invitations but the requirement is partial: the journal and bank files are payroll's.)
 - [ ] 5.2 Nemura's own Ory Hydra (D7): `nemura-oauth-migrate` and `nemura-oauth` in the `people` profile on
   `nemura_hydra`, the same pinned image and settings (opaque tokens, PKCE only, 60-minute access tokens), the
   `OAuth` port wired, `/api/auth/login` and `/consent` on Nemura's origin, the audience `nemura-api`, and Nemura's own
@@ -131,6 +132,7 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   adapter, so `scripts/images.py` lists it in the images that must. Tests `// req: NM-ARC-06` for: the services'
   separate identities and roles, the standalone profile (the list of what Nemura needs) and **sign-in with every
   Fyniq service stopped**, proven by a new `scripts/local-smoke-people.sh` that CI runs beside QA-LOCAL-01.
+  (Built in part, 19 Nov 2026: sessions as opaque hashed tokens, expiry, revocation, deactivation and the step-up window (`TestSessionsAreOpaqueExpireAndEndWithTheMember`). **Left, so unticked:** the `SignIn` port's local adapter and the sign-in page, the Identity Platform adapter [live-verify], the `__Host-` cookie, `scripts/local-smoke-people.sh`, and `// req: NM-ARC-06`'s full proof.)
 - [ ] 5.4 Passkeys and step-up: WebAuthn with the relying-party ID from `NEMURA_RP_ID` (locally `localhost`), single-use
   server-side challenges, assertions kept for re-verification, step-up for approvals and role changes; and Nemura's
   own API clients, audience-bound, with the scopes of NM-ARC-06's own token issuer (question 11). Tests: a step-up is

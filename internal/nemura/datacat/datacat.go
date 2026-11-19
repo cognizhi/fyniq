@@ -32,6 +32,12 @@ var Categories = []Category{
 		Columns:   []string{"member.display_name"},
 	},
 	{
+		Key: "sign-in-identities", What: "Each person's name at the identity provider: its issuer, subject and tenant, and the invitations and sessions that let them in (kept as hashes)",
+		Purpose:   "To recognise a person who signs in, never by email alone, and to keep them signed in until they sign out or are deactivated",
+		Retention: Rule{After: "leaving", Reason: "Kept while a member; a deactivated member's identity is switched off and kept for the audit trail"},
+		Columns:   []string{"identity_directory.subject"},
+	},
+	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
 		Purpose:    "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)",
 		Capability: "Own file beyond routine release (NM-SEC-07)",
@@ -59,6 +65,8 @@ var NotPersonal = map[string]string{
 	"audit_event.body":             "the audit event, whose personal values are masked or sealed (SEC-15, AUD-02)",
 	"outbox.last_error":            "an error message for operators, never a person's data",
 	"outbox.task_name":             "the queue's name for one delivery of a task: a row id and a count",
+	"identity_directory.issuer":    "the identity provider's address, not a person",
+	"identity_directory.tenant":    "the identity provider's tenant for the organisation, not a person",
 	"outbox.payload":               "the task's payload: ids only, never pay or bank details (ADR-N5)",
 }
 

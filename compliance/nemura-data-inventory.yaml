@@ -13,6 +13,15 @@ classes:
     protection: "Row-level security per organisation; the audit trail's personal values are masked or sealed (SEC-15, AUD-02)"
     transfers: "None"
     columns: [member.display_name]
+  - key: sign-in-identities
+    what: "Each person's name at the identity provider: its issuer, subject and tenant, and the invitations and sessions that let them in (kept as hashes)"
+    why: "To recognise a person who signs in, never by email alone, and to keep them signed in until they sign out or are deactivated"
+    where: "Nemura's database, in Singapore; the identity provider is the deployment's (Identity Platform, or the local sign-in page)"
+    who: "The person themselves and the services that authenticate them; no role reads the directory directly"
+    retention: "Kept while a member; a deactivated member's identity is switched off and kept for the audit trail"
+    protection: "A global table no application role can read, reached only through functions that return the caller's own memberships; tokens and codes kept only as SHA-256"
+    transfers: "The identity provider: the flow sign-in, assessed when it is outside Singapore (CMP-PD-06)"
+    columns: [identity_directory.subject]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"
