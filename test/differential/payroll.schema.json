@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fyniq.example/schemas/payroll-month@1.json",
+  "title": "fyniq-payroll-month@1",
+  "description": "An employee-month both the Go engine (internal/nemura/payroll) and the independent oracle work out from the same facts and the same pack versions (PRD-001 Appendix B.3; QA-ENG-02). Money is a decimal string; the expected figures are worked by hand from the rules, never from the engine.",
+  "type": "object",
+  "required": ["schema", "name", "month", "person", "items", "expect"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": "fyniq-payroll-month@1"},
+    "name": {"type": "string", "minLength": 1},
+    "why": {"type": "string"},
+    "month": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-01$"},
+    "packs": {"type": "object", "description": "Pack versions read; the defaults are sg-cpf@2026.2, sg-sdl@2026.1 and sg-shg@2026.1"},
+    "person": {
+      "type": "object",
+      "required": ["residency", "birth_date"],
+      "additionalProperties": false,
+      "properties": {
+        "employee": {"type": "boolean", "default": true},
+        "residency": {"enum": ["citizen", "permanent_resident", "foreigner"]},
+        "pr_start": {"type": "string", "format": "date"},
+        "birth_date": {"type": "string", "format": "date"},
+        "joint_election": {"type": "boolean"},
+        "shg_fund": {"enum": ["", "CDAC", "ECF", "MBMF", "SINDA"]},
+        "shg_opt_out": {"type": "boolean"}
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "name", "amount", "cpf_wages"],
+        "additionalProperties": false,
+        "properties": {
+          "key": {"type": "string"},
+          "name": {"type": "string"},
+          "amount": {"type": "string", "pattern": "^-?[0-9]+(\\.[0-9]{1,2})?$"},
+          "cpf_wages": {"type": "boolean"},
+          "for_month": {"type": "string", "format": "date"},
+          "payable_on": {"type": "string", "format": "date"},
+          "suggested": {"enum": ["", "ordinary", "additional"]}
+        }
+      }
+    },
+    "ytd": {
+      "type": "object",
+      "required": ["ow", "aw_subject", "aw_paid"],
+      "additionalProperties": false,
+      "properties": {"ow": {"type": "string"}, "aw_subject": {"type": "string"}, "aw_paid": {"type": "string"}}
+    },
+    "last_month": {"type": "boolean"},
+    "reimbursements": {"type": "array", "items": {"type": "string"}},
+    "expect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "error": {"type": "string", "description": "A refusal the month ends in, such as needs_year_to_date"},
+        "gross": {"type": "string"},
+        "ow_subject": {"type": "string"},
+        "aw_subject": {"type": "string"},
+        "cpf_total": {"type": "string"},
+        "cpf_employee": {"type": "string"},
+        "cpf_employer": {"type": "string"},
+        "sdl": {"type": "string"},
+        "shg": {"type": "string"},
+        "net": {"type": "string"},
+        "disburse": {"type": "string"},
+        "refund_wages": {"type": "string"}
+      }
+    }
+  }
+}

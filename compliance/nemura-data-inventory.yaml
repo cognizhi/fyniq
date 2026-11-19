@@ -30,7 +30,7 @@ classes:
     retention: "MOM: employment records of a former employee are kept for 1 year after they leave"
     protection: "Row-level security per organisation; every change is audited; job history is never edited, only ended"
     transfers: "None"
-    columns: [person.legal_name, person.preferred_name, person.work_email, person.phone, person.leaving_reason]
+    columns: [person.legal_name, person.preferred_name, person.work_email, person.phone, person.leaving_reason, join_task.note]
   - key: legal-classification
     what: "A person's legal classification: contract of service or for service, Employment Act cover and Part IV class, residency and the date residence began, and date of birth"
     why: "To apply the right statutory rules to the person (leave, hours, retirement and re-employment) and no others"
@@ -85,6 +85,42 @@ classes:
     protection: "Row-level security; a request keeps its words, its receipt date and its deadline, and is answered once; the audit event carries the outcome, never the reason or the reply"
     transfers: "None"
     columns: [flex_request.reason, flex_request.outcome, flex_request.written_reply]
+  - key: own-details
+    what: "A person's own contact details (personal email, home address, postal code), up to three emergency contacts (name, relationship, phone), their requests to change a legal name, residency or NRIC or FIN with the note and the evidence, and their questions to the people team with the answers"
+    why: "To reach a person and their family in an emergency, to keep the record true on the person's own word and evidence, and to answer what they ask"
+    where: "Nemura's database, in Singapore; the evidence in Nemura's file store, in Singapore"
+    who: "The person their own; the people team reads the details of a person it looks after and the queue of requests (Appendix B: Own profile, balances, payslips, letters, requests)"
+    retention: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"
+    protection: "Row-level security; a request keeps its words and its evidence and is decided once by someone else; the audit event names the fields that changed, never the details, and a request never holds an NRIC or FIN"
+    transfers: "None"
+    columns: [person_contact.personal_email, person_contact.address, person_contact.postal_code, emergency_contact.contact_name, emergency_contact.relationship, emergency_contact.contact_phone, details_change.new_legal_name, details_change.note, details_change.decision_reason, hr_question.question, hr_question.reply]
+  - key: pay-records
+    what: "A person's pay: their pay group, basic monthly salary, self-help group fund, allowances and fixed deductions, the one-off items of a month (bonuses, commissions), a permanent resident's joint election, and the year to date of CPF wages"
+    why: "To work out each person's pay, CPF, SDL and self-help group fund exactly and to show where every figure came from (Employment Act; CPF Act)"
+    where: "Nemura's database, in Singapore"
+    who: "The Payroll administrator and the Owner alone (Appendix B: Pay, pay history, pay runs); the person sees their own payslip; the HR roles see that a run exists, not amounts"
+    retention: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"
+    protection: "Row-level security and the payroll role; a pay record is history that is only ended, once; every change is audited and the audit event says that pay was set, never what it was; no log, outbox row or error carries pay"
+    transfers: "None"
+    columns: [person_pay.basic_monthly, person_pay.shg_fund, person_pay.pay_group_id, person_pay_item.pay_id, person_pay_item.name, person_pay_item.amount, pay_one_off.name, pay_one_off.amount, pay_one_off.note, cpf_ytd.ow, cpf_ytd.aw_subject, cpf_ytd.aw_paid]
+  - key: key-employment-terms
+    what: "A person's key employment terms: main duties, notice period, medical benefits and a fixed-term contract's end, and the pay terms (salary period, basic salary, fixed allowances and deductions, overtime period, other pay)"
+    why: "To give the person the key employment terms in writing (Employment Act) and to fill the letter from the record, not from memory"
+    where: "Nemura's database, in Singapore"
+    who: "The base terms: HR officer, HR administrator and Owner write, Payroll administrator reads; the pay terms: Payroll administrator and Owner only (Appendix B: Pay, pay history, pay runs); the person sees them in the letter issued to them"
+    retention: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"
+    protection: "Row-level security; a record of terms is history that is only ended, once; every change is audited and the audit event says only that pay was set, never what it was"
+    transfers: "None"
+    columns: [person_terms.main_duties, person_terms.notice_period, person_terms.medical_benefits, person_terms.salary_period, person_terms.basic_salary, person_terms.fixed_allowances, person_terms.fixed_deductions, person_terms.overtime_period, person_terms.other_pay]
+  - key: letters
+    what: "A person's request for a letter and what it is for, the facts filled into it from their record, the issued letter's data, the company's letterhead and the notes on a template"
+    why: "To issue letters the person asked for, exactly and attributably, and to keep the issued letter as evidence of what was said and who signed it"
+    where: "Nemura's database, in Singapore; the PDF in Nemura's file store, in Singapore"
+    who: "The person their own; HR officer, HR administrator and Owner (Appendix B: Letters and templates); a delivery link delivers one letter to whoever holds the token for seven days"
+    retention: "Kept with the employment record: an issued letter is evidence of what the company stated about the person"
+    protection: "Row-level security; a request, a checked letter and an issued letter are evidence that never change; the PDF's SHA-256 is checked whenever it is read; a link's token is kept as a hash; the audit event carries the reference and the hash, never the letter's text"
+    transfers: "None"
+    columns: [letter_request.purpose, letter_request.data, letter_request.decision_reason, letter_issued.data, letter_template_version.note, letter_delegation.revoked_reason]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"

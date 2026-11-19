@@ -1,6 +1,7 @@
 package archtest
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -9,6 +10,9 @@ import (
 	"testing"
 
 	"go.yaml.in/yaml/v3"
+
+	nemurapacks "github.com/cognizhi/fyniq/internal/nemura/packs"
+	fyniqpacks "github.com/cognizhi/fyniq/packs"
 )
 
 // Nemura stays in its lane: its packages import only their own code and the shared list, and nothing outside Nemura
@@ -119,5 +123,44 @@ func TestTheSharedPackLibraryStaysPure(t *testing.T) {
 	})
 	if len(got) != 3 {
 		t.Errorf("want the 3 planted impurities, got %d: %v", len(got), got)
+	}
+}
+
+// Nemura's copies of the statutory packs payroll reads (sg-cpf, sg-sdl, sg-shg) are byte for byte Fyniq's: one set of researched values, two places to read it from, so the two
+// apps and the oracle cannot disagree because a copy was edited alone (p1-nemura-payroll D1, owner decision O1 of 19 Nov 2026).
+// req: NM-PACK-01
+func TestNemurasStatutoryPackCopiesEqualFyniqs(t *testing.T) {
+	for _, name := range []string{"sg-cpf", "sg-sdl", "sg-shg"} {
+		a, err := fs.Sub(fyniqpacks.FS, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, err := fs.Sub(nemurapacks.Statutory, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		read := func(f fs.FS) map[string]string {
+			out := map[string]string{}
+			if err := fs.WalkDir(f, ".", func(p string, d fs.DirEntry, err error) error {
+				if err != nil || d.IsDir() {
+					return err
+				}
+				raw, err := fs.ReadFile(f, p)
+				out[p] = string(raw)
+				return err
+			}); err != nil {
+				t.Fatal(err)
+			}
+			return out
+		}
+		fa, fb := read(a), read(b)
+		if len(fa) != len(fb) {
+			t.Errorf("%s: %d files in Fyniq's and %d in Nemura's copy", name, len(fa), len(fb))
+		}
+		for p, want := range fa {
+			if got, ok := fb[p]; !ok || got != want {
+				t.Errorf("%s/%s differs between Fyniq's pack and Nemura's copy: copy it again", name, p)
+			}
+		}
 	}
 }

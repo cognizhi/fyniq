@@ -27,6 +27,9 @@ Select **Draft an invoice**, choose the revenue account and the GST code, and Fy
 person and rate for the time, and one a cost. It is an ordinary draft invoice, so you check it, change it and issue it as any other, and the
 usual approval applies. You need the right to create invoices (the Accountant or the AR specialist).
 
+The assistant can propose this draft for a project when you ask it to invoice the project by its code: you see the customer,
+the lines and the total, and a person who may draft the invoice approves it (see [AI proposals](ai-proposals.md)).
+
 ## Billed once
 
 Nothing is billed while the invoice is a draft. **When you issue the invoice**, the time and costs on it are marked billed and leave the unbilled

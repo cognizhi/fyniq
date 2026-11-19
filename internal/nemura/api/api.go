@@ -55,6 +55,10 @@ func Config(v string) huma.Config {
 		{Name: "Features", Description: "Each optional feature of an organisation: on, off or held by another system (NM-FEAT-01 to 05)."},
 		{Name: "Packs", Description: "Country packs with their sources, the company's policy on top and the people checks (NM-PACK-01 to 08)."},
 		{Name: "Leave", Description: "Working patterns, leave balances and the ledger behind them (NM-LV-01, NM-LV-02, NM-LV-13, NM-TIM-01)."},
+		{Name: "Payroll", Description: "Pay groups, a person's pay, the year to date and one-off items: for the Payroll administrator and the Owner alone (NM-PAY-02, NM-PAY-03, FR-EMP-01)."},
+		{Name: "Onboarding", Description: "The task to invite new people to Fyniq, and a leaver's dates, checklist and leave settlement (NM-ONB-02, NM-ONB-03)."},
+		{Name: "Self-service", Description: "A person's own details and requests, and what waits for the people team (NM-ESS-03, NM-ESS-04)."},
+		{Name: "Letters", Description: "Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07)."},
 		{Name: "Session", Description: "Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02)."},
 	}
 	return cfg
@@ -64,6 +68,10 @@ func Config(v string) huma.Config {
 type Session struct {
 	ID, Organisation, Member uuid.UUID
 	StepUpAt                 *time.Time // when the person last confirmed the session with a passkey
+	// Leaver is true when the person's last day has passed: the account is then narrow, for their own documents until LeaverUntil, and holds no role (NM-ESS-06).
+	Leaver      bool
+	LeaverUntil *time.Time
+	Person      uuid.UUID // the person record the login is linked to, or the zero value
 }
 
 // StepUpWindow is how long a passkey confirmation stays fresh.
@@ -111,21 +119,25 @@ type SignInInfo interface {
 
 // Deps are what the API is given.
 type Deps struct {
-	Sessions   Sessions
-	Passkeys   Passkeys
-	Clients    APIClients
-	People     People
-	Features   Features
-	Restricted Restricted
-	Packs      Packs
-	Leave      Leave
-	Requests   LeaveRequests
-	Sick       Sick
-	Government Government
-	Flex       Flex
-	Time       Time
-	SignIn     SignInInfo
-	Clock      ports.Clock
+	Sessions    Sessions
+	Passkeys    Passkeys
+	Clients     APIClients
+	People      People
+	Features    Features
+	Restricted  Restricted
+	Packs       Packs
+	Leave       Leave
+	Requests    LeaveRequests
+	Sick        Sick
+	Government  Government
+	Flex        Flex
+	Time        Time
+	Letters     Letters
+	SelfService SelfService
+	Onboarding  Onboarding
+	Payroll     Payroll
+	SignIn      SignInInfo
+	Clock       ports.Clock
 	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
 	CookieNames []string
 }
@@ -154,6 +166,10 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerFlex()
 	a.registerTime()
 	a.registerAccrual()
+	a.registerLetters()
+	a.registerSelfService()
+	a.registerOnboarding()
+	a.registerPayroll()
 	a.registerSignIn()
 	return a
 }
@@ -235,6 +251,9 @@ type sessionOutput struct {
 		Member       string   `json:"member_id" format:"uuid" doc:"The person who is signed in." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
 		Roles        []string `json:"roles" doc:"The roles the person holds today, from PRD-002 Appendix B." example:"[\"hr_admin\"]"`
 		Landing      string   `json:"landing" doc:"The page the person lands on: /people for the people team, /me for everyone else." example:"/people"`
+		Person       string   `json:"person_id,omitempty" format:"uuid" doc:"The person record the login is linked to, when there is one." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+		Leaver       bool     `json:"leaver" doc:"True after the person's last day: the account is for their own documents only." example:"false"`
+		LeaverUntil  string   `json:"leaver_until,omitempty" format:"date" doc:"The day the leaver's account ends, when it is one." example:"2027-12-01"`
 	}
 }
 
@@ -266,6 +285,13 @@ func (a *API) registerSession() {
 		}
 		out := &sessionOutput{}
 		out.Body.Organisation, out.Body.Member, out.Body.Landing = s.Organisation.String(), s.Member.String(), Landing(roles)
+		out.Body.Leaver = s.Leaver
+		if s.Person != uuid.Nil {
+			out.Body.Person = s.Person.String()
+		}
+		if s.LeaverUntil != nil {
+			out.Body.LeaverUntil = s.LeaverUntil.Format(time.DateOnly)
+		}
 		out.Body.Roles = make([]string, len(roles))
 		for i, r := range roles {
 			out.Body.Roles[i] = string(r)

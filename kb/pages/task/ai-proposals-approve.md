@@ -4,7 +4,7 @@ type: task
 title: Review, approve or reject a change the AI proposed
 summary: Review, approve or reject an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
 sources:
-  - docs/user-guide/ai-proposals.md sha256:214d6d51c38df6c3c7bca5d20a9ffc886bd31873138be3051c5ec9e6f27b0e90
+  - docs/user-guide/ai-proposals.md sha256:48dc75d3946ab79ee61185a37796b00e2e0aaddb938c4607861aeec2992bad28
 data_class: general
 taint: trusted
 status: draft
@@ -95,6 +95,24 @@ aliases:
 - If the directors, the secretary or the members change before approval, the proposal is out of date and drafts nothing.
 
 (src: docs/user-guide/ai-proposals.md#review-a-corporate-document-the-ai-drafted)
+
+## Review an invoice the AI drafted
+
+- Draft an invoice from a project's unbilled work (`ar.draft_invoice`, tier 1) is a draft invoice the AI asks Fyniq to make for a time-and-materials project it was told the code of: the same draft as Draft an invoice on the project's Unbilled tab ([[projects.billing]]), with approved time at billing rates and billable costs at cost plus markup.
+- The review shows the customer, each line and the total, and says it is a draft: nothing is issued or posted, and the invoice follows the approval policies when someone issues it. Someone who may draft a project's invoice themselves, such as the AR specialist or the accountant, approves it.
+- Nothing is drafted if time was approved, returned or billed, or a billing rate or markup changed, after the review: the proposal is marked out of date and the AI can propose it again. An internal project, or one with no customer or nothing to bill, is refused with the reason. The AI never sees what anyone is paid.
+
+(src: docs/user-guide/ai-proposals.md#review-an-invoice-the-ai-drafted)
+
+## Review a bill or an expense claim the AI drafted
+
+- Draft a bill from a supplier's document (`ap.draft_bill`, tier 1) is a draft bill the AI asks Fyniq to make from an invoice or receipt it was given: supplier, the supplier's number, date, currency and each line's account, net amount, GST code and stated GST. It is the same draft as a new bill. Someone who may enter bills themselves, such as the AP specialist or the accountant, approves it.
+- Draft an expense claim from receipts (`exp.draft_claim`, tier 1) is a draft of the requester's own claim. Only the person who asked can approve it, so no one else's claim is made for them.
+- The review shows the lines, the total, how each line's input tax is decided and what would stop the bill being posted or the claim submitted. Both are drafts: nothing is posted or submitted, and the approval policies apply when a person posts the bill or submits the claim.
+- The AI says only what the document states; when it is not sure of the kind of document the input tax is left out for a person to confirm. It never decides whether GST is claimable.
+- A bill is out of date, and drafts nothing, if the supplier changed after the review. A supplier that is not an active supplier, an account that cannot be costed, a GST code that is not a purchase code and a category that is not a claim category are refused with the reason.
+
+(src: docs/user-guide/ai-proposals.md#review-a-bill-or-an-expense-claim-the-ai-drafted)
 
 ## Turn a task type on or off
 

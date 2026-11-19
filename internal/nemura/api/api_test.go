@@ -23,8 +23,12 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/checks"
 	"github.com/cognizhi/fyniq/internal/nemura/features"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
+	"github.com/cognizhi/fyniq/internal/nemura/letters"
+	"github.com/cognizhi/fyniq/internal/nemura/onboarding"
+	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
 	"github.com/cognizhi/fyniq/internal/nemura/policy"
+	"github.com/cognizhi/fyniq/internal/nemura/selfservice"
 )
 
 var update = flag.Bool("update", false, "rewrite contracts/openapi/nemura/nemura.v1.yaml from the code (make openapi)")
@@ -41,10 +45,13 @@ const contractHeader = `# The contract of Nemura's public API (PRD-002 NM-ARC-03
 var versionLine = regexp.MustCompile(`(?m)^  version: .*$`)
 
 // fakeSessions knows one session token and the roles of its member.
+var testLeaver bool
+
 type fakeSessions struct {
 	token  string
 	roles  []authz.Role
 	stepUp bool
+	leaver bool
 }
 
 func (f fakeSessions) Authenticate(_ context.Context, token string, _ time.Time) (Session, error) {
@@ -55,6 +62,10 @@ func (f fakeSessions) Authenticate(_ context.Context, token string, _ time.Time)
 	if f.stepUp {
 		at := testNow
 		s.StepUpAt = &at
+	}
+	if f.leaver {
+		until := testNow.AddDate(0, 6, 0)
+		s.Leaver, s.LeaverUntil = true, &until
 	}
 	return s, nil
 }
@@ -316,6 +327,128 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 	return f.err
 }
 
+// fakeLetters answers letters with whatever the test says.
+type fakePayroll struct{ err error }
+
+func (f fakePayroll) Groups(context.Context, Session) ([]PayGroup, error) { return nil, f.err }
+func (f fakePayroll) CreateGroup(context.Context, Session, PayGroupInput) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30", f.err
+}
+func (f fakePayroll) Pay(context.Context, Session, uuid.UUID, time.Time) (PayView, bool, error) {
+	return PayView{}, false, f.err
+}
+func (f fakePayroll) SetPay(context.Context, Session, uuid.UUID, time.Time, PersonPayInput) error {
+	return f.err
+}
+func (f fakePayroll) SetElection(context.Context, Session, uuid.UUID, time.Time, uuid.UUID) error {
+	return f.err
+}
+func (f fakePayroll) ImportYTD(context.Context, Session, uuid.UUID, YTDInput) error { return f.err }
+func (f fakePayroll) OneOffs(context.Context, Session, time.Time) ([]OneOff, error) {
+	return nil, f.err
+}
+func (f fakePayroll) AddOneOff(context.Context, Session, uuid.UUID, time.Time, OneOffInput) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f31", f.err
+}
+
+type fakeOnboarding struct{ err error }
+
+func (f fakeOnboarding) Settings(context.Context, Session) (bool, error)    { return true, f.err }
+func (f fakeOnboarding) SetSettings(context.Context, Session, bool) error   { return f.err }
+func (f fakeOnboarding) Tasks(context.Context, Session) ([]JoinTask, error) { return nil, f.err }
+func (f fakeOnboarding) DecideTask(context.Context, Session, uuid.UUID, string, string) error {
+	return f.err
+}
+func (f fakeOnboarding) Offboardings(context.Context, Session) ([]Offboarding, error) {
+	return nil, f.err
+}
+func (f fakeOnboarding) Offboarding(context.Context, Session, uuid.UUID) (Offboarding, bool, error) {
+	return Offboarding{}, false, f.err
+}
+func (f fakeOnboarding) SetOffboarding(context.Context, Session, uuid.UUID, OffboardingInput) error {
+	return f.err
+}
+func (f fakeOnboarding) CancelOffboarding(context.Context, Session, uuid.UUID) error { return f.err }
+
+type fakeSelf struct{ err error }
+
+func (f fakeSelf) Details(context.Context, Session) (MyDetails, error) {
+	return MyDetails{Phone: "+65 9123 4567"}, f.err
+}
+func (f fakeSelf) SetDetails(context.Context, Session, MyDetails) error            { return f.err }
+func (f fakeSelf) SetEmergency(context.Context, Session, []EmergencyContact) error { return f.err }
+func (f fakeSelf) RequestChange(context.Context, Session, DetailsChange, []byte) (string, string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0", "2026-11-27", f.err
+}
+func (f fakeSelf) Ask(context.Context, Session, string) (string, string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0", "2026-11-25", f.err
+}
+func (f fakeSelf) Requests(context.Context, Session) ([]RequestRow, error) { return nil, f.err }
+func (f fakeSelf) Withdraw(context.Context, Session, uuid.UUID) error      { return f.err }
+func (f fakeSelf) Queue(context.Context, Session) ([]QueueRow, error)      { return nil, f.err }
+func (f fakeSelf) Decide(context.Context, Session, uuid.UUID, bool, string) error {
+	return f.err
+}
+func (f fakeSelf) Reply(context.Context, Session, uuid.UUID, string) error { return f.err }
+
+type fakeLetters struct{ err error }
+
+func (f fakeLetters) Delegations(context.Context, Session) ([]Delegation, error) { return nil, f.err }
+func (f fakeLetters) Delegate(context.Context, Session, string, int, time.Time) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10", f.err
+}
+func (f fakeLetters) Revoke(context.Context, Session, uuid.UUID, string) error { return f.err }
+func (f fakeLetters) RequestFor(context.Context, Session, uuid.UUID, string, string) (string, string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", "2026-11-25", f.err
+}
+func (f fakeLetters) Terms(context.Context, Session, uuid.UUID, time.Time, bool) (Terms, bool, error) {
+	return Terms{From: "2026-09-01", Base: TermsBase{MainDuties: "x", NoticePeriod: "y"}}, true, f.err
+}
+func (f fakeLetters) SetTerms(context.Context, Session, uuid.UUID, time.Time, *TermsBase, *TermsPay) error {
+	return f.err
+}
+
+func (f fakeLetters) Settings(context.Context, Session) (LetterSettings, bool, error) {
+	return LetterSettings{Name: "Acme", UEN: "1", Address: "x"}, true, f.err
+}
+func (f fakeLetters) SetSettings(context.Context, Session, LetterSettings) error { return f.err }
+func (f fakeLetters) Types(context.Context, Session) ([]LetterType, error) {
+	return []LetterType{{Key: "employment_confirmation", Title: "Employment confirmation", Fields: []string{}}}, f.err
+}
+func (f fakeLetters) SetType(context.Context, Session, string, bool, int) error { return f.err }
+func (f fakeLetters) Templates(context.Context, Session, string) ([]LetterTemplate, error) {
+	return []LetterTemplate{}, f.err
+}
+func (f fakeLetters) SaveDraft(context.Context, Session, string, []LetterBlock, string) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ee0", f.err
+}
+func (f fakeLetters) Publish(context.Context, Session, uuid.UUID) (int, error) { return 1, f.err }
+func (f fakeLetters) Request(context.Context, Session, string, string) (string, string, bool, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0", "2026-11-25", false, f.err
+}
+func (f fakeLetters) List(context.Context, Session, bool, string) ([]LetterRequest, error) {
+	return []LetterRequest{}, f.err
+}
+func (f fakeLetters) Check(context.Context, Session, uuid.UUID) (string, string, error) {
+	return "EC-2026-0001", "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", f.err
+}
+func (f fakeLetters) Draft(context.Context, Session, uuid.UUID) (string, []byte, error) {
+	return "EC-2026-0001", []byte("%PDF-1.4"), f.err
+}
+func (f fakeLetters) Sign(context.Context, Session, uuid.UUID, string) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f00", f.err
+}
+func (f fakeLetters) Refuse(context.Context, Session, uuid.UUID, string, bool) error { return f.err }
+func (f fakeLetters) File(context.Context, Session, uuid.UUID, bool) (string, []byte, error) {
+	return "EC-2026-0001", []byte("%PDF-1.4"), f.err
+}
+func (f fakeLetters) Link(context.Context, Session, uuid.UUID, bool) (string, string, error) {
+	return "org.token", "2026-11-28T10:00:00Z", f.err
+}
+func (f fakeLetters) ByLink(context.Context, string) (string, []byte, error) {
+	return "EC-2026-0001", []byte("%PDF-1.4"), f.err
+}
+
 // fakeClients registers whatever it is told and answers with clientsErr.
 type fakeClients struct{ err error }
 
@@ -339,7 +472,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -510,6 +643,7 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		err                error // what the passkey or client service answers
 		owner, stepUp      bool  // the person is the Owner, and confirmed with a passkey
 		featuresOff        bool  // Leave is switched off
+		leaver             bool  // the person has left
 	}
 	triggers := map[string]trigger{ // code -> a request that returns it
 		CodeNotFound:           {method: "GET", path: "/v1/errors/NM_NOPE"},
@@ -535,6 +669,15 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeLeaveBalance:       {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026/carry-forward", signedIn: true, err: &leave.Refusal{Code: leave.CodeBalance, Message: "That is more than the balance."}},
 		CodeLeaveConflict:      {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/working-pattern", body: patternBody, signedIn: true, err: &leave.Refusal{Code: leave.CodeConflict, Message: "Overlaps."}},
 		CodeFeatureOff:         {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026", signedIn: true, featuresOff: true},
+		CodeLeaverAccount:      {method: "GET", path: "/v1/me/details", signedIn: true, leaver: true},
+		CodePayrollInvalid:     {method: "POST", path: "/v1/payroll/groups", body: `{"name":"Monthly","pay_day":25,"cutoff_days":7,"approval_days":3}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeInvalid, Message: "The pay day is wrong."}},
+		CodePayrollConflict:    {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/pay/year-to-date", body: `{"year":2026,"ow":"25000.00","aw_subject":"0.00","aw_paid":"0.00","through_month":"2026-05-01"}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeConflict, Message: "Held already."}},
+		CodeOnboardingInvalid:  {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/offboarding", body: `{"kind":"resignation","last_day":"2026-11-30"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeInvalid, Message: "The last day is required."}},
+		CodeOnboardingConflict: {method: "POST", path: "/v1/onboarding/tasks/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20/decision", body: `{"state":"done"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeConflict, Message: "Decided already."}},
+		CodeRequestInvalid:     {method: "POST", path: "/v1/me/questions", body: `{"question":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeInvalid, Message: "Write your question."}},
+		CodeRequestConflict:    {method: "POST", path: "/v1/questions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/reply", body: `{"reply":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeConflict, Message: "That question is closed."}},
+		CodeLetterInvalid:      {method: "POST", path: "/v1/me/letters", body: `{"type":"employment_confirmation","purpose":"x"}`, signedIn: true, err: &letters.Refusal{Code: letters.CodeInvalid, Message: "Say what the letter is for."}},
+		CodeLetterConflict:     {method: "POST", path: "/v1/letters/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/check", signedIn: true, err: &letters.Refusal{Code: letters.CodeConflict, Message: "That request is checked."}},
 		CodeClientExists:       {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
 	}
 	for _, c := range Catalogue {
@@ -547,9 +690,9 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		if tr.owner {
 			testRoles = []authz.Role{authz.Owner}
 		}
-		testStepUp, featuresOff = tr.stepUp, tr.featuresOff
+		testStepUp, featuresOff, testLeaver = tr.stepUp, tr.featuresOff, tr.leaver
 		_, mux := testAPI(t)
-		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr, testRoles, testStepUp, featuresOff = nil, nil, nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false, false
+		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr, testRoles, testStepUp, featuresOff, testLeaver = nil, nil, nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false, false, false
 		req := httptest.NewRequest(tr.method, tr.path, strings.NewReader(tr.body))
 		if tr.body != "" {
 			req.Header.Set("Content-Type", "application/json")

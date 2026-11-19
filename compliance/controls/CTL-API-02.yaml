@@ -10,9 +10,10 @@ evidence: "Client inventory"
 owner: Owner
 checks:
   - frequency: N
-    status: planned
+    status: running
     how: "verify integrations.owned"
-    arrives: "p1-mcp-first-party (rev 0.242: Connected apps first registers integration clients, AI-46)"
+    evidence: "the latest run in each organisation (fyniq.control_run), nightly: every integration client that is not revoked has an owner who is an active member, a class of integration or agent, an end date that had not passed when the day's window began, and only its class's scopes; each exception is listed by client (target 0)"
   - frequency: Q
-    status: planned
-    arrives: "p1-mcp-first-party (rev 0.242: the access review lists integration clients once Connected apps registers them)"
+    status: running
+    how: "attestation access-review"
+    evidence: "the quarterly access review (GET /v1/access-review) lists every integration client that is not revoked with its owner, class, scopes and end date, and its attestation records the report's hash (FR-CTL-06, C.2 #7)"

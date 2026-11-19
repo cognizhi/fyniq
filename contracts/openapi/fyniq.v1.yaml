@@ -4314,9 +4314,16 @@ components:
             - array
             - "null"
         connectors:
-          description: The organisation's installed connectors. OAuth clients join with Connected apps (AI-46).
+          description: The organisation's installed connectors.
           items:
             $ref: "#/components/schemas/AccessReviewConnector"
+          type:
+            - array
+            - "null"
+        integration_clients:
+          description: The organisation's integration clients that are not revoked, each with its owner, class, scopes and end date (CTL-API-02).
+          items:
+            $ref: "#/components/schemas/AccessReviewClient"
           type:
             - array
             - "null"
@@ -4355,6 +4362,7 @@ components:
         - members
         - invitations
         - connectors
+        - integration_clients
         - attestations
       type: object
     AccessReviewAttestation:
@@ -4394,6 +4402,65 @@ components:
         - attested_by
         - attested_at
         - report_sha256
+      type: object
+    AccessReviewClient:
+      additionalProperties: false
+      properties:
+        class:
+          description: Its client class (AI-34).
+          enum:
+            - integration
+            - agent
+          examples:
+            - integration
+          type: string
+        client_id:
+          description: Its OAuth client ID.
+          examples:
+            - fy-int-0193a3c2
+          type: string
+        expires_at:
+          description: When it stops working.
+          examples:
+            - "2027-01-01T00:00:00Z"
+          format: date-time
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Reporting export
+          type: string
+        owner:
+          description: The member it acts for, whose rights it never exceeds; empty when that person is no longer a member.
+          examples:
+            - Ah Kow
+          type: string
+        scopes:
+          description: What it may read or write.
+          items:
+            description: A scope.
+            examples:
+              - fyniq.read.banking
+            type: string
+          type:
+            - array
+            - "null"
+        status:
+          description: live while it works; expired once its end date has passed and nobody revoked it.
+          enum:
+            - live
+            - expired
+          examples:
+            - live
+          type: string
+      required:
+        - client_id
+        - name
+        - class
+        - owner
+        - scopes
+        - expires_at
+        - status
       type: object
     AccessReviewConflict:
       additionalProperties: false
@@ -34989,6 +35056,72 @@ components:
         - expired_roles
         - passkeys
       type: object
+    MemberConnection:
+      additionalProperties: false
+      properties:
+        client_id:
+          description: The app's client ID.
+          examples:
+            - claude-code
+          type: string
+        expires_at:
+          description: "When the consent must be renewed: 90 days after you gave it (AI-37)."
+          examples:
+            - "2027-02-17T09:30:00Z"
+          format: date-time
+          type: string
+        granted_at:
+          description: When you allowed it.
+          examples:
+            - "2026-11-19T09:30:00Z"
+          format: date-time
+          type: string
+        name:
+          description: The app's name.
+          examples:
+            - Claude Code
+          type: string
+        person:
+          description: Their name.
+          examples:
+            - Ah Kow
+          type: string
+        scopes:
+          description: What you allowed it.
+          items:
+            description: A scope an AI app was granted.
+            examples:
+              - fyniq.read.reports
+            type: string
+          maxItems: 30
+          type: array
+        user_id:
+          description: Whose connection it is.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+          format: uuid
+          type: string
+      required:
+        - user_id
+        - person
+        - client_id
+        - name
+        - scopes
+        - granted_at
+        - expires_at
+      type: object
+    MemberConnections:
+      additionalProperties: false
+      properties:
+        connections:
+          description: Each person's allowed AI apps, by person.
+          items:
+            $ref: "#/components/schemas/MemberConnection"
+          maxItems: 600
+          type: array
+      required:
+        - connections
+      type: object
     MemberInvitation:
       additionalProperties: false
       properties:
@@ -35249,15 +35382,17 @@ components:
             - no revenue in the month
           type: string
         unit:
-          enum:
+          description: "What the value is: amount, percent, months, ratio, days or minutes; more may be added."
+          examples:
+            - amount
+          type: string
+          x-extensible-enum:
             - amount
             - percent
             - months
             - ratio
             - days
-          examples:
-            - amount
-          type: string
+            - minutes
         value:
           description: Exact decimal text, as the report shows it before rounding for display; absent when the fact has no value.
           examples:
@@ -35290,6 +35425,7 @@ components:
             - customer
             - vendor
             - department
+            - project
           examples:
             - customer
           type: string
@@ -35327,6 +35463,7 @@ components:
             - current_liabilities
             - total_liabilities
             - equity
+            - project_minutes
             - account_movement
             - account_balance
             - gross_margin
@@ -102116,6 +102253,110 @@ paths:
       x-fyniq-permission:
         capability: Own MCP connection (opt in, consent, revoke) (rev 0.2)
         right: V
+  /v1/connected-apps/connections:
+    get:
+      description: "For an Owner (AI-44): each member's allowed AI apps with the scopes they gave and when the consent must be renewed. Read-only; no side effects. Never on the AI's or MCP's tool list."
+      operationId: listMCPConnections
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberConnections"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: See what everyone allowed AI apps
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: A connection is a person and an app, so the list is a few dozen read whole; it is capped at 600 (AI-44).
+      x-fyniq-permission:
+        capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+        right: V
   /v1/connected-apps/connections/{client_id}:
     delete:
       description: "Revokes what you allowed one AI app: its access and refresh tokens end at once (AI-44). Only your own; idempotent. Side effects: the app's tokens at the OAuth server. Never on the AI's or MCP's tool list."
@@ -102230,6 +102471,138 @@ paths:
       x-fyniq-permission:
         capability: Own MCP connection (opt in, consent, revoke) (rev 0.2)
         right: C
+  /v1/connected-apps/people/{user_id}/connections/{client_id}:
+    delete:
+      description: "An Owner revokes what one member allowed one AI app: its access and refresh tokens end at once (AI-44, AI-38). It narrows, so it is never held for a second person; idempotent. Only a member of this organisation. Side effects: the app's tokens at the OAuth server and an audit event. Never on the AI's or MCP's tool list."
+      operationId: revokeMemberConnection
+      parameters:
+        - description: The person.
+          in: path
+          name: user_id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+            format: uuid
+            type: string
+        - description: The app's client ID.
+          in: path
+          name: client_id
+          required: true
+          schema:
+            description: The app's client ID.
+            examples:
+              - claude-code
+            maxLength: 64
+            pattern: ^[a-z0-9][a-z0-9-]*$
+            type: string
+      responses:
+        "204":
+          description: No Content
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `MCP-APPS-01` Not a person who is a member."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Disconnect a person's AI app
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - MCP-APPS-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: A revocation is idempotent, so a retry is safe without a key (AI-44).
+        Prefer: A revocation narrows and takes effect at once; a preview would only repeat the answer (AI-44).
+      x-fyniq-permission:
+        capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+        right: A
   /v1/connected-apps/registrations:
     get:
       description: "The self-registered apps nobody has approved yet (AI-90), only while registration is on for the organisation: each one's name, which Fyniq has not verified, and where it sends people to sign in. An Owner approves one by adding its ID to the apps that may connect, or denies it. Read-only; no side effects."
@@ -172001,7 +172374,7 @@ paths:
         right: A
   /v1/metrics:query:
     post:
-      description: "A named measure (AI-03) over a run of months, by month or their total, split by a dimension the measure offers (account, customer, vendor or department) or not: revenue, gross profit, EBITDA, net profit, costs, spend by function, net burn, cash, receivables, payables, current assets and liabilities, total liabilities, equity, each account's movement or balance, and the monthly KPIs. Each figure is a typed fact (AI-68) with its ID, period, exact value, currency and unit, sign, the ledger revision it was read at and the report it comes from: the statements, the KPIs, the trial balance and the sub-ledgers, so it equals what that report shows. A month the books have no period for is REPORT-03, a later revision REPORT-04. Saves nothing; no side effects."
+      description: "A named measure (AI-03) over a run of months, by month or their total, split by a dimension the measure offers (account, customer, vendor, department or project) or not: revenue, gross profit, EBITDA, net profit, costs, spend by function, net burn, cash, receivables, payables, current assets and liabilities, total liabilities, equity, each account's movement or balance, and the monthly KPIs. Each figure is a typed fact (AI-68) with its ID, period, exact value, currency and unit, sign, the ledger revision it was read at and the report it comes from: the statements, the KPIs, the trial balance and the sub-ledgers, so it equals what that report shows. A month the books have no period for is REPORT-03, a later revision REPORT-04. Saves nothing; no side effects."
       operationId: queryMetrics
       requestBody:
         content:
@@ -214786,6 +215159,132 @@ paths:
         - PRJ-09
       x-fyniq-permission:
         capability: Project reports and cost rates (rev 0.8)
+        right: V
+  /v1/reports/projects/export:
+    get:
+      description: "The report getProjectReport gives for the same months, as a file (FR-PRJ-12, FR-RPT-09): CSV, the projects' rows with amounts as plain decimals and an ASCII minus; or XLSX, a workbook with the projects and each person's utilisation, amounts as number cells. No text in either becomes a formula. It holds only what the caller's own report holds: costs, margin and salary tagged are columns only for a caller who may see them, and a person's cost only for the Owner and the Payroll administrator. Returned in base64 with its SHA-256 and the ledger revision. Refused with PRJ-09 while Projects and time are switched off. Side effects: an audit event of the export with what was exported, its months, rows and hash (FR-RPT-09). Never cached."
+      operationId: exportProjectReport
+      parameters:
+        - description: A day in the first month.
+          explode: false
+          in: query
+          name: from
+          required: true
+          schema:
+            description: A day in the first month.
+            examples:
+              - "2026-11-01"
+            format: date
+            type: string
+        - description: A day in the last month, at most 12 months after the first.
+          explode: false
+          in: query
+          name: to
+          required: true
+          schema:
+            description: A day in the last month, at most 12 months after the first.
+            examples:
+              - "2026-11-30"
+            format: date
+            type: string
+        - description: "csv: the projects' rows, plain decimals with an ASCII minus; xlsx: a workbook with the projects and each person's utilisation, amounts as number cells."
+          explode: false
+          in: query
+          name: format
+          schema:
+            default: csv
+            description: "csv: the projects' rows, plain decimals with an ASCII minus; xlsx: a workbook with the projects and each person's utilisation, amounts as number cells."
+            enum:
+              - csv
+              - xlsx
+            examples:
+              - csv
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportFile"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Export the project report
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - PRJ-09
+      x-fyniq-permission:
+        capability: Project reports and cost rates (rev 0.8)
+        note: "The same rows the caller's own report holds, as a file: costs, margin and salary tagged only for those who may see them (G4-050)."
         right: V
   /v1/reports/sales-by-customer:
     get:

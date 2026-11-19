@@ -1,0 +1,52 @@
+{
+ "canonical": [
+  {
+   "name": "keys are sorted, whitespace is dropped",
+   "input": "{ \"b\": 1,\n \"a\": [true, null, \"x\"] }",
+   "canonical": "{\"a\":[true,null,\"x\"],\"b\":1}",
+   "sha256": "54a65415ad370228851a1da4b31b6fd42dc58b19a50d35cae759325f7388ce64"
+  },
+  {
+   "name": "strings escape only the quote, the backslash and control characters",
+   "input": "{\"s\":\"a\\\"b\\\\c\\u0007\\n<&>\\u2028é\"}",
+   "canonical": "{\"s\":\"a\\\"b\\\\c\\u0007\\n<&> é\"}",
+   "sha256": "816ad1c8b2e9151be5659cc8b9330805f34159db603597309ba58f73e5d3d6f8"
+  },
+  {
+   "name": "a decimal string stays a string",
+   "input": "{\"amount\":\"10200.0000\",\"currency\":\"SGD\"}",
+   "canonical": "{\"amount\":\"10200.0000\",\"currency\":\"SGD\"}",
+   "sha256": "e1e2908424e345682a5a023ff21e08079d57f516f397e5c0d9f125b095d586bb"
+  },
+  {
+   "name": "keys sort by UTF-8 bytes, not by locale",
+   "input": "{\"b\":1,\"B\":2,\"é\":3,\"a\":4}",
+   "canonical": "{\"B\":2,\"a\":4,\"b\":1,\"é\":3}",
+   "sha256": "1dbb52e49ef96b7ab621d11f786530b41dac60c0450588452942a41384c426b4"
+  },
+  {
+   "name": "negative and zero integers",
+   "input": "[0,-7,9007199254740992]",
+   "canonical": "[0,-7,9007199254740992]",
+   "sha256": "a55ad66f09832c6e2d79c06c6ec4407aa1e484ffca2627d86d5a19acd7a6714c"
+  }
+ ],
+ "refused": [
+  {
+   "name": "a fraction",
+   "input": "{\"a\":1.5}"
+  },
+  {
+   "name": "an exponent",
+   "input": "{\"a\":1e3}"
+  },
+  {
+   "name": "a number beyond 2^53",
+   "input": "{\"a\":9007199254740993}"
+  },
+  {
+   "name": "two documents",
+   "input": "{} {}"
+  }
+ ]
+}

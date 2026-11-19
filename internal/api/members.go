@@ -51,7 +51,7 @@ type Member struct {
 	// rev 0.165
 	ExpiredRoles []MemberRole `json:"expired_roles" doc:"Roles that ended at their end date and that nobody ended: they grant nothing. Give the role again with a new end date, or remove the member (C.2 #6)."`
 	Removed      bool         `json:"removed,omitempty" doc:"true in the answer to removeMember: they are no longer a member." example:"false"`
-	// rev 0.333
+	// rev 0.373
 	LastSignInAt *time.Time `json:"last_sign_in_at,omitempty" doc:"When they last signed in to Fyniq; absent when they never have (SEC-06)." example:"2026-11-20T09:00:00Z"`
 	Passkeys     int        `json:"passkeys" doc:"How many live passkeys they hold: none means they confirm it's you only by signing in again (SEC-01)." example:"1"`
 }

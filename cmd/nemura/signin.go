@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/auth"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/identity"
+	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/passkey"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
@@ -78,7 +79,7 @@ func (s sessions) EndSession(ctx context.Context, token string, now time.Time) e
 
 func (s sessions) Authenticate(ctx context.Context, token string, now time.Time) (api.Session, error) {
 	got, err := s.Store.Authenticate(ctx, token, now)
-	return api.Session{ID: got.ID, Organisation: got.Organisation, Member: got.Member, StepUpAt: got.StepUpAt}, err
+	return api.Session{ID: got.ID, Organisation: got.Organisation, Member: got.Member, StepUpAt: got.StepUpAt, Leaver: got.Leaver, LeaverUntil: got.LeaverUntil, Person: got.Person}, err
 }
 
 func (s sessions) RolesAt(ctx context.Context, org, member uuid.UUID, on time.Time) ([]authz.Role, error) {
@@ -102,7 +103,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	if err != nil {
 		return err
 	}
-	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, People: nemura.PeopleService{Store: store, Clock: deps.Clock}, Features: nemura.FeatureService{Store: store, Clock: deps.Clock}, Restricted: restricted(store, deps, getenv), Packs: packsService(store, deps), Leave: leaveService(store, deps), Requests: leaveRequests(store, deps), Sick: sickService(store, deps, getenv), Government: governmentService(store, deps), Flex: flexService(store, deps), Time: timeService(store, deps), Clock: deps.Clock,
+	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, People: nemura.PeopleService{Store: store, Clock: deps.Clock}, Features: nemura.FeatureService{Store: store, Clock: deps.Clock}, Restricted: restricted(store, deps, getenv), Packs: packsService(store, deps), Leave: leaveService(store, deps), Requests: leaveRequests(store, deps), Sick: sickService(store, deps, getenv), Government: governmentService(store, deps), Flex: flexService(store, deps), Time: timeService(store, deps), Letters: lettersService(store, deps, getenv), SelfService: selfService(store, deps, getenv), Onboarding: onboardingService(store, deps), Payroll: nemura.PayrollService{Store: store, Clock: deps.Clock}, Clock: deps.Clock,
 		CookieNames: []string{auth.SessionCookie(true), auth.SessionCookie(false)}}
 	if provider != nil {
 		d.SignIn = signInInfo{provider: provider, store: store}
@@ -274,4 +275,30 @@ func timeService(store *nemura.Store, deps app.Deps) api.Time {
 		panic(err) // a pack that does not validate is a build error: the files are embedded
 	}
 	return nemura.TimeService{Store: store, Clock: deps.Clock, Packs: p}
+}
+
+// letterRenderer is the renderer of letters. The release build has none until the platform's render service is wired (`[live-verify]`): a letter then cannot be checked,
+// rather than drawn by a renderer made for the local build, whose pages say so.
+var letterRenderer letters.Renderer
+
+func lettersService(store *nemura.Store, deps app.Deps, getenv func(string) string) api.Letters {
+	_, blobs := restrictedWiring(getenv)
+	p, err := nemura.NewPacksService(store, deps.Clock)
+	if err != nil {
+		panic(err) // a pack that does not validate is a build error: the files are embedded
+	}
+	return nemura.LettersService{Packs: p, Store: store, Clock: deps.Clock, Blobs: blobs, Renderer: letterRenderer}
+}
+
+func selfService(store *nemura.Store, deps app.Deps, getenv func(string) string) api.SelfService {
+	_, blobs := restrictedWiring(getenv)
+	return nemura.SelfService{Store: store, Clock: deps.Clock, Blobs: blobs}
+}
+
+func onboardingService(store *nemura.Store, deps app.Deps) api.Onboarding {
+	p, err := nemura.NewPacksService(store, deps.Clock)
+	if err != nil {
+		panic(err) // a pack that does not validate is a build error: the files are embedded
+	}
+	return nemura.OnboardingService{Store: store, Clock: deps.Clock, Packs: p}
 }

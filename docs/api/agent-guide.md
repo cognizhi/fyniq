@@ -8,9 +8,13 @@ the person building it. The [API reference](reference.md) lists every operation,
 change from the approved catalogue. A named person approves it in the web app, and only then is it
 carried out. No agent holds a credential that can write.
 
-**Where this stands (19 Oct 2026).** MCP access and every AI task type are off until an Owner turns them
-on with a second person's approval. The MCP server, the proposal catalogue and the proposal operations
-arrive in P1's wave 6 (`p1-mcp-first-party`, `p1-ai-proposals`). Until then an agent can only read.
+**Where this stands (20 Nov 2026).** MCP access and every AI task type are off until an Owner turns them
+on with a second person's approval. The MCP server (`/mcp`, the 2026-07-28 revision of the protocol), its
+read tools and `propose_<type>` tools exist and sit behind the deployment's switch (`FYNIQ_MCP_SERVER`) until
+the security review. Over MCP an agent reads what the person may read and proposes only task types the
+organisation turned on and the person granted (`fyniq.propose.<type>`); it cannot approve, reject or
+execute anything, and Fyniq answers for its tools and results, never for an external model's wording:
+cite the fact IDs the tools return. The knowledge base is not offered over MCP.
 
 ## How to read
 

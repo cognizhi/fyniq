@@ -99,6 +99,8 @@
     "kb.index": "The knowledge base reaches MCP clients in a later slice: it needs its own read scope and the per-reader filter proven on the MCP path (AI-54); until the Owner grants that, an MCP client reads no know-how page, and no scope is widened to carry it.",
     "kb.read": "The knowledge base reaches MCP clients in a later slice: it needs its own read scope and the per-reader filter proven on the MCP path (AI-54); until the Owner grants that, an MCP client reads no know-how page, and no scope is widened to carry it.",
     "kb.search": "The knowledge base reaches MCP clients in a later slice: it needs its own read scope and the per-reader filter proven on the MCP path (AI-54); until the Owner grants that, an MCP client reads no know-how page, and no scope is widened to carry it.",
+    "metrics.query.by=project": "Projects reach MCP clients in a later slice: project reports have their own right (Appendix D) and a manager sees only their projects, which the MCP path has not proved; until then no scope is widened to carry it.",
+    "metrics.query.measure=project_minutes": "As metrics.query.by=project: approved project time is read by project only.",
     "records.get.kind=expense_claim": "A claim names a person and their reimbursement: not exposed over MCP in P1.",
     "records.get.kind=contact": "A contact is a customer, a vendor, a director or a holder: personal data, not exposed over MCP in P1.",
     "records.search.kind=claims": "As expense_claim.",

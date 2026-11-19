@@ -22,6 +22,20 @@ export const billingNames: Record<NonNullable<Project["billing_method"]>, string
 
 export const statusNames: Record<Project["status"], string> = { planned: "Planned", active: "Active", on_hold: "On hold", closed: "Closed" };
 
+// basisWords say where a time cost's rates came from (FR-PRJ-06): the server names the basis, and the pages say it in words.
+export const basisWords: Record<string, string> = {
+  person: "each person's own rate",
+  role_average: "the average rate of their role",
+  standard: "the standard rate",
+  mixed: "more than one rate",
+  none: "hours only",
+};
+
+// monthsBack is the month n months before the month of day, as YYYY-MM (UTC).
+export function monthsBack(day: Date, n: number): string {
+  return new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth() - n, 1)).toISOString().slice(0, 7);
+}
+
 // hours writes a number of minutes as hours and minutes: 150 is "2 h 30 min", 24000 is "400 h".
 export function hours(minutes: number): string {
   const sign = minutes < 0 ? "-" : "";

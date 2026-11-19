@@ -2195,6 +2195,7 @@
    "content": [
     "Budget burn: 340 of 400 budgeted hours (85% ⚠ at 80%), forecast at completion",
     "Margin = revenue − time at cost − direct costs (payroll-cost accounts excluded); role-average rates unless the viewer has payroll rights",
+    "Profitability card (rev 0.331): the project's report row for its last twelve months at the viewer's tier, the rate named, a small-group warning, the approved entries behind the hours on request, Export CSV",
     "Unbilled tab: 62.5 approved hours at billing rates plus a S$420 billable expense with 10% markup → 'Draft invoice' (AI may draft, ar.draft_invoice)",
     "Milestones for fixed-fee projects; retainer drawdown",
     "Project managers, members, billing rates by role or person",
@@ -2781,7 +2782,8 @@
     "Profitability per project, customer and person: revenue − time at cost − direct costs",
     "Utilisation (billable ÷ available hours; 40 h a week, 173.33 a month, less public holidays) and realisation (billed ÷ standard value)",
     "Unbilled work and budget burn; project-tagged payroll lines listed separately to reconcile",
-    "Per-person cost hidden without payroll rights: hours shown instead; small-group warning"
+    "Per-person cost hidden without payroll rights: hours shown instead; small-group warning",
+    "Export CSV and Excel of the report's rows, only the columns the viewer's own report holds (rev 0.331)"
    ],
    "states": [
     "role-average rates (no payroll rights)",
@@ -6243,13 +6245,75 @@
     "What it can and cannot do",
     "Common questions",
     "Conversation with cited answers (AI badge)",
-    "Ask Sarah instead (a request to HR)",
+    "Ask Sarah instead (a request to HR: route /me/ask/hr)",
     "Composer"
    ],
    "states": [
     "rule to confirm with HR",
     "question outside the person's rights"
    ]
+  },
+  {
+    "id": "nm-my-details",
+    "file": "NmMyDetails",
+    "title": "My details",
+    "canvas": "nemura-me",
+    "module": "Self-service",
+    "route": "/me/details",
+    "kind": "form",
+    "phase": "P1",
+    "roles": [
+      "Employee"
+    ],
+    "mode": "basic",
+    "requirements": [
+      "NM-ESS-03",
+      "NM-ESS-04"
+    ],
+    "purpose": "Change contact details and emergency contacts at once, and ask for a change of legal name, residency or NRIC or FIN with evidence.",
+    "content": [
+      "Contact details (saved at once)",
+      "Emergency contacts (up to three)",
+      "Ask to change a legal name, residency or NRIC or FIN",
+      "Evidence upload",
+      "What needs approval and why"
+    ],
+    "states": [
+      "saved",
+      "waiting for approval"
+    ]
+  },
+  {
+    "id": "nm-people-requests",
+    "file": "NmPeopleRequests",
+    "title": "Requests",
+    "canvas": "nemura-team",
+    "module": "People team",
+    "route": "/people/requests",
+    "kind": "list",
+    "phase": "P1",
+    "roles": [
+      "HR officer",
+      "HR administrator",
+      "Owner"
+    ],
+    "mode": "basic",
+    "requirements": [
+      "NM-ESS-03",
+      "NM-ESS-04"
+    ],
+    "purpose": "Decide the changes of details people asked for, with their evidence, and answer their questions.",
+    "content": [
+      "Queue soonest due first",
+      "Change of details with its evidence",
+      "Approve or refuse with a reason",
+      "Questions and answers",
+      "Never your own request"
+    ],
+    "states": [
+      "empty queue",
+      "your own request (cannot decide)"
+    ]
   },
   {
    "id": "nm-report-sick",
@@ -6436,12 +6500,14 @@
     "NM-PPL-05",
     "NM-LV-02",
     "NM-ONB-03",
-    "NM-PAY-06"
+    "NM-PAY-06",
+    "NM-LTR-06"
    ],
    "purpose": "One person's record: job and history, leave, documents, pass and the leaving plan.",
    "content": [
     "Header with status and manager",
     "Job history (effective-dated)",
+    "Key employment terms and the KETs letter",
     "Restricted fields masked with reveal",
     "Leave balances",
     "Documents",
@@ -6582,7 +6648,8 @@
    "purpose": "Plans for the next joiner and the next leaver, with what is due and who does it.",
    "content": [
     "Joanne Lee's plan (starts Mon 2 Nov): tasks by owner and due date, KETs",
-    "Chen Yu's leaving plan (last day Mon 30 Nov): final pay, leave, IR21, access, letter"
+    "Chen Yu's leaving plan (last day Mon 30 Nov): final pay, leave, IR21, access, letter",
+    "P1: the invitation tasks for new people and each leaver's dates, checklist and leave settlement"
    ],
    "states": [
     "task overdue",

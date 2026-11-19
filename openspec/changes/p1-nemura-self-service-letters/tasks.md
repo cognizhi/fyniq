@@ -9,37 +9,58 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations`, `fyniq
 
 ## 1. Letter types, templates and issue in two steps (slice 1)
 
-- [ ] 1.1 PRD-002 revision for D2's departure from NM-LTR-02 (Nemura's own text templates in P1), with the revision-history row and the specs stamped.
-- [ ] 1.2 The catalogue of letter types and merge fields (pure, tested): each type's default fields, signer and due days; the field catalogue with formats; a field
+- [x] 1.1 PRD-002 revision 0.11 for D2's departure from NM-LTR-02 (Nemura's own text templates in P1), with the revision-history row and the specs stamped.
+- [x] 1.2 The catalogue of letter types and merge fields (pure, tested): each type's default fields, signer and due days; the field catalogue with formats; a field
   outside a type's list is refused. `// req: NM-LTR-01`
-- [ ] 1.3 Migration: `letter_type`, `letter_template` and `letter_template_version` (draft, published immutable, numbered, approval), `letter_request`,
+- [x] 1.3 Migration 000023: `letter_settings` (the letterhead), `letter_type`, `letter_template_version` (draft, published immutable, numbered, approval), `letter_request`,
   `letter_issued` (append-only evidence); forced RLS, audit, goldens. `// req: NM-LTR-01, NM-LTR-02`
-- [ ] 1.4 The renderer port and its local adapter (D3), with a contract test both adapters pass.
-- [ ] 1.5 Request, HR check, signatory's passkey signing over the hash, issue with the evidence (D4), the expiring link and the employee's copy (D5); the attack
+- [x] 1.4 The renderer port and its local adapter (D3), with a contract test both adapters pass.
+- [x] 1.5 Request, HR check, signatory's passkey signing over the hash, issue with the evidence (D4), the expiring link and the employee's copy (D5); the attack
   tests (a letter changed after issue, signing without a fresh passkey, a field outside the type, an unauthorised signatory). `// req: NM-LTR-03, NM-LTR-07`
-- [ ] 1.6 API, screens `nm-letters`, `nm-letter-template`, `nm-request-letter`, guide and kb pages; the data inventory and retention rows.
-- [ ] 1.7 Verify.
+- [x] 1.6 API, screens `nm-letters`, `nm-letter-template`, `nm-request-letter`, guide and kb pages; the data inventory and retention rows.
+- [x] 1.7 Verify: the local gates.
+  Left in slice 1: the production renderer (the platform's render service, `[live-verify]`: the release build has none, so a letter is not checked there); the email that carries the
+  link (notices are queued and logged until notifications deliver them; a person makes a link on demand); replacement and withdrawal of an issued letter as a new row; the
+  contract test that both renderers pass; narrowing who may request a type; the retention lock on the letter blobs.
 
 ## 2. KETs (slice 2)
 
-- [ ] 2.1 The KETs content from MOM's pages into `sg-people` as a new version, researched, with its source, quote and pinned cases. `// req: NM-PACK-06`
-- [ ] 2.2 `person_terms` (D7), restricted fields sealed, the KETs template and letter type, generation from the terms and the record. `// req: NM-LTR-06`
-- [ ] 2.3 N.1 #1: KETs not issued within 14 days of the start. `// req: NM-LTR-06`
-- [ ] 2.4 Screens, guide and kb pages; verify.
+- [x] 2.1 The 17 KETs items from MOM's tripartite guidelines (read 20 Nov 2026) into `sg-people@2026.6` (`ket_items`, `kets_days_after_start`), researched, with the source,
+  the quote and pinned cases; the earlier versions are kept and do not hold them. `// req: NM-PACK-06`
+- [x] 2.2 Migration 000024 `person_terms` (D7, O3): effective-dated history that is only ended, once; the base terms written by the people team, the pay by payroll and the
+  Owner; the KETs letter type and its standard text; the letter is filled from the terms, the working pattern, the classification and the pack, and the people team asks
+  for it for a person (`POST /v1/people/{id}/letters`). `// req: NM-LTR-06`
+- [x] 2.3 N.1 #1: KETs not issued 14 days after the start are ✖, a reminder in the 3 days before. `// req: NM-LTR-06`
+- [x] 2.4 The terms panel on `nm-person`, guide and kb pages; PRD-002 rev 0.12; verify.
+  Left in slice 2: the sealed form of the pay terms (they are guarded by role and kept out of the audit event, not sealed with the key service: [accountant to confirm] whether
+  sealing is wanted before payroll holds pay); "place of work" and the probation's end as terms of their own (MOM's list has neither: the probation reads from the person's
+  record); re-issuing the KETs when terms change (a new request does it); reading MOM's page rather than the PDF guidelines for any later change `[verify]`.
 
 ## 3. Self-service and the leaver's account (slice 3)
 
-- [ ] 3.1 My home (NM-ESS-01): the tiles, the balance, the next public holiday, the open requests. Screen `nm-my-home`.
-- [ ] 3.2 My details (NM-ESS-03): direct changes and changes with evidence and HR approval; the audit shows what changed and never a sealed value.
-- [ ] 3.3 Requests (NM-ESS-04): one list with type, status, due date and reply for letters, flexible work, details changes and HR questions. Screen `nm-my-requests`.
-- [ ] 3.4 The leaver's narrow account (NM-ESS-06, D9), re-issue of a lost document. Screen `nm-leaver-home`.
-- [ ] 3.5 Verify.
+- [x] 3.1 My home (NM-ESS-01): the tiles, the annual leave left, the next public holiday, the open requests, read by the page from the API where each is kept. Screen `nm-my-home`.
+  Left in 3.1: the next pay day and the payslip tile (payroll), the Claims tile and its "ask HR for Fyniq access" state (`p1-nemura-fyniq-link`, NM-ESS-05).
+- [x] 3.2 My details (NM-ESS-03): migration 000025; contact details, the address and up to three emergency contacts save at once and are audited by field name, never by
+  value; legal name, residency and NRIC or FIN go through a request with evidence that another HR member decides (decision O4). `// req: NM-ESS-03`
+- [x] 3.3 Requests (NM-ESS-04): one list with the type, the step (received, with HR, ready, closed), the due day and the reply for letters, flexible work, changes of details
+  and questions to HR; the people team's queue and replies; withdrawal. Screens `nm-my-details`, `nm-people-requests`, and `nm-ask`'s "ask HR" at `/me/ask/hr`. `// req: NM-ESS-04`
+  Left in 3.2 and 3.3: the notices to the person and the people team are queued and logged until notifications deliver them; due days are constants, not company settings;
+  a change of residency needs the person's legal classification to exist first.
+- [x] 3.4 The leaver's narrow account (NM-ESS-06, D9, decision O5): derived from the last day, no role, own documents and letters and a question to HR, ends 12 months after the last
+  day; re-issue of a lost document is that question and HR's new letter. Screen `nm-leaver-home`. `// req: NM-ESS-06`
+  Left in 3.4: payslips and IR8A (payroll); a prompt for HR to end role grants at offboarding (4.2); the last Owner who leaves is locked out until recovery.
+- [x] 3.5 Verify: the local gates.
 
 ## 4. Automatic issue, joiners and leavers (slice 4)
 
-- [ ] 4.1 Delegations (NM-LTR-04, D6): created by a signatory, bounded, revocable, ended by a template change; each letter keeps its bytes and who asked.
-- [ ] 4.2 The joiner's invitation task on People home (NM-ONB-02) and the offboarding dates and leave settlement (NM-ONB-03, D10). Screen `nm-onboarding`.
-- [ ] 4.3 Verify, and tag only what is fully proven.
+- [x] 4.1 Delegations (NM-LTR-04, D6): migration 000026; created by the Owner after a fresh passkey, bounded (a monthly limit, an end date within twelve months, one live
+  delegation per type, never pay), revocable once, ended by a template change; each letter keeps its bytes, who asked and the delegation as its authority. `// req: NM-LTR-04`
+  Left in 4.1: "who may ask" is the one rule (active employees not serving notice); the people assistant's drafts do not exist yet and will never use this path.
+- [x] 4.2 The joiner's invitation task (NM-ONB-02, decision O6) and the offboarding dates, checklist and leave settlement (NM-ONB-03, D10): migration 000027; the people team's page
+  `nm-onboarding`. `// req: NM-ONB-02, NM-ONB-03`
+  Left in 4.2: the link closes the invitation task and switches the setting on (`p1-nemura-fyniq-link`); final pay, IR21 and the tax-clearance hold (payroll); the retrenchment
+  notification rule `[verify]`; the offboarding plan from templates (P2, NM-ONB-01).
+- [x] 4.3 Verify: the local gates; the requirements this change builds are tagged where their tests prove them.
 
 ## Coverage
 

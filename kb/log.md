@@ -718,9 +718,13 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | home.md -> home.overview (the Auditor's engagement opens the trial balance, general ledger and access list)
 
+## [2026-11-20] compile | projects.reports recompiled: a project's profitability card, the CSV and Excel export, project metrics (p1-projects 4.2, 4.4)
+
 ## [2026-11-20] compile | nemura.requests new; leave.approve: flexible work replies (p1-nemura-leave-time 3.3)
 
 ## [2026-11-20] compile | appearance.md -> preferences.appearance (Expert starts Compact)
+
+## [2026-11-20] compile | ai.proposals.approve and projects.billing recompiled: the AI's draft of a project invoice, ar.draft_invoice (p1-projects)
 
 ## [2026-11-20] compile | sign-in.md -> auth.sign-in (set up how you confirm it's you: the enrolment page)
 
@@ -735,3 +739,21 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | sign-in-providers.md -> settings.sign-in-providers (links the installation console)
 
 ## [2026-11-20] compile | members-and-roles.md -> settings.members (last sign-in and passkeys)
+
+## [2026-11-20] compile | nemura.letters.request, nemura.letters.issue, nemura.letters.templates new (p1-nemura-self-service-letters 1.6)
+
+## [2026-11-20] compile | docs/user-guide/nemura/letters-kets.md, person.md -> nemura.letters.kets, nemura.person (key employment terms; p1-nemura-self-service-letters slice 2)
+
+## [2026-11-20] compile | settings.connected-apps recompiled: the Owner's view, last use and API clients (p1-mcp-first-party 3.3, 9.1, 9.2)
+
+## [2026-11-20] compile | docs/user-guide/nemura/my-details.md, ask-hr.md, requests-queue.md, requests.md -> nemura.my-details, nemura.ask-hr, nemura.requests-queue, nemura.requests (p1-nemura-self-service-letters slice 3a)
+
+## [2026-11-20] compile | docs/user-guide/nemura/leaver-account.md, home.md -> nemura.leaver-account, nemura.home (p1-nemura-self-service-letters 3.1, 3.4)
+
+## [2026-11-20] compile | docs/user-guide/nemura/letters-templates.md -> nemura.letters.templates (automatic issue; p1-nemura-self-service-letters 4.1)
+
+## [2026-11-20] compile | docs/user-guide/nemura/onboarding.md, leaver-account.md -> nemura.onboarding, nemura.leaver-account (p1-nemura-self-service-letters 4.2)
+
+## [2026-11-20] compile | ai.proposals: the guide's section on ap.draft_bill and exp.draft_claim
+
+## [2026-11-20] compile | docs/user-guide/nemura/payroll-records.md -> nemura.payroll-records (p1-nemura-payroll 2.1, 2.3)

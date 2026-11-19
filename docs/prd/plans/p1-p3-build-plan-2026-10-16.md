@@ -11,10 +11,10 @@ behind the specs or the screens.
 
 <!-- roadmap:summary -->
 
-That is all 1,401 requirements:
+That is all 1,404 requirements:
 - 117 belong to the P0 changes, which built them or hold them for the cloud gate;
-- the other 1,284 are spread over 66 changes below;
-- all 202 designed screens after P0 sit with the change that owns most of their requirements.
+- the other 1,287 are spread over 66 changes below;
+- all 204 designed screens after P0 sit with the change that owns most of their requirements.
 
 <!-- /roadmap -->
 
@@ -511,6 +511,13 @@ The release's own task types wait beyond it, each with its command, its suite an
 secretary's three come first, with `p1-scheduled-agents` and `p1-company-secretary`. Approval quality, tier 3 and undo
 come with `p1-ai-proposals` after go-live.
 
+`p1-ai-proposals` and `p1-document-capture` were planned on 20 Nov 2026, while the owner was away until 21 Nov, to be built
+locally on the recommended option (PRD-001 rev 0.370: FR-DOC-14, AI-91, AI-92; owner to confirm). The proposals' rest is
+built in the order of its design D2: the drafts the capture needs, then undo, tier 3 and approval quality, then the other
+tier-1 and tier-2 types with the posting ones last. Capture reads a file through the agent `document_capture` as a read,
+and a person makes the draft with one action: a proposal made at arrival with nobody present would be a third way to
+start an AI write, which is the owner's decision (`p1-document-capture` design D4).
+
 `p1-scheduled-agents` was proposed on 15 Nov 2026 and built on 15 and 16 Nov 2026, one pull request per slice from #705
 onwards. The owner decided two things that day (rev 0.281, AI-89):
 - a run's model step goes through one internal API operation that the worker calls with its own service token;
@@ -600,6 +607,23 @@ Several things wait beyond it:
 - the accountant's review of the pack and the checks, and a lawyer's of the templates (the review register, #734);
 - the annual return pack (FR-CS-07) in P2.
 
+`p1-launch-readiness` is built in part, from 17 Nov 2026. What was built (tasks 1 to 7.2):
+- the quality gates as requirements, and the launch subset frozen in the repository with the trace gate checking it
+  (`make trace-gate`, which `release.yml`'s first job runs; `docs/quality/launch-gaps.md` lists what still blocks);
+- the browser journeys (`make test-journeys`, `apps/web/journeys/`): set-up, record, sell, buy, pay, reconcile, close, the GST
+  monitor and calendar, and the two AI journeys on the scripted local model, plus a walkthrough per role of §7.1;
+- the visual snapshots (`make test-visual`, QA-UI-07, QA-RPT-04), nightly and in the release, and the motion and
+  device-class journeys of `p1-app-shell`;
+- the UAT scripts and the per-role API check of the Inbox's requests (`TestEachRoleSeesTheInboxItemsItsRightsGive`).
+
+What waits:
+- the first visual baselines, which are approved once from the final run (`scripts/visual.py approve`);
+- the per-role Inbox items in the browser walkthroughs beyond the requests a role may decide (each needs a second person's
+  records), and the Approver's department figures, which wait for the people projection;
+- payroll's and the GST F5's journeys, `after-go-live` by the owner's decisions;
+- the `[live-verify]` parts, which `cloud-first-deployment` lists;
+- task 7.3's last step, `make test`, `make test-e2e` and `make test-journeys` on the final head, which run once when every slice is integrated.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |
@@ -638,11 +662,11 @@ Several things wait beyond it:
 | 6 | `p1-ai-assistant` | On-behalf-of read tools, exclusions, the semantic layer, result limits, typed facts, numeric grounding and the calculator, guardrails against the OWASP LLM risks, the eval harness with the golden questions and the red team, Ask, explain and simulate | 29 | 1 | `p1-ai-providers`, `p1-reports` | Evals in replay; live runs with the local AI provider | — | Security (#4) | Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs) |
 | 6 | `p1-knowledge-base` | The organisation knowledge base from trusted sources, context assembly, compile, index and lint, trust, versioning and publishing | 17 | 1 | `p1-ai-assistant` | — | — | Security (#4) | After go-live |
 | 6 | `p1-ai-proposals-core` | The proposal principles and store, the catalogue as dual-controlled data with its tiers and never-list, approval of AI work in the Inbox with rejection reasons fed back, idempotent execution through the executor as the approving human, the proposal evals' harness and the controls | 27 | 2 | `p1-ai-assistant`, `p1-approval-engine` | — | — | Security (#4) | Launch (owner, 15 Nov 2026: the proposals the company secretary's agent needs) |
-| 6 | `p1-ai-proposals` | The rest of the task catalogue of Appendix E (bank, sales, purchases, journals, contacts, planning, reports, knowledge pages), two approvers for tier 3, undo, approval-quality metrics | 21 | 0 | `p1-ai-proposals-core` | — | — | Security (#4) | After go-live |
+| 6 | `p1-ai-proposals` | The rest of the task catalogue of Appendix E (bank, sales, purchases, journals, contacts, planning, reports, knowledge pages), two approvers for tier 3, undo, approval-quality metrics | 23 | 0 | `p1-ai-proposals-core` | — | — | Security (#4) | After go-live |
 | 6 | `p1-mcp-first-party` | The MCP server for first-party clients: client classes, off by default, audience-bound tokens with option (b), consent and scopes, transport, the tool surface, limits, audit and detection; the local MCP endpoint; QA-MCP-01 | 25 | 2 | `p1-ai-proposals` | Option (b) with a local key; Cloud KMS at the cloud gate | Security review #4 | Security (#4) | After go-live |
 | 6 | `p1-scheduled-agents` | Agent skills, schedules and triggers, identity and permissions, deterministic first, outputs with their Inbox tasks and the sec.create_task and sec.draft_reminder proposals, the never-list, budgets and failure | 14 | 2 | `p1-ai-assistant`, `p1-ai-proposals-core` | — | — | Security (#4) | Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs) |
 | 6 | `p1-company-secretary` | The corporate profile, ACRA pack, cross-checks, the company secretary workspace and role, document drafts, the named human secretary, and the AI secretary's scheduled checks | 13 | 1 | `p1-scheduled-agents`, `p1-equity-register` | — | A corporate secretarial firm appointed (Q19) | Accountant | Launch (owner, 13 Nov 2026: in full, with the AI secretary's scheduled checks) |
-| 6 | `p1-document-capture` | Smart document capture (upload, paste, email-in), bill capture and automated bill entry, as drafts a person confirms | 3 | 1 | `p1-ai-providers`, `p1-purchases`, `p1-templates-email` | Inbound email through Mailpit | — | Security (#4) | After go-live |
+| 6 | `p1-document-capture` | Smart document capture (upload, paste, email-in), bill capture and automated bill entry, as drafts a person confirms | 4 | 1 | `p1-ai-providers`, `p1-purchases`, `p1-templates-email` | Inbound email through Mailpit | — | Security (#4) | After go-live |
 | 7 | `p1-security-hardening` | Web protections, uploads, outbound requests to configured hosts, registered private endpoints, dependency hygiene, SLSA provenance and reproducible builds, security monitoring, alerting and the incident runbook, release review and recorded versions | 19 | 0 | P0 | Local logs and alerts; Binary Authorization and cloud posture at the cloud gate | — | Security (#4) | Launch |
 | 7 | `p1-operations-dr` | Observability and the scheduler heartbeat, the performance budgets, volume, availability and browsers, cost targets and limits, backup, PITR, DR copy, restore drills and attachment storage | 31 | 1 | P0 | Performance budgets locally; backups, restores and observability at the cloud gate | — | — | Launch |
 | 7 | `p1-workbook-migration` | Workbook import, import reconciliation, generic import and full tenant export; the M1…M6 migration steps rehearsed on the synthetic sample workbook | 10 | 2 | `p1-sales`, `p1-purchases`, `p1-bank-import-reconcile`, `p1-founders-money` | The synthetic sample workbook only: real company data never comes to a laptop (DEV-08) | The accountant confirms the framework (Q31) and the founders' balances (Q15) | Accountant | Launch |
@@ -665,7 +689,7 @@ not a Fyniq wave.
 | 1 | `p1-nemura-platform` | Nemura's own image, database, web app and token issuer (ADR-N1), its non-functional rules, inherited controls, need to know, PDPA and records, roles, the permission matrix, and the experience | 30 | 3 | P0 | Local sign-in page; one Identity Platform tenant per organisation at the cloud gate | — | Security (#4) | After go-live (Nemura Q12) |
 | 2 | `p1-nemura-records-packs` | People records, the Singapore pack with verified values, feature switches and the people checks (N.1) | 38 | 5 | `p1-nemura-platform`, `p1-statutory-packs` | — | — | HR, accountant | After go-live (Nemura Q12) |
 | 3 | `p1-nemura-leave-time` | Leave types, entitlements, the leave ledger, applying and approving, calendars, medical certificates, government-paid leave, flexible-work requests; working patterns, Part IV overtime and hours worked; the month-end leave liability accrual (Nemura Q4) | 17 | 6 | `p1-nemura-records-packs` | — | The statutory leave minimum verified in the Singapore pack (Nemura Q3) | HR | After go-live (Nemura Q12) |
-| 3 | `p1-nemura-self-service-letters` | Self-service, letters, templates and KETs issued in two steps, what an issued letter proves, accounts for joiners and offboarding with final pay and IR21 | 14 | 7 | `p1-nemura-records-packs` | — | — | HR | After go-live (Nemura Q12) |
+| 3 | `p1-nemura-self-service-letters` | Self-service, letters, templates and KETs issued in two steps, what an issued letter proves, accounts for joiners and offboarding with final pay and IR21 | 14 | 9 | `p1-nemura-records-packs` | — | — | HR | After go-live (Nemura Q12) |
 | 4 | `p1-nemura-payroll` | Pay runs with the full CPF, SDL, SHG and FWL rules (PRD-001 §8.7 in Nemura, ADR-N2), overrides, year to date, approval, salary deduction limits, wage classes, payslips in Nemura, run and payment states and corrections; employee records; the oracle's half by the oracle session | 30 | 5 | `p1-nemura-leave-time`, `p1-nemura-self-service-letters` | — | Counsel on retention (Q39); two months of parallel comparison (Nemura Q13) | Accountant, payroll administrator (#5) | After go-live (Q4, Nemura Q12) |
 | 4 | `p1-nemura-fyniq-link` | The cross-app contracts and events, one sign-in and the workspace switch, segregation across both apps; paired with p1-payroll-link | 19 | 1 | `p1-nemura-payroll`, `p1-users-roles` | Both apps in one local stack | — | Security (#4) | After go-live (Nemura Q12) |
 | 5 | `p1-nemura-assistant-external` | The people assistant (questions and letter drafts, never-list, own pay), Fyniq without Nemura, the payroll file import and one external connector, imported journals as drafts | 10 | 3 | `p1-nemura-payroll`, `p1-ai-assistant` | Connector against a fake | — | Security (#4) | After go-live (Nemura Q12) |
@@ -802,11 +826,11 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `p1-ai-assistant` | `ai/data-access`: AI-01, AI-02, AI-03, AI-04, AI-68, AI-05; `ai/evaluation`: QA-AI-01, QA-AI-03, QA-AI-04, QA-AI-05; `ai/guardrails`: AI-18, AI-19, AI-20, AI-21, AI-22, AI-23, AI-24, AI-25, AI-69; `ai/proposals`: AI-P1, AI-P2, AI-P6, AI-P7, AI-P8, AI-08, 1 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-06; `data/backup-and-recovery`: 1 unnumbered; `experience/navigation`: FR-UX-17<br>Screens: ai-assistant-panel |
 | `p1-knowledge-base` | `ai/evaluation`: QA-AI-06; `ai/knowledge-base`: AI-48, AI-49, AI-50, AI-51, AI-52, AI-53, AI-54, AI-55, AI-56, AI-57, AI-58, AI-60, 2 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-08; `platform/release-and-versioning`: 1 unnumbered<br>Screens: knowledge-base |
 | `p1-ai-proposals-core` | `ai/evaluation`: QA-AI-02; `ai/proposals`: AI-P3, AI-P4, AI-P5, AI-06, AI-07, AI-10, AI-11, AI-14, AI-30, AI-32, AI-89, 5 unnumbered; `ai/task-catalogue`: 5 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-02, CTL-AI-03, CTL-AI-04; `controls/platform-checks`: C.2 #19; `platform/release-and-versioning`: 1 unnumbered<br>Screens: ai-proposal-review, ai-tasks |
-| `p1-ai-proposals` | `ai/proposals`: AI-09, AI-31; `ai/task-catalogue`: 18 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-07 |
+| `p1-ai-proposals` | `ai/proposals`: AI-09, AI-31, AI-91, AI-92; `ai/task-catalogue`: 18 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-07 |
 | `p1-mcp-first-party` | `ai/guardrails`: 1 unnumbered; `ai/mcp-and-agents`: AI-15, AI-16, AI-17, AI-34, AI-35, AI-36, AI-37, AI-38, AI-39, AI-40, AI-41, AI-42, AI-43, AI-44, AI-45, AI-90, 1 unnumbered; `compliance/ai-and-api-controls`: CTL-API-02, CTL-MCP-01, CTL-MCP-02, CTL-MCP-03, CTL-MCP-04; `integrations/public-api`: FR-INT-03; `platform/local-mode`: DEV-06<br>Screens: connected-apps, oauth-consent |
 | `p1-scheduled-agents` | `ai/evaluation`: QA-AI-07; `ai/scheduled-agents`: AI-61, AI-62, AI-63, AI-64, AI-65, AI-66, AI-67, 2 unnumbered; `ai/task-catalogue`: 2 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-09; `controls/platform-checks`: C.2 #36<br>Screens: agent-run-report, company-secretary |
 | `p1-company-secretary` | `ai/task-catalogue`: 1 unnumbered; `controls/platform-checks`: C.2 #32, C.2 #33, C.2 #34, C.2 #35, C.2 #54; `governance/company-secretary`: FR-CS-01, FR-CS-02, FR-CS-03, FR-CS-04, FR-CS-05, FR-CS-06, FR-CS-08<br>Screens: corporate-profile |
-| `p1-document-capture` | `documents/attachments-and-evidence`: FR-DOC-12; `purchases/payables`: FR-AP-04, FR-AP-12<br>Screens: document-inbox |
+| `p1-document-capture` | `documents/attachments-and-evidence`: FR-DOC-12, FR-DOC-14; `purchases/payables`: FR-AP-04, FR-AP-12<br>Screens: document-inbox |
 | `p1-security-hardening` | `compliance/technology-controls`: CTL-CHG-04, CTL-CHG-05, CTL-CHG-07, CTL-DP-03, CTL-RES-04; `platform/container-images`: NFR-IMG-05, NFR-IMG-07; `platform/release-and-versioning`: REL-04, REL-05; `security/application-security`: SEC-22, SEC-23, SEC-24, SEC-36, SEC-37, SEC-26; `security/detection-and-response`: SEC-30, SEC-31, SEC-32, SEC-33 |
 | `p1-operations-dr` | `compliance/financial-controls`: CTL-AUD-03, CTL-AUD-04; `compliance/technology-controls`: CTL-RES-02, CTL-RES-03, CTL-RES-05; `data/audit-trail`: 1 unnumbered; `data/backup-and-recovery`: DR-01, DR-02, DR-03, DR-04, DR-06, DR-07; `platform/operations`: NFR-DR-01, NFR-DR-02, NFR-DR-03, NFR-RET-01, NFR-OBS-01, NFR-OBS-02; `platform/performance-and-scale`: NFR-PERF-01, NFR-PERF-06, NFR-PERF-02, NFR-PERF-03, NFR-PERF-04, NFR-PERF-05, NFR-SCALE-01, NFR-AVAIL-01, NFR-BROWSER-01; `platform/portability-and-cost`: NFR-COST-02, NFR-COST-01, NFR-COST-03, NFR-COST-04<br>Screens: operations-tray |
 | `p1-workbook-migration` | `controls/platform-checks`: C.2 #63; `data/migration`: FR-MIG-01, FR-MIG-02, FR-MIG-03, FR-MIG-04, 4 unnumbered; `ledger/money-and-rounding`: RND-IMPORT<br>Screens: data-export, workbook-import |
@@ -816,7 +840,7 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `p1-nemura-platform` | `people/experience`: NM-ROLE-01, NM-ROLE-02, NM-ROLE-03, NM-ROLE-04, NM-ROLE-05, NM-UX-01, NM-UX-02, NM-UX-03, NM-UX-04, NM-UX-05, NM-UX-06, 1 unnumbered; `people/platform`: NM-ARC-01, NM-ARC-02, NM-ARC-03, NM-ARC-04, NM-ARC-05, NM-ARC-06, NM-NFR-01, NM-NFR-02, NM-NFR-03, NM-NFR-04, NM-NFR-05, 1 unnumbered; `people/security`: NM-SEC-01, NM-SEC-02, NM-SEC-03, NM-SEC-04, NM-SEC-05, NM-SEC-07<br>Screens: nm-access-request, nm-my-pay, nm-sign-in |
 | `p1-nemura-records-packs` | `people/checks`: N.1 #1, N.1 #2, N.1 #3, N.1 #4, N.1 #5, N.1 #6, N.1 #7, N.1 #8, N.1 #9, N.1 #10, N.1 #11, N.1 #12, N.1 #13, N.1 #14, N.1 #15, N.1 #16; `people/features-and-packs`: NM-FEAT-01, NM-FEAT-02, NM-FEAT-03, NM-FEAT-04, NM-FEAT-05, NM-PACK-01, NM-PACK-02, NM-PACK-03, NM-PACK-04, NM-PACK-05, NM-PACK-06, NM-PACK-07, NM-PACK-08, 1 unnumbered; `people/records`: NM-PPL-01, NM-PPL-02, NM-PPL-03, NM-PPL-04, NM-PPL-05, NM-PPL-06, NM-PPL-07, NM-PPL-08<br>Screens: nm-country-pack, nm-features, nm-leave-policy, nm-people, nm-person |
 | `p1-nemura-leave-time` | `people/leave`: NM-LV-01, NM-LV-02, NM-LV-03, NM-LV-04, NM-LV-05, NM-LV-06, NM-LV-07, NM-LV-08, NM-LV-09, NM-LV-10, NM-LV-11, NM-LV-12, NM-LV-13, NM-LV-14; `people/time`: NM-TIM-01, NM-TIM-02, NM-TIM-04<br>Screens: nm-apply-leave, nm-govt-claims, nm-my-leave, nm-people-home, nm-report-sick, nm-team-leave |
-| `p1-nemura-self-service-letters` | `people/letters`: NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-04, NM-LTR-06, NM-LTR-07; `people/onboarding`: NM-ONB-02, NM-ONB-03; `people/self-service`: NM-ESS-01, NM-ESS-02, NM-ESS-03, NM-ESS-04, NM-ESS-05, NM-ESS-06<br>Screens: nm-leaver-home, nm-letter-template, nm-letters, nm-my-home, nm-my-requests, nm-onboarding, nm-request-letter |
+| `p1-nemura-self-service-letters` | `people/letters`: NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-04, NM-LTR-06, NM-LTR-07; `people/onboarding`: NM-ONB-02, NM-ONB-03; `people/self-service`: NM-ESS-01, NM-ESS-02, NM-ESS-03, NM-ESS-04, NM-ESS-05, NM-ESS-06<br>Screens: nm-leaver-home, nm-letter-template, nm-letters, nm-my-details, nm-my-home, nm-my-requests, nm-onboarding, nm-people-requests, nm-request-letter |
 | `p1-nemura-payroll` | `ledger/money-and-rounding`: RND-CPF, RND-CPF-GRAD, RND-SDL; `ledger/posting-rules`: 2 unnumbered; `payroll/employees`: FR-EMP-01, FR-EMP-02; `payroll/pay-runs`: FR-PAY-01, FR-PAY-02, FR-PAY-03, FR-PAY-04, FR-PAY-05, FR-PAY-06, FR-PAY-14, FR-PAY-16, FR-PAY-17, FR-PAY-18, FR-PAY-13, 1 unnumbered; `people/payroll`: NM-PAY-01, NM-PAY-02, NM-PAY-03, NM-PAY-04, NM-PAY-05, NM-PAY-06, NM-PAY-07, NM-PAY-08, NM-PAY-09, NM-PAY-10, NM-PAY-11<br>Screens: employees, nm-checks, nm-payroll-hr, nm-payrun-approval, nm-payslip |
 | `p1-nemura-fyniq-link` | `integrations/people-platform`: FR-PPL-02, FR-PPL-03, FR-PPL-10, FR-PPL-15, FR-PPL-18; `people/fyniq-integration`: NM-INT-01, NM-INT-02, NM-INT-03, NM-INT-04, NM-INT-05, NM-INT-06, NM-INT-07, NM-INT-08, NM-INT-09, NM-INT-10, NM-INT-11, NM-INT-12, NM-INT-13, 1 unnumbered<br>Screens: nm-fyniq-link |
 | `p1-nemura-assistant-external` | `people/assistant`: NM-AI-01, NM-AI-02, NM-AI-03, NM-AI-04, NM-AI-06, people.draft_letter, people.draft_fwa_reply; `people/external-systems`: NM-EXT-01, NM-EXT-02, NM-EXT-03<br>Screens: hr-import, nm-ask, nm-assistant |

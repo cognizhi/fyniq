@@ -30,6 +30,7 @@ rule of design D4); **API ↔ database** (`fyniq_api`, RLS per organisation, the
 | T7 | person ↔ API | Tampering: two sessions save one week at once, or a stale save overwrites newer time | Lost updates | Medium |
 | T8 | AR specialist ↔ API ↔ database | Tampering: work billed twice (two draft invoices naming the same time or cost), billed work marked by a forged payload, or a marked line edited away, a milestone billed unaccepted or twice, a milestone's amount changed after acceptance | Revenue overstated; a customer billed twice | Medium |
 | T9 | person ↔ API | Information disclosure: the unbilled view or the report shows a person's cost rate; a manager reads another project's unbilled work | Payroll data disclosed | Medium |
+| T10 | person ↔ API ↔ AI | Information disclosure: the project report's export or the semantic layer's project measures carry a cost or rate the viewer's own report would not (a person's cost in a file, a rate in a fact the assistant reads), or a project manager reads another project's figures through them | A person's pay inferred; another project's results disclosed | Medium |
 
 ## 3. Mitigations and the test that proves each
 
@@ -44,6 +45,7 @@ rule of design D4); **API ↔ database** (`fyniq_api`, RLS per organisation, the
 | T7 | `If-Match` with the week's ETag; every entry change at its version | `TestAWeekOfTime…` (stale and missing ETags) |
 | T8 | The marks are written only by the `project_billing_follows_invoice` trigger when an invoice is posted, and refuse (FY606, `STORAGE-BILL-01`) time that is not approved billable time of the project, a cost that is not a posted bill or claim, and work already billed; no role may write the table; a void releases the work; `project_milestone_guard` keeps a milestone's name and amount, accepts it once and refuses one on the wrong billing method (FY607) | `TestTwoInvoicesNeverBillTheSameWork`, `TestAProjectBillsItsUnbilledWorkOnceThroughADraftInvoice`, `TestEachRoleHoldsExactlyItsGrants` |
 | T9 | The unbilled view carries hours and billing rates only; the report values cost at the viewer's tier; a manager reads only their projects | `TestProjectReportsComeFromThePostedLedgerAndApprovedTime`, the matrix rows `getProjectUnbilled` and `draftProjectInvoice` |
+| T10 | The export is built from the same report body as the screen, so a column the viewer may not see is not in the file; the workbook's person cost only for the payroll tier; the semantic layer has no cost measure, gives approved minutes (hours only) and the P&L by project, and a manager's reads are narrowed to their own projects and never the untagged lines; every export is audited with its hash | `TestProjectReportsComeFromThePostedLedgerAndApprovedTime` (the Controller's and the AR specialist's CSV, the Owner's workbook, an Employee refused, the audit event, revenue and approved minutes by project, no cost or rate field), the matrix row `exportProjectReport`, `TestEveryChangeToAToolIsANewVersion` (the tool is version 2) |
 
 ## 4. Residual risk
 

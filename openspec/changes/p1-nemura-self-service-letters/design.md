@@ -44,8 +44,10 @@ the people assistant's drafts (`-assistant-external`); hiring and onboarding pla
 - **D7. KETs come from the person's terms.** A `person_terms` record, effective-dated, holds what the Employment Act's key employment terms need that the people
   record does not (main duties, working arrangement, the salary period, the basic salary and fixed allowances as restricted fields, overtime, medical benefits,
   probation, the notice period, the place of work); the KETs letter is generated from it and the record, issued as any letter and due within 14 days of the start
-  for an employee the Employment Act covers on a contract of two weeks or longer. Missing KETs are ✖ on Checks (N.1 #1). The KETs content is read from MOM into a
-  pack version, with its source, before the template is written.
+  for an employee the Employment Act covers on a contract of two weeks or longer. Missing KETs are ✖ on Checks (N.1 #1), with a reminder in the 3 days before. The 17
+  items are read from MOM's tripartite guidelines into `sg-people@2026.6` (`ket_items`, each with when it applies: always, only for a fixed-term contract, only if the
+  overtime payment period differs), with the days to issue them; the standard text lists them in MOM's order. The pay terms are the Payroll administrator's and the
+  Owner's to write and read (O3); an item that does not apply says so in words; a fact not recorded is named when the request is made, never guessed.
 - **D8. Self-service is the person's own scope.** My home reads the leave balance, the next public holiday, the open requests and the tiles; My details lets a person
   change contact details, emergency contacts and address directly, and change legal name, NRIC or FIN and residency only through a request with evidence that HR
   approves (the bank account keeps its own flow, NM-PPL-04). Requests are one list of letter requests, flexible work, details changes and general HR questions, each
@@ -77,6 +79,51 @@ Decided 20 Nov 2026 under the owner's standing instruction (the owner is away: t
 | B. Bundle Typst and fonts in the local image | Same output as production | A binary and fonts in a lean image; heavier local mode |
 
 **Decided: A.** Production uses the platform's service; the local limit is stated in the footer and the refusal.
+
+### O3. Who writes the pay terms of the KETs
+
+| Option | Pros | Cons |
+|---|---|---|
+| **A. The Payroll administrator and the Owner write and read the pay terms; the people team writes the rest** | Follows Appendix B's Pay row (HR roles have none); the audit event never holds pay; the people team cannot see pay by writing the KETs | The HR officer cannot finish the KETs alone: the request names the missing pay terms and payroll records them |
+| B. The HR officer writes everything | One person finishes the KETs | Gives HR the pay, which Appendix B withholds |
+| C. Pay terms come only from payroll (P1 later) | One source of pay | KETs would wait for `p1-nemura-payroll`, past the 14 days of the first hire |
+
+**Decided: A.** It keeps Appendix B intact and lets the first hire's KETs be issued before payroll exists; when payroll arrives, its pay record becomes the source and this
+form is read-only for a person it holds.
+
+### O4. How a change of legal name, residency or NRIC or FIN is requested and what the request holds
+
+| Option | Pros | Cons |
+|---|---|---|
+| **A. The request carries the evidence as a document and a note; it never holds an NRIC or FIN. Another HR member approves; a name or residency applies on approval, an NRIC or FIN is recorded by HR through the sealed flow afterwards** | The NRIC never rests anywhere but the sealed store (SEC-15); the evidence is on the person's file with its retention; one rule for the three kinds | An NRIC change takes two steps (approve, then record) |
+| B. The request holds a sealed proposed NRIC or FIN and applies it on approval | One step | A second sealed store and key handling for a value that may never be approved |
+| C. Only HR changes these, on a paper request | Nothing to build | Breaks NM-ESS-03 |
+
+**Decided: A.** Due days: a change is decided within 5 working days and a question answered within 3 (code constants; letters keep their type's days and flexible work the
+pack's months). The audit event of a direct change names the fields that changed and never their values (data minimisation, PDPA); a request's words stay in its row.
+
+### O5. How a leaver's narrow account is made
+
+| Option | Pros | Cons |
+|---|---|---|
+| **A. Derived from the record: after the last day the same login holds no role and keeps a short list of operations; it ends 12 months after the last day** | No new identity, no second sign-in, nothing to forget to switch off; the role cut is in the one place roles are read (`ActiveRoles`), so a leaver who was the HR administrator keeps nothing | A person whose last day is entered wrongly is narrowed at once (correct the date); the last Owner who leaves is locked out (the recovery runbook covers it) |
+| B. Deactivate the member and give a separate `leaver` identity | A clean break | A second identity, sign-in and session path to build and secure; two logins for one person |
+| C. Deactivate and mail documents | Nothing to maintain | Email links are only to deliver a document; a lost one has no way back |
+
+**Decided: A.** The retention months are the data inventory's 12 (MOM: employment records for 1 year after the person leaves). The API refuses every operation a leaver does not
+keep with `NM_LEAVER_ACCOUNT`; the list is the person's own documents, their own letters (read, link), asking a question and their own requests.
+
+### O6. When the invitation task is raised before the link exists
+
+| Option | Pros | Cons |
+|---|---|---|
+| **A. A setting "invite new people to Fyniq", off by default; the link switches it on** | A Nemura-only company sees no noise; the task is a real list the link later closes; nothing in the link's contract is assumed | One more setting until the link arrives |
+| B. Always raise the task | No setting | Noise for a company without Fyniq, and a task nobody can complete |
+| C. Wait for the link | Nothing to undo | NM-ONB-02 (M, P1) is unmet until then |
+
+**Decided: A.** The offboarding record keeps the dates that start statutory clocks apart and no figure of money: final pay, IR21 and the tax-clearance hold are payroll's. The leave
+settlement is days only; whether untaken days are paid, and the recovery of days taken beyond the prorated entitlement, follow the contract and the Employment Act
+`[accountant to confirm]` and are not decided here. The retrenchment notification to MOM is recorded as the date employees were told; its rule is not stated here `[verify]`.
 
 ## Risks / Trade-offs
 

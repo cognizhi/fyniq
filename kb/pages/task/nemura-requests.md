@@ -4,7 +4,7 @@ type: task
 title: See requests and make a flexible work request in Nemura
 summary: What My requests shows, how a formal flexible work request works and when the written reply is due, and who answers it
 sources:
-  - docs/user-guide/nemura/requests.md sha256:18a74c4d1e7cd1d4b06c36fd4eab87b148827b6c226c7d6beec8418abe038796
+  - docs/user-guide/nemura/requests.md sha256:0989886c7b7c811b8dd8558c3910f73103dfc58e9725e839e909fd3d0a518f09
 data_class: general
 taint: trusted
 status: published
@@ -32,10 +32,11 @@ aliases:
 
 ## Steps
 
-1. Open **My requests**: **Cancel** a leave request that is waiting, or an approved one before it starts.
-2. Read each flexible work request and, once answered, its written reply.
-3. To make one, fill in **Make a formal flexible work request** (what to change, start, end if any, why) and select **Send the request**.
-4. **Withdraw** it while it waits for a reply.
+1. Open **My requests**. **Where my requests are** lists letters, flexible work, changes of details and questions with their step (**Received**, **With HR**, **Ready** or **Closed**), the day due and the reply or the reason refused; a change of details or a question nobody has answered can be withdrawn. See [[nemura.my-details]] and [[nemura.ask-hr]].
+2. **Cancel** a leave request that is waiting, or an approved one before it starts.
+3. Read each flexible work request and, once answered, its written reply.
+4. To make one, fill in **Make a formal flexible work request** (what to change, start, end if any, why) and select **Send the request**.
+5. **Withdraw** it while it waits for a reply.
 
 (src: docs/user-guide/nemura/requests.md#steps)
 

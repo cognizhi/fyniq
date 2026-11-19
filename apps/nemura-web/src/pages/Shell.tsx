@@ -17,6 +17,14 @@ export function Shell({ children, directory, features, roles }: { children: Reac
             <a href="/me/leave">{t("nav.leave")}</a>
             <a href="/me/leave/new">{t("nav.apply")}</a>
             <a href="/me/requests">{t("nav.requests")}</a>
+            <a href="/me/details">{t("nav.details")}</a>
+            <a href="/me/ask/hr">{t("nav.ask")}</a>
+            <a href="/me/letters/new">{t("letters.ask")}</a>
+            {directory && <a href="/people/requests">{t("nav.queue")}</a>}
+            {directory && <a href="/people/onboarding">{t("nav.onboarding")}</a>}
+            {payroll(roles ?? []) && <a href="/people/payroll">{t("nav.payroll")}</a>}
+            {directory && <a href="/people/letters">{t("nav.letters")}</a>}
+            {directory && <a href="/settings/letters">{t("nav.letterSettings")}</a>}
             {approver(roles ?? []) && <a href="/people/leave">{t("nav.teamLeave")}</a>}
             {directory && <a href="/people/leave/government-paid">{t("nav.gov")}</a>}
             {directory && <a href="/people/directory">{t("nav.directory")}</a>}
@@ -48,3 +56,6 @@ export const admin = (roles: readonly string[]): boolean => roles.some((r) => ["
 
 // hr is whether the roles add people: the HR officer and the HR administrator (Appendix B). The API decides; this only shows the button.
 export const hr = (roles: readonly string[]): boolean => roles.some((r) => ["hr_officer", "hr_admin"].includes(r));
+
+// payroll reports whether the roles see pay: the Payroll administrator and the Owner alone.
+export const payroll = (roles: readonly string[]): boolean => roles.some((r) => r === "payroll_admin" || r === "owner");

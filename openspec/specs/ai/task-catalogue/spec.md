@@ -231,6 +231,11 @@ Source: PRD-001 §E
 - **WHEN** the proposal executes
 - **THEN** the invoice it creates is a draft only
 
+#### Scenario: Version 1 drafts a project's work (rev 0.332)
+- **WHEN** a person asks for an invoice for a time-and-materials project and the AI proposes this task type
+- **THEN** the proposal names the project by its code and the dry run shows the customer, the lines and the total
+- **AND** an approver who may draft it themselves approves it, and the draft is made only while what it bills is what the dry run showed
+
 #### Scenario: Approver is AR or above
 - **WHEN** the proposal is approved
 - **THEN** the approver is AR+ (the AR role or above), which may be the requesting user if they hold that permission

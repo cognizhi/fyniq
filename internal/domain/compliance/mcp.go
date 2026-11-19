@@ -161,3 +161,55 @@ func parseTime(s string) time.Time {
 	t, _ := time.Parse(time.RFC3339, s)
 	return t
 }
+
+// integrationsOwned (CTL-API-02, SEC-07; p1-mcp-first-party task 10.2) is the nightly look at the organisation's integration clients as
+// Fyniq holds them: each one that is not revoked has an owner who is an active member, a class of integration or agent, an end date that
+// had not passed when the day's window began, and only its class's scopes (an agent holds read and propose scopes, never a write; an integration client reads and
+// writes by area). Each exception is listed by client (target 0).
+func integrationsOwned(ctx context.Context, u storage.UnitOfWork, since time.Time) ([]Finding, string, error) {
+	clients, err := u.APIClients().List(ctx, storage.APIClientIntegration)
+	if err != nil {
+		return nil, "", err
+	}
+	members, err := u.Members().List(ctx, since)
+	if err != nil {
+		return nil, "", err
+	}
+	active := map[uuid.UUID]bool{}
+	for _, m := range members {
+		active[m.UserID] = true
+	}
+	out, live := integrationFindings(clients, active, since)
+	return out, fmt.Sprintf("%d live integration client(s)", live), nil
+}
+
+// integrationFindings are the live integration clients that break CTL-API-02, and how many were live.
+func integrationFindings(clients []storage.APIClient, active map[uuid.UUID]bool, since time.Time) ([]Finding, int) {
+	var out []Finding
+	live := 0
+	for _, c := range clients {
+		if c.RevokedAt != nil {
+			continue
+		}
+		live++
+		add := func(why string) { out = append(out, Finding{Kind: "integration_client", ID: c.ClientID, Detail: why}) }
+		switch {
+		case c.OwnerID == uuid.Nil || !active[c.OwnerID]:
+			add("It has no owner who is an active member")
+		case c.Class != "integration" && c.Class != "agent":
+			add("Its class is neither integration nor agent")
+		}
+		if c.ExpiresAt.IsZero() {
+			add("It has no end date")
+		} else if c.ExpiresAt.Before(since) {
+			add("Its end date passed and it was not revoked")
+		}
+		for _, s := range c.Scopes {
+			ok := strings.HasPrefix(s, "fyniq.read.") || (c.Class == "integration" && strings.HasPrefix(s, "fyniq.write."))
+			if !ok && s != "openid" && s != "offline_access" {
+				add("It holds the scope " + s + ", which its class does not")
+			}
+		}
+	}
+	return out, live
+}

@@ -55,6 +55,15 @@ type confirmedOutput struct {
 }
 
 func (a *API) signedIn(ctx context.Context, cookie string) (Session, error) {
+	s, err := a.signedInOrLeaver(ctx, cookie)
+	if err == nil && s.Leaver {
+		return Session{}, Err(CodeLeaverAccount, "Your account is for your own documents now that you have left: open them from your home page, or ask the people team a question.")
+	}
+	return s, err
+}
+
+// signedInOrLeaver is the session a request carries, a leaver's included: only the few operations a leaver's narrow account keeps use it (NM-ESS-06).
+func (a *API) signedInOrLeaver(ctx context.Context, cookie string) (Session, error) {
 	s, err := a.d.Sessions.Authenticate(ctx, a.cookie(cookie), a.d.Clock.Now())
 	if err != nil {
 		return Session{}, Err(CodeUnauthenticated, "There is no valid session in this request.")

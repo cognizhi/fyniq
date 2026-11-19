@@ -4636,6 +4636,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/connected-apps/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what everyone allowed AI apps
+         * @description For an Owner (AI-44): each member's allowed AI apps with the scopes they gave and when the consent must be renewed. Read-only; no side effects. Never on the AI's or MCP's tool list.
+         */
+        get: operations["listMCPConnections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connected-apps/connections/{client_id}": {
         parameters: {
             query?: never;
@@ -4651,6 +4671,26 @@ export interface paths {
          * @description Revokes what you allowed one AI app: its access and refresh tokens end at once (AI-44). Only your own; idempotent. Side effects: the app's tokens at the OAuth server. Never on the AI's or MCP's tool list.
          */
         delete: operations["revokeMyConnection"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connected-apps/people/{user_id}/connections/{client_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Disconnect a person's AI app
+         * @description An Owner revokes what one member allowed one AI app: its access and refresh tokens end at once (AI-44, AI-38). It narrows, so it is never held for a second person; idempotent. Only a member of this organisation. Side effects: the app's tokens at the OAuth server and an audit event. Never on the AI's or MCP's tool list.
+         */
+        delete: operations["revokeMemberConnection"];
         options?: never;
         head?: never;
         patch?: never;
@@ -11040,7 +11080,7 @@ export interface paths {
         put?: never;
         /**
          * Query the semantic layer
-         * @description A named measure (AI-03) over a run of months, by month or their total, split by a dimension the measure offers (account, customer, vendor or department) or not: revenue, gross profit, EBITDA, net profit, costs, spend by function, net burn, cash, receivables, payables, current assets and liabilities, total liabilities, equity, each account's movement or balance, and the monthly KPIs. Each figure is a typed fact (AI-68) with its ID, period, exact value, currency and unit, sign, the ledger revision it was read at and the report it comes from: the statements, the KPIs, the trial balance and the sub-ledgers, so it equals what that report shows. A month the books have no period for is REPORT-03, a later revision REPORT-04. Saves nothing; no side effects.
+         * @description A named measure (AI-03) over a run of months, by month or their total, split by a dimension the measure offers (account, customer, vendor, department or project) or not: revenue, gross profit, EBITDA, net profit, costs, spend by function, net burn, cash, receivables, payables, current assets and liabilities, total liabilities, equity, each account's movement or balance, and the monthly KPIs. Each figure is a typed fact (AI-68) with its ID, period, exact value, currency and unit, sign, the ledger revision it was read at and the report it comes from: the statements, the KPIs, the trial balance and the sub-ledgers, so it equals what that report shows. A month the books have no period for is REPORT-03, a later revision REPORT-04. Saves nothing; no side effects.
          */
         post: operations["queryMetrics"];
         delete?: never;
@@ -15329,6 +15369,26 @@ export interface paths {
          * @description For each project the caller may see, between two months: revenue and direct costs from the posted ledger through the balance service (payroll-cost accounts excluded and listed apart), the time at cost at the caller's tier (RND-TIME) and the margin = revenue - time at cost - direct costs, approved hours, billing at standard value and realisation, and budget use; each person's utilisation (billable over available hours); and the lines tagged with no project, so every project plus these tie to the ledger (FR-PRJ-12, QA-RPT-01). Time posts nothing. A person's own cost appears only for the Owner and the Payroll administrator; the AR specialist is given hours and revenue only; the AI never reads it. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
          */
         get: operations["getProjectReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reports/projects/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export the project report
+         * @description The report getProjectReport gives for the same months, as a file (FR-PRJ-12, FR-RPT-09): CSV, the projects' rows with amounts as plain decimals and an ASCII minus; or XLSX, a workbook with the projects and each person's utilisation, amounts as number cells. No text in either becomes a formula. It holds only what the caller's own report holds: costs, margin and salary tagged are columns only for a caller who may see them, and a person's cost only for the Owner and the Payroll administrator. Returned in base64 with its SHA-256 and the ledger revision. Refused with PRJ-09 while Projects and time are switched off. Side effects: an audit event of the export with what was exported, its months, rows and hash (FR-RPT-09). Never cached.
+         */
+        get: operations["exportProjectReport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -19827,8 +19887,10 @@ export interface components {
             as_at: string;
             /** @description The quarters attested, latest first. */
             attestations: components["schemas"]["AccessReviewAttestation"][] | null;
-            /** @description The organisation's installed connectors. OAuth clients join with Connected apps (AI-46). */
+            /** @description The organisation's installed connectors. */
             connectors: components["schemas"]["AccessReviewConnector"][] | null;
+            /** @description The organisation's integration clients that are not revoked, each with its owner, class, scopes and end date (CTL-API-02). */
+            integration_clients: components["schemas"]["AccessReviewClient"][] | null;
             /** @description The pending invitations: who will join, with which roles. */
             invitations: components["schemas"]["MemberInvitation"][] | null;
             /** @description The active members, in the order they joined. */
@@ -19873,6 +19935,43 @@ export interface components {
              * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
              */
             report_sha256: string;
+        };
+        AccessReviewClient: {
+            /**
+             * @description Its client class (AI-34).
+             * @example integration
+             * @enum {string}
+             */
+            class: "integration" | "agent";
+            /**
+             * @description Its OAuth client ID.
+             * @example fy-int-0193a3c2
+             */
+            client_id: string;
+            /**
+             * Format: date-time
+             * @description When it stops working.
+             * @example 2027-01-01T00:00:00Z
+             */
+            expires_at: string;
+            /**
+             * @description Its name.
+             * @example Reporting export
+             */
+            name: string;
+            /**
+             * @description The member it acts for, whose rights it never exceeds; empty when that person is no longer a member.
+             * @example Ah Kow
+             */
+            owner: string;
+            /** @description What it may read or write. */
+            scopes: string[] | null;
+            /**
+             * @description live while it works; expired once its end date has passed and nobody revoked it.
+             * @example live
+             * @enum {string}
+             */
+            status: "live" | "expired";
         };
         AccessReviewConflict: {
             /**
@@ -40992,6 +41091,47 @@ export interface components {
              */
             user_id: string;
         };
+        MemberConnection: {
+            /**
+             * @description The app's client ID.
+             * @example claude-code
+             */
+            client_id: string;
+            /**
+             * Format: date-time
+             * @description When the consent must be renewed: 90 days after you gave it (AI-37).
+             * @example 2027-02-17T09:30:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: date-time
+             * @description When you allowed it.
+             * @example 2026-11-19T09:30:00Z
+             */
+            granted_at: string;
+            /**
+             * @description The app's name.
+             * @example Claude Code
+             */
+            name: string;
+            /**
+             * @description Their name.
+             * @example Ah Kow
+             */
+            person: string;
+            /** @description What you allowed it. */
+            scopes: string[];
+            /**
+             * Format: uuid
+             * @description Whose connection it is.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+             */
+            user_id: string;
+        };
+        MemberConnections: {
+            /** @description Each person's allowed AI apps, by person. */
+            connections: components["schemas"]["MemberConnection"][];
+        };
         MemberInvitation: {
             /**
              * Format: date-time
@@ -41176,10 +41316,10 @@ export interface components {
              */
             undefined?: string;
             /**
+             * @description What the value is: amount, percent, months, ratio, days or minutes; more may be added.
              * @example amount
-             * @enum {string}
              */
-            unit: "amount" | "percent" | "months" | "ratio" | "days";
+            unit: string;
             /**
              * @description Exact decimal text, as the report shows it before rounding for display; absent when the fact has no value.
              * @example 125000.00
@@ -41197,7 +41337,7 @@ export interface components {
              * @example customer
              * @enum {string}
              */
-            by?: "account" | "customer" | "vendor" | "department";
+            by?: "account" | "customer" | "vendor" | "department" | "project";
             /**
              * @description The first month, YYYY-MM; left out, the last month's.
              * @example 2026-07
@@ -41215,7 +41355,7 @@ export interface components {
              * @example revenue
              * @enum {string}
              */
-            measure: "revenue" | "gross_profit" | "ebitda" | "net_profit" | "costs" | "spend_sm" | "spend_rd" | "spend_ga" | "net_burn" | "cash" | "receivables" | "payables" | "current_assets" | "current_liabilities" | "total_liabilities" | "equity" | "account_movement" | "account_balance" | "gross_margin" | "ebitda_margin" | "net_margin" | "revenue_growth" | "booked_mrr" | "arr" | "runway" | "burn_multiple" | "current_ratio" | "quick_ratio" | "working_capital" | "dso" | "dpo";
+            measure: "revenue" | "gross_profit" | "ebitda" | "net_profit" | "costs" | "spend_sm" | "spend_rd" | "spend_ga" | "net_burn" | "cash" | "receivables" | "payables" | "current_assets" | "current_liabilities" | "total_liabilities" | "equity" | "project_minutes" | "account_movement" | "account_balance" | "gross_margin" | "ebitda_margin" | "net_margin" | "revenue_growth" | "booked_mrr" | "arr" | "runway" | "burn_multiple" | "current_ratio" | "quick_ratio" | "working_capital" | "dso" | "dpo";
             /**
              * @description Keep one member of the dimension: its ID (an account's code too).
              * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
@@ -90295,6 +90435,99 @@ export interface operations {
             };
         };
     };
+    listMCPConnections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberConnections"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     revokeMyConnection: {
         parameters: {
             query?: never;
@@ -90329,6 +90562,111 @@ export interface operations {
             };
             /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `MCP-APPS-01` Not a person who is a member. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    revokeMemberConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The person. */
+                user_id: string;
+                /** @description The app's client ID. */
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -174345,6 +174683,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectReport"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    exportProjectReport: {
+        parameters: {
+            query: {
+                /** @description A day in the first month. */
+                from: string;
+                /** @description A day in the last month, at most 12 months after the first. */
+                to: string;
+                /** @description csv: the projects' rows, plain decimals with an ASCII minus; xlsx: a workbook with the projects and each person's utilisation, amounts as number cells. */
+                format?: "csv" | "xlsx";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportFile"];
                 };
             };
             /** @description Unauthorized: `API-AUTH-01` Sign-in required. */

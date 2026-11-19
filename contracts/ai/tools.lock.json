@@ -28,8 +28,8 @@
     "sha256": "d750bc9596f99fae0c00b87eb2b8c0279456c4844d3793b4862032272962d40e"
   },
   "metrics.query": {
-    "version": 1,
-    "sha256": "b60a8af0229db8542b21111ee3ee02bdc15e704cec9fe31ca518da61384dac77"
+    "version": 2,
+    "sha256": "0f174aba7e27013675378d11543de9a4717bfd1eb73f26451d2def695fb35c0c"
   },
   "packs.get": {
     "version": 3,

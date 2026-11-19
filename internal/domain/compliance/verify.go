@@ -53,6 +53,7 @@ var verifications = map[string]verification{
 	"ai.agent-runs":            agentRuns,
 	"mcp.agent-writes":         mcpAgentWrites,
 	"mcp.enablement":           mcpEnablement,
+	"integrations.owned":       integrationsOwned,
 	"kb.pages":                 kbPages,
 }
 

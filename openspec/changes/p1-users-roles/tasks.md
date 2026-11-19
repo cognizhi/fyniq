@@ -8,7 +8,7 @@
   or the order differs from the PRD; `TestAnUnknownAreaDenies` refuses every principal on an area Appendix D does not
   name. The per-area matrix tests run each operation's area in `TestAuthorisationMatrix`.)
 - [ ] 1.2 The roles of §6 and their combinations, attribute conditions and field masking, checked in the API and by row-level security scope predicates on sensitive tables. Tests on every role's rights and limits, `// req: access/roles-and-segregation <role> role`, and the permission model test
-  (20 Nov 2026, with 2.1: attribute conditions for the Approver's department cells (PRD-001 rev 0.331) are enforced twice: the API's policy
+  (20 Nov 2026, with 2.1: attribute conditions for the Approver's department cells (PRD-001 rev 0.371) are enforced twice: the API's policy
   table still refuses a department-qualified read it has no endpoint for, and the database holds a restrictive policy on journal
   lines and balances for the API's role that reaches only the rows of the department values the person's Approver role is
   narrowed to (`TestAttackADepartmentScopeBindsWhatTheAPIReads`: no scope reaches none; any other role beyond Employee leaves
@@ -68,7 +68,7 @@
   decision: department scopes are built in P1, a role narrowed to department values reaching only those records, lines
   and budgets under Appendix D's "dept" cells; entity scopes with multi-entity (P3). **Left:** department scopes and
   invitation emails.)
-  (20 Nov 2026, department scopes built in part, PRD-001 rev 0.331: `POST /v1/members/{member_id}/roles` takes `department_value_ids`
+  (20 Nov 2026, department scopes built in part, PRD-001 rev 0.371: `POST /v1/members/{member_id}/roles` takes `department_value_ids`
   for the Approver role (each a value of the department dimension, checked when asked, carried by the approval request and
   fixed for the assignment: migration 000702), the members list shows them and Settings › Members and roles offers the
   department values when the Approver role is chosen. **Left:** an invitation's scope, invitation emails
@@ -221,13 +221,13 @@
   recovery codes, and a second authenticator (recommended), each Done or To do from what the API holds, and "You are set up"
   when the first two are done; guide `sign-in.md` (Set up how you confirm it's you), compiled into `auth.sign-in`; test
   `enrol.test.tsx`. Not a first-run tour step: the founder's tour is at its seven.)
-  (20 Nov 2026, super-admin-console built, PRD-001 rev 0.332: `GET /v1/installation/health` and `GET /v1/installation/super-admins` for a
+  (20 Nov 2026, super-admin-console built, PRD-001 rev 0.372: `GET /v1/installation/health` and `GET /v1/installation/super-admins` for a
   Super admin (counts, times and names only, through definer functions: migration 000703), and Settings › Installation console
   (`AdminConsole.tsx`): healthy or degraded and why, the platform jobs' beats, the outbox's backlog, the Super admins with the
   warning while there is one; guide `installation-console.md`, compiled into `settings.console`. Tests
   `TestTheSuperAdminConsoleReadsHealthAndSuperAdmins`, `adminConsole.test.tsx`. Not shown: installation email senders, whose
   SPF, DKIM and DMARC status has its own page.)
-  (20 Nov 2026, members columns, PRD-001 rev 0.333: last sign-in and live passkeys beside each member (`member_activity()`, migration 000704).
+  (20 Nov 2026, members columns, PRD-001 rev 0.373: last sign-in and live passkeys beside each member (`member_activity()`, migration 000704).
   **Left, an owner question:** the member's email (personal data the Auditor and the DPO would see on the list); the default experience
   mode per invitation, an invitation's department scope, MFA status beyond passkeys (TOTP is the provider's).)
 - [x] 4.2 Run the walkthrough test for each role (QA-UI-08) on the workspaces these rights produce

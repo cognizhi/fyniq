@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "class": {
+      "description": "Its client class (AI-34).",
+      "enum": [
+        "integration",
+        "agent"
+      ],
+      "examples": [
+        "integration"
+      ],
+      "type": "string"
+    },
+    "client_id": {
+      "description": "Its OAuth client ID.",
+      "examples": [
+        "fy-int-0193a3c2"
+      ],
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "When it stops working.",
+      "examples": [
+        "2027-01-01T00:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Reporting export"
+      ],
+      "type": "string"
+    },
+    "owner": {
+      "description": "The member it acts for, whose rights it never exceeds; empty when that person is no longer a member.",
+      "examples": [
+        "Ah Kow"
+      ],
+      "type": "string"
+    },
+    "scopes": {
+      "description": "What it may read or write.",
+      "items": {
+        "description": "A scope.",
+        "examples": [
+          "fyniq.read.banking"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "status": {
+      "description": "live while it works; expired once its end date has passed and nobody revoked it.",
+      "enum": [
+        "live",
+        "expired"
+      ],
+      "examples": [
+        "live"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_id",
+    "name",
+    "class",
+    "owner",
+    "scopes",
+    "expires_at",
+    "status"
+  ],
+  "title": "AccessReviewClient",
+  "type": "object"
+}

@@ -146,7 +146,7 @@
     {
       "name": "metrics.query",
       "title": "Query a measure",
-      "description": "Reads a named measure of the books (revenue, gross profit, net burn, cash, receivables, a KPI and others) from the semantic layer, as the person asking may see it. Returns typed facts: each has an ID, the value as exact decimal text, its unit and currency, the period, the dimension member, the ledger revision and a lineage link. Quote figures only from facts; cite each by its ID. Use by to split a measure by account, customer, vendor or department, and grain month for one fact a month.",
+      "description": "Reads a named measure of the books (revenue, gross profit, net burn, cash, receivables, a KPI and others) from the semantic layer, as the person asking may see it. Returns typed facts: each has an ID, the value as exact decimal text, its unit and currency, the period, the dimension member, the ledger revision and a lineage link. Quote figures only from facts; cite each by its ID. Use by to split a measure by account, customer, vendor, department or project, and grain month for one fact a month. A project's approved time is the measure project_minutes, by project: hours only, never a rate or a cost.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -156,7 +156,8 @@
               "account",
               "customer",
               "vendor",
-              "department"
+              "department",
+              "project"
             ],
             "type": "string"
           },
@@ -193,6 +194,7 @@
               "current_liabilities",
               "total_liabilities",
               "equity",
+              "project_minutes",
               "account_movement",
               "account_balance",
               "gross_margin",
@@ -244,8 +246,8 @@
         "fyniq.read.reports",
         "fyniq.read.sales"
       ],
-      "version": 1,
-      "sha256": "5d5513998935b9f3b21cb2fa32518ee8733200e58ef868935460cfab4ee82ee1"
+      "version": 2,
+      "sha256": "a5003b977f0d9a6e79848d549af9b0d77ff6561e2a9b5612028e28f3d8647054"
     },
     {
       "name": "packs.get",

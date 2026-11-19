@@ -24,7 +24,7 @@ Source: PRD-002 §10 · Priority M · Phase P1
 - **THEN** they see their payslips by month and can view, print or download each one
 
 ### Requirement: NM-ESS-03 My details
-Employees SHALL update contact details, emergency contacts and address directly; legal name, NRIC or FIN, bank account and residency changes SHALL need evidence and HR approval.
+Employees SHALL update contact details, emergency contacts and address directly (audited by field, never by value); legal name, NRIC or FIN, bank account and residency changes SHALL need evidence and HR approval, and a request SHALL never carry an NRIC or FIN number.
 
 Source: PRD-002 §10 · Priority M · Phase P1
 
@@ -37,7 +37,7 @@ Source: PRD-002 §10 · Priority M · Phase P1
 - **THEN** the change waits for evidence and HR approval
 
 ### Requirement: NM-ESS-04 Requests
-Letters, flexible-work requests, details changes and HR questions SHALL be requests with a type, status, track, due date and reply that the employee can follow.
+Letters, flexible-work requests, details changes and HR questions SHALL be requests with a type, status, track, due date and reply that the employee can follow; a change is decided within 5 working days, a question answered within 3, and nobody decides their own.
 
 Source: PRD-002 §10 · Priority M · Phase P1
 
@@ -61,7 +61,7 @@ Source: PRD-002 §10 · Priority M · Phase P1
 - **THEN** they see "You don't have Fyniq access yet" with a button that asks HR, never a refused page
 
 ### Requirement: NM-ESS-06 After leaving
-A leaver SHALL keep a narrow, authenticated account for their own documents for the record-keeping period, with re-issue on request, and email links SHALL only deliver documents.
+A leaver SHALL keep a narrow, authenticated account that holds no role and keeps only their own documents and letters and a question to the people team, for 12 months after the last day, with re-issue on request; email links SHALL only deliver documents.
 
 Source: PRD-002 §10 · Priority M · Phase P1
 

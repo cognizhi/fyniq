@@ -15,6 +15,7 @@ folder holds the contract between them (OpenSpec change `p0-python-oracle-differ
 | `forecasts/` | The golden forecasts the Go gate runs through both sides |
 | `feasibility.schema.json` | `fyniq-feasibility@1`: a feasibility study both sides work out ("Feasibility studies") |
 | `feasibilities/` | The golden studies the Go gate runs through both sides |
+| `payroll.schema.json` | `fyniq-payroll-month@1`: an employee-month (PRD-001 Appendix B.3) both sides work out; the golden months are in `payrolls/`, worked by hand, and Nemura's engine (`internal/nemura/payroll`) passes them; the oracle's half reads the same files `[oracle]` |
 
 Both schemas are JSON Schema draft 2020-12 with RE2- and ECMA-262-compatible patterns, so a Go
 validator and Python's `jsonschema` accept the same documents. The oracle checks its input against

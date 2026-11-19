@@ -6,7 +6,7 @@ The checks Nemura runs, each shown on Nemura's Checks with its status. Derived f
 ## Requirements
 
 ### Requirement: N.1 #1 Missing KETs
-The system SHALL block a person who started 14 or more days ago with no issued KETs (NM-LTR-06).
+The system SHALL block a person who started 14 or more days ago with no issued KETs, and remind in the 3 days before (NM-LTR-06).
 
 Source: PRD-002 §N.1
 

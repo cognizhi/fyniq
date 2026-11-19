@@ -128,6 +128,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/details-changes/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or refuse a change of details
+         * @description Approves or refuses a change of details after reading its evidence. Nobody decides a change to their own details. Approving a legal name or a residency applies it to the person's record from the day of the decision; approving a change of NRIC or FIN records that the evidence was checked, and the new number is then recorded through the restricted fields. Refusing needs a reason. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["decideDetailsChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/errors": {
         parameters: {
             query?: never;
@@ -512,6 +532,418 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/letter-links/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a letter by its expiring link
+         * @description Delivers the letter the token names, with no sign-in, until it expires; a token that is unknown, wrong or expired is refused the same way. The page never shows more than the letter. It changes nothing.
+         */
+        get: operations["downloadLetterByLink"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Letter requests the caller may read
+         * @description The caller's own requests; the HR officer, the HR administrator and the Owner read everyone's, those still open first by due day. It changes nothing.
+         */
+        get: operations["listLetters"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/delegations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Delegations of automatic issue
+         * @description The signatory's delegations of automatic issue with their state and how many letters each has issued this month. The HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listLetterDelegations"];
+        put?: never;
+        /**
+         * Delegate automatic issue of a letter type
+         * @description The signatory lets one letter type be issued at once, signed as them, to active employees not serving notice: it covers the template version published now, a monthly limit and an end date at most twelve months away. A letter that shows pay is never delegated, a type has one live delegation, and a change to the template ends it. The Owner, after a passkey confirmation in the last five minutes. It is audited.
+         */
+        post: operations["createLetterDelegation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/delegations/{id}/revocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a delegation
+         * @description Ends a delegation from now, once; letters already issued under it stay as they are. The Owner. It is audited.
+         */
+        post: operations["revokeLetterDelegation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The letterhead
+         * @description The company's name, UEN and address every letter carries. The people team. It changes nothing.
+         */
+        get: operations["getLetterSettings"];
+        /**
+         * Set the letterhead
+         * @description Sets the company's name, UEN and address for every letter. The HR administrator and the Owner. It is audited.
+         */
+        put: operations["setLetterSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/templates/{id}/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a template draft
+         * @description The HR administrator or the Owner approves and publishes a draft as the next numbered version; it is immutable from then on and the version before is superseded. Nobody approves the template they wrote. It is audited.
+         */
+        post: operations["publishLetterTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The letter types and their settings
+         * @description The catalogue of letter types with the company's setting on each (switched on, due days, the published template version) and the merge fields a template may use. Anyone signed in sees which types are on, so they can ask for one. It changes nothing.
+         */
+        get: operations["listLetterTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/types/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Switch a letter type on or off
+         * @description Switches a type of the catalogue on or off for the company and sets how many working days it takes to issue. A type that needs the person's salary or terms cannot be switched on until Nemura holds them. The HR administrator and the Owner. It is audited.
+         */
+        put: operations["setLetterType"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/types/{key}/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save a draft of a type's template
+         * @description Saves the type's open draft (replacing the last), after checking every block and field against the type: every problem is reported at once. A draft changes nothing until another person publishes it. The people team. It is audited.
+         */
+        put: operations["saveLetterTemplateDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/types/{key}/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A type's template versions
+         * @description The type's template versions, the open draft first, each with its blocks. The people team. It changes nothing.
+         */
+        get: operations["listLetterTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/{id}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check a letter request
+         * @description The HR officer, the HR administrator or the Owner checks a request, never their own: the letter is drawn into a PDF, which is kept and hashed, and given its reference. The signatory then signs exactly those bytes. It is audited.
+         */
+        post: operations["checkLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/{id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The checked letter, to read before signing
+         * @description The exact PDF of a checked letter, so the signatory reads what they are about to sign. The people team and the Owner. It changes nothing.
+         */
+        get: operations["getLetterDraft"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/{id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An issued letter
+         * @description The issued PDF, after its bytes are checked against the hash kept as evidence: a changed byte is never served. The person the letter is about, the people team and the Owner. It changes nothing.
+         */
+        get: operations["getLetterFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/{id}/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make an expiring link to an issued letter
+         * @description Makes a link that delivers the one letter for seven days: its token is shown once and only its hash is kept. The person the letter is about, the people team and the Owner. It is audited.
+         */
+        post: operations["createLetterLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/{id}/refusal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refuse a letter request
+         * @description The people team or the Owner refuses a request that is not issued, with a reason the person is told. It is audited.
+         */
+        post: operations["refuseLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/{id}/signature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign a checked letter
+         * @description The signatory (the Owner) confirms the SHA-256 of the exact PDF they read, after a passkey confirmation in the last five minutes (POST /v1/session/step-up); the letter is then issued once and kept as evidence with the hash, the template version, the data, the signatory, their authority and what the passkey confirmed. It is audited.
+         */
+        post: operations["signLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/{id}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw one's own letter request
+         * @description The person withdraws their own request while it is not issued. It is audited.
+         */
+        post: operations["withdrawLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My contact details and emergency contacts
+         * @description The signed-in person's phone, personal email, address and up to three emergency contacts. It changes nothing.
+         */
+        get: operations["getMyDetails"];
+        /**
+         * Change my contact details
+         * @description Saves the signed-in person's phone, personal email, address and postal code at once. It is audited: the event names the fields that changed, never their values.
+         */
+        put: operations["setMyDetails"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/details-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask to change my legal name, residency or NRIC or FIN
+         * @description Asks the people team to change what needs evidence and approval: a legal name, a residency (with the day residence began for a permanent resident) or an NRIC or FIN. The request carries the evidence, up to 5 MB, and the note says what changed; it never carries an NRIC or FIN number. Another member of the people team approves or refuses it within five working days. It is audited.
+         */
+        post: operations["requestDetailsChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/emergency-contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change my emergency contacts
+         * @description Replaces the signed-in person's emergency contacts with the list given, up to three, in order. It is audited: the event says how many there were and are, never who.
+         */
+        put: operations["setMyEmergencyContacts"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/flexible-work-requests": {
         parameters: {
             query?: never;
@@ -592,6 +1024,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/letters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for a letter
+         * @description Asks for a letter about the signed-in person: the published template of a type the company issues is filled from their record and the letterhead, and a fact the record does not hold is refused by name. The people team is told. It is audited.
+         */
+        post: operations["requestLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/overtime": {
         parameters: {
             query?: never;
@@ -612,6 +1064,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the people team a question
+         * @description Asks the people team a question in writing. Another member of the people team answers it within three working days, and the answer shows on the person's requests. It is audited.
+         */
+        post: operations["askHRQuestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * All my requests and where each is
+         * @description The signed-in person's letters, flexible work requests, changes of details and questions, newest first, each with its step (received, with HR, ready, or closed), its due day and the reply. It changes nothing.
+         */
+        get: operations["listMyRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/requests/{id}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw a request of mine
+         * @description Withdraws a change of details or a question of the signed-in person that nobody has decided or answered. A letter is withdrawn on its own operation. It is audited.
+         */
+        post: operations["withdrawMyRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/sick-leave": {
         parameters: {
             query?: never;
@@ -626,6 +1138,90 @@ export interface paths {
          * @description Records the signed-in person's sick leave: no approval. Each working day is taken against the paid ceiling in force on that day, outpatient and hospitalisation sharing one; days beyond it are recorded as unpaid for the people team to decide on. A notice later than 48 hours after the first day is flagged and accepted. It is audited and the people team is told.
          */
         post: operations["notifySickLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/offboardings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * People who are leaving
+         * @description The active leavings, the soonest last day first, each with its dates kept apart, its checklist, where the service letter is and the leave settlement to the last day. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listLeavings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/onboarding/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether new people are invited to Fyniq
+         * @description Whether adding a person raises a task to invite them to Fyniq. The HR administrator, the Administrator and the Owner. It changes nothing.
+         */
+        get: operations["getOnboardingSettings"];
+        /**
+         * Invite new people to Fyniq
+         * @description Switches on or off the task to invite each new person to Fyniq. Switching on raises no task for people already added. The HR administrator and the Owner. It is audited.
+         */
+        put: operations["setOnboardingSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/onboarding/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tasks to invite new people to Fyniq
+         * @description The tasks to invite new people to Fyniq with the Employee role, the open ones first. Nemura never grants a Fyniq role itself: whoever may invite does it in Fyniq and marks the task done. The HR administrator, the Administrator and the Owner. It changes nothing.
+         */
+        get: operations["listJoinTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/onboarding/tasks/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark an invitation task done or dismissed
+         * @description Marks a task done (the person was invited in Fyniq) or dismissed (it does not apply), once. The HR administrator, the Administrator and the Owner. It is audited.
+         */
+        post: operations["decideJoinTask"];
         delete?: never;
         options?: never;
         head?: never;
@@ -784,6 +1380,50 @@ export interface paths {
          * @description Lists the inputs no pay run has used yet: unpaid leave, encashed annual leave, and approved overtime, rest-day and public-holiday hours, each linked to its source record. The people team, the Owner and the Payroll administrator. A pay run marks each used once. It changes nothing.
          */
         get: operations["listPayInputs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pay groups
+         * @description The pay groups: each has a pay day and the cut-offs for inputs and approval (NM-PAY-03). The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["listPayGroups"];
+        put?: never;
+        /**
+         * Make a pay group
+         * @description Makes a pay group with its pay day and the cut-offs for inputs and approval. The Payroll administrator and the Owner. It is audited.
+         */
+        post: operations["createPayGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/one-offs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A month's one-off items
+         * @description The one-off items (bonuses, commissions, allowances) of a wage month with the facts that class them. The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["listPayOneOffs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1088,6 +1728,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people/{id}/letters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for a letter about a person
+         * @description The people team asks for a letter about a person, such as their key employment terms: the published template is filled from the person's record, terms and the letterhead, and a fact the record does not hold is refused by name. Another member of the people team checks it and the Owner signs it. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["requestLetterFor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people/{id}/nric": {
         parameters: {
             query?: never;
@@ -1108,6 +1768,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people/{id}/offboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's leaving
+         * @description The person's active leaving, when there is one. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["getLeaving"];
+        /**
+         * Record or change a person's leaving
+         * @description Records how and when a person leaves: the day notice was given (it starts the tax-clearance hold), the last day (it prorates the leave and, the day after, narrows the account), for a retrenchment the day employees were told, and the checklist. It sets the leaving date on the person's record. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        put: operations["setLeaving"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/offboarding/cancellation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw a person's leaving
+         * @description Withdraws a leaving before its last day has passed, such as a resignation withdrawn: the leaving date on the record is cleared. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["cancelLeaving"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's pay
+         * @description The person's pay record on a day: the pay group, the monthly basic salary, the fund, the allowances and fixed deductions, whether a joint election is in force and the year to date. Pay is for the Payroll administrator and the Owner alone: anyone else is refused, and every read is of one person. It changes nothing.
+         */
+        get: operations["getPersonPay"];
+        put?: never;
+        /**
+         * Start a person's pay record
+         * @description Ends the current pay record the day the new one starts and starts it, with its allowances and fixed deductions. A record is history: it is ended, never edited. The Payroll administrator and the Owner. It is audited, and the audit event says that pay was set and from when, never what it was.
+         */
+        post: operations["setPersonPay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/pay/one-offs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a one-off item to a month's pay
+         * @description Adds a one-off item to the wage month with the month of employment it is for and the day it is payable, which decide whether it is ordinary or additional wages (FR-PAY-17). The Payroll administrator and the Owner. It is audited without the amount.
+         */
+        post: operations["addPayOneOff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/pay/year-to-date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a person's year to date of CPF wages
+         * @description Imports the CPF wages this employer has counted for the person in a year before Nemura's first run (FR-PAY-14): ordinary wages subject to CPF, additional wages subject and paid, and the last month counted. Once for a year; a run adds to it afterwards. A month that pays additional wages with no year to date cannot be calculated. The Payroll administrator and the Owner. It is audited without the figures.
+         */
+        post: operations["importYearToDate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/pr-election": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a permanent resident's joint election
+         * @description Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file. The Payroll administrator and the Owner. It is audited.
+         */
+        post: operations["setPersonElection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people/{id}/secrets/{field}": {
         parameters: {
             query?: never;
@@ -1122,6 +1910,30 @@ export interface paths {
         get: operations["getPersonSecret"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's key employment terms
+         * @description The key employment terms Nemura holds for a person on a day. The people team reads the base terms; the Payroll administrator and the Owner read the pay terms as well. Anyone else is refused as if the person did not exist. It changes nothing.
+         */
+        get: operations["getPersonTerms"];
+        put?: never;
+        /**
+         * Start a person's key employment terms
+         * @description Ends the current terms the day the new ones start and starts them. The HR officer, the HR administrator and the Owner write the base terms (main duties, notice period, medical benefits, contract end); the Payroll administrator and the Owner write the pay terms. A part the caller may not write carries forward; pay terms cannot be started before the base terms are. It is audited, and the audit event never holds the pay.
+         */
+        post: operations["setPersonTerms"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1189,6 +2001,46 @@ export interface paths {
          * @description Starts the company's leave policy on a day, ending the one in force. It is checked rule by rule against the statute of the pack in force: a policy that gives less on any rule is refused (NM_POLICY_BELOW_STATUTE) with every rule it breaks; one that gives more says so. The HR administrator or the Owner. It is audited.
          */
         put: operations["setPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/questions/{id}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer a question
+         * @description Answers a person's question in writing, once. Nobody answers their own question. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["replyToQuestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/requests/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What waits for the people team
+         * @description Changes of details and questions that nobody has decided or answered, soonest due first, with the person's name and, for a change, the evidence document on their file. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listRequestQueue"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1660,6 +2512,23 @@ export interface components {
              */
             issuer: string;
         };
+        ChangeEvidence: {
+            /**
+             * @description The file, base64-encoded; up to 5 MB.
+             * @example JVBERi0x
+             */
+            content_base64: string;
+            /**
+             * @description The file's type.
+             * @example application/pdf
+             */
+            content_type: string;
+            /**
+             * @description What the file is.
+             * @example Deed poll
+             */
+            title: string;
+        };
         ChangeJobInputBody: {
             /**
              * Format: date
@@ -1941,6 +2810,92 @@ export interface components {
              */
             reason?: string;
         };
+        DelegateInputBody: {
+            /**
+             * Format: date
+             * @description The day it ends: after today and at most twelve months from today.
+             * @example 2027-11-20
+             */
+            ends_on: string;
+            /**
+             * Format: int64
+             * @description How many letters may be issued under it in a calendar month.
+             * @example 50
+             */
+            monthly_limit: number;
+            /**
+             * @description The letter type to delegate.
+             * @example employment_confirmation
+             */
+            type: string;
+        };
+        Delegation: {
+            /**
+             * Format: date
+             * @description The day it was made.
+             * @example 2026-11-20
+             */
+            created_on: string;
+            /**
+             * Format: date
+             * @description The day it ends: at most twelve months after it was made.
+             * @example 2027-11-20
+             */
+            ends_on: string;
+            /** @description The fields the approved template shows; never salary. */
+            fields: string[] | null;
+            /**
+             * Format: uuid
+             * @description The delegation.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description How many it has issued this month.
+             * @example 3
+             */
+            issued_this_month: number;
+            /**
+             * Format: int64
+             * @description How many letters may be issued under it in a calendar month.
+             * @example 50
+             */
+            monthly_limit: number;
+            /**
+             * @description Why it was revoked.
+             * @example No longer needed.
+             */
+            revoked_reason?: string;
+            /**
+             * @description Active; revoked by a signatory; ended on its date; or replaced because the template changed.
+             * @example active
+             * @enum {string}
+             */
+            state: "active" | "revoked" | "ended" | "replaced";
+            /**
+             * @description The letter type.
+             * @example employment_confirmation
+             */
+            type: string;
+            /**
+             * @description Who may ask: active employees not serving notice.
+             * @example active_employees
+             * @enum {string}
+             */
+            who: "active_employees";
+        };
+        DelegationRevokeInputBody: {
+            /**
+             * @description Why it is revoked.
+             * @example No longer needed.
+             */
+            reason?: string;
+        };
+        DelegationsOutputBody: {
+            /** @description The delegations, newest first. */
+            delegations: components["schemas"]["Delegation"][] | null;
+        };
         Dependant: {
             /**
              * @description The formal intent to adopt, instead of a date of birth.
@@ -1987,6 +2942,72 @@ export interface components {
         DependantsOutputBody: {
             /** @description The person's dependants. */
             dependants: components["schemas"]["Dependant"][] | null;
+        };
+        DetailsChange: {
+            /** @description The evidence the people team checks. */
+            evidence: components["schemas"]["ChangeEvidence"];
+            /**
+             * @description What changes.
+             * @example legal_name
+             * @enum {string}
+             */
+            kind: "legal_name" | "residency" | "nric_fin";
+            /**
+             * @description The new legal name, for a legal-name change.
+             * @example Ben Lim Wei
+             */
+            legal_name?: string;
+            /**
+             * @description What changed and why. Never an NRIC or FIN number.
+             * @example My FIN became an NRIC when I became a citizen.
+             */
+            note: string;
+            /**
+             * Format: date
+             * @description The day permanent residence began, for a permanent resident.
+             * @example 2024-03-01
+             */
+            pr_start?: string;
+            /**
+             * @description The new residency, for a residency change.
+             * @example permanent_resident
+             * @enum {string}
+             */
+            residency?: "citizen" | "permanent_resident" | "foreigner";
+        };
+        DetailsDecisionInputBody: {
+            /**
+             * @description Approve or refuse.
+             * @example true
+             */
+            approve: boolean;
+            /**
+             * @description Why it is refused; required to refuse.
+             * @example The deed poll is not legible: attach a clearer copy.
+             */
+            reason?: string;
+        };
+        DetailsSetInputBody: {
+            /**
+             * @description Your home address; empty clears it.
+             * @example 1 Raffles Place #20-01
+             */
+            address?: string;
+            /**
+             * @description Your personal email; empty clears it.
+             * @example ben@example.com
+             */
+            personal_email?: string;
+            /**
+             * @description Your phone number; empty clears it.
+             * @example +65 9123 4567
+             */
+            phone?: string;
+            /**
+             * @description Its postal code; empty clears it.
+             * @example 048616
+             */
+            postal_code?: string;
         };
         DirectoryEntry: {
             /**
@@ -2094,6 +3115,41 @@ export interface components {
         DocumentsOutputBody: {
             /** @description The documents the caller may see. */
             documents: components["schemas"]["Document"][] | null;
+        };
+        ElectionInputBody: {
+            /**
+             * Format: date
+             * @description The day the election starts.
+             * @example 2026-02-10
+             */
+            effective_from: string;
+            /**
+             * Format: uuid
+             * @description A document on the person's file: the CPF Board's approval of the joint application.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9
+             */
+            evidence_document_id: string;
+        };
+        EmergencyContact: {
+            /**
+             * @description Their name.
+             * @example Mei Lim
+             */
+            name: string;
+            /**
+             * @description Their phone number.
+             * @example +65 9123 4567
+             */
+            phone: string;
+            /**
+             * @description How they are related.
+             * @example spouse
+             */
+            relationship: string;
+        };
+        EmergencySetInputBody: {
+            /** @description The whole list, in order; it replaces the one before. */
+            contacts: components["schemas"]["EmergencyContact"][] | null;
         };
         EncashInputBody: {
             /**
@@ -2468,6 +3524,10 @@ export interface components {
             /** @description Every block of government-paid leave, soonest claim deadline first. */
             blocks: components["schemas"]["GovBlock"][] | null;
         };
+        GroupsOutputBody: {
+            /** @description The pay groups by name. */
+            groups: components["schemas"]["PayGroup"][] | null;
+        };
         InfoOutputBody: {
             /**
              * @description The service this answers as.
@@ -2561,6 +3621,65 @@ export interface components {
              * @example SG
              */
             worksite: string;
+        };
+        JoinDecisionInputBody: {
+            /**
+             * @description A note.
+             * @example Invited as an employee.
+             */
+            note?: string;
+            /**
+             * @description Done once the person is invited; dismissed when it does not apply, such as a person who does not claim expenses.
+             * @example done
+             * @enum {string}
+             */
+            state: "done" | "dismissed";
+        };
+        JoinTask: {
+            /**
+             * Format: uuid
+             * @description The task.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20
+             */
+            id: string;
+            /**
+             * @description The note left when it was decided.
+             * @example Invited as an employee.
+             */
+            note?: string;
+            /**
+             * @description Their legal name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The new person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * Format: date-time
+             * @description When the task was raised.
+             * @example 2026-11-20T10:00:00Z
+             */
+            raised_at: string;
+            /**
+             * Format: date
+             * @description The day they start.
+             * @example 2026-12-01
+             */
+            start_date: string;
+            /**
+             * @description Waiting; the person was invited; or it does not apply to them.
+             * @example open
+             * @enum {string}
+             */
+            state: "open" | "done" | "dismissed";
+        };
+        JoinTasksOutputBody: {
+            /** @description The tasks, the open ones first. */
+            tasks: components["schemas"]["JoinTask"][] | null;
         };
         LeaveAsk: {
             /**
@@ -2780,12 +3899,674 @@ export interface components {
              */
             year: number;
         };
+        LetterAskForInputBody: {
+            /**
+             * @description What the letter is for.
+             * @example The key employment terms for the new hire
+             */
+            purpose: string;
+            /**
+             * @description The letter type's key.
+             * @example kets
+             */
+            type: string;
+        };
+        LetterAskInputBody: {
+            /**
+             * @description What the letter is for.
+             * @example A bank loan.
+             */
+            purpose: string;
+            /**
+             * @description The letter type.
+             * @example employment_confirmation
+             */
+            type: string;
+        };
+        LetterAskOutputBody: {
+            /**
+             * Format: date
+             * @description The day it is due.
+             * @example 2026-11-25
+             */
+            due_on: string;
+            /**
+             * Format: uuid
+             * @description The new request.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+             */
+            id: string;
+            /**
+             * @description True when a delegation of the signatory issued the letter at once: it is already under the person's requests, signed.
+             * @example false
+             */
+            issued: boolean;
+        };
+        LetterBlock: {
+            /**
+             * @description The block's kind.
+             * @example paragraph
+             * @enum {string}
+             */
+            kind: "letterhead" | "heading" | "paragraph" | "signature";
+            /**
+             * @description Its text, with {{field}} placeholders from the catalogue.
+             * @example This confirms that {{person.legal_name}} works for {{company.name}}.
+             */
+            text: string;
+        };
+        LetterCheckOutputBody: {
+            /**
+             * @description The letter's reference.
+             * @example EC-2026-0001
+             */
+            reference: string;
+            /**
+             * @description The SHA-256 of the exact PDF, which the signatory confirms.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
+        };
+        LetterDraftInputBody: {
+            /** @description The template's blocks. */
+            blocks: components["schemas"]["LetterBlock"][] | null;
+            /**
+             * @description A note for the approver.
+             * @example Adds the department.
+             */
+            note?: string;
+        };
+        LetterField: {
+            /**
+             * @description How its value is written.
+             * @example text
+             * @enum {string}
+             */
+            format: "text" | "date";
+            /**
+             * @description The field as a template writes it, between double braces.
+             * @example person.legal_name
+             */
+            key: string;
+            /**
+             * @description What it is called.
+             * @example Legal name
+             */
+            label: string;
+        };
+        LetterFileOutputBody: {
+            /** @description The PDF, base64. */
+            content_base64: string;
+            /**
+             * @description Its media type.
+             * @example application/pdf
+             */
+            content_type: string;
+            /**
+             * @description The letter's reference.
+             * @example EC-2026-0001
+             */
+            reference: string;
+        };
+        LetterIDOutputBody: {
+            /**
+             * Format: uuid
+             * @description The record.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ee0
+             */
+            id: string;
+        };
+        LetterLinkOutputBody: {
+            /**
+             * Format: date-time
+             * @description When the link stops working.
+             * @example 2026-11-28T10:00:00Z
+             */
+            expires_at: string;
+            /**
+             * @description The token, shown once: GET /v1/letter-links/download?token=… delivers the letter until it expires.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44.abc
+             */
+            token: string;
+        };
+        LetterListOutputBody: {
+            /** @description The requests the caller may read: their own, or everyone's for the people team and the Owner. */
+            requests: components["schemas"]["LetterRequest"][] | null;
+        };
+        LetterPublishOutputBody: {
+            /**
+             * Format: int64
+             * @description The number it was published as.
+             * @example 2
+             */
+            version: number;
+        };
+        LetterRefuseInputBody: {
+            /**
+             * @description Why; the person is told.
+             * @example The letter is for a different company.
+             */
+            reason: string;
+        };
+        LetterRequest: {
+            /**
+             * @description Why it was refused.
+             * @example The letter is for a different company.
+             */
+            decision_reason?: string;
+            /**
+             * Format: date
+             * @description The day it is due.
+             * @example 2026-11-25
+             */
+            due_on: string;
+            /**
+             * Format: uuid
+             * @description The request.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When it was issued.
+             * @example 2026-11-21T10:00:00Z
+             */
+            issued_at?: string;
+            /**
+             * Format: uuid
+             * @description The issued letter, once there is one.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f00
+             */
+            issued_id?: string;
+            /**
+             * Format: uuid
+             * @description The person the letter is about.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person_name: string;
+            /**
+             * @description What the letter is for.
+             * @example A bank loan.
+             */
+            purpose: string;
+            /**
+             * @description The letter's reference, given when it is checked.
+             * @example EC-2026-0001
+             */
+            reference?: string;
+            /**
+             * Format: date-time
+             * @description When it was asked for.
+             * @example 2026-11-20T10:00:00Z
+             */
+            requested_at: string;
+            /**
+             * @description The SHA-256 of the exact PDF checked, which the signatory confirms.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256?: string;
+            /**
+             * @description Received and waiting for HR; checked and waiting for the signatory; issued; refused; or withdrawn.
+             * @example requested
+             * @enum {string}
+             */
+            state: "requested" | "checked" | "refused" | "issued" | "withdrawn";
+            /**
+             * @description The letter type.
+             * @example employment_confirmation
+             */
+            type: string;
+        };
+        LetterSettings: {
+            /**
+             * @description Its address.
+             * @example 1 Raffles Place, Singapore 048616
+             */
+            address: string;
+            /**
+             * @description The company's name.
+             * @example Acme Pte. Ltd.
+             */
+            company_name: string;
+            /**
+             * @description Its UEN.
+             * @example 201912345A
+             */
+            uen: string;
+        };
+        LetterSettingsOutputBody: {
+            /**
+             * @description Whether a letterhead is set.
+             * @example true
+             */
+            set: boolean;
+            /** @description The letterhead. */
+            settings: components["schemas"]["LetterSettings"];
+        };
+        LetterSignInputBody: {
+            /**
+             * @description The SHA-256 the signatory saw for the exact PDF and confirms.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
+        };
+        LetterSignOutputBody: {
+            /**
+             * Format: uuid
+             * @description The issued letter.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f00
+             */
+            issued_id: string;
+        };
+        LetterTemplate: {
+            /** @description The blocks. */
+            blocks: components["schemas"]["LetterBlock"][] | null;
+            /**
+             * Format: uuid
+             * @description The version.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ee0
+             */
+            id: string;
+            /**
+             * @description The author's note.
+             * @example First version.
+             */
+            note?: string;
+            /**
+             * @description A draft, the published version, or one replaced by a newer.
+             * @example published
+             * @enum {string}
+             */
+            state: "draft" | "published" | "superseded";
+            /**
+             * @description The letter type.
+             * @example employment_confirmation
+             */
+            type: string;
+            /**
+             * Format: int64
+             * @description Its number once published; 0 for a draft.
+             * @example 1
+             */
+            version: number;
+        };
+        LetterTemplatesOutputBody: {
+            /** @description The type's template versions, the open draft first. */
+            versions: components["schemas"]["LetterTemplate"][] | null;
+        };
+        LetterType: {
+            /**
+             * Format: int64
+             * @description Working days to issue it.
+             * @example 3
+             */
+            due_days: number;
+            /**
+             * @description Whether the company issues it.
+             * @example true
+             */
+            enabled: boolean;
+            /** @description The merge fields a template of this type may use. */
+            fields: string[] | null;
+            /**
+             * @description The type's key.
+             * @example employment_confirmation
+             */
+            key: string;
+            /**
+             * @description What the type waits for before it can be switched on: salary or terms.
+             * @example salary
+             */
+            needs?: string;
+            /**
+             * Format: int64
+             * @description The published template version; 0 when none.
+             * @example 1
+             */
+            published_version: number;
+            /**
+             * @description What the letter says, in a sentence.
+             * @example Confirms that the person works for the company.
+             */
+            statement: string;
+            /**
+             * @description Its name.
+             * @example Employment confirmation
+             */
+            title: string;
+        };
+        LetterTypeSetInputBody: {
+            /**
+             * Format: int64
+             * @description Working days to issue it.
+             * @example 3
+             */
+            due_days: number;
+            /**
+             * @description Whether the company issues this type.
+             * @example true
+             */
+            enabled: boolean;
+        };
+        LetterTypesOutputBody: {
+            /** @description The merge fields a template may use. */
+            fields: components["schemas"]["LetterField"][] | null;
+            /** @description The catalogue with the company's settings. */
+            types: components["schemas"]["LetterType"][] | null;
+        };
+        MyDetails: {
+            /**
+             * @description Your home address.
+             * @example 1 Raffles Place #20-01
+             */
+            address?: string;
+            /** @description Up to three people to call, in order. */
+            emergency_contacts: components["schemas"]["EmergencyContact"][] | null;
+            /**
+             * @description Your personal email.
+             * @example ben@example.com
+             */
+            personal_email?: string;
+            /**
+             * @description Your phone number.
+             * @example +65 9123 4567
+             */
+            phone?: string;
+            /**
+             * @description Its postal code.
+             * @example 048616
+             */
+            postal_code?: string;
+        };
         NricInputBody: {
             /**
              * @description The NRIC or FIN: a letter, seven digits and a letter.
              * @example S1234567D
              */
             nric: string;
+        };
+        Offboarding: {
+            /**
+             * Format: date
+             * @description When equipment was returned.
+             * @example 2026-11-30
+             */
+            equipment_returned_on?: string;
+            /**
+             * Format: date
+             * @description When the exit interview was held.
+             * @example 2026-11-27
+             */
+            exit_interview_on?: string;
+            /**
+             * Format: date
+             * @description When the person's Fyniq access was removed.
+             * @example 2026-11-30
+             */
+            fyniq_access_removed_on?: string;
+            /**
+             * Format: uuid
+             * @description The leaving.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f21
+             */
+            id: string;
+            /**
+             * @description How the employment ends.
+             * @example resignation
+             * @enum {string}
+             */
+            kind: "resignation" | "termination" | "retrenchment" | "end_of_contract" | "retirement" | "other";
+            /**
+             * Format: date
+             * @description The last day of employment, the notice period included.
+             * @example 2026-11-30
+             */
+            last_day: string;
+            /** @description The annual leave to the last day; left out when the person has no legal classification or no pack covers the year. */
+            leave_settlement?: components["schemas"]["Settlement"];
+            /**
+             * Format: date
+             * @description The day the person's Nemura account becomes the narrow one for their own documents: the day after the last day.
+             * @example 2026-12-01
+             */
+            nemura_access_narrows_on: string;
+            /**
+             * Format: date
+             * @description When notice was given or the company learned of the cessation: it starts the tax-clearance hold.
+             * @example 2026-10-01
+             */
+            notice_given_on?: string;
+            /**
+             * @description Their legal name.
+             * @example Chen Yu
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * Format: date
+             * @description For a retrenchment, when employees were told.
+             * @example 2026-09-28
+             */
+            retrenchment_notified_on?: string;
+            /**
+             * @description Where the person's service letter is: none asked for yet, or the latest request's state.
+             * @example none
+             * @enum {string}
+             */
+            service_letter: "none" | "requested" | "checked" | "issued" | "refused" | "withdrawn";
+        };
+        OffboardingInput: {
+            /**
+             * Format: date
+             * @description When equipment was returned.
+             * @example 2026-11-30
+             */
+            equipment_returned_on?: string;
+            /**
+             * Format: date
+             * @description When the exit interview was held.
+             * @example 2026-11-27
+             */
+            exit_interview_on?: string;
+            /**
+             * Format: date
+             * @description When the person's Fyniq access was removed.
+             * @example 2026-11-30
+             */
+            fyniq_access_removed_on?: string;
+            /**
+             * @description How the employment ends.
+             * @example resignation
+             * @enum {string}
+             */
+            kind: "resignation" | "termination" | "retrenchment" | "end_of_contract" | "retirement" | "other";
+            /**
+             * Format: date
+             * @description The last day of employment, the notice period included.
+             * @example 2026-11-30
+             */
+            last_day: string;
+            /**
+             * Format: date
+             * @description When notice was given or the company learned of the cessation.
+             * @example 2026-10-01
+             */
+            notice_given_on?: string;
+            /**
+             * Format: date
+             * @description For a retrenchment only, when employees were told.
+             * @example 2026-09-28
+             */
+            retrenchment_notified_on?: string;
+        };
+        OffboardingOutputBody: {
+            /** @description The leaving. */
+            leaving: components["schemas"]["Offboarding"];
+            /**
+             * @description Whether the person has a leaving recorded.
+             * @example true
+             */
+            recorded: boolean;
+        };
+        OffboardingsOutputBody: {
+            /** @description The active leavings, the soonest last day first. */
+            leavings: components["schemas"]["Offboarding"][] | null;
+        };
+        OnboardingSettingsInputBody: {
+            /**
+             * @description Raise a task to invite each new person to Fyniq.
+             * @example true
+             */
+            invite_to_fyniq: boolean;
+        };
+        OnboardingSettingsOutputBody: {
+            /**
+             * @description Whether adding a person raises a task to invite them to Fyniq.
+             * @example true
+             */
+            invite_to_fyniq: boolean;
+        };
+        OneOff: {
+            /**
+             * @description Dollars.
+             * @example 5000.00
+             */
+            amount: string;
+            /**
+             * @description Whether it is CPF wages.
+             * @example true
+             */
+            cpf_wages: boolean;
+            /**
+             * Format: date
+             * @description The month of employment it is for.
+             * @example 2025-12-01
+             */
+            for_month?: string;
+            /**
+             * Format: uuid
+             * @description The item.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f31
+             */
+            id: string;
+            /**
+             * @description Its key, used once for a person and month.
+             * @example bonus-2026
+             */
+            key: string;
+            /**
+             * Format: date
+             * @description The wage month it is paid in.
+             * @example 2026-06-01
+             */
+            month: string;
+            /**
+             * @description As the payslip shows it.
+             * @example Annual bonus
+             */
+            name: string;
+            /**
+             * @description What it is.
+             * @example bonus
+             * @enum {string}
+             */
+            nature: "bonus" | "commission" | "allowance" | "other";
+            /**
+             * @description A note.
+             * @example Annual bonus.
+             */
+            note?: string;
+            /**
+             * Format: date
+             * @description The day it is payable.
+             * @example 2026-06-30
+             */
+            payable_on?: string;
+            /**
+             * @description Their legal name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Whether a run used it.
+             * @example false
+             */
+            used: boolean;
+        };
+        OneOffAddInputBody: {
+            /** @description The item. */
+            item: components["schemas"]["OneOffInput"];
+            /**
+             * Format: date
+             * @description The wage month, the first day.
+             * @example 2026-06-01
+             */
+            month: string;
+        };
+        OneOffInput: {
+            /**
+             * @description Dollars.
+             * @example 5000.00
+             */
+            amount: string;
+            /**
+             * @description Whether it is CPF wages.
+             * @example true
+             */
+            cpf_wages: boolean;
+            /**
+             * Format: date
+             * @description The first day of the month of employment it is for; empty is the wage month.
+             * @example 2025-12-01
+             */
+            for_month?: string;
+            /**
+             * @description The item's key, used once for a person and month.
+             * @example bonus-2026
+             */
+            key: string;
+            /**
+             * @description As the payslip shows it.
+             * @example Annual bonus
+             */
+            name: string;
+            /**
+             * @description What it is.
+             * @example bonus
+             * @enum {string}
+             */
+            nature: "bonus" | "commission" | "allowance" | "other";
+            /**
+             * @description A note.
+             * @example Annual bonus.
+             */
+            note?: string;
+            /**
+             * Format: date
+             * @description The day it is payable; empty is the pay day.
+             * @example 2026-06-30
+             */
+            payable_on?: string;
+        };
+        OneOffsOutputBody: {
+            /** @description The month's one-off items. */
+            items: components["schemas"]["OneOff"][] | null;
         };
         OvertimeAsk: {
             /**
@@ -3041,6 +4822,62 @@ export interface components {
             /** @description The person's work passes, soonest to expire first. */
             passes: components["schemas"]["Pass"][] | null;
         };
+        PayGroup: {
+            /**
+             * Format: int64
+             * @description The run is approved at the latest this many days before the pay day.
+             * @example 3
+             */
+            approval_days: number;
+            /**
+             * Format: int64
+             * @description Inputs are accepted until this many days before the pay day.
+             * @example 7
+             */
+            cutoff_days: number;
+            /**
+             * Format: uuid
+             * @description The pay group.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+             */
+            id: string;
+            /**
+             * @description Its name.
+             * @example Monthly
+             */
+            name: string;
+            /**
+             * Format: int64
+             * @description The day of the month salary is paid; 0 is the last day of the month.
+             * @example 25
+             */
+            pay_day: number;
+        };
+        PayGroupInput: {
+            /**
+             * Format: int64
+             * @description The run is approved at the latest this many days before the pay day; no more than the cut-off.
+             * @example 3
+             */
+            approval_days: number;
+            /**
+             * Format: int64
+             * @description Inputs are accepted until this many days before the pay day.
+             * @example 7
+             */
+            cutoff_days: number;
+            /**
+             * @description Its name.
+             * @example Monthly
+             */
+            name: string;
+            /**
+             * Format: int64
+             * @description The day of the month salary is paid; 0 is the last day of the month.
+             * @example 25
+             */
+            pay_day: number;
+        };
         PayInput: {
             /**
              * Format: date
@@ -3105,6 +4942,108 @@ export interface components {
             /** @description The inputs no pay run has used yet, oldest first. */
             inputs: components["schemas"]["PayInput"][] | null;
         };
+        PayItem: {
+            /**
+             * @description Dollars a month, as a decimal string.
+             * @example 100.00
+             */
+            amount: string;
+            /**
+             * @description Whether it is CPF wages (FR-PAY-17); a deduction never is.
+             * @example true
+             */
+            cpf_wages: boolean;
+            /**
+             * @description The item's key, used once in a record.
+             * @example transport
+             */
+            key: string;
+            /**
+             * @description An allowance adds to pay; a fixed deduction takes from it.
+             * @example allowance
+             * @enum {string}
+             */
+            kind: "allowance" | "fixed_deduction";
+            /**
+             * @description As the payslip shows it.
+             * @example Transport allowance
+             */
+            name: string;
+            /**
+             * @description What it is: an allowance's or a deduction's kind.
+             * @example allowance
+             * @enum {string}
+             */
+            nature: "allowance" | "overtime" | "other" | "accommodation" | "cooperative" | "other_deduction";
+        };
+        PayOutputBody: {
+            /** @description The pay. */
+            pay: components["schemas"]["PayView"];
+            /**
+             * @description Whether the person has pay on the day.
+             * @example true
+             */
+            recorded: boolean;
+        };
+        PaySetInputBody: {
+            /**
+             * Format: date
+             * @description The day the new pay record starts; the current one ends that day.
+             * @example 2026-07-01
+             */
+            effective_from: string;
+            /** @description The pay record. */
+            pay: components["schemas"]["PersonPayInput"];
+        };
+        PayView: {
+            /**
+             * @description The basic salary a month, in dollars.
+             * @example 4500.00
+             */
+            basic_monthly: string;
+            /**
+             * Format: date
+             * @description The day this record started.
+             * @example 2026-01-05
+             */
+            effective_from: string;
+            /**
+             * Format: date
+             * @description The day it ended, when it has.
+             * @example 2026-07-01
+             */
+            effective_to?: string;
+            /** @description The allowances and fixed deductions. */
+            items: components["schemas"]["PayItem"][] | null;
+            /**
+             * @description Whether a joint election to contribute at full employer rates is in force.
+             * @example false
+             */
+            joint_election: boolean;
+            /**
+             * @description Its name.
+             * @example Monthly
+             */
+            pay_group: string;
+            /**
+             * Format: uuid
+             * @description The pay group.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+             */
+            pay_group_id: string;
+            /**
+             * @description The self-help group fund, when there is one.
+             * @example CDAC
+             */
+            shg_fund?: string;
+            /**
+             * @description Whether the employee opted out of the fund.
+             * @example false
+             */
+            shg_opt_out: boolean;
+            /** @description The year to date for the year of the day asked, when there is one. */
+            year_to_date?: components["schemas"]["YearToDate"];
+        };
         PersonInput: {
             /**
              * Format: date
@@ -3149,6 +5088,32 @@ export interface components {
              * @example ana@acme.example
              */
             work_email?: string;
+        };
+        PersonPayInput: {
+            /**
+             * @description The basic salary a month, in dollars.
+             * @example 4500.00
+             */
+            basic_monthly: string;
+            /** @description The allowances and fixed deductions. */
+            items?: components["schemas"]["PayItem"][] | null;
+            /**
+             * Format: uuid
+             * @description The pay group.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+             */
+            pay_group_id: string;
+            /**
+             * @description The self-help group fund, or empty for none.
+             * @example CDAC
+             * @enum {string}
+             */
+            shg_fund?: "CDAC" | "ECF" | "MBMF" | "SINDA" | "";
+            /**
+             * @description The employee opted out of the fund.
+             * @example false
+             */
+            shg_opt_out?: boolean;
         };
         PolicyOutputBody: {
             /**
@@ -3266,6 +5231,91 @@ export interface components {
              */
             name: string;
         };
+        QuestionInputBody: {
+            /**
+             * @description What you want to ask the people team.
+             * @example How many days of annual leave do I get next year?
+             */
+            question: string;
+        };
+        QueueOutputBody: {
+            /** @description What waits for the people team, soonest due first. */
+            queue: components["schemas"]["QueueRow"][] | null;
+        };
+        QueueRow: {
+            /**
+             * Format: date-time
+             * @description When it was made.
+             * @example 2026-11-20T10:00:00Z
+             */
+            asked_at: string;
+            /**
+             * @description For a change of details, what changes.
+             * @example legal_name
+             */
+            change_kind?: string;
+            /**
+             * @description What the person wrote.
+             * @example A bank loan.
+             */
+            detail?: string;
+            /**
+             * Format: date
+             * @description The day it is due.
+             * @example 2026-11-25
+             */
+            due_on: string;
+            /**
+             * Format: uuid
+             * @description For a change of details, the evidence document on the person's file.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9
+             */
+            evidence_id?: string;
+            /**
+             * Format: uuid
+             * @description The request.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+             */
+            id: string;
+            /**
+             * @description What kind of request it is.
+             * @example letter
+             * @enum {string}
+             */
+            kind: "letter" | "flexible_work" | "details_change" | "question";
+            /**
+             * @description Their legal name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person who asked.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description The reply, or the reason it was refused.
+             * @example Thank you: the new address is on your record.
+             */
+            reply?: string;
+            /**
+             * @description Where it is in its own states.
+             * @example requested
+             */
+            state: string;
+            /**
+             * @description Where it is for the person: received, with HR, ready, or closed.
+             * @example received
+             * @enum {string}
+             */
+            step: "received" | "with_hr" | "ready" | "closed";
+            /**
+             * @description What it is about: the letter type, the arrangement, the kind of change, or question.
+             * @example employment_confirmation
+             */
+            title: string;
+        };
         Record: {
             /** @description Their legal classification on the day asked; only the people team sees it. */
             classification?: components["schemas"]["Classification"];
@@ -3345,6 +5395,13 @@ export interface components {
              */
             id: string;
         };
+        ReplyInputBody: {
+            /**
+             * @description The answer.
+             * @example You get 8 days from your second year.
+             */
+            reply: string;
+        };
         RequestListOutputBody: {
             /** @description The requests the caller may read, newest first. */
             requests: components["schemas"]["LeaveRequest"][] | null;
@@ -3376,6 +5433,62 @@ export interface components {
              */
             left_after: string;
         };
+        RequestRow: {
+            /**
+             * Format: date-time
+             * @description When it was made.
+             * @example 2026-11-20T10:00:00Z
+             */
+            asked_at: string;
+            /**
+             * @description What the person wrote.
+             * @example A bank loan.
+             */
+            detail?: string;
+            /**
+             * Format: date
+             * @description The day it is due.
+             * @example 2026-11-25
+             */
+            due_on: string;
+            /**
+             * Format: uuid
+             * @description The request.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+             */
+            id: string;
+            /**
+             * @description What kind of request it is.
+             * @example letter
+             * @enum {string}
+             */
+            kind: "letter" | "flexible_work" | "details_change" | "question";
+            /**
+             * @description The reply, or the reason it was refused.
+             * @example Thank you: the new address is on your record.
+             */
+            reply?: string;
+            /**
+             * @description Where it is in its own states.
+             * @example requested
+             */
+            state: string;
+            /**
+             * @description Where it is for the person: received, with HR, ready, or closed.
+             * @example received
+             * @enum {string}
+             */
+            step: "received" | "with_hr" | "ready" | "closed";
+            /**
+             * @description What it is about: the letter type, the arrangement, the kind of change, or question.
+             * @example employment_confirmation
+             */
+            title: string;
+        };
+        RequestsOutputBody: {
+            /** @description The person's requests, newest first. */
+            requests: components["schemas"]["RequestRow"][] | null;
+        };
         SecretOutputBody: {
             /**
              * @description How much of it the caller sees.
@@ -3396,6 +5509,17 @@ export interface components {
              */
             landing: string;
             /**
+             * @description True after the person's last day: the account is for their own documents only.
+             * @example false
+             */
+            leaver: boolean;
+            /**
+             * Format: date
+             * @description The day the leaver's account ends, when it is one.
+             * @example 2027-12-01
+             */
+            leaver_until?: string;
+            /**
              * Format: uuid
              * @description The person who is signed in.
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
@@ -3407,6 +5531,12 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
              */
             organisation_id: string;
+            /**
+             * Format: uuid
+             * @description The person record the login is linked to, when there is one.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id?: string;
             /**
              * @description The roles the person holds today, from PRD-002 Appendix B.
              * @example [
@@ -3474,6 +5604,36 @@ export interface components {
              * @example 1
              */
             requests: number;
+        };
+        Settlement: {
+            /** @description The steps of the calculation, one plain line each. */
+            basis: string[] | null;
+            /**
+             * @description The days still booked after the last day, to cancel.
+             * @example 0.00
+             */
+            booked: string;
+            /**
+             * @description The annual leave prorated to the last day, as a decimal string.
+             * @example 13.00
+             */
+            entitled: string;
+            /**
+             * @description The days taken.
+             * @example 10.00
+             */
+            taken: string;
+            /**
+             * @description Entitled less taken: negative when the person took more than the prorated entitlement.
+             * @example 3.00
+             */
+            untaken: string;
+            /**
+             * Format: int64
+             * @description The leave year of the last day.
+             * @example 2026
+             */
+            year: number;
         };
         SickAsk: {
             /**
@@ -3624,6 +5784,101 @@ export interface components {
              */
             setup_done: boolean;
         };
+        Terms: {
+            /** @description The base terms. */
+            base: components["schemas"]["TermsBase"];
+            /**
+             * Format: date
+             * @description The day these terms started.
+             * @example 2026-09-01
+             */
+            effective_from: string;
+            /**
+             * Format: date
+             * @description The day they ended, when they have.
+             * @example 2027-01-01
+             */
+            effective_to?: string;
+            /** @description The pay terms; only the Payroll administrator and the Owner see them. */
+            pay?: components["schemas"]["TermsPay"];
+        };
+        TermsBase: {
+            /**
+             * Format: date
+             * @description The last day of a fixed-term contract; empty for an open-ended one.
+             * @example 2027-08-31
+             */
+            contract_end?: string;
+            /**
+             * @description The main duties and responsibilities, as the contract states them.
+             * @example Builds and runs the payments platform.
+             */
+            main_duties: string;
+            /**
+             * @description Other medical benefits; empty is none.
+             * @example Group hospital and surgical insurance
+             */
+            medical_benefits?: string;
+            /**
+             * @description The notice period for termination by either party.
+             * @example One month
+             */
+            notice_period: string;
+        };
+        TermsOutputBody: {
+            /**
+             * @description Whether the person has terms on the day.
+             * @example true
+             */
+            recorded: boolean;
+            /** @description The terms. */
+            terms: components["schemas"]["Terms"];
+        };
+        TermsPay: {
+            /**
+             * @description The basic salary in dollars per salary period, as a decimal string.
+             * @example 4500.00
+             */
+            basic_salary?: string;
+            /**
+             * @description Fixed allowances per salary period; empty is none.
+             * @example Transport 100.00
+             */
+            fixed_allowances?: string;
+            /**
+             * @description Fixed deductions per salary period; empty is none.
+             * @example Dormitory 200.00
+             */
+            fixed_deductions?: string;
+            /**
+             * @description Other salary-related components such as bonuses; empty is none.
+             * @example A discretionary year-end bonus
+             */
+            other_pay?: string;
+            /**
+             * @description The overtime payment period, only when it differs from the salary period.
+             * @example Monthly, with the next salary
+             */
+            overtime_period?: string;
+            /**
+             * @description The salary period.
+             * @example monthly
+             * @enum {string}
+             */
+            salary_period?: "hourly" | "daily" | "weekly" | "fortnightly" | "monthly";
+        };
+        TermsSetInputBody: {
+            /** @description The base terms, for the people team; left out, the current ones carry forward. */
+            base?: components["schemas"]["TermsBase"];
+            /**
+             * Format: date
+             * @description The day the new terms start; the current ones end that day.
+             * @example 2026-09-01
+             */
+            effective_from: string;
+            /** @description The pay terms, for the Payroll administrator and the Owner; left out, the current ones carry forward. */
+            pay?: components["schemas"]["TermsPay"];
+        };
         UnpaidDecisionInputBody: {
             /**
              * @description Unpaid leave (a pay input) or taken from annual leave.
@@ -3662,6 +5917,70 @@ export interface components {
              *     ]
              */
             weekdays: number[] | null;
+        };
+        YTDInput: {
+            /**
+             * @description Additional wages paid, subject or not.
+             * @example 0.00
+             */
+            aw_paid: string;
+            /**
+             * @description Additional wages subject to CPF.
+             * @example 0.00
+             */
+            aw_subject: string;
+            /**
+             * @description Ordinary wages subject to CPF this employer has counted.
+             * @example 25000.00
+             */
+            ow: string;
+            /**
+             * Format: date
+             * @description The first day of the last month counted.
+             * @example 2026-05-01
+             */
+            through_month: string;
+            /**
+             * Format: int64
+             * @description The calendar year.
+             * @example 2026
+             */
+            year: number;
+        };
+        YearToDate: {
+            /**
+             * @description Additional wages paid.
+             * @example 0.00
+             */
+            aw_paid: string;
+            /**
+             * @description Additional wages subject to CPF.
+             * @example 0.00
+             */
+            aw_subject: string;
+            /**
+             * @description Ordinary wages subject to CPF.
+             * @example 25000.00
+             */
+            ow: string;
+            /**
+             * @description Imported at cut-over, or added to by a run.
+             * @example import
+             * @enum {string}
+             */
+            source: "import" | "run";
+            /**
+             * Format: date
+             * @description The first day of the last month counted.
+             * @example 2026-05-01
+             */
+            through_month: string;
+            /**
+             * Format: int64
+             * @description The calendar year.
+             * @example 2026
+             */
+            year: number;
         };
     };
     responses: never;
@@ -4111,6 +6430,88 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideDetailsChange: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DetailsDecisionInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5444,6 +7845,1653 @@ export interface operations {
             };
         };
     };
+    downloadLetterByLink: {
+        parameters: {
+            query?: {
+                /** @description The token of a delivery link. */
+                token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listLetters: {
+        parameters: {
+            query?: {
+                /** @description Only requests in this state. */
+                state?: "requested" | "checked" | "refused" | "issued" | "withdrawn";
+                /** @description Only the caller's own. */
+                mine?: boolean;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterListOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listLetterDelegations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DelegationsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createLetterDelegation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DelegateInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    revokeLetterDelegation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The delegation. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DelegationRevokeInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLetterSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterSettingsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setLetterSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterSettings"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    publishLetterTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The draft. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterPublishOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listLetterTypes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterTypesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setLetterType: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The letter type's key. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterTypeSetInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    saveLetterTemplateDraft: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The letter type's key. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterDraftInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterIDOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listLetterTemplates: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The letter type's key. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterTemplatesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    checkLetter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The letter request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterCheckOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLetterDraft: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The letter request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterFileOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLetterFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The letter request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterFileOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createLetterLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The letter request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterLinkOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    refuseLetter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The letter request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterRefuseInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    signLetter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The letter request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterSignInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterSignOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    withdrawLetter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The letter request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyDetails: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setMyDetails: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DetailsSetInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestDetailsChange: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DetailsChange"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterAskOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setMyEmergencyContacts: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmergencySetInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     requestFlexibleWork: {
         parameters: {
             query?: never;
@@ -5731,6 +9779,78 @@ export interface operations {
             };
         };
     };
+    requestLetter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterAskInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterAskOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     recordOvertime: {
         parameters: {
             query?: never;
@@ -5803,6 +9923,188 @@ export interface operations {
             };
         };
     };
+    askHRQuestion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterAskOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyRequests: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    withdrawMyRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     notifySickLeave: {
         parameters: {
             query?: never;
@@ -5848,6 +10150,317 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listLeavings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OffboardingsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getOnboardingSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingSettingsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setOnboardingSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OnboardingSettingsInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listJoinTasks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinTasksOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideJoinTask: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The task. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinDecisionInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6399,6 +11012,199 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPayGroups: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createPayGroup: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayGroupInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPayOneOffs: {
+        parameters: {
+            query?: {
+                /** @description The wage month, the first day. */
+                month?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OneOffsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7772,6 +12578,90 @@ export interface operations {
             };
         };
     };
+    requestLetterFor: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person the letter is about. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterAskForInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterAskOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     setPersonNric: {
         parameters: {
             query?: never;
@@ -7854,6 +12744,632 @@ export interface operations {
             };
         };
     };
+    getLeaving: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OffboardingOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setLeaving: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OffboardingInput"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    cancelLeaving: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPersonPay: {
+        parameters: {
+            query?: {
+                /** @description The day to show the pay on; today when empty. */
+                as_of?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPersonPay: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaySetInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addPayOneOff: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OneOffAddInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    importYearToDate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YTDInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPersonElection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ElectionInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getPersonSecret: {
         parameters: {
             query?: never;
@@ -7918,6 +13434,162 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPersonTerms: {
+        parameters: {
+            query?: {
+                /** @description The day to show the terms on; today when empty. */
+                as_of?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPersonTerms: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TermsSetInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8271,6 +13943,147 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replyToQuestion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The question. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listRequestQueue: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

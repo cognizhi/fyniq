@@ -444,6 +444,31 @@ components:
         - content_type
         - content_base64
       type: object
+    ChangeEvidence:
+      additionalProperties: false
+      properties:
+        content_base64:
+          description: The file, base64-encoded; up to 5 MB.
+          examples:
+            - JVBERi0x
+          type: string
+        content_type:
+          description: The file's type.
+          examples:
+            - application/pdf
+          type: string
+        title:
+          description: What the file is.
+          examples:
+            - Deed poll
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - title
+        - content_type
+        - content_base64
+      type: object
     ChangeJobInputBody:
       additionalProperties: false
       properties:
@@ -858,6 +883,134 @@ components:
       required:
         - decision
       type: object
+    DelegateInputBody:
+      additionalProperties: false
+      properties:
+        ends_on:
+          description: "The day it ends: after today and at most twelve months from today."
+          examples:
+            - "2027-11-20"
+          format: date
+          type: string
+        monthly_limit:
+          description: How many letters may be issued under it in a calendar month.
+          examples:
+            - 50
+          format: int64
+          maximum: 1000
+          minimum: 1
+          type: integer
+        type:
+          description: The letter type to delegate.
+          examples:
+            - employment_confirmation
+          type: string
+      required:
+        - type
+        - monthly_limit
+        - ends_on
+      type: object
+    Delegation:
+      additionalProperties: false
+      properties:
+        created_on:
+          description: The day it was made.
+          examples:
+            - "2026-11-20"
+          format: date
+          type: string
+        ends_on:
+          description: "The day it ends: at most twelve months after it was made."
+          examples:
+            - "2027-11-20"
+          format: date
+          type: string
+        fields:
+          description: The fields the approved template shows; never salary.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        id:
+          description: The delegation.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10
+          format: uuid
+          type: string
+        issued_this_month:
+          description: How many it has issued this month.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        monthly_limit:
+          description: How many letters may be issued under it in a calendar month.
+          examples:
+            - 50
+          format: int64
+          type: integer
+        revoked_reason:
+          description: Why it was revoked.
+          examples:
+            - No longer needed.
+          type: string
+        state:
+          description: Active; revoked by a signatory; ended on its date; or replaced because the template changed.
+          enum:
+            - active
+            - revoked
+            - ended
+            - replaced
+          examples:
+            - active
+          type: string
+        type:
+          description: The letter type.
+          examples:
+            - employment_confirmation
+          type: string
+        who:
+          description: "Who may ask: active employees not serving notice."
+          enum:
+            - active_employees
+          examples:
+            - active_employees
+          type: string
+      required:
+        - id
+        - type
+        - who
+        - fields
+        - monthly_limit
+        - issued_this_month
+        - created_on
+        - ends_on
+        - state
+      type: object
+    DelegationRevokeInputBody:
+      additionalProperties: false
+      properties:
+        reason:
+          description: Why it is revoked.
+          examples:
+            - No longer needed.
+          maxLength: 500
+          type: string
+      type: object
+    DelegationsOutputBody:
+      additionalProperties: false
+      properties:
+        delegations:
+          description: The delegations, newest first.
+          items:
+            $ref: "#/components/schemas/Delegation"
+          type:
+            - array
+            - "null"
+      required:
+        - delegations
+      type: object
     Dependant:
       additionalProperties: false
       properties:
@@ -927,6 +1080,99 @@ components:
             - "null"
       required:
         - dependants
+      type: object
+    DetailsChange:
+      additionalProperties: false
+      properties:
+        evidence:
+          $ref: "#/components/schemas/ChangeEvidence"
+          description: The evidence the people team checks.
+        kind:
+          description: What changes.
+          enum:
+            - legal_name
+            - residency
+            - nric_fin
+          examples:
+            - legal_name
+          type: string
+        legal_name:
+          description: The new legal name, for a legal-name change.
+          examples:
+            - Ben Lim Wei
+          maxLength: 200
+          type: string
+        note:
+          description: What changed and why. Never an NRIC or FIN number.
+          examples:
+            - My FIN became an NRIC when I became a citizen.
+          maxLength: 500
+          minLength: 1
+          type: string
+        pr_start:
+          description: The day permanent residence began, for a permanent resident.
+          examples:
+            - "2024-03-01"
+          format: date
+          type: string
+        residency:
+          description: The new residency, for a residency change.
+          enum:
+            - citizen
+            - permanent_resident
+            - foreigner
+          examples:
+            - permanent_resident
+          type: string
+      required:
+        - kind
+        - note
+        - evidence
+      type: object
+    DetailsDecisionInputBody:
+      additionalProperties: false
+      properties:
+        approve:
+          description: Approve or refuse.
+          examples:
+            - true
+          type: boolean
+        reason:
+          description: Why it is refused; required to refuse.
+          examples:
+            - "The deed poll is not legible: attach a clearer copy."
+          maxLength: 500
+          type: string
+      required:
+        - approve
+      type: object
+    DetailsSetInputBody:
+      additionalProperties: false
+      properties:
+        address:
+          description: Your home address; empty clears it.
+          examples:
+            - "1 Raffles Place #20-01"
+          maxLength: 300
+          type: string
+        personal_email:
+          description: Your personal email; empty clears it.
+          examples:
+            - ben@example.com
+          maxLength: 200
+          type: string
+        phone:
+          description: Your phone number; empty clears it.
+          examples:
+            - +65 9123 4567
+          maxLength: 30
+          type: string
+        postal_code:
+          description: Its postal code; empty clears it.
+          examples:
+            - "048616"
+          maxLength: 12
+          type: string
       type: object
     DirectoryEntry:
       additionalProperties: false
@@ -1084,6 +1330,68 @@ components:
             - "null"
       required:
         - documents
+      type: object
+    ElectionInputBody:
+      additionalProperties: false
+      properties:
+        effective_from:
+          description: The day the election starts.
+          examples:
+            - "2026-02-10"
+          format: date
+          type: string
+        evidence_document_id:
+          description: "A document on the person's file: the CPF Board's approval of the joint application."
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9
+          format: uuid
+          type: string
+      required:
+        - effective_from
+        - evidence_document_id
+      type: object
+    EmergencyContact:
+      additionalProperties: false
+      properties:
+        name:
+          description: Their name.
+          examples:
+            - Mei Lim
+          maxLength: 120
+          minLength: 1
+          type: string
+        phone:
+          description: Their phone number.
+          examples:
+            - +65 9123 4567
+          maxLength: 30
+          minLength: 3
+          type: string
+        relationship:
+          description: How they are related.
+          examples:
+            - spouse
+          maxLength: 60
+          minLength: 1
+          type: string
+      required:
+        - name
+        - relationship
+        - phone
+      type: object
+    EmergencySetInputBody:
+      additionalProperties: false
+      properties:
+        contacts:
+          description: The whole list, in order; it replaces the one before.
+          items:
+            $ref: "#/components/schemas/EmergencyContact"
+          maxItems: 3
+          type:
+            - array
+            - "null"
+      required:
+        - contacts
       type: object
     EncashInputBody:
       additionalProperties: false
@@ -1630,6 +1938,19 @@ components:
       required:
         - blocks
       type: object
+    GroupsOutputBody:
+      additionalProperties: false
+      properties:
+        groups:
+          description: The pay groups by name.
+          items:
+            $ref: "#/components/schemas/PayGroup"
+          type:
+            - array
+            - "null"
+      required:
+        - groups
+      type: object
     InfoOutputBody:
       additionalProperties: false
       properties:
@@ -1758,6 +2079,93 @@ components:
         - job_title
         - worksite
         - employment_type
+      type: object
+    JoinDecisionInputBody:
+      additionalProperties: false
+      properties:
+        note:
+          description: A note.
+          examples:
+            - Invited as an employee.
+          maxLength: 300
+          type: string
+        state:
+          description: Done once the person is invited; dismissed when it does not apply, such as a person who does not claim expenses.
+          enum:
+            - done
+            - dismissed
+          examples:
+            - done
+          type: string
+      required:
+        - state
+      type: object
+    JoinTask:
+      additionalProperties: false
+      properties:
+        id:
+          description: The task.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20
+          format: uuid
+          type: string
+        note:
+          description: The note left when it was decided.
+          examples:
+            - Invited as an employee.
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The new person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        raised_at:
+          description: When the task was raised.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        start_date:
+          description: The day they start.
+          examples:
+            - "2026-12-01"
+          format: date
+          type: string
+        state:
+          description: Waiting; the person was invited; or it does not apply to them.
+          enum:
+            - open
+            - done
+            - dismissed
+          examples:
+            - open
+          type: string
+      required:
+        - id
+        - person_id
+        - person
+        - start_date
+        - state
+        - raised_at
+      type: object
+    JoinTasksOutputBody:
+      additionalProperties: false
+      properties:
+        tasks:
+          description: The tasks, the open ones first.
+          items:
+            $ref: "#/components/schemas/JoinTask"
+          type:
+            - array
+            - "null"
+      required:
+        - tasks
       type: object
     LeaveAsk:
       additionalProperties: false
@@ -2072,6 +2480,599 @@ components:
         - year
         - types
       type: object
+    LetterAskForInputBody:
+      additionalProperties: false
+      properties:
+        purpose:
+          description: What the letter is for.
+          examples:
+            - The key employment terms for the new hire
+          maxLength: 300
+          minLength: 1
+          type: string
+        type:
+          description: The letter type's key.
+          examples:
+            - kets
+          type: string
+      required:
+        - type
+        - purpose
+      type: object
+    LetterAskInputBody:
+      additionalProperties: false
+      properties:
+        purpose:
+          description: What the letter is for.
+          examples:
+            - A bank loan.
+          maxLength: 300
+          minLength: 1
+          type: string
+        type:
+          description: The letter type.
+          examples:
+            - employment_confirmation
+          type: string
+      required:
+        - type
+        - purpose
+      type: object
+    LetterAskOutputBody:
+      additionalProperties: false
+      properties:
+        due_on:
+          description: The day it is due.
+          examples:
+            - "2026-11-25"
+          format: date
+          type: string
+        id:
+          description: The new request.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+          format: uuid
+          type: string
+        issued:
+          description: "True when a delegation of the signatory issued the letter at once: it is already under the person's requests, signed."
+          examples:
+            - false
+          type: boolean
+      required:
+        - id
+        - due_on
+        - issued
+      type: object
+    LetterBlock:
+      additionalProperties: false
+      properties:
+        kind:
+          description: The block's kind.
+          enum:
+            - letterhead
+            - heading
+            - paragraph
+            - signature
+          examples:
+            - paragraph
+          type: string
+        text:
+          description: Its text, with {{field}} placeholders from the catalogue.
+          examples:
+            - This confirms that {{person.legal_name}} works for {{company.name}}.
+          maxLength: 2000
+          type: string
+      required:
+        - kind
+        - text
+      type: object
+    LetterCheckOutputBody:
+      additionalProperties: false
+      properties:
+        reference:
+          description: The letter's reference.
+          examples:
+            - EC-2026-0001
+          type: string
+        sha256:
+          description: The SHA-256 of the exact PDF, which the signatory confirms.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+      required:
+        - reference
+        - sha256
+      type: object
+    LetterDraftInputBody:
+      additionalProperties: false
+      properties:
+        blocks:
+          description: The template's blocks.
+          items:
+            $ref: "#/components/schemas/LetterBlock"
+          maxItems: 40
+          minItems: 1
+          type:
+            - array
+            - "null"
+        note:
+          description: A note for the approver.
+          examples:
+            - Adds the department.
+          maxLength: 500
+          type: string
+      required:
+        - blocks
+      type: object
+    LetterField:
+      additionalProperties: false
+      properties:
+        format:
+          description: How its value is written.
+          enum:
+            - text
+            - date
+          examples:
+            - text
+          type: string
+        key:
+          description: The field as a template writes it, between double braces.
+          examples:
+            - person.legal_name
+          type: string
+        label:
+          description: What it is called.
+          examples:
+            - Legal name
+          type: string
+      required:
+        - key
+        - label
+        - format
+      type: object
+    LetterFileOutputBody:
+      additionalProperties: false
+      properties:
+        content_base64:
+          description: The PDF, base64.
+          type: string
+        content_type:
+          description: Its media type.
+          examples:
+            - application/pdf
+          type: string
+        reference:
+          description: The letter's reference.
+          examples:
+            - EC-2026-0001
+          type: string
+      required:
+        - reference
+        - content_type
+        - content_base64
+      type: object
+    LetterIDOutputBody:
+      additionalProperties: false
+      properties:
+        id:
+          description: The record.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ee0
+          format: uuid
+          type: string
+      required:
+        - id
+      type: object
+    LetterLinkOutputBody:
+      additionalProperties: false
+      properties:
+        expires_at:
+          description: When the link stops working.
+          examples:
+            - "2026-11-28T10:00:00Z"
+          format: date-time
+          type: string
+        token:
+          description: "The token, shown once: GET /v1/letter-links/download?token=… delivers the letter until it expires."
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44.abc
+          type: string
+      required:
+        - token
+        - expires_at
+      type: object
+    LetterListOutputBody:
+      additionalProperties: false
+      properties:
+        requests:
+          description: "The requests the caller may read: their own, or everyone's for the people team and the Owner."
+          items:
+            $ref: "#/components/schemas/LetterRequest"
+          type:
+            - array
+            - "null"
+      required:
+        - requests
+      type: object
+    LetterPublishOutputBody:
+      additionalProperties: false
+      properties:
+        version:
+          description: The number it was published as.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - version
+      type: object
+    LetterRefuseInputBody:
+      additionalProperties: false
+      properties:
+        reason:
+          description: Why; the person is told.
+          examples:
+            - The letter is for a different company.
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - reason
+      type: object
+    LetterRequest:
+      additionalProperties: false
+      properties:
+        decision_reason:
+          description: Why it was refused.
+          examples:
+            - The letter is for a different company.
+          type: string
+        due_on:
+          description: The day it is due.
+          examples:
+            - "2026-11-25"
+          format: date
+          type: string
+        id:
+          description: The request.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+          format: uuid
+          type: string
+        issued_at:
+          description: When it was issued.
+          examples:
+            - "2026-11-21T10:00:00Z"
+          format: date-time
+          type: string
+        issued_id:
+          description: The issued letter, once there is one.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f00
+          format: uuid
+          type: string
+        person_id:
+          description: The person the letter is about.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        person_name:
+          description: Their name.
+          examples:
+            - Ben Lim
+          type: string
+        purpose:
+          description: What the letter is for.
+          examples:
+            - A bank loan.
+          type: string
+        reference:
+          description: The letter's reference, given when it is checked.
+          examples:
+            - EC-2026-0001
+          type: string
+        requested_at:
+          description: When it was asked for.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        sha256:
+          description: The SHA-256 of the exact PDF checked, which the signatory confirms.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        state:
+          description: Received and waiting for HR; checked and waiting for the signatory; issued; refused; or withdrawn.
+          enum:
+            - requested
+            - checked
+            - refused
+            - issued
+            - withdrawn
+          examples:
+            - requested
+          type: string
+        type:
+          description: The letter type.
+          examples:
+            - employment_confirmation
+          type: string
+      required:
+        - id
+        - person_id
+        - person_name
+        - type
+        - purpose
+        - state
+        - due_on
+        - requested_at
+      type: object
+    LetterSettings:
+      additionalProperties: false
+      properties:
+        address:
+          description: Its address.
+          examples:
+            - 1 Raffles Place, Singapore 048616
+          maxLength: 400
+          minLength: 1
+          type: string
+        company_name:
+          description: The company's name.
+          examples:
+            - Acme Pte. Ltd.
+          maxLength: 200
+          minLength: 1
+          type: string
+        uen:
+          description: Its UEN.
+          examples:
+            - 201912345A
+          maxLength: 30
+          minLength: 1
+          type: string
+      required:
+        - company_name
+        - uen
+        - address
+      type: object
+    LetterSettingsOutputBody:
+      additionalProperties: false
+      properties:
+        set:
+          description: Whether a letterhead is set.
+          examples:
+            - true
+          type: boolean
+        settings:
+          $ref: "#/components/schemas/LetterSettings"
+          description: The letterhead.
+      required:
+        - set
+        - settings
+      type: object
+    LetterSignInputBody:
+      additionalProperties: false
+      properties:
+        sha256:
+          description: The SHA-256 the signatory saw for the exact PDF and confirms.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          pattern: ^[0-9a-f]{64}$
+          type: string
+      required:
+        - sha256
+      type: object
+    LetterSignOutputBody:
+      additionalProperties: false
+      properties:
+        issued_id:
+          description: The issued letter.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f00
+          format: uuid
+          type: string
+      required:
+        - issued_id
+      type: object
+    LetterTemplate:
+      additionalProperties: false
+      properties:
+        blocks:
+          description: The blocks.
+          items:
+            $ref: "#/components/schemas/LetterBlock"
+          type:
+            - array
+            - "null"
+        id:
+          description: The version.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ee0
+          format: uuid
+          type: string
+        note:
+          description: The author's note.
+          examples:
+            - First version.
+          type: string
+        state:
+          description: A draft, the published version, or one replaced by a newer.
+          enum:
+            - draft
+            - published
+            - superseded
+          examples:
+            - published
+          type: string
+        type:
+          description: The letter type.
+          examples:
+            - employment_confirmation
+          type: string
+        version:
+          description: Its number once published; 0 for a draft.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - type
+        - version
+        - state
+        - blocks
+      type: object
+    LetterTemplatesOutputBody:
+      additionalProperties: false
+      properties:
+        versions:
+          description: The type's template versions, the open draft first.
+          items:
+            $ref: "#/components/schemas/LetterTemplate"
+          type:
+            - array
+            - "null"
+      required:
+        - versions
+      type: object
+    LetterType:
+      additionalProperties: false
+      properties:
+        due_days:
+          description: Working days to issue it.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        enabled:
+          description: Whether the company issues it.
+          examples:
+            - true
+          type: boolean
+        fields:
+          description: The merge fields a template of this type may use.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        key:
+          description: The type's key.
+          examples:
+            - employment_confirmation
+          type: string
+        needs:
+          description: "What the type waits for before it can be switched on: salary or terms."
+          examples:
+            - salary
+          type: string
+        published_version:
+          description: The published template version; 0 when none.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        statement:
+          description: What the letter says, in a sentence.
+          examples:
+            - Confirms that the person works for the company.
+          type: string
+        title:
+          description: Its name.
+          examples:
+            - Employment confirmation
+          type: string
+      required:
+        - key
+        - title
+        - statement
+        - enabled
+        - due_days
+        - published_version
+        - fields
+      type: object
+    LetterTypeSetInputBody:
+      additionalProperties: false
+      properties:
+        due_days:
+          description: Working days to issue it.
+          examples:
+            - 3
+          format: int64
+          maximum: 30
+          minimum: 1
+          type: integer
+        enabled:
+          description: Whether the company issues this type.
+          examples:
+            - true
+          type: boolean
+      required:
+        - enabled
+        - due_days
+      type: object
+    LetterTypesOutputBody:
+      additionalProperties: false
+      properties:
+        fields:
+          description: The merge fields a template may use.
+          items:
+            $ref: "#/components/schemas/LetterField"
+          type:
+            - array
+            - "null"
+        types:
+          description: The catalogue with the company's settings.
+          items:
+            $ref: "#/components/schemas/LetterType"
+          type:
+            - array
+            - "null"
+      required:
+        - types
+        - fields
+      type: object
+    MyDetails:
+      additionalProperties: false
+      properties:
+        address:
+          description: Your home address.
+          examples:
+            - "1 Raffles Place #20-01"
+          maxLength: 300
+          type: string
+        emergency_contacts:
+          description: Up to three people to call, in order.
+          items:
+            $ref: "#/components/schemas/EmergencyContact"
+          maxItems: 3
+          type:
+            - array
+            - "null"
+        personal_email:
+          description: Your personal email.
+          examples:
+            - ben@example.com
+          maxLength: 200
+          type: string
+        phone:
+          description: Your phone number.
+          examples:
+            - +65 9123 4567
+          maxLength: 30
+          type: string
+        postal_code:
+          description: Its postal code.
+          examples:
+            - "048616"
+          maxLength: 12
+          type: string
+      required:
+        - emergency_contacts
+      type: object
     NricInputBody:
       additionalProperties: false
       properties:
@@ -2082,6 +3083,391 @@ components:
           type: string
       required:
         - nric
+      type: object
+    Offboarding:
+      additionalProperties: false
+      properties:
+        equipment_returned_on:
+          description: When equipment was returned.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        exit_interview_on:
+          description: When the exit interview was held.
+          examples:
+            - "2026-11-27"
+          format: date
+          type: string
+        fyniq_access_removed_on:
+          description: When the person's Fyniq access was removed.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        id:
+          description: The leaving.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f21
+          format: uuid
+          type: string
+        kind:
+          description: How the employment ends.
+          enum:
+            - resignation
+            - termination
+            - retrenchment
+            - end_of_contract
+            - retirement
+            - other
+          examples:
+            - resignation
+          type: string
+        last_day:
+          description: The last day of employment, the notice period included.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        leave_settlement:
+          $ref: "#/components/schemas/Settlement"
+          description: The annual leave to the last day; left out when the person has no legal classification or no pack covers the year.
+        nemura_access_narrows_on:
+          description: "The day the person's Nemura account becomes the narrow one for their own documents: the day after the last day."
+          examples:
+            - "2026-12-01"
+          format: date
+          type: string
+        notice_given_on:
+          description: "When notice was given or the company learned of the cessation: it starts the tax-clearance hold."
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Chen Yu
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        retrenchment_notified_on:
+          description: For a retrenchment, when employees were told.
+          examples:
+            - "2026-09-28"
+          format: date
+          type: string
+        service_letter:
+          description: "Where the person's service letter is: none asked for yet, or the latest request's state."
+          enum:
+            - none
+            - requested
+            - checked
+            - issued
+            - refused
+            - withdrawn
+          examples:
+            - none
+          type: string
+      required:
+        - id
+        - person_id
+        - person
+        - kind
+        - last_day
+        - nemura_access_narrows_on
+        - service_letter
+      type: object
+    OffboardingInput:
+      additionalProperties: false
+      properties:
+        equipment_returned_on:
+          description: When equipment was returned.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        exit_interview_on:
+          description: When the exit interview was held.
+          examples:
+            - "2026-11-27"
+          format: date
+          type: string
+        fyniq_access_removed_on:
+          description: When the person's Fyniq access was removed.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        kind:
+          description: How the employment ends.
+          enum:
+            - resignation
+            - termination
+            - retrenchment
+            - end_of_contract
+            - retirement
+            - other
+          examples:
+            - resignation
+          type: string
+        last_day:
+          description: The last day of employment, the notice period included.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        notice_given_on:
+          description: When notice was given or the company learned of the cessation.
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        retrenchment_notified_on:
+          description: For a retrenchment only, when employees were told.
+          examples:
+            - "2026-09-28"
+          format: date
+          type: string
+      required:
+        - kind
+        - last_day
+      type: object
+    OffboardingOutputBody:
+      additionalProperties: false
+      properties:
+        leaving:
+          $ref: "#/components/schemas/Offboarding"
+          description: The leaving.
+        recorded:
+          description: Whether the person has a leaving recorded.
+          examples:
+            - true
+          type: boolean
+      required:
+        - recorded
+        - leaving
+      type: object
+    OffboardingsOutputBody:
+      additionalProperties: false
+      properties:
+        leavings:
+          description: The active leavings, the soonest last day first.
+          items:
+            $ref: "#/components/schemas/Offboarding"
+          type:
+            - array
+            - "null"
+      required:
+        - leavings
+      type: object
+    OnboardingSettingsInputBody:
+      additionalProperties: false
+      properties:
+        invite_to_fyniq:
+          description: Raise a task to invite each new person to Fyniq.
+          examples:
+            - true
+          type: boolean
+      required:
+        - invite_to_fyniq
+      type: object
+    OnboardingSettingsOutputBody:
+      additionalProperties: false
+      properties:
+        invite_to_fyniq:
+          description: Whether adding a person raises a task to invite them to Fyniq.
+          examples:
+            - true
+          type: boolean
+      required:
+        - invite_to_fyniq
+      type: object
+    OneOff:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Dollars.
+          examples:
+            - "5000.00"
+          type: string
+        cpf_wages:
+          description: Whether it is CPF wages.
+          examples:
+            - true
+          type: boolean
+        for_month:
+          description: The month of employment it is for.
+          examples:
+            - "2025-12-01"
+          format: date
+          type: string
+        id:
+          description: The item.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f31
+          format: uuid
+          type: string
+        key:
+          description: Its key, used once for a person and month.
+          examples:
+            - bonus-2026
+          type: string
+        month:
+          description: The wage month it is paid in.
+          examples:
+            - "2026-06-01"
+          format: date
+          type: string
+        name:
+          description: As the payslip shows it.
+          examples:
+            - Annual bonus
+          type: string
+        nature:
+          description: What it is.
+          enum:
+            - bonus
+            - commission
+            - allowance
+            - other
+          examples:
+            - bonus
+          type: string
+        note:
+          description: A note.
+          examples:
+            - Annual bonus.
+          type: string
+        payable_on:
+          description: The day it is payable.
+          examples:
+            - "2026-06-30"
+          format: date
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        used:
+          description: Whether a run used it.
+          examples:
+            - false
+          type: boolean
+      required:
+        - id
+        - person_id
+        - person
+        - month
+        - key
+        - name
+        - nature
+        - amount
+        - cpf_wages
+        - used
+      type: object
+    OneOffAddInputBody:
+      additionalProperties: false
+      properties:
+        item:
+          $ref: "#/components/schemas/OneOffInput"
+          description: The item.
+        month:
+          description: The wage month, the first day.
+          examples:
+            - "2026-06-01"
+          format: date
+          type: string
+      required:
+        - month
+        - item
+      type: object
+    OneOffInput:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Dollars.
+          examples:
+            - "5000.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        cpf_wages:
+          description: Whether it is CPF wages.
+          examples:
+            - true
+          type: boolean
+        for_month:
+          description: The first day of the month of employment it is for; empty is the wage month.
+          examples:
+            - "2025-12-01"
+          format: date
+          type: string
+        key:
+          description: The item's key, used once for a person and month.
+          examples:
+            - bonus-2026
+          maxLength: 40
+          minLength: 1
+          type: string
+        name:
+          description: As the payslip shows it.
+          examples:
+            - Annual bonus
+          maxLength: 80
+          minLength: 1
+          type: string
+        nature:
+          description: What it is.
+          enum:
+            - bonus
+            - commission
+            - allowance
+            - other
+          examples:
+            - bonus
+          type: string
+        note:
+          description: A note.
+          examples:
+            - Annual bonus.
+          maxLength: 300
+          type: string
+        payable_on:
+          description: The day it is payable; empty is the pay day.
+          examples:
+            - "2026-06-30"
+          format: date
+          type: string
+      required:
+        - key
+        - name
+        - nature
+        - amount
+        - cpf_wages
+      type: object
+    OneOffsOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The month's one-off items.
+          items:
+            $ref: "#/components/schemas/OneOff"
+          type:
+            - array
+            - "null"
+      required:
+        - items
       type: object
     OvertimeAsk:
       additionalProperties: false
@@ -2451,6 +3837,85 @@ components:
       required:
         - passes
       type: object
+    PayGroup:
+      additionalProperties: false
+      properties:
+        approval_days:
+          description: The run is approved at the latest this many days before the pay day.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        cutoff_days:
+          description: Inputs are accepted until this many days before the pay day.
+          examples:
+            - 7
+          format: int64
+          type: integer
+        id:
+          description: The pay group.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+          format: uuid
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Monthly
+          type: string
+        pay_day:
+          description: The day of the month salary is paid; 0 is the last day of the month.
+          examples:
+            - 25
+          format: int64
+          type: integer
+      required:
+        - id
+        - name
+        - pay_day
+        - cutoff_days
+        - approval_days
+      type: object
+    PayGroupInput:
+      additionalProperties: false
+      properties:
+        approval_days:
+          description: The run is approved at the latest this many days before the pay day; no more than the cut-off.
+          examples:
+            - 3
+          format: int64
+          maximum: 20
+          minimum: 0
+          type: integer
+        cutoff_days:
+          description: Inputs are accepted until this many days before the pay day.
+          examples:
+            - 7
+          format: int64
+          maximum: 20
+          minimum: 0
+          type: integer
+        name:
+          description: Its name.
+          examples:
+            - Monthly
+          maxLength: 80
+          minLength: 1
+          type: string
+        pay_day:
+          description: The day of the month salary is paid; 0 is the last day of the month.
+          examples:
+            - 25
+          format: int64
+          maximum: 28
+          minimum: 0
+          type: integer
+      required:
+        - name
+        - pay_day
+        - cutoff_days
+        - approval_days
+      type: object
     PayInput:
       additionalProperties: false
       properties:
@@ -2547,6 +4012,158 @@ components:
       required:
         - inputs
       type: object
+    PayItem:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Dollars a month, as a decimal string.
+          examples:
+            - "100.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        cpf_wages:
+          description: Whether it is CPF wages (FR-PAY-17); a deduction never is.
+          examples:
+            - true
+          type: boolean
+        key:
+          description: The item's key, used once in a record.
+          examples:
+            - transport
+          maxLength: 40
+          minLength: 1
+          type: string
+        kind:
+          description: An allowance adds to pay; a fixed deduction takes from it.
+          enum:
+            - allowance
+            - fixed_deduction
+          examples:
+            - allowance
+          type: string
+        name:
+          description: As the payslip shows it.
+          examples:
+            - Transport allowance
+          maxLength: 80
+          minLength: 1
+          type: string
+        nature:
+          description: "What it is: an allowance's or a deduction's kind."
+          enum:
+            - allowance
+            - overtime
+            - other
+            - accommodation
+            - cooperative
+            - other_deduction
+          examples:
+            - allowance
+          type: string
+      required:
+        - key
+        - name
+        - kind
+        - nature
+        - amount
+        - cpf_wages
+      type: object
+    PayOutputBody:
+      additionalProperties: false
+      properties:
+        pay:
+          $ref: "#/components/schemas/PayView"
+          description: The pay.
+        recorded:
+          description: Whether the person has pay on the day.
+          examples:
+            - true
+          type: boolean
+      required:
+        - recorded
+        - pay
+      type: object
+    PaySetInputBody:
+      additionalProperties: false
+      properties:
+        effective_from:
+          description: The day the new pay record starts; the current one ends that day.
+          examples:
+            - "2026-07-01"
+          format: date
+          type: string
+        pay:
+          $ref: "#/components/schemas/PersonPayInput"
+          description: The pay record.
+      required:
+        - effective_from
+        - pay
+      type: object
+    PayView:
+      additionalProperties: false
+      properties:
+        basic_monthly:
+          description: The basic salary a month, in dollars.
+          examples:
+            - "4500.00"
+          type: string
+        effective_from:
+          description: The day this record started.
+          examples:
+            - "2026-01-05"
+          format: date
+          type: string
+        effective_to:
+          description: The day it ended, when it has.
+          examples:
+            - "2026-07-01"
+          format: date
+          type: string
+        items:
+          description: The allowances and fixed deductions.
+          items:
+            $ref: "#/components/schemas/PayItem"
+          type:
+            - array
+            - "null"
+        joint_election:
+          description: Whether a joint election to contribute at full employer rates is in force.
+          examples:
+            - false
+          type: boolean
+        pay_group:
+          description: Its name.
+          examples:
+            - Monthly
+          type: string
+        pay_group_id:
+          description: The pay group.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+          format: uuid
+          type: string
+        shg_fund:
+          description: The self-help group fund, when there is one.
+          examples:
+            - CDAC
+          type: string
+        shg_opt_out:
+          description: Whether the employee opted out of the fund.
+          examples:
+            - false
+          type: boolean
+        year_to_date:
+          $ref: "#/components/schemas/YearToDate"
+          description: The year to date for the year of the day asked, when there is one.
+      required:
+        - effective_from
+        - pay_group_id
+        - pay_group
+        - basic_monthly
+        - shg_opt_out
+        - joint_election
+        - items
+      type: object
     PersonInput:
       additionalProperties: false
       properties:
@@ -2602,6 +4219,49 @@ components:
       required:
         - legal_name
         - employment_start
+      type: object
+    PersonPayInput:
+      additionalProperties: false
+      properties:
+        basic_monthly:
+          description: The basic salary a month, in dollars.
+          examples:
+            - "4500.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        items:
+          description: The allowances and fixed deductions.
+          items:
+            $ref: "#/components/schemas/PayItem"
+          maxItems: 30
+          type:
+            - array
+            - "null"
+        pay_group_id:
+          description: The pay group.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+          format: uuid
+          type: string
+        shg_fund:
+          description: The self-help group fund, or empty for none.
+          enum:
+            - CDAC
+            - ECF
+            - MBMF
+            - SINDA
+            - ""
+          examples:
+            - CDAC
+          type: string
+        shg_opt_out:
+          description: The employee opted out of the fund.
+          examples:
+            - false
+          type: boolean
+      required:
+        - pay_group_id
+        - basic_monthly
       type: object
     PolicyOutputBody:
       additionalProperties: false
@@ -2774,6 +4434,126 @@ components:
         - id
         - name
       type: object
+    QuestionInputBody:
+      additionalProperties: false
+      properties:
+        question:
+          description: What you want to ask the people team.
+          examples:
+            - How many days of annual leave do I get next year?
+          maxLength: 1000
+          minLength: 1
+          type: string
+      required:
+        - question
+      type: object
+    QueueOutputBody:
+      additionalProperties: false
+      properties:
+        queue:
+          description: What waits for the people team, soonest due first.
+          items:
+            $ref: "#/components/schemas/QueueRow"
+          type:
+            - array
+            - "null"
+      required:
+        - queue
+      type: object
+    QueueRow:
+      additionalProperties: false
+      properties:
+        asked_at:
+          description: When it was made.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        change_kind:
+          description: For a change of details, what changes.
+          examples:
+            - legal_name
+          type: string
+        detail:
+          description: What the person wrote.
+          examples:
+            - A bank loan.
+          type: string
+        due_on:
+          description: The day it is due.
+          examples:
+            - "2026-11-25"
+          format: date
+          type: string
+        evidence_id:
+          description: For a change of details, the evidence document on the person's file.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9
+          format: uuid
+          type: string
+        id:
+          description: The request.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+          format: uuid
+          type: string
+        kind:
+          description: What kind of request it is.
+          enum:
+            - letter
+            - flexible_work
+            - details_change
+            - question
+          examples:
+            - letter
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person who asked.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        reply:
+          description: The reply, or the reason it was refused.
+          examples:
+            - "Thank you: the new address is on your record."
+          type: string
+        state:
+          description: Where it is in its own states.
+          examples:
+            - requested
+          type: string
+        step:
+          description: "Where it is for the person: received, with HR, ready, or closed."
+          enum:
+            - received
+            - with_hr
+            - ready
+            - closed
+          examples:
+            - received
+          type: string
+        title:
+          description: "What it is about: the letter type, the arrangement, the kind of change, or question."
+          examples:
+            - employment_confirmation
+          type: string
+      required:
+        - person_id
+        - person
+        - id
+        - kind
+        - title
+        - state
+        - step
+        - asked_at
+        - due_on
+      type: object
     Record:
       additionalProperties: false
       properties:
@@ -2878,6 +4658,19 @@ components:
       required:
         - id
       type: object
+    ReplyInputBody:
+      additionalProperties: false
+      properties:
+        reply:
+          description: The answer.
+          examples:
+            - You get 8 days from your second year.
+          maxLength: 2000
+          minLength: 1
+          type: string
+      required:
+        - reply
+      type: object
     RequestListOutputBody:
       additionalProperties: false
       properties:
@@ -2939,6 +4732,89 @@ components:
         - days_counted
         - away
       type: object
+    RequestRow:
+      additionalProperties: false
+      properties:
+        asked_at:
+          description: When it was made.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        detail:
+          description: What the person wrote.
+          examples:
+            - A bank loan.
+          type: string
+        due_on:
+          description: The day it is due.
+          examples:
+            - "2026-11-25"
+          format: date
+          type: string
+        id:
+          description: The request.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+          format: uuid
+          type: string
+        kind:
+          description: What kind of request it is.
+          enum:
+            - letter
+            - flexible_work
+            - details_change
+            - question
+          examples:
+            - letter
+          type: string
+        reply:
+          description: The reply, or the reason it was refused.
+          examples:
+            - "Thank you: the new address is on your record."
+          type: string
+        state:
+          description: Where it is in its own states.
+          examples:
+            - requested
+          type: string
+        step:
+          description: "Where it is for the person: received, with HR, ready, or closed."
+          enum:
+            - received
+            - with_hr
+            - ready
+            - closed
+          examples:
+            - received
+          type: string
+        title:
+          description: "What it is about: the letter type, the arrangement, the kind of change, or question."
+          examples:
+            - employment_confirmation
+          type: string
+      required:
+        - id
+        - kind
+        - title
+        - state
+        - step
+        - asked_at
+        - due_on
+      type: object
+    RequestsOutputBody:
+      additionalProperties: false
+      properties:
+        requests:
+          description: The person's requests, newest first.
+          items:
+            $ref: "#/components/schemas/RequestRow"
+          type:
+            - array
+            - "null"
+      required:
+        - requests
+      type: object
     SecretOutputBody:
       additionalProperties: false
       properties:
@@ -2967,6 +4843,17 @@ components:
           examples:
             - /people
           type: string
+        leaver:
+          description: "True after the person's last day: the account is for their own documents only."
+          examples:
+            - false
+          type: boolean
+        leaver_until:
+          description: The day the leaver's account ends, when it is one.
+          examples:
+            - "2027-12-01"
+          format: date
+          type: string
         member_id:
           description: The person who is signed in.
           examples:
@@ -2977,6 +4864,12 @@ components:
           description: The organisation the session is in.
           examples:
             - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+          format: uuid
+          type: string
+        person_id:
+          description: The person record the login is linked to, when there is one.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
           format: uuid
           type: string
         roles:
@@ -2993,6 +4886,7 @@ components:
         - member_id
         - roles
         - landing
+        - leaver
       type: object
     SetClassificationInputBody:
       additionalProperties: false
@@ -3094,6 +4988,50 @@ components:
       required:
         - requests
         - days
+      type: object
+    Settlement:
+      additionalProperties: false
+      properties:
+        basis:
+          description: The steps of the calculation, one plain line each.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        booked:
+          description: The days still booked after the last day, to cancel.
+          examples:
+            - "0.00"
+          type: string
+        entitled:
+          description: The annual leave prorated to the last day, as a decimal string.
+          examples:
+            - "13.00"
+          type: string
+        taken:
+          description: The days taken.
+          examples:
+            - "10.00"
+          type: string
+        untaken:
+          description: "Entitled less taken: negative when the person took more than the prorated entitlement."
+          examples:
+            - "3.00"
+          type: string
+        year:
+          description: The leave year of the last day.
+          examples:
+            - 2026
+          format: int64
+          type: integer
+      required:
+        - year
+        - entitled
+        - taken
+        - booked
+        - untaken
+        - basis
       type: object
     SickAsk:
       additionalProperties: false
@@ -3299,6 +5237,142 @@ components:
         - providers
         - setup_done
       type: object
+    Terms:
+      additionalProperties: false
+      properties:
+        base:
+          $ref: "#/components/schemas/TermsBase"
+          description: The base terms.
+        effective_from:
+          description: The day these terms started.
+          examples:
+            - "2026-09-01"
+          format: date
+          type: string
+        effective_to:
+          description: The day they ended, when they have.
+          examples:
+            - "2027-01-01"
+          format: date
+          type: string
+        pay:
+          $ref: "#/components/schemas/TermsPay"
+          description: The pay terms; only the Payroll administrator and the Owner see them.
+      required:
+        - effective_from
+        - base
+      type: object
+    TermsBase:
+      additionalProperties: false
+      properties:
+        contract_end:
+          description: The last day of a fixed-term contract; empty for an open-ended one.
+          examples:
+            - "2027-08-31"
+          format: date
+          type: string
+        main_duties:
+          description: The main duties and responsibilities, as the contract states them.
+          examples:
+            - Builds and runs the payments platform.
+          maxLength: 1000
+          minLength: 1
+          type: string
+        medical_benefits:
+          description: Other medical benefits; empty is none.
+          examples:
+            - Group hospital and surgical insurance
+          maxLength: 500
+          type: string
+        notice_period:
+          description: The notice period for termination by either party.
+          examples:
+            - One month
+          maxLength: 300
+          minLength: 1
+          type: string
+      required:
+        - main_duties
+        - notice_period
+      type: object
+    TermsOutputBody:
+      additionalProperties: false
+      properties:
+        recorded:
+          description: Whether the person has terms on the day.
+          examples:
+            - true
+          type: boolean
+        terms:
+          $ref: "#/components/schemas/Terms"
+          description: The terms.
+      required:
+        - recorded
+        - terms
+      type: object
+    TermsPay:
+      additionalProperties: false
+      properties:
+        basic_salary:
+          description: The basic salary in dollars per salary period, as a decimal string.
+          examples:
+            - "4500.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        fixed_allowances:
+          description: Fixed allowances per salary period; empty is none.
+          examples:
+            - Transport 100.00
+          maxLength: 500
+          type: string
+        fixed_deductions:
+          description: Fixed deductions per salary period; empty is none.
+          examples:
+            - Dormitory 200.00
+          maxLength: 500
+          type: string
+        other_pay:
+          description: Other salary-related components such as bonuses; empty is none.
+          examples:
+            - A discretionary year-end bonus
+          maxLength: 500
+          type: string
+        overtime_period:
+          description: The overtime payment period, only when it differs from the salary period.
+          examples:
+            - Monthly, with the next salary
+          maxLength: 200
+          type: string
+        salary_period:
+          description: The salary period.
+          enum:
+            - hourly
+            - daily
+            - weekly
+            - fortnightly
+            - monthly
+          examples:
+            - monthly
+          type: string
+      type: object
+    TermsSetInputBody:
+      additionalProperties: false
+      properties:
+        base:
+          $ref: "#/components/schemas/TermsBase"
+          description: The base terms, for the people team; left out, the current ones carry forward.
+        effective_from:
+          description: The day the new terms start; the current ones end that day.
+          examples:
+            - "2026-09-01"
+          format: date
+          type: string
+        pay:
+          $ref: "#/components/schemas/TermsPay"
+          description: The pay terms, for the Payroll administrator and the Owner; left out, the current ones carry forward.
+      required:
+        - effective_from
+      type: object
     UnpaidDecisionInputBody:
       additionalProperties: false
       properties:
@@ -3356,6 +5430,94 @@ components:
         - effective_from
         - weekdays
         - hours_per_week
+      type: object
+    YTDInput:
+      additionalProperties: false
+      properties:
+        aw_paid:
+          description: Additional wages paid, subject or not.
+          examples:
+            - "0.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        aw_subject:
+          description: Additional wages subject to CPF.
+          examples:
+            - "0.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        ow:
+          description: Ordinary wages subject to CPF this employer has counted.
+          examples:
+            - "25000.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        through_month:
+          description: The first day of the last month counted.
+          examples:
+            - "2026-05-01"
+          format: date
+          type: string
+        year:
+          description: The calendar year.
+          examples:
+            - 2026
+          format: int64
+          maximum: 2100
+          minimum: 2020
+          type: integer
+      required:
+        - year
+        - ow
+        - aw_subject
+        - aw_paid
+        - through_month
+      type: object
+    YearToDate:
+      additionalProperties: false
+      properties:
+        aw_paid:
+          description: Additional wages paid.
+          examples:
+            - "0.00"
+          type: string
+        aw_subject:
+          description: Additional wages subject to CPF.
+          examples:
+            - "0.00"
+          type: string
+        ow:
+          description: Ordinary wages subject to CPF.
+          examples:
+            - "25000.00"
+          type: string
+        source:
+          description: Imported at cut-over, or added to by a run.
+          enum:
+            - import
+            - run
+          examples:
+            - import
+          type: string
+        through_month:
+          description: The first day of the last month counted.
+          examples:
+            - "2026-05-01"
+          format: date
+          type: string
+        year:
+          description: The calendar year.
+          examples:
+            - 2026
+          format: int64
+          type: integer
+      required:
+        - year
+        - ow
+        - aw_subject
+        - aw_paid
+        - through_month
+        - source
       type: object
 info:
   contact:
@@ -3782,6 +5944,77 @@ paths:
       summary: The people checks
       tags:
         - Packs
+  /v1/details-changes/{id}/decision:
+    post:
+      description: Approves or refuses a change of details after reading its evidence. Nobody decides a change to their own details. Approving a legal name or a residency applies it to the person's record from the day of the decision; approving a change of NRIC or FIN records that the evidence was checked, and the new number is then recorded through the restricted fields. Refusing needs a reason. The HR officer, the HR administrator and the Owner. It is audited.
+      operationId: decideDetailsChange
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DetailsDecisionInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Approve or refuse a change of details
+      tags:
+        - Self-service
   /v1/errors:
     get:
       description: Lists every stable error code the API returns, with its HTTP status, its title and the usual fix. It needs no sign-in and changes nothing; a code never changes meaning inside /v1.
@@ -4921,6 +7154,1407 @@ paths:
       summary: Record the leave that has been taken
       tags:
         - Leave
+  /v1/letter-links/download:
+    get:
+      description: Delivers the letter the token names, with no sign-in, until it expires; a token that is unknown, wrong or expired is refused the same way. The page never shows more than the letter. It changes nothing.
+      operationId: downloadLetterByLink
+      parameters:
+        - description: The token of a delivery link.
+          explode: false
+          in: query
+          name: token
+          schema:
+            description: The token of a delivery link.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44.abc
+            type: string
+      responses:
+        "200":
+          description: OK
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Download a letter by its expiring link
+      tags:
+        - Letters
+  /v1/letters:
+    get:
+      description: The caller's own requests; the HR officer, the HR administrator and the Owner read everyone's, those still open first by due day. It changes nothing.
+      operationId: listLetters
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: Only requests in this state.
+          explode: false
+          in: query
+          name: state
+          schema:
+            description: Only requests in this state.
+            enum:
+              - requested
+              - checked
+              - refused
+              - issued
+              - withdrawn
+            examples:
+              - checked
+            type: string
+        - description: Only the caller's own.
+          explode: false
+          in: query
+          name: mine
+          schema:
+            description: Only the caller's own.
+            examples:
+              - true
+            type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterListOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Letter requests the caller may read
+      tags:
+        - Letters
+  /v1/letters/delegations:
+    get:
+      description: The signatory's delegations of automatic issue with their state and how many letters each has issued this month. The HR administrator and the Owner. It changes nothing.
+      operationId: listLetterDelegations
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DelegationsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Delegations of automatic issue
+      tags:
+        - Letters
+    post:
+      description: "The signatory lets one letter type be issued at once, signed as them, to active employees not serving notice: it covers the template version published now, a monthly limit and an end date at most twelve months away. A letter that shows pay is never delegated, a type has one live delegation, and a change to the template ends it. The Owner, after a passkey confirmation in the last five minutes. It is audited."
+      operationId: createLetterDelegation
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DelegateInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Delegate automatic issue of a letter type
+      tags:
+        - Letters
+  /v1/letters/delegations/{id}/revocation:
+    post:
+      description: Ends a delegation from now, once; letters already issued under it stay as they are. The Owner. It is audited.
+      operationId: revokeLetterDelegation
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The delegation.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The delegation.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DelegationRevokeInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Revoke a delegation
+      tags:
+        - Letters
+  /v1/letters/settings:
+    get:
+      description: The company's name, UEN and address every letter carries. The people team. It changes nothing.
+      operationId: getLetterSettings
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterSettingsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: The letterhead
+      tags:
+        - Letters
+    put:
+      description: Sets the company's name, UEN and address for every letter. The HR administrator and the Owner. It is audited.
+      operationId: setLetterSettings
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LetterSettings"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Set the letterhead
+      tags:
+        - Letters
+  /v1/letters/templates/{id}/publication:
+    post:
+      description: The HR administrator or the Owner approves and publishes a draft as the next numbered version; it is immutable from then on and the version before is superseded. Nobody approves the template they wrote. It is audited.
+      operationId: publishLetterTemplate
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The draft.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The draft.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ee0
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterPublishOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Publish a template draft
+      tags:
+        - Letters
+  /v1/letters/types:
+    get:
+      description: The catalogue of letter types with the company's setting on each (switched on, due days, the published template version) and the merge fields a template may use. Anyone signed in sees which types are on, so they can ask for one. It changes nothing.
+      operationId: listLetterTypes
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterTypesOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: The letter types and their settings
+      tags:
+        - Letters
+  /v1/letters/types/{key}:
+    put:
+      description: Switches a type of the catalogue on or off for the company and sets how many working days it takes to issue. A type that needs the person's salary or terms cannot be switched on until Nemura holds them. The HR administrator and the Owner. It is audited.
+      operationId: setLetterType
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The letter type's key.
+          in: path
+          name: key
+          required: true
+          schema:
+            description: The letter type's key.
+            examples:
+              - employment_confirmation
+            pattern: ^[a-z][a-z0-9_]{1,60}$
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LetterTypeSetInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Switch a letter type on or off
+      tags:
+        - Letters
+  /v1/letters/types/{key}/template:
+    put:
+      description: "Saves the type's open draft (replacing the last), after checking every block and field against the type: every problem is reported at once. A draft changes nothing until another person publishes it. The people team. It is audited."
+      operationId: saveLetterTemplateDraft
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The letter type's key.
+          in: path
+          name: key
+          required: true
+          schema:
+            description: The letter type's key.
+            examples:
+              - employment_confirmation
+            pattern: ^[a-z][a-z0-9_]{1,60}$
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LetterDraftInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterIDOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Save a draft of a type's template
+      tags:
+        - Letters
+  /v1/letters/types/{key}/templates:
+    get:
+      description: The type's template versions, the open draft first, each with its blocks. The people team. It changes nothing.
+      operationId: listLetterTemplates
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The letter type's key.
+          in: path
+          name: key
+          required: true
+          schema:
+            description: The letter type's key.
+            examples:
+              - employment_confirmation
+            pattern: ^[a-z][a-z0-9_]{1,60}$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterTemplatesOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A type's template versions
+      tags:
+        - Letters
+  /v1/letters/{id}/check:
+    post:
+      description: "The HR officer, the HR administrator or the Owner checks a request, never their own: the letter is drawn into a PDF, which is kept and hashed, and given its reference. The signatory then signs exactly those bytes. It is audited."
+      operationId: checkLetter
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The letter request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The letter request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterCheckOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Check a letter request
+      tags:
+        - Letters
+  /v1/letters/{id}/draft:
+    get:
+      description: The exact PDF of a checked letter, so the signatory reads what they are about to sign. The people team and the Owner. It changes nothing.
+      operationId: getLetterDraft
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The letter request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The letter request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterFileOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The checked letter, to read before signing
+      tags:
+        - Letters
+  /v1/letters/{id}/file:
+    get:
+      description: "The issued PDF, after its bytes are checked against the hash kept as evidence: a changed byte is never served. The person the letter is about, the people team and the Owner. It changes nothing."
+      operationId: getLetterFile
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The letter request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The letter request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterFileOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: An issued letter
+      tags:
+        - Letters
+  /v1/letters/{id}/link:
+    post:
+      description: "Makes a link that delivers the one letter for seven days: its token is shown once and only its hash is kept. The person the letter is about, the people team and the Owner. It is audited."
+      operationId: createLetterLink
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The letter request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The letter request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterLinkOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Make an expiring link to an issued letter
+      tags:
+        - Letters
+  /v1/letters/{id}/refusal:
+    post:
+      description: The people team or the Owner refuses a request that is not issued, with a reason the person is told. It is audited.
+      operationId: refuseLetter
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The letter request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The letter request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LetterRefuseInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Refuse a letter request
+      tags:
+        - Letters
+  /v1/letters/{id}/signature:
+    post:
+      description: The signatory (the Owner) confirms the SHA-256 of the exact PDF they read, after a passkey confirmation in the last five minutes (POST /v1/session/step-up); the letter is then issued once and kept as evidence with the hash, the template version, the data, the signatory, their authority and what the passkey confirmed. It is audited.
+      operationId: signLetter
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The letter request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The letter request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LetterSignInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterSignOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Sign a checked letter
+      tags:
+        - Letters
+  /v1/letters/{id}/withdrawal:
+    post:
+      description: The person withdraws their own request while it is not issued. It is audited.
+      operationId: withdrawLetter
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The letter request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The letter request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Withdraw one's own letter request
+      tags:
+        - Letters
+  /v1/me/details:
+    get:
+      description: The signed-in person's phone, personal email, address and up to three emergency contacts. It changes nothing.
+      operationId: getMyDetails
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyDetails"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: My contact details and emergency contacts
+      tags:
+        - Self-service
+    put:
+      description: "Saves the signed-in person's phone, personal email, address and postal code at once. It is audited: the event names the fields that changed, never their values."
+      operationId: setMyDetails
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DetailsSetInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Change my contact details
+      tags:
+        - Self-service
+  /v1/me/details-changes:
+    post:
+      description: "Asks the people team to change what needs evidence and approval: a legal name, a residency (with the day residence began for a permanent resident) or an NRIC or FIN. The request carries the evidence, up to 5 MB, and the note says what changed; it never carries an NRIC or FIN number. Another member of the people team approves or refuses it within five working days. It is audited."
+      operationId: requestDetailsChange
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DetailsChange"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterAskOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Request Entity Too Large
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Ask to change my legal name, residency or NRIC or FIN
+      tags:
+        - Self-service
+  /v1/me/emergency-contacts:
+    put:
+      description: "Replaces the signed-in person's emergency contacts with the list given, up to three, in order. It is audited: the event says how many there were and are, never who."
+      operationId: setMyEmergencyContacts
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmergencySetInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Change my emergency contacts
+      tags:
+        - Self-service
   /v1/me/flexible-work-requests:
     post:
       description: Records the signed-in person's formal request (type, start, end and reason). Its receipt date is today and never restarts; the employer's written reply is due the country pack's months after (two). The people team is told. It is audited.
@@ -5163,6 +8797,65 @@ paths:
       summary: My leave in a year
       tags:
         - Leave
+  /v1/me/letters:
+    post:
+      description: "Asks for a letter about the signed-in person: the published template of a type the company issues is filled from their record and the letterhead, and a fact the record does not hold is refused by name. The people team is told. It is audited."
+      operationId: requestLetter
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LetterAskInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterAskOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Ask for a letter
+      tags:
+        - Letters
   /v1/me/overtime:
     post:
       description: Records the signed-in Part IV employee's overtime, rest-day work or public-holiday work for a day, without clocking. It starts pending. Overtime beyond the country pack's monthly limit stays recorded and is flagged for HR, never refused. A person who is not a Part IV employee on that day is refused. It is audited.
@@ -5222,6 +8915,159 @@ paths:
       summary: Record a day's overtime or special-day work
       tags:
         - Leave
+  /v1/me/questions:
+    post:
+      description: Asks the people team a question in writing. Another member of the people team answers it within three working days, and the answer shows on the person's requests. It is audited.
+      operationId: askHRQuestion
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterAskOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Ask the people team a question
+      tags:
+        - Self-service
+  /v1/me/requests:
+    get:
+      description: The signed-in person's letters, flexible work requests, changes of details and questions, newest first, each with its step (received, with HR, ready, or closed), its due day and the reply. It changes nothing.
+      operationId: listMyRequests
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: All my requests and where each is
+      tags:
+        - Self-service
+  /v1/me/requests/{id}/withdrawal:
+    post:
+      description: Withdraws a change of details or a question of the signed-in person that nobody has decided or answered. A letter is withdrawn on its own operation. It is audited.
+      operationId: withdrawMyRequest
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Withdraw a request of mine
+      tags:
+        - Self-service
   /v1/me/sick-leave:
     post:
       description: "Records the signed-in person's sick leave: no approval. Each working day is taken against the paid ceiling in force on that day, outpatient and hospitalisation sharing one; days beyond it are recorded as unpaid for the people team to decide on. A notice later than 48 hours after the first day is flagged and accepted. It is audited and the people team is told."
@@ -5281,6 +9127,260 @@ paths:
       summary: Tell the company you are sick
       tags:
         - Leave
+  /v1/offboardings:
+    get:
+      description: The active leavings, the soonest last day first, each with its dates kept apart, its checklist, where the service letter is and the leave settlement to the last day. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: listLeavings
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OffboardingsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: People who are leaving
+      tags:
+        - Onboarding
+  /v1/onboarding/settings:
+    get:
+      description: Whether adding a person raises a task to invite them to Fyniq. The HR administrator, the Administrator and the Owner. It changes nothing.
+      operationId: getOnboardingSettings
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingSettingsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Whether new people are invited to Fyniq
+      tags:
+        - Onboarding
+    put:
+      description: Switches on or off the task to invite each new person to Fyniq. Switching on raises no task for people already added. The HR administrator and the Owner. It is audited.
+      operationId: setOnboardingSettings
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingSettingsInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Invite new people to Fyniq
+      tags:
+        - Onboarding
+  /v1/onboarding/tasks:
+    get:
+      description: "The tasks to invite new people to Fyniq with the Employee role, the open ones first. Nemura never grants a Fyniq role itself: whoever may invite does it in Fyniq and marks the task done. The HR administrator, the Administrator and the Owner. It changes nothing."
+      operationId: listJoinTasks
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JoinTasksOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Tasks to invite new people to Fyniq
+      tags:
+        - Onboarding
+  /v1/onboarding/tasks/{id}/decision:
+    post:
+      description: Marks a task done (the person was invited in Fyniq) or dismissed (it does not apply), once. The HR administrator, the Administrator and the Owner. It is audited.
+      operationId: decideJoinTask
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The task.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The task.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinDecisionInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Mark an invitation task done or dismissed
+      tags:
+        - Onboarding
   /v1/overtime:
     get:
       description: Lists the caller's own records, their reports' for a line manager, and everyone's for the people team, the Owner and the Payroll administrator. It changes nothing.
@@ -5761,6 +9861,168 @@ paths:
       summary: What leave and time give the next pay run
       tags:
         - Leave
+  /v1/payroll/groups:
+    get:
+      description: "The pay groups: each has a pay day and the cut-offs for inputs and approval (NM-PAY-03). The Payroll administrator and the Owner. It changes nothing."
+      operationId: listPayGroups
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Pay groups
+      tags:
+        - Payroll
+    post:
+      description: Makes a pay group with its pay day and the cut-offs for inputs and approval. The Payroll administrator and the Owner. It is audited.
+      operationId: createPayGroup
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayGroupInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Make a pay group
+      tags:
+        - Payroll
+  /v1/payroll/one-offs:
+    get:
+      description: The one-off items (bonuses, commissions, allowances) of a wage month with the facts that class them. The Payroll administrator and the Owner. It changes nothing.
+      operationId: listPayOneOffs
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The wage month, the first day.
+          explode: false
+          in: query
+          name: month
+          schema:
+            description: The wage month, the first day.
+            examples:
+              - "2026-06-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OneOffsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A month's one-off items
+      tags:
+        - Payroll
   /v1/people:
     get:
       description: "Lists everyone who works for the organisation on a day (today when none is given): name, job title, department, work email and line manager, nothing restricted. Every signed-in person may read it (Appendix B: Directory and org chart). It changes nothing."
@@ -7021,6 +11283,81 @@ paths:
       summary: Pay out days of annual leave
       tags:
         - Leave
+  /v1/people/{id}/letters:
+    post:
+      description: "The people team asks for a letter about a person, such as their key employment terms: the published template is filled from the person's record, terms and the letterhead, and a fact the record does not hold is refused by name. Another member of the people team checks it and the Owner signs it. The HR officer, the HR administrator and the Owner. It is audited."
+      operationId: requestLetterFor
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person the letter is about.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person the letter is about.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LetterAskForInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterAskOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Ask for a letter about a person
+      tags:
+        - Letters
   /v1/people/{id}/nric:
     put:
       description: "Seals the NRIC or FIN with the key service and keeps its masked form: it is collected only for statutory filings, never shown in a list, never in a log or an event. The HR officer and the HR administrator. It is audited without the value."
@@ -7092,6 +11429,558 @@ paths:
       summary: Set a person's NRIC or FIN
       tags:
         - People
+  /v1/people/{id}/offboarding:
+    get:
+      description: The person's active leaving, when there is one. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: getLeaving
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OffboardingOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A person's leaving
+      tags:
+        - Onboarding
+    put:
+      description: "Records how and when a person leaves: the day notice was given (it starts the tax-clearance hold), the last day (it prorates the leave and, the day after, narrows the account), for a retrenchment the day employees were told, and the checklist. It sets the leaving date on the person's record. The HR officer, the HR administrator and the Owner. It is audited."
+      operationId: setLeaving
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OffboardingInput"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Record or change a person's leaving
+      tags:
+        - Onboarding
+  /v1/people/{id}/offboarding/cancellation:
+    post:
+      description: "Withdraws a leaving before its last day has passed, such as a resignation withdrawn: the leaving date on the record is cleared. The HR officer, the HR administrator and the Owner. It is audited."
+      operationId: cancelLeaving
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Withdraw a person's leaving
+      tags:
+        - Onboarding
+  /v1/people/{id}/pay:
+    get:
+      description: "The person's pay record on a day: the pay group, the monthly basic salary, the fund, the allowances and fixed deductions, whether a joint election is in force and the year to date. Pay is for the Payroll administrator and the Owner alone: anyone else is refused, and every read is of one person. It changes nothing."
+      operationId: getPersonPay
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+        - description: The day to show the pay on; today when empty.
+          explode: false
+          in: query
+          name: as_of
+          schema:
+            description: The day to show the pay on; today when empty.
+            examples:
+              - "2026-06-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A person's pay
+      tags:
+        - Payroll
+    post:
+      description: "Ends the current pay record the day the new one starts and starts it, with its allowances and fixed deductions. A record is history: it is ended, never edited. The Payroll administrator and the Owner. It is audited, and the audit event says that pay was set and from when, never what it was."
+      operationId: setPersonPay
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaySetInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Start a person's pay record
+      tags:
+        - Payroll
+  /v1/people/{id}/pay/one-offs:
+    post:
+      description: Adds a one-off item to the wage month with the month of employment it is for and the day it is payable, which decide whether it is ordinary or additional wages (FR-PAY-17). The Payroll administrator and the Owner. It is audited without the amount.
+      operationId: addPayOneOff
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OneOffAddInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Add a one-off item to a month's pay
+      tags:
+        - Payroll
+  /v1/people/{id}/pay/year-to-date:
+    post:
+      description: "Imports the CPF wages this employer has counted for the person in a year before Nemura's first run (FR-PAY-14): ordinary wages subject to CPF, additional wages subject and paid, and the last month counted. Once for a year; a run adds to it afterwards. A month that pays additional wages with no year to date cannot be calculated. The Payroll administrator and the Owner. It is audited without the figures."
+      operationId: importYearToDate
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/YTDInput"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Import a person's year to date of CPF wages
+      tags:
+        - Payroll
+  /v1/people/{id}/pr-election:
+    post:
+      description: Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file. The Payroll administrator and the Owner. It is audited.
+      operationId: setPersonElection
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ElectionInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Record a permanent resident's joint election
+      tags:
+        - Payroll
   /v1/people/{id}/secrets/{field}:
     get:
       description: "Returns the NRIC or FIN or the salary bank account at the level the caller's roles give (Appendix B): masked for the HR officer, in full for the HR administrator, the Payroll administrator and the Owner as the matrix says, and always in full for the person themselves. Every read, and every refusal, is audited. A field the caller may not see answers as if there were none."
@@ -7167,6 +12056,149 @@ paths:
       summary: Read a restricted field
       tags:
         - People
+  /v1/people/{id}/terms:
+    get:
+      description: The key employment terms Nemura holds for a person on a day. The people team reads the base terms; the Payroll administrator and the Owner read the pay terms as well. Anyone else is refused as if the person did not exist. It changes nothing.
+      operationId: getPersonTerms
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+        - description: The day to show the terms on; today when empty.
+          explode: false
+          in: query
+          name: as_of
+          schema:
+            description: The day to show the terms on; today when empty.
+            examples:
+              - "2026-06-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A person's key employment terms
+      tags:
+        - Letters
+    post:
+      description: Ends the current terms the day the new ones start and starts them. The HR officer, the HR administrator and the Owner write the base terms (main duties, notice period, medical benefits, contract end); the Payroll administrator and the Owner write the pay terms. A part the caller may not write carries forward; pay terms cannot be started before the base terms are. It is audited, and the audit event never holds the pay.
+      operationId: setPersonTerms
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TermsSetInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Start a person's key employment terms
+      tags:
+        - Letters
   /v1/people/{id}/work-passes:
     get:
       description: Lists the person's work passes, numbers masked, soonest to expire first. The people team (HR, the Payroll administrator, the Owner). It changes nothing.
@@ -7490,6 +12522,124 @@ paths:
       summary: Set the company's leave policy
       tags:
         - Packs
+  /v1/questions/{id}/reply:
+    post:
+      description: Answers a person's question in writing, once. Nobody answers their own question. The HR officer, the HR administrator and the Owner. It is audited.
+      operationId: replyToQuestion
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The question.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The question.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplyInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Answer a question
+      tags:
+        - Self-service
+  /v1/requests/queue:
+    get:
+      description: Changes of details and questions that nobody has decided or answered, soonest due first, with the person's name and, for a change, the evidence document on their file. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: listRequestQueue
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: What waits for the people team
+      tags:
+        - Self-service
   /v1/session:
     get:
       description: Returns the person the session cookie names, the organisation they are in, the roles they hold today and the page they land on. Roles are read again on each request, so a change is seen at once. It changes nothing; without a valid session it is NM_UNAUTHENTICATED.
@@ -7947,5 +13097,13 @@ tags:
     name: Packs
   - description: Working patterns, leave balances and the ledger behind them (NM-LV-01, NM-LV-02, NM-LV-13, NM-TIM-01).
     name: Leave
+  - description: "Pay groups, a person's pay, the year to date and one-off items: for the Payroll administrator and the Owner alone (NM-PAY-02, NM-PAY-03, FR-EMP-01)."
+    name: Payroll
+  - description: The task to invite new people to Fyniq, and a leaver's dates, checklist and leave settlement (NM-ONB-02, NM-ONB-03).
+    name: Onboarding
+  - description: A person's own details and requests, and what waits for the people team (NM-ESS-03, NM-ESS-04).
+    name: Self-service
+  - description: Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07).
+    name: Letters
   - description: Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02).
     name: Session

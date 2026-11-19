@@ -1,4 +1,16 @@
 {
+  "ap.draft_bill": {
+    "version": 1,
+    "sha256": "0d3fca08b184b092d7faa05b3212ca57c75e3212bd90efff7687ec68cefdfe62"
+  },
+  "ar.draft_invoice": {
+    "version": 1,
+    "sha256": "57846e3eb6946df1dc4fe03f2b1287522bae1176e888832236d28fd8aedac83b"
+  },
+  "exp.draft_claim": {
+    "version": 1,
+    "sha256": "f8f8991af93b01d5262f8f93f2dd3029441365cf2b6429af8d9575919d1ca4fd"
+  },
   "sec.create_task": {
     "version": 1,
     "sha256": "9ad70a323e277f6e0589476330c1d888dd33eac8b9254c61f9bc5a9b151d532f"

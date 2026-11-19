@@ -71,8 +71,9 @@ const (
 	CodeFeatureObligations = features.CodeObligations
 	CodeFeatureInvalid     = features.CodeInvalid
 	CodePolicyBelow        = policy.CodeBelowStatute
-	CodeUnavailable        = "NM_UNAVAILABLE" // the service is not configured for this here
-	CodeNoPasskey          = "NM_NO_PASSKEY"  // #nosec G101 -- a problem code's name: no passkey to confirm with
+	CodeLeaverAccount      = "NM_LEAVER_ACCOUNT" // a leaver's account is for their own documents only
+	CodeUnavailable        = "NM_UNAVAILABLE"    // the service is not configured for this here
+	CodeNoPasskey          = "NM_NO_PASSKEY"     // #nosec G101 -- a problem code's name: no passkey to confirm with
 )
 
 // Catalogue is every stable code the API returns, in order. It is served at GET /v1/errors.
@@ -96,6 +97,15 @@ var Catalogue = []Code{
 	{CodeLeaveBalance, http.StatusConflict, "That is more than the balance", "Ask for no more than the days left, or ask the people team about the leave type."},
 	{CodeLeaveConflict, http.StatusConflict, "That overlaps leave or a pattern already recorded", "Start the new record on or after the day the last one ends."},
 	{CodeFeatureOff, http.StatusConflict, "That feature is switched off", "Switch the feature on under Settings, Features; its records are kept while it is off."},
+	{CodeLetterInvalid, http.StatusUnprocessableEntity, "The letter is not valid", "Correct what the message names and send it again."},
+	{CodeLeaverAccount, http.StatusForbidden, "That is not part of your account now", "After the last day an account keeps the person's own documents and letters, and a way to ask the people team a question."},
+	{CodePayrollInvalid, http.StatusUnprocessableEntity, "The pay is not valid", "Correct what the message names and send it again."},
+	{CodePayrollConflict, http.StatusConflict, "That cannot happen to the pay now", "A pay record and an election are history: start a new one from a later day. A name, a key and a year to date are used once."},
+	{CodeOnboardingInvalid, http.StatusUnprocessableEntity, "The leaving or the task is not valid", "Correct what the message names and send it again."},
+	{CodeOnboardingConflict, http.StatusConflict, "That cannot happen to the task or the leaving now", "A task is decided once; a leaving is withdrawn only before its last day."},
+	{CodeRequestInvalid, http.StatusUnprocessableEntity, "The request is not valid", "Correct what the message names and send it again."},
+	{CodeRequestConflict, http.StatusConflict, "That cannot happen to the request now", "A request keeps its words and its evidence and is decided or answered once: make a new request instead."},
+	{CodeLetterConflict, http.StatusConflict, "That cannot happen to the letter now", "A published template, a checked letter and an issued letter are evidence: change them with a new version, a new request or a new letter."},
 	{CodeUnavailable, http.StatusServiceUnavailable, "Not available here", "This deployment has not set it up: ask whoever runs Nemura."},
 	{CodeRoleRequired, http.StatusForbidden, "Not allowed for your roles", "Ask the Owner to do it, or to change your roles."},
 	{CodeStepUp, http.StatusForbidden, "Confirm it is you", "Confirm with your passkey (POST /v1/session/step-up), then try again within five minutes."},

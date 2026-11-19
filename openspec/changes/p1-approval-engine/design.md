@@ -59,3 +59,14 @@
   dependency after approval and expects a block.
 - [Founder mode's friction on a two-person team] → FM-2's threshold and the weekly review keep
   routine work moving, and the threshold is a setting with its reason (FR-ORG-08).
+
+## Who sees a request in the Inbox (checked 20 Nov 2026)
+
+The list and a request's page follow the rule the code already holds (`maySee`, `internal/api/approvals.go`; the policy note of
+`listApprovals`): a person sees a request they asked for, or one on whose object's Appendix D row they hold any right (V or
+more); on "Expense claims" an own-claims-only right sees only one's own requests (design D10). FR-UX-40 ("lists follow rights")
+and Appendix D agree: a setting change sits on the row "Organisation profile, financial year, defaults", which the Bookkeeper
+and the other finance roles may view, so they list it; they do not have it as their turn (only A signs). So the behaviour is
+Appendix D's, not a leak, and `TestEachRoleSeesTheInboxItemsItsRightsGive` pins it per role. **To confirm with the owner:**
+whether a request's summary (it can name amounts) should show only to roles that may *sign* it, a narrower rule than FR-UX-40
+and Appendix D now give; nothing was changed.

@@ -204,7 +204,7 @@ and names the requirement IDs it proves.
   (`journeys/setup.ts`). The replay model is the local build's own (`internal/adapters/local/models.go`); the AI
   journeys use it when the assistant of `p1-ai-providers` reaches main (5.2). CI runs the journeys in the images job on
   the stack the smoke test and the DAST scan use, and keeps a failed journey's trace.
-- [ ] 5.2 QA-E2E-01's journeys: set-up, record, sell, buy, pay, reconcile, close, the GST monitor and calendar, AI ask,
+- [x] 5.2 QA-E2E-01's journeys: set-up, record, sell, buy, pay, reconcile, close, the GST monitor and calendar, AI ask,
   and AI propose → approve → execute. Payroll's journey and the GST F5's are recorded `after-go-live`. Test
   `// req: QA-E2E-01`, each journey naming the scenarios it asserts.
   Built in part: set-up, record, sell, buy, pay, reconcile, close and the GST monitor and calendar pass on the local
@@ -213,6 +213,11 @@ and names the requirement IDs it proves.
   journeys run on a scripted local model, design D6.) Building them found the sample company's chart without the 2330 and 2410
   system accounts, so no sample month could close; the loader now adds the standard chart's accounts for the roles it
   lacks (FR-COA-03).
+  (20 Nov 2026: checked: `apps/web/journeys/ai.spec.ts` holds both AI journeys (AI ask, and AI propose → approve → execute) on
+  the scripted local model, and its README lists them beside the others; payroll's journey and the GST F5's are recorded
+  `after-go-live`. Every journey this task names is built, so it is ticked. The journeys passed in CI when #775 landed;
+  this session did not run them again, since a stack of its own could not be started beside the other sessions' on a
+  shared host.)
 - [ ] 5.3 QA-UI-08: a walkthrough per role of §7.1, covering the landing page, the navigation, the Home blocks, the
   Inbox items, the not-available page, and the API's refusal of the same reads. Test `// req: QA-UI-08`.
   (17 Nov 2026, in part: `apps/web/journeys/walkthroughs.spec.ts`, one walkthrough per role of §7.1 (16; the line
@@ -234,7 +239,14 @@ and names the requirement IDs it proves.
   figures wait for the people projection; the Auditor's requests and samples (FR-UX-42) and retention holds (AUD-11)
   are after go-live. 18 Nov 2026, later: the Approver's Home lists the requests waiting for them with each one's step and
   who it needs (a request carries its own step, as an Approver reads no approval policy). **Left:** each role's Inbox
-  items in the walkthroughs, which need records waiting for that role.)
+  items in the walkthroughs, which need records waiting for that role.
+  (20 Nov 2026: a journey for the Owner's and the Administrator's Inbox, where the Administrator asks to change the
+  capitalisation threshold and the Owner finds it under "To approve" as their turn, was drafted and left out, as it could
+  not be run here; the other roles' items each need a second person's choreography.
+  What is built instead, on the API the Inbox reads: `TestEachRoleSeesTheInboxItemsItsRightsGive` (`// req: QA-UI-08`) has a founder's request
+  waiting and checks, for every role of §7.1, who lists it, who has it as their turn (only the Owner) and who is refused (an
+  Employee, a line manager, the HR officer, a Super admin); the web side is `approvals.test.tsx`. 5.4's baselines stay for the
+  final run, from CI's or the final head's picture, as the note above says.))
 - [ ] 5.4 QA-UI-07 and QA-RPT-04's visual snapshots (design D5; rev 0.284):
   - hash baselines in `apps/web/visual/baselines.json`;
   - the key pages on every pull request, every route nightly and in the release workflow, at the five frames, in light
@@ -345,6 +357,8 @@ and names the requirement IDs it proves.
   - `docs/quality/launch-gaps.md`: the 77 blockers by change, each with how it closes (44 with the chain).
 - [ ] 7.3 The build plan's paragraph says what was built and what waits. `make check`, `make test`, `make test-e2e` and
   `make test-journeys` pass.
+  (20 Nov 2026: the build plan's paragraph is written ("`p1-launch-readiness` is built in part"). **Left:** the last sentence's
+  runs, `make test`, `make test-e2e` and `make test-journeys`, on the final head; the task stays open until they pass.)
 
 ## Workflow follow-up
 

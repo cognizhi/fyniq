@@ -33,13 +33,15 @@ var Exported = []string{
 	"recurring_invoice_version", "recurring_journal", "recurring_journal_version", "report_export", "restore_drill",
 	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "role_assignment_scope", "sales_reminder",
 	"security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",
-	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "user_preference", "user_saved_item", "withholding_decision",
+	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "user_preference", "user_saved_item", "withholding_decision", "people_source", "person_projection",
 	"psp_account", "psp_balance", "psp_dispute_credit", "psp_dispute_loss", "psp_event", "psp_payout", "psp_txn",
 }
 
 // Excluded are the tables the export leaves out, with why: no secret, key, token, idempotency key or job in flight
 // leaves Fyniq, and none of them is the organisation's own record.
 var Excluded = map[string]string{
+	"people_link":                   "the link to the people platform: a link is made again with its approval and a new epoch, never restored (FR-PPL-16); its key and client are not the organisation's records",
+	"people_link_inbox":             "the events the link received: identities and digests of another system's messages, kept to dedupe them, not the organisation's records (FR-PPL-15)",
 	"idempotency_key":               "saved answers to repeated API requests, kept a day: not the organisation's records",
 	"outbox":                        "background jobs in flight: not the organisation's records",
 	"authz_refusal":                 "counters of a person's refused requests, behind the lockout: not the organisation's records",

@@ -42,7 +42,7 @@ var Categories = []Category{
 		Purpose:    "To run employment: who works here, in what role and under whom, and to meet the employer's record-keeping duties (Employment Act)",
 		Capability: "People records (not restricted)",
 		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "MOM: employment records of a former employee are kept for 1 year after they leave"},
-		Columns:    []string{"person.legal_name", "person.preferred_name", "person.work_email", "person.phone", "person.leaving_reason"},
+		Columns:    []string{"person.legal_name", "person.preferred_name", "person.work_email", "person.phone", "person.leaving_reason", "join_task.note"},
 	},
 	{
 		Key: "legal-classification", What: "A person's legal classification: contract of service or for service, Employment Act cover and Part IV class, residency and the date residence began, and date of birth",
@@ -87,6 +87,37 @@ var Categories = []Category{
 		Columns:    []string{"flex_request.reason", "flex_request.outcome", "flex_request.written_reply"},
 	},
 	{
+		Key: "own-details", What: "A person's own contact details (personal email, home address, postal code), up to three emergency contacts (name, relationship, phone), their requests to change a legal name, residency or NRIC or FIN with the note and the evidence, and their questions to the people team with the answers",
+		Purpose:    "To reach a person and their family in an emergency, to keep the record true on the person's own word and evidence, and to answer what they ask",
+		Capability: "Own profile, balances, payslips, letters, requests",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"},
+		Columns: []string{"person_contact.personal_email", "person_contact.address", "person_contact.postal_code", "emergency_contact.contact_name", "emergency_contact.relationship", "emergency_contact.contact_phone",
+			"details_change.new_legal_name", "details_change.note", "details_change.decision_reason", "hr_question.question", "hr_question.reply"},
+	},
+	{
+		Key: "pay-records", What: "A person's pay: their pay group, basic monthly salary, self-help group fund, allowances and fixed deductions, the one-off items of a month (bonuses, commissions), a permanent resident's joint election, and the year to date of CPF wages",
+		Purpose:    "To work out each person's pay, CPF, SDL and self-help group fund exactly and to show where every figure came from (Employment Act; CPF Act)",
+		Capability: "Pay, pay history, pay runs",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"},
+		Columns: []string{"person_pay.basic_monthly", "person_pay.shg_fund", "person_pay.pay_group_id", "person_pay_item.pay_id", "person_pay_item.name", "person_pay_item.amount", "pay_one_off.name", "pay_one_off.amount", "pay_one_off.note",
+			"cpf_ytd.ow", "cpf_ytd.aw_subject", "cpf_ytd.aw_paid"},
+	},
+	{
+		Key: "key-employment-terms", What: "A person's key employment terms: main duties, notice period, medical benefits and a fixed-term contract's end, and the pay terms (salary period, basic salary, fixed allowances and deductions, overtime period, other pay)",
+		Purpose:    "To give the person the key employment terms in writing (Employment Act) and to fill the letter from the record, not from memory",
+		Capability: "Pay, pay history, pay runs",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"},
+		Columns: []string{"person_terms.main_duties", "person_terms.notice_period", "person_terms.medical_benefits", "person_terms.salary_period", "person_terms.basic_salary", "person_terms.fixed_allowances",
+			"person_terms.fixed_deductions", "person_terms.overtime_period", "person_terms.other_pay"},
+	},
+	{
+		Key: "letters", What: "A person's request for a letter and what it is for, the facts filled into it from their record, the issued letter's data, the company's letterhead and the notes on a template",
+		Purpose:    "To issue letters the person asked for, exactly and attributably, and to keep the issued letter as evidence of what was said and who signed it",
+		Capability: "Letters and templates",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: an issued letter is evidence of what the company stated about the person"},
+		Columns:    []string{"letter_request.purpose", "letter_request.data", "letter_request.decision_reason", "letter_issued.data", "letter_template_version.note", "letter_delegation.revoked_reason"},
+	},
+	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
 		Purpose:    "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)",
 		Capability: "Own file beyond routine release (NM-SEC-07)",
@@ -103,7 +134,11 @@ var Categories = []Category{
 
 // NotPersonal are columns whose names look personal and are not, with why. A column here needs a reason a reviewer can read.
 var NotPersonal = map[string]string{
+	"pay_group.name":               "the name of a pay group, such as Monthly, not of a person",
+	"pay_group.pay_day":            "the day of the month a group is paid, not a person's pay",
 	"organisation.name":            "the name of a company, not of a person",
+	"letter_settings.company_name": "the name of the company on its letterhead, not of a person",
+	"letter_settings.address":      "the company's registered address on its letterhead, not a person's",
 	"deletion_report.record_type":  "the name of a kind of record",
 	"deletion_proof.record_type":   "the name of a kind of record",
 	"legal_hold.record_type":       "the name of a kind of record",

@@ -1,0 +1,49 @@
+{
+  "id": "ar.draft_invoice",
+  "version": 1,
+  "name": "Draft an invoice from a project's unbilled work",
+  "description": "Drafts an invoice to a project's customer from the project's approved, billable, not yet billed time at its billing rates and its posted billable costs at cost plus markup, exactly as a person's Draft an invoice on the project's Unbilled tab does: one line a person and rate for the time, one line a cost, each carrying the project, on the revenue account and GST code you give. It is a draft: it posts nothing, issues nothing and moves no money, and the invoice follows the organisation's approval policies when a person issues it. Name the project by the code the person gave you; give no amounts, they come from the records, and the approver sees the customer, the lines and the total before anything is made. Only a time-and-materials project with a customer can be drafted for; refused for an internal project or when nothing is ready to bill.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "project",
+      "revenue_account",
+      "gst_code"
+    ],
+    "properties": {
+      "project": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,29}$",
+        "description": "The project's code, as the person asking wrote it, such as ACME-01."
+      },
+      "revenue_account": {
+        "type": "string",
+        "pattern": "^[0-9]{4,6}$",
+        "description": "The code of the active revenue account the invoice's lines earn, as records_search or records_get returned it."
+      },
+      "gst_code": {
+        "type": "string",
+        "pattern": "^[A-Z]{2,4}$",
+        "description": "The GST code of the lines, such as SR."
+      },
+      "date": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "The invoice's date, YYYY-MM-DD; leave it out for today."
+      }
+    }
+  },
+  "command": "DraftInvoice",
+  "tier": 1,
+  "limits": {
+    "items": 1
+  },
+  "approvers": [
+    "owner",
+    "controller",
+    "accountant",
+    "ar_specialist"
+  ],
+  "expiry_hours": 72
+}

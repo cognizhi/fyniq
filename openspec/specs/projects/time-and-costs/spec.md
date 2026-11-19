@@ -262,6 +262,11 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** a user drills into a project report figure
 - **THEN** the time entries and costs behind it are shown
 
+#### Scenario: Export and metrics (rev 0.331)
+- **WHEN** a person exports the project report, or asks the semantic layer for a measure by project
+- **THEN** the file or fact holds only what the person's own report holds, hours and revenue for a viewer who may see no costs
+- **AND** the semantic layer gives approved minutes by project and never a rate or a person's cost
+
 #### Scenario: Time never posts
 - **WHEN** time is logged and approved
 - **THEN** nothing posts to the ledger, because salaries are already in the ledger through payroll
