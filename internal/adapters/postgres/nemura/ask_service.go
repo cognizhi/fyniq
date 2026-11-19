@@ -13,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/assistant"
+	"github.com/cognizhi/fyniq/internal/nemura/features"
 	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
@@ -41,11 +42,21 @@ var payslipRules = map[string][2]string{
 	"gross":     {"Gross pay is your basic salary and everything paid on top of it before any deduction.", "PRD-002 NM-PAY-04"},
 }
 
+// toolFeature is the Nemura feature a tool reads: the tool is absent while that feature is switched off for the organisation, or held by another system (NM-FEAT-01, NM-EXT-01).
+var toolFeature = map[string]string{assistant.ToolLeaveBalance: "leave", assistant.ToolPayDay: "payroll", assistant.ToolPayslipLine: "payroll"}
+
 type toolRunner struct {
-	tx     pgx.Tx
-	person uuid.UUID
-	now    time.Time
-	packs  *PacksService
+	switches features.Switches
+	tx       pgx.Tx
+	person   uuid.UUID
+	now      time.Time
+	packs    *PacksService
+}
+
+// Enabled says whether the feature a tool reads is on.
+func (r toolRunner) Enabled(tool string) bool {
+	f, ok := toolFeature[tool]
+	return !ok || r.switches[f].State == features.On
 }
 
 func (r toolRunner) Run(ctx context.Context, c assistant.Call) (assistant.Result, error) {
@@ -130,7 +141,11 @@ func (a AskService) Ask(ctx context.Context, s api.Session, question string) (ap
 		if err != nil {
 			return &assistant.Refusal{Code: assistant.CodeInvalid, Message: "Your login is not linked to a person record yet: ask the people team."}
 		}
-		ans, err := assistant.Ask(ctx, a.Model, toolRunner{tx: tx, person: person, now: a.Clock.Now(), packs: a.Packs}, question)
+		sw, err := FeatureSwitches(ctx, tx)
+		if err != nil {
+			return err
+		}
+		ans, err := assistant.Ask(ctx, a.Model, toolRunner{switches: sw, tx: tx, person: person, now: a.Clock.Now(), packs: a.Packs}, question)
 		if err != nil {
 			return err
 		}

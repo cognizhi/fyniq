@@ -132,6 +132,10 @@ func Ask(ctx context.Context, m Model, r Runner, question string) (Answer, error
 	}
 	var results []Result
 	for _, c := range calls {
+		if e, ok := r.(interface{ Enabled(tool string) bool }); ok && !e.Enabled(c.Tool) {
+			a.Dropped = append(a.Dropped, c.Tool+": the feature it reads is switched off for this organisation")
+			continue
+		}
 		if _, ok := Tools[c.Tool]; !ok || Refuse(c.Tool) != "" {
 			a.Dropped = append(a.Dropped, c.Tool+": not a tool the assistant may use")
 			continue
@@ -243,7 +247,7 @@ func policyTopic(l string) string {
 
 func (Scripted) Compose(_ context.Context, q string, results []Result) ([]Segment, error) {
 	if len(results) == 0 {
-		return []Segment{{Text: "I can answer questions about your own leave balance, your pay day, what a rule of the Singapore pack says and what a line of your payslip is. I could not match your question to one of those: try asking it another way, or ask the people team."}}, nil
+		return []Segment{{Text: "I can answer questions about your own leave balance, your pay day, what a rule of the Singapore pack says and what a line of your payslip is. I could not match your question to one of those: try asking it another way, or ask the people team.", Sources: []string{"what the assistant can answer"}}}, nil
 	}
 	var out []Segment
 	for _, r := range results {

@@ -4,7 +4,9 @@ package nemura_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/assistant"
 )
@@ -200,6 +203,13 @@ func TestAPersonAsksTheAssistantAboutTheirOwnLeavePayDayAndPayslipAndItNeverAnsw
 	if err != nil {
 		t.Fatal(err)
 	}
+	feats := nemura.FeatureService{Store: st, Clock: clock.NewFrozen(now)}
+	if err := feats.Set(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.owner}, "leave", "on", "", nil); err != nil {
+		t.Fatal(err)
+	}
+	// Payroll cannot be switched on through the API until its second approver exists (p1-nemura-platform); the switch is written as the platform's owner would.
+	setPayroll := func(state string) { payrollSwitch(t, lt, now, state) }
+	setPayroll("on")
 	asker := nemura.AskService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Model: assistant.Scripted{}}
 	admin := nemura.AssistantService{Store: st, Clock: clock.NewFrozen(now), AllowScripted: true}
 	ben := api.Session{Organisation: lt.c.org, Member: lt.benLogin}
@@ -269,6 +279,18 @@ func TestAPersonAsksTheAssistantAboutTheirOwnLeavePayDayAndPayslipAndItNeverAnsw
 	_ = su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND (body LIKE '%How much leave%' OR body LIKE '%salary of Ben%' OR body LIKE '%4500%')`, lt.c.org).Scan(&leaks)
 	if asked != 9 || leaks != 0 {
 		t.Errorf("audit: %d asked events, %d with a question or a pay figure", asked, leaks)
+	}
+	// A tool whose feature is switched off is absent: with Leave off the leave question is not matched to a tool.
+	setPayroll("off")
+	if err := feats.Set(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.owner}, "leave", "off", "", nil); err != nil {
+		t.Fatal(err)
+	}
+	off := ask("How much leave do I have left?")
+	if len(off.Tools) != 0 || off.Dropped != 1 || !strings.Contains(text(off), "could not match") {
+		t.Errorf("a tool of a feature that is off: %+v", off)
+	}
+	if off := ask("When is my pay day?"); len(off.Tools) != 0 || off.Dropped != 1 {
+		t.Errorf("pay day with payroll off: %+v", off)
 	}
 	if _, err := (nemura.AskService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc}).Ask(ctx, ben, "How much leave do I have left?"); !errors.Is(err, api.ErrUnavailable) {
 		t.Errorf("no model route: %v", err)
@@ -402,4 +424,90 @@ func TestAFlexibleWorkReplyIsDraftedApprovedAndAttachedByTheExecutorAndNothingEl
 	if leaks != 0 {
 		t.Errorf("the text of a request or a draft in the audit trail: %d", leaks)
 	}
+}
+
+// The golden questions of the people assistant (QA-AI-01, NM-AI-02, NM-AI-03, NM-AI-06): each is asked as Ben Lim of the sample company through the real runtime, and a right answer names its tool, states the figures
+// a tool returned, cites its source and holds no pay figure; the pass mark is 100%.
+// req: NM-AI-02, NM-AI-03, NM-AI-06
+func TestTheGoldenQuestionsOfThePeopleAssistantAllPass(t *testing.T) {
+	raw, err := os.ReadFile("../../../../evals/nemura-assistant/golden.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var suite struct {
+		Threshold float64 `json:"threshold"`
+		Cases     []struct {
+			ID, Question, Source string
+			Tools, Contains      []string
+		} `json:"cases"`
+	}
+	if err := json.Unmarshal(raw, &suite); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-11-20").Add(10 * time.Hour)
+	st := store(t, "nemura_api")
+	packsSvc, err := nemura.NewPacksService(st, clock.NewFrozen(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	feats := nemura.FeatureService{Store: st, Clock: clock.NewFrozen(now)}
+	if err := feats.Set(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.owner}, "leave", "on", "", nil); err != nil {
+		t.Fatal(err)
+	}
+	payrollSwitch(t, lt, now, "on")
+	asker := nemura.AskService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Model: assistant.Scripted{}}
+	admin := nemura.AssistantService{Store: st, Clock: clock.NewFrozen(now), AllowScripted: true}
+	pay := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc}
+	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
+	gid, _ := pay.CreateGroup(ctx, prep, api.PayGroupInput{Name: "Monthly", PayDay: 25, CutoffDays: 7, ApprovalDays: 3})
+	if err := pay.SetPay(ctx, prep, lt.ben, d("2026-01-05"), api.PersonPayInput{GroupID: gid, BasicMonthly: "4500.00", SHGFund: "CDAC"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := admin.SetSettings(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.owner}, api.AISettingsInput{Enabled: true, Route: "scripted", TaskTypes: []string{"people.draft_letter"}}); err != nil {
+		t.Fatal(err)
+	}
+	pass := 0
+	for _, c := range suite.Cases {
+		a, err := asker.Ask(ctx, api.Session{Organisation: lt.c.org, Member: lt.benLogin}, c.Question)
+		if err != nil {
+			t.Errorf("%s: %v", c.ID, err)
+			continue
+		}
+		text, ok := "", true
+		src := ""
+		for _, s := range a.Segments {
+			text += s.Text + " "
+			src += strings.Join(s.Sources, "; ") + " "
+		}
+		for _, w := range c.Contains {
+			ok = ok && strings.Contains(strings.ToLower(text), strings.ToLower(w))
+		}
+		ok = ok && strings.Join(a.Tools, ",") == strings.Join(c.Tools, ",") && strings.Contains(src, c.Source) && !strings.Contains(text, "4500") && !strings.Contains(text, "4,500")
+		if !ok {
+			t.Errorf("%s: %q: tools %v, answer %q, sources %q", c.ID, c.Question, a.Tools, text, src)
+			continue
+		}
+		pass++
+	}
+	if float64(pass)/float64(len(suite.Cases)) < suite.Threshold {
+		t.Errorf("%d of %d golden questions pass", pass, len(suite.Cases))
+	}
+}
+
+// payrollSwitch writes the Payroll feature's state as the platform's owner would, with its audit event: the API refuses to switch Payroll on until its second approver exists (p1-nemura-platform).
+func payrollSwitch(t *testing.T, lt *leaveTeam, at time.Time, state string) {
+	t.Helper()
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var id uuid.UUID
+		err := tx.QueryRow(ctx, "UPDATE nemura.feature_state SET state = $1, changed_by = $2 WHERE feature = 'payroll' RETURNING id", state, lt.c.owner).Scan(&id)
+		if err != nil {
+			id = uuid.New()
+			if _, err := tx.Exec(ctx, "INSERT INTO nemura.feature_state (id, feature, state, changed_by) VALUES ($1, 'payroll', $2, $3)", id, state, lt.c.owner); err != nil {
+				return err
+			}
+		}
+		return nemura.Audit(ctx, tx, lt.c.org, at, audit.Actor{Type: "user", ID: lt.c.owner.String()}, "nemura.feature.changed", audit.Object{Type: "feature_state", ID: id}, map[string]audit.Change{"state": {nil, state}}, "")
+	})
 }

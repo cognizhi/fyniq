@@ -22,9 +22,9 @@ Load before each slice: `fyniq-ai-proposals`, `fyniq-security-compliance`, `fyni
 
 ## 4. Evals and red team (slice 4)
 
-- [ ] 4.1 Golden questions from the pack and the oracle, and the red-team suite (an injected instruction in a request, a request for another person's pay, for an approval, for a bank account change, for a role change), through the real runtime with the scripted model. `// req: NM-AI-04`
-- [ ] 4.2 `agents/people-assistant/SKILL.md`, the guide pages and their knowledge-base pages; a switched-off feature's tools are absent (NM-EXT-01's Nemura side). `// req: NM-AI-02, NM-EXT-01`
-- [ ] 4.3 Verify the whole change; the second reviewer's list (the AI write path, the roles, the never-list).
+- [x] 4.1 Golden questions from the pack and the oracle, and the red-team suite (an injected instruction in a request, a request for another person's pay, for an approval, for a bank account change, for a role change), through the real runtime with the scripted model. `// req: NM-AI-04`
+- [x] 4.2 `agents/people-assistant/SKILL.md`, the guide pages and their knowledge-base pages; a switched-off feature's tools are absent (NM-EXT-01's Nemura side). `// req: NM-AI-02, NM-EXT-01`
+- [x] 4.3 Verify the whole change; the second reviewer's list: (1) `nemura_assistant` can insert a proposal and its audit event and nothing else (the grants golden and `TestEachRoleHoldsExactlyItsGrants`); (2) the executor attaches a draft and changes no request (`permission denied` tested); (3) the never-list as words, on tasks, fields and tools; (4) no pay figure, NRIC or bank account reaches a model; (5) a request's own words are quoted as data (the red-team suite); (6) own pay refused by a database check; (7) the model route is the scripted one until evidenced `[live-verify]`.
 
 ## Coverage
 
@@ -44,3 +44,9 @@ Load before each slice: `fyniq-ai-proposals`, `fyniq-security-compliance`, `fyni
 
 - The assistant's and the executor's own processes (`NEMURA_ROLE=assistant` and `executor`) are not built (`cmd/nemura/main_test.go` says so), so a draft request answers `NM_UNAVAILABLE` in a deployment until they are; the code path, the roles and the grants are proven by the database tests. The queued `assistant.apply` item (class executor) waits for the executor's sweep, which is `ExecutorService.ApplyApproved`.
 - A draft letter's fields are the values the request already holds; filling the template's own fields from the record again is the people team's check step.
+
+## Left (slice 4)
+
+- A recorded replay of a real model's answers (`evals/cassettes`) waits for a route evidenced in Singapore `[live-verify]`; the suites run deterministically through the scripted model, which is the recorded run for now.
+- NM-EXT-01 to 03 (Fyniq without Nemura, the payroll file import, one connector, imported journals as drafts) are Fyniq's side and stay in `p1-payroll-link` 7.1 and 8.1; the Nemura side (a tool of a switched-off feature is absent) is built and tested.
+- The Payroll feature cannot be switched on through the API ("needs the Owner and a second approver ... cannot be switched on yet"): `p1-nemura-platform` 6.5 and the Fyniq link's second approver own it. The assistant's pay tools are absent until it is on, which is the safe default.
