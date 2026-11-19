@@ -16,13 +16,13 @@ import (
 var NemuraPackages = []string{"cmd/nemura", "db/nemura", "internal/nemura", "internal/adapters/postgres/nemura"}
 
 // NemuraShared is what Nemura's packages may import from the rest of the module: the infrastructure every service
-// uses and the pure libraries that carry the shared rules, and the goose runner both migration streams use. An entry names
+// uses and the pure libraries that carry the shared rules, the goose runner both migration streams use, and the local substitutes (queue, task credentials) of the local build. An entry names
 // one package, not its sub-packages (Fyniq's storage port is a sub-package of ports and is not shared by accident). The list is the one a separate Nemura
 // repository would take as its shared module (ADR-N1). Widening it is a reviewed change to this file.
 var NemuraShared = []string{
 	"internal/app", "internal/httpserver", "internal/runtime", "internal/clock", "internal/telemetry", "internal/logging",
 	"internal/egress", "internal/version", "internal/ports", "internal/domain/money", "internal/domain/rounding",
-	"internal/domain/audit", "internal/adapters/postgres/gooserun",
+	"internal/domain/audit", "internal/adapters/postgres/gooserun", "internal/adapters/local",
 }
 
 func inNemura(importPath string) bool {

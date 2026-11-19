@@ -46,5 +46,5 @@ Who uses it, and what guards it:
 
 | | |
 |---|---|
-| The web app | `apps/web/src/api/schema.d.ts` is generated from this file (openapi-typescript) and used through `openapi-fetch` in `src/api/client.ts`. `make openapi` regenerates both; `make api-check` fails while the client is stale; `internal/archtest` refuses hand-written network calls elsewhere in the app (QA-API-03) |
+| The web app | `sdk/typescript/src/schema.d.ts` (the TypeScript SDK, `@fyniq/sdk`, FR-INT-17) is generated from this file (openapi-typescript), and the web app takes its types from it and calls the API through `openapi-fetch` in `src/api/client.ts`. `make openapi` regenerates both; `make api-check` fails while the client is stale; `internal/archtest` refuses hand-written network calls elsewhere in the app (QA-API-03) |
 | Breaking changes | `oasdiff breaking` compares this file with the last release's (the latest `v*` tag); an error-level change fails `make test` (QA-API-02, FR-INT-06). Inside `/v1` changes are additive only; a breaking change needs `/v2` |
