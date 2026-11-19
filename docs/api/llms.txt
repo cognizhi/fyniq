@@ -640,6 +640,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/knowledge-base/pages/{key}/versions` (listKBPageVersions): List a knowledge-base page's versions
 - `POST /v1/knowledge-base/publications` (publishKBPages): Publish knowledge-base pages
 - `POST /v1/knowledge-base/publications/approval` (requestKBPublication): Ask for approval to publish knowledge-base pages
+- `POST /v1/knowledge-base/recompile` (recompileKnowledgeBase): Recompile the organisation's knowledge base
 - `GET /v1/knowledge-base/snapshots` (listKBSnapshots): List the knowledge base's snapshots
 - `GET /v1/kpi-inputs` (listKpiInputs): List the KPIs' entered counts
 - `PUT /v1/kpi-inputs/{month}` (setKpiInput): Enter a month's KPI counts

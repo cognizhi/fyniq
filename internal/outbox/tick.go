@@ -47,6 +47,10 @@ var PlatformSchedules = []Schedule{
 	{Job: "ai.conversations.purge", Every: 24 * time.Hour, Offset: 17*time.Hour + 55*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
 	// Every 15 minutes, the AI's proposals that waited past their expiry undecided (§9.5; p1-ai-proposals-core design D9).
 	{Job: "ai.proposals.expire", Every: 15 * time.Minute, Offset: 7 * time.Minute, Lease: 10 * time.Minute, Stale: time.Hour},
+	// Weekly on Sundays at 02:00 Singapore time (Saturday 18:00 UTC; the epoch was a Thursday), the deterministic lint across every
+	// organisation's knowledge base: stale pages, notes with no page, overlays Fyniq has since changed, links to no page and orphans, raised
+	// as findings for the Owner and the Administrator (AI-52, AI-56; p1-knowledge-base task 6.3).
+	{Job: "kb.lint", Every: 7 * 24 * time.Hour, Offset: 66 * time.Hour, Lease: time.Hour, Stale: 8 * 24 * time.Hour},
 	// Every tick, the scheduled agents' slots due before the next one, each delivered at its time (AI-62; p1-scheduled-agents
 	// design D4).
 	{Job: "agents.schedule", Every: TickInterval, Lease: 4 * time.Minute, Stale: 30 * time.Minute},

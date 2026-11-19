@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "compiles": {
+      "description": "Whether it will compile changed notes into page drafts: false while the AI is switched off, when only the lint runs.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "note": {
+      "description": "What it will do, in plain words.",
+      "examples": [
+        "The compiler will draft pages from the notes that changed and check the whole knowledge base; drafts and findings appear here, and nothing is published."
+      ],
+      "type": "string"
+    },
+    "queued": {
+      "description": "The compiler job was queued for this organisation.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "queued",
+    "compiles",
+    "note"
+  ],
+  "title": "KBRecompile",
+  "type": "object"
+}

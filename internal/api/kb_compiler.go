@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
@@ -19,19 +21,20 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// The knowledge-base compiler's four operations (PRD-001 AI-52, AI-57; p1-knowledge-base design D7): the whole of what the compiler job
+// The knowledge-base compiler's five operations (PRD-001 AI-52, AI-57; p1-knowledge-base design D7): the whole of what the compiler job
 // can ask of the API, under its own service identity and no other. It cannot publish, read the ledger or run a domain command, because
 // none of these does: they list the notes that changed, ask the model for a page of a note (the API reads the note and asks, so the job
 // never holds a provider key or the note's text beyond the lint's), store the page as a draft authored by the compiler, and raise a
 // finding. A draft is never live: only a publication a person approves makes a snapshot, and the compiler's token opens nothing else.
 
-// ServiceKBCompiler is the class of the compiler's service tokens: these four operations alone.
+// ServiceKBCompiler is the class of the compiler's service tokens: these five operations alone.
 const ServiceKBCompiler = "kb_compiler"
 
 // Codes of the compiler's refusals.
 const (
 	CodeKBCompilerNote = "KB-COMPILER-01" // the note is not there, or changed since the work was listed
 	CodeKBCompilerPage = "KB-COMPILER-02" // the model's page is not a page
+	CodeKBCompilerOff  = "KB-COMPILER-03" // this installation has no compiler job connected to run a recompile
 )
 
 type (
@@ -87,11 +90,18 @@ type (
 			Raised bool `json:"raised" example:"true"`
 		}
 	}
+	kbCompilerLintIn  struct{ Body kbCompilerOrg }
+	kbCompilerLintOut struct {
+		Body struct {
+			Found  int `json:"found" doc:"What the deterministic lint found across the knowledge base." example:"3"`
+			Raised int `json:"raised" doc:"The findings newly raised: one open finding of a kind per page." example:"2"`
+		}
+	}
 )
 
 func kbCompilerOps(id string) bool {
 	switch id {
-	case "kbCompilerWork", "kbCompilerCompile", "kbCompilerDraft", "kbCompilerFinding":
+	case "kbCompilerWork", "kbCompilerCompile", "kbCompilerDraft", "kbCompilerFinding", "kbCompilerLint":
 		return true
 	}
 	return false
@@ -336,10 +346,103 @@ func registerKBCompiler(a *API) {
 		})
 		return out, err
 	})
+
+	internalOp(a, huma.Operation{
+		OperationID: "kbCompilerLint", Method: http.MethodPost, Path: internalBase + "/kb-compiler/lint", Tags: []string{"Assistant"},
+		Summary: "Run the weekly lint of an organisation's knowledge base",
+		Description: "The compiler job's weekly pass (AI-52, AI-56), with its own service token and no other: the findings a person should look at across the " +
+			"whole knowledge base, found without a model: a note whose page was compiled from an older version, a note with no page, an overlay of a platform " +
+			"page Fyniq has since changed, a link to no page, and a page nothing links to. Each is raised as a finding, one open finding of a kind per page; " +
+			"nothing is published or changed. A model's contradiction pass is not part of it. Side effects: the findings and their audit events " +
+			"kb_finding.raised by the service kb-compiler.",
+	}, codes, func(ctx context.Context, in *kbCompilerLintIn) (*kbCompilerLintOut, error) {
+		o, err := org(in.Body.Organisation)
+		if err != nil {
+			return nil, err
+		}
+		out := &kbCompilerLintOut{}
+		err = a.deps.Store.Do(ctx, o, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			out.Body.Found, out.Body.Raised, err = kbSemanticLint(ctx, u, a.deps.Clock.Now())
+			return err
+		})
+		return out, err
+	})
 }
+
+// lintReader is who the weekly lint reads the knowledge base as: every page of every class, to find what a person should look at.
+// What it returns is counts, and the findings it raises name page keys, never a page's text.
+var lintReader = storage.KBReader{Roles: []string{"owner"}, Classes: []string{"general", "personal", "identity", "payroll", "equity"}}
 
 // compilerReader is who the compiler's lists are read as: general pages of the platform, for the keys a link may name.
 var compilerReader = storage.KBReader{Roles: []string{"owner"}, Classes: []string{"general"}}
+
+// kbSemanticLint reads the organisation's notes, newest page versions and published pages and raises what the weekly lint finds,
+// once per kind per page (task 6.3).
+func kbSemanticLint(ctx context.Context, u storage.UnitOfWork, now time.Time) (found, raised int, err error) {
+	k := u.OrganisationKnowledge()
+	notes, err := k.Notes(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	latest, err := k.Latest(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	byKey := map[string]storage.KBVersion{}
+	for _, v := range latest {
+		byKey[v.Key] = v
+	}
+	var sn []knowledge.SemNote
+	for _, n := range notes {
+		s := knowledge.SemNote{Key: n.Key, Version: n.Version}
+		if v, ok := byKey[knowledge.PageKeyOfNote(n.Key)]; ok {
+			s.PageVersion, s.PageNoteVersion = v.Number, kbPageNoteVersion(v)
+		}
+		sn = append(sn, s)
+	}
+	live, err := k.LiveIndex(ctx, lintReader.Classes)
+	if err != nil {
+		return 0, 0, err
+	}
+	var sl []knowledge.SemLive
+	for _, p := range live {
+		l := knowledge.SemLive{Key: p.Key, Body: p.Body, BaseKey: p.BaseKey, BaseDigest: p.BaseDigest}
+		if p.BaseKey != "" {
+			base, ok, err := u.KnowledgeBase().PlatformPage(ctx, p.BaseKey, lintReader)
+			if err != nil {
+				return 0, 0, err
+			}
+			l.PlatformGone, l.PlatformDigest = !ok, base.Digest
+		}
+		sl = append(sl, l)
+	}
+	keys := map[string]bool{}
+	for key := range byKey {
+		keys[key] = true
+	}
+	idx, err := u.KnowledgeBase().PlatformIndex(ctx, lintReader)
+	if err != nil {
+		return 0, 0, err
+	}
+	for _, e := range idx {
+		keys[e.Key] = true
+	}
+	for _, f := range knowledge.SemanticLint(sn, sl, func(key string) bool { return keys[key] }) {
+		found++
+		open, err := k.OpenFindings(ctx, f.PageKey)
+		if err != nil {
+			return 0, 0, err
+		}
+		if slices.ContainsFunc(open, func(o storage.KBFinding) bool { return o.Kind == f.Kind }) {
+			continue
+		}
+		if _, err := k.AddFinding(ctx, storage.KBFinding{Kind: f.Kind, PageKey: f.PageKey, PageVersion: f.Version, Detail: f.Detail, CreatedAt: now}); err != nil {
+			return 0, 0, err
+		}
+		raised++
+	}
+	return found, raised, nil
+}
 
 // lintDraftPage is the findings of the lint a publication is checked by, for a draft of the page of a note.
 func lintDraftPage(key string, d kbCompilerDraft, ref, text string, keys map[string]bool) []knowledge.Finding {

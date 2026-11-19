@@ -14,7 +14,7 @@
 //	                             on it, the copy removed, the drill recorded (DR-06; make restore-drill locally)
 //	jobs controls                list every check of the control registry and how it runs (the dry run)
 //	jobs kb-compile <org>        the knowledge-base compiler for an organisation (AI-52, AI-57): drafts and findings through the
-//	                             API's four compiler operations, with its own service token and no database
+//	                             API's compiler operations, with its own service token and no database
 //
 // FYNIQ_DATABASE_URL is the worker's role; the local build defaults it.
 package main

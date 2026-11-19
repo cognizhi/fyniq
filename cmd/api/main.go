@@ -115,6 +115,8 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	d.Mail = api.MailInfo{From: kit.Mail.From, Domains: kit.Mail.Domains, Check: dns.Results, CaptureDomain: kit.Mail.CaptureDomain,
 		ProvidersFrom: kit.MailProviders}
 	d.Outbox = &outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
+	// A recompile can run only where the worker holds the knowledge-base compiler's own identity (AI-57).
+	d.KBCompiler = kit.KBCompiler() != nil
 	if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" { // FR-INT-02: integration clients, registered with the OAuth server
 		d.OAuthClients, d.APIAudience = wiring.Hydra(admin), oauthAudience()
 	}

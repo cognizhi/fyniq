@@ -39,6 +39,7 @@ func (f *fake) SubmitDraft(_ context.Context, _ uuid.UUID, note string, v int, d
 	f.submit = append(f.submit, note+" "+d.Title)
 	return nil
 }
+func (f *fake) Lint(context.Context, uuid.UUID) (int, int, error) { return 2, 1, nil }
 func (f *fake) RaiseFinding(_ context.Context, _ uuid.UUID, fi kbcompile.Finding) error {
 	f.findings = append(f.findings, fi)
 	return nil
