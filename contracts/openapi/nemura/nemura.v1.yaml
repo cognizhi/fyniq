@@ -1522,6 +1522,128 @@ components:
         - message
         - fix
       type: object
+    FinalPay:
+      additionalProperties: false
+      properties:
+        due:
+          description: When the final salary is due.
+          examples:
+            - "2026-11-04"
+          format: date
+          type: string
+        hold:
+          $ref: "#/components/schemas/TaxHoldView"
+          description: The tax-clearance hold.
+        items:
+          description: The final pay items already added to the month.
+          items:
+            $ref: "#/components/schemas/FinalPayRow"
+          type:
+            - array
+            - "null"
+        kind:
+          description: How they leave.
+          examples:
+            - resignation
+          type: string
+        last_day:
+          description: The last day of employment.
+          examples:
+            - "2026-11-04"
+          format: date
+          type: string
+        latest:
+          description: The latest day it may be paid under MOM's rule for the case.
+          examples:
+            - "2026-11-10"
+          format: date
+          type: string
+        month:
+          description: "The wage month of the final run: the month of the last day."
+          examples:
+            - "2026-11-01"
+          format: date
+          type: string
+        notice_served:
+          description: "Whether notice was given: a resignation with it is due on the last day, without it within 7 days. The required notice period is not compared with the contract."
+          examples:
+            - true
+          type: boolean
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        proposed_leave_pay:
+          description: What the untaken leave is worth at the day rate of an unpaid-leave deduction (basic monthly pay over the month's working days, RND-PAY-RATIO); empty when none is untaken or the person has no pay record. A proposal to add as an item, never added by itself.
+          examples:
+            - "692.31"
+          type: string
+        rule:
+          description: The rule, in words, with the pack version it came from.
+          examples:
+            - On the last day, or within 3 working days of it.
+          type: string
+        untaken_days:
+          description: Annual leave left to the last day, in days, negative when more was taken than earned.
+          examples:
+            - "3.00"
+          type: string
+      required:
+        - person_id
+        - person
+        - kind
+        - last_day
+        - notice_served
+        - due
+        - latest
+        - rule
+        - month
+        - hold
+        - items
+      type: object
+    FinalPayRow:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Dollars.
+          examples:
+            - "692.31"
+          type: string
+        id:
+          description: The item.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f31
+          format: uuid
+          type: string
+        name:
+          description: As the payslip shows it.
+          examples:
+            - Leave pay on leaving
+          type: string
+        nature:
+          description: Leave pay, pay in lieu of notice or a retrenchment benefit.
+          examples:
+            - leave_encashment
+          type: string
+        used:
+          description: Whether a run used it.
+          examples:
+            - false
+          type: boolean
+      required:
+        - id
+        - name
+        - nature
+        - amount
+        - used
+      type: object
     Finding:
       additionalProperties: false
       properties:
@@ -3348,6 +3470,9 @@ components:
             - commission
             - allowance
             - other
+            - leave_encashment
+            - notice_pay
+            - retrenchment_benefit
           examples:
             - bonus
           type: string
@@ -3447,6 +3572,9 @@ components:
             - commission
             - allowance
             - other
+            - leave_encashment
+            - notice_pay
+            - retrenchment_benefit
           examples:
             - bonus
           type: string
@@ -6489,6 +6617,67 @@ components:
       required:
         - providers
         - setup_done
+      type: object
+    TaxHoldInput:
+      additionalProperties: false
+      properties:
+        action:
+          description: Put a hold on, or release the one in force.
+          enum:
+            - hold
+            - release
+          examples:
+            - hold
+          type: string
+        effective_from:
+          description: The day it takes effect.
+          examples:
+            - "2026-10-15"
+          format: date
+          type: string
+        evidence_id:
+          description: "A document of the person that shows IRAS's clearance: required to release."
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60
+          format: uuid
+          type: string
+        reason:
+          description: A reason.
+          examples:
+            - IR21 filed on 15 Oct 2026.
+          maxLength: 300
+          type: string
+      required:
+        - action
+        - effective_from
+      type: object
+    TaxHoldView:
+      additionalProperties: false
+      properties:
+        effective_from:
+          description: The day the latest version took effect.
+          examples:
+            - "2026-10-15"
+          format: date
+          type: string
+        held:
+          description: "True while a hold is in force: every dollar due to the person in a pay run is held and none is disbursed."
+          examples:
+            - false
+          type: boolean
+        reason:
+          description: The reason recorded.
+          examples:
+            - IR21 filed on 15 Oct 2026.
+          type: string
+        version:
+          description: The latest version of the hold; Fyniq is told each version.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - held
       type: object
     Terms:
       additionalProperties: false
@@ -12978,6 +13167,69 @@ paths:
       summary: A document's content
       tags:
         - People
+  /v1/people/{id}/final-pay:
+    get:
+      description: When the leaver's final salary is due and the latest day to pay it under MOM's rule for the case (resignation with or without the notice served; termination, dismissal or retrenchment), the annual leave left to the last day and what it is worth as a proposal, the tax-clearance hold, and the final pay items already added to the month of the last day. 404 when nobody has recorded the person leaving. The Payroll administrator and the Owner. It changes nothing.
+      operationId: getFinalPay
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinalPay"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A leaver's final pay
+      tags:
+        - Payroll
   /v1/people/{id}/government-paid-leave:
     post:
       description: "Records maternity, paternity or shared parental leave for a child the person declared, under the country pack's rule for the child's birth date: a Singapore Citizen child, the months of service the scheme asks for, its window and weeks. A block never overlaps other leave. The claim deadline is worked out. The HR officer and the HR administrator. It is audited; the child's date of birth is not in the audit event."
@@ -14217,6 +14469,139 @@ paths:
       summary: Read a restricted field
       tags:
         - People
+  /v1/people/{id}/tax-hold:
+    get:
+      description: Whether a tax-clearance hold (IRAS Form IR21) is in force for the person, with its latest version. The Payroll administrator and the Owner. It changes nothing.
+      operationId: getTaxHold
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxHoldView"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A person's tax-clearance hold
+      tags:
+        - Payroll
+    post:
+      description: Puts a hold on the person (every dollar due to them in a pay run is held and none is disbursed) or releases the one in force, with a document of the person that shows IRAS's clearance as evidence. Each is a version that is written once; Fyniq is told each. The Payroll administrator and the Owner. It is audited, never with an amount.
+      operationId: setTaxHold
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxHoldInput"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Put a tax-clearance hold on, or release it
+      tags:
+        - Payroll
   /v1/people/{id}/terms:
     get:
       description: The key employment terms Nemura holds for a person on a day. The people team reads the base terms; the Payroll administrator and the Owner read the pay terms as well. Anyone else is refused as if the person did not exist. It changes nothing.

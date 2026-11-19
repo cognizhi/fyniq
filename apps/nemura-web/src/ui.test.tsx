@@ -26,6 +26,7 @@ import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
 import { PayRunApproval } from "./pages/PayRunApproval";
 import { MyPay, Payslip } from "./pages/MyPay";
+import { FinalPay } from "./components/FinalPay";
 import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
@@ -1377,5 +1378,45 @@ describe("my pay", () => {
     answer(`GET /v1/me/payslips/${sid}`, { status: 404, body: { code: "NM_NOT_FOUND" } });
     render(<Payslip id={sid} roles={["employee"]} />);
     expect(await screen.findByText("There is no such payslip of yours.")).toBeTruthy();
+  });
+});
+
+// req: NM-PAY-06, NM-PAY-08, NM-INT-08
+describe("final pay", () => {
+  const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+  const doc = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60";
+  const final = (held: boolean) => ({ person_id: person, person: "Ben Lim", kind: "termination", last_day: "2026-11-04", notice_served: false, due: "2026-11-04", latest: "2026-11-10", rule: "On the last day, or within 3 working days of it if that is not possible: the employer ended the contract. (sg-people@2026.9)",
+    month: "2026-11-01", untaken_days: "3.00", proposed_leave_pay: "613.64", hold: held ? { held: true, version: 1, effective_from: "2026-10-15" } : { held: false }, items: [{ id: "i", name: "Leave pay on leaving", nature: "leave_encashment", amount: "613.64", used: false }] });
+
+  it("shows the deadline by the case, the leave left and its worth as a proposal, and puts a hold on", async () => {
+    answer(`GET /v1/people/${person}/final-pay`, { status: 200, body: final(false) });
+    answer(`POST /v1/people/${person}/tax-hold`, { status: 201, body: undefined });
+    const { container } = render(<FinalPay person={person} docs={[{ id: doc, title: "IRAS clearance" }]} onChange={() => undefined} />);
+    expect(await screen.findByText("The final salary is due on 2026-11-04, and by 2026-11-10 at the latest. It is paid in the run of 2026-11.")).toBeTruthy();
+    expect(screen.getByText(/Annual leave left to the last day: 3.00 days. At the day rate of an unpaid-leave deduction it is worth 613.64/)).toBeTruthy();
+    expect(screen.getByText("Leave pay on leaving: 613.64, waiting for a run")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Put a tax-clearance hold on" }));
+    expect(await screen.findByText("The hold is on. Calculate the next version of the run to hold the pay.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/people/${person}/tax-hold`)).toMatchObject({ action: "hold" });
+  });
+
+  it("releases a hold only with a document of the person as evidence", async () => {
+    answer(`GET /v1/people/${person}/final-pay`, { status: 200, body: final(true) });
+    answer(`POST /v1/people/${person}/tax-hold`, { status: 201, body: undefined });
+    render(<FinalPay person={person} docs={[{ id: doc, title: "IRAS clearance" }]} onChange={() => undefined} />);
+    expect(await screen.findByText(/A tax-clearance hold has been in force since 2026-10-15/)).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Release the hold" }));
+    expect(await screen.findByText("The hold is released. Calculate the next version of the run to pay it.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/people/${person}/tax-hold`)).toMatchObject({ action: "release", evidence_id: doc });
+  });
+
+  it("draws nothing for a person nobody has recorded leaving", async () => {
+    answer(`GET /v1/people/${person}/final-pay`, { status: 404, body: { code: "NM_NOT_FOUND" } });
+    const { container } = render(<FinalPay person={person} docs={[]} onChange={() => undefined} />);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(container.textContent).toBe("");
   });
 });

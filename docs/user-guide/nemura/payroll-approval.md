@@ -47,3 +47,4 @@ digest. The person who prepared a version cannot approve it: the database refuse
 
 - [Set up pay groups and record each person's pay](payroll-records.md)
 - [Read your payslips](my-pay.md)
+- [Pay a leaver's final pay and hold it for tax clearance](payroll-final-pay.md)

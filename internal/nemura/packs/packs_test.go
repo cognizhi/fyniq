@@ -17,17 +17,17 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("the packs do not load: %v", err)
 	}
-	if len(versions) != 8 || versions[0].ID != "sg-people@2026.1" || versions[1].ID != "sg-people@2026.2" || versions[1].Supersedes != "sg-people@2026.1" || versions[2].ID != "sg-people@2026.3" || versions[2].Supersedes != "sg-people@2026.2" || versions[3].ID != "sg-people@2026.4" || versions[3].Supersedes != "sg-people@2026.3" || versions[4].ID != "sg-people@2026.5" || versions[4].Supersedes != "sg-people@2026.4" || versions[5].ID != "sg-people@2026.6" || versions[5].Supersedes != "sg-people@2026.5" || versions[6].ID != "sg-people@2026.7" || versions[6].Supersedes != "sg-people@2026.6" || versions[7].ID != "sg-people@2026.8" || versions[7].Supersedes != "sg-people@2026.7" {
+	if len(versions) != 9 || versions[0].ID != "sg-people@2026.1" || versions[1].ID != "sg-people@2026.2" || versions[1].Supersedes != "sg-people@2026.1" || versions[2].ID != "sg-people@2026.3" || versions[2].Supersedes != "sg-people@2026.2" || versions[3].ID != "sg-people@2026.4" || versions[3].Supersedes != "sg-people@2026.3" || versions[4].ID != "sg-people@2026.5" || versions[4].Supersedes != "sg-people@2026.4" || versions[5].ID != "sg-people@2026.6" || versions[5].Supersedes != "sg-people@2026.5" || versions[6].ID != "sg-people@2026.7" || versions[6].Supersedes != "sg-people@2026.6" || versions[7].ID != "sg-people@2026.8" || versions[7].Supersedes != "sg-people@2026.7" || versions[8].ID != "sg-people@2026.9" || versions[8].Supersedes != "sg-people@2026.8" {
 		t.Fatalf("%d versions", len(versions))
 	}
-	for _, old := range versions[:7] { // the first version is kept as it was: it still loads and its cases pass
+	for _, old := range versions[:8] { // the first version is kept as it was: it still loads and its cases pass
 		for _, r := range pack.RunPinned(old) {
 			if !r.Pass {
 				t.Errorf("%s %s: %s", old.ID, r.Case, r.Why)
 			}
 		}
 	}
-	v := versions[7]
+	v := versions[8]
 	cases := 0
 	for _, r := range pack.RunPinned(v) {
 		cases++
@@ -35,7 +35,7 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 			t.Errorf("%s %s: got %q, want %q (%s)", r.Table, r.Case, r.Got, r.Want, r.Why)
 		}
 	}
-	if cases < 72 {
+	if cases < 74 {
 		t.Errorf("only %d pinned cases", cases)
 	}
 	if got := pack.Unverified(v); len(got) < 40 {
@@ -92,7 +92,7 @@ func TestAWrongValueOrStatusIsRefused(t *testing.T) {
 // four weeks from 1 April 2025, and shared parental leave's six weeks then ten from 1 April 2026; a scheme's cap and claim window come with it (NM-LV-14).
 // req: NM-PACK-06
 func TestParentalLeaveSchemesAreKeyedByTheChildsBirthDate(t *testing.T) {
-	v, err := pack.Load(Files(), "sg-people/2026.8")
+	v, err := pack.Load(Files(), "sg-people/2026.9")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/nemura/checks"
 	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 )
@@ -234,4 +235,70 @@ ORDER BY r.month, l.person_id`)
 		out = append(out, f)
 	}
 	return out, rows.Err()
+}
+
+// CalendarFacts are the wage months of the month before `on` and the month of `on`, for each pay group that has run payroll before: whether the group has people to pay, whether a run exists and whether
+// one of its versions is approved (N.1 #2). A group is checked from the month of its first run, so a group that has not started payroll is never late.
+func CalendarFacts(ctx context.Context, tx pgx.Tx, on time.Time) ([]checks.CalendarFact, error) {
+	groups, err := PayGroups(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+	var out []checks.CalendarFact
+	this := time.Date(on.Year(), on.Month(), 1, 0, 0, 0, 0, time.UTC)
+	for _, g := range groups {
+		var first *time.Time
+		if err := tx.QueryRow(ctx, "SELECT min(month) FROM nemura.pay_run WHERE pay_group_id = $1", g.ID).Scan(&first); err != nil {
+			return nil, err
+		}
+		if first == nil {
+			continue
+		}
+		pg := payroll.PayGroup{Name: g.Name, PayDay: g.PayDay, CutoffDays: g.CutoffDays, ApprovalDays: g.ApprovalDays}
+		for _, month := range []time.Time{this.AddDate(0, -1, 0), this} {
+			if month.Before(*first) {
+				continue
+			}
+			members, err := groupMembers(ctx, tx, g.ID, month)
+			if err != nil {
+				return nil, err
+			}
+			f := checks.CalendarFact{Group: g.Name, Month: month, PayDate: pg.PayDate(month), ApproveBy: pg.ApprovalDate(month), HasMembers: len(members) > 0}
+			if err := tx.QueryRow(ctx, `SELECT count(*) > 0, coalesce(bool_or(EXISTS (SELECT 1 FROM nemura.pay_run_version v WHERE v.run_id = r.id AND v.approved_by IS NOT NULL)), false) FROM nemura.pay_run r WHERE r.pay_group_id = $1 AND r.month = $2`, g.ID, day(month)).Scan(&f.HasRun, &f.Approved); err != nil {
+				return nil, err
+			}
+			out = append(out, f)
+		}
+	}
+	return out, nil
+}
+
+// FinalPayFacts are each leaver's final pay: the day it is due and the latest day, whether the person's pay for the month of the last day is confirmed paid and when, and whether a hold is in force.
+func FinalPayFacts(ctx context.Context, tx pgx.Tx, v func(time.Time) (pack.Version, bool)) ([]checks.FinalPayFact, error) {
+	offs, err := Offboardings(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+	var out []checks.FinalPayFact
+	for _, o := range offs {
+		pv, ok := v(o.LastDay)
+		if !ok {
+			continue
+		}
+		due, latest, _ := payroll.FinalPayDeadline(pv, o.Kind, o.NoticeGiven != nil, o.LastDay)
+		f := checks.FinalPayFact{Person: o.Person.String(), Due: due, Latest: latest}
+		month := time.Date(o.LastDay.Year(), o.LastDay.Month(), 1, 0, 0, 0, 0, time.UTC)
+		var paid *time.Time
+		if err := tx.QueryRow(ctx, `SELECT min(e.paid_on) FROM nemura.pay_payment_event e JOIN nemura.pay_run r ON r.id = e.run_id WHERE e.person_id = $1 AND r.month = $2 AND e.state = 'paid'`, o.Person, day(month)).Scan(&paid); err != nil {
+			return nil, err
+		}
+		f.PaidOn = paid
+		hold, found, err := TaxHoldOf(ctx, tx, o.Person)
+		if err != nil {
+			return nil, err
+		}
+		f.Held = found && hold.Held
+		out = append(out, f)
+	}
+	return out, nil
 }

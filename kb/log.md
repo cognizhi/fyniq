@@ -767,6 +767,11 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/nemura/my-pay.md, payroll-approval.md -> nemura.my-pay, nemura.payroll-approval (p1-nemura-payroll 4.1, 4.2)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/payroll-approval.md -> nemura.payroll-approval (payment states, p1-nemura-payroll 5.2)
+
 ## [2026-11-20] compile | members-and-roles.md -> settings.members (the department-scoped P&L)
 
 ## [2026-11-20] compile | documents.inbox: files showing an NRIC in full are not read
+
+## [2026-11-20] compile | docs/user-guide/nemura/payroll-final-pay.md -> nemura.payroll-final-pay (p1-nemura-payroll 5.1)
+
+## [2026-11-20] compile | payroll-approval.md -> nemura.payroll-approval link to final pay

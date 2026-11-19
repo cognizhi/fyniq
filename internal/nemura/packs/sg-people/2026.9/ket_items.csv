@@ -1,0 +1,18 @@
+item,key,label,when,status,source
+1,employer_name,Name of employer,always,researched,mom-kets-guidelines
+2,employee_name,Name of employee,always,researched,mom-kets-guidelines
+3,job_and_duties,Job title and main duties and responsibilities,always,researched,mom-kets-guidelines
+4,start_date,Date of commencing employment,always,researched,mom-kets-guidelines
+5,contract_duration,Duration of employment (only for a fixed-term contract),fixed_term,researched,mom-kets-guidelines
+6,working_arrangement,"Daily working hours, number of working days per week and rest day(s)",always,researched,mom-kets-guidelines
+7,salary_period,Salary period,always,researched,mom-kets-guidelines
+8,basic_salary,Basic salary per salary period,always,researched,mom-kets-guidelines
+9,fixed_allowances,Fixed allowances per salary period,always,researched,mom-kets-guidelines
+10,fixed_deductions,Fixed deductions per salary period,always,researched,mom-kets-guidelines
+11,overtime_payment_period,Overtime payment period (only if different from the salary period),if_different,researched,mom-kets-guidelines
+12,overtime_rate,Overtime rate of pay,always,researched,mom-kets-guidelines
+13,other_pay,Other salary-related components,always,researched,mom-kets-guidelines
+14,leave,Leave entitlements,always,researched,mom-kets-guidelines
+15,medical_benefits,Other medical benefits,always,researched,mom-kets-guidelines
+16,probation,Probation period,always,researched,mom-kets-guidelines
+17,notice_period,Notice period for termination of employment initiated by either party,always,researched,mom-kets-guidelines

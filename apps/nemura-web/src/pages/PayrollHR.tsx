@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
+import { FinalPay } from "../components/FinalPay";
 import { PayRuns } from "../components/PayRuns";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
@@ -185,6 +186,7 @@ export function PayrollHR({ roles }: { roles: readonly string[] }) {
                 <button className="fy-btn fy-btn--primary" type="submit">{t("payroll.recordElection")}</button>
               </form>
             </section>
+            {pid && <FinalPay person={pid} docs={docs} onChange={loadOneOffs} />}
             <PayRuns month={month} groups={groups} people={people.map((p) => ({ id: p.id, name: p.name }))} />
             <section className="fy-stack fy-stack--2" aria-labelledby="oneoff-h">
               <h2 className="fy-h2" id="oneoff-h">{t("payroll.oneOffs")}</h2>
@@ -198,7 +200,7 @@ export function PayrollHR({ roles }: { roles: readonly string[] }) {
                 <label className="fy-field">
                   <span>{t("payroll.nature")}</span>
                   <select className="fy-input" value={o.nature} onChange={(ev: Change) => setO({ ...o, nature: ev.target.value })}>
-                    {["bonus", "commission", "allowance", "other"].map((n) => <option key={n} value={n}>{t(`payroll.nature.${n}`)}</option>)}
+                    {["bonus", "commission", "allowance", "other", "leave_encashment", "notice_pay", "retrenchment_benefit"].map((n) => <option key={n} value={n}>{t(`payroll.nature.${n}`)}</option>)}
                   </select>
                 </label>
                 <label className="fy-field"><span>{t("payroll.amount")}</span><input className="fy-input" inputMode="decimal" required value={o.amount} onChange={(ev) => setO({ ...o, amount: ev.target.value })} /></label>

@@ -687,6 +687,16 @@ nemura_api | column nemura.sick_unpaid_decision.decided_at | INSERT
 nemura_api | column nemura.sick_unpaid_decision.decided_by | INSERT
 nemura_api | column nemura.sick_unpaid_decision.notification_id | INSERT
 nemura_api | column nemura.sick_unpaid_decision.treatment | INSERT
+nemura_api | column nemura.tax_hold.effective_from | INSERT
+nemura_api | column nemura.tax_hold.evidence_id | INSERT
+nemura_api | column nemura.tax_hold.hold_id | INSERT
+nemura_api | column nemura.tax_hold.id | INSERT
+nemura_api | column nemura.tax_hold.person_id | INSERT
+nemura_api | column nemura.tax_hold.reason | INSERT
+nemura_api | column nemura.tax_hold.recorded_at | INSERT
+nemura_api | column nemura.tax_hold.recorded_by | INSERT
+nemura_api | column nemura.tax_hold.status | INSERT
+nemura_api | column nemura.tax_hold.version | INSERT
 nemura_api | column nemura.transfer_assessment.assessed_by | INSERT
 nemura_api | column nemura.transfer_assessment.assessed_on | INSERT
 nemura_api | column nemura.transfer_assessment.country | INSERT
@@ -787,6 +797,7 @@ nemura_api | table nemura.role_assignment | SELECT
 nemura_api | table nemura.session | SELECT
 nemura_api | table nemura.sick_notification | SELECT
 nemura_api | table nemura.sick_unpaid_decision | SELECT
+nemura_api | table nemura.tax_hold | SELECT
 nemura_api | table nemura.transfer_assessment | SELECT
 nemura_api | table nemura.work_pass | SELECT
 nemura_api | table nemura.working_pattern | SELECT
@@ -899,6 +910,7 @@ nemura_readonly | table nemura.role_assignment | SELECT
 nemura_readonly | table nemura.session | SELECT
 nemura_readonly | table nemura.sick_notification | SELECT
 nemura_readonly | table nemura.sick_unpaid_decision | SELECT
+nemura_readonly | table nemura.tax_hold | SELECT
 nemura_readonly | table nemura.transfer_assessment | SELECT
 nemura_readonly | table nemura.work_pass | SELECT
 nemura_readonly | table nemura.working_pattern | SELECT
@@ -1018,6 +1030,7 @@ nemura_worker | table nemura.role_assignment | SELECT
 nemura_worker | table nemura.session | SELECT
 nemura_worker | table nemura.sick_notification | SELECT
 nemura_worker | table nemura.sick_unpaid_decision | SELECT
+nemura_worker | table nemura.tax_hold | SELECT
 nemura_worker | table nemura.tenants | SELECT
 nemura_worker | table nemura.transfer_assessment | SELECT
 nemura_worker | table nemura.work_pass | SELECT

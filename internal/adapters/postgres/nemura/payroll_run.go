@@ -235,7 +235,7 @@ WHERE person_id = $1 AND pay_group_id = $2 AND effective_from <= $3 AND (effecti
 			orows.Close()
 			return mb, err
 		}
-		it := payroll.Item{Key: key, Name: nm, Nature: nature, Amount: dec(amt), CPFWages: cpfw, Suggested: map[string]string{"bonus": payroll.Additional, "commission": payroll.Additional, "allowance": payroll.Ordinary, "other": ""}[nature]}
+		it := payroll.Item{Key: key, Name: nm, Nature: nature, Amount: dec(amt), CPFWages: cpfw, Suggested: map[string]string{"bonus": payroll.Additional, "commission": payroll.Additional, "allowance": payroll.Ordinary, "other": "", payroll.NatureLeavePay: "", payroll.NatureNoticePay: "", payroll.NatureRetrenchment: ""}[nature]}
 		if forM != nil {
 			it.ForMonth = *forM
 		}
@@ -324,6 +324,13 @@ WHERE person_id = $1 AND pay_group_id = $2 AND effective_from <= $3 AND (effecti
 		return mb, err
 	}
 	m.LastMonth = month.Month() == time.December || (p.LeavingDate != nil && !p.LeavingDate.Before(month) && !p.LeavingDate.After(monthEnd(month)))
+	// A person leaving in the month is paid their final pay: the 50% limit on deductions does not apply (FR-PAY-16). A tax-clearance hold in force holds every dollar due (FR-PAY-10).
+	m.Final = p.LeavingDate != nil && !p.LeavingDate.Before(month) && !p.LeavingDate.After(monthEnd(month))
+	if hold, found, err := TaxHoldOf(ctx, tx, person); err != nil {
+		return mb, err
+	} else if found && hold.Held && !hold.From.After(monthEnd(month)) {
+		m.HoldAll = true
+	}
 	mb.Month = m
 	return mb, nil
 }

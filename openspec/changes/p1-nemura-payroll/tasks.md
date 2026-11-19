@@ -66,10 +66,10 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
 
 ## 5. Final pay, payment states and the checks (slice 5)
 
-- [ ] 5.1 Final pay (NM-PAY-06, NM-PAY-08): the last salary, leave encashment or deduction from the settlement of `p1-nemura-self-service-letters` 4.2, notice pay, the deadline by case, the IR21
+- [x] 5.1 Final pay (NM-PAY-06, NM-PAY-08): the last salary, leave encashment or deduction from the settlement of `p1-nemura-self-service-letters` 4.2, notice pay, the deadline by case, the IR21
   clearance hold as a flag the payment path reads. `// req: NM-PAY-06, NM-PAY-08`
 - [x] 5.2 Payment states per person (scheduled to returned or unknown), recorded with evidence when standalone; an unknown outcome blocks a new payment for that person and run. `// req: NM-PAY-10`
-- [ ] 5.3 The payroll checks of N.1: payslip late (#9, done), a rejected, returned or unknown payment (#14, done), late against the calendar (#2), books not received (#6), final pay due (#15). `// req: NM-PAY-03`
+- [x] 5.3 The payroll checks of N.1: payslip late (#9), a rejected, returned or unknown payment (#14), late against the calendar (#2) and final pay due (#15) are built; books not received (#6) needs Fyniq's `payroll.run.posted` event and arrives with `p1-nemura-fyniq-link`. `// req: NM-PAY-03`
 - [ ] 5.4 Verify.
 
 ## 6. Hand-off files (slice 6)
