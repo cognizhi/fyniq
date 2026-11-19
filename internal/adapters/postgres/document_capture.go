@@ -19,7 +19,7 @@ type docCaptures struct{ u *unitOfWork }
 
 func toDocCapture(r sqlcdb.GetDocumentCaptureRow) storage.DocumentCapture {
 	return storage.DocumentCapture{ID: r.ID, Source: r.Source, FileName: r.FileName, MediaType: r.MediaType, Size: r.SizeBytes, SHA256: r.Sha256, BlobKey: r.BlobKey,
-		MessageID: r.MessageID, InboundFileID: r.InboundFileID, OwnerUserID: r.OwnerUserID, CapturedBy: r.CapturedBy, NRICFlagged: r.NricFlagged, Status: r.Status, Kind: str(r.Kind), Reading: r.Reading,
+		MessageID: r.MessageID, InboundFileID: r.InboundFileID, OwnerUserID: r.OwnerUserID, CapturedBy: r.CapturedBy, NRICFlagged: r.NricFlagged, StatusAt: r.StatusAt, Status: r.Status, Kind: str(r.Kind), Reading: r.Reading,
 		ReadingModel: str(r.ReadingModel), ReadingPrompt: str(r.ReadingPrompt), Readings: int(r.Readings), ReadAt: r.ReadAt, Checks: r.Checks, DuplicateOf: r.DuplicateOf,
 		DraftKind: str(r.DraftKind), DraftID: r.DraftID, DraftedBy: r.DraftedBy, DraftedAt: r.DraftedAt, DismissedBy: r.DismissedBy, DismissedAt: r.DismissedAt,
 		DismissReason: str(r.DismissReason), LastError: str(r.LastError), CreatedAt: r.CreatedAt, Version: int(r.Version)}
@@ -140,7 +140,8 @@ func (r docCaptures) Status(ctx context.Context, id uuid.UUID, version int, stat
 	if err := r.u.check(); err != nil {
 		return storage.DocumentCapture{}, err
 	}
-	_, err := r.u.q.SetDocumentCaptureStatus(ctx, sqlcdb.SetDocumentCaptureStatusParams{ID: id, Version: int32(version), Status: status, LastError: optional(clipTo(lastError, 500))})
+	now := r.u.store.clock.Now()
+	_, err := r.u.q.SetDocumentCaptureStatus(ctx, sqlcdb.SetDocumentCaptureStatusParams{ID: id, Version: int32(version), Status: status, LastError: optional(clipTo(lastError, 500)), StatusAt: &now})
 	c, err := r.moved(ctx, id, err)
 	if err != nil {
 		return c, err

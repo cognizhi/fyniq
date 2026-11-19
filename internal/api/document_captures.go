@@ -357,9 +357,34 @@ func captureKey(org uuid.UUID) string {
 	return "capture/" + org.String() + "/" + uuid.Must(uuid.NewV7()).String()
 }
 
-// mediaReadable is whether the model reads a file of this type: a PDF or a photo.
+// mediaReadable is whether the model reads a file of this type: the text of a PDF, a plain text, CSV or email file. A photo is not: its pixels cannot be
+// masked before the model reads them (AI-02; the owner's decision of 20 Nov 2026).
 func mediaReadable(mt string) bool {
-	return mt == evidence.PDF || mt == "image/png" || mt == "image/jpeg" || mt == "image/webp"
+	return mt == evidence.PDF || mt == evidence.Text || mt == evidence.CSV || mt == evidence.EML
+}
+
+// ReadingGrace is how long a document may be Reading before the next ask ends it as Failed.
+const ReadingGrace = 10 * time.Minute
+
+// maxReadText is the most of a document's text the model is given.
+const maxReadText = 60000
+
+// maskedTextOf is the text of a file as the model reads it, with its bank account numbers, IBANs and NRIC or FIN numbers hidden first (AI-02, the owner's
+// decision of 20 Nov 2026), and how many things were hidden. A PDF whose text Fyniq cannot extract is refused: it cannot be checked, so it does not go to the model.
+func maskedTextOf(mediaType string, data []byte) (string, int, error) {
+	text := string(data)
+	if mediaType == evidence.PDF {
+		var err error
+		if text, err = pdftext.Text(data); err != nil || len(strings.TrimSpace(text)) < 20 {
+			return "", 0, problem(CodeCaptureType, "Fyniq cannot read this PDF's text, so it cannot hide the bank and identity numbers on it before the model sees it, and it is not read.",
+				"Type the bill in by hand, or capture its email or a text copy")
+		}
+	}
+	if len(text) > maxReadText {
+		text = text[:maxReadText]
+	}
+	masked, n := capdom.MaskText(text)
+	return masked, n, nil
 }
 
 // capturing adds file, already checked as any upload is, to the inbox in u; a file the inbox holds already is a duplicate of it.
@@ -789,14 +814,18 @@ func (a *API) readDocument(ctx context.Context, p authn.Principal, id uuid.UUID,
 		if err := checkIfMatch(ifMatch, docCaptureETag(c)); err != nil {
 			return err
 		}
-		if !slices.Contains([]string{storage.CaptureReceived, storage.CaptureFailed, storage.CaptureRead}, c.Status) {
-			return problem(CodeCaptureState, "A document that is "+c.Status+" is not read.", "Only a document waiting in the inbox is read")
+		// A reading that never ended (a crash mid-call) is ended as Failed once it has been Reading for ReadingGrace, so no document is stranded.
+		if c.Status == storage.CaptureReading && c.StatusAt != nil && a.deps.Clock.Now().Sub(*c.StatusAt) > ReadingGrace {
+			if c, err = u.DocumentCaptures().Status(ctx, c.ID, c.Version, storage.CaptureFailed, "The reading did not finish: ask for it again."); err != nil {
+				return err
+			}
 		}
-		if c.NRICFlagged {
-			return problem(CodeCaptureType, "It shows an NRIC or FIN in full, which never goes to a model, so it is not read.", "Mask the number and capture it again, or type the bill in by hand")
+		if !slices.Contains([]string{storage.CaptureReceived, storage.CaptureFailed, storage.CaptureRead}, c.Status) {
+			return problem(CodeCaptureState, "A document that is "+c.Status+" is not read.", "Only a document waiting in the inbox is read; one being read is ended after "+ReadingGrace.String()+" if it never finishes")
 		}
 		if !mediaReadable(c.MediaType) {
-			return problem(CodeCaptureType, "Only a PDF or a photo can be read, and this is "+c.MediaType+".", "Type the bill in by hand")
+			return problem(CodeCaptureType, "Only a PDF with text, or a text or email file, is read, and this is "+c.MediaType+": a photo cannot be checked for bank and identity numbers before the model sees it.",
+				"Type the bill in by hand")
 		}
 		return nil
 	}); err != nil {
@@ -812,6 +841,10 @@ func (a *API) readDocument(ctx context.Context, p authn.Principal, id uuid.UUID,
 	if err != nil {
 		return storage.DocumentCapture{}, problem(CodeUnavailable, "The file could not be read in full.", "Try again")
 	}
+	masked, hidden, err := maskedTextOf(c.MediaType, data)
+	if err != nil {
+		return storage.DocumentCapture{}, err
+	}
 	// From here on every way out ends the reading in a status: Read, or Failed with why.
 	if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		cur, err := u.DocumentCaptures().Lock(ctx, id)
@@ -826,21 +859,15 @@ func (a *API) readDocument(ctx context.Context, p authn.Principal, id uuid.UUID,
 	}); err != nil {
 		return storage.DocumentCapture{}, err
 	}
-	part := ports.ModelPart{Kind: ports.PartImage, MediaType: c.MediaType, Data: data}
-	screened := []string{c.FileName}
-	if c.MediaType == evidence.PDF {
-		part.Kind = ports.PartDocument
-		if text, err := pdftext.Text(data); err == nil {
-			screened = append(screened, text)
-		}
-	}
-	ask, _ := json.Marshal(map[string]any{"file_name": map[string]string{"untrusted_text": c.FileName}, "task": "Read this document into the shape you were given."})
+	ask, _ := json.Marshal(map[string]any{"file_name": map[string]string{"untrusted_text": c.FileName}, "document_text": map[string]string{"untrusted_text": masked},
+		"hidden_before_you_read": hidden, "task": "Read this document into the shape you were given."})
+	screened := []string{c.FileName, masked}
 	if err := a.screen(ctx, false, append(screened, string(ask))...); err != nil {
 		return storage.DocumentCapture{}, a.failCapture(ctx, p, id, "Screening stopped the document before it reached the model: "+plainError(err), err)
 	}
 	res, err := a.router().Run(ctx, p.Organisation, ai.Call{Agent: "document_capture", Classes: []string{"business-figures", "personal-data"}, Actor: "user:" + p.UserID.String(),
 		Request: ports.ModelRequest{System: prompt.Text, MaxTokens: 6000, Output: readingSchema(),
-			Messages: []ports.ModelMessage{{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: string(ask)}, part}}}}})
+			Messages: []ports.ModelMessage{{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: string(ask)}}}}}})
 	if err != nil {
 		pr := modelCallProblem(err)
 		return storage.DocumentCapture{}, a.failCapture(ctx, p, id, pr.Detail, pr)

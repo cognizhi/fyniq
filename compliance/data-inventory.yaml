@@ -149,7 +149,7 @@ classes:
     where: "The database and the staging file store, in Singapore (Cloud SQL and Cloud Storage, asia-southeast1; locally the developer's database and files)"
     who: "Those who may enter bills or claims, for the organisation's address, uploads and pastes; only the member for their own email-in address"
     retention: "The reading and its record are kept with the organisation's records; the file is kept until a draft attaches it as evidence, under the evidence rules' retention (FR-DOC-02), or it is dismissed [counsel to confirm]"
-    protection: "A file is checked and scanned like any upload (FR-DOC-08); what the model returns is untrusted data, screened, and never decides a figure; a file that shows an NRIC or FIN in full is captured, flagged and never read (AI-02, FR-DOC-09). A supplier's invoice is sent as printed, so the payment details it prints (a bank account number) reach the model: an owner decision [owner to confirm]"
+    protection: "A file is checked and scanned like any upload (FR-DOC-08); the model is given the text of a PDF, a text file or an email, never a photo or a PDF whose text Fyniq cannot extract, with every bank account number, IBAN and NRIC or FIN number hidden first (AI-02, AI-20; the owner's decision of 20 Nov 2026); what the model returns is untrusted data, screened, and never decides a figure"
     transfers: "Model calls only, when a document is read: the flow ai-models"
     columns: [document_capture.reading, document_capture.file_name, document_capture.checks, document_capture.nric_flagged]
   - key: agent-runs

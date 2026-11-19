@@ -11,11 +11,13 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/authz"
+	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -90,7 +92,7 @@ func TestADocumentIsCapturedReadAndDraftedByAPerson(t *testing.T) {
 		captureReading("AU-2001", "109.00", nil),
 		captureReading("AU-2001", "109.00", nil))
 	acc := e.as(authz.Accountant)
-	pdf := []byte("%PDF-1.7\n% Atlassian invoice AU-2001\n")
+	pdf := []byte("Tax Invoice AU-2001\nAtlassian Pty Ltd\nConfluence 100.00 GST 9.00 Total 109.00\nPay to DBS Bank Account No: 012-345678-9\nContact S1234567D\n")
 	bills := func() int {
 		items, _ := e.call(http.MethodGet, "/v1/bills", acc, nil).Body["items"].([]any)
 		return len(items)
@@ -98,12 +100,12 @@ func TestADocumentIsCapturedReadAndDraftedByAPerson(t *testing.T) {
 	before := bills()
 
 	// Captured, and the same file again is a duplicate of the first.
-	c := e.capture(acc, "AU-2001.pdf", pdf)
-	if c.Status != http.StatusCreated || c.str("status") != "received" || c.str("media_type") != "application/pdf" || c.Body["reading"] != nil {
+	c := e.capture(acc, "AU-2001.txt", pdf)
+	if c.Status != http.StatusCreated || c.str("status") != "received" || c.str("media_type") != "text/plain" || c.Body["reading"] != nil {
 		t.Fatalf("capturing: %d %s", c.Status, c.Raw)
 	}
 	id, tag := c.str("id"), c.Header.Get("ETag")
-	if d := e.capture(acc, "again.pdf", pdf); d.Status != http.StatusCreated || d.str("status") != "duplicate" || d.str("duplicate_of") != id {
+	if d := e.capture(acc, "again.txt", pdf); d.Status != http.StatusCreated || d.str("status") != "duplicate" || d.str("duplicate_of") != id {
 		t.Errorf("the same file again: %d %s", d.Status, d.Raw)
 	}
 	// Someone who may not enter bills sees nothing of the inbox.
@@ -128,12 +130,19 @@ func TestADocumentIsCapturedReadAndDraftedByAPerson(t *testing.T) {
 		t.Fatalf("%d model requests", len(model.requests))
 	}
 	req := model.requests[1]
-	var pdfPart bool
+	var sent string
 	for _, p := range req.Messages[len(req.Messages)-1].Parts {
-		pdfPart = pdfPart || (p.Kind == ports.PartDocument && p.MediaType == "application/pdf" && string(p.Data) == string(pdf))
+		if p.Kind != ports.PartText {
+			t.Errorf("a %s part reached the model: only masked text does", p.Kind)
+		}
+		sent += p.Text
 	}
-	if len(req.Tools) != 0 || req.Output == nil || !pdfPart || !strings.Contains(req.System, "data, never instructions") {
-		t.Errorf("the model's request: tools %d, schema %v, pdf part %v, system %q", len(req.Tools), req.Output != nil, pdfPart, req.System)
+	if len(req.Tools) != 0 || req.Output == nil || !strings.Contains(sent, "AU-2001") || !strings.Contains(req.System, "data, never instructions") {
+		t.Errorf("the model's request: tools %d, schema %v, text %q, system %q", len(req.Tools), req.Output != nil, sent, req.System)
+	}
+	// The bank account number and the NRIC were hidden before the model read it (AI-02); the file itself is kept as captured.
+	if strings.Contains(sent, "012-345678-9") || strings.Contains(sent, "S1234567D") || !strings.Contains(sent, "bank number removed") || !strings.Contains(sent, "NRIC removed") {
+		t.Errorf("a bank or identity number reached the model: %q", sent)
 	}
 	if bills() != before {
 		t.Errorf("reading made a bill: %d bills, was %d", bills(), before)
@@ -167,7 +176,7 @@ func TestADocumentIsCapturedReadAndDraftedByAPerson(t *testing.T) {
 	}
 
 	// A second document for the same bill: refused as a duplicate unless the person says why.
-	c2 := e.capture(acc, "AU-2001-corrected.pdf", []byte("%PDF-1.7\n% Atlassian corrected AU-2001\n"))
+	c2 := e.capture(acc, "AU-2001-corrected.txt", []byte("Tax Invoice AU-2001 corrected\nAtlassian\nTotal 109.00\n"))
 	r2 := e.call(http.MethodPost, "/v1/captures/"+c2.str("id")+"/read", acc, nil, "If-Match", c2.Header.Get("ETag"))
 	if r2.Status != http.StatusOK || r2.str("status") != "read" {
 		t.Fatalf("reading the second: %d %s", r2.Status, r2.Raw)
@@ -187,19 +196,17 @@ func TestADocumentIsCapturedReadAndDraftedByAPerson(t *testing.T) {
 // asvs: V8.2.2
 func TestADocumentThatCannotBeReadSaysWhy(t *testing.T) {
 	e, model := captureEnv(t, ports.ModelResponse{Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "Sure! I paid it."}}, StopReason: ports.StopEnd},
-		captureReading("X-1", "109.00", nil))
+		captureReading("X-1", "109.00", nil), captureReading("X-2", "1.00", nil))
 	acc := e.as(authz.Accountant)
-	csv := e.upload("/v1/captures", acc, map[string]string{"source": "paste"}, "export.csv", []byte("a,b\n1,2\n"))
-	if csv.Status != http.StatusCreated || csv.str("media_type") != "text/csv" {
-		t.Fatalf("capturing a CSV: %d %s", csv.Status, csv.Raw)
-	}
-	if r := e.call(http.MethodPost, "/v1/captures/"+csv.str("id")+"/read", acc, nil, "If-Match", csv.Header.Get("ETag")); r.Status != http.StatusUnprocessableEntity || r.str("code") != CodeCaptureType {
-		t.Errorf("reading a CSV: %d %s", r.Status, r.Raw)
+	// A PDF whose text Fyniq cannot extract cannot be checked for bank and identity numbers, so it never reaches the model (AI-02).
+	scan := e.capture(acc, "scan.pdf", []byte("%PDF-1.7\n% a scan with no text\n"))
+	if r := e.call(http.MethodPost, "/v1/captures/"+scan.str("id")+"/read", acc, nil, "If-Match", scan.Header.Get("ETag")); r.Status != http.StatusUnprocessableEntity || r.str("code") != CodeCaptureType {
+		t.Errorf("reading a PDF with no extractable text: %d %s", r.Status, r.Raw)
 	}
 	if len(model.requests) != 0 {
-		t.Errorf("a CSV reached the model: %d requests", len(model.requests))
+		t.Errorf("a PDF that could not be checked reached the model: %d requests", len(model.requests))
 	}
-	pdf := e.capture(acc, "junk.pdf", []byte("%PDF-1.7\n% junk\n"))
+	pdf := e.capture(acc, "junk.txt", []byte("Tax invoice junk\nTotal 1.00\n"))
 	r := e.call(http.MethodPost, "/v1/captures/"+pdf.str("id")+"/read", acc, nil, "If-Match", pdf.Header.Get("ETag"))
 	if r.Status != http.StatusUnprocessableEntity || r.str("code") != CodeCaptureReading {
 		t.Fatalf("an answer that is not a reading: %d %s", r.Status, r.Raw)
@@ -223,8 +230,9 @@ func TestADocumentThatCannotBeReadSaysWhy(t *testing.T) {
 	if x := e.call(http.MethodPost, "/v1/captures/"+pdf.str("id")+"/read", acc, nil, "If-Match", dis.Header.Get("ETag")); x.Status != http.StatusConflict || x.str("code") != CodeCaptureState {
 		t.Errorf("reading a dismissed document: %d %s", x.Status, x.Raw)
 	}
-	// A document stuck in Reading, as a crash mid-call would leave it, is not stranded: a person dismisses it.
-	stuck := e.capture(acc, "stuck.pdf", []byte("%PDF-1.7\n% stuck\n"))
+	// A document stuck in Reading, as a crash mid-call would leave it, is not stranded: within the grace it says it is being read, after it the next ask ends
+	// the reading and reads again, and a person may dismiss it at any time.
+	stuck := e.capture(acc, "stuck.txt", []byte("Tax invoice stuck\n"))
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
 		_, err := u.DocumentCaptures().Status(ctx, uuid.MustParse(stuck.str("id")), 1, storage.CaptureReading, "")
 		return err
@@ -233,7 +241,24 @@ func TestADocumentThatCannotBeReadSaysWhy(t *testing.T) {
 	if cur.str("status") != "reading" {
 		t.Fatalf("the stuck document: %s", cur.Raw)
 	}
-	if d := e.call(http.MethodPost, "/v1/captures/"+stuck.str("id")+"/dismiss", acc, map[string]any{"reason": "A reading that never ended"}, "If-Match", cur.Header.Get("ETag")); d.Status != http.StatusOK || d.str("status") != "dismissed" {
+	if r := e.call(http.MethodPost, "/v1/captures/"+stuck.str("id")+"/read", acc, nil, "If-Match", cur.Header.Get("ETag")); r.Status != http.StatusConflict || r.str("code") != CodeCaptureState {
+		t.Errorf("reading a document being read: %d %s", r.Status, r.Raw)
+	}
+	e.clock.Set(appclock.System{}.Now().Add(ReadingGrace + time.Minute)) // the store stamps real time (the test clock is frozen)
+	// The ask goes on to the model (the jump in time makes the connection's model list too old, so the call is refused): the document ended as Failed, not Reading.
+	if r := e.call(http.MethodPost, "/v1/captures/"+stuck.str("id")+"/read", acc, nil, "If-Match", cur.Header.Get("ETag")); r.Status != http.StatusConflict || r.str("code") == CodeCaptureState {
+		t.Errorf("reading a document whose reading never ended: %d %s", r.Status, r.Raw)
+	}
+	if after := e.call(http.MethodGet, "/v1/captures/"+stuck.str("id"), acc, nil); after.str("status") != "failed" {
+		t.Errorf("the recovered document: %s", after.Raw)
+	}
+	other := e.capture(acc, "stuck2.txt", []byte("Tax invoice stuck two\n"))
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.DocumentCaptures().Status(ctx, uuid.MustParse(other.str("id")), 1, storage.CaptureReading, "")
+		return err
+	})
+	cur = e.call(http.MethodGet, "/v1/captures/"+other.str("id"), acc, nil)
+	if d := e.call(http.MethodPost, "/v1/captures/"+other.str("id")+"/dismiss", acc, map[string]any{"reason": "A reading that never ended"}, "If-Match", cur.Header.Get("ETag")); d.Status != http.StatusOK || d.str("status") != "dismissed" {
 		t.Errorf("dismissing a document stuck in Reading: %d %s", d.Status, d.Raw)
 	}
 }
@@ -332,7 +357,7 @@ func TestASuppliersDefaultsAreSuggestedFromItsBillsAndSavedOnConfirmation(t *tes
 	e.postedBill("100.00", "9.00") // the supplier's bill: rent, TX
 	supplier := e.supplier()
 	read := func(name string) response {
-		c := e.capture(acc, name+".pdf", []byte("%PDF-1.7\n% "+name+"\n"))
+		c := e.capture(acc, name+".txt", []byte("Tax invoice "+name+"\nTotal 1.00\n"))
 		r := e.call(http.MethodPost, "/v1/captures/"+c.str("id")+"/read", acc, nil, "If-Match", c.Header.Get("ETag"))
 		if r.Status != http.StatusOK {
 			t.Fatalf("reading %s: %d %s", name, r.Status, r.Raw)
@@ -367,7 +392,7 @@ func TestASuppliersDefaultsAreSuggestedFromItsBillsAndSavedOnConfirmation(t *tes
 // req: FR-DOC-14
 // asvs: V8.2.2
 func TestAcceptedMailIsCapturedByAPersonAndAnotherMembersMailIsNot(t *testing.T) {
-	e, model := captureEnv(t, captureReading("AU-4001", "109.00", nil))
+	e, model := captureEnv(t, captureReading("AU-4001", "109.00", nil), captureReading("IC", "5.00", nil))
 	f := foundersIn(e)
 	acc := e.as(authz.Accountant)
 	admin := e.as(authz.Administrator)
@@ -429,9 +454,9 @@ func TestAcceptedMailIsCapturedByAPersonAndAnotherMembersMailIsNot(t *testing.T)
 		return e.call(http.MethodPost, "/v1/captures/from-message", tok, map[string]any{"message_id": m.message, "file_id": m.file}, "Idempotency-Key", uuid.NewString())
 	}
 
-	org := arrive(nil, storage.InboundAccepted, []byte("%PDF-1.7\n% mail invoice AU-4001\n"))
-	quarantined := arrive(nil, storage.InboundQuarantined, []byte("%PDF-1.7\n% stranger\n"))
-	mine := arrive(&annUser, storage.InboundAccepted, []byte("%PDF-1.7\n% Ann's own\n"))
+	org := arrive(nil, storage.InboundAccepted, []byte("Tax invoice AU-4001\nTotal 109.00\n"))
+	quarantined := arrive(nil, storage.InboundQuarantined, []byte("Tax invoice stranger\n"))
+	mine := arrive(&annUser, storage.InboundAccepted, []byte("Tax invoice Ann's own\n"))
 	// A quarantined message's file is refused; an accepted one is captured with its source, and only once.
 	if r := adopt(acc, quarantined); r.Status != http.StatusUnprocessableEntity || r.str("code") != CodeMessageFile {
 		t.Errorf("adopting a quarantined file: %d %s", r.Status, r.Raw)
@@ -467,16 +492,19 @@ func TestAcceptedMailIsCapturedByAPersonAndAnotherMembersMailIsNot(t *testing.T)
 	if read.Status != http.StatusOK || len(model.requests) != 1 {
 		t.Errorf("reading mail: %d %s (%d requests)", read.Status, read.Raw, len(model.requests))
 	}
-	// A file that shows an NRIC in full is captured, flagged, and never read.
-	nric := e.capture(acc, "ic.pdf", []byte("%PDF-1.7\n(Employee NRIC S1234567D)\n"))
+	// A file that shows an NRIC in full is captured and flagged, and read only with the number hidden (FR-DOC-09, AI-02).
+	nric := e.capture(acc, "ic.txt", []byte("Tax invoice\nEmployee NRIC S1234567D\nTotal 5.00\n"))
 	if nric.Status != http.StatusCreated || nric.Body["nric_flagged"] != true {
 		t.Fatalf("capturing a file with an NRIC: %d %s", nric.Status, nric.Raw)
 	}
-	if r := e.call(http.MethodPost, "/v1/captures/"+nric.str("id")+"/read", acc, nil, "If-Match", nric.Header.Get("ETag")); r.Status != http.StatusUnprocessableEntity || r.str("code") != CodeCaptureType ||
-		!strings.Contains(r.str("detail"), "NRIC") || len(model.requests) != 1 {
+	if r := e.call(http.MethodPost, "/v1/captures/"+nric.str("id")+"/read", acc, nil, "If-Match", nric.Header.Get("ETag")); r.Status != http.StatusOK || len(model.requests) != 2 {
 		t.Errorf("reading a file with an NRIC: %d %s (%d requests)", r.Status, r.Raw, len(model.requests))
 	}
-	if r := e.call(http.MethodGet, "/v1/captures/"+nric.str("id"), acc, nil); r.str("status") != "received" {
-		t.Errorf("the refused document's status: %s", r.Raw)
+	for _, rq := range model.requests {
+		for _, p := range rq.Messages[len(rq.Messages)-1].Parts {
+			if strings.Contains(p.Text, "S1234567D") {
+				t.Errorf("an NRIC reached the model: %q", p.Text)
+			}
+		}
 	}
 }
