@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billable_minutes": {
+      "description": "Of them, the billable minutes.",
+      "examples": [
+        12000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "budget_minutes": {
+      "description": "The hours budget in minutes.",
+      "examples": [
+        24000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "budget_used": {
+      "description": "Approved minutes over the hours budget, a percentage to one decimal.",
+      "examples": [
+        "56.3"
+      ],
+      "type": "string"
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "ACME-01"
+      ],
+      "type": "string"
+    },
+    "customer_name": {
+      "description": "Its customer.",
+      "examples": [
+        "Acme Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "direct_costs": {
+      "description": "Project-tagged posted costs on expense accounts WITHOUT the payroll-cost flag (FR-COA-02), in the base currency.",
+      "examples": [
+        "420.00"
+      ],
+      "type": "string"
+    },
+    "margin": {
+      "description": "Revenue less time at cost less direct costs; absent when the time has no cost to use.",
+      "examples": [
+        "17580.00"
+      ],
+      "type": "string"
+    },
+    "minutes": {
+      "description": "Approved net minutes.",
+      "examples": [
+        13500
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Acme rollout"
+      ],
+      "type": "string"
+    },
+    "payroll_tagged": {
+      "description": "Project-tagged lines on payroll-cost accounts: listed to reconcile, never in direct costs, so salary tagged to a project is not counted twice (G4-049).",
+      "examples": [
+        "5000.00"
+      ],
+      "type": "string"
+    },
+    "project_id": {
+      "description": "The project.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "rate_basis": {
+      "description": "Where the time cost's rates came from.",
+      "enum": [
+        "person",
+        "role_average",
+        "standard",
+        "mixed",
+        "none"
+      ],
+      "examples": [
+        "role_average"
+      ],
+      "type": "string"
+    },
+    "realisation": {
+      "description": "Billed (revenue) over standard value, a percentage to one decimal.",
+      "examples": [
+        "83.3"
+      ],
+      "type": "string"
+    },
+    "revenue": {
+      "description": "Revenue posted to the project in the months, from posted ledger lines on revenue accounts, in the base currency.",
+      "examples": [
+        "30000.00"
+      ],
+      "type": "string"
+    },
+    "standard_value": {
+      "description": "Billable time at billing rates, in the base currency, when the project is billed in it.",
+      "examples": [
+        "36000.00"
+      ],
+      "type": "string"
+    },
+    "time_cost": {
+      "description": "Approved time at the viewer's cost rate (RND-TIME per entry); absent when no rate may be used.",
+      "examples": [
+        "12000.00"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "code",
+    "name",
+    "revenue",
+    "minutes",
+    "billable_minutes",
+    "rate_basis"
+  ],
+  "title": "ProjectReportRow",
+  "type": "object"
+}

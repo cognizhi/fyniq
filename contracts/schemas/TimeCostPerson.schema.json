@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billable_minutes": {
+      "description": "Of them, the billable minutes.",
+      "examples": [
+        2100
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "cost": {
+      "description": "Their time at their own cost rate, in the base currency: present only for the Owner and the Payroll administrator (payroll data, FR-PAY-13).",
+      "examples": [
+        "2343.75"
+      ],
+      "type": "string"
+    },
+    "minutes": {
+      "description": "Their approved net minutes.",
+      "examples": [
+        2250
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "person_name": {
+      "description": "Their name.",
+      "examples": [
+        "Priya Nair"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "person_name",
+    "minutes",
+    "billable_minutes"
+  ],
+  "title": "TimeCostPerson",
+  "type": "object"
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billing_method": {
+      "description": "How it is billed; time on an internal project is never billable.",
+      "enum": [
+        "time_and_materials",
+        "fixed_fee",
+        "retainer",
+        "internal"
+      ],
+      "examples": [
+        "time_and_materials"
+      ],
+      "type": "string"
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "ACME-01"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The project's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Acme rollout"
+      ],
+      "type": "string"
+    },
+    "tasks": {
+      "description": "Its tasks in use.",
+      "items": {
+        "$ref": "TimesheetTask.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "code",
+    "name",
+    "billing_method",
+    "tasks"
+  ],
+  "title": "TimesheetProject",
+  "type": "object"
+}
