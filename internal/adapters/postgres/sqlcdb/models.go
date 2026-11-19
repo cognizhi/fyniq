@@ -2673,6 +2673,20 @@ type FyniqProjectMember struct {
 	CreatedAt      time.Time
 }
 
+type FyniqProjectMilestone struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Kind           string
+	Name           string
+	Amount         string
+	DueOn          pgtype.Date
+	AcceptedOn     pgtype.Date
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
+}
+
 type FyniqProjectTask struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

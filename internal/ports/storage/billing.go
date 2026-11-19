@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -35,4 +36,44 @@ type Billing interface {
 	// BillableDocuments lists, by ID after a cursor, at most limit posted bills and claims that have a billable line carrying the project as a
 	// dimension value (FR-PRJ-08).
 	BillableDocuments(ctx context.Context, project uuid.UUID, after *uuid.UUID, limit int) ([]uuid.UUID, error)
+	// Milestones lists a project's milestones or retainer periods, oldest first, each with the invoice that billed it, if one did.
+	Milestones(ctx context.Context, project uuid.UUID) ([]Milestone, error)
+	// GetMilestone is one, ports.ErrNotFound for none.
+	GetMilestone(ctx context.Context, id uuid.UUID) (Milestone, error)
+	// CreateMilestone saves one under its project; the database refuses one on a project of another billing method, or a closed one (CodeMilestone).
+	CreateMilestone(ctx context.Context, m NewMilestone) (Milestone, error)
+	// AcceptMilestone records the customer's acceptance, once, at its version: CodeVersion when it changed since.
+	AcceptMilestone(ctx context.Context, id uuid.UUID, version int, on time.Time) (Milestone, error)
+}
+
+// The kinds of milestone.
+const (
+	MilestoneFixedFee = "milestone" // a fixed-fee project's milestone: invoiced once it is accepted
+	MilestoneRetainer = "retainer"  // a retainer's period: invoiced without acceptance, and time is drawn down against it
+)
+
+// CodeMilestone: a milestone on a project of another billing method or a closed one, one changed after it was saved, or accepted twice (FY607).
+const CodeMilestone = "STORAGE-MILESTONE-01"
+
+// Milestone is a part of a fixed fee, or a retainer's period, and what became of it.
+type Milestone struct {
+	ID         uuid.UUID
+	ProjectID  uuid.UUID
+	Kind       string
+	Name       string
+	Amount     Decimal // in the project's currency
+	DueOn      *time.Time
+	AcceptedOn *time.Time
+	Version    int
+	InvoiceID  *uuid.UUID // the posted invoice that billed it
+	CreatedAt  time.Time
+}
+
+// NewMilestone is a milestone as entered.
+type NewMilestone struct {
+	ProjectID uuid.UUID
+	Kind      string
+	Name      string
+	Amount    Decimal
+	DueOn     *time.Time
 }

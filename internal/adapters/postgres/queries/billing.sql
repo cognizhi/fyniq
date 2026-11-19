@@ -15,3 +15,26 @@ WHERE d.type IN ('bill', 'expense_claim') AND d.status = 'posted'
   AND (sqlc.narg(after_id)::uuid IS NULL OR d.id > sqlc.narg(after_id)::uuid)
 ORDER BY d.id
 LIMIT sqlc.arg(max_rows);
+
+-- name: ProjectMilestones :many
+SELECT m.id, m.project_id, m.kind, m.name, m.amount, m.due_on, m.accepted_on, m.version, m.created_at, b.invoice_id AS billed_on
+FROM fyniq.project_milestone m
+LEFT JOIN fyniq.project_billed_item b ON b.organisation_id = m.organisation_id AND b.kind = 'milestone' AND b.ref_id = m.id
+WHERE m.project_id = sqlc.arg(project_id)
+ORDER BY m.created_at, m.id;
+
+-- name: ProjectMilestone :one
+SELECT m.id, m.project_id, m.kind, m.name, m.amount, m.due_on, m.accepted_on, m.version, m.created_at, b.invoice_id AS billed_on
+FROM fyniq.project_milestone m
+LEFT JOIN fyniq.project_billed_item b ON b.organisation_id = m.organisation_id AND b.kind = 'milestone' AND b.ref_id = m.id
+WHERE m.id = sqlc.arg(id);
+
+-- name: InsertProjectMilestone :one
+INSERT INTO fyniq.project_milestone (project_id, kind, name, amount, due_on)
+VALUES (sqlc.arg(project_id), sqlc.arg(kind), sqlc.arg(name), sqlc.arg(amount)::numeric, sqlc.narg(due_on))
+RETURNING id;
+
+-- name: AcceptProjectMilestone :one
+UPDATE fyniq.project_milestone SET accepted_on = sqlc.arg(accepted_on), version = version + 1, changed_at = now()
+ WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
+RETURNING id;

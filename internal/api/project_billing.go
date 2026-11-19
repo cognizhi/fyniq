@@ -72,6 +72,7 @@ type DraftProjectInvoiceBody struct {
 	RevenueAccountID string                `json:"revenue_account_id" format:"uuid" doc:"The revenue account the invoice's lines earn." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d62"`
 	GSTCode          string                `json:"gst_code,omitempty" pattern:"^[A-Z]{2,4}$" doc:"The GST code of the invoice's lines. Left out, SR, standard-rated; choose OS or ZR where it applies [verify with the tax agent]." example:"SR"`
 	Date             string                `json:"date,omitempty" format:"date" doc:"The invoice's date. Left out, the organisation's today." example:"2026-10-31"`
+	MilestoneID      string                `json:"milestone_id,omitempty" format:"uuid" doc:"For a fixed-fee project, an accepted milestone to bill; for a retainer, a period to bill. The invoice then has that one line, at its amount, and bills nothing else." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e91"`
 	TimeEntryIDs     []TimeEntryRef        `json:"time_entry_ids,omitempty" maxItems:"5000" doc:"The priced time entries to bill. Left out, all of them."`
 	Expenses         []DraftProjectExpense `json:"expenses,omitempty" maxItems:"2000" doc:"The costs to bill. Left out, all of those in the project's currency."`
 }
@@ -261,6 +262,9 @@ func (a *API) projectInvoiceDraft(ctx context.Context, u storage.UnitOfWork, pr 
 	if code == "" {
 		code = "SR"
 	}
+	if in.MilestoneID != "" {
+		return a.milestoneInvoiceDraft(ctx, u, pr, account, code, in)
+	}
 	un, err := projectbilling.Of(ctx, u, pr, base)
 	if err != nil {
 		return invoice.Draft{}, err
@@ -378,4 +382,59 @@ func hoursText(minutes int) string {
 		return "-" + s
 	}
 	return s
+}
+
+// milestoneInvoiceDraft is the draft invoice of one accepted milestone, or one period of a retainer: a single line at its amount, carrying the
+// project, and the milestone for the database to mark when the invoice is posted.
+func (a *API) milestoneInvoiceDraft(ctx context.Context, u storage.UnitOfWork, pr storage.Project, account uuid.UUID, code string, in DraftProjectInvoiceBody) (invoice.Draft, error) {
+	mid, err := uuid.Parse(in.MilestoneID)
+	if err != nil {
+		return invoice.Draft{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.milestone_id", Message: "is not an ID", Fix: "Send the milestone's ID"}})
+	}
+	if pr.BillingMethod != storage.BillingFixedFee && pr.BillingMethod != storage.BillingRetainer {
+		return invoice.Draft{}, problem(projectbilling.CodeMilestone, "Only a fixed-fee project has milestones, and a retainer periods.", "Bill the project's time and costs instead")
+	}
+	m, err := u.Billing().GetMilestone(ctx, mid)
+	if err != nil || m.ProjectID != pr.ID {
+		return invoice.Draft{}, ports.ErrNotFound
+	}
+	switch {
+	case m.InvoiceID != nil:
+		return invoice.Draft{}, problem(projectbilling.CodeMilestone, "A posted invoice bills the milestone already.", "Void that invoice first, or bill another milestone")
+	case m.Kind == storage.MilestoneFixedFee && m.AcceptedOn == nil:
+		return invoice.Draft{}, problem(projectbilling.CodeMilestone, "The customer has not accepted the milestone.", "Record the customer's acceptance first (acceptProjectMilestone)")
+	}
+	cur, err := money.Lookup(pr.Currency)
+	if err != nil {
+		return invoice.Draft{}, err
+	}
+	amount, err := money.ParseStored(string(m.Amount), cur)
+	if err != nil {
+		return invoice.Draft{}, err
+	}
+	price, err := money.ParseUnitPrice(amount.String(), cur, "unit_price")
+	if err != nil {
+		return invoice.Draft{}, err
+	}
+	one, err := money.ParseQuantity("1", "quantity")
+	if err != nil {
+		return invoice.Draft{}, err
+	}
+	day, err := orgToday(ctx, a, u)
+	if err != nil {
+		return invoice.Draft{}, err
+	}
+	if in.Date != "" {
+		if day, err = time.Parse(time.DateOnly, in.Date); err != nil {
+			return invoice.Draft{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.date", Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"}})
+		}
+	}
+	desc := m.Name
+	if m.Kind == storage.MilestoneRetainer {
+		desc = "Retainer: " + m.Name
+	}
+	d := invoice.Draft{CustomerID: *pr.CustomerID, Date: day, Currency: cur, Reference: pr.Code,
+		Lines:          []invoice.Line{{Description: desc, Quantity: one, UnitPrice: price, AccountID: account, GSTCode: code, Values: []uuid.UUID{pr.ID}}},
+		ProjectBilling: &invoice.ProjectBilling{ProjectID: pr.ID, MilestoneID: &mid}}
+	return d, nil
 }

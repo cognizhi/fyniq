@@ -2614,6 +2614,63 @@ Makes a draft invoice to the project's customer through the ordinary invoice com
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `FX-08`, `INVOICE-05`, `INVOICE-06`, `INVOICE-07`, `INVOICE-08`, `INVOICE-09`, `INVOICE-15`, `INVOICE-16`, `LEDGER-22`, `LEDGER-23`, `LEDGER-24`, `LEDGER-28`, `LEDGER-31`, `LEDGER-32`, `LEDGER-33`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `PRJ-09`, `PRJ-11`, `PRJ-12`, `PRJ-13`, `PRJ-14`, `STORAGE-BILL-01`
 
+### `POST /v1/project-milestones`
+
+**Add a milestone or a retainer period** (`createProjectMilestone`)
+
+Adds a milestone to a fixed-fee project, or a period to a retainer: a name, an amount in the project's currency above zero and an optional due date (FR-PRJ-10). Its amount and name never change; the customer's acceptance is recorded with acceptProjectMilestone. Refused with PRJ-15 on a project of another billing method or a closed one, and PRJ-09 while Projects and time are switched off. Side effects: the milestone and its audit event under the project. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Invoices, credit notes
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ProjectMilestoneDraft`](../../contracts/schemas/ProjectMilestoneDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ProjectMilestone`](../../contracts/schemas/ProjectMilestone.schema.json)
+  - `201` Created [`ProjectMilestone`](../../contracts/schemas/ProjectMilestone.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PRJ-15` The milestone does not fit the project, is not accepted, or is billed already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MILESTONE-01` The milestone record does not allow that.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `PRJ-09`, `PRJ-15`, `STORAGE-LOCK-01`, `STORAGE-MILESTONE-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/project-milestones/{milestone_id}/accept`
+
+**Record the customer's acceptance of a milestone** (`acceptProjectMilestone`)
+
+Records the day the customer accepted a fixed-fee milestone, once, which lets an invoice bill it (FR-PRJ-10). A retainer period needs no acceptance (PRJ-15). Needs If-Match with the milestone's ETag. Side effects: its next version and its audit event under the project. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Invoices, credit notes
+- **Parameters:**
+  - `milestone_id` (path, required): The milestone's ID.
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ProjectMilestoneAcceptance`](../../contracts/schemas/ProjectMilestoneAcceptance.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ProjectMilestone`](../../contracts/schemas/ProjectMilestone.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PRJ-15` The milestone does not fit the project, is not accepted, or is billed already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MILESTONE-01` The milestone record does not allow that.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`, `PRJ-15`, `STORAGE-LOCK-01`, `STORAGE-MILESTONE-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
 ### `GET /v1/project-people`
 
 **List the members a project can name** (`listProjectPeople`)
@@ -2796,6 +2853,27 @@ The project's own billing rates and its customer's, oldest first (FR-PRJ-06). A 
   - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
 - **Responses:**
   - `200` OK [`BillingRatePage`](../../contracts/schemas/BillingRatePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
+
+### `GET /v1/projects/{project_id}/milestones`
+
+**A project's milestones or retainer periods** (`listProjectMilestones`)
+
+The milestones of a fixed-fee project, or the periods of a retainer, oldest first, each with whether the customer accepted it and the invoice that billed it (FR-PRJ-10). A retainer shows what it has billed, what its approved billable time has drawn down at billing rates, and what is left. A person who reads only the projects they manage gets 404 for another. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+
+- **Permission:** View on Project reports and cost rates (rev 0.8)
+- **Parameters:**
+  - `project_id` (path, required): The project's ID.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`ProjectMilestones`](../../contracts/schemas/ProjectMilestones.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.

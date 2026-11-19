@@ -4,7 +4,7 @@ type: task
 title: Bill a project's time and costs
 summary: What Unbilled work lists, how to draft the invoice, when the work counts as billed, and the check on time left uninvoiced
 sources:
-  - docs/user-guide/projects-billing.md sha256:84ed5c38e1816922dfd172fcd4414a139b7016aa8ffa5d1ce1fb7e6753b62854
+  - docs/user-guide/projects-billing.md sha256:669e5cbab15d9572c6aca3ab893bcb4c7a0641983835b4cdc381054cd8486f3e
 data_class: general
 taint: trusted
 status: draft
@@ -37,6 +37,12 @@ aliases:
 
 - The work is marked billed when the invoice is issued, and released if the invoice is voided; two drafts may name the same work but only the
   first issued bills it. (src: docs/user-guide/projects-billing.md#billed-once)
+
+## Fixed fee and retainer
+
+- A fixed-fee project has milestones (a name and an amount that never change, a due date): record the customer's acceptance, then draft an
+  invoice that bills it once. A retainer has periods that need no acceptance; the project's approved billable time is drawn down at billing
+  rates against what was billed, and the balance is billed less drawn. (src: docs/user-guide/projects-billing.md#fixed-fee-and-retainer)
 
 ## The check
 

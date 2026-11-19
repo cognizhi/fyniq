@@ -220,6 +220,18 @@ var matrixProjectRates = map[string]func(e *env, tok string) (response, func() b
 		return e.call(http.MethodPost, "/v1/project-invoice-drafts", t.as(e, tok, t.wei), map[string]any{"project_id": t.project, "revenue_account_id": e.books.Sales.ID.String()},
 			"Idempotency-Key", uuid.NewString()), nil
 	},
+	"listProjectMilestones": func(e *env, tok string) (response, func() bool) {
+		t := matrixTimeTeam(e)
+		return e.call(http.MethodGet, "/v1/projects/"+t.project+"/milestones", t.as(e, tok, t.wei), nil), nil
+	},
+	"createProjectMilestone": func(e *env, tok string) (response, func() bool) {
+		t := matrixTimeTeam(e)
+		return e.call(http.MethodPost, "/v1/project-milestones", t.as(e, tok, t.wei), map[string]any{"project_id": t.project, "name": "x", "amount": "10"}, "Idempotency-Key", uuid.NewString()), nil
+	},
+	"acceptProjectMilestone": func(e *env, tok string) (response, func() bool) {
+		t := matrixTimeTeam(e)
+		return e.call(http.MethodPost, "/v1/project-milestones/"+uuid.NewString()+"/accept", t.as(e, tok, t.wei), map[string]any{"accepted_on": "2026-10-14"}, "If-Match", `"1"`, "Idempotency-Key", uuid.NewString()), nil
+	},
 	"getProjectReport": func(e *env, tok string) (response, func() bool) {
 		t := matrixTimeTeam(e)
 		return e.call(http.MethodGet, "/v1/reports/projects?from=2026-10-01&to=2026-10-31", t.as(e, tok, t.wei), nil), nil

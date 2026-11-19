@@ -21,9 +21,10 @@ import (
 
 // The error codes (ENG-23).
 const (
-	CodeInternal = "PRJ-12" // an internal project is never billed
-	CodeNothing  = "PRJ-13" // nothing to bill, or a customer the project lacks
-	CodeAccount  = "PRJ-14" // a revenue account or GST code the invoice needs and was not given
+	CodeInternal  = "PRJ-12" // an internal project is never billed
+	CodeNothing   = "PRJ-13" // nothing to bill, or a customer the project lacks
+	CodeAccount   = "PRJ-14" // a revenue account or GST code the invoice needs and was not given
+	CodeMilestone = "PRJ-15" // a milestone that is not on a fixed-fee or retainer project, is not accepted, is billed already, or has an amount Fyniq cannot read
 )
 
 // Time is an approved, billable, unbilled time entry and what it is worth at the billing rate of its day.
@@ -60,6 +61,49 @@ type Unbilled struct {
 	TimeValue     money.Money
 	ExpenseValue  money.Money
 	Total         money.Money
+}
+
+// Retainer is where a retainer project stands: what its invoiced periods bought, what its approved billable time has drawn down at billing
+// rates, and what is left (negative: drawn beyond what was billed).
+type Retainer struct {
+	Billed   money.Money
+	Drawn    money.Money
+	Left     money.Money
+	Unpriced int // approved billable entries no billing rate covers: not in Drawn
+}
+
+// RetainerOf works out where a retainer project stands (FR-PRJ-10): the amounts of its retainer periods on posted invoices, less the value of
+// all its approved billable time (RND-TIME per entry at the billing rate of the day).
+func RetainerOf(ctx context.Context, u storage.UnitOfWork, p storage.Project) (Retainer, error) {
+	cur, err := money.Lookup(p.Currency)
+	if err != nil {
+		return Retainer{}, err
+	}
+	out := Retainer{Billed: money.Zero(cur), Drawn: money.Zero(cur)}
+	ms, err := u.Billing().Milestones(ctx, p.ID)
+	if err != nil {
+		return out, err
+	}
+	for _, m := range ms {
+		if m.Kind != storage.MilestoneRetainer || m.InvoiceID == nil {
+			continue
+		}
+		a, err := money.ParseStored(string(m.Amount), cur)
+		if err != nil {
+			return out, err
+		}
+		if out.Billed, err = out.Billed.Add(a); err != nil {
+			return out, err
+		}
+	}
+	var all Unbilled
+	all.TimeValue = money.Zero(cur)
+	if err := timeOf(ctx, u, p, cur, map[string]bool{}, &all); err != nil {
+		return out, err
+	}
+	out.Drawn, out.Unpriced = all.TimeValue, len(all.Unpriced)
+	out.Left, err = out.Billed.Sub(out.Drawn)
+	return out, err
 }
 
 // Of works out what project can bill now. Time is billed on a time-and-materials project only; a retainer draws it down and a fixed fee bills

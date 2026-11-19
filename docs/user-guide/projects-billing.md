@@ -4,7 +4,7 @@ title: Bill a project's time and costs
 mode: expert
 roles: [owner, controller, accountant, ar_specialist, approver]
 requirements: [FR-PRJ-10, FR-PRJ-08, FR-PRJ-06]
-status: draft            # provisional until the owner signs off (PRD-001 rev 0.298)
+status: draft            # provisional until the owner signs off (PRD-001 rev 0.298 and 0.301)
 ---
 
 # Bill a project's time and costs
@@ -32,6 +32,16 @@ usual approval applies. You need the right to create invoices (the Accountant or
 Nothing is billed while the invoice is a draft. **When you issue the invoice**, the time and costs on it are marked billed and leave the unbilled
 list; if you **void** the invoice, they come back. Two drafts may name the same work, but only the first to be issued bills it: issuing the
 second is refused, and you remove the work from it or void the first.
+
+## Fixed fee and retainer
+
+On a **fixed-fee** project, add its **milestones**: a name, an amount in the project's currency and a due date. A milestone's name and amount
+never change. When the customer accepts one, select **Record acceptance** with the day; then **Draft an invoice** bills that milestone once, as one
+line at its amount. A milestone is invoiced once, and a voided invoice releases it.
+
+On a **retainer** project, add a **period** for each month's amount. A period needs no acceptance, and its invoice bills the amount. The
+project's approved billable time is not invoiced as time: it is **drawn down** at billing rates against what the retainer has billed, and the
+card shows what was billed, what was drawn and what is left, which is negative when more time was worked than was billed.
 
 ## The check
 

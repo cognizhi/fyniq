@@ -29,6 +29,14 @@
       "pattern": "^[A-Z]{2,4}$",
       "type": "string"
     },
+    "milestone_id": {
+      "description": "For a fixed-fee project, an accepted milestone to bill; for a retainer, a period to bill. The invoice then has that one line, at its amount, and bills nothing else.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e91"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "project_id": {
       "description": "The project to bill.",
       "examples": [

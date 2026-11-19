@@ -7,9 +7,30 @@ package sqlcdb
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const acceptProjectMilestone = `-- name: AcceptProjectMilestone :one
+UPDATE fyniq.project_milestone SET accepted_on = $1, version = version + 1, changed_at = now()
+ WHERE id = $2 AND version = $3
+RETURNING id
+`
+
+type AcceptProjectMilestoneParams struct {
+	AcceptedOn pgtype.Date
+	ID         uuid.UUID
+	Version    int32
+}
+
+func (q *Queries) AcceptProjectMilestone(ctx context.Context, arg AcceptProjectMilestoneParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, acceptProjectMilestone, arg.AcceptedOn, arg.ID, arg.Version)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
 
 const billableDocuments = `-- name: BillableDocuments :many
 SELECT d.id
@@ -78,6 +99,123 @@ func (q *Queries) BilledItems(ctx context.Context, projectID uuid.UUID) ([]Bille
 			&i.RefID,
 			&i.LineNo,
 			&i.InvoiceID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const insertProjectMilestone = `-- name: InsertProjectMilestone :one
+INSERT INTO fyniq.project_milestone (project_id, kind, name, amount, due_on)
+VALUES ($1, $2, $3, $4::numeric, $5)
+RETURNING id
+`
+
+type InsertProjectMilestoneParams struct {
+	ProjectID uuid.UUID
+	Kind      string
+	Name      string
+	Amount    string
+	DueOn     pgtype.Date
+}
+
+func (q *Queries) InsertProjectMilestone(ctx context.Context, arg InsertProjectMilestoneParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertProjectMilestone,
+		arg.ProjectID,
+		arg.Kind,
+		arg.Name,
+		arg.Amount,
+		arg.DueOn,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const projectMilestone = `-- name: ProjectMilestone :one
+SELECT m.id, m.project_id, m.kind, m.name, m.amount, m.due_on, m.accepted_on, m.version, m.created_at, b.invoice_id AS billed_on
+FROM fyniq.project_milestone m
+LEFT JOIN fyniq.project_billed_item b ON b.organisation_id = m.organisation_id AND b.kind = 'milestone' AND b.ref_id = m.id
+WHERE m.id = $1
+`
+
+type ProjectMilestoneRow struct {
+	ID         uuid.UUID
+	ProjectID  uuid.UUID
+	Kind       string
+	Name       string
+	Amount     string
+	DueOn      pgtype.Date
+	AcceptedOn pgtype.Date
+	Version    int32
+	CreatedAt  time.Time
+	BilledOn   *uuid.UUID
+}
+
+func (q *Queries) ProjectMilestone(ctx context.Context, id uuid.UUID) (ProjectMilestoneRow, error) {
+	row := q.db.QueryRow(ctx, projectMilestone, id)
+	var i ProjectMilestoneRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Kind,
+		&i.Name,
+		&i.Amount,
+		&i.DueOn,
+		&i.AcceptedOn,
+		&i.Version,
+		&i.CreatedAt,
+		&i.BilledOn,
+	)
+	return i, err
+}
+
+const projectMilestones = `-- name: ProjectMilestones :many
+SELECT m.id, m.project_id, m.kind, m.name, m.amount, m.due_on, m.accepted_on, m.version, m.created_at, b.invoice_id AS billed_on
+FROM fyniq.project_milestone m
+LEFT JOIN fyniq.project_billed_item b ON b.organisation_id = m.organisation_id AND b.kind = 'milestone' AND b.ref_id = m.id
+WHERE m.project_id = $1
+ORDER BY m.created_at, m.id
+`
+
+type ProjectMilestonesRow struct {
+	ID         uuid.UUID
+	ProjectID  uuid.UUID
+	Kind       string
+	Name       string
+	Amount     string
+	DueOn      pgtype.Date
+	AcceptedOn pgtype.Date
+	Version    int32
+	CreatedAt  time.Time
+	BilledOn   *uuid.UUID
+}
+
+func (q *Queries) ProjectMilestones(ctx context.Context, projectID uuid.UUID) ([]ProjectMilestonesRow, error) {
+	rows, err := q.db.Query(ctx, projectMilestones, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ProjectMilestonesRow
+	for rows.Next() {
+		var i ProjectMilestonesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Kind,
+			&i.Name,
+			&i.Amount,
+			&i.DueOn,
+			&i.AcceptedOn,
+			&i.Version,
+			&i.CreatedAt,
+			&i.BilledOn,
 		); err != nil {
 			return nil, err
 		}

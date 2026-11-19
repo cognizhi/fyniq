@@ -13425,6 +13425,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/project-milestones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a milestone or a retainer period
+         * @description Adds a milestone to a fixed-fee project, or a period to a retainer: a name, an amount in the project's currency above zero and an optional due date (FR-PRJ-10). Its amount and name never change; the customer's acceptance is recorded with acceptProjectMilestone. Refused with PRJ-15 on a project of another billing method or a closed one, and PRJ-09 while Projects and time are switched off. Side effects: the milestone and its audit event under the project. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["createProjectMilestone"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/project-milestones/{milestone_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record the customer's acceptance of a milestone
+         * @description Records the day the customer accepted a fixed-fee milestone, once, which lets an invoice bill it (FR-PRJ-10). A retainer period needs no acceptance (PRJ-15). Needs If-Match with the milestone's ETag. Side effects: its next version and its audit event under the project. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["acceptProjectMilestone"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/project-people": {
         parameters: {
             query?: never;
@@ -13545,6 +13585,26 @@ export interface paths {
          * @description The project's own billing rates and its customer's, oldest first (FR-PRJ-06). A person who reads only the projects they are on gets 404 for another one. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
          */
         get: operations["listBillingRates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_id}/milestones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A project's milestones or retainer periods
+         * @description The milestones of a fixed-fee project, or the periods of a retainer, oldest first, each with whether the customer accepted it and the invoice that billed it (FR-PRJ-10). A retainer shows what it has billed, what its approved billable time has drawn down at billing rates, and what is left. A person who reads only the projects they manage gets 404 for another. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+         */
+        get: operations["listProjectMilestones"];
         put?: never;
         post?: never;
         delete?: never;
@@ -31439,6 +31499,12 @@ export interface components {
             gst_code?: string;
             /**
              * Format: uuid
+             * @description For a fixed-fee project, an accepted milestone to bill; for a retainer, a period to bill. The invoice then has that one line, at its amount, and bills nothing else.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e91
+             */
+            milestone_id?: string;
+            /**
+             * Format: uuid
              * @description The project to bill.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
              */
@@ -44874,6 +44940,105 @@ export interface components {
              */
             status?: "planned" | "active" | "on_hold" | "closed";
         };
+        ProjectMilestone: {
+            /**
+             * Format: date
+             * @description The day the customer accepted it.
+             * @example 2026-12-10
+             */
+            accepted_on?: string;
+            /** @description What it bills, in the project's currency. */
+            amount: components["schemas"]["Money"];
+            /**
+             * @description true when an invoice can bill it now: accepted (a retainer period needs no acceptance) and not billed.
+             * @example true
+             */
+            can_invoice: boolean;
+            /**
+             * Format: date
+             * @description When it is due.
+             * @example 2026-12-15
+             */
+            due_on?: string;
+            /**
+             * Format: uuid
+             * @description The milestone.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e91
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description The posted invoice that billed it; absent until one does, and again if that invoice is voided.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4ea1
+             */
+            invoice_id?: string;
+            /**
+             * @description milestone: a part of a fixed fee, invoiced once the customer has accepted it; retainer: a period of a retainer, invoiced without acceptance.
+             * @example milestone
+             * @enum {string}
+             */
+            kind: "milestone" | "retainer";
+            /**
+             * @description What it is.
+             * @example Design sign-off
+             */
+            name: string;
+            /**
+             * Format: uuid
+             * @description Its project.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+             */
+            project_id: string;
+            /**
+             * Format: int64
+             * @description For If-Match.
+             * @example 1
+             */
+            version: number;
+        };
+        ProjectMilestoneAcceptance: {
+            /**
+             * Format: date
+             * @description The day the customer accepted it, not in the future.
+             * @example 2026-12-10
+             */
+            accepted_on: string;
+        };
+        ProjectMilestoneDraft: {
+            /**
+             * @description What it bills, as a decimal in the project's currency, above zero.
+             * @example 15000.00
+             */
+            amount: string;
+            /**
+             * Format: date
+             * @description When it is due.
+             * @example 2026-12-15
+             */
+            due_on?: string;
+            /**
+             * @description What it is, such as Design sign-off, or the retainer's month.
+             * @example Design sign-off
+             */
+            name: string;
+            /**
+             * Format: uuid
+             * @description The fixed-fee project, or the retainer.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+             */
+            project_id: string;
+        };
+        ProjectMilestones: {
+            /** @description Oldest first. */
+            milestones: components["schemas"]["ProjectMilestone"][];
+            /**
+             * @description Pass it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjEwMCJ9
+             */
+            next_cursor?: string;
+            /** @description For a retainer project: what it has billed, drawn and has left. */
+            retainer?: components["schemas"]["RetainerBalance"];
+        };
         ProjectPage: {
             items: components["schemas"]["Project"][];
             /**
@@ -47009,6 +47174,20 @@ export interface components {
             posted: components["schemas"]["Money"];
             /** @description Its balance on the year's first day: every earlier year's result and what was posted to it before. A credit, so negative, is accumulated profit. */
             start: components["schemas"]["Money"];
+        };
+        RetainerBalance: {
+            /** @description The retainer periods on posted invoices. */
+            billed: components["schemas"]["Money"];
+            /** @description The value of all the project's approved billable time at billing rates (RND-TIME per entry). */
+            drawn: components["schemas"]["Money"];
+            /** @description Billed less drawn; negative when time was worked beyond what was billed. */
+            left: components["schemas"]["Money"];
+            /**
+             * Format: int64
+             * @description Approved billable entries no billing rate covers; they are not in drawn.
+             * @example 0
+             */
+            unpriced_entries: number;
         };
         RetentionRow: {
             /**
@@ -158506,6 +158685,326 @@ export interface operations {
             };
         };
     };
+    createProjectMilestone: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectMilestoneDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMilestone"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMilestone"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PRJ-15` The milestone does not fit the project, is not accepted, or is billed already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MILESTONE-01` The milestone record does not allow that. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    acceptProjectMilestone: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The milestone's ID. */
+                milestone_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectMilestoneAcceptance"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMilestone"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PRJ-15` The milestone does not fit the project, is not accepted, or is billed already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MILESTONE-01` The milestone record does not allow that. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listProjectPeople: {
         parameters: {
             query?: {
@@ -159413,6 +159912,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BillingRatePage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listProjectMilestones: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project's ID. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMilestones"];
                 };
             };
             /** @description Unauthorized: `API-AUTH-01` Sign-in required. */

@@ -1451,6 +1451,10 @@
       "label": "Input tax",
       "tooltip": "What the GST claim rests on: the document, the supplier's registration and whom it is addressed to."
     },
+    "project.milestones": {
+      "label": "Milestones",
+      "tooltip": "The parts of a fixed fee. Record the customer's acceptance of a milestone, then invoice it once. A retainer shows its periods and what time has drawn down."
+    },
     "project.unbilled": {
       "label": "Unbilled work",
       "tooltip": "What this project can bill its customer now: approved billable time at billing rates, and posted billable costs at cost plus markup. Posting an invoice made from it marks the work billed; voiding the invoice releases it."

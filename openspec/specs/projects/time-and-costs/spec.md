@@ -210,6 +210,16 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** approved billable time on a time-and-materials project is on no posted invoice 30 days after the end of its month
 - **THEN** C.2 #40 warns and names the project
 
+#### Scenario: Milestones are billed once after acceptance (rev 0.301)
+- **GIVEN** a fixed-fee project with a milestone
+- **WHEN** the customer's acceptance is recorded and an invoice is drafted for it
+- **THEN** the invoice has one line at the milestone's amount, an unaccepted or already billed milestone is refused, and posting the invoice marks the milestone billed until the invoice is voided
+
+#### Scenario: Retainer drawdown (rev 0.301)
+- **GIVEN** a retainer project whose periods are invoiced without acceptance
+- **WHEN** its approved billable time is valued at billing rates
+- **THEN** the time is drawn down against what the retainer billed, and the balance is billed less drawn, not invoiced as time
+
 ### Requirement: FR-PRJ-11 Revenue over time for fixed-fee projects
 When the accountant elects it, the system SHALL recognise revenue over time for fixed-fee projects by cost-to-cost progress, with a contract asset and contract liability, through a monthly journal proposed for approval.
 

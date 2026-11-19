@@ -108,6 +108,7 @@ type ProjectBilling struct {
 	ProjectID   uuid.UUID       `json:"project_id"`
 	TimeEntries []uuid.UUID     `json:"time_entries,omitempty"`
 	Expenses    []BilledExpense `json:"expenses,omitempty"`
+	MilestoneID *uuid.UUID      `json:"milestone_id,omitempty"` // an accepted milestone, or a retainer period
 }
 
 // BilledExpense is a line of a posted bill or claim an invoice bills on.
