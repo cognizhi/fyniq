@@ -52,6 +52,7 @@ const (
 	DocumentTemplates   Capability = "Document templates: edit, publish (rev 0.7)"
 	Timesheets          Capability = "Timesheets and project time (rev 0.7)"
 	ProjectReports      Capability = "Project reports and cost rates (rev 0.8)"
+	ProjectCostRates    Capability = "Project cost rates, person level (rev 0.295)"
 	BankConnections     Capability = "Bank data, payment-provider and ticketing connections (rev 0.7)"
 	Journals            Capability = "Journals"
 	PayRuns             Capability = "Pay runs, employee data"
@@ -84,7 +85,7 @@ const (
 var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, ProjectCostRates, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection}
 
 // The capabilities outside Appendix D.
 const (
@@ -218,6 +219,9 @@ var Grants = map[Capability]map[string]Cell{
 	},
 	ProjectReports: {
 		"Owner": {"V", ""}, "Admin": {}, "Controller": {"V", "role-average rates"}, "Accountant": {"V", "role-average rates"}, "Bookkeeper": {}, "AR": {"V", "revenue, hours"}, "AP": {}, "Payroll": {"V", ""}, "Releaser": {}, "Approver": {"V", "own projects; role-average rates"}, "Employee": {}, "Auditor": {"V", "role-average rates"}, "Tax agent": {"V", "role-average rates"}, "Board": {}, "DPO": {}, "AI": {"", "Same as the user; person-level rates only with payroll access (FR-PAY-13, AI-02)"},
+	},
+	ProjectCostRates: {
+		"Owner": {"C", ""}, "Admin": {}, "Controller": {}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {"C", ""}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
 	},
 	BankConnections: {
 		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
@@ -404,6 +408,9 @@ var (
 	// Evidence search (FR-DOC-10, rev 0.184): whoever views evidence without a qualifier, on the records whose rows they view.
 	SearchEvidence = Policy{Operation: "searchEvidence", Capability: Evidence, Need: View, Unqualified: true,
 		Note: "Lists only files on the records whose Appendix D rows the person views."}
+	// GetEvidenceRules is PRD-001 §8.16's table with the levels in force (FR-DOC-06): the Evidence panel's rules.
+	GetEvidenceRules = Policy{Operation: "getEvidenceRules", Capability: Membership, Need: View,
+		Note: "Any member: the table of required and recommended evidence holds no record or figure."}
 	// SearchRecords is the global search (FR-UX-02, rev 0.190): any member; each kind of record by its own row (SEC-34).
 	SearchRecords = Policy{Operation: "searchRecords", Capability: Membership, Need: View,
 		Note: "Each kind of record is searched only by whoever views its Appendix D row without a qualifier; an Employee finds their own claims."}
@@ -1935,12 +1942,14 @@ var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegra
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,
 	TestOrganisationConnector,
-	ListProjects, GetProject, CreateProject, ReplaceProject, ListProjectPeople, ListProjectTasks, CreateProjectTask, ReplaceProjectTask,
+	ListProjects, GetProject, CreateProject, ReplaceProject, ListProjectPeople, ListProjectTasks, GetTimesheet, SaveTimesheet, SubmitTimesheet, GetTimer, StartTimer, StopTimer, DropTimer, ReverseTimeEntry,
+	ListTimesheetSubmissions, GetTimesheetSubmission, ApproveTimesheetSubmission, ReturnTimesheetSubmission,
+	ListCostRates, SetCostRate, ListBillingRates, SetBillingRate, GetProjectTimeCost, GetProjectReport, ListProjectTimeEntries, GetProjectUnbilled, DraftProjectInvoice, ListProjectMilestones, CreateProjectMilestone, AcceptProjectMilestone, CreateProjectTask, ReplaceProjectTask,
 	GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, RequestAccountMerge,
 	ListDimensions, CreateDimension, ReplaceDimension, ListDimensionValues, CreateDimensionValue, ReplaceDimensionValue, ListContacts, GetContact, GetContactSummary,
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
-	RevokeRole, RemoveMember, SearchEvidence, GetEvidenceFile, CreateEvidenceDownload, GetEvidenceDownload, SearchRecords, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
+	RevokeRole, RemoveMember, SearchEvidence, GetEvidenceRules, GetEvidenceFile, CreateEvidenceDownload, GetEvidenceDownload, SearchRecords, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
 	ObjectToOwnerSuccession, WithdrawOwnerSuccession, CompleteOwnerSuccession, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, GetHelpState, SetTourState, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetLedgerEntry, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, QueryMetrics, ListKpiInputs, SetKpiInput, ListChecks, GetCheck, RunChecks, SetCheckOwner, ReviewCheckItem, ReplayBackgroundWork, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,

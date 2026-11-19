@@ -236,6 +236,9 @@ var matrixSuccession = map[string]func(e *env, tok string) (response, func() boo
 		l := e.call(http.MethodPost, "/v1/evidence/"+file+"/download", e.as(authz.Accountant), nil)
 		return e.call(http.MethodGet, strings.TrimPrefix(l.str("url"), "/api"), tok, nil), nil
 	},
+	"getEvidenceRules": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/evidence-rules", tok, nil), nil
+	},
 	"searchEvidence": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/evidence", tok, nil), nil
 	},

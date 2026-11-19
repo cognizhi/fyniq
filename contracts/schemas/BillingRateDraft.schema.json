@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "customer_id": {
+      "description": "A customer, for all their projects, in the base currency; give this or project_id.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "effective_from": {
+      "description": "The first day it applies.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "hourly_rate": {
+      "description": "The price of an hour, a plain decimal with at most 6 decimals.",
+      "examples": [
+        "150.00"
+      ],
+      "type": "string"
+    },
+    "project_id": {
+      "description": "The project it is for, in the project's currency; give this or customer_id.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "role": {
+      "description": "One role; not with user_id. Neither: everyone on it.",
+      "examples": [
+        "Consultant"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    },
+    "user_id": {
+      "description": "One person; not with role.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "effective_from",
+    "hourly_rate"
+  ],
+  "title": "BillingRateDraft",
+  "type": "object"
+}

@@ -10,6 +10,7 @@ import { helpText } from "../i18n";
 import { nav } from "../registry";
 import { useSignedIn } from "../session";
 import { mayOpen } from "../shell/navigation";
+import { operationLabel, stepWho } from "./approvals/words";
 import { Icon } from "../ui";
 
 // A tally is how many items a read found, and whether there were more than one page holds; null when the person's
@@ -473,3 +474,60 @@ const auditorPages: { to: string; icon: LucideIcon; title: string; meta: string 
   { to: "/compliance/evidence", icon: FileSearch, title: "Evidence", meta: "The files kept for each record, searchable and exportable" },
   { to: "/compliance/audit-trail", icon: ScrollText, title: "Audit trail", meta: "Who changed what, when and why, with each change's before and after" },
 ];
+
+// ApproverWork is the Approver's "approvals waiting with their limits" (§7.1, rev 0.288): the requests that wait for
+// them and that the server lets them decide, the oldest first, each with the step it is at and who that step needs: the
+// limit the approval policy gave it (FR-APR-01). A person's department figures come with the people projection, after
+// go-live; the Approver reads no approval policy, so each request carries its own step.
+export function ApproverWork() {
+  const { session } = useSignedIn();
+  const approver = (session.roles ?? []).includes("approver");
+  const h = helpText("home.approver-work");
+  const q = useQuery({
+    queryKey: ["home-work", "approver"],
+    enabled: approver,
+    retry: false,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/approvals", { params: { query: { status: "pending", page_size: 100 } } });
+      return error || !data ? null : (data.items ?? []).filter((a) => a.you_may_approve);
+    },
+  });
+  if (!approver || !q.data || q.data.length === 0) return null;
+  const items = [...q.data].sort((a, b) => a.requested_at.localeCompare(b.requested_at)).slice(0, 5);
+  return (
+    <section className="fy-card" aria-labelledby="approver-work-title">
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id="approver-work-title" title={h.tooltip}>
+          {h.label} ({q.data.length})
+        </h2>
+        <Link className="fy-btn fy-btn--ghost fy-btn--sm" to="/inbox">
+          Open the Inbox
+        </Link>
+      </div>
+      <ul className="fy-list" aria-labelledby="approver-work-title">
+        {items.map((a) => {
+          const step = (a.steps ?? [])[Math.max(0, a.current_step - 1)];
+          return (
+            <li key={a.id}>
+              <Link className="fy-list__item" to="/approvals/$approvalId" params={{ approvalId: a.id }}>
+                <span className="fy-list__icon fy-list__icon--brand">
+                  <Icon of={FileText} size={20} />
+                </span>
+                <span className="fy-list__main">
+                  <span className="fy-list__title whitespace-normal">{a.summary}</span>
+                  <span className="fy-list__meta whitespace-normal">
+                    {operationLabel(a.operation)} · asked for by {a.requested_by_name}
+                    {step ? ` · step ${a.current_step} of ${(a.steps ?? []).length}: ${stepWho(step)}` : ""}
+                  </span>
+                </span>
+                <span className="fy-chip fy-chip--info">Your turn</span>
+                <Icon of={ChevronRight} />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}

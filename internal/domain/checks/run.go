@@ -37,11 +37,11 @@ const (
 const maxEvents = 20000
 
 // areas are the order the Checks page lists the areas in.
-var areas = []string{"Books", "Setup", "Bank", "Sales", "Purchases", "Journals", "Assets", "Recurring", "Closing", "FX", "Planning", "Ledger", "Audit"}
+var areas = []string{"Books", "Setup", "Bank", "Sales", "Purchases", "Journals", "Assets", "Recurring", "Closing", "FX", "Planning", "Projects", "Ledger", "Audit"}
 
 // catalogue is every check built: by area, then in its slice's order.
 var catalogue = func() []Definition {
-	out := slices.Concat(booksChecks, setupChecks, documentChecks, closeChecks, controlChecks, paymentChecks, platformChecks, foundersChecks, equityChecks, corporateChecks, taxChecks, evidenceChecks, planningChecks, aiChecks, agentChecks)
+	out := slices.Concat(booksChecks, setupChecks, documentChecks, closeChecks, controlChecks, paymentChecks, platformChecks, foundersChecks, equityChecks, corporateChecks, taxChecks, evidenceChecks, planningChecks, aiChecks, agentChecks, projectChecks)
 	slices.SortStableFunc(out, func(a, b Definition) int { return slices.Index(areas, a.Area) - slices.Index(areas, b.Area) })
 	return out
 }()

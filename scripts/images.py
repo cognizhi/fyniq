@@ -96,7 +96,7 @@ PLATFORMS = ("linux/amd64", "linux/arm64")
 ELF_MACHINES = {62: "amd64", 183: "arm64"}   # EM_X86_64, EM_AARCH64
 # Where images are pinned by digest; each must be a multi-platform index with PLATFORMS.
 PINNED_IN = ("deploy/docker/Dockerfile.go-service", "deploy/docker/Dockerfile.web", "deploy/local/compose.yaml",
-             ".devcontainer/Dockerfile", "internal/adapters/postgres/pgtest/pgtest.go", "scripts/images.py", "scripts/dast.py",
+             ".devcontainer/Dockerfile", "internal/adapters/postgres/pgtest/pgtest.go", "internal/adapters/postgres/nemura/nemuratest/nemuratest.go", "scripts/images.py", "scripts/dast.py",
              "Makefile")
 PIN = re.compile(r"([a-z0-9][a-z0-9._/-]*(?::[A-Za-z0-9._-]+)?)@(sha256:[0-9a-f]{64})")
 
@@ -182,7 +182,7 @@ def judge(svc: str, flavour: str, image: str, size: int, cfg: dict, names: list[
         problems.append(f"{image} has no /app binary")
     elif flavour == "release" and LOCAL_MARK in app:
         problems.append(f"{image} is a release image with a local adapter compiled in (DEV-07, CTL-CHG-09)")
-    elif flavour == "local" and LOCAL_MARK not in app and svc in ("api", "worker", "jobs", "executor"):
+    elif flavour == "local" and LOCAL_MARK not in app and svc in ("api", "worker", "jobs", "executor", "nemura"):
         problems.append(f"{image}: the local adapters are missing from a local image, so the release check proves nothing")
     return problems
 

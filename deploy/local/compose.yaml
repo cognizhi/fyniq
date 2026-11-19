@@ -246,9 +246,24 @@ services:
 
   # ------------------------------------------------------------ Nemura, the people platform (profile people)
   # PRD-002 ADR-N1: its own image, its own database and its own sign-in, optional. `PEOPLE=yes make up` adds it to the
-  # core stack; it needs nothing of Fyniq's services (NM-ARC-01). One image, one service per role (NM-ARC-06), the role
-  # in NEMURA_ROLE; never the shared data volume. Its database, migrate job and issuer arrive with p1-nemura-platform's
-  # next slices.
+  # core stack; it needs nothing of Fyniq's services (NM-ARC-01), only the Postgres server, where it has a database `nemura` and
+  # roles of its own (nemura_*; the password nemura-local-only is valid nowhere else). One image, one service per role
+  # (NM-ARC-06), the role in NEMURA_ROLE; never the shared data volume. Its issuer arrives with p1-nemura-platform's
+  # identity slice.
+  nemura-migrate:                             # creates nemura_migrator and the database, applies the migrations, lets the roles log in
+    <<: *hardened
+    image: fyniq-nemura:local
+    profiles: [people]
+    restart: "no"
+    command: ["up"]
+    environment:
+      FYNIQ_ENV: local
+      NEMURA_ROLE: migrate
+      NEMURA_DATABASE_URL: postgres://nemura_migrator:nemura-local-only@postgres:5432/nemura?sslmode=disable
+      # the container's superuser, used only to create nemura_migrator and the database in an empty server
+      NEMURA_DATABASE_ADMIN_URL: postgres://fyniq:fyniq-local-only@postgres:5432/postgres?sslmode=disable
+    depends_on: { postgres: { condition: service_healthy } }
+
   nemura-api:
     <<: *hardened
     image: fyniq-nemura:local
@@ -257,7 +272,32 @@ services:
       FYNIQ_ENV: local
       PORT: "8080"
       NEMURA_ROLE: api
+      NEMURA_DATABASE_URL: postgres://nemura_api:nemura-local-only@postgres:5432/nemura?sslmode=disable
+      NEMURA_PUBLIC_ORIGIN: http://localhost:${NEMURA_HTTP_PORT:-8180}   # Nemura's own origin, through its edge
+      NEMURA_API_BASE: /api
+      NEMURA_TENANT: local
     ports: ["127.0.0.1:${NEMURA_API_PORT:-8087}:8080"]
+    depends_on: { nemura-migrate: { condition: service_completed_successfully } }
+    healthcheck: *health
+
+  nemura-edge:                                # Nemura's own origin on NEMURA_HTTP_PORT, as its production hostname is (NM-INT-12)
+    image: caddy:2.10-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    profiles: [people]
+    ports: ["127.0.0.1:${NEMURA_HTTP_PORT:-8180}:8080"]
+    volumes: ["./Caddyfile.people:/etc/caddy/Caddyfile:ro"]
+    depends_on:
+      nemura-api: { condition: service_healthy }
+
+  nemura-worker:                              # background work from the outbox: /tasks and the sweep's /tick (ADR-T7)
+    <<: *hardened
+    image: fyniq-nemura:local
+    profiles: [people]
+    environment:
+      FYNIQ_ENV: local
+      PORT: "8080"
+      NEMURA_ROLE: worker
+      NEMURA_DATABASE_URL: postgres://nemura_worker:nemura-local-only@postgres:5432/nemura?sslmode=disable
+    depends_on: { nemura-migrate: { condition: service_completed_successfully } }
     healthcheck: *health
 
   web:                                        # the built web app on nginx-unprivileged

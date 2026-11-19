@@ -53,6 +53,11 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** reminders run
 - **THEN** the person is reminded of the missing day
 
+#### Scenario: The Friday reminder (rev 0.302)
+- **GIVEN** a person on an active project and a Friday in the organisation's time zone
+- **WHEN** the daily job runs at 16:00 Singapore time
+- **THEN** the person is told once of the weekdays of the week with no time, public holidays excluded, in a notice that is theirs alone, and nobody is told on another day or while Projects and time are off
+
 #### Scenario: Approved or invoiced entries lock
 - **WHEN** a time entry is approved or invoiced
 - **THEN** it is locked
@@ -61,6 +66,12 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **GIVEN** a locked time entry
 - **WHEN** it is corrected
 - **THEN** the correction is a reversing entry
+
+#### Scenario: Time is whole minutes, one timer, one week at a time
+- **WHEN** time is entered
+- **THEN** it is whole minutes, 1 to 1,440 an entry, on a task of a project the person is on, and never billable on an internal project
+- **AND** the timer runs one at a time and stops into a draft entry of the nearest whole minute, half up, at least one (RND-TIME)
+- **AND** a week is Monday to Sunday and is saved and audited as one
 
 ### Requirement: FR-PRJ-06 Cost and billing rates
 The system SHALL keep an effective-dated cost rate per person and effective-dated billing rates in the project's currency, and SHALL treat a person's payroll-derived cost rate as payroll data (FR-PAY-13, AUD-05).
@@ -84,6 +95,11 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** they see time at cost
 - **THEN** it is at a role or department average rate computed over at least 3 people, or else at an Owner-set standard rate
 - **AND** per-person profitability shows hours, not person-level cost
+
+#### Scenario: Who enters a person-level rate
+- **WHEN** a person-level cost rate is entered or read
+- **THEN** only the Owner and the Payroll administrator may, through the Appendix D row for project cost rates
+- **AND** until payroll supplies one the rate is typed in, and a payroll-derived rate replaces it later
 
 #### Scenario: Billing rates
 - **WHEN** billing rates are set
@@ -109,6 +125,12 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** a project manager tries to approve their own time
 - **THEN** the approval is refused
 
+#### Scenario: Naming a manager gives no right
+- **GIVEN** a member named a manager of a project who holds neither the Approver nor the Controller role
+- **WHEN** they try to approve the project's time
+- **THEN** it is refused, and the project warns of the manager
+- **AND** the Controller approves any project's time and the Approver only the projects they manage, never their own
+
 ### Requirement: FR-PRJ-08 Costs on projects
 Bills, claims, mileage, card spend and journals SHALL carry the project dimension, and the system SHALL support billable expenses with an optional markup and purchase orders per project.
 
@@ -125,6 +147,16 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 #### Scenario: Purchase orders per project
 - **WHEN** a purchase order is raised for a project
 - **THEN** it is recorded against that project
+
+#### Scenario: A billable line needs a project (rev 0.297)
+- **WHEN** a bill line or a claim line is billable or has a markup
+- **THEN** it carries a project value, a markup is a percentage from 0 to 999.99 with at most two decimals, and a markup belongs to a billable line
+- **AND** otherwise it is refused with a plain message naming the line
+
+#### Scenario: A purchase order's project (rev 0.297)
+- **GIVEN** a purchase order for a project
+- **WHEN** a bill is made from it
+- **THEN** each of the bill's lines carries the project as a project value
 
 ### Requirement: FR-PRJ-09 Budgets and change orders
 The system SHALL keep budgets in hours and money per task, with burn, forecast at completion and alerts at 80% and 100% (settings), and change orders (P2) that change the budget, the fee and the estimate at completion.
@@ -168,6 +200,30 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 #### Scenario: Internal or non-billable project
 - **WHEN** time and costs are recorded on an internal or non-billable project
 - **THEN** they are not billed
+
+#### Scenario: The unbilled view and the draft invoice (rev 0.298)
+- **GIVEN** a time-and-materials project with a customer, approved billable time and posted billable costs
+- **WHEN** the unbilled work is drafted into an invoice
+- **THEN** time is valued at the billing rate of each day (RND-TIME per entry) and each cost at its cost plus markup (RND-MARKUP)
+- **AND** an ordinary draft invoice is made to the customer through the invoice command, each line carrying the project
+
+#### Scenario: Work is billed once (rev 0.298)
+- **WHEN** an invoice made from a project's unbilled work is posted
+- **THEN** its time entries and cost lines are marked billed by the database, a voided invoice releases them, and no second invoice can be posted for the same work
+
+#### Scenario: Approved time not invoiced (rev 0.298)
+- **WHEN** approved billable time on a time-and-materials project is on no posted invoice 30 days after the end of its month
+- **THEN** C.2 #40 warns and names the project
+
+#### Scenario: Milestones are billed once after acceptance (rev 0.301)
+- **GIVEN** a fixed-fee project with a milestone
+- **WHEN** the customer's acceptance is recorded and an invoice is drafted for it
+- **THEN** the invoice has one line at the milestone's amount, an unaccepted or already billed milestone is refused, and posting the invoice marks the milestone billed until the invoice is voided
+
+#### Scenario: Retainer drawdown (rev 0.301)
+- **GIVEN** a retainer project whose periods are invoiced without acceptance
+- **WHEN** its approved billable time is valued at billing rates
+- **THEN** the time is drawn down against what the retainer billed, and the balance is billed less drawn, not invoiced as time
 
 ### Requirement: FR-PRJ-11 Revenue over time for fixed-fee projects
 When the accountant elects it, the system SHALL recognise revenue over time for fixed-fee projects by cost-to-cost progress, with a contract asset and contract liability, through a monthly journal proposed for approval.
@@ -231,6 +287,20 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** Acme's profitability is shown
 - **THEN** Acme's cost counts staff cost once (time at cost)
 - **AND** the tagged salary appears on a separate reconciliation line, not in direct costs
+
+#### Scenario: Lines tagged with no project (rev 0.296)
+- **WHEN** the project report is shown to someone who sees every project
+- **THEN** a row for lines tagged with no project is shown, so every project plus that row equals the revenue and expense accounts' totals
+
+#### Scenario: Cost by tier in the report (rev 0.296)
+- **WHEN** the report shows time at cost
+- **THEN** a person's own rate is used only for the Owner and the Payroll administrator
+- **AND** others see the role average over at least three people or the standard rate, and the AR specialist sees revenue and hours only
+
+#### Scenario: Project checks (rev 0.296)
+- **GIVEN** a project over its hours budget, a week submitted or returned more than 7 days ago, or a closed week with no approved time
+- **WHEN** the checks run
+- **THEN** C.1 #26, C.1 #27 and C.2 #41 each warn, name the project or week, and say how to fix it
 
 #### Scenario: Pattern change, leave across a holiday
 - **GIVEN** a part-timer whose working pattern changes mid-month, and a leave interval that spans a public holiday and is later cancelled in part

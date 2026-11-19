@@ -385,6 +385,26 @@ Source: PRD-001 §10.4
 - **THEN** mileage amount = round(distance in km, to 0.1 km, half-up) × rate, then rounded to the cent, half-up
 - **AND** it is computed per trip
 
+### Requirement: RND-TIME Time cost and value
+The cost or value of a time entry SHALL be its minutes times the hourly rate divided by 60, rounded to the currency's minor units, half away from zero, once per entry (new, FR-PRJ-02, FR-PRJ-06).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Time cost formula per entry
+- **WHEN** the cost of a time entry is computed
+- **THEN** cost = round(minutes × hourly rate ÷ 60, minor units), half away from zero, computed exactly before its one rounding
+- **AND** a reversing entry costs exactly the negative of the entry it reverses
+
+### Requirement: RND-MARKUP Markup on a billable expense
+The markup on a billable project expense SHALL be its cost times the markup percentage divided by 100, rounded to the currency's minor units, half away from zero, once (new, FR-PRJ-08).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Markup formula
+- **WHEN** the markup on a billable expense is computed
+- **THEN** markup = round(cost × percent ÷ 100, minor units), half away from zero, computed exactly before its one rounding
+- **AND** the percent is from 0 to 999.99 with at most two decimals, and what is billed is the cost plus the markup
+
 ### Requirement: RND-DISPLAY Display never re-rounds
 Display SHALL never re-round stored amounts, and totals SHALL be sums of stored amounts, so every report foots and cross-foots exactly (new).
 

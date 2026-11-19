@@ -762,6 +762,18 @@ bill_payment_plan | bill_id | uuid | not null |
 bill_payment_plan | planned_on | date | null | 
 bill_payment_plan | recorded_by | text | not null | 
 bill_payment_plan | recorded_at | timestamp with time zone | not null | now()
+billing_rate | organisation_id | uuid | not null | current_org()
+billing_rate | id | uuid | not null | uuidv7()
+billing_rate | project_id | uuid | null | 
+billing_rate | customer_id | uuid | null | 
+billing_rate | user_id | uuid | null | 
+billing_rate | role_name | text | null | 
+billing_rate | effective_from | date | not null | 
+billing_rate | hourly_rate | numeric(20,6) | not null | 
+billing_rate | currency | text | not null | 
+billing_rate | minor_units | smallint | not null | 
+billing_rate | created_by | text | not null | 
+billing_rate | created_at | timestamp with time zone | not null | now()
 brand_version | organisation_id | uuid | not null | current_org()
 brand_version | id | uuid | not null | uuidv7()
 brand_version | version | integer | not null | 
@@ -1992,6 +2004,16 @@ period_variance_explanation | explanation | text | not null |
 period_variance_explanation | written_by | text | not null | 
 period_variance_explanation | written_at | timestamp with time zone | not null | 
 period_variance_explanation | kind | text | not null | 'month'::text
+person_cost_rate | organisation_id | uuid | not null | current_org()
+person_cost_rate | id | uuid | not null | uuidv7()
+person_cost_rate | user_id | uuid | null | 
+person_cost_rate | role_name | text | not null | 
+person_cost_rate | effective_from | date | not null | 
+person_cost_rate | hourly_rate | numeric(20,6) | not null | 
+person_cost_rate | currency | text | not null | 
+person_cost_rate | minor_units | smallint | not null | 
+person_cost_rate | created_by | text | not null | 
+person_cost_rate | created_at | timestamp with time zone | not null | now()
 person_key | organisation_id | uuid | not null | current_org()
 person_key | id | uuid | not null | uuidv7()
 person_key | person | text | not null | 
@@ -2049,6 +2071,14 @@ project | budget_amount | numeric(20,4) | null |
 project | version | integer | not null | 1
 project | created_at | timestamp with time zone | not null | now()
 project | changed_at | timestamp with time zone | not null | now()
+project_billed_item | organisation_id | uuid | not null | current_org()
+project_billed_item | id | uuid | not null | uuidv7()
+project_billed_item | project_id | uuid | not null | 
+project_billed_item | kind | text | not null | 
+project_billed_item | ref_id | uuid | not null | 
+project_billed_item | line_no | integer | not null | 0
+project_billed_item | invoice_id | uuid | not null | 
+project_billed_item | created_at | timestamp with time zone | not null | now()
 project_member | organisation_id | uuid | not null | current_org()
 project_member | id | uuid | not null | uuidv7()
 project_member | project_id | uuid | not null | 
@@ -2056,6 +2086,17 @@ project_member | user_id | uuid | not null |
 project_member | is_manager | boolean | not null | false
 project_member | is_active | boolean | not null | true
 project_member | created_at | timestamp with time zone | not null | now()
+project_milestone | organisation_id | uuid | not null | current_org()
+project_milestone | id | uuid | not null | uuidv7()
+project_milestone | project_id | uuid | not null | 
+project_milestone | kind | text | not null | 
+project_milestone | name | text | not null | 
+project_milestone | amount | numeric(20,4) | not null | 
+project_milestone | due_on | date | null | 
+project_milestone | accepted_on | date | null | 
+project_milestone | version | integer | not null | 1
+project_milestone | created_at | timestamp with time zone | not null | now()
+project_milestone | changed_at | timestamp with time zone | not null | now()
 project_task | organisation_id | uuid | not null | current_org()
 project_task | id | uuid | not null | uuidv7()
 project_task | project_id | uuid | not null | 
@@ -2387,6 +2428,42 @@ tick_drill | escalation_minutes | integer | null |
 tick_drill | findings | text | not null | 
 tick_drill | recorded_by | text | not null | 
 tick_drill | recorded_at | timestamp with time zone | not null | 
+time_entry | organisation_id | uuid | not null | current_org()
+time_entry | id | uuid | not null | uuidv7()
+time_entry | user_id | uuid | not null | 
+time_entry | project_id | uuid | not null | 
+time_entry | task_id | uuid | not null | 
+time_entry | work_date | date | not null | 
+time_entry | minutes | integer | not null | 
+time_entry | billable | boolean | not null | 
+time_entry | note | text | not null | ''::text
+time_entry | status | text | not null | 'draft'::text
+time_entry | submission_id | uuid | null | 
+time_entry | reverses_id | uuid | null | 
+time_entry | week_id | uuid | null | time_week_id(user_id, work_date)
+time_entry | version | integer | not null | 1
+time_entry | created_at | timestamp with time zone | not null | now()
+time_entry | changed_at | timestamp with time zone | not null | now()
+time_timer | organisation_id | uuid | not null | current_org()
+time_timer | id | uuid | not null | uuidv7()
+time_timer | user_id | uuid | not null | 
+time_timer | project_id | uuid | not null | 
+time_timer | task_id | uuid | not null | 
+time_timer | billable | boolean | not null | 
+time_timer | note | text | not null | ''::text
+time_timer | started_at | timestamp with time zone | not null | 
+timesheet_submission | organisation_id | uuid | not null | current_org()
+timesheet_submission | id | uuid | not null | uuidv7()
+timesheet_submission | user_id | uuid | not null | 
+timesheet_submission | project_id | uuid | not null | 
+timesheet_submission | week_start | date | not null | 
+timesheet_submission | status | text | not null | 'submitted'::text
+timesheet_submission | submitted_at | timestamp with time zone | not null | now()
+timesheet_submission | decided_by | uuid | null | 
+timesheet_submission | decided_at | timestamp with time zone | null | 
+timesheet_submission | comment | text | not null | ''::text
+timesheet_submission | week_id | uuid | null | time_week_id(user_id, week_start)
+timesheet_submission | version | integer | not null | 1
 user_help_state | organisation_id | uuid | not null | current_org()
 user_help_state | id | uuid | not null | uuidv7()
 user_help_state | user_id | uuid | not null | 
@@ -3645,6 +3722,23 @@ bill_payment_plan | bill_payment_plan_recorded_at_not_null | NOT NULL recorded_a
 bill_payment_plan | bill_payment_plan_recorded_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 bill_payment_plan | bill_payment_plan_recorded_by_not_null | NOT NULL recorded_by
 bill_payment_plan | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+billing_rate | billing_rate_amount | CHECK (((hourly_rate <> 'NaN'::numeric) AND (hourly_rate >= (0)::numeric) AND (hourly_rate = trunc(hourly_rate, 6))))
+billing_rate | billing_rate_created_at_not_null | NOT NULL created_at
+billing_rate | billing_rate_created_by_not_null | NOT NULL created_by
+billing_rate | billing_rate_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
+billing_rate | billing_rate_currency_not_null | NOT NULL currency
+billing_rate | billing_rate_customer_fkey | FOREIGN KEY (organisation_id, customer_id) REFERENCES contact(organisation_id, id)
+billing_rate | billing_rate_effective_from_not_null | NOT NULL effective_from
+billing_rate | billing_rate_hourly_rate_not_null | NOT NULL hourly_rate
+billing_rate | billing_rate_id_not_null | NOT NULL id
+billing_rate | billing_rate_minor_units_not_null | NOT NULL minor_units
+billing_rate | billing_rate_organisation_id_not_null | NOT NULL organisation_id
+billing_rate | billing_rate_pkey | PRIMARY KEY (organisation_id, id)
+billing_rate | billing_rate_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+billing_rate | billing_rate_role_length | CHECK (((role_name IS NULL) OR ((length(btrim(role_name)) >= 1) AND (length(btrim(role_name)) <= 80))))
+billing_rate | billing_rate_scope | CHECK ((((project_id IS NULL) <> (customer_id IS NULL)) AND (NOT ((user_id IS NOT NULL) AND (role_name IS NOT NULL)))))
+billing_rate | billing_rate_user_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+billing_rate | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 brand_version | brand_version_accent | CHECK (((accent IS NULL) OR (accent ~ '^#[0-9A-F]{6}$'::text)))
 brand_version | brand_version_cleaned_not_null | NOT NULL cleaned
 brand_version | brand_version_cleaned_object | CHECK ((jsonb_typeof(cleaned) = 'object'::text))
@@ -5647,6 +5741,23 @@ period_variance_explanation | period_variance_explanation_previous_amount_not_nu
 period_variance_explanation | period_variance_explanation_written_at_not_null | NOT NULL written_at
 period_variance_explanation | period_variance_explanation_written_by_not_null | NOT NULL written_by
 period_variance_explanation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+person_cost_rate | person_cost_rate_amount | CHECK (((hourly_rate <> 'NaN'::numeric) AND (hourly_rate >= (0)::numeric) AND (hourly_rate = trunc(hourly_rate, 6))))
+person_cost_rate | person_cost_rate_created_at_not_null | NOT NULL created_at
+person_cost_rate | person_cost_rate_created_by_not_null | NOT NULL created_by
+person_cost_rate | person_cost_rate_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
+person_cost_rate | person_cost_rate_currency_not_null | NOT NULL currency
+person_cost_rate | person_cost_rate_day_key | UNIQUE NULLS NOT DISTINCT (organisation_id, user_id, effective_from)
+person_cost_rate | person_cost_rate_effective_from_not_null | NOT NULL effective_from
+person_cost_rate | person_cost_rate_hourly_rate_not_null | NOT NULL hourly_rate
+person_cost_rate | person_cost_rate_id_not_null | NOT NULL id
+person_cost_rate | person_cost_rate_minor_units_not_null | NOT NULL minor_units
+person_cost_rate | person_cost_rate_organisation_id_not_null | NOT NULL organisation_id
+person_cost_rate | person_cost_rate_pkey | PRIMARY KEY (organisation_id, id)
+person_cost_rate | person_cost_rate_role_length | CHECK (((length(btrim(role_name)) >= 1) AND (length(btrim(role_name)) <= 80)))
+person_cost_rate | person_cost_rate_role_name_not_null | NOT NULL role_name
+person_cost_rate | person_cost_rate_standard | CHECK (((user_id IS NOT NULL) OR (role_name = 'Standard'::text)))
+person_cost_rate | person_cost_rate_user_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+person_cost_rate | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 person_key | person_key_cohort_not_null | NOT NULL cohort
 person_key | person_key_created_at_not_null | NOT NULL created_at
 person_key | person_key_id_not_null | NOT NULL id
@@ -5749,6 +5860,20 @@ project | project_value_fkey | FOREIGN KEY (organisation_id, id) REFERENCES dime
 project | project_version_not_null | NOT NULL version
 project | project_version_positive | CHECK ((version >= 1))
 project | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+project_billed_item | project_billed_item_created_at_not_null | NOT NULL created_at
+project_billed_item | project_billed_item_id_not_null | NOT NULL id
+project_billed_item | project_billed_item_invoice_fkey | FOREIGN KEY (organisation_id, invoice_id) REFERENCES document(organisation_id, id)
+project_billed_item | project_billed_item_invoice_id_not_null | NOT NULL invoice_id
+project_billed_item | project_billed_item_kind | CHECK ((kind = ANY (ARRAY['time'::text, 'expense'::text, 'milestone'::text])))
+project_billed_item | project_billed_item_kind_not_null | NOT NULL kind
+project_billed_item | project_billed_item_line | CHECK ((line_no >= 0))
+project_billed_item | project_billed_item_line_no_not_null | NOT NULL line_no
+project_billed_item | project_billed_item_once | UNIQUE (organisation_id, kind, ref_id, line_no)
+project_billed_item | project_billed_item_organisation_id_not_null | NOT NULL organisation_id
+project_billed_item | project_billed_item_pkey | PRIMARY KEY (organisation_id, id)
+project_billed_item | project_billed_item_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+project_billed_item | project_billed_item_project_id_not_null | NOT NULL project_id
+project_billed_item | project_billed_item_ref_id_not_null | NOT NULL ref_id
 project_member | project_member_created_at_not_null | NOT NULL created_at
 project_member | project_member_id_not_null | NOT NULL id
 project_member | project_member_is_active_not_null | NOT NULL is_active
@@ -5761,6 +5886,23 @@ project_member | project_member_project_id_not_null | NOT NULL project_id
 project_member | project_member_user_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
 project_member | project_member_user_id_not_null | NOT NULL user_id
 project_member | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+project_milestone | project_milestone_amount | CHECK (((amount <> 'NaN'::numeric) AND (amount > (0)::numeric)))
+project_milestone | project_milestone_amount_not_null | NOT NULL amount
+project_milestone | project_milestone_changed_at_not_null | NOT NULL changed_at
+project_milestone | project_milestone_created_at_not_null | NOT NULL created_at
+project_milestone | project_milestone_id_not_null | NOT NULL id
+project_milestone | project_milestone_kind | CHECK ((kind = ANY (ARRAY['milestone'::text, 'retainer'::text])))
+project_milestone | project_milestone_kind_not_null | NOT NULL kind
+project_milestone | project_milestone_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))
+project_milestone | project_milestone_name_not_null | NOT NULL name
+project_milestone | project_milestone_organisation_id_not_null | NOT NULL organisation_id
+project_milestone | project_milestone_pkey | PRIMARY KEY (organisation_id, id)
+project_milestone | project_milestone_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+project_milestone | project_milestone_project_id_not_null | NOT NULL project_id
+project_milestone | project_milestone_retainer_unaccepted | CHECK (((kind = 'milestone'::text) OR (accepted_on IS NULL)))
+project_milestone | project_milestone_version_not_null | NOT NULL version
+project_milestone | project_milestone_version_positive | CHECK ((version >= 1))
+project_milestone | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 project_task | project_task_billable_not_null | NOT NULL billable
 project_task | project_task_changed_at_not_null | NOT NULL changed_at
 project_task | project_task_created_at_not_null | NOT NULL created_at
@@ -6291,6 +6433,66 @@ tick_drill | tick_drill_paused_minutes_not_null | NOT NULL paused_minutes
 tick_drill | tick_drill_pkey | PRIMARY KEY (organisation_id, id)
 tick_drill | tick_drill_recorded_at_not_null | NOT NULL recorded_at
 tick_drill | tick_drill_recorded_by_not_null | NOT NULL recorded_by
+time_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+time_entry | time_entry_billable_not_null | NOT NULL billable
+time_entry | time_entry_changed_at_not_null | NOT NULL changed_at
+time_entry | time_entry_created_at_not_null | NOT NULL created_at
+time_entry | time_entry_id_not_null | NOT NULL id
+time_entry | time_entry_minutes | CHECK ((((minutes >= '-1440'::integer) AND (minutes <= 1440)) AND (minutes <> 0) AND ((reverses_id IS NOT NULL) = (minutes < 0))))
+time_entry | time_entry_minutes_not_null | NOT NULL minutes
+time_entry | time_entry_note_length | CHECK ((length(note) <= 500))
+time_entry | time_entry_note_not_null | NOT NULL note
+time_entry | time_entry_organisation_id_not_null | NOT NULL organisation_id
+time_entry | time_entry_pkey | PRIMARY KEY (organisation_id, id)
+time_entry | time_entry_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+time_entry | time_entry_project_id_not_null | NOT NULL project_id
+time_entry | time_entry_reverses_fkey | FOREIGN KEY (organisation_id, reverses_id) REFERENCES time_entry(organisation_id, id)
+time_entry | time_entry_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'approved'::text, 'returned'::text])))
+time_entry | time_entry_status_not_null | NOT NULL status
+time_entry | time_entry_submission_fkey | FOREIGN KEY (organisation_id, submission_id) REFERENCES timesheet_submission(organisation_id, id)
+time_entry | time_entry_submission_follows_status | CHECK (((status = 'returned'::text) OR ((status = 'draft'::text) = (submission_id IS NULL))))
+time_entry | time_entry_task_fkey | FOREIGN KEY (organisation_id, project_id, task_id) REFERENCES project_task(organisation_id, project_id, id)
+time_entry | time_entry_task_id_not_null | NOT NULL task_id
+time_entry | time_entry_user_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+time_entry | time_entry_user_id_not_null | NOT NULL user_id
+time_entry | time_entry_version_not_null | NOT NULL version
+time_entry | time_entry_version_positive | CHECK ((version >= 1))
+time_entry | time_entry_work_date_not_null | NOT NULL work_date
+time_timer | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+time_timer | time_timer_billable_not_null | NOT NULL billable
+time_timer | time_timer_id_key | UNIQUE (organisation_id, id)
+time_timer | time_timer_id_not_null | NOT NULL id
+time_timer | time_timer_note_length | CHECK ((length(note) <= 500))
+time_timer | time_timer_note_not_null | NOT NULL note
+time_timer | time_timer_organisation_id_not_null | NOT NULL organisation_id
+time_timer | time_timer_pkey | PRIMARY KEY (organisation_id, user_id)
+time_timer | time_timer_project_id_not_null | NOT NULL project_id
+time_timer | time_timer_started_at_not_null | NOT NULL started_at
+time_timer | time_timer_task_fkey | FOREIGN KEY (organisation_id, project_id, task_id) REFERENCES project_task(organisation_id, project_id, id)
+time_timer | time_timer_task_id_not_null | NOT NULL task_id
+time_timer | time_timer_user_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+time_timer | time_timer_user_id_not_null | NOT NULL user_id
+timesheet_submission | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+timesheet_submission | timesheet_submission_comment_length | CHECK ((length(comment) <= 1000))
+timesheet_submission | timesheet_submission_comment_not_null | NOT NULL comment
+timesheet_submission | timesheet_submission_decided | CHECK (((status = 'submitted'::text) = ((decided_by IS NULL) AND (decided_at IS NULL))))
+timesheet_submission | timesheet_submission_decider_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES user_membership(organisation_id, user_id)
+timesheet_submission | timesheet_submission_id_not_null | NOT NULL id
+timesheet_submission | timesheet_submission_monday | CHECK ((EXTRACT(isodow FROM week_start) = (1)::numeric))
+timesheet_submission | timesheet_submission_organisation_id_not_null | NOT NULL organisation_id
+timesheet_submission | timesheet_submission_pkey | PRIMARY KEY (organisation_id, id)
+timesheet_submission | timesheet_submission_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+timesheet_submission | timesheet_submission_project_id_not_null | NOT NULL project_id
+timesheet_submission | timesheet_submission_returned_says_why | CHECK (((status <> 'returned'::text) OR (length(btrim(comment)) > 0)))
+timesheet_submission | timesheet_submission_settled | TRIGGER DEFERRABLE INITIALLY DEFERRED
+timesheet_submission | timesheet_submission_status_known | CHECK ((status = ANY (ARRAY['submitted'::text, 'approved'::text, 'returned'::text])))
+timesheet_submission | timesheet_submission_status_not_null | NOT NULL status
+timesheet_submission | timesheet_submission_submitted_at_not_null | NOT NULL submitted_at
+timesheet_submission | timesheet_submission_user_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+timesheet_submission | timesheet_submission_user_id_not_null | NOT NULL user_id
+timesheet_submission | timesheet_submission_version_not_null | NOT NULL version
+timesheet_submission | timesheet_submission_version_positive | CHECK ((version >= 1))
+timesheet_submission | timesheet_submission_week_start_not_null | NOT NULL week_start
 user_help_state | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 user_help_state | user_help_state_id_not_null | NOT NULL id
 user_help_state | user_help_state_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
@@ -6548,8 +6750,11 @@ CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, date
 CREATE INDEX period_reopen_period ON fyniq.period_reopen USING btree (organisation_id, period_id, reopened_at)
 CREATE INDEX period_variance_explanation_period ON fyniq.period_variance_explanation USING btree (organisation_id, period_id, account_id, written_at)
 CREATE INDEX private_endpoint_serves ON fyniq.private_endpoint USING btree (serves, credential)
+CREATE INDEX project_billed_item_invoice_idx ON fyniq.project_billed_item USING btree (organisation_id, invoice_id)
+CREATE INDEX project_billed_item_project_idx ON fyniq.project_billed_item USING btree (organisation_id, project_id, kind)
 CREATE INDEX project_customer_idx ON fyniq.project USING btree (organisation_id, customer_id) WHERE (customer_id IS NOT NULL)
 CREATE INDEX project_member_user_idx ON fyniq.project_member USING btree (organisation_id, user_id) WHERE is_active
+CREATE INDEX project_milestone_project_idx ON fyniq.project_milestone USING btree (organisation_id, project_id, created_at)
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
 CREATE INDEX report_export_expiring ON fyniq.report_export USING btree (organisation_id, status, expires_at)
 CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organisation_id, requested_by, requested_at DESC)
@@ -6564,6 +6769,10 @@ CREATE INDEX sod_override_lookup ON fyniq.sod_override USING btree (organisation
 CREATE INDEX super_admin_grant_created_by_idx ON fyniq.super_admin_grant USING btree (created_by)
 CREATE INDEX super_admin_grant_used_by_idx ON fyniq.super_admin_grant USING btree (used_by)
 CREATE INDEX super_admin_grant_user_idx ON fyniq.super_admin_grant USING btree (user_id, kind)
+CREATE INDEX time_entry_person_idx ON fyniq.time_entry USING btree (organisation_id, user_id, work_date)
+CREATE INDEX time_entry_project_idx ON fyniq.time_entry USING btree (organisation_id, project_id, work_date)
+CREATE INDEX time_entry_submission_idx ON fyniq.time_entry USING btree (organisation_id, submission_id) WHERE (submission_id IS NOT NULL)
+CREATE INDEX timesheet_submission_project_idx ON fyniq.timesheet_submission USING btree (organisation_id, project_id, status)
 CREATE INDEX user_help_state_latest ON fyniq.user_help_state USING btree (organisation_id, user_id, set_at)
 CREATE INDEX user_identity_user_idx ON fyniq.user_identity USING btree (user_id)
 CREATE INDEX user_recovery_code_user ON fyniq.user_recovery_code USING btree (user_id) WHERE (used_at IS NULL)
@@ -6673,6 +6882,8 @@ CREATE UNIQUE INDEX bank_transfer_from_line ON fyniq.bank_transfer USING btree (
 CREATE UNIQUE INDEX bank_transfer_pkey ON fyniq.bank_transfer USING btree (organisation_id, id)
 CREATE UNIQUE INDEX bank_transfer_to_line ON fyniq.bank_transfer USING btree (organisation_id, to_line_id) WHERE ((to_line_id IS NOT NULL) AND (undone_at IS NULL))
 CREATE UNIQUE INDEX bill_payment_plan_pkey ON fyniq.bill_payment_plan USING btree (organisation_id, id)
+CREATE UNIQUE INDEX billing_rate_day_key ON fyniq.billing_rate USING btree (organisation_id, COALESCE(project_id, customer_id), COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid), COALESCE(role_name, ''::text), effective_from)
+CREATE UNIQUE INDEX billing_rate_pkey ON fyniq.billing_rate USING btree (organisation_id, id)
 CREATE UNIQUE INDEX brand_version_number ON fyniq.brand_version USING btree (organisation_id, version)
 CREATE UNIQUE INDEX brand_version_pkey ON fyniq.brand_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX break_glass_pkey ON fyniq.break_glass USING btree (organisation_id, id)
@@ -6873,6 +7084,8 @@ CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id
 CREATE UNIQUE INDEX period_reopen_close_key ON fyniq.period_reopen USING btree (organisation_id, close_id)
 CREATE UNIQUE INDEX period_reopen_pkey ON fyniq.period_reopen USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_variance_explanation_pkey ON fyniq.period_variance_explanation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX person_cost_rate_day_key ON fyniq.person_cost_rate USING btree (organisation_id, user_id, effective_from) NULLS NOT DISTINCT
+CREATE UNIQUE INDEX person_cost_rate_pkey ON fyniq.person_cost_rate USING btree (organisation_id, id)
 CREATE UNIQUE INDEX person_key_once ON fyniq.person_key USING btree (organisation_id, person, cohort)
 CREATE UNIQUE INDEX person_key_pkey ON fyniq.person_key USING btree (organisation_id, id)
 CREATE UNIQUE INDEX policy_acknowledgement_once ON fyniq.policy_acknowledgement USING btree (organisation_id, key, version, acknowledged_by)
@@ -6882,8 +7095,11 @@ CREATE UNIQUE INDEX policy_draft_pkey ON fyniq.policy_draft USING btree (organis
 CREATE UNIQUE INDEX policy_version_once ON fyniq.policy_version USING btree (organisation_id, key, version)
 CREATE UNIQUE INDEX policy_version_pkey ON fyniq.policy_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX private_endpoint_pkey ON fyniq.private_endpoint USING btree (id, version)
+CREATE UNIQUE INDEX project_billed_item_once ON fyniq.project_billed_item USING btree (organisation_id, kind, ref_id, line_no)
+CREATE UNIQUE INDEX project_billed_item_pkey ON fyniq.project_billed_item USING btree (organisation_id, id)
 CREATE UNIQUE INDEX project_member_person_key ON fyniq.project_member USING btree (organisation_id, project_id, user_id)
 CREATE UNIQUE INDEX project_member_pkey ON fyniq.project_member USING btree (organisation_id, id)
+CREATE UNIQUE INDEX project_milestone_pkey ON fyniq.project_milestone USING btree (organisation_id, id)
 CREATE UNIQUE INDEX project_pkey ON fyniq.project USING btree (organisation_id, id)
 CREATE UNIQUE INDEX project_task_live_name ON fyniq.project_task USING btree (organisation_id, project_id, lower(btrim(name))) WHERE is_active
 CREATE UNIQUE INDEX project_task_pkey ON fyniq.project_task USING btree (organisation_id, id)
@@ -6938,6 +7154,12 @@ CREATE UNIQUE INDEX team_mode_request_once ON fyniq.team_mode USING btree (organ
 CREATE UNIQUE INDEX team_mode_version_once ON fyniq.team_mode USING btree (organisation_id, version)
 CREATE UNIQUE INDEX tenant_directory_pkey ON fyniq.tenant_directory USING btree (organisation_id)
 CREATE UNIQUE INDEX tick_drill_pkey ON fyniq.tick_drill USING btree (organisation_id, id)
+CREATE UNIQUE INDEX time_entry_one_reversal ON fyniq.time_entry USING btree (organisation_id, reverses_id) WHERE (reverses_id IS NOT NULL)
+CREATE UNIQUE INDEX time_entry_pkey ON fyniq.time_entry USING btree (organisation_id, id)
+CREATE UNIQUE INDEX time_timer_id_key ON fyniq.time_timer USING btree (organisation_id, id)
+CREATE UNIQUE INDEX time_timer_pkey ON fyniq.time_timer USING btree (organisation_id, user_id)
+CREATE UNIQUE INDEX timesheet_submission_open ON fyniq.timesheet_submission USING btree (organisation_id, user_id, project_id, week_start) WHERE (status = 'submitted'::text)
+CREATE UNIQUE INDEX timesheet_submission_pkey ON fyniq.timesheet_submission USING btree (organisation_id, id)
 CREATE UNIQUE INDEX user_help_state_pkey ON fyniq.user_help_state USING btree (organisation_id, id)
 CREATE UNIQUE INDEX user_identity_pkey ON fyniq.user_identity USING btree (issuer, subject)
 CREATE UNIQUE INDEX user_membership_pkey ON fyniq.user_membership USING btree (organisation_id, id)
@@ -6989,6 +7211,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.audit_recovery DEF
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.audit_recovery_acknowledgement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('audit_recovery_acknowledgement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bank_statement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_statement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bill_payment_plan DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'bill_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.billing_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('billing_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.break_glass_use DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('break_glass', 'break_glass_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.capture_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_sender', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.check_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_review', 'id')
@@ -7039,6 +7262,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFER
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_reopen', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_variance_explanation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_variance_explanation', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.person_cost_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('person_cost_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_acknowledgement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_acknowledgement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_draft DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_draft', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_version', 'id')
@@ -7060,6 +7284,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFER
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.statutory_pack_activation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statutory_pack_activation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.team_mode DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('team_mode', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.tick_drill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('tick_drill', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.time_timer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('time_timer', 'user_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.user_help_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_help_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.withholding_decision DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('withholding_decision', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits, gap_free, version ON fyniq.document_sequence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_sequence', 'id')
@@ -7124,6 +7349,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.pd_shred
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_milestone DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
@@ -7133,6 +7359,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_ass
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.statement_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statement_mapping', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_installation_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin_grant DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_grant_audit()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.time_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('time_week', 'week_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.timesheet_submission DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('time_week', 'week_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.user_membership DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_membership', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER UPDATE ON fyniq.ai_turn DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_turn', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER UPDATE ON fyniq.bank_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'id')
@@ -7140,6 +7368,7 @@ CREATE CONSTRAINT TRIGGER require_audit_status AFTER UPDATE ON fyniq.check_state
 CREATE CONSTRAINT TRIGGER require_audit_status AFTER UPDATE ON fyniq.control_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION require_audit('control_state', 'id')
 CREATE CONSTRAINT TRIGGER share_issue_entry_registered AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((new.source_type = 'share_issue'::text)) EXECUTE FUNCTION share_issue_entry_registered()
 CREATE CONSTRAINT TRIGGER share_issue_moved AFTER INSERT ON fyniq.share_issue DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION share_issue_moved()
+CREATE CONSTRAINT TRIGGER timesheet_submission_settled AFTER INSERT OR UPDATE ON fyniq.timesheet_submission DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION timesheet_submission_settled()
 CREATE TRIGGER access_review_attestation_guard BEFORE DELETE OR UPDATE ON fyniq.access_review_attestation FOR EACH ROW EXECUTE FUNCTION access_review_attestation_guard()
 CREATE TRIGGER access_review_attestation_no_truncate BEFORE TRUNCATE ON fyniq.access_review_attestation FOR EACH STATEMENT EXECUTE FUNCTION access_review_attestation_guard()
 CREATE TRIGGER account_changed_at BEFORE UPDATE ON fyniq.account FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION account_changed_at()
@@ -7238,6 +7467,8 @@ CREATE TRIGGER bank_signal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank
 CREATE TRIGGER bank_statement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_statement FOR EACH ROW EXECUTE FUNCTION bank_statement_guard()
 CREATE TRIGGER bank_transfer_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_transfer FOR EACH ROW EXECUTE FUNCTION bank_transfer_guard()
 CREATE TRIGGER bill_payment_plan_immutable BEFORE DELETE OR UPDATE ON fyniq.bill_payment_plan FOR EACH ROW EXECUTE FUNCTION bill_payment_plan_immutable()
+CREATE TRIGGER billing_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.billing_rate FOR EACH ROW EXECUTE FUNCTION rate_immutable()
+CREATE TRIGGER billing_rate_no_truncate BEFORE TRUNCATE ON fyniq.billing_rate FOR EACH STATEMENT EXECUTE FUNCTION rate_immutable()
 CREATE TRIGGER brand_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.brand_version FOR EACH ROW EXECUTE FUNCTION brand_version_guard()
 CREATE TRIGGER break_glass_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.break_glass FOR EACH ROW EXECUTE FUNCTION break_glass_guard()
 CREATE TRIGGER break_glass_no_truncate BEFORE TRUNCATE ON fyniq.break_glass FOR EACH STATEMENT EXECUTE FUNCTION break_glass_guard()
@@ -7467,6 +7698,8 @@ CREATE TRIGGER period_reopen_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pe
 CREATE TRIGGER period_reopen_no_truncate BEFORE TRUNCATE ON fyniq.period_reopen FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_variance_explanation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_variance_explanation FOR EACH ROW EXECUTE FUNCTION period_variance_explanation_guard()
 CREATE TRIGGER period_variance_explanation_no_truncate BEFORE TRUNCATE ON fyniq.period_variance_explanation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER person_cost_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.person_cost_rate FOR EACH ROW EXECUTE FUNCTION rate_immutable()
+CREATE TRIGGER person_cost_rate_no_truncate BEFORE TRUNCATE ON fyniq.person_cost_rate FOR EACH STATEMENT EXECUTE FUNCTION rate_immutable()
 CREATE TRIGGER person_key_guard BEFORE DELETE OR UPDATE ON fyniq.person_key FOR EACH ROW EXECUTE FUNCTION person_key_guard()
 CREATE TRIGGER person_key_no_truncate BEFORE TRUNCATE ON fyniq.person_key FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER policy_acknowledgement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_acknowledgement FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
@@ -7476,8 +7709,10 @@ CREATE TRIGGER policy_draft_no_truncate BEFORE TRUNCATE ON fyniq.policy_draft FO
 CREATE TRIGGER policy_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_version FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
 CREATE TRIGGER policy_version_no_truncate BEFORE TRUNCATE ON fyniq.policy_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER private_endpoint_append_only BEFORE DELETE OR UPDATE ON fyniq.private_endpoint FOR EACH ROW EXECUTE FUNCTION private_endpoint_append_only()
+CREATE TRIGGER project_billing_follows_invoice AFTER UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((new.type = 'invoice'::text) AND (old.status IS DISTINCT FROM new.status) AND (new.status = ANY (ARRAY['posted'::text, 'reversed'::text])))) EXECUTE FUNCTION project_billing_follows_invoice()
 CREATE TRIGGER project_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project FOR EACH ROW EXECUTE FUNCTION project_guard()
 CREATE TRIGGER project_member_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_member FOR EACH ROW EXECUTE FUNCTION project_part_guard()
+CREATE TRIGGER project_milestone_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_milestone FOR EACH ROW EXECUTE FUNCTION project_milestone_guard()
 CREATE TRIGGER project_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_task FOR EACH ROW EXECUTE FUNCTION project_part_guard()
 CREATE TRIGGER quote_outcome_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.quote_outcome FOR EACH ROW EXECUTE FUNCTION quote_outcome_guard()
 CREATE TRIGGER recurring_bill_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_bill_version FOR EACH ROW EXECUTE FUNCTION recurring_bill_version_immutable()
@@ -7531,6 +7766,9 @@ CREATE TRIGGER team_mode_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.team_m
 CREATE TRIGGER team_mode_voids AFTER INSERT ON fyniq.team_mode FOR EACH ROW EXECUTE FUNCTION team_mode_voids()
 CREATE TRIGGER tick_drill_guard BEFORE DELETE OR UPDATE ON fyniq.tick_drill FOR EACH ROW EXECUTE FUNCTION tick_drill_guard()
 CREATE TRIGGER tick_drill_no_truncate BEFORE TRUNCATE ON fyniq.tick_drill FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER time_entry_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.time_entry FOR EACH ROW EXECUTE FUNCTION time_entry_guard()
+CREATE TRIGGER time_timer_guard BEFORE INSERT OR UPDATE ON fyniq.time_timer FOR EACH ROW EXECUTE FUNCTION time_timer_guard()
+CREATE TRIGGER timesheet_submission_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.timesheet_submission FOR EACH ROW EXECUTE FUNCTION timesheet_submission_guard()
 CREATE TRIGGER user_help_state_guard BEFORE DELETE OR UPDATE ON fyniq.user_help_state FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER user_help_state_no_truncate BEFORE TRUNCATE ON fyniq.user_help_state FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER webauthn_challenge_guard BEFORE DELETE OR UPDATE ON fyniq.webauthn_challenge FOR EACH ROW EXECUTE FUNCTION webauthn_challenge_guard()
@@ -7590,6 +7828,7 @@ bank_signal | tenant_isolation | * | (organisation_id = current_org()) | (organi
 bank_statement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_transfer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bill_payment_plan | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+billing_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 brand_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 break_glass | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 break_glass_use | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7690,12 +7929,15 @@ period_close | tenant_isolation | * | (organisation_id = current_org()) | (organ
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_reopen | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_variance_explanation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+person_cost_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 person_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_draft | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+project_billed_item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_member | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+project_milestone | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 quote_outcome | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7722,6 +7964,9 @@ statement_mapping | tenant_isolation | * | (organisation_id = current_org()) | (
 statutory_pack_activation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 team_mode | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 tick_drill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+time_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+time_timer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+timesheet_submission | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 user_help_state | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 user_membership | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 withholding_decision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7784,6 +8029,7 @@ bank_signal | enabled | forced
 bank_statement | enabled | forced
 bank_transfer | enabled | forced
 bill_payment_plan | enabled | forced
+billing_rate | enabled | forced
 brand_version | enabled | forced
 break_glass | enabled | forced
 break_glass_use | enabled | forced
@@ -7903,13 +8149,16 @@ period_close | enabled | forced
 period_close_check | enabled | forced
 period_reopen | enabled | forced
 period_variance_explanation | enabled | forced
+person_cost_rate | enabled | forced
 person_key | enabled | forced
 policy_acknowledgement | enabled | forced
 policy_draft | enabled | forced
 policy_version | enabled | forced
 private_endpoint | disabled | not forced
 project | enabled | forced
+project_billed_item | enabled | forced
 project_member | enabled | forced
+project_milestone | enabled | forced
 project_task | enabled | forced
 quote_outcome | enabled | forced
 rate_limit_window | enabled | forced
@@ -7943,6 +8192,9 @@ super_admin_grant | disabled | not forced
 team_mode | enabled | forced
 tenant_directory | disabled | not forced
 tick_drill | enabled | forced
+time_entry | enabled | forced
+time_timer | enabled | forced
+timesheet_submission | enabled | forced
 user_help_state | enabled | forced
 user_identity | disabled | not forced
 user_membership | enabled | forced
@@ -8236,12 +8488,15 @@ private_endpoint_address_ok(p_address cidr) → boolean | security invoker | i |
 private_endpoint_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 495b7d8c5db1f4005355e12e03026057
 private_endpoints() → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | da8a815f6c91cfdc5f5453fba7d6e3f8
 private_endpoints_for(p_service text, p_credential uuid) → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 85ce4fe273b1eba64231e49b57ed690b
+project_billing_follows_invoice() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7cfa65ee0c1f5851ea7eeb24b7702898
 project_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 263feebbc9e8c9cfa868c0c58b30e881
+project_milestone_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b8dc234f6537bead909f4c0fcb746635
 project_part_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abaebce4c4cd3919837dd8db7382ce2a
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
 purge_ip_rate_windows(p_before timestamp with time zone) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 81de58d9129c046ca2aa53b08d3607c8
 purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 90114d368d5bac0773307d5f4b014509
 quote_outcome_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b0e30fb295e3f4b5d5634a5a0be9f9fa
+rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 188a389db4f1658b1f0563d7d26487a6
 reapply_shredding(p_run uuid, p_cohort date, p_keys uuid[], p_listed_at timestamp with time zone, p_approved_by text, p_approved_at timestamp with time zone, p_register text) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 479b5993ee4000e36ae2f505d9db0fb9
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 954a578019c93ea55f9a346d84e9c317
 record_ai_call(p_run uuid, p_agent text, p_route_version integer, p_step integer, p_fell_back_from integer, p_connection uuid, p_model_requested text, p_model_reported text, p_version_reported text, p_actor text, p_classes text[], p_outcome text, p_detail text, p_input bigint, p_output bigint, p_cache_read bigint, p_cache_write bigint, p_reasoning bigint, p_cost numeric, p_currency text, p_price uuid, p_cost_base numeric, p_latency_ms integer, p_started_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 33e64917db0b8feb3947f2a84fe7710b
@@ -8318,6 +8573,12 @@ team_mode_voids() → trigger | security invoker | v | search_path=pg_catalog, f
 tenant_rows(p_table text, p_after uuid, p_limit integer) → SETOF text | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 5393ad3f836b2db72023aab42941f263
 tenant_tables() → TABLE(table_name text, column_names text[]) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 5760f7bb41bdaa1139717f7de0c1d661
 tick_drill_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2d20fefee069f4a10a9554a506421021
+time_entry_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ae62ca6663b9d8abe185af01473f8072
+time_timer_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | dc34f891faedcb4c58ad4195922fb969
+time_week_id(u uuid, d date) → uuid | security invoker | i | search_path=pg_catalog, fyniq | d8187f4a4463bd0c5639208b97c3a3a7
+time_week_start(d date) → date | security invoker | i | search_path=pg_catalog | 34e3fcc86a84f4f7305b5b383ebd7297
+timesheet_submission_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ea976e9a32271c2c540eff7d3b778320
+timesheet_submission_settled() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b59fd9028a5c2ca309b66cc0e2f4d797
 unlink_identity(p_session bytea, p_issuer text, p_subject text, p_now timestamp with time zone) → TABLE(unlinked_user uuid, unlinked_provider text) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 04c0e37b7eae3e0e00f09b568764bf44
 user_cooling_off_until(p_user uuid, p_now timestamp with time zone) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 19590232dc6fbb14aaa95eada86bfd83
 user_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2d20860879f5e546a6feda7d9fbefdfb

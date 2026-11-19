@@ -52,7 +52,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
+.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code people-setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -68,6 +68,9 @@ setup: ## Install the pinned toolchain (mise), the web dependencies and the git 
 setup-code: ## Create the one-time first-run setup code and print it once (FR-ADM-06); refused once setup is done
 	@$(MISE) go run -tags local ./cmd/migrate setup-code
 
+people-setup-code: ## Create Nemura's one-time first-run setup code for the local database and print it once (NM-ARC-01); refused once setup is done; after `PEOPLE=yes make dev` (or the nemura-migrate service) has applied the migrations
+	@NEMURA_ROLE=migrate $(MISE) go run -tags local ./cmd/nemura setup-code
+
 super-admin-recovery: ## The deployment's two-person recovery for a Super admin: USER_ID=<user id> OPERATORS="<name>, <name>" (FR-ADM-09)
 	@test -n "$(USER_ID)" -a -n "$(OPERATORS)" || { echo 'usage: make super-admin-recovery USER_ID=<user id> OPERATORS="<name>, <name>"'; exit 2; }
 	@$(MISE) go run -tags local ./cmd/migrate super-admin-recovery "$(USER_ID)" "$(OPERATORS)"
@@ -78,6 +81,7 @@ audit-recover: ## After a database restore, before the copy opens: the audit tra
 dev: ## Run the stack with hot reload: dependencies in Docker, the Go services and Vite on the host
 	@$(MAKE) --no-print-directory deps-up
 	@$(MISE) go run -tags local ./cmd/migrate up
+	@$(if $(filter yes,$(PEOPLE)),NEMURA_ROLE=migrate $(MISE) go run -tags local ./cmd/nemura up)
 	@$(MAKE) --no-print-directory seed
 	@$(MISE) scripts/dev.sh
 
@@ -125,8 +129,8 @@ test: ## Run every merge gate offline (Docker needed for the database suites): m
 	@$(MAKE) --no-print-directory oracle-test
 	@$(MAKE) --no-print-directory check
 
-db-lint: ## Lint the migrations (squawk) and check the adapter's generated queries match them (sqlc)
-	@$(MISE) squawk db/migrations/*.sql
+db-lint: ## Lint Fyniq's and Nemura's migrations (squawk) and check the adapter's generated queries match them (sqlc)
+	@$(MISE) squawk db/migrations/*.sql db/nemura/migrations/*.sql
 	@cd internal/adapters/postgres && $(MISE) sqlc diff || { echo "✖ internal/adapters/postgres/sqlcdb is stale: run make sqlc"; exit 1; }
 	@echo "✔ migrations lint clean; generated queries up to date"
 
@@ -147,15 +151,18 @@ oracle-test: ## Run the independent oracle's own tests: hand-worked journals, th
 sqlc: ## Regenerate the PostgreSQL adapter's typed queries from db/migrations and its queries/
 	@cd internal/adapters/postgres && $(MISE) sqlc generate && echo "✔ internal/adapters/postgres/sqlcdb regenerated"
 
-openapi: ## Regenerate the API contract contracts/openapi/fyniq.v1.yaml and the internal one (fyniq-internal.v1.yaml), its JSON Schemas, the API reference and llms.txt from the code, and the web app's client; review the diff
+openapi: ## Regenerate Nemura's API contract contracts/openapi/nemura/nemura.v1.yaml, the API contract contracts/openapi/fyniq.v1.yaml and the internal one (fyniq-internal.v1.yaml), its JSON Schemas, the API reference and llms.txt from the code, and the SDK's types (sdk/typescript, the web app's too); review the diff
 	@$(MISE) go test ./internal/api -run 'TestTheContractIsTheCode|TestTheInternalContractIsTheCode|TestTheReferenceIsTheContract' -count=1 -args -update && echo "✔ contracts/openapi/fyniq.v1.yaml, contracts/schemas/ and docs/api/ regenerated"
-	@$(MISE) pnpm --filter @fyniq/web -s gen:api >/dev/null && echo "✔ apps/web/src/api/schema.d.ts regenerated"
+	@$(MISE) go test ./internal/nemura/api -run 'TestTheContractIsTheCode' -count=1 -args -update && echo "✔ contracts/openapi/nemura/nemura.v1.yaml regenerated"
+	@$(MISE) pnpm --filter @fyniq/sdk -s gen >/dev/null && echo "✔ sdk/typescript/src/schema.d.ts regenerated"
 
-api-check: ## The API contract: Spectral lint (NFR-API-01) and the web app's generated client is current (FR-INT-17); oasdiff runs in the Go tests (QA-API-02)
+api-check: ## The API contract: Spectral lint (NFR-API-01) and the SDK's generated types (the web app's too) are current (FR-INT-17); oasdiff runs in the Go tests (QA-API-02)
 	@$(MISE) pnpm exec spectral lint contracts/openapi/fyniq.v1.yaml --ruleset contracts/openapi/spectral.yaml --fail-severity warn --quiet \
 	  && echo "✔ the API contract passes Spectral"
-	@$(MISE) pnpm --filter @fyniq/web -s check:api >/dev/null || { echo "✖ apps/web/src/api/schema.d.ts is stale: run pnpm --filter @fyniq/web gen:api"; exit 1; }
-	@echo "✔ the web app's API client matches the contract"
+	@$(MISE) pnpm exec spectral lint contracts/openapi/nemura/nemura.v1.yaml --ruleset contracts/openapi/nemura/spectral.yaml --fail-severity warn --quiet \
+	  && echo "✔ Nemura's API contract passes Spectral"
+	@$(MISE) pnpm --filter @fyniq/sdk -s check:api >/dev/null || { echo "✖ sdk/typescript/src/schema.d.ts is stale: run pnpm --filter @fyniq/sdk gen"; exit 1; }
+	@echo "✔ the SDK's types (the web app's too) match the contract"
 
 test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 	@$(MISE) pnpm --filter @fyniq/web test:e2e

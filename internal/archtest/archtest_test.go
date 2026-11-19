@@ -239,7 +239,7 @@ func TestOnlyTheUnitOfWorkBeginsOrEndsTransactions(t *testing.T) {
 			return err
 		}
 		rel, _ := filepath.Rel(dir, path)
-		if rel == "store.go" || strings.HasPrefix(rel, "pgtest"+string(filepath.Separator)) {
+		if rel == "store.go" || rel == filepath.Join("nemura", "store.go") || strings.HasPrefix(rel, "pgtest"+string(filepath.Separator)) {
 			return nil
 		}
 		src, err := os.ReadFile(path)

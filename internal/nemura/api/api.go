@@ -1,0 +1,204 @@
+// Package api is Nemura's public API (PRD-002 NM-ARC-03, golden rule 4): every capability is an operation in
+// contracts/openapi/nemura/ before it is a screen, with Fyniq's conventions: RFC 9457 errors with stable codes, Idempotency-Key
+// on writes, ETag and If-Match on versioned records, additive changes inside /v1 (PRD-001 §8.18.1). The web app calls only the
+// client generated from the contract. This is its foundation: the conventions and the first operations.
+package api
+
+import (
+	"context"
+	"regexp"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/adapters/humago"
+	"github.com/google/uuid"
+
+	"github.com/cognizhi/fyniq/internal/nemura/authz"
+	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/version"
+)
+
+const description = `Nemura's public API: the optional people platform of PRD-002. Its web app uses only this API (QA-API-03).
+
+Conventions (PRD-002 NM-ARC-03, PRD-001 §8.18.1):
+- Errors are RFC 9457 problem details (application/problem+json) with a stable code from the catalogue at GET /v1/errors, what is
+  wrong, and how to fix it; validation errors list every invalid field at once.
+- Every POST that creates or changes state accepts an Idempotency-Key header: a repeat returns the original response, and the same
+  key with a different request returns 422.
+- Versioned records return an ETag; commands that change one require If-Match and return 412 when the record changed since, 428
+  without it.
+- Changes inside /v1 are additive: a field, an operation or an enum value may be added, and nothing is removed or changed in meaning.
+- Money is a decimal string with its currency, never a JSON number; dates are ISO 8601; IDs are UUIDv7 strings.`
+
+// Config is the API's huma configuration. It leaves out huma's $schema links, documentation page and schema routes, so the
+// document is the contract and the responses carry only their fields.
+func Config(v string) huma.Config {
+	cfg := huma.DefaultConfig("Nemura API", v)
+	cfg.CreateHooks = nil
+	cfg.DocsPath = ""
+	cfg.SchemasPath = ""
+	cfg.OpenAPIPath = "/v1/openapi"
+	cfg.Info.Description = description
+	cfg.Info.License = &huma.License{Name: "MIT", Identifier: "MIT"}
+	cfg.Info.Contact = &huma.Contact{Name: "Nemura", URL: "https://github.com/cognizhi/fyniq"}
+	cfg.Servers = []*huma.Server{{URL: "{origin}", Description: "Nemura's origin with /api (one origin serves the web app and the API), or the api service itself in make dev.",
+		Variables: map[string]*huma.ServerVariable{"origin": {Default: "http://localhost:8180/api",
+			Description: "http://localhost:8180/api behind Nemura's edge (PEOPLE=yes make up); http://localhost:8087 for the api service"}}}}
+	cfg.Tags = []*huma.Tag{
+		{Name: "Platform", Description: "What the service is and the error codes it returns (NM-ARC-03)."},
+		{Name: "Session", Description: "Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02)."},
+	}
+	return cfg
+}
+
+// Session is who a request's session is: the person, their organisation and the roles they hold now.
+type Session struct {
+	Organisation, Member uuid.UUID
+}
+
+// Sessions is what the API needs of sign-in and the database to know who is asking. Roles are read again on every request, so a
+// change of roles is seen on the next one.
+type Sessions interface {
+	Authenticate(ctx context.Context, token string, now time.Time) (Session, error)
+	RolesAt(ctx context.Context, org, member uuid.UUID, on time.Time) ([]authz.Role, error)
+}
+
+// Deps are what the API is given.
+type Deps struct {
+	Sessions Sessions
+	Clock    ports.Clock
+	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
+	CookieNames []string
+}
+
+// API is Nemura's API.
+type API struct {
+	huma.API
+	d Deps
+}
+
+// New registers the API on mux (an http.ServeMux, or the service's httpserver.Server).
+func New(mux humago.Mux, d Deps) *API {
+	a := &API{API: humago.New(mux, Config(version.Version)), d: d}
+	a.register()
+	a.registerSession()
+	return a
+}
+
+type infoOutput struct {
+	Body struct {
+		Service string `json:"service" doc:"The service this answers as." example:"nemura-api"`
+		Version string `json:"version" doc:"The build's version." example:"0.1.0"`
+	}
+}
+
+type errorsOutput struct {
+	Body struct {
+		Codes []Code `json:"codes" doc:"Every stable error code, in order."`
+	}
+}
+
+type codeInput struct {
+	Code string `path:"code" doc:"A stable error code." example:"NM_NOT_FOUND"`
+}
+
+type codeOutput struct{ Body Code }
+
+var codeFormat = regexp.MustCompile(`^NM_[A-Z][A-Z_]*$`)
+
+func (a *API) register() {
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getInfo", Method: "GET", Path: "/v1/info", Tags: []string{"Platform"}, Summary: "What this service is",
+		Description: "Names the service and its build. It needs no sign-in and changes nothing: a client uses it to check that it is talking to Nemura's API and which version.",
+	}, func(context.Context, *struct{}) (*infoOutput, error) {
+		out := &infoOutput{}
+		out.Body.Service, out.Body.Version = "nemura-api", version.Version
+		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "listErrorCodes", Method: "GET", Path: "/v1/errors", Tags: []string{"Platform"}, Summary: "The stable error codes",
+		Description: "Lists every stable error code the API returns, with its HTTP status, its title and the usual fix. It needs no sign-in and changes nothing; a code never changes meaning inside /v1.",
+	}, func(context.Context, *struct{}) (*errorsOutput, error) {
+		out := &errorsOutput{}
+		out.Body.Codes = Catalogue
+		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getErrorCode", Method: "GET", Path: "/v1/errors/{code}", Tags: []string{"Platform"}, Summary: "One stable error code",
+		Description: "Returns one error code of the catalogue with its status, title and usual fix. It needs no sign-in and changes nothing. An unknown code is NM_NOT_FOUND, and a value that is not shaped like a code is NM_INVALID.",
+		Errors:      []int{404, 422},
+	}, func(_ context.Context, in *codeInput) (*codeOutput, error) {
+		if !codeFormat.MatchString(in.Code) {
+			return nil, Err(CodeInvalid, "path.code "+in.Code+" is not an error code.", FieldProblem{Code: CodeInvalid, Field: "path.code",
+				Message: "is not an error code", Fix: "Error codes look like NM_NOT_FOUND."})
+		}
+		for _, c := range Catalogue {
+			if c.Code == in.Code {
+				return &codeOutput{Body: c}, nil
+			}
+		}
+		return nil, Err(CodeNotFound, "There is no error code "+in.Code+".")
+	})
+}
+
+// Landing is where a person lands, by their highest role (PRD-002 §3): the people team on People home, everyone else on My home. The
+// pages arrive with the web app; the path is the contract's.
+func Landing(roles []authz.Role) string {
+	for _, r := range []authz.Role{authz.Owner, authz.Administrator, authz.PayrollAdmin, authz.HRAdmin, authz.HROfficer} {
+		if slices.Contains(roles, r) {
+			return "/people"
+		}
+	}
+	return "/me"
+}
+
+type sessionInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+}
+
+type sessionOutput struct {
+	Body struct {
+		Organisation string   `json:"organisation_id" format:"uuid" doc:"The organisation the session is in." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
+		Member       string   `json:"member_id" format:"uuid" doc:"The person who is signed in." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
+		Roles        []string `json:"roles" doc:"The roles the person holds today, from PRD-002 Appendix B." example:"[\"hr_admin\"]"`
+		Landing      string   `json:"landing" doc:"The page the person lands on: /people for the people team, /me for everyone else." example:"/people"`
+	}
+}
+
+func (a *API) cookie(header string) string {
+	for _, name := range a.d.CookieNames {
+		for _, part := range strings.Split(header, ";") {
+			if k, v, ok := strings.Cut(strings.TrimSpace(part), "="); ok && k == name {
+				return v
+			}
+		}
+	}
+	return ""
+}
+
+func (a *API) registerSession() {
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getSession", Method: "GET", Path: "/v1/session", Tags: []string{"Session"}, Summary: "Who is signed in",
+		Description: "Returns the person the session cookie names, the organisation they are in, the roles they hold today and the page they land on. Roles are read again on each request, so a change is seen at once. It changes nothing; without a valid session it is NM_UNAUTHENTICATED.",
+		Errors:      []int{401},
+	}, func(ctx context.Context, in *sessionInput) (*sessionOutput, error) {
+		now := a.d.Clock.Now()
+		s, err := a.d.Sessions.Authenticate(ctx, a.cookie(in.Cookie), now)
+		if err != nil {
+			return nil, Err(CodeUnauthenticated, "There is no valid session in this request.")
+		}
+		roles, err := a.d.Sessions.RolesAt(ctx, s.Organisation, s.Member, now)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("The roles could not be read.")
+		}
+		out := &sessionOutput{}
+		out.Body.Organisation, out.Body.Member, out.Body.Landing = s.Organisation.String(), s.Member.String(), Landing(roles)
+		out.Body.Roles = make([]string, len(roles))
+		for i, r := range roles {
+			out.Body.Roles[i] = string(r)
+		}
+		return out, nil
+	})
+}

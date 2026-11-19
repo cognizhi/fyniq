@@ -950,6 +950,21 @@ type FyniqBillPaymentPlan struct {
 	RecordedAt     time.Time
 }
 
+type FyniqBillingRate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      *uuid.UUID
+	CustomerID     *uuid.UUID
+	UserID         *uuid.UUID
+	RoleName       *string
+	EffectiveFrom  time.Time
+	HourlyRate     string
+	Currency       string
+	MinorUnits     int16
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
 type FyniqBrandVersion struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2549,6 +2564,19 @@ type FyniqPeriodVarianceExplanation struct {
 	Kind           string
 }
 
+type FyniqPersonCostRate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         *uuid.UUID
+	RoleName       string
+	EffectiveFrom  time.Time
+	HourlyRate     string
+	Currency       string
+	MinorUnits     int16
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
 type FyniqPersonKey struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2624,6 +2652,17 @@ type FyniqProject struct {
 	ChangedAt      time.Time
 }
 
+type FyniqProjectBilledItem struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Kind           string
+	RefID          uuid.UUID
+	LineNo         int32
+	InvoiceID      uuid.UUID
+	CreatedAt      time.Time
+}
+
 type FyniqProjectMember struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2632,6 +2671,20 @@ type FyniqProjectMember struct {
 	IsManager      bool
 	IsActive       bool
 	CreatedAt      time.Time
+}
+
+type FyniqProjectMilestone struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Kind           string
+	Name           string
+	Amount         string
+	DueOn          pgtype.Date
+	AcceptedOn     pgtype.Date
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
 }
 
 type FyniqProjectTask struct {
@@ -3071,6 +3124,51 @@ type FyniqTickDrill struct {
 	Findings          string
 	RecordedBy        string
 	RecordedAt        time.Time
+}
+
+type FyniqTimeEntry struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	ProjectID      uuid.UUID
+	TaskID         uuid.UUID
+	WorkDate       time.Time
+	Minutes        int32
+	Billable       bool
+	Note           string
+	Status         string
+	SubmissionID   *uuid.UUID
+	ReversesID     *uuid.UUID
+	WeekID         *uuid.UUID
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
+}
+
+type FyniqTimeTimer struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	ProjectID      uuid.UUID
+	TaskID         uuid.UUID
+	Billable       bool
+	Note           string
+	StartedAt      time.Time
+}
+
+type FyniqTimesheetSubmission struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	ProjectID      uuid.UUID
+	WeekStart      time.Time
+	Status         string
+	SubmittedAt    time.Time
+	DecidedBy      *uuid.UUID
+	DecidedAt      *time.Time
+	Comment        string
+	WeekID         *uuid.UUID
+	Version        int32
 }
 
 type FyniqUserHelpState struct {
