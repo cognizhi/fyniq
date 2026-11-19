@@ -8004,6 +8004,96 @@ A money account's imported statements, latest first: how each arrived, its reade
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
 
+### `GET /v1/payment-providers/accounts`
+
+**List the payment providers' accounts** (`listPaymentProviderAccounts`)
+
+Each payment provider's money account that has been set up (FR-PSP-04..06): its connector, where its payouts land, the accounts its fees and disputes post to, how far the daily sweep has made it complete to, and what the books and the provider each say it holds (check C.2 #50). Read-only.
+
+- **Permission:** View on Bank transactions, categorise
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`PspAccountsOutputBody`](../../contracts/schemas/PspAccountsOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `PUT /v1/payment-providers/accounts/{money_account_id}`
+
+**Set up a payment provider's money account** (`setPaymentProviderAccount`)
+
+Sets up, or changes, a payment gateway money account fed by a Stripe or HitPay connector (FR-PSP-04..06): the money account its payouts land in, the expense account its fees post to and the account a disputed amount waits in. Once it is set up, Reconcile now posts the provider's own lines from it, within the caps of auto-reconcile: a fee, a dispute's money and a payout as a transfer; the worker posts nothing. Needs a right on "Bank data… connections", as setting a connector as a source does. A first setup needs no If-Match; a change needs the ETag. Side effects: the setup and its audit event with the old and new accounts. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Bank data, payment-provider and ticketing connections (rev 0.7)
+- **Parameters:**
+  - `money_account_id` (path, required): The money account's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PaymentProviderAccountDraft`](../../contracts/schemas/PaymentProviderAccountDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PaymentProviderAccount`](../../contracts/schemas/PaymentProviderAccount.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PSP-01` The money account is not a payment provider's; `PSP-02` The account payouts land in cannot take them; `PSP-03` The account fees post to cannot take them; `PSP-04` The account a dispute waits in cannot hold it.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PSP-01`, `PSP-02`, `PSP-03`, `PSP-04`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/payment-providers/events`
+
+**List the payment providers' webhook events** (`listPaymentProviderEvents`)
+
+The events the providers' signed webhooks brought, newest first, without their payloads (which are sealed): their type, the object they name, and where each stands. A parked event is one Fyniq does not know or could not post, for a person to review (UC-PSP-01); it posts nothing. Read-only.
+
+- **Permission:** View on Bank transactions, categorise
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `status` (query): Only events in this state; parked is what a person reviews.
+- **Responses:**
+  - `200` OK [`PspEventsOutputBody`](../../contracts/schemas/PspEventsOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `GET /v1/payment-providers/payouts`
+
+**List the payment providers' payouts** (`listPaymentProviderPayouts`)
+
+Each payout a provider's connector has reported, newest first, with the balance transactions it settles and whether their lines have posted (FR-PSP-06). A payout whose own line has posted says whether it and what it settles come to nothing in the provider's clearing account, the same check as C.2 #42. Read-only.
+
+- **Permission:** View on Bank transactions, categorise
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `money_account_id` (query): Only this provider account's payouts.
+- **Responses:**
+  - `200` OK [`PspPayoutsOutputBody`](../../contracts/schemas/PspPayoutsOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
 ### `GET /v1/statement-mappings`
 
 **List the saved column mappings** (`listStatementMappings`)

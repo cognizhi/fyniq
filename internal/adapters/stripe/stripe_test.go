@@ -34,7 +34,7 @@ func header(v string) http.Header { h := http.Header{}; h.Set("Stripe-Signature"
 // A webhook is accepted only with a v1 signature of its raw body under the secret and a timestamp within five minutes of
 // the platform's clock, either way; a changed body, another secret, no v1 or an old or future timestamp is refused. While
 // a secret rolls Stripe sends one v1 per secret, and any one verifies; v0 and the debug entries are ignored.
-// req: FR-PSP-01
+// req: banking/payment-providers Signed webhooks
 // asvs: V4.1.5
 func TestAWebhookIsAcceptedOnlyWithASignatureOfItsRawBodyAndAFreshTimestamp(t *testing.T) {
 	now := time.Date(2026, 11, 19, 10, 0, 0, 0, time.UTC)
@@ -71,7 +71,7 @@ func TestAWebhookIsAcceptedOnlyWithASignatureOfItsRawBodyAndAFreshTimestamp(t *t
 }
 
 // Minor units become the decimal string of the currency's own scale, never through a float: S$12.50, ¥1,250, BD 1.250.
-// req: FR-PSP-01
+// req: banking/payment-providers Amounts are never floats
 // req: ENG-10
 func TestMinorUnitsAreConvertedWithTheCurrencysScale(t *testing.T) {
 	for _, c := range []struct {
@@ -142,8 +142,6 @@ func client(srv *httptest.Server, now time.Time) *Client {
 
 // The balance transactions come as statement lines, oldest first: a charge's gross, its fee as a line of its own with the
 // fee's sign, and a payout as one negative line, whose lines sum to the net (S$96.10) and, with the payout, to zero.
-// req: FR-PSP-01
-// req: FR-PSP-06
 func TestBalanceTransactionsComeAsStatementLinesWithTheirFees(t *testing.T) {
 	var seen []string
 	srv := fake(t, &seen)
@@ -185,8 +183,6 @@ func TestBalanceTransactionsComeAsStatementLinesWithTheirFees(t *testing.T) {
 
 // A payout is read with the balance transactions it settles, a charge with its invoice (from Stripe's invoice payments,
 // where a charge no longer names it), and the balance is available and pending together, per currency.
-// req: FR-PSP-06
-// req: FR-PSP-01
 func TestObjectsAreFetchedByIDWithTheirLinks(t *testing.T) {
 	var seen []string
 	srv := fake(t, &seen)
@@ -226,7 +222,7 @@ func TestObjectsAreFetchedByIDWithTheirLinks(t *testing.T) {
 }
 
 // The connector is read-only: the client refuses any method but GET before it leaves, and the port has no method that
-// writes. req: FR-PSP-01 req: FR-INT-27
+// writes. req: FR-INT-27
 func TestTheAdapterIsReadOnly(t *testing.T) {
 	var seen []string
 	srv := fake(t, &seen)
@@ -244,12 +240,17 @@ func TestTheAdapterIsReadOnly(t *testing.T) {
 
 // Events: a handled type names its object, an informational one is known and posts nothing, and any other type is unknown,
 // for a person to review (UC-PSP-01); a body with no ID is refused.
-// req: FR-PSP-01
+// req: banking/payment-providers Unknown event type parked
 func TestEventsAreKnownHandledOrUnknown(t *testing.T) {
-	body, _ := os.ReadFile("testdata/event_invoice_paid.json")
+	body, _ := os.ReadFile("testdata/event_payout_paid.json")
 	e, err := ParseEvent(nil, body)
-	if err != nil || e.ID != "evt_1" || !e.Known || !e.Handled || e.Kind != ports.ProviderInvoice || e.ObjectID != "in_1" || e.APIVersion != "2025-09-30.clover" {
+	if err != nil || e.ID != "evt_1" || !e.Known || !e.Handled || e.Kind != ports.ProviderPayout || e.ObjectID != "po_1" || e.APIVersion != "2025-09-30.clover" {
 		t.Fatalf("%+v, %v", e, err)
+	}
+	// Model B's invoice events are known and post nothing until the mirror is built.
+	inv, _ := ParseEvent(nil, []byte(`{"id":"evt_9","type":"invoice.paid","data":{"object":{"id":"in_1"}}}`))
+	if !inv.Known || inv.Handled {
+		t.Errorf("invoice.paid: %+v", inv)
 	}
 	info, _ := ParseEvent(nil, []byte(`{"id":"evt_2","type":"payment_intent.succeeded","data":{"object":{"id":"pi_1"}}}`))
 	if !info.Known || info.Handled {
@@ -296,7 +297,7 @@ func TestNoFloatsInTheAdapter(t *testing.T) {
 
 // The partner contract the Prism mock serves (contracts/partners/stripe.yaml) names every operation the adapter calls, and
 // only GET ones.
-// req: FR-PSP-01
+// req: FR-INT-27
 func TestThePartnerContractNamesEveryOperationTheAdapterCalls(t *testing.T) {
 	raw, err := os.ReadFile("../../../contracts/partners/stripe.yaml")
 	if err != nil {

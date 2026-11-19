@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -53,10 +54,8 @@ func (f *fakeLedgerProvider) Transactions(_ context.Context, _, cursor string, _
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	var out ports.BankDataPage
-	out.Cursor = "all"
-	if cursor == "all" {
-		return out, nil
-	}
+	out.Cursor = "all" // the provider sends everything every time, with no running balance: import's reference check keeps each line once
+	_ = cursor
 	for _, t := range f.txns {
 		out.Transactions = append(out.Transactions, ports.BankDataTransaction{ID: t.ID, BookingDate: t.Created, Amount: t.Amount, Currency: "SGD", Counterparty: "Provider",
 			Description: t.Category + " " + t.ID})
@@ -136,9 +135,10 @@ func fakeLedgerConnector(t testing.TB, f *fakeLedgerProvider) connector.Binding 
 // leaves a charge for the document it settles. The bank's own line then completes the transfer. Each settled payout nets to
 // zero in clearing (C.2 #42), and what is left agrees to the provider's own balance (C.2 #50); a charge no one has posted
 // breaks both, and a second run posts nothing twice.
-// req: FR-PSP-04
-// req: FR-PSP-05
-// req: FR-PSP-06
+// req: banking/payment-providers Payout breakdown
+// req: banking/payment-providers Each settled payout nets to zero
+// req: banking/payment-providers Dispute moves to disputes clearing
+// req: banking/payment-providers Month-end clearing equals the provider balance
 // req: C.2 #42
 // req: C.2 #50
 func TestAProviderAccountIsSweptAndItsLinesReconciledOnce(t *testing.T) {
@@ -307,8 +307,36 @@ func TestAProviderAccountIsSweptAndItsLinesReconciledOnce(t *testing.T) {
 	if again, err := banking.AutoReconcile(ctx, txns, e.books.Org, nil, e.clock.Now()); err != nil || len(again.Reconciled) != 0 {
 		t.Fatalf("a second reconcile now: %d reconciled, %v", len(again.Reconciled), err)
 	}
-	if got, err := sync.Sync(ctx, e.books.Org, c.ID); err != nil || got.Added != 0 {
-		t.Fatalf("a second sync: %+v, %v", got, err)
+	before := len(statuses())
+	if got, err := sync.Sync(ctx, e.books.Org, c.ID); err != nil || got.Added != 0 || len(statuses()) != before {
+		t.Fatalf("a second sync, which sends every line again: %+v, %v, %d lines of %d", got, err, len(statuses()), before)
+	}
+	for ref, status := range statuses() {
+		if status == storage.LinePossibleDuplicate {
+			t.Errorf("%s came again and was marked a possible duplicate", ref)
+		}
+	}
+	// Auto-reconcile's own record of what it did: a provider line is among the auto-reconciliations, on the basis exact.
+	feeLine := lineOf("txn_c1:fee")
+	var sys []storage.BankMatch
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		sys, err = u.BankMatching().Matches(ctx, storage.BankMatchFilter{SystemOnly: true})
+		return err
+	})
+	if !slices.ContainsFunc(sys, func(m storage.BankMatch) bool {
+		return m.LineID == feeLine.ID && m.Basis == storage.BasisExact && m.UndoneAt == nil
+	}) {
+		t.Errorf("the fee line is not among the auto-reconciliations: %d matches", len(sys))
+	}
+	// It undoes as any auto-reconciliation does, and Reconcile now posts it again, once.
+	if err := banking.UndoAuto(ctx, e.store, e.books.Org, feeLine.ID, "Testing the undo", e.clock.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if st := statuses()["txn_c1:fee"]; st != storage.LineUnreconciled || e.balanceOf(t, e.books.Rent.ID) != "7.80" {
+		t.Fatalf("after the undo the fee line is %q and fees are %s", st, e.balanceOf(t, e.books.Rent.ID))
+	}
+	if again, err := banking.AutoReconcile(ctx, txns, e.books.Org, nil, e.clock.Now()); err != nil || len(again.Reconciled) != 1 || e.balanceOf(t, e.books.Rent.ID) != "11.70" {
+		t.Fatalf("reconcile now after the undo: %d reconciled, %v, fees %s", len(again.Reconciled), err, e.balanceOf(t, e.books.Rent.ID))
 	}
 	if bal := e.balanceOf(t, e.books.Rent.ID); bal != "11.70" {
 		t.Errorf("a second run changed the fees: %s", bal)
@@ -381,6 +409,27 @@ func TestAProviderAccountIsSweptAndItsLinesReconciledOnce(t *testing.T) {
 	if s := runChecks()["bank.sync"]; checks.Status(s.Status) != checks.Warning || !strings.Contains(s.Detail, "behind") {
 		t.Errorf("C.2 #43 with a failed sweep: %+v", s)
 	}
+
+	// A later transaction comes with the same lines again: only its own two lines are added, and the chain shows no gap.
+	f.mu.Lock()
+	f.failList = nil
+	f.txns = append(f.txns, bt("txn_c4", "charge", "100.00", "3.90", "96.10", 13, ports.ProviderCharge, "ch_4"))
+	f.mu.Unlock()
+	if got, err := sync.Sync(ctx, e.books.Org, c.ID); err != nil || got.Added != 2 {
+		t.Fatalf("a sync with one new transaction: %+v, %v", got, err)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		gaps, err := u.Banking().Gaps(ctx, clearing.ID, true)
+		if err != nil || len(gaps) != 0 {
+			t.Errorf("gaps: %v, %v", gaps, err)
+		}
+		return nil
+	})
+	for ref, status := range statuses() {
+		if status == storage.LinePossibleDuplicate {
+			t.Errorf("%s was marked a possible duplicate", ref)
+		}
+	}
 }
 
 // balanceOf is a chart account's book balance in the base currency on the clock's day, debit positive.
@@ -398,8 +447,7 @@ func (e *env) balanceOf(t *testing.T, account uuid.UUID) string {
 
 // A provider's payout event records the payout and what it settles and queues one sweep of its connector (at most one a
 // minute, so a burst of events queues one); the sweep is the worker's handler of psp.run, and nothing is posted by it.
-// req: FR-PSP-01
-// req: FR-PSP-06
+// req: banking/payment-providers Provider transactions stored
 func TestAPayoutEventRecordsThePayoutAndQueuesASweep(t *testing.T) {
 	e := newEnv(t)
 	var c storage.InstalledConnector

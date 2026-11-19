@@ -583,6 +583,16 @@ var (
 	informational  = []string{"order", "invoice", "transfer", "payment_request", "recurring_billing"}
 )
 
+// HandledKinds are the kinds of object the events the adapter handles name: each needs a handler in the processor.
+func HandledKinds() []ports.ProviderKind {
+	var out []ports.ProviderKind
+	for _, k := range handledObjects {
+		out = append(out, k)
+	}
+	slices.Sort(out)
+	return out
+}
+
 // ParseEvent reads a verified webhook. Its ID is made of the type, the object's ID and a digest of the body, because
 // HitPay sends none: a redelivery of a body repeats it, and a changed object does not.
 func ParseEvent(h http.Header, body []byte) (ports.ProviderEvent, error) {

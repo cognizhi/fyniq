@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "disputes_account_id": {
+      "description": "A chart account, not a money account, a disputed amount waits in, such as 1055; left out, a dispute waits for a person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b13"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "fee_account_id": {
+      "description": "The expense chart account fees post to, such as 5040.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b12"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "payout_account_id": {
+      "description": "The money account payouts land in, in the same currency; left out, a payout waits for a person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fee_account_id"
+  ],
+  "title": "PaymentProviderAccountDraft",
+  "type": "object"
+}

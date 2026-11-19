@@ -3,7 +3,7 @@ key: settings.integrations
 title: Integrations and connectors
 mode: expert
 roles: [owner, admin, controller, auditor, dpo, super_admin]
-requirements: [FR-INT-20, FR-INT-21, FR-INT-25, FR-INT-26, FR-INT-27, SEC-36]
+requirements: [FR-INT-20, FR-INT-21, FR-INT-25, FR-INT-26, FR-INT-27, SEC-36, FR-PSP-01, FR-PSP-04, FR-PSP-05, FR-PSP-06]
 status: draft
 ---
 
@@ -124,6 +124,32 @@ An email provider's page also has **Senders and domain**.
   with an unknown result is checked first, so nobody gets an email twice. **Move** changes a provider's place.
 - **Suppression list**: addresses Fyniq doesn't send to, after a hard bounce or a spam complaint. Fix the
   contact's email first, then choose **Release**.
+
+## Payment providers (Stripe and HitPay)
+
+The Stripe and HitPay connectors read your provider account into Banking. They never charge, refund, retry or pay out
+anything.
+
+- **Set up.** Install the connector like any organisation connector. For Stripe, create a restricted key that can only
+  read, and give Fyniq the signing secret of the Stripe webhook that points to the connector's address. Then add a money
+  account of kind **Payment gateway** for each currency, named by the currency (for example SGD), and set the connector as
+  its data source.
+- **What arrives.** The provider's balance transactions come in as the account's lines: each charge, and its fee on a line
+  of its own. Every hour Fyniq also reads the provider's payouts and its balance, going back four days so that a webhook
+  that never arrived is made up for.
+- **What posts.** When you choose **Reconcile now**, a fee posts to the fee account (5040), a dispute's money to the
+  disputes account (1055 is the usual one), and a payout as a transfer to the bank account it lands in, which the bank's own
+  line completes. These follow the same S$500 limit for a single line as other automatic matches: a larger payout waits for
+  you, with the charges and fees it settles listed. A charge waits for the invoice it settles. Fees carry no claimable GST
+  until the provider's monthly tax invoice is matched.
+- **Who sets it up.** Someone with a right on bank connections names the bank for payouts, the fee account and the disputes
+  account for each provider account. Until a screen for it arrives, this is the payment providers API.
+- **A lost dispute.** Fyniq posts nothing for a lost dispute. Its amount stays in the disputes account until you and your
+  accountant decide whether it is an expense or a credit note.
+- **Checks.** A settled payout, with what it settles, must come to nothing in the provider's account. What the books hold
+  in it should equal what the provider says it holds for you. A sweep that fell behind shows with the other bank syncs.
+- **Events Fyniq cannot read.** A webhook of a type Fyniq does not know is kept and set aside for a person. It posts
+  nothing.
 
 ## Related
 

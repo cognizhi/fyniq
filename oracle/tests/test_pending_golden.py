@@ -831,7 +831,7 @@ def _neg(text: str) -> str:
 
 
 # req: QA-ENG-02
-# req: FR-PSP-06
+# req: banking/payment-providers Month-end clearing equals the provider balance
 def test_payment_providers_month_nets_to_the_unpaid_charge():
     """A provider's clearing account (1050), worked by hand from the rules (p1-payment-providers 2.6): three charges of
     100.00 and their fees of 3.90 leave 288.30; the dispute takes 50.00 and its fee 15.00 to 1055 and the win brings 65.00

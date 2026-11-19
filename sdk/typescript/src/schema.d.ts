@@ -12981,6 +12981,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payment-providers/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the payment providers' accounts
+         * @description Each payment provider's money account that has been set up (FR-PSP-04..06): its connector, where its payouts land, the accounts its fees and disputes post to, how far the daily sweep has made it complete to, and what the books and the provider each say it holds (check C.2 #50). Read-only.
+         */
+        get: operations["listPaymentProviderAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payment-providers/accounts/{money_account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set up a payment provider's money account
+         * @description Sets up, or changes, a payment gateway money account fed by a Stripe or HitPay connector (FR-PSP-04..06): the money account its payouts land in, the expense account its fees post to and the account a disputed amount waits in. Once it is set up, Reconcile now posts the provider's own lines from it, within the caps of auto-reconcile: a fee, a dispute's money and a payout as a transfer; the worker posts nothing. Needs a right on "Bank data… connections", as setting a connector as a source does. A first setup needs no If-Match; a change needs the ETag. Side effects: the setup and its audit event with the old and new accounts. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        put: operations["setPaymentProviderAccount"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payment-providers/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the payment providers' webhook events
+         * @description The events the providers' signed webhooks brought, newest first, without their payloads (which are sealed): their type, the object they name, and where each stands. A parked event is one Fyniq does not know or could not post, for a person to review (UC-PSP-01); it posts nothing. Read-only.
+         */
+        get: operations["listPaymentProviderEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payment-providers/payouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the payment providers' payouts
+         * @description Each payout a provider's connector has reported, newest first, with the balance transactions it settles and whether their lines have posted (FR-PSP-06). A payout whose own line has posted says whether it and what it settles come to nothing in the provider's clearing account, the same check as C.2 #42. Read-only.
+         */
+        get: operations["listPaymentProviderPayouts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/periods": {
         parameters: {
             query?: never;
@@ -43326,6 +43406,254 @@ export interface components {
              */
             reason?: string;
         };
+        PaymentProviderAccount: {
+            /** @description What the books hold in the clearing account. */
+            book_balance?: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The organisation connector that feeds it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40
+             */
+            connector_id: string;
+            /**
+             * @description Its currency, the provider balance's.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: uuid
+             * @description The chart account a disputed amount waits in; none: a dispute waits for a person.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b13
+             */
+            disputes_account_id?: string;
+            /**
+             * @description Its code and name.
+             * @example 1055 Payment disputes clearing
+             */
+            disputes_account_name?: string;
+            /**
+             * Format: uuid
+             * @description The chart account fees expense to.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b12
+             */
+            fee_account_id: string;
+            /**
+             * @description Its code and name.
+             * @example 5040 Payment processing fees
+             */
+            fee_account_name: string;
+            /**
+             * Format: uuid
+             * @description The provider's clearing money account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+             */
+            money_account_id: string;
+            /**
+             * @description Its name.
+             * @example Stripe SGD
+             */
+            money_account_name: string;
+            /**
+             * Format: uuid
+             * @description The money account payouts land in; none: a payout waits for a person.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11
+             */
+            payout_account_id?: string;
+            /**
+             * @description Its name.
+             * @example DBS Operating
+             */
+            payout_account_name?: string;
+            /**
+             * @description The connector's manifest ID.
+             * @example stripe
+             */
+            provider: string;
+            /** @description What the provider said it holds for the organisation and has not paid out, at the last sweep. */
+            provider_balance?: components["schemas"]["Money"];
+            /**
+             * @description Why the last sweep could not close a gap (C.2 #43).
+             * @example the provider answered 503
+             */
+            sweep_error?: string;
+            /**
+             * Format: date
+             * @description The day the daily sweep has made the account complete to (FR-PSP-01).
+             * @example 2026-11-18
+             */
+            swept_through?: string;
+            /**
+             * Format: int64
+             * @description Its version, for If-Match.
+             * @example 1
+             */
+            version: number;
+        };
+        PaymentProviderAccountDraft: {
+            /**
+             * Format: uuid
+             * @description A chart account, not a money account, a disputed amount waits in, such as 1055; left out, a dispute waits for a person.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b13
+             */
+            disputes_account_id?: string;
+            /**
+             * Format: uuid
+             * @description The expense chart account fees post to, such as 5040.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b12
+             */
+            fee_account_id: string;
+            /**
+             * Format: uuid
+             * @description The money account payouts land in, in the same currency; left out, a payout waits for a person.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11
+             */
+            payout_account_id?: string;
+        };
+        PaymentProviderEvent: {
+            /**
+             * @description The provider's API version.
+             * @example 2025-09-30.clover
+             */
+            api_version?: string;
+            /**
+             * Format: uuid
+             * @description The connector it came through.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40
+             */
+            connector_id: string;
+            /**
+             * @description The provider's event ID.
+             * @example evt_1Q3
+             */
+            event_id: string;
+            /**
+             * @description Its type.
+             * @example payout.paid
+             */
+            event_type: string;
+            /**
+             * Format: uuid
+             * @description The event's ID in Fyniq.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70
+             */
+            id: string;
+            /** @description Why its last attempt failed. */
+            last_error?: string;
+            /**
+             * @description The object's provider ID.
+             * @example po_1Q3
+             */
+            object_id?: string;
+            /**
+             * @description What the event names.
+             * @example payout
+             */
+            object_kind?: string;
+            /**
+             * @description Why it is parked.
+             * @example Fyniq does not know this event type (radar.early_fraud_warning.created): a person reviews it, and it posts nothing
+             */
+            parked_reason?: string;
+            /**
+             * @description The parser's version.
+             * @example stripe@1
+             */
+            parser_version: string;
+            /**
+             * @description The connector's manifest ID.
+             * @example stripe
+             */
+            provider: string;
+            /**
+             * Format: date-time
+             * @description When it was received.
+             * @example 2026-11-12T10:00:00Z
+             */
+            received_at: string;
+            /**
+             * @description Where it stands: parked waits for a person (an event type Fyniq does not know, or an object it cannot post).
+             * @example parked
+             * @enum {string}
+             */
+            status: "received" | "processed" | "parked" | "failed";
+        };
+        PaymentProviderPayout: {
+            /** @description Paid out, as the provider reports it. */
+            amount: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description When it was due in the bank.
+             * @example 2026-11-12
+             */
+            arrival_date?: string;
+            /**
+             * @description Whether it is an automatic payout, which Stripe itemises (FR-PSP-06).
+             * @example true
+             */
+            automatic: boolean;
+            /** @description What they come to, when not nothing. */
+            difference?: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The payout's ID in Fyniq.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60
+             */
+            id: string;
+            /** @description References of lines that are not imported or not posted. */
+            missing?: string[] | null;
+            /**
+             * Format: uuid
+             * @description The provider's clearing money account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+             */
+            money_account_id: string;
+            /**
+             * @description Whether the payout and what it settles come to nothing in clearing; absent until the payout's own line has posted.
+             * @example true
+             */
+            nets_to_zero?: boolean;
+            /**
+             * @description The provider's ID.
+             * @example po_1Q3
+             */
+            payout_id: string;
+            /**
+             * @description Whether the payout's own statement line has posted, as a transfer to the bank.
+             * @example true
+             */
+            payout_line_posted: boolean;
+            /**
+             * @description The provider's status.
+             * @example paid
+             */
+            status: string;
+            /** @description What it settles. */
+            transactions: components["schemas"]["PaymentProviderTxn"][];
+        };
+        PaymentProviderTxn: {
+            /**
+             * @description How Fyniq reads it.
+             * @example charge
+             * @enum {string}
+             */
+            category: "charge" | "refund" | "dispute" | "dispute_reversal" | "fee" | "payout" | "other";
+            /** @description What the provider keeps. */
+            fee: components["schemas"]["Money"];
+            /** @description Signed: money in positive. */
+            gross: components["schemas"]["Money"];
+            /** @description Gross less fee. */
+            net: components["schemas"]["Money"];
+            /**
+             * @description Whether its line, and its fee's line when it has one, have posted.
+             * @example true
+             */
+            posted: boolean;
+            /**
+             * @description The provider's ID, the reference of its statement line.
+             * @example txn_1Q3
+             */
+            txn_id: string;
+        };
         PdRequestsOutputBody: {
             /** @description The requests, oldest first. */
             items: components["schemas"]["PDRequestView"][];
@@ -45076,6 +45404,33 @@ export interface components {
             /**
              * @description Pass it as cursor for the next page; absent on the last page.
              * @example eyJhZnRlciI6IjEwMCJ9
+             */
+            next_cursor?: string;
+        };
+        PspAccountsOutputBody: {
+            /** @description The provider accounts, by money account name. */
+            items: components["schemas"]["PaymentProviderAccount"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjAxOTIifQ
+             */
+            next_cursor?: string;
+        };
+        PspEventsOutputBody: {
+            /** @description The events, newest first, without their payloads. */
+            items: components["schemas"]["PaymentProviderEvent"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjAxOTIifQ
+             */
+            next_cursor?: string;
+        };
+        PspPayoutsOutputBody: {
+            /** @description The payouts, newest first. */
+            items: components["schemas"]["PaymentProviderPayout"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjAxOTIifQ
              */
             next_cursor?: string;
         };
@@ -154943,6 +155298,424 @@ export interface operations {
             };
             /** @description Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPaymentProviderAccounts: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PspAccountsOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPaymentProviderAccount: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The money account's ID. */
+                money_account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentProviderAccountDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentProviderAccount"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PSP-01` The money account is not a payment provider's; `PSP-02` The account payouts land in cannot take them; `PSP-03` The account fees post to cannot take them; `PSP-04` The account a dispute waits in cannot hold it. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPaymentProviderEvents: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only events in this state; parked is what a person reviews. */
+                status?: "received" | "processed" | "parked" | "failed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PspEventsOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPaymentProviderPayouts: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only this provider account's payouts. */
+                money_account_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PspPayoutsOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

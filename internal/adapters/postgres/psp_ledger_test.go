@@ -34,7 +34,7 @@ func pspConnector(t *testing.T, org uuid.UUID) uuid.UUID {
 // A provider's balance transaction is recorded once whatever the sweep or the event repeats; it is kept as the provider
 // reported it and only the payout that settles it is added, once; a payout is kept as reported but for its standing; a
 // balance reading is never changed; and another organisation sees none of it.
-// req: FR-PSP-06
+// req: banking/payment-providers Provider transactions stored
 // asvs: V13.2.2
 func TestAProvidersRecordsAreKeptAsTheProviderReportedThem(t *testing.T) {
 	ctx := context.Background()

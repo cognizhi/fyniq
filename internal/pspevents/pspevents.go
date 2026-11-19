@@ -16,6 +16,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -194,7 +195,7 @@ func (p Processor) Work() outbox.Work {
 		}
 		err := p.work(ctx, org, pl)
 		if errors.Is(err, connector.ErrNotEnabled) {
-			return nil // a connector disabled since: the event stays as received, for a person
+			return p.notEnabled(ctx, org, pl)
 		}
 		return err
 	}
@@ -241,6 +242,38 @@ func (p Processor) work(ctx context.Context, org uuid.UUID, pl payload) error {
 			return err
 		}
 		_, err = u.PSPEvents().Settle(ctx, ev.ID, storage.PSPProcessed, "", p.Clock.Now())
+		return err
+	})
+}
+
+// HoldFor is how long work of a paused or disabled connector waits before it is delivered again.
+const HoldFor = 15 * time.Minute
+
+// notEnabled holds an event's work while its connector is paused or disabled, as the manifest says pause and disable do
+// (on_pause and on_disable: hold, FR-INT-26): the work is delivered again, with no attempt used, and goes on once the
+// connector is enabled. An uninstalled connector's event is parked for a person: nothing will ever work it.
+func (p Processor) notEnabled(ctx context.Context, org uuid.UUID, pl payload) error {
+	state := ""
+	if err := p.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		all, err := u.Connectors().Organisation(ctx)
+		for _, c := range all {
+			if c.ID == pl.ConnectorID {
+				state = string(c.State)
+			}
+		}
+		return err
+	}); err != nil {
+		return err
+	}
+	if state == string(storage.ConnectorPaused) || state == string(storage.ConnectorDisabled) {
+		return outbox.Held{For: HoldFor, Reason: "the connector is " + state}
+	}
+	return p.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		ev, err := u.PSPEvents().Get(ctx, pl.EventID)
+		if err != nil || ev.Status == storage.PSPProcessed || ev.Status == storage.PSPParked {
+			return err
+		}
+		_, err = u.PSPEvents().Settle(ctx, ev.ID, storage.PSPParked, "its connector is no longer installed: a person reviews the event", p.Clock.Now())
 		return err
 	})
 }

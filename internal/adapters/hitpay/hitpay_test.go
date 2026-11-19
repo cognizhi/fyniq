@@ -27,7 +27,7 @@ func sig(salt string, body []byte) string {
 
 // A webhook is accepted only with the HMAC-SHA256 of its raw body under the webhook's salt, in hex; a changed body,
 // another salt, no header or one that is not hex is refused. HitPay signs no timestamp.
-// req: FR-PSP-01
+// req: banking/payment-providers Signed webhooks
 // asvs: V4.1.5
 func TestAWebhookIsAcceptedOnlyWithASignatureOfItsRawBody(t *testing.T) {
 	body := []byte(`{"id":"9e9be893","status":"succeeded"}`)
@@ -98,8 +98,6 @@ func client(srv *httptest.Server) *Client {
 // UC-PSP-02: a B2B invoice of S$5,450 paid by PayNow: HitPay's charge is a line for the gross naming the invoice, its fee
 // (S$0.30 and S$35.43 = S$35.73) a line of its own, and the payout of S$5,414.27 a negative line; amounts are JSON numbers
 // read as exact decimals, a charge in another currency is left to its own account, and the lines net to zero.
-// req: FR-PSP-01
-// req: FR-PSP-06
 // req: ENG-10
 func TestChargesFeesAndPayoutsComeAsStatementLines(t *testing.T) {
 	var seen []string
@@ -140,7 +138,7 @@ func TestChargesFeesAndPayoutsComeAsStatementLines(t *testing.T) {
 }
 
 // A charge and a payout are fetched by ID, the payout with the charges it settles; the balance is available, pending and
-// reserve together; nothing but GET is sent. req: FR-PSP-06 req: FR-INT-27
+// reserve together; nothing but GET is sent. req: FR-INT-27
 func TestObjectsBalanceAndReadOnly(t *testing.T) {
 	var seen []string
 	srv := fake(t, &seen)
@@ -179,7 +177,7 @@ func TestObjectsBalanceAndReadOnly(t *testing.T) {
 
 // HitPay's event has no ID: Fyniq makes one of the type, the object and a digest of the body, so a redelivery repeats it and
 // a changed charge does not; a charge or payout is handled, other known objects are informational, and others unknown.
-// req: FR-PSP-01
+// req: banking/payment-providers Unknown event type parked
 func TestEventsGetAnIDFromTheirBody(t *testing.T) {
 	h := func(object, kind string) http.Header {
 		x := http.Header{}
@@ -224,7 +222,7 @@ func TestNoFloatsInTheAdapter(t *testing.T) {
 
 // The partner contract the Prism mock serves (contracts/partners/hitpay.yaml) names every operation the adapter calls, and
 // only GET ones.
-// req: FR-PSP-01
+// req: FR-INT-27
 func TestThePartnerContractNamesEveryOperationTheAdapterCalls(t *testing.T) {
 	raw, err := os.ReadFile("../../../contracts/partners/hitpay.yaml")
 	if err != nil {

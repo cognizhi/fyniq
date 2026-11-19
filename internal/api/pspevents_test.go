@@ -106,8 +106,11 @@ func (h *recordingHandler) Handle(_ context.Context, _ storage.UnitOfWork, _ sto
 // connector are refused and store nothing. The worker fetches the object the event names (never trusting the payload),
 // hands it to the rule of its kind once, and a second run of the same row does nothing; an object the provider does not
 // have fails the event for a retry and parks it when the retries run out.
-// req: FR-PSP-01
-// req: FR-INT-27
+// req: banking/payment-providers Signed webhooks
+// req: banking/payment-providers Deduplicated by event ID
+// req: banking/payment-providers Raw payload kept
+// req: banking/payment-providers Unknown event type parked
+// req: banking/payment-providers Events in any order
 // asvs: V4.1.5
 func TestProviderWebhooksAreStoredOnceAndWorkedFromTheFetchedObject(t *testing.T) {
 	e := newEnv(t)
@@ -305,6 +308,33 @@ func TestProviderWebhooksAreStoredOnceAndWorkedFromTheFetchedObject(t *testing.T
 	if x := eventByID(events(), "evt_5"); x.Status != storage.PSPParked || x.ParkedReason != h.park {
 		t.Fatalf("parked by the rule: %+v", x)
 	}
+
+	// Work of a connector that is disabled since is held, with no attempt used, and the event stays as received.
+	post("example-psp", c.ID, "good", body("evt_7", "invoice.paid", "in_1"))
+	_, row7 := nextWorkRow(t, e)
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Connectors().ChangeOrganisation(ctx, c.ID, c.Version, storage.ConnectorChange{Step: storage.StepPause, State: storage.ConnectorPaused,
+			Configuration: map[string]any{}, Position: 1, Test: c.Test, ManifestVersion: m.Version, ManifestHash: m.Hash(),
+			SecretNames: []string{"token"}, Consent: m.Consent(), At: e.clock.Now()})
+		return err
+	})
+	if err := proc.Work()(context.Background(), e.books.Org, row7); !errors.Is(err, outbox.ErrHeld) {
+		t.Fatalf("work of a paused connector: %v", err)
+	}
+	if x := eventByID(events(), "evt_7"); x.Status != storage.PSPReceived {
+		t.Fatalf("the held event: %+v", x)
+	}
+	var paused storage.InstalledConnector
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		all, err := u.Connectors().Organisation(ctx)
+		for _, x := range all {
+			if x.ID == c.ID {
+				paused = x
+			}
+		}
+		return err
+	})
+	c = paused
 
 	// A disabled connector's webhook is refused.
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {

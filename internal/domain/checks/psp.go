@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/pspnet"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -30,14 +30,9 @@ var pspChecks = []Definition{
 		Rules: "FR-PSP-05, FR-PSP-06", Owner: "bookkeeper", View: viewBank, Triggers: onProviders, Run: clearingEqualsProviderBalance},
 }
 
-// posted is whether a line has posted.
-func posted(status string) bool {
-	return status == storage.LineCategorised || status == storage.LineMatched || status == storage.LineTransferred
-}
-
 // payoutsNetToZero (C.2 #42): for each paid payout whose own line has posted, its transactions' lines, with the payout's,
-// come to nothing in the clearing account. It reads the posted lines (each posts exactly its amount through the account,
-// FY228), so a transaction the provider names that has no posted line shows as short.
+// come to nothing in the clearing account (pspnet reads the posted lines, each of which posts exactly its amount through the
+// account, FY228), so a transaction the provider names that has no posted line shows as short.
 func payoutsNetToZero(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
 	accounts, err := u.PSP().Accounts(ctx)
 	if err != nil {
@@ -58,70 +53,32 @@ func payoutsNetToZero(ctx context.Context, u storage.UnitOfWork, e *Env) (Result
 		if err != nil {
 			return Result{}, err
 		}
-		lines, err := u.Banking().Lines(ctx, storage.BankLineFilter{MoneyAccountID: &a.MoneyAccountID})
+		byRef, err := pspnet.Lines(ctx, u, m)
 		if err != nil {
 			return Result{}, err
-		}
-		byRef := map[string]storage.BankLine{}
-		for _, l := range lines {
-			byRef[l.Reference] = l
 		}
 		payouts, err := u.PSP().Payouts(ctx, a.ConnectorID, 500)
 		if err != nil {
 			return Result{}, err
 		}
 		for _, p := range payouts {
-			if p.Currency != m.Currency || p.Status != "paid" {
+			if p.Currency != m.Currency || !pspnet.Settled(p.Status) {
 				continue
 			}
-			pt, err := u.PSP().TxnOfSource(ctx, a.ConnectorID, "payout", p.PayoutID)
-			if errors.Is(err, ports.ErrNotFound) {
-				continue
-			}
+			r, err := pspnet.Of(ctx, u, a, cur, p, byRef)
 			if err != nil {
 				return Result{}, err
 			}
-			pl, ok := byRef[pt.TxnID]
-			if !ok || !posted(pl.Status) {
+			if !r.Evaluated {
 				continue // its own line has not posted: nothing to prove yet
 			}
 			checked++
-			total, err := money.ParseStored(string(pl.Amount), cur)
-			if err != nil {
-				return Result{}, err
-			}
-			contents, err := u.PSP().TxnsOfPayout(ctx, a.ConnectorID, p.PayoutID)
-			if err != nil {
-				return Result{}, err
-			}
-			var missing []string
-			for _, t := range contents {
-				refs := []string{t.TxnID}
-				if f, err := money.ParseStored(string(t.Fee), cur); err == nil && !f.IsZero() {
-					refs = append(refs, t.TxnID+":fee")
-				}
-				for _, ref := range refs {
-					l, ok := byRef[ref]
-					if !ok || !posted(l.Status) {
-						missing = append(missing, ref)
-						continue
-					}
-					amt, err := money.ParseStored(string(l.Amount), cur)
-					if err != nil {
-						return Result{}, err
-					}
-					if total, err = total.Add(amt); err != nil {
-						return Result{}, err
-					}
-				}
-			}
-			if total.IsZero() && len(missing) == 0 {
+			if r.Nets() {
 				continue
 			}
-			detail := fmt.Sprintf("Its transactions and the payout come to %s %s, not nothing", total, cur.Code)
-			if len(missing) > 0 {
-				slices.Sort(missing)
-				detail += "; not posted in " + m.Name + ": " + strings.Join(missing, ", ")
+			detail := fmt.Sprintf("Its transactions and the payout come to %s %s, not nothing", r.Total, cur.Code)
+			if len(r.Missing) > 0 {
+				detail += "; not posted in " + m.Name + ": " + strings.Join(r.Missing, ", ")
 			}
 			items = append(items, Item{Kind: "psp_payout", ID: p.ID.String(), Label: fmt.Sprintf("%s payout %s", m.Name, p.PayoutID), Detail: detail})
 		}

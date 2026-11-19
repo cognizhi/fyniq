@@ -31,30 +31,29 @@ Everything this change needs from the rest of the platform has landed:
   period. It has no write method: nothing in this change charges, refunds, retries or cancels (FR-INT-27, FR-PSP-03).
 - **Signed webhooks with their own receiver (design D3).** `/webhooks/psp/{connector}/{id}` verifies
   `Stripe-Signature` (HMAC-SHA256 over `t.body`, five-minute tolerance) or `Hitpay-Signature` against the connector's
-  secrets, stores the raw payload, the provider's API version and the parser version, deduplicates on the event ID
-  (answering 2xx to a redelivery), and queues processing. An event only tells Fyniq which object to fetch. An unknown
-  event type is stored and parked with a warning.
-- **Posting identity (design D4).** Every posting the provider causes is keyed on the provider object and the economic
-  action, in a table of its own whose unique key makes a second event, a redelivery days later or a backfill post
+  secrets, stores the raw payload sealed, the provider's API version and the parser version, deduplicates on the event ID
+  (HitPay sends none: Fyniq makes one of the event's type, its object and a digest of its body; a redelivery answers 2xx),
+  and queues the work. An event only tells Fyniq which object to fetch. An unknown event type is stored and parked.
+- **Posting identity (design D4).** A money leg is a statement line of the provider's own reference, reconciled once; an
+  invoice leg will be keyed on a unique provider invoice row. A second event, a redelivery days later or a backfill posts
   nothing.
-- **Money legs reuse the posting rules that exist (design D5).** A charge settles the mirrored invoice through
-  `customer_receipt` into the clearing account; a fee is a categorised line to payment fees; a payout is a transfer
-  from the clearing account to the bank; a refund is a credit note and a customer refund. No posting source is added,
-  so the Python oracle already covers them. Fee GST and disputes are the two new rules, written with the oracle's half
-  staged as the build plan says.
-- **Model B mirror (design D6).** Customers, subscriptions and invoices are mirrored read-only. A finalised provider
-  invoice becomes an AR document that totals to the provider's invoice or is parked; its lines spread over their
-  service periods (2400) and the provider's collection state (attempts, next retry, final outcome) is shown, never acted
-  on.
+- **The worker mirrors and the API posts (design D5).** The worker holds no right to make a document, so the hourly sweep
+  mirrors the provider's balance transactions, payouts and balance, and auto-reconcile in the API posts what that makes
+  certain through the rules that exist: a fee to the fee account, a dispute's money to disputes clearing, a payout as a
+  transfer to the bank. A charge or a refund waits for the document it settles. No posting source is added, so the Python
+  oracle already covers them; a differential scenario of a provider month proves it.
+- **Model B mirror (design D6) is not built here:** how a provider invoice becomes a Fyniq document needs the owner's decision
+  2 (a narrow database function, API-side posting, or by hand). Its events are known and post nothing.
 - **Payout reconciliation (design D7).** Each payout is stored with the balance transactions it settles. Check C.2 #42
-  (a settled payout nets to zero in clearing, ✖) and C.2 #50 (month-end clearing equals the provider's balance not yet
-  paid out, ⚠) run on the checks engine; a gap the sweep cannot close is C.2 #43's ⚠.
-- **Screens:** `provider-payouts` and `subscriptions` (both designed), with their help keys, guide pages and compiled
-  knowledge-base pages.
-- **PRD revision** recording the decisions of design D1, D8 and D9, the two new chart accounts and the service-period
-  rule, each tagged `[accountant to confirm]`.
+  (a settled payout nets to zero in clearing, error) and C.2 #50 (month-end clearing equals the provider's balance not yet
+  paid out, warning) run on the checks engine; a sweep that fell behind is C.2 #43's warning.
+- **API:** the provider accounts' setup (the bank its payouts land in, the fee and disputes accounts), and reads of
+  accounts, payouts with their breakdown and the parked events; the setup needs a right on "Bank data… connections".
+- **Screens:** `provider-payouts` and `subscriptions` stay designed and unbuilt in this change; the API gives them
+  what they need.
+- **PRD revision** recording the decisions of design D1, D4, D5, D8 and D9, each tagged `[accountant to confirm]`.
 
-Not in this change: payment links and PayNow QR creation on invoices (FR-PSP-02, FR-AR-13, P2: HitPay's charges are read
+Not in this change: the Model B mirror and its postings (owner decision 2); the two screens and the guide's pages for them; payment links and PayNow QR creation on invoices (FR-PSP-02, FR-AR-13, P2: HitPay's charges are read
 and matched by the existing reconciliation); instant and manual-payout contents beyond balance data (FR-PSP-06's
 limits); usage prices, bundles, set-up fees and multi-element contracts (parked, FR-PSP-07); MRR and churn from
 subscriptions (FR-KPI-04, P2); the provider's monthly tax invoice capture (needs `p1-document-capture`; FR-PSP-05's

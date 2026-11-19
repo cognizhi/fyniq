@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "api_version": {
+      "description": "The provider's API version.",
+      "examples": [
+        "2025-09-30.clover"
+      ],
+      "type": "string"
+    },
+    "connector_id": {
+      "description": "The connector it came through.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "event_id": {
+      "description": "The provider's event ID.",
+      "examples": [
+        "evt_1Q3"
+      ],
+      "type": "string"
+    },
+    "event_type": {
+      "description": "Its type.",
+      "examples": [
+        "payout.paid"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The event's ID in Fyniq.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "last_error": {
+      "description": "Why its last attempt failed.",
+      "type": "string"
+    },
+    "object_id": {
+      "description": "The object's provider ID.",
+      "examples": [
+        "po_1Q3"
+      ],
+      "type": "string"
+    },
+    "object_kind": {
+      "description": "What the event names.",
+      "examples": [
+        "payout"
+      ],
+      "type": "string"
+    },
+    "parked_reason": {
+      "description": "Why it is parked.",
+      "examples": [
+        "Fyniq does not know this event type (radar.early_fraud_warning.created): a person reviews it, and it posts nothing"
+      ],
+      "type": "string"
+    },
+    "parser_version": {
+      "description": "The parser's version.",
+      "examples": [
+        "stripe@1"
+      ],
+      "type": "string"
+    },
+    "provider": {
+      "description": "The connector's manifest ID.",
+      "examples": [
+        "stripe"
+      ],
+      "type": "string"
+    },
+    "received_at": {
+      "description": "When it was received.",
+      "examples": [
+        "2026-11-12T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "status": {
+      "description": "Where it stands: parked waits for a person (an event type Fyniq does not know, or an object it cannot post).",
+      "enum": [
+        "received",
+        "processed",
+        "parked",
+        "failed"
+      ],
+      "examples": [
+        "parked"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "connector_id",
+    "provider",
+    "event_id",
+    "event_type",
+    "parser_version",
+    "status",
+    "received_at"
+  ],
+  "title": "PaymentProviderEvent",
+  "type": "object"
+}

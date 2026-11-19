@@ -2,16 +2,16 @@
 key: settings.integrations
 type: task
 title: Install, configure, test and run connectors, such as the email providers
-summary: Connectors and the catalogue; install, configure, set secrets, test, enable, pause, upgrade, approve changes; email senders, domains, failover, suppressions
+summary: Connectors and the catalogue: install, configure, secrets, test, enable, pause, upgrade, approve; email senders; Stripe and HitPay payment providers
 sources:
-  - docs/user-guide/integrations.md sha256:5eb9db500200fb0e5e2303344a6cb56d78556051704d42204a2b70c7b28c75c3
+  - docs/user-guide/integrations.md sha256:c415720951d3fcd2b26f20bd5633ec97c7aa3a709f7d45a97db2cd71ac0026da
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-02
+compiled_at: 2026-11-19
 aliases:
   - connector
   - integration
@@ -27,6 +27,11 @@ aliases:
   - failover
   - suppression list
   - DMARC
+  - Stripe
+  - HitPay
+  - payment provider
+  - payout
+  - dispute
 ---
 
 # Install, configure, test and run connectors, such as the email providers
@@ -142,3 +147,24 @@ aliases:
   **Release**. How notifications reach people: [[settings.notifications]].
 
 (src: docs/user-guide/integrations.md#email-senders-domains-and-suppressions)
+
+## Payment providers (Stripe and HitPay)
+
+- The Stripe and HitPay connectors read your provider account into Banking, and never charge, refund, retry or pay out.
+  For Stripe, use a restricted key that can only read, and give Fyniq the signing secret of the webhook that points to the
+  connector's address. Add a money account of kind **Payment gateway** for each currency, named by the currency, with the
+  connector as its data source.
+- The provider's balance transactions come in as the account's lines, a charge and its fee on lines of their own. Every
+  hour Fyniq also reads the provider's payouts and balance, going back four days to make up for a webhook that never came.
+- **Reconcile now** posts a fee to the fee account (5040), a dispute's money to the disputes account (1055 is the usual
+  one) and a payout as a transfer to the bank, which the bank's own line completes, within the S$500 limit for a single
+  line: a larger payout waits for you, with what it settles listed. A charge waits for its invoice. Fees carry no claimable
+  GST until the provider's monthly tax invoice is matched.
+- Someone with a right on bank connections names the bank for payouts, the fee account and the disputes account; until a
+  screen arrives this is the payment providers API.
+- Nothing is posted for a lost dispute: its amount stays in the disputes account until you and your accountant decide.
+- Checks: a settled payout with what it settles comes to nothing in the provider's account; what the books hold equals what
+  the provider holds for you; a sweep that fell behind shows with the other bank syncs. A webhook of an unknown type is kept
+  and set aside for a person, and posts nothing.
+
+(src: docs/user-guide/integrations.md#payment-providers-stripe-and-hitpay)

@@ -8,7 +8,6 @@ import (
 
 // The payment-provider port only reads: its methods are these four, and none writes (a charge, a refund, a payout, a
 // retry, a cancellation). A new method must be added here on purpose, with the reason it still does not write.
-// req: FR-PSP-01
 // req: FR-INT-27
 func TestThePaymentProviderPortHasNoMethodThatWrites(t *testing.T) {
 	typ := reflect.TypeOf((*PaymentProvider)(nil)).Elem()

@@ -114,8 +114,8 @@ See proposal.md for why. What exists (read on `origin/main`, 19 Nov 2026):
 
 ### D5. Money legs use the rules that exist, posted by auto-reconcile
 
-The worker holds no right to make a document (`INSERT` on `document` is the API's, and the owner decided on 26 Oct 2026 that
-the bank sync "posts nothing: the lines wait for Reconcile now", rev 0.143), and this change does not widen a grant. So the
+The worker holds no right to make a document (`INSERT` on `document` is the API's, and PRD-001 rev 0.143 has the bank sync
+"post nothing: the lines wait for Reconcile now"), and this change does not widen a grant. So the
 worker **mirrors** (D7) and the API **posts**: auto-reconcile (`banking.AutoReconcile`, which runs after an import and on a
 person's Reconcile now) gains one more exact case, a line of a provider money account whose provider transaction the sweep
 has mirrored. It keeps the S$500 per-line cap, the audit actor `service bank.auto-reconcile` acting for the person who
@@ -137,7 +137,12 @@ pressed the button, the preview (`Plan`), the weekly sample (FM-3) and undo, and
 - A negative provider balance or a payout that debits the bank has the same legs reversed (FR-PSP-06): the signs of the
   lines carry it; a payout line that brings money in waits for a person.
 
-### D6. Model B: the mirror is read-only and is an AR document
+### D6. Model B: the mirror is read-only and is an AR document (not built: decision 2 below)
+
+The worker cannot make a document either (D5), so a mirrored Stripe invoice cannot be created where its events are read. This
+section is the design the owner's decision 2 chooses a way to build; until then the events of invoices, credit notes,
+subscriptions and customers are known and post nothing (the adapters list them as informational), and no collection state is
+mirrored.
 
 - `psp_customer`, `psp_subscription` and `psp_invoice` hold the provider's objects as read, with their provider IDs and
   the fetch time. `psp_invoice` also holds the **collection state**: attempt count, next retry date, final outcome
@@ -242,12 +247,26 @@ transaction (set once) and a payout's standing.
    the PRD, corrects revenue and GST; needs the customer match, and more code). Nothing is posted by itself either way (D9).
    **Recommendation: (a) for a small dispute, (b) when the invoice is known and the accountant agrees; build a one-click
    step from the dispute for (b) after go-live.**
-2. **HitPay's charge leg in P1.** FR-PSP-02's automatic AR leg is P2, but HitPay's connector is P1. Options: (a) charges
+2. **How a Model B invoice is made in the books (blocks FR-PSP-03 and FR-PSP-07's postings).** The worker may not make a document
+   and this change does not widen that. Options: (a) a narrow SECURITY DEFINER database function the worker calls, as
+   `create_scheduled_invoice_draft` lets the scheduler make recurring invoices' drafts (automatic like recurring invoices; one
+   migration and a second reviewer, since it touches the posting path; the totals-equal-or-parked rule and the service-period
+   rule of D6 sit in it); (b) the API makes it on Reconcile now, like the provider's fees, from the worker's mirror (no new
+   grant or function; revenue is booked only when a person presses the button or imports a statement); (c) a person enters
+   the invoice by hand from the mirror (smallest; the books lag). Posting from the webhook request is rejected: it puts
+   provider I/O and a posting in one request. **Recommendation: (a), after go-live, with the accountant's confirmation of
+   the service-period rule; (b) if (a) is judged too wide.**
+3. **Who sets a provider account up.** Built: one person with a right on "Bank data… connections" (the Owner and the
+   Administrator, as for setting a connector as a money account's source, which is unattended in the same way), audited with
+   the old and new accounts. Option: an approval by a second person as a bank rule's auto-apply has (a new approval object
+   and its tests). The setup only chooses internal accounts, each posting stays within the per-line cap and is undone like
+   any auto-reconciliation, and the connector itself was enabled under dual control. **Recommendation: keep it as built; add
+   the approval if the accountant wants fee and payout accounts reviewed.**
+4. **HitPay's charge leg in P1.** FR-PSP-02's automatic AR leg is P2, but HitPay's connector is P1. Options: (a) charges
    arrive as unreconciled lines on the HitPay clearing account and are matched by the existing exact-reference reconcile or
    by a person (built); (b) wait for P2. **Recommendation: (a): no new rule, nothing posts without an invoice or a person.**
-3. **Which currencies.** Stripe can hold several balances. Options: SGD only in P1 (a foreign balance is shown and left
-   unposted with ⚠), or every currency with a money account each. **Recommendation: every currency whose money account the
-   Owner opens; one that has none is parked with ⚠.**
+5. **Which currencies.** Stripe can hold several balances. Built: a money account per currency the Owner sets up; a currency
+   with none is not read into the books and shows in the provider's balance only. **Recommendation: as built.**
 
 ## Risks / Trade-offs
 

@@ -67,20 +67,33 @@ checks are tagged `[live-verify]`.
   engine's half is green, then moved. `// req: QA-ENG-02`
   - Built: `test/differential/golden/payment-providers.json`, a month of a provider account through the existing sources (charges to revenue, fees, a dispute and its win, a payout as a transfer), its figures worked by hand in `oracle/tests/test_pending_golden.py`; the gate posts it through both sides with 0 disagreements. No posting source was added, so nothing else needs an oracle half. **Left:** receipts and credit notes of mirrored invoices join it with task 3.2.
 
-## 3. The Model B mirror, the screens and the guide (FR-PSP-03, 04, 07)
+## 3. The setup and reads, the PRD revision and the guide; the Model B mirror and the screens are left
 
 - [ ] 3.1 Migration 000624 (`psp_customer`, `psp_subscription`, `psp_invoice`); the mirror from fetched objects; the customer
-  mapping.
-- [ ] 3.2 Finalised, paid, failed, voided, uncollectible and credited invoices (FR-PSP-07): the mirrored AR document through
-  `Invoices.Create` and `Post`, total equals the provider's or parked, the service-period spread (D6), a credit note for a
-  refund; unsupported pricing parked.
-  - Tests: G4-040 (out-of-order, redelivered), G4-106 (collection state mirrored, no reminder, no charge), UC-PSP-01; a
-    prorated upgrade; an annual plan over twelve months. `// req: FR-PSP-03`, `// req: FR-PSP-07`
-- [ ] 3.3 The API (additive): `GET /v1/payment-providers/payouts`, `.../payouts/{id}`, `.../subscriptions`,
-  `.../events` (parked first), and the resolution of a parked event or invoice by a person; the matrix rows; `make openapi`,
-  then the web build.
-- [ ] 3.4 The screens `provider-payouts` and `subscriptions` (designed first, fyniq-openspec Recipe C), their help keys,
-  guide pages and compiled knowledge-base pages.
-- [ ] 3.5 PRD revision (new IDs only, `(rev 0.N)`, revision row), the spec stamp, `make roadmap`, `compliance` control rows.
-  **Left unless decided:** the daily-summary posting mode; revenue reversal on a lost dispute (decision 1); capture of the
-  provider's tax invoice (`p1-document-capture`); every live-provider check `[live-verify]`.
+  mapping; the typed provider invoice on the port.
+  - **Left, blocked on the owner's decision 2 (design D6):** the collection state is only worth mirroring beside the invoice,
+    and the invoice cannot be made where the worker reads it. Stripe's invoice, credit-note, subscription and customer events
+    are known and post nothing (`informational` in the adapter), which `TestEveryHandledProviderEventKindHasAHandler` and
+    `TestEventsAreKnownHandledOrUnknown` hold.
+- [ ] 3.2 Finalised, paid, failed, voided, uncollectible and credited invoices (FR-PSP-07): the mirrored AR document, total
+  equal to the provider's or parked, the service-period spread (D6), a credit note for a refund; unsupported pricing parked.
+  - **Left:** the same decision. Tests to write with it: G4-040 (out of order, redelivered), G4-106 (collection state
+    mirrored, no reminder, no charge), UC-PSP-01, a prorated upgrade, an annual plan over twelve months.
+- [x] 3.3 The API (additive): `GET /v1/payment-providers/accounts`, `PUT /v1/payment-providers/accounts/{money_account_id}`
+  (the setup, behind a right on "Bank data… connections", checked, audited, If-Match on a change), `GET
+  /v1/payment-providers/payouts` (with the transactions each settles and whether it nets to zero) and `GET
+  /v1/payment-providers/events` (without payloads); `make openapi` run, the matrix rows, errors PSP-01 to PSP-04.
+  - Built: `internal/api/psp.go`, `internal/domain/pspnet` (the netting C.2 #42 and the payouts read share), four policies.
+    `TestAPaymentProvidersAccountIsSetUpThroughTheAPI`, and the authorisation matrix rows `matrixPaymentProviders`.
+    **Left:** resolving a parked event by a person (no operation yet: a parked event waits and is listed); the web client calls
+    nothing yet.
+- [ ] 3.4 The screens `provider-payouts` and `subscriptions` (designed first, fyniq-openspec Recipe C), their help keys, guide
+  pages and compiled knowledge-base pages.
+  - **Left:** both screens stay designed and unbuilt (`docs/design/screens`); the API of 3.3 gives provider-payouts what it
+    needs, and subscriptions waits for 3.1. The integrations guide page carries the provider's section meanwhile, compiled
+    into `settings.integrations`.
+- [x] 3.5 PRD revision 0.304 (FR-PSP-01, 04, 05, 06 and FR-AUT-01; the history row), the spec scenarios and the stamp,
+  `make roadmap`, the guide section and its knowledge-base page, the threat model.
+  - **Left (owner decisions in design.md):** decision 1, a lost dispute's revenue; decision 2, how a Model B invoice is made in
+    the books; and every live-provider check `[live-verify]`: Stripe's permissions for the list calls, the API version, the
+    invoice-payments lookup of a charge's invoice, HitPay's fee fields, refunds and balance reserve, and G4-107's outage.

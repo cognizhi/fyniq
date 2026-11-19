@@ -1053,19 +1053,25 @@ var (
 
 	// Banking (FR-BNK-01…18; p1-bank-import-reconcile task 9.1): money accounts, their imports and lines under "Bank
 	// transactions, categorise"; a source fed by email or a connector under "Bank data… connections".
-	ListMoneyAccounts       = Policy{Operation: "listMoneyAccounts", Capability: BankTransactions, Need: View}
-	CreateMoneyAccount      = Policy{Operation: "createMoneyAccount", Capability: BankTransactions, Need: Create}
-	GetMoneyAccount         = Policy{Operation: "getMoneyAccount", Capability: BankTransactions, Need: View}
-	ReplaceMoneyAccount     = Policy{Operation: "replaceMoneyAccount", Capability: BankTransactions, Need: Create}
-	AddMoneyAccountSource   = Policy{Operation: "addMoneyAccountSource", Capability: BankConnections, Need: Create}
-	ResolveBankGap          = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
-	ListStatementMappings   = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
-	CreateStatementMapping  = Policy{Operation: "createStatementMapping", Capability: BankTransactions, Need: Create}
-	ReplaceStatementMapping = Policy{Operation: "replaceStatementMapping", Capability: BankTransactions, Need: Create}
-	ImportBankStatements    = Policy{Operation: "importBankStatements", Capability: BankTransactions, Need: Create}
-	ListBankStatements      = Policy{Operation: "listBankStatements", Capability: BankTransactions, Need: View}
-	ListBankLines           = Policy{Operation: "listBankLines", Capability: BankTransactions, Need: View}
-	GetBankLine             = Policy{Operation: "getBankLine", Capability: BankTransactions, Need: View}
+	ListMoneyAccounts     = Policy{Operation: "listMoneyAccounts", Capability: BankTransactions, Need: View}
+	CreateMoneyAccount    = Policy{Operation: "createMoneyAccount", Capability: BankTransactions, Need: Create}
+	GetMoneyAccount       = Policy{Operation: "getMoneyAccount", Capability: BankTransactions, Need: View}
+	ReplaceMoneyAccount   = Policy{Operation: "replaceMoneyAccount", Capability: BankTransactions, Need: Create}
+	AddMoneyAccountSource = Policy{Operation: "addMoneyAccountSource", Capability: BankConnections, Need: Create}
+	// Payment providers (FR-PSP-04..06; p1-payment-providers): their accounts' setup, which lets Reconcile now post a provider's
+	// own lines, under "Bank data… connections" as a source is; their payouts and events are read under "Bank transactions".
+	ListPaymentProviderAccounts = Policy{Operation: "listPaymentProviderAccounts", Capability: BankTransactions, Need: View}
+	SetPaymentProviderAccount   = Policy{Operation: "setPaymentProviderAccount", Capability: BankConnections, Need: Create}
+	ListPaymentProviderPayouts  = Policy{Operation: "listPaymentProviderPayouts", Capability: BankTransactions, Need: View}
+	ListPaymentProviderEvents   = Policy{Operation: "listPaymentProviderEvents", Capability: BankTransactions, Need: View}
+	ResolveBankGap              = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
+	ListStatementMappings       = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
+	CreateStatementMapping      = Policy{Operation: "createStatementMapping", Capability: BankTransactions, Need: Create}
+	ReplaceStatementMapping     = Policy{Operation: "replaceStatementMapping", Capability: BankTransactions, Need: Create}
+	ImportBankStatements        = Policy{Operation: "importBankStatements", Capability: BankTransactions, Need: Create}
+	ListBankStatements          = Policy{Operation: "listBankStatements", Capability: BankTransactions, Need: View}
+	ListBankLines               = Policy{Operation: "listBankLines", Capability: BankTransactions, Need: View}
+	GetBankLine                 = Policy{Operation: "getBankLine", Capability: BankTransactions, Need: View}
 	// A line's actions and transfers post, or undo what posted (FR-BNK-05…09): "Bank transactions, categorise" with P; keeping or
 	// excluding a line posts nothing, so C.
 	CategoriseBankLine    = Policy{Operation: "categoriseBankLine", Capability: BankTransactions, Need: Post}
@@ -2006,7 +2012,7 @@ var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegra
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid, RequestBankRuleAutoApply,
-	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ResolveBankGap, ListStatementMappings,
+	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ResolveBankGap, ListStatementMappings,
 	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
 	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
 	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,
