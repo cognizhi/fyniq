@@ -647,3 +647,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | organisation-settings: AI apps through MCP and AI app limits (p1-mcp-first-party 2.1)
 
 ## [2026-11-19] compile | organisation-settings: AI apps may register themselves (p1-mcp-first-party 11.1)
+
+## [2026-11-19] compile | connected-apps: the Connected apps guide page (p1-mcp-first-party 9.4)

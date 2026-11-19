@@ -201,6 +201,8 @@ export const routes = [
   { kind: "route", id: "settings-ai-routes", path: "/settings/ai/routes", mode: "expert", signedIn: true, help: "settings.ai-routes", guide: "settings.ai-routes" },
   { kind: "route", id: "settings-ai-route", path: "/settings/ai/routes/$agent", mode: "expert", signedIn: true, help: "settings.ai-route", guide: "settings.ai-routes#change-an-agents-route" },
   { kind: "route", id: "settings-ai-activity", path: "/settings/ai/activity", mode: "expert", signedIn: true, help: "settings.ai-activity", guide: "settings.ai-activity" },
+  // Settings › Connected apps (AI-44, AI-35, AI-90): the AI apps that work for a person, and the registrations waiting for an Owner.
+  { kind: "route", id: "settings-connected-apps", path: "/settings/connected-apps", mode: "basic", signedIn: true, help: "settings.connected-apps", guide: "settings.connected-apps" },
   { kind: "route", id: "settings-ai-plan", path: "/settings/profile/ai-plan", mode: "basic", signedIn: true, help: "settings.ai-plan", guide: "settings.ai-activity#your-own-ai-plan" },
   // Settings › Import (FR-MIG-01…03; p1-workbook-migration task 9.1): the move from the workbook, M1 to M6, and the generic import.
   { kind: "route", id: "settings-import", path: "/settings/import", mode: "expert", signedIn: true, help: "settings.import", guide: "settings.import" },
@@ -762,6 +764,7 @@ export const nav = [
 export const settingsNav = [
   { kind: "nav", id: "settings.profile", route: "/settings/profile", icon: UserRound, group: "you", roles: "all", mode: "basic", help: "settings.profile", guide: "preferences.security" },
   { kind: "nav", id: "settings.notifications", route: "/settings/notifications", icon: Bell, group: "you", roles: "all", mode: "basic", help: "settings.notifications", guide: "settings.notifications" },
+  { kind: "nav", id: "settings.connected-apps", route: "/settings/connected-apps", icon: Plug, group: "you", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "ar_specialist", "ap_specialist", "payroll_administrator", "payment_releaser", "approver", "tax_agent", "dpo"], mode: "basic", help: "settings.connected-apps", guide: "settings.connected-apps" },
   { kind: "nav", id: "settings.ai-activity", route: "/settings/ai/activity", icon: ScrollText, group: "you", roles: "all", mode: "expert", help: "settings.ai-activity", guide: "settings.ai-activity" },
   // The organisation's pages show to the roles that may view them (Appendix D, V or more); the API decides the rest.
   { kind: "nav", id: "settings.organisation", route: "/settings/organisation", icon: Building, group: "organisation", roles: "all", mode: "expert", help: "settings.organisation", guide: "settings.organisation" },

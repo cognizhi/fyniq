@@ -213,7 +213,7 @@ The calendar itself: [[compliance.calendar]].
 - **AI apps that may connect**: none unless changed. Enter the apps to allow, such as `claude-code`, separated by commas; you can list the apps the release has registered, and an app that registered itself by the ID shown when it asked, and an app that is not listed cannot connect. Adding an app needs a second approver; taking one off takes effect at once, with no second approver, and cuts that app off.
 - **AI apps may register themselves**: off unless changed. An AI app can ask to be registered, on its own, only while an Owner has turned this on with a second approver. A registered app is limited to the default read access, is not verified, and cannot connect until an Owner adds it to the apps that may connect. A registration nobody approves expires after 7 days, and an approved app nobody uses after 30. Turning it off takes effect at once.
 - Each person also has to opt in before an app can act for them, and sees what the app may read when they allow it.
-- The release only holds these settings: no AI app can connect until the MCP server is opened for the deployment, separately, after a security review.
+- The release only holds these settings: no AI app can connect until the MCP server is opened for the deployment, separately, after a security review. Each person connects and disconnects apps under **Connected apps** ([[settings.connected-apps]]).
 
 (src: docs/user-guide/organisation-settings.md#ai-apps-through-mcp)
 
