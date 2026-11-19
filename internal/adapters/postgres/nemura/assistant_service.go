@@ -2,6 +2,7 @@ package nemura
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,6 +20,8 @@ type AssistantService struct {
 	Clock ports.Clock
 	// AllowScripted lets an Owner choose local mode's scripted model as the route: true in the local build only, never in a release build.
 	AllowScripted bool
+	// Runtime is the store of the assistant's own role: the one that may insert a proposal. Without it a draft cannot be proposed.
+	Runtime *Store
 }
 
 var _ api.AssistantAdmin = AssistantService{}
@@ -86,4 +89,84 @@ func (a AssistantService) Decide(ctx context.Context, s api.Session, id uuid.UUI
 	return a.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
 		return DecideProposal(ctx, tx, s.Organisation, a.Clock.Now(), s.Member, []string{"hr_officer"}, id, in.Approve, in.Reason, in.Final)
 	})
+}
+
+// Draft makes a proposal for an open request: the request is read as the person who asked (the HR team), the scripted writer drafts from it, and the proposal is inserted as the assistant's own role.
+func (a AssistantService) Draft(ctx context.Context, s api.Session, in api.AIDraftInput) (api.AIDraftResult, error) {
+	var out api.AIDraftResult
+	req, err := uuid.Parse(in.RequestID)
+	if err != nil {
+		return out, &assistant.Refusal{Code: assistant.CodeNotFound, Message: "There is no such request."}
+	}
+	if a.Runtime == nil {
+		return out, api.ErrUnavailable
+	}
+	var facts assistant.RequestFacts
+	var route string
+	if err := a.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		set, err := AISettings(ctx, tx)
+		if err != nil {
+			return err
+		}
+		route = set.Route
+		if !set.Enabled || !slices.Contains(set.TaskTypes, in.Task) {
+			return &assistant.Refusal{Code: assistant.CodeOff, Message: "The assistant is off, or this kind of draft is: the Owner turns it on in the assistant's settings."}
+		}
+		facts, err = RequestFactsOf(ctx, tx, in.Task, req)
+		return err
+	}); err != nil {
+		return out, err
+	}
+	payload, why, err := assistant.Draft(in.Task, facts)
+	if err != nil {
+		return out, err
+	}
+	payload["request_id"] = req.String()
+	err = a.Runtime.InOrg(ctx, s.Organisation, func(ctx context.Context, tx pgx.Tx) error {
+		id, err := Propose(ctx, tx, s.Organisation, a.Clock.Now(), ProposalInput{Asker: s.Member, Task: in.Task, Payload: payload, Rationale: why, ModelID: route, PromptVersion: "people-assistant@1"})
+		out.ProposalID = id.String()
+		return err
+	})
+	return out, err
+}
+
+// Drafts lists the drafts the executor attached to a request.
+func (a AssistantService) Drafts(ctx context.Context, s api.Session, request uuid.UUID) ([]api.AIDraft, error) {
+	out := []api.AIDraft{}
+	err := a.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		rows, err := DraftsFor(ctx, tx, request)
+		for _, r := range rows {
+			out = append(out, api.AIDraft{ID: r.ID.String(), ProposalID: r.Proposal.String(), Kind: r.Kind, Payload: r.Payload, AppliedAt: r.AppliedAt.UTC().Format(time.RFC3339)})
+		}
+		return err
+	})
+	return out, err
+}
+
+// ExecutorService applies approved proposals under the executor's own role (NM-ARC-06): the sweep the executor process runs, and the same command a queued item calls.
+type ExecutorService struct {
+	Store *Store
+	Clock ports.Clock
+}
+
+// ApplyApproved applies every approved proposal of an organisation that nobody has applied, each in its own transaction, and returns how many were applied and what refused.
+func (e ExecutorService) ApplyApproved(ctx context.Context, org uuid.UUID) (int, []error) {
+	var ids []uuid.UUID
+	if err := e.Store.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		ids, err = ApprovedProposals(ctx, tx)
+		return err
+	}); err != nil {
+		return 0, []error{err}
+	}
+	applied := 0
+	var refused []error
+	for _, id := range ids {
+		if err := e.Store.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error { return ApplyProposal(ctx, tx, org, e.Clock.Now(), id) }); err != nil {
+			refused = append(refused, err)
+			continue
+		}
+		applied++
+	}
+	return applied, refused
 }

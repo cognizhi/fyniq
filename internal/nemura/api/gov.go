@@ -51,9 +51,6 @@ type Government interface {
 }
 
 func init() {
-	IdempotencyExempt["POST /v1/people/{id}/government-paid-leave"] = "a repeat overlaps the first block's days, which the database refuses (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/government-paid-leave/{id}/claims"] = "a claim may be repeated or partial by design: each is its own record with the portal's reference"
-	IdempotencyExempt["POST /v1/government-paid-claims/{id}/events"] = "receipts and rejections are separate records of what the portal answered, and may repeat"
 }
 
 type govRecordInput struct {

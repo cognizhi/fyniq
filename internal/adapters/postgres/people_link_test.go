@@ -234,3 +234,114 @@ func TestAttackOnlyTheLinkHoldsTheLinkScopes(t *testing.T) {
 		wantState(t, x.what, err, x.state)
 	}
 }
+
+// Fyniq's own credentials for the link are the database's to guard (p1-payroll-link design D1, p1-nemura-fyniq-link design D10; FR-PPL-15): the keys are made once with the link and never change, the
+// sequence of what Fyniq sends only goes up by one, a key with a private part or of the wrong size is refused, the API writes the private halves and cannot read them back, the worker reads them and
+// writes nothing, another organisation sees none of it, and the audit trail says that keys exist and holds none.
+// asvs: V8.2.1, V6.4.1, V11.2.1, V13.2.1
+func TestAttackTheLinksKeysAreKeptOnceAndOnlyTheWorkerReadsTheSecrets(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "People link keys Pte Ltd")
+	other := books(t, "People link keys elsewhere Pte Ltd")
+	now := time.Date(2026, time.November, 2, 3, 0, 0, 0, time.UTC)
+	nemuraKey := make([]byte, 32)
+	api := func(org uuid.UUID, fn func(u storage.UnitOfWork) error) error {
+		return store(t, "fyniq_api").Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error { return fn(u) })
+	}
+	var link storage.PeopleLinkRow
+	if err := api(b.Org, func(u storage.UnitOfWork) (err error) {
+		link, err = u.PeopleLinks().Link(ctx, storage.PeopleLinkRow{NemuraOrganisationID: uuid.New(), LinkKey: nemuraKey, ApprovalID: uuid.New(), CreatedBy: "user:" + uuid.NewString(), CreatedAt: now})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	pub, priv := make([]byte, 32), make([]byte, 64)
+	for i := range pub {
+		pub[i] = byte(i + 7)
+	}
+	keys := storage.PeopleLinkKeys{LinkID: link.ID, NemuraClientID: "fyniq-link-" + uuid.NewString(), LinkPublic: pub, ClientPublic: []byte(`{"kty":"EC","crv":"P-256","x":"a","y":"b"}`)}
+	secrets := storage.PeopleLinkSecrets{LinkID: link.ID, LinkPrivate: priv, ClientPrivate: []byte("a-pkcs8-der-stand-in-of-some-length-0123456789")}
+	if err := api(b.Org, func(u storage.UnitOfWork) error { return u.PeopleLinks().SaveKeys(ctx, keys, secrets) }); err != nil {
+		t.Fatalf("saving the keys: %v", err)
+	}
+	if err := api(b.Org, func(u storage.UnitOfWork) error { return u.PeopleLinks().SaveKeys(ctx, keys, secrets) }); err == nil {
+		t.Error("a link's keys were made twice")
+	}
+	var seq [3]int64
+	for i := range seq {
+		if err := api(b.Org, func(u storage.UnitOfWork) (err error) {
+			seq[i], err = u.PeopleLinks().NextSequence(ctx, link.ID)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if seq != [3]int64{1, 2, 3} {
+		t.Errorf("the sequence: %v", seq)
+	}
+	if err := api(b.Org, func(u storage.UnitOfWork) error {
+		got, err := u.PeopleLinks().Keys(ctx, link.ID)
+		if err != nil || got.NemuraClientID != keys.NemuraClientID || string(got.LinkPublic) != string(pub) || got.Sequence != 3 {
+			t.Errorf("the keys: %+v %v", got, err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := api(b.Org, func(u storage.UnitOfWork) error {
+		_, err := u.PeopleLinks().Secrets(ctx, link.ID)
+		return err
+	}); err == nil {
+		t.Error("the API read the link's private keys")
+	}
+	if err := store(t, "fyniq_worker").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		got, err := u.PeopleLinks().Secrets(ctx, link.ID)
+		if err != nil || len(got.LinkPrivate) != 64 || string(got.ClientPrivate) != string(secrets.ClientPrivate) {
+			t.Errorf("the worker's secrets: %v", err)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := api(other.Org, func(u storage.UnitOfWork) error {
+		if _, err := u.PeopleLinks().Keys(ctx, link.ID); !errors.Is(err, ports.ErrNotFound) {
+			t.Errorf("another organisation reads the keys: %v", err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, x := range []struct{ role, what, stmt, state string }{
+		{"fyniq_migrator", "delete the keys", "DELETE FROM fyniq.people_link_key", "FY900"},
+		{"fyniq_migrator", "change the public key", "UPDATE fyniq.people_link_key SET link_public = decode(repeat('00', 32), 'hex')", "FY900"},
+		{"fyniq_migrator", "change the client ID", "UPDATE fyniq.people_link_key SET nemura_client_id = 'someone-else'", "FY900"},
+		{"fyniq_migrator", "skip a sequence number", "UPDATE fyniq.people_link_key SET sequence = sequence + 5", "FY900"},
+		{"fyniq_migrator", "send the sequence back", "UPDATE fyniq.people_link_key SET sequence = 0", "FY900"},
+		{"fyniq_api", "set the sequence as the API directly", "UPDATE fyniq.people_link_key SET link_public = link_public", "42501"},
+		{"fyniq_migrator", "change a secret", "UPDATE fyniq.people_link_secret SET link_private = link_private", "FY"},
+		{"fyniq_api", "read the secrets as the API", "SELECT link_private FROM fyniq.people_link_secret", "42501"},
+		{"fyniq_readonly", "read the secrets as the read-only role", "SELECT link_private FROM fyniq.people_link_secret", "42501"},
+		{"fyniq_worker", "write a secret as the worker", "UPDATE fyniq.people_link_secret SET link_private = link_private", "42501"},
+		{"fyniq_worker", "write the keys as the worker", "UPDATE fyniq.people_link_key SET sequence = sequence + 1", "42501"},
+		{"fyniq_api", "make a key with a private part", "INSERT INTO fyniq.people_link_key (link_id, nemura_client_id, link_public, client_public) VALUES (gen_random_uuid(), 'x', decode(repeat('01', 32), 'hex'), '{\"kty\":\"EC\",\"d\":\"secret\"}')", "23514"},
+		{"fyniq_api", "make a public key of the wrong size", "INSERT INTO fyniq.people_link_key (link_id, nemura_client_id, link_public, client_public) VALUES (gen_random_uuid(), 'x', '\\x01', '{\"kty\":\"EC\"}')", "23514"},
+	} {
+		err := asOrg(ctx, conn(t, x.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
+		if x.state == "FY" {
+			if err == nil {
+				t.Errorf("%s ran", x.what)
+			}
+			continue
+		}
+		wantState(t, x.what, err, x.state)
+	}
+	var trail string
+	if err := asOrg(ctx, conn(t, "fyniq_readonly"), b.Org, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, "SELECT coalesce(string_agg(body::text, ' '), '') FROM fyniq.audit_event WHERE action = 'people_link.keys_made'").Scan(&trail)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(trail, keys.NemuraClientID) || strings.Contains(trail, "kty") || strings.Contains(trail, "pkcs8") || strings.Contains(trail, "link_public") {
+		t.Errorf("the audit trail of the keys: %q", trail)
+	}
+}

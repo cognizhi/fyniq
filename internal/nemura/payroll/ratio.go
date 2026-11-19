@@ -44,3 +44,8 @@ func RatioDays(amount, days *apd.Decimal, den int) *apd.Decimal {
 	}
 	return roundCents(quo(mul(amount, days), apd.New(int64(den), 0)))
 }
+
+// PartMonthMethod is how a part month is counted, as a named parameter (NM-PAY-12): the PRD counts the calendar days a pay record covers over the days of the month. MOM's page counts working days; which
+// the company follows is an owner decision that is pending, so the method is not changed here: only named, so that the day the decision is made one place changes and one golden test (the adapter's
+// `TestAPartMonthIsCountedByCalendarDays`) says what it was.
+const PartMonthMethod = "calendar_days"

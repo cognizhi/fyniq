@@ -76,7 +76,8 @@ type PayRow struct {
 	SHGFund      string
 	SHGOptOut    bool
 	Items        []payroll.RecurringItem
-	Election     bool // a joint election is in force
+	Election     bool   // a joint election is in force
+	ElectionKind string // fg (full employer, graduated employee rates) or ff (full rates for both); empty when none
 	ElectionFrom *time.Time
 }
 
@@ -113,10 +114,11 @@ WHERE p.person_id = $1 AND p.effective_from <= $2 AND (p.effective_to IS NULL OR
 	}
 	rows.Close()
 	var from *time.Time
-	if err := tx.QueryRow(ctx, "SELECT effective_from FROM nemura.pr_election WHERE person_id = $1 AND effective_from <= $2 AND (effective_to IS NULL OR effective_to > $2)", person, day(on)).Scan(&from); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	var kind string
+	if err := tx.QueryRow(ctx, "SELECT effective_from, kind FROM nemura.pr_election WHERE person_id = $1 AND effective_from <= $2 AND (effective_to IS NULL OR effective_to > $2)", person, day(on)).Scan(&from, &kind); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return r, false, err
 	}
-	r.Election, r.ElectionFrom = from != nil, from
+	r.Election, r.ElectionFrom, r.ElectionKind = from != nil, from, kind
 	return r, true, nil
 }
 
@@ -180,8 +182,15 @@ func SetPay(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, per
 	return id, Audit(ctx, tx, org, at, user(by), "nemura.person_pay.set", audit.Object{Type: "person_pay", ID: id}, map[string]audit.Change{"person": {nil, person.String()}, "effective_from": {nil, day(from)}, "items": {nil, len(rec.Items)}}, "")
 }
 
-// SetElection records a joint election to contribute at full employer rates in the first two years of permanent residence, with its evidence, from a day; it ends the one before.
-func SetElection(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, person uuid.UUID, from time.Time, evidence uuid.UUID) (uuid.UUID, error) {
+// SetElection records a joint election to contribute at full employer rates in the first two years of permanent residence, with its evidence, from a day; it ends the one before. The kind is
+// "fg" (full employer, graduated employee rates) or "ff" (full rates for both, the full table's): the CPF Board's approval says which. The audit event names the kind, never an amount.
+func SetElection(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, person uuid.UUID, from time.Time, evidence uuid.UUID, kind string) (uuid.UUID, error) {
+	if kind == "" {
+		kind = "fg"
+	}
+	if kind != "fg" && kind != "ff" {
+		return uuid.Nil, &payroll.Refusal{Code: payroll.CodeInvalid, Message: "kind: the CPF Board's approval is for fg (full employer rates, graduated employee rates) or ff (full rates for both)."}
+	}
 	var own bool
 	if err := tx.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM nemura.person_document WHERE id = $1 AND person_id = $2)", evidence, person).Scan(&own); err != nil {
 		return uuid.Nil, err
@@ -208,10 +217,10 @@ func SetElection(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by
 		}
 	}
 	id := uuid.Must(uuid.NewV7())
-	if _, err := tx.Exec(ctx, "INSERT INTO nemura.pr_election (id, person_id, effective_from, evidence_id, created_by, created_at) VALUES ($1, $2, $3, $4, $5, $6)", id, person, day(from), evidence, by, at); err != nil {
+	if _, err := tx.Exec(ctx, "INSERT INTO nemura.pr_election (id, person_id, effective_from, evidence_id, kind, created_by, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)", id, person, day(from), evidence, kind, by, at); err != nil {
 		return uuid.Nil, payrollError(err)
 	}
-	return id, Audit(ctx, tx, org, at, user(by), "nemura.pr_election.set", audit.Object{Type: "pr_election", ID: id}, map[string]audit.Change{"person": {nil, person.String()}, "effective_from": {nil, day(from)}}, "")
+	return id, Audit(ctx, tx, org, at, user(by), "nemura.pr_election.set", audit.Object{Type: "pr_election", ID: id}, map[string]audit.Change{"person": {nil, person.String()}, "effective_from": {nil, day(from)}, "kind": {nil, kind}}, "")
 }
 
 // YTDRow is a person's year to date of CPF wages.

@@ -7,9 +7,12 @@ properties check the rules agree, and that what posts keeps the ledger's invaria
 import json
 from datetime import date
 from decimal import Decimal
+from random import Random
 
 import pytest
-from hypothesis import HealthCheck, Phase, find, given, settings
+from hypothesis import HealthCheck, Phase, given, settings
+from hypothesis import find as hypothesis_find
+from hypothesis.errors import NoSuchExample
 
 from oracle import money
 from oracle.ledger import Ledger
@@ -18,6 +21,23 @@ from oracle.sources.settle import OpenItem
 from oracle.strategies import POST, REJECT
 from oracle.strategies_p1 import (CLAIMS_REJECTED, EQUITY_REJECTED, FOUNDERS_REJECTED, KINDS, OVER_OWED, SOURCES, p1_scenarios,
                                   p1_scenarios_with_intent)
+
+
+SEARCHES = 40
+
+
+def find(strategy, condition, settings=None):
+    """The first example of ``strategy`` meeting ``condition``, searched the same way every run: a kind that the generator reaches only through a chain
+    of other documents (a forfeiture of options already vested, for one) turns up in about 19 of 20 searches of 2,000 examples, so a search that is
+    drawn at random fails the test about one run in 20. Each search here has its own fixed seed (``random=Random(n)``), so the outcome is a function of the generator and
+    the pinned Hypothesis alone, and a miss on one seed goes on to the next: the test fails only when ``SEARCHES`` fixed seeds all miss, which the
+    generator's reach (about 5% per seed) makes a defect and not luck."""
+    for n in range(SEARCHES):
+        try:
+            return hypothesis_find(strategy, condition, settings=settings, random=Random(n))
+        except NoSuchExample:
+            continue
+    raise NoSuchExample(f"none of {SEARCHES} fixed-seed searches found one")
 
 
 # req: QA-ENG-01

@@ -55,3 +55,11 @@ def test_another_run_stands_alone_and_the_refusals():
     # PR-0006: deductions of 900.00 beyond 1,000.00 - 100.00 - 5.00 = 895.00; PR-0007 a money account as a department; PR-0008 before the
     # wage month; PR-0009 a director's account as a deduction; PR-0010 the employer CPF account as a department.
     assert r["rejected"] == ["PR-0004", "PR-0006", "PR-0007", "PR-0008", "PR-0009", "PR-0010"]
+
+
+# part of FR-PAY-07 (the posting rule); B.3: the net pay is 2100's, so a deduction is recovered through its own account, never 2100
+def test_a_deduction_cannot_be_recovered_through_salaries_payable():
+    # test/differential/golden/payroll-deduction-on-salaries-payable.json: gross 0.01 with a deduction of 0.01 on 2100, which the settings name as salaries payable
+    # although the account carries no role of its own: refused, as the engine refuses it (the full differential found the oracle posting it).
+    result = Ledger(load_scenario(GOLDEN.with_name("payroll-deduction-on-salaries-payable.json"))).result()
+    assert result["rejected"] == ["PR-0001"] and result["entries"] == []

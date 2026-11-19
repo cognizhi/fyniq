@@ -38,7 +38,7 @@ export function PayrollHR({ roles }: { roles: readonly string[] }) {
   const [f, setF] = useState({ from: today(), group: "", basic: "", fund: "", optOut: false });
   const [items, setItems] = useState<Item[]>([]);
   const [y, setY] = useState({ year: String(new Date().getFullYear()), ow: "", aw: "", paid: "", through: "" });
-  const [e, setE] = useState({ from: today(), evidence: "" });
+  const [e, setE] = useState({ from: today(), evidence: "", kind: "fg" });
   const [o, setO] = useState({ key: "", name: "", nature: "bonus", amount: "", cpf: true, forMonth: "", payable: "" });
   const pid = person || people[0]?.id || "";
   const done = (error: unknown, ok: string) => {
@@ -76,7 +76,7 @@ export function PayrollHR({ roles }: { roles: readonly string[] }) {
   };
   const elect = async (ev: React.FormEvent) => {
     ev.preventDefault();
-    if (done((await api.POST("/v1/people/{id}/pr-election", { params: { path: { id: pid } }, body: { effective_from: e.from, evidence_document_id: e.evidence || docs[0]?.id || "" } })).error, t("payroll.electionSaved"))) loadPay();
+    if (done((await api.POST("/v1/people/{id}/pr-election", { params: { path: { id: pid } }, body: { effective_from: e.from, evidence_document_id: e.evidence || docs[0]?.id || "", kind: e.kind as "fg" } })).error, t("payroll.electionSaved"))) loadPay();
   };
   const addOneOff = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -122,7 +122,7 @@ export function PayrollHR({ roles }: { roles: readonly string[] }) {
                   {pay.shg_fund && <div className="fy-row" style={{ gap: "var(--space-3)" }}><dt className="fy-strong">{t("payroll.fund")}</dt><dd>{pay.shg_fund}{pay.shg_opt_out ? ` (${t("payroll.optedOut")})` : ""}</dd></div>}
                   {(pay.items ?? []).map((it) => <div key={it.key} className="fy-row" style={{ gap: "var(--space-3)" }}><dt className="fy-strong">{it.name}</dt><dd>{it.amount}</dd></div>)}
                   <div className="fy-row" style={{ gap: "var(--space-3)" }}><dt className="fy-strong">{t("payroll.since")}</dt><dd>{pay.effective_from}</dd></div>
-                  {pay.joint_election && <div><dt className="fy-strong">{t("payroll.election")}</dt></div>}
+                  {pay.joint_election && <div><dt className="fy-strong">{t("payroll.election")}</dt><dd>{t(`payroll.kind.${pay.election_kind ?? "fg"}`)}</dd></div>}
                   {pay.year_to_date && <div className="fy-row" style={{ gap: "var(--space-3)" }}><dt className="fy-strong">{t("payroll.ytd")}</dt><dd>{t("payroll.ytdLine", { year: String(pay.year_to_date.year), ow: pay.year_to_date.ow, aw: pay.year_to_date.aw_subject })}</dd></div>}
                 </dl>
               ) : <p className="fy-secondary">{t("payroll.noPay")}</p>}
@@ -181,6 +181,13 @@ export function PayrollHR({ roles }: { roles: readonly string[] }) {
                   <span>{t("payroll.evidence")}</span>
                   <select className="fy-input" value={e.evidence || docs[0]?.id} onChange={(ev: Change) => setE({ ...e, evidence: ev.target.value })}>
                     {docs.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+                  </select>
+                </label>
+                <label className="fy-field">
+                  <span>{t("payroll.kind")}</span>
+                  <select className="fy-input" value={e.kind} onChange={(ev: Change) => setE({ ...e, kind: ev.target.value })}>
+                    <option value="fg">{t("payroll.kind.fg")}</option>
+                    <option value="ff">{t("payroll.kind.ff")}</option>
                   </select>
                 </label>
                 <button className="fy-btn fy-btn--primary" type="submit">{t("payroll.recordElection")}</button>

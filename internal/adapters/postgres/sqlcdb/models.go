@@ -2776,6 +2776,22 @@ type FyniqPeopleLinkInbox struct {
 	ReceivedAt     time.Time
 }
 
+type FyniqPeopleLinkKey struct {
+	OrganisationID uuid.UUID
+	LinkID         uuid.UUID
+	NemuraClientID string
+	LinkPublic     []byte
+	ClientPublic   []byte
+	Sequence       int64
+}
+
+type FyniqPeopleLinkSecret struct {
+	OrganisationID uuid.UUID
+	LinkID         uuid.UUID
+	LinkPrivate    []byte
+	ClientPrivate  []byte
+}
+
 type FyniqPeopleSource struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

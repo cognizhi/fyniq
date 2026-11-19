@@ -44,7 +44,7 @@ func (e *env) narrowExisting(user string, values ...string) {
 	}
 }
 
-// An Approver narrowed to departments (FR-ADM-01, rev 0.375) reaches the expense claims, bills and requests of their departments
+// An Approver narrowed to departments (FR-ADM-01, rev 0.381) reaches the expense claims, bills and requests of their departments
 // only: the claims they list and read, the files of a claim, the bills they list and read, and the requests they see and sign
 // are those whose lines carry only their department's values, and a record in no department is in none of theirs; a claim of
 // their own is theirs still; the company's payables and a bill's files are the Inbox's, not theirs to browse; and a person

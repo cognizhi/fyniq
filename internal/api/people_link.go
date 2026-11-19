@@ -3,7 +3,11 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -13,6 +17,7 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/go-jose/go-jose/v4"
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authn"
@@ -85,6 +90,10 @@ type PeopleLink struct {
 	ClientID             string             `json:"client_id,omitempty" format:"uuid" doc:"The API client Nemura calls with: its scopes are Appendix E's and no other." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
 	Version              int                `json:"version,omitempty" doc:"The link's version." example:"1"`
 	LinkedAt             *time.Time         `json:"linked_at,omitempty" doc:"When it was linked." example:"2026-11-20T09:00:00Z"`
+	OAuthClientID        string             `json:"oauth_client_id,omitempty" doc:"The ID the link's client has at Fyniq's OAuth server: what Nemura signs its token request as. Give it to Nemura when it approves the link." example:"4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11"`
+	FyniqLinkKey         string             `json:"fyniq_link_key,omitempty" doc:"Fyniq's Ed25519 public key for what Fyniq sends (payroll.run.posted, payroll.payments.status), 32 bytes as base64url without padding: Nemura checks every event against it. Give it to Nemura when it approves the link." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"`
+	FyniqClientKey       map[string]any     `json:"fyniq_client_public_key,omitempty" doc:"The public half of the key Fyniq's own client signs its token request to Nemura's OAuth server with, as a JWK: Nemura registers it for Fyniq's client. Never the private key."`
+	NemuraClientID       string             `json:"nemura_client_id,omitempty" doc:"The ID Fyniq's client has at Nemura's OAuth server, as Nemura chose it when it proposed the link." example:"fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
 	Sources              []PeopleLinkSource `json:"sources" nullable:"false" doc:"Where each feature lives now."`
 	Inbox                []PeopleLinkInbox  `json:"inbox" nullable:"false" doc:"The events received, by outcome."`
 }
@@ -95,6 +104,7 @@ type PeopleLinkRequest struct {
 	NemuraOrigin         string          `json:"nemura_origin" pattern:"^https?://[a-z0-9.-]{1,200}(:[0-9]{1,5})?$" doc:"Where Nemura's web app is served from, such as https://people.example.com: a passkey assertion made there names it, and Fyniq checks a pay run's approval against it (one relying-party ID, two origins)." example:"https://people.example.com"`
 	LinkKey              string          `json:"link_key" minLength:"43" maxLength:"43" doc:"Nemura's Ed25519 public key for the link's envelopes, 32 bytes as base64url without padding: shown on Nemura's link page. Every event is checked against it." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"`
 	ClientName           string          `json:"client_name" minLength:"1" maxLength:"80" doc:"The name of the client Nemura calls with." example:"Nemura link"`
+	NemuraClientID       string          `json:"nemura_client_id" minLength:"1" maxLength:"200" pattern:"^[A-Za-z0-9._:-]+$" doc:"The ID Fyniq's own client will have at Nemura's OAuth server, as Nemura chose it when it proposed the link: shown on Nemura's link page. Fyniq signs in to Nemura as this client to send its events." example:"fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
 	ClientPublicKey      map[string]any  `json:"client_public_key" doc:"The public half of the key Nemura's client signs its private_key_jwt assertions with, as a JWK: an EC P-256 key or an RSA key of 2048 bits or more. Never the private key."`
 	ExpiresAt            time.Time       `json:"expires_at" doc:"When the client stops, within a year (SEC-07); link again before then." example:"2027-11-17T00:00:00Z"`
 	Features             []PeopleFeature `json:"features" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"The features that live in Nemura from now on: Fyniq never loads them itself (FR-PPL-01)."`
@@ -346,8 +356,25 @@ func registerPeopleLink(a *API) {
 				return err
 			}
 			inbox, err := u.PeopleLinks().InboxCounts(ctx, l.ID)
+			if err != nil {
+				return err
+			}
 			out = peopleLinkOut(l, true, sources, inbox)
-			return err
+			// What Nemura needs to complete its half of the link: Fyniq's public keys and the client's ID at Fyniq's OAuth server. Never a private key.
+			if keys, err := u.PeopleLinks().Keys(ctx, l.ID); err == nil {
+				out.FyniqLinkKey, out.NemuraClientID = base64.RawURLEncoding.EncodeToString(keys.LinkPublic), keys.NemuraClientID
+				_ = json.Unmarshal(keys.ClientPublic, &out.FyniqClientKey)
+			} else if !errors.Is(err, ports.ErrNotFound) {
+				return err
+			}
+			if l.ClientID != uuid.Nil {
+				c, err := u.APIClients().Get(ctx, l.ClientID)
+				if err != nil {
+					return err
+				}
+				out.OAuthClientID = c.ClientID
+			}
+			return nil
 		})
 		return &peopleLinkOutput{Body: out}, err
 	})
@@ -407,7 +434,7 @@ func registerPeopleLink(a *API) {
 				return Approval{}, err
 			}
 			change := map[string]any{"id": uuid.NewString(), "nemura_organisation_id": org.String(), "nemura_origin": in.Body.NemuraOrigin, "link_key": base64.RawURLEncoding.EncodeToString(key),
-				"client_name": checked.Name, "client_public_key": string(public), "alg": checked.Alg, "key_thumbprint": checked.Thumbprint,
+				"nemura_client_id": in.Body.NemuraClientID, "client_name": checked.Name, "client_public_key": string(public), "alg": checked.Alg, "key_thumbprint": checked.Thumbprint,
 				"expires_at": checked.ExpiresAt.UTC().Format(time.RFC3339), "features": anyList(features)}
 			diff := []ApprovalDiff{{Field: "nemura_organisation_id", After: org.String()}, {Field: "features in Nemura", After: fmt.Sprint(features)},
 				{Field: "scopes", After: fmt.Sprint(apiclient.LinkScopes)}, {Field: "client key thumbprint", After: checked.Thumbprint},
@@ -700,8 +727,17 @@ func (a *API) executePeopleLink(ctx context.Context, u storage.UnitOfWork, r sto
 		if err != nil {
 			return err
 		}
-		if _, err := u.PeopleLinks().Link(ctx, storage.PeopleLinkRow{NemuraOrganisationID: org, NemuraOrigin: str("nemura_origin"), LinkKey: key, ClientID: client.ID, ApprovalID: r.ID,
-			CreatedBy: "user:" + r.RequestedBy.String(), CreatedAt: now}); err != nil {
+		linked, err := u.PeopleLinks().Link(ctx, storage.PeopleLinkRow{NemuraOrganisationID: org, NemuraOrigin: str("nemura_origin"), LinkKey: key, ClientID: client.ID, ApprovalID: r.ID,
+			CreatedBy: "user:" + r.RequestedBy.String(), CreatedAt: now})
+		if err != nil {
+			return err
+		}
+		// Fyniq's own two keys, made now and never again (design D10): the envelope key signs what Fyniq sends, the client key signs its token request to Nemura's OAuth server.
+		keys, secrets, err := newLinkKeys(linked.ID, str("nemura_client_id"))
+		if err != nil {
+			return err
+		}
+		if err := u.PeopleLinks().SaveKeys(ctx, keys, secrets); err != nil {
 			return err
 		}
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
@@ -740,6 +776,28 @@ func (a *API) executePeopleLink(ctx context.Context, u storage.UnitOfWork, r sto
 		return a.removeOAuthClient(ctx, u, client.ClientID)
 	}
 	return fmt.Errorf("people link: no operation %q", r.Operation)
+}
+
+// newLinkKeys makes Fyniq's credentials for a link: an Ed25519 key for its events and an ES256 key for its token request, as the keys the link stores and the secrets only the worker reads.
+func newLinkKeys(link uuid.UUID, nemuraClient string) (storage.PeopleLinkKeys, storage.PeopleLinkSecrets, error) {
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return storage.PeopleLinkKeys{}, storage.PeopleLinkSecrets{}, err
+	}
+	ck, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return storage.PeopleLinkKeys{}, storage.PeopleLinkSecrets{}, err
+	}
+	der, err := x509.MarshalPKCS8PrivateKey(ck)
+	if err != nil {
+		return storage.PeopleLinkKeys{}, storage.PeopleLinkSecrets{}, err
+	}
+	jwk, err := (&jose.JSONWebKey{Key: &ck.PublicKey, Algorithm: string(jose.ES256), Use: "sig"}).MarshalJSON()
+	if err != nil {
+		return storage.PeopleLinkKeys{}, storage.PeopleLinkSecrets{}, err
+	}
+	return storage.PeopleLinkKeys{LinkID: link, NemuraClientID: nemuraClient, LinkPublic: pub, ClientPublic: jwk},
+		storage.PeopleLinkSecrets{LinkID: link, LinkPrivate: priv, ClientPrivate: der}, nil
 }
 
 // peopleLinkInFlight is the work a link must settle before it ends (FR-PPL-16).

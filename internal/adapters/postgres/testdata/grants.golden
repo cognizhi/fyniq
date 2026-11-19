@@ -464,6 +464,10 @@ fyniq_api       SELECT    people_link
 fyniq_api       UPDATE    people_link (changed_at, client_id, state, version)
 fyniq_api       INSERT    people_link_inbox (code, epoch, event_id, link_id, object_id, object_type, object_version, outcome, payload_sha256, received_at, sequence, type)
 fyniq_api       SELECT    people_link_inbox
+fyniq_api       INSERT    people_link_key (client_public, link_id, link_public, nemura_client_id)
+fyniq_api       SELECT    people_link_key
+fyniq_api       UPDATE    people_link_key (sequence)
+fyniq_api       INSERT    people_link_secret (client_private, link_id, link_private)
 fyniq_api       INSERT    people_source (approval_id, effective_from, feature, set_at, source)
 fyniq_api       SELECT    people_source
 fyniq_api       INSERT    period (ends_on, starts_on)
@@ -944,6 +948,7 @@ fyniq_readonly  SELECT    pd_shredding_run
 fyniq_readonly  SELECT    pd_transfer
 fyniq_readonly  SELECT    people_link
 fyniq_readonly  SELECT    people_link_inbox
+fyniq_readonly  SELECT    people_link_key
 fyniq_readonly  SELECT    people_source
 fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    period_close
@@ -1286,6 +1291,8 @@ fyniq_worker    UPDATE    pd_shredding_run (register, version)
 fyniq_worker    SELECT    pd_transfer
 fyniq_worker    SELECT    people_link
 fyniq_worker    SELECT    people_link_inbox
+fyniq_worker    SELECT    people_link_key
+fyniq_worker    SELECT    people_link_secret
 fyniq_worker    SELECT    people_source
 fyniq_worker    SELECT    period
 fyniq_worker    SELECT    period_close

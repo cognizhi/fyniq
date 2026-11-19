@@ -9,7 +9,7 @@ import (
 )
 
 // Difference is the first way two fyniq-payroll-run-result@1 results differ, or "" when they agree to the cent. Every figure is a decimal string and
-// is compared as a decimal; the engine's raw entry ("lines") is for a reader and the refund's total is not compared, since no named policy rounds it; each
+// is compared as a decimal; the engine's raw entry ("lines") is for a reader; each
 // person's broken deduction rules are reduced to the deductions they are broken by (the key of each, "" for the month's 50% limit), since the two sides name the rules in their own words (test/differential/README.md,
 // "Payroll months and runs").
 func Difference(engine, oracle []byte) string {
@@ -32,7 +32,6 @@ func normalise(v any) any {
 	if people, ok := m["people"].([]any); ok {
 		for _, p := range people {
 			if pm, ok := p.(map[string]any); ok {
-				delete(pm, "refund_total")
 				if vs, ok := pm["violations"].([]any); ok {
 					keys := []string{}
 					for _, v := range vs {

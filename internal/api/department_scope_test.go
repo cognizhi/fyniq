@@ -67,7 +67,7 @@ func TestAnApproverRoleIsNarrowedToDepartments(t *testing.T) {
 	t.Fatalf("Third is not listed: %s", m.Raw)
 }
 
-// An invitation that gives the Approver role narrows it to department values from the first minute (FR-ADM-01, rev 0.375): the
+// An invitation that gives the Approver role narrows it to department values from the first minute (FR-ADM-01, rev 0.381): the
 // scope is part of what the second Owner signs; the list of invitations shows it; redeemed, the member's role carries it. Another
 // set of roles, a value that is not a department's and a repeated one are refused, and no scope on an invitation is no scope.
 // req: FR-ADM-01
@@ -134,7 +134,7 @@ func TestAnInvitationNarrowsTheApproverRoleItGives(t *testing.T) {
 }
 
 // The members' list shows each member's verified sign-in email to an Owner and an Administrator, who invite and remove people, and to
-// no one else who may read the list: the Auditor, the DPO and the Controller see the names and roles (FR-ADM-01, SEC-06, rev 0.375).
+// no one else who may read the list: the Auditor, the DPO and the Controller see the names and roles (FR-ADM-01, SEC-06, rev 0.381).
 // req: FR-ADM-01
 // req: SEC-06
 // asvs: V8.2.1, V8.3.1

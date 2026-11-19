@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
+	"github.com/cognizhi/fyniq/internal/linksend"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -372,17 +373,42 @@ func (a *API) submitPayrollRun(ctx context.Context, in *payrollRunInput) (*payro
 			return err
 		}
 		receipt = PayrollRunReceipt{EventID: env.Header.EventID, Outcome: "unchanged", RunID: run.RunID, Version: run.Version}
+		ref := "unchanged" // a version that changed nothing is answered with the entry the run's earlier versions posted
+		if latest.EntryID != uuid.Nil {
+			ref = latest.EntryID.String()
+		}
 		if stored.ID != uuid.Nil {
 			receipt.Outcome, receipt.EntryID, receipt.PostingDate = "posted", stored.ID.String(), posting.Format(time.DateOnly)
+			ref = stored.ID.String()
 		}
-		return nil
+		// Nemura is told what became of the run, in the same unit of work (NM-INT-03): the posting's reference. Nothing is queued with no link that has keys.
+		_, err = linksend.Queue(ctx, u, linksend.TypeRunPosted, "payroll_run", run.RunID, run.Version, linksend.RunPosted{RunID: run.RunID, Version: run.Version, Status: "posted", PostingRef: ref})
+		return err
 	})
 	if err != nil {
 		// FR-PPL-09: the refusal is audited, in a transaction of its own, since the run's was rolled back.
-		code := problemFrom(ctx, err).Code
+		pr := problemFrom(ctx, err)
+		code := pr.Code
 		_ = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-			return u.Audit().Record(ctx, storage.AuditRecord{Action: "payroll_run.refused", ObjectType: "payroll_run", ObjectID: cmpID(runID, env.Header.ObjectID),
-				Changes: map[string][2]any{"refusal": {nil, map[string]any{"code": code, "event_id": env.Header.EventID, "version": version, "epoch": env.Header.Epoch}}}})
+			if err := u.Audit().Record(ctx, storage.AuditRecord{Action: "payroll_run.refused", ObjectType: "payroll_run", ObjectID: cmpID(runID, env.Header.ObjectID),
+				Changes: map[string][2]any{"refusal": {nil, map[string]any{"code": code, "event_id": env.Header.EventID, "version": version, "epoch": env.Header.Epoch}}}}); err != nil {
+				return err
+			}
+			// A refused run is answered to Nemura with the refusal's code and its plain words, so it waits there with them (NM-INT-03, NM-INT-06). The run is the one the link's header names, which the link's
+			// signature covers. What came before the run was read (PPL-01 to PPL-09: a forged or malformed call, no link, not the link's client, an old epoch, a stale time), an envelope already used
+			// (PPL-17) and a version that is not newer than one posted (PPL-18) are not answered: they say nothing about a run that is waiting, and a stale or repeated one must not read as a
+			// refusal of a version that posted.
+			if id, perr := uuid.Parse(env.Header.ObjectID); perr == nil && env.Header.ObjectVersion >= 1 && !strings.HasPrefix(code, "PPL-0") && code != peoplelink.CodeRunUsed && code != peoplelink.CodeRunStale {
+				// The link's own refusals (PPL-*) say what is wrong with the run in words that carry no figure; any other refusal (a ledger's) is answered with its title and fix, which never change between occurrences.
+				message := strings.TrimSpace(pr.Title + ". " + pr.Fix)
+				if strings.HasPrefix(code, "PPL-") {
+					message = pr.Detail
+				}
+				_, err := linksend.Queue(ctx, u, linksend.TypeRunPosted, "payroll_run", id.String(), env.Header.ObjectVersion,
+					linksend.RunPosted{RunID: id.String(), Version: env.Header.ObjectVersion, Status: "refused", Code: code, Message: message})
+				return err
+			}
+			return nil
 		})
 		return nil, err
 	}

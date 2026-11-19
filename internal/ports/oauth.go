@@ -130,6 +130,9 @@ type PersonalRegistration struct {
 
 // IntegrationRegistration is an integration client as the OAuth server registers it.
 type IntegrationRegistration struct {
+	// ClientID is the ID the client gets, when the caller must know it before the server answers (the link's two clients: each app is told the other's
+	// before it registers anything); empty lets the server choose.
+	ClientID string
 	Name     string
 	Class    string // AI-34: always integration here; kept in the client's metadata
 	Audience string // the API's: the only audience its tokens may name

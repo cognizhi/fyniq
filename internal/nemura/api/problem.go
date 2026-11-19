@@ -71,9 +71,14 @@ const (
 	CodeFeatureObligations = features.CodeObligations
 	CodeFeatureInvalid     = features.CodeInvalid
 	CodePolicyBelow        = policy.CodeBelowStatute
-	CodeLeaverAccount      = "NM_LEAVER_ACCOUNT" // a leaver's account is for their own documents only
-	CodeUnavailable        = "NM_UNAVAILABLE"    // the service is not configured for this here
-	CodeNoPasskey          = "NM_NO_PASSKEY"     // #nosec G101 -- a problem code's name: no passkey to confirm with
+	CodeLeaverAccount      = "NM_LEAVER_ACCOUNT"       // a leaver's account is for their own documents only
+	CodeUnavailable        = "NM_UNAVAILABLE"          // the service is not configured for this here
+	CodeNoPasskey          = "NM_NO_PASSKEY"           // #nosec G101 -- a problem code's name: no passkey to confirm with
+	CodeLinkNone           = "NM_LINK_NONE"            // there is no active link, or the call is not from the link's client at its epoch
+	CodeLinkClient         = "NM_LINK_CLIENT"          // the token is valid but not the link's client's, or lacks the link scope
+	CodeLinkApprover       = "NM_LINK_SECOND_APPROVER" // an Owner starts the link and another Owner or Administrator approves it
+	CodeLinkState          = "NM_LINK_STATE"           // the link is in a state that does not allow that
+	CodeLinkRefused        = "NM_LINK_REFUSED"         // the signed event was refused: its own code says why
 )
 
 // Catalogue is every stable code the API returns, in order. It is served at GET /v1/errors.
@@ -99,6 +104,8 @@ var Catalogue = []Code{
 	{CodeFeatureOff, http.StatusConflict, "That feature is switched off", "Switch the feature on under Settings, Features; its records are kept while it is off."},
 	{CodeLetterInvalid, http.StatusUnprocessableEntity, "The letter is not valid", "Correct what the message names and send it again."},
 	{CodeLeaverAccount, http.StatusForbidden, "That is not part of your account now", "After the last day an account keeps the person's own documents and letters, and a way to ask the people team a question."},
+	{CodeIdempotencyMismatch, http.StatusUnprocessableEntity, "That Idempotency-Key was used for a different request", "Use a new key for a new request, or send the same request again with the same key."},
+	{CodeIdempotencyConflict, http.StatusConflict, "That request already ran or is still running", "Read the record for the result: an answer that may carry pay or restricted data is not stored, and an identical request may still be running."},
 	{CodeAINever, http.StatusUnprocessableEntity, "The assistant never does that", "The assistant drafts and explains; a person approves, issues and changes records. Ask for a draft instead."},
 	{CodeAIInvalid, http.StatusUnprocessableEntity, "The assistant's draft or settings are not valid", "Correct what the message names and send it again."},
 	{CodeAIOff, http.StatusConflict, "The assistant is off", "The Owner turns the assistant, and each kind of draft, on in the assistant's settings."},
@@ -115,6 +122,11 @@ var Catalogue = []Code{
 	{CodeStepUp, http.StatusForbidden, "Confirm it is you", "Confirm with your passkey (POST /v1/session/step-up), then try again within five minutes."},
 	{CodeClientInvalid, http.StatusUnprocessableEntity, "The API client is not valid", "Correct the name, scopes, algorithm or public key named in the message."},
 	{CodeClientExists, http.StatusConflict, "An API client has that name", "Choose another name, or revoke the first client."},
+	{CodeLinkNone, http.StatusConflict, "Nemura is not linked to Fyniq", "Link the organisation to Fyniq first, or call with the client of the link that is live now."},
+	{CodeLinkClient, http.StatusForbidden, "Not the link's client", "Call with the token the link's own client got for the audience nemura-api and the scope link.events.write."},
+	{CodeLinkApprover, http.StatusForbidden, "The link needs a second person", "An Owner starts the link, and an Owner or Administrator other than them approves it, each with a passkey confirmed in the last five minutes."},
+	{CodeLinkState, http.StatusConflict, "The link is not in a state for that", "A link is proposed once and approved once; unlink first to start again."},
+	{CodeLinkRefused, http.StatusUnprocessableEntity, "The event was refused", "Send the event as Fyniq signed it, within five minutes, at the link's epoch, with only the fields PRD-002 Appendix E lists; the field's code says which check failed."},
 }
 
 func lookup(code string) Code {

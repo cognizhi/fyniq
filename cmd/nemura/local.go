@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha512"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -42,6 +43,9 @@ func init() {
 	letterRenderer = letters.Local{} // a plain Latin text PDF that says it is local (design D3)
 	hydraAdmin = func(admin string) ports.OAuthClients {
 		return hydra.New(admin, (&egress.Guard{Local: true, Propagate: true}).Bounded(0, 10*time.Second).For(egress.HostOf(admin)))
+	}
+	linkHTTP = func(hosts ...string) *http.Client {
+		return (&egress.Guard{Local: true, Propagate: true}).Bounded(0, 15*time.Second).For(hosts...)
 	}
 }
 

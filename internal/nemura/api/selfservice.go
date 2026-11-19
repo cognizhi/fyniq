@@ -88,13 +88,6 @@ type SelfService interface {
 }
 
 func init() {
-	IdempotencyExempt["PUT /v1/me/details"] = "naturally idempotent: the same body leaves the same details"
-	IdempotencyExempt["PUT /v1/me/emergency-contacts"] = "naturally idempotent: the same list leaves the same contacts"
-	IdempotencyExempt["POST /v1/me/details-changes"] = "each request is its own record with its own date: a person may ask again after a refusal"
-	IdempotencyExempt["POST /v1/me/questions"] = "each question is its own record with its own date: a person may ask the same thing twice"
-	IdempotencyExempt["POST /v1/me/requests/{id}/withdrawal"] = "a request is closed once: a repeat is refused (NM_NOT_FOUND)"
-	IdempotencyExempt["POST /v1/details-changes/{id}/decision"] = "a request is decided once: a repeat is refused (NM_REQUEST_CONFLICT)"
-	IdempotencyExempt["POST /v1/questions/{id}/reply"] = "a question is answered once: a repeat is refused (NM_REQUEST_CONFLICT)"
 }
 
 const maxEvidence = 5 << 20

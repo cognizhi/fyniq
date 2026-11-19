@@ -4,7 +4,7 @@ type: task
 title: Turn on the people assistant and decide its drafts in Nemura
 summary: The people assistant is off until the Owner turns it on, only drafts for a person to approve, and never decides, issues, pays or changes a record
 sources:
-  - docs/user-guide/nemura/assistant.md sha256:f6d2166f407fb7d0520d6ccbbed9951b60fb0da78fc2305ebf81a227a59a6fa1
+  - docs/user-guide/nemura/assistant.md sha256:f079c903e9be68cda59113579677b5495a599d27ed52f0d803e6c631b92db88c
 data_class: personal
 taint: trusted
 status: published
@@ -37,9 +37,10 @@ aliases:
 
 ## What happens next
 
-- Approving keeps the draft exactly as seen; only that text is used. The person the assistant acted for cannot decide their own draft. The audit trail holds a fingerprint of the text, never the text. Own-pay explanations stay off until a second approver exists, which arrives with the Fyniq link: the assistant explains a payslip line from its rule and the page shows the figures. (src: docs/user-guide/nemura/assistant.md#what-happens-next)
+- To ask for a draft, open a request and select Draft a reply with the assistant; it never states a decision and only quotes the request's words. An approved draft is attached beside the request, where you select Use the approved draft; you still decide, sign and send. (src: docs/user-guide/nemura/assistant.md#what-happens-next)
+- Approving keeps the draft exactly as seen; only that text is used. The audit trail records who asked for the draft and who decided it. The audit trail holds a fingerprint of the text, never the text. Own-pay explanations stay off until a second approver exists, which arrives with the Fyniq link: the assistant explains a payslip line from its rule and the page shows the figures. (src: docs/user-guide/nemura/assistant.md#what-happens-next)
 
 ## When it goes wrong
 
-- Off: the Owner turns it on. Cannot approve: it waited more than 72 hours, was drafted for you, or you are not the HR officer, HR administrator or Owner. (src: docs/user-guide/nemura/assistant.md#common-problems)
+- Off: the Owner turns it on. Cannot approve: it waited more than 72 hours, or you are not the HR officer, HR administrator or Owner. (src: docs/user-guide/nemura/assistant.md#common-problems)
 - Related: [[nemura.letters.request]]. (src: docs/user-guide/nemura/assistant.md#related)

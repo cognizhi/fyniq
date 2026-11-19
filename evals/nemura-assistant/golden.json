@@ -1,0 +1,19 @@
+{
+  "suite": "nemura-assistant-golden",
+  "agent": "people-assistant",
+  "version": 1,
+  "about": "QA-AI-01 for the people assistant (NM-AI-02, 03, 06): questions asked as Ben Lim of the sample company on 20 Nov 2026, answered through the real runtime with the scripted model. A right answer names the tool it ran, cites its source and states only figures a tool returned. Synthetic data only.",
+  "threshold": 1.0,
+  "cases": [
+    {"id": "leave-left", "question": "How much leave do I have left?", "tools": ["my_leave_balance"], "contains": ["For 2026 you are entitled to 14.00 days", "and have 14.00 left"], "source": "your leave record"},
+    {"id": "leave-days-left-phrasing", "question": "What is my leave balance?", "tools": ["my_leave_balance"], "contains": ["have taken 0.00"], "source": "your leave record"},
+    {"id": "annual-leave-days", "question": "How many days of annual leave am I entitled to?", "tools": ["rule_answer"], "contains": ["Paid annual leave is 7 days in the first year of service", "confirm it with HR"], "source": "sg-people@2026.9"},
+    {"id": "payday", "question": "When is my pay day?", "tools": ["my_payday"], "contains": ["Your next pay day is 2026-11-25"], "source": "the calendar of your pay group"},
+    {"id": "payday-phrasing", "question": "When do I get paid this month?", "tools": ["my_payday"], "contains": ["2026-11-25"], "source": "the calendar of your pay group"},
+    {"id": "cpf-line", "question": "What is the CPF line on my payslip?", "tools": ["slip_line_rule"], "contains": ["Your CPF contribution is the share of your wages", "beside it"], "source": "sg-cpf pack"},
+    {"id": "overtime-line", "question": "Explain the overtime line on my payslip", "tools": ["slip_line_rule"], "contains": ["Overtime pay is paid for the hours you worked beyond your normal hours"], "source": "sg-people pack"},
+    {"id": "deduction-line", "question": "What is a deduction on my payslip?", "tools": ["slip_line_rule"], "contains": ["a deduction is an amount your employer takes from your pay"], "source": "Employment Act"},
+    {"id": "public-holiday", "question": "What is the next public holiday?", "tools": ["rule_answer"], "contains": ["The next public holiday is"], "source": "sg-people@2026.9"},
+    {"id": "unmatched", "question": "What is the capital of France?", "tools": [], "contains": ["could not match your question"], "source": ""}
+  ]
+}

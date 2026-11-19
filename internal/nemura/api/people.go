@@ -104,10 +104,6 @@ type People interface {
 var ErrPersonExists = errors.New("a person with that ID exists already")
 
 func init() {
-	IdempotencyExempt["POST /v1/people"] = "the person's ID is chosen by the caller, so a repeat is refused (NM_PERSON_EXISTS)"
-	IdempotencyExempt["PUT /v1/people/{id}"] = "naturally idempotent: the same body leaves the same person"
-	IdempotencyExempt["POST /v1/people/{id}/job"] = "a repeat starts a job on the current job's own start day, which is refused (NM_PERSON_HISTORY)"
-	IdempotencyExempt["POST /v1/people/{id}/classification"] = "a repeat starts a classification on the current one's own start day, which is refused (NM_PERSON_HISTORY)"
 }
 
 type directoryInput struct {

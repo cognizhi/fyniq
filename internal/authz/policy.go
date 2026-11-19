@@ -1755,7 +1755,7 @@ var (
 
 // Budgets (FR-PLN-01; p1-planning slice 4, design D6): read by whoever views budgets and forecasts; drafted, changed,
 // copied, imported and asked for approval by whoever prepares them; approved by a person who holds A, never the one
-// who asked. A department's budget holder (the Approver's C dept, rev 0.375) reads the budget and the budget against actual, and
+// who asked. A department's budget holder (the Approver's C dept, rev 0.381) reads the budget and the budget against actual, and
 // saves a draft, as their department's lines only; every other budget operation, the forecasts and the planning summary are the
 // company's.
 var (

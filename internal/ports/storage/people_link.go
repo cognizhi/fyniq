@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -78,6 +79,22 @@ type InboxCount struct {
 	LastAt  time.Time
 }
 
+// PeopleLinkKeys are the public half of Fyniq's credentials for the link, and the running number of what Fyniq sent: the ID of Fyniq's client at Nemura's OAuth server (chosen by Nemura
+// when it proposed the link), Fyniq's Ed25519 key for what it sends and the public half of its ES256 client key as a JWK, which Nemura registers.
+type PeopleLinkKeys struct {
+	LinkID         uuid.UUID
+	NemuraClientID string
+	LinkPublic     []byte
+	ClientPublic   json.RawMessage
+	Sequence       int64
+}
+
+// PeopleLinkSecrets are the private halves: the Ed25519 key that signs the link's events and the ES256 key (PKCS #8, DER) that signs the token assertion. Only the worker's role reads them.
+type PeopleLinkSecrets struct {
+	LinkID                       uuid.UUID
+	LinkPrivate, ClientPrivate []byte
+}
+
 // PeopleLinks are the link, where each feature lives, the inbox and the employee projection. Every change is audited.
 type PeopleLinks interface {
 	// Live is the link that is not unlinked, or ports.ErrNotFound.
@@ -101,6 +118,14 @@ type PeopleLinks interface {
 	People(ctx context.Context) ([]peoplelink.Person, error)
 	// PersonOfUser is the person a Fyniq user was mapped to, or ports.ErrNotFound.
 	PersonOfUser(ctx context.Context, user uuid.UUID) (peoplelink.Person, error)
+	// SaveKeys keeps the credentials made when the link was approved, audited as people_link.keys_made (that keys exist, never a key).
+	SaveKeys(ctx context.Context, k PeopleLinkKeys, s PeopleLinkSecrets) error
+	// Keys are the link's public credentials and its sequence, or ports.ErrNotFound for a link made before there were keys.
+	Keys(ctx context.Context, link uuid.UUID) (PeopleLinkKeys, error)
+	// NextSequence takes the next number of what Fyniq sends on the link, under the row's lock, so events leave in the order they were committed.
+	NextSequence(ctx context.Context, link uuid.UUID) (int64, error)
+	// Secrets are the link's private keys: the worker's role alone can read them (the API's refused by the database).
+	Secrets(ctx context.Context, link uuid.UUID) (PeopleLinkSecrets, error)
 	// SavePerson writes a person's new state, audited as person_projection.changed with the names of the fields that changed, never
 	// their values. CodePeopleLink when it goes back to an older version.
 	SavePerson(ctx context.Context, p peoplelink.Person) error

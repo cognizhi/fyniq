@@ -121,7 +121,9 @@ func TestAdditionalWagesAboveTheCeilingDoNotMoveTheGraduatedContribution(t *test
 }
 
 // FR-PAY-14: the refund task and the employee's share are worked out whatever band the month's own wages are in. The ordinary wages 88,000 + 0.10 leave 13,999.90 of the
-// ceiling for the 14,961.56 counted: 961.66 is refundable, and the employee's 20% of it is 192.332, cents dropped: 192.33.
+// ceiling for the 14,961.56 counted: 961.66 is refundable. The contributions on it at 37% are 355.81 -> 356 (RND-CPF's dollar), and the employee's share is the refund
+// divided by the total rate times the employee rate, 356 / 0.37 x 0.20 = 192.43, and the CPF Board drops the cents: 192 (its own worked example, $2,260 / 32.5% x 17% =
+// $1,182.15 -> $1,182; cpf.gov.sg, checked 20 Nov 2026). The refund's total is an estimate the accountant confirms [accountant to confirm].
 // req: FR-PAY-14
 func TestARefundIsWorkedOutInTheGraduatedRangeToo(t *testing.T) {
 	m := payroll.Month{Month: fDay(2026, 12, 1), Person: fCitizen(), Items: []payroll.Item{fBasic("0.10")}, LastMonth: true,
@@ -134,7 +136,23 @@ func TestARefundIsWorkedOutInTheGraduatedRangeToo(t *testing.T) {
 		t.Fatal("no refund task")
 	}
 	fEq(t, "refund wages", r.Refund.Wages, "961.66")
-	fEq(t, "refund employee share", r.Refund.Employee, "192.33")
+	fEq(t, "refund total", r.Refund.Total, "356")
+	fEq(t, "refund employee share", r.Refund.Employee, "192")
+}
+
+// FR-PAY-14: the employee's share of a refund is whole dollars, as the CPF Board's example shows ("cents should be dropped": $2,260 / 32.5% x 17% = $1,182.15 is $1,182).
+// 8,100.07 refundable at 37% is 2,997.03 -> 2,997 contributions, and 2,997 / 0.37 x 0.20 = 1,620 exactly.
+// req: FR-PAY-14
+func TestTheEmployeesShareOfARefundIsWholeDollars(t *testing.T) {
+	m := payroll.Month{Month: fDay(2026, 12, 1), Person: fCitizen(), Items: []payroll.Item{fBasic("8000.00")}, LastMonth: true,
+		YTD: payroll.YearToDate{Known: true, OW: fDec("89999.93"), AWSubject: fDec("12100.14"), AWPaid: fDec("12100.14")}}
+	r, err := payroll.Calculate(m, oraclePacks(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fEq(t, "refund wages", r.Refund.Wages, "8100.07")
+	fEq(t, "refund total", r.Refund.Total, "2997")
+	fEq(t, "refund employee share", r.Refund.Employee, "1620")
 }
 
 // [verify] The band is the month's wages subject to CPF (the sg-cpf pack's definition of total wages), so S$103.77 of ordinary wages with S$20,000 of additional wages the
@@ -152,4 +170,25 @@ func TestTheBandIsChosenOnTheWagesSubjectToCPFNotThoseAboveTheCeiling(t *testing
 	fEq(t, "additional wages subject", r.AWSubject, "0")
 	fEq(t, "CPF total", r.CPF.Total, "18")
 	fEq(t, "CPF employee", r.CPF.Employee, "0")
+}
+
+// FR-PAY-14: a first- or second-year permanent resident whose employer and who jointly apply may contribute at full employer and full employee rates (F/F, Form JAP/94),
+// which are Table 1's: the CPF Board's table note says "These rates are also applicable to 1st and 2nd year Singapore Permanent Resident (SPR) employees ... after CPF Board
+// approves their joint application to contribute to CPF at full employer - full employee rates" (cpf.gov.sg, checked 20 Nov 2026). At 5,000 a month and age 36, 37%: 1,850 in
+// all, 1,000 the employee's; at 600 the graduated range of the full table, 17% of 600 + 0.6 x (600 - 500) = 162, 60 the employee's. F/G stays at full employer and
+// graduated employee rates (the pack's spr1_fg rows), unchanged.
+// req: FR-PAY-14
+func TestAFullEmployerAndFullEmployeeElectionIsTheFullTable(t *testing.T) {
+	start := fDay(2026, 2, 10)
+	for _, c := range []struct{ pay, total, employee string }{{"5000.00", "1850", "1000"}, {"600.00", "162", "60"}} {
+		p := fCitizen()
+		p.Residency, p.PRStart, p.JointElection, p.FullEmployeeRate = payroll.PermanentResident, &start, true, true
+		m := payroll.Month{Month: fDay(2027, 2, 1), Person: p, Items: []payroll.Item{fBasic(c.pay)}}
+		r, err := payroll.Calculate(m, oraclePacks(t))
+		if err != nil {
+			t.Fatal(err)
+		}
+		fEq(t, "CPF total at "+c.pay, r.CPF.Total, c.total)
+		fEq(t, "CPF employee at "+c.pay, r.CPF.Employee, c.employee)
+	}
 }
