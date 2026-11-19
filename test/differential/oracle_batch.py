@@ -13,6 +13,7 @@ import sys
 
 from pathlib import Path
 
+from oracle.employee_month import payroll_run
 from oracle.feasibility import feasibility
 from oracle.ledger import Ledger
 from oracle.planning import ForecastError, forecast
@@ -28,6 +29,8 @@ def main(paths: list[str]) -> int:
                 line = {"file": path, "result": forecast(doc)}
             elif isinstance(doc, dict) and doc.get("schema") == "fyniq-feasibility@1":
                 line = {"file": path, "result": feasibility(doc)}
+            elif isinstance(doc, dict) and doc.get("schema") == "fyniq-payroll-run@1":
+                line = {"file": path, "result": payroll_run(doc)}
             elif isinstance(doc, dict) and doc.get("schema") == "fyniq-purge@1":
                 line = {"file": path, "result": purge(doc)}
             else:

@@ -1,0 +1,103 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "deductions-and-a-later-run",
+ "why": "The limits of FR-PAY-16 (G4-008) and the difference a later run posts (B.3)",
+ "month": "2026-06-01",
+ "people": [
+  {
+   "id": "A",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "4000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "deductions": [
+    {
+     "key": "a1",
+     "kind": "recovery",
+     "amount": "1500.00",
+     "instalment": 1,
+     "is_advance": true
+    },
+    {
+     "key": "o",
+     "kind": "other",
+     "amount": "10.00"
+    }
+   ]
+  },
+  {
+   "id": "B",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "4000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    },
+    {
+     "key": "off",
+     "name": "Off-cycle",
+     "amount": "4000.00",
+     "cpf_wages": true
+    }
+   ],
+   "posted": {
+    "items": [
+     {
+      "key": "basic",
+      "name": "Basic salary",
+      "amount": "4000.00",
+      "cpf_wages": true,
+      "suggested": "ordinary"
+     }
+    ]
+   }
+  },
+  {
+   "id": "C",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "4000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "final": true,
+   "deductions": [
+    {
+     "key": "a",
+     "kind": "recovery",
+     "amount": "800.00",
+     "instalment": 1,
+     "is_advance": true,
+     "consent": true
+    },
+    {
+     "key": "d",
+     "kind": "damage_or_loss",
+     "amount": "3000.00"
+    }
+   ]
+  }
+ ]
+}

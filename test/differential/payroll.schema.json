@@ -50,6 +50,26 @@
       "properties": {"ow": {"type": "string"}, "aw_subject": {"type": "string"}, "aw_paid": {"type": "string"}}
     },
     "last_month": {"type": "boolean"},
+    "pay_day": {"type": "string", "format": "date", "description": "The pay day of the month, for an item that names no payable_on; the last day of the month when absent"},
+    "deductions": {
+      "type": "array",
+      "description": "Salary deductions (FR-PAY-16), each linked to its source by its key",
+      "items": {
+        "type": "object",
+        "required": ["key", "kind", "amount"],
+        "additionalProperties": false,
+        "properties": {
+          "key": {"type": "string"},
+          "kind": {"enum": ["absence", "damage_or_loss", "accommodation", "recovery", "cpf", "income_tax", "court_order", "cooperative", "other"]},
+          "amount": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,2})?$"},
+          "consent": {"type": "boolean", "description": "Written consent is recorded"},
+          "instalment": {"type": "integer", "minimum": 0, "description": "For a recovery of an advance: which instalment this is, from 1"},
+          "is_advance": {"type": "boolean", "description": "A recovery of an advance, which has instalment limits"}
+        }
+      }
+    },
+    "final": {"type": "boolean", "description": "Final pay on termination: the 50% limit does not apply and an advance is recovered only as far as consented"},
+    "held": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,2})?$", "description": "Monies held under an IR21 clearance hold: they stay in 2100 and out of the amount to disburse"},
     "reimbursements": {"type": "array", "items": {"type": "string"}},
     "expect": {
       "type": "object",
@@ -66,7 +86,11 @@
         "shg": {"type": "string"},
         "net": {"type": "string"},
         "disburse": {"type": "string"},
-        "refund_wages": {"type": "string"}
+        "refund_wages": {"type": "string"},
+        "deductions": {"type": "string"},
+        "reimbursements": {"type": "string"},
+        "employer_cost": {"type": "string"},
+        "violations": {"type": "boolean", "description": "Whether the deductions break a rule of FR-PAY-16"}
       }
     }
   }

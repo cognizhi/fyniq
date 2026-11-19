@@ -28,7 +28,7 @@ MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/
 # The P1 sources `make differential` draws beside manual journals, and the statements and KPIs over them: what
 # cmd/scenario-run reads and states (test/differential/README.md, "P1 sources", "Statements", "KPIs"), and the forecasts
 # and feasibility studies ("Forecasts", "Feasibility studies", each drawn by its own test).
-DIFFERENTIAL_SOURCES ?= bank,purchases,sales,claims,assets,founders,general-ledger,fx,equity,opening-items,statements,kpis,forecast,feasibility,purge,payroll
+DIFFERENTIAL_SOURCES ?= bank,purchases,sales,claims,assets,founders,general-ledger,fx,equity,opening-items,statements,kpis,forecast,feasibility,purge,payroll,payroll-month
 FLAVOURS ?= release local
 # The platform `make images` builds: empty for the Docker engine's own (linux/arm64 on Apple silicon), or
 # linux/amd64 or linux/arm64 (NFR-IMG-08)
@@ -147,8 +147,8 @@ mutation: ## Mutation tests on money, rounding and the engine (QA-ENG-04): effic
 	  $(MISE) gremlins unleash ./$$p --workers 4 --timeout-coefficient 6 --threshold-efficacy 90 || exit 1; done
 
 differential: ## The full differential run (QA-ENG-02): Hypothesis looks for a scenario where the engine and the oracle disagree, and saves the shrunk one as a golden case
-	@mkdir -p .data/bin && $(MISE) go build -tags local -o .data/bin/scenario-run ./cmd/scenario-run
-	@cd oracle && FYNIQ_SCENARIO_RUN=$(CURDIR)/.data/bin/scenario-run FYNIQ_DIFFERENTIAL_SOURCES=$(DIFFERENTIAL_SOURCES) $(MISE) uv run --locked python -m pytest -q -p no:cacheprovider ../test/differential/test_engine_agrees.py
+	@mkdir -p .data/bin && $(MISE) go build -tags local -o .data/bin/scenario-run ./cmd/scenario-run && $(MISE) go build -tags local -o .data/bin/payrollrun ./cmd/nemura/payrollrun
+	@cd oracle && FYNIQ_SCENARIO_RUN=$(CURDIR)/.data/bin/scenario-run FYNIQ_PAYROLL_RUN=$(CURDIR)/.data/bin/payrollrun FYNIQ_DIFFERENTIAL_SOURCES=$(DIFFERENTIAL_SOURCES) $(MISE) uv run --locked python -m pytest -q -p no:cacheprovider ../test/differential/test_engine_agrees.py
 
 scan: ## Security scans (SEC-21, SEC-26): gosec, Semgrep, gitleaks, grype, govulncheck, pnpm audit --prod, Checkov, licences, actionlint, zizmor; waivers in compliance/scan-waivers.toml; reports in .data/scan/
 	@$(MISE) python3 scripts/scan.py

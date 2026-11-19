@@ -1,0 +1,61 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "refund-in-the-graduated-range",
+ "why": "A true-up refund is worked out whatever band the month's own wages are in (FR-PAY-14)",
+ "month": "2026-12-01",
+ "people": [
+  {
+   "id": "A",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "0.10",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "ytd": {
+    "ow": "88000",
+    "aw_subject": "14961.56",
+    "aw_paid": "14961.56"
+   },
+   "last_month": true
+  },
+  {
+   "id": "B",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "8000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    },
+    {
+     "key": "bonus",
+     "name": "Bonus",
+     "amount": "0.00",
+     "cpf_wages": true,
+     "for_month": "2025-12-01",
+     "payable_on": "2026-12-31",
+     "suggested": "additional"
+    }
+   ],
+   "ytd": {
+    "ow": "88000",
+    "aw_subject": "30000",
+    "aw_paid": "30000"
+   },
+   "last_month": true
+  }
+ ]
+}

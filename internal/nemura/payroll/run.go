@@ -9,12 +9,12 @@ import (
 // Totals are a run's totals, kept apart (FR-PAY-18) and ready for B.3's postings: the SDL payable is the employer-month total rounded down to the dollar (RND-SDL), never the sum of the
 // employee amounts.
 type Totals struct {
-	Gross, EmployeeCPF, EmployerCPF, SDLEmployees, SDLPayable, SHG, Deductions, Reimbursements, Held, Net, Disburse, EmployerCost *apd.Decimal
+	Gross, EmployeeCPF, EmployerCPF, SDLEmployees, SDLPayable, SHG, Deductions, Advances, Reimbursements, Held, Net, Disburse, EmployerCost *apd.Decimal
 }
 
 // Total adds a run's employee-months. The employer-month SDL is rounded down once, across the run (RND-SDL).
 func Total(rs []Result) Totals {
-	t := Totals{Gross: zero(), EmployeeCPF: zero(), EmployerCPF: zero(), SDLEmployees: zero(), SHG: zero(), Deductions: zero(), Reimbursements: zero(), Held: zero(), Net: zero(), Disburse: zero(), EmployerCost: zero()}
+	t := Totals{Gross: zero(), EmployeeCPF: zero(), EmployerCPF: zero(), SDLEmployees: zero(), SHG: zero(), Deductions: zero(), Advances: zero(), Reimbursements: zero(), Held: zero(), Net: zero(), Disburse: zero(), EmployerCost: zero()}
 	var sdl []*apd.Decimal
 	for _, r := range rs {
 		t.Gross = add(t.Gross, r.Gross)
@@ -24,6 +24,7 @@ func Total(rs []Result) Totals {
 		sdl = append(sdl, r.SDL)
 		t.SHG = add(t.SHG, r.SHG)
 		t.Deductions = add(t.Deductions, r.Deductions)
+		t.Advances = add(t.Advances, r.Advances)
 		t.Reimbursements = add(t.Reimbursements, r.Reimbursements)
 		t.Held = add(t.Held, r.Held)
 		t.Net = add(t.Net, r.Net)
@@ -43,7 +44,7 @@ type Line struct {
 }
 
 // Postings are B.3's entry for a run's totals: Dr salary expense gross; Dr 6020 employer CPF; Dr 6030 SDL (the payable); Dr 2150 for claims paid with the salary; Cr 1250 for advances
-// recovered and the deductions' own accounts; Cr 2100 the amount to disburse plus the monies held (which stay in 2100, flagged, until released); Cr 2110 the employee and employer CPF,
+// recovered and the deductions' own accounts for the rest; Cr 2100 the amount to disburse plus the monies held (which stay in 2100, flagged, until released); Cr 2110 the employee and employer CPF,
 // the SDL payable and the self-help group funds. Fyniq posts it by department (p1-payroll-link); here it is the whole run, so that the entry's balance is proved.
 func Postings(t Totals) []Line {
 	return []Line{
@@ -51,7 +52,8 @@ func Postings(t Totals) []Line {
 		{"6020", t.EmployerCPF, zero(), "Employer CPF"},
 		{"6030", t.SDLPayable, zero(), "SDL"},
 		{"2150", t.Reimbursements, zero(), "Claims paid with the salary"},
-		{"deductions", zero(), t.Deductions, "Advances recovered and other authorised deductions"},
+		{"1250", zero(), t.Advances, "Advances recovered"},
+		{"deductions", zero(), sub(t.Deductions, t.Advances), "Other authorised deductions, each to its own account"},
 		{"2100", zero(), add(t.Disburse, t.Held), "To disburse, and monies held"},
 		{"2110", zero(), add(add(add(t.EmployeeCPF, t.EmployerCPF), t.SDLPayable), t.SHG), "CPF, SDL and self-help group funds"},
 	}
