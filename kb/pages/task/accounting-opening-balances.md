@@ -21,6 +21,8 @@ aliases:
   - trial balance at start
   - change opening balances
   - correct opening balances
+  - starting balances
+  - start using Fyniq part way through the year
 ---
 
 # Enter the opening balances

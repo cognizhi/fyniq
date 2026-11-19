@@ -23,6 +23,16 @@
       ],
       "type": "string"
     },
+    "sources": {
+      "description": "With words that explain how Fyniq works: the guide pages they come from, which you can open (AI-51).",
+      "items": {
+        "$ref": "AISource.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "text": {
       "description": "Words, in Fyniq's Markdown subset.",
       "examples": [

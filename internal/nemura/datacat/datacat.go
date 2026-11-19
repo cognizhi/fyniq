@@ -35,7 +35,7 @@ var Categories = []Category{
 		Key: "sign-in-identities", What: "Each person's name at the identity provider: its issuer, subject and tenant, and the invitations and sessions that let them in (kept as hashes)",
 		Purpose:   "To recognise a person who signs in, never by email alone, and to keep them signed in until they sign out or are deactivated",
 		Retention: Rule{After: "leaving", Reason: "Kept while a member; a deactivated member's identity is switched off and kept for the audit trail"},
-		Columns:   []string{"identity_directory.subject"},
+		Columns:   []string{"identity_directory.subject", "passkey.name"},
 	},
 	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
@@ -67,6 +67,7 @@ var NotPersonal = map[string]string{
 	"outbox.task_name":             "the queue's name for one delivery of a task: a row id and a count",
 	"identity_directory.issuer":    "the identity provider's address, not a person",
 	"identity_directory.tenant":    "the identity provider's tenant for the organisation, not a person",
+	"api_client.name":              "the name of a system that calls the API (a company or product), not a person",
 	"outbox.payload":               "the task's payload: ids only, never pay or bank details (ADR-N5)",
 }
 

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "key": {
+      "examples": [
+        "claims.approve-team-claims"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The platform release and the page file's SHA-256 (first 12 characters).",
+      "examples": [
+        "v0.1.0#7c1ea9b4f2d3"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "version"
+  ],
+  "title": "AIKBPage",
+  "type": "object"
+}

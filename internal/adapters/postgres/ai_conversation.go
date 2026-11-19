@@ -95,7 +95,7 @@ func (r aiConversations) Finish(ctx context.Context, t storage.AITurn, calls []s
 		if err := r.u.q.InsertAIToolCall(ctx, sqlcdb.InsertAIToolCallParams{TurnID: t.ID, N: int32(min(i+1, 100)), Tool: c.Tool, // #nosec G115 -- capped
 			Version: int32(min(max(c.Version, 0), 1<<30)), Input: input, OutputSha256: c.OutputSHA256, Outcome: c.Outcome, Code: c.Code, // #nosec G115 -- capped
 			Facts: int32(min(max(c.Facts, 0), 1<<30)), Omitted: int32(min(max(c.Omitted, 0), 1<<30)), Withheld: c.Withheld, // #nosec G115 -- capped
-			DurationMs: int32(min(max(c.DurationMS, 0), 1<<30))}); err != nil { // #nosec G115 -- capped
+			DurationMs: int32(min(max(c.DurationMS, 0), 1<<30)), KbPages: kbPagesJSON(c.KBPages)}); err != nil { // #nosec G115 -- capped
 			return mapError(err)
 		}
 	}
@@ -187,7 +187,7 @@ func (r aiConversations) Page(ctx context.Context, q storage.AITurnQuery) ([]sto
 	for _, row := range callRows {
 		calls[row.TurnID] = append(calls[row.TurnID], storage.AIToolCall{ID: row.ID, Turn: row.TurnID, N: int(row.N), Tool: row.Tool,
 			Version: int(row.Version), Input: row.Input, OutputSHA256: row.OutputSha256, Outcome: row.Outcome, Code: row.Code, Facts: int(row.Facts),
-			Omitted: int(row.Omitted), Withheld: row.Withheld, DurationMS: int(row.DurationMs)})
+			Omitted: int(row.Omitted), Withheld: row.Withheld, DurationMS: int(row.DurationMs), KBPages: kbPagesOf(row.KbPages)})
 	}
 	return turns, calls, nil
 }
@@ -204,7 +204,7 @@ func (r aiConversations) ToolCalls(ctx context.Context, turn uuid.UUID) ([]stora
 	for _, row := range rows {
 		out = append(out, storage.AIToolCall{ID: row.ID, Turn: row.TurnID, N: int(row.N), Tool: row.Tool, Version: int(row.Version), Input: row.Input,
 			OutputSHA256: row.OutputSha256, Outcome: row.Outcome, Code: row.Code, Facts: int(row.Facts), Omitted: int(row.Omitted),
-			Withheld: row.Withheld, DurationMS: int(row.DurationMs)})
+			Withheld: row.Withheld, DurationMS: int(row.DurationMs), KBPages: kbPagesOf(row.KbPages)})
 	}
 	return out, nil
 }
@@ -335,4 +335,24 @@ func (r aiConversations) Purge(ctx context.Context, before time.Time) (int, int,
 		return 0, 0, mapError(err)
 	}
 	return int(row.Conversations), int(row.Turns), nil
+}
+
+// kbPagesJSON is a call's knowledge-base page versions as the column holds them: an array, empty for most calls.
+func kbPagesJSON(p []storage.KBPageVersion) []byte {
+	if len(p) == 0 {
+		return []byte(`[]`)
+	}
+	b, err := json.Marshal(p)
+	if err != nil {
+		return []byte(`[]`)
+	}
+	return b
+}
+
+func kbPagesOf(raw []byte) []storage.KBPageVersion {
+	var out []storage.KBPageVersion
+	if err := json.Unmarshal(raw, &out); err != nil || len(out) == 0 {
+		return nil
+	}
+	return out
 }

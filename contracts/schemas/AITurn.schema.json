@@ -70,6 +70,13 @@
       },
       "type": "array"
     },
+    "sources": {
+      "description": "The guide pages the answer's explanations come from (AI-51), which you can open.",
+      "items": {
+        "$ref": "AISource.schema.json"
+      },
+      "type": "array"
+    },
     "status": {
       "description": "answering until it ends; refused with the code of what stopped it; failed when the AI service did not finish.",
       "enum": [
@@ -98,6 +105,7 @@
     "status",
     "segments",
     "cited",
+    "sources",
     "regenerated",
     "withheld",
     "asked_at"

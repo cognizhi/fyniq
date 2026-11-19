@@ -1,0 +1,21 @@
+{
+  "name": "kb.index",
+  "title": "List the knowledge base",
+  "version": 1,
+  "description": "Lists the know-how pages you may read, each with its key, type, title and one-line summary, so you can choose which to read with kb.read. Know-how is how Fyniq works, what its statuses and screens mean, statutory guides, and the organisation's own policies and decisions. It holds no figures: figures come only from the other tools. Without a section it lists the whole index when that is short, and otherwise the sections (the first part of each page's key) with their page counts; give a section to list its pages. A page marked draft comes from a guide page still awaiting review.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "section": {
+        "type": "string",
+        "description": "Only the pages of this section: the first part of their keys, such as claims or founders.",
+        "pattern": "^[a-z0-9][a-z0-9-]{0,40}$"
+      }
+    }
+  },
+  "annotations": {"readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false},
+  "runs": "api",
+  "scope": "ai.read",
+  "limits": {"rows": 50, "timeout_ms": 5000, "result_tokens": 4000}
+}

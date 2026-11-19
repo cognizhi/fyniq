@@ -9,9 +9,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/app"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/nemura/role"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -33,6 +35,9 @@ func init() {
 	after = nemura.EnableLocalLogins
 	taskWiring = localTasks
 	signInWiring = localSignIn
+	hydraAdmin = func(admin string) ports.OAuthClients {
+		return hydra.New(admin, (&egress.Guard{Local: true, Propagate: true}).Bounded(0, 10*time.Second).For(egress.HostOf(admin)))
+	}
 }
 
 // localSignIn is the local build's sign-in: an OpenID Connect issuer inside the api whose page asks who you are, as a provider would after

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "examples": [
+        "2026-11-19T08:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "detail": {
+      "examples": [
+        "The note changed after a person edited the page: the recompile waits beside it."
+      ],
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "examples": [
+        "human_edit_conflict"
+      ],
+      "type": "string"
+    },
+    "page": {
+      "examples": [
+        "org.expense-policy"
+      ],
+      "type": "string"
+    },
+    "resolution": {
+      "examples": [
+        "Kept the person's version."
+      ],
+      "type": "string"
+    },
+    "resolved_at": {
+      "examples": [
+        "2026-11-19T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "resolved_by": {
+      "examples": [
+        "user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "open",
+        "resolved"
+      ],
+      "examples": [
+        "open"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The version it is about.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "page",
+    "version",
+    "detail",
+    "status",
+    "created_at"
+  ],
+  "title": "KBFindingView",
+  "type": "object"
+}

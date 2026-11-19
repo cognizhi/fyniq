@@ -4,6 +4,59 @@
 # info.version follows the platform version (release-please updates it).
 components:
   schemas:
+    Client:
+      additionalProperties: false
+      properties:
+        audience:
+          description: "The audience its tokens name: the API's."
+          examples:
+            - nemura-api
+          type: string
+        client_id:
+          description: The OAuth client ID the system signs in with at the token endpoint.
+          examples:
+            - 4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11
+          type: string
+        id:
+          description: The client's ID in Nemura.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e60
+          format: uuid
+          type: string
+        name:
+          description: The system that calls.
+          examples:
+            - Payroll bureau
+          type: string
+        scopes:
+          description: What its tokens may do.
+          examples:
+            - - directory.read
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+      required:
+        - id
+        - name
+        - scopes
+        - client_id
+        - audience
+      type: object
+    ClientsOutputBody:
+      additionalProperties: false
+      properties:
+        clients:
+          description: The organisation's live API clients.
+          items:
+            $ref: "#/components/schemas/Client"
+          type:
+            - array
+            - "null"
+      required:
+        - clients
+      type: object
     Code:
       additionalProperties: false
       properties:
@@ -33,6 +86,62 @@ components:
         - status
         - title
         - fix
+      type: object
+    ConfirmInputBody:
+      additionalProperties: false
+      properties:
+        credential:
+          additionalProperties: {}
+          description: The PublicKeyCredential the browser returned for the step-up, as JSON.
+          type: object
+      required:
+        - credential
+      type: object
+    ConfirmedOutputBody:
+      additionalProperties: false
+      properties:
+        confirmed:
+          description: "True: the session is confirmed with a passkey for the next five minutes."
+          examples:
+            - true
+          type: boolean
+      required:
+        - confirmed
+      type: object
+    CreateClientInputBody:
+      additionalProperties: false
+      properties:
+        algorithm:
+          description: "The algorithm its assertions are signed with: ES256, RS256 or EdDSA."
+          examples:
+            - ES256
+          type: string
+        name:
+          description: The system that will call Nemura.
+          examples:
+            - Payroll bureau
+          maxLength: 100
+          minLength: 1
+          type: string
+        public_key:
+          additionalProperties: {}
+          description: Its public key as a JWK (RFC 7517), never the private key.
+          type: object
+        scopes:
+          description: What its tokens may do, from GET /v1/api-clients/scopes.
+          examples:
+            - - directory.read
+          items:
+            type: string
+          minItems: 1
+          type:
+            - array
+            - "null"
+      required:
+        - name
+        - scopes
+        - algorithm
+        - public_key
       type: object
     ErrorsOutputBody:
       additionalProperties: false
@@ -142,6 +251,36 @@ components:
         - detail
         - code
       type: object
+    RegisterInputBody:
+      additionalProperties: false
+      properties:
+        credential:
+          additionalProperties: {}
+          description: The PublicKeyCredential the browser returned, as JSON.
+          type: object
+        name:
+          description: What the person calls this passkey.
+          examples:
+            - My laptop
+          maxLength: 100
+          minLength: 1
+          type: string
+      required:
+        - name
+        - credential
+      type: object
+    RegisteredOutputBody:
+      additionalProperties: false
+      properties:
+        id:
+          description: The new passkey.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e50
+          format: uuid
+          type: string
+      required:
+        - id
+      type: object
     SessionOutputBody:
       additionalProperties: false
       properties:
@@ -200,6 +339,170 @@ info:
   version: 0.1.0 # x-release-please-version
 openapi: 3.1.0
 paths:
+  /v1/api-clients:
+    get:
+      description: "Lists the organisation's live API clients: name, scopes and OAuth client ID, never a key. Only the Owner. It changes nothing."
+      operationId: listApiClients
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: List the API clients
+      tags:
+        - API clients
+    post:
+      description: Registers a system that calls Nemura's API on its own with the client-credentials grant, signing in with the key pair it holds (private_key_jwt), for the API's audience and the scopes given. Only the Owner, confirmed with a passkey in the last five minutes. It is audited; the private key never reaches Nemura.
+      operationId: createApiClient
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClientInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Register an API client
+      tags:
+        - API clients
+  /v1/api-clients/{id}:
+    delete:
+      description: "Revokes a client: its tokens are deleted and it can sign in no more. Only the Owner, confirmed with a passkey in the last five minutes. It is audited. A client that is not registered is NM_NOT_FOUND."
+      operationId: revokeApiClient
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The client to revoke.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The client to revoke.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e60
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Revoke an API client
+      tags:
+        - API clients
   /v1/errors:
     get:
       description: Lists every stable error code the API returns, with its HTTP status, its title and the usual fix. It needs no sign-in and changes nothing; a code never changes meaning inside /v1.
@@ -282,6 +585,101 @@ paths:
       summary: What this service is
       tags:
         - Platform
+  /v1/passkeys:
+    post:
+      description: Checks the browser's answer to the registration challenge and keeps the passkey for the signed-in person, with its audit event. The challenge is used once, whatever the answer; a wrong answer is NM_PASSKEY_REFUSED and an unknown or used challenge is NM_PASSKEY_NO_CEREMONY.
+      operationId: registerPasskey
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisteredOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Register a passkey
+      tags:
+        - Session
+  /v1/passkeys/registration:
+    post:
+      description: Returns the options the browser passes to navigator.credentials.create to register a passkey for the signed-in person, and keeps a one-time challenge for five minutes. It needs a session and saves no passkey until the answer is sent to POST /v1/passkeys.
+      operationId: beginPasskeyRegistration
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Start registering a passkey
+      tags:
+        - Session
   /v1/session:
     get:
       description: Returns the person the session cookie names, the organisation they are in, the roles they hold today and the page they land on. Roles are read again on each request, so a change is seen at once. It changes nothing; without a valid session it is NM_UNAUTHENTICATED.
@@ -323,6 +721,107 @@ paths:
       summary: Who is signed in
       tags:
         - Session
+  /v1/session/step-up:
+    post:
+      description: Returns the options the browser passes to navigator.credentials.get to confirm it is the person, and keeps a one-time challenge for five minutes. It needs a session; without a registered passkey it is NM_NO_PASSKEY. Nothing changes until the answer is sent to POST /v1/session/step-up/confirm.
+      operationId: beginStepUp
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Start confirming the session with a passkey
+      tags:
+        - Session
+  /v1/session/step-up/confirm:
+    post:
+      description: "Checks the browser's answer to the step-up challenge: one of the person's live passkeys signed exactly that challenge, for this site, with the person verified, and its counter did not go back. The session is then confirmed for five minutes, which approvals need. The challenge is used once, whatever the answer."
+      operationId: confirmStepUp
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfirmedOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Confirm the session with a passkey
+      tags:
+        - Session
 servers:
   - description: Nemura's origin with /api (one origin serves the web app and the API), or the api service itself in make dev.
     url: "{origin}"
@@ -333,5 +832,7 @@ servers:
 tags:
   - description: What the service is and the error codes it returns (NM-ARC-03).
     name: Platform
+  - description: Systems that call Nemura's API on their own, registered by the Owner with a key pair they hold (NM-ARC-06).
+    name: API clients
   - description: Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02).
     name: Session

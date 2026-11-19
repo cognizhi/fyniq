@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { FileText, Landmark, RotateCcw, Send, Sparkles, SquarePen, Trash2, X } from "lucide-react";
+import { BookOpen, FileText, Landmark, RotateCcw, Send, Sparkles, SquarePen, Trash2, X } from "lucide-react";
 import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import { api } from "../../api/client";
 import { date } from "../../format/date";
@@ -325,6 +325,13 @@ function TurnView({ turn: t, expert, conversation, onRated }: {
             Fyniq withheld {t.withheld === 1 ? "a figure" : `${t.withheld} figures`} it could not check against the books.
           </p>
         )}
+        {t.sources.length > 0 && (
+          <div className="fy-row fy-row--wrap gap-1" aria-label="Where the explanation comes from" role="group">
+            {t.sources.map((s) => (
+              <GuideSource key={`${s.guide ?? ""}${s.title}#${s.anchor}`} source={s} />
+            ))}
+          </div>
+        )}
         {t.cited.length > 0 && (
           <div className="fy-row fy-row--wrap gap-1" aria-label="Where the figures come from" role="group">
             {t.cited.map((f) => (
@@ -344,6 +351,27 @@ function TurnView({ turn: t, expert, conversation, onRated }: {
         )}
       </div>
     </>
+  );
+}
+
+// GuideSource is a chip naming the guide page an explanation comes from, opening it (AI-51): always a page the person can open
+// in the user guide, never one of the assistant's own compiled pages. A page still awaiting review says so.
+function GuideSource({ source: s }: { source: NonNullable<Turn["sources"]>[number] }) {
+  const label = `${s.title}${s.draft ? " (awaiting review)" : ""}`;
+  const body = (
+    <>
+      <Icon of={BookOpen} />
+      {label}
+    </>
+  );
+  if (!s.href) {
+    return <span className="fy-tag">{body}</span>; // what the reader may not open is named, not linked
+  }
+  const [to = "", hash] = s.href.split("#");
+  return (
+    <Link className="fy-tag" to={to} hash={hash} title={s.draft ? "This guide page is still awaiting review" : `From ${s.title}`}>
+      {body}
+    </Link>
   );
 }
 

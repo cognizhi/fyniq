@@ -208,6 +208,7 @@ export const routes = [
   { kind: "route", id: "settings-ai-routes", path: "/settings/ai/routes", mode: "expert", signedIn: true, help: "settings.ai-routes", guide: "settings.ai-routes" },
   { kind: "route", id: "settings-ai-route", path: "/settings/ai/routes/$agent", mode: "expert", signedIn: true, help: "settings.ai-route", guide: "settings.ai-routes#change-an-agents-route" },
   { kind: "route", id: "settings-ai-activity", path: "/settings/ai/activity", mode: "expert", signedIn: true, help: "settings.ai-activity", guide: "settings.ai-activity" },
+  { kind: "route", id: "settings-ai-knowledge-base", path: "/settings/ai/knowledge-base", mode: "expert", signedIn: true, help: "settings.ai-knowledge-base", guide: "settings.ai-knowledge-base" },
   { kind: "route", id: "settings-ai-plan", path: "/settings/profile/ai-plan", mode: "basic", signedIn: true, help: "settings.ai-plan", guide: "settings.ai-activity#your-own-ai-plan" },
   // Settings › Import (FR-MIG-01…03; p1-workbook-migration task 9.1): the move from the workbook, M1 to M6, and the generic import.
   { kind: "route", id: "settings-import", path: "/settings/import", mode: "expert", signedIn: true, help: "settings.import", guide: "settings.import" },

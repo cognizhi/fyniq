@@ -19,6 +19,8 @@ aliases:
   - back-test
   - rule order
   - rules to consider
+  - automatic categorisation
+  - categorise bank lines automatically
 ---
 
 # Make, test and approve bank rules

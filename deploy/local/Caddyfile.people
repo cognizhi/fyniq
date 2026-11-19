@@ -11,6 +11,10 @@
 	handle_path /api/* {
 		reverse_proxy nemura-api:8080
 	}
+	# Nemura's OAuth server's public endpoints (token, discovery, JWKS); its admin port is internal.
+	handle_path /oauth/* {
+		reverse_proxy nemura-oauth:4444
+	}
 	# The sign-in routes are browser navigations on the API (/auth/…), reached through /api like every route.
 	handle {
 		respond "Nemura's web app arrives with p1-nemura-platform's web slice." 404
