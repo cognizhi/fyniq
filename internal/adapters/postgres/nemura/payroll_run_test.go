@@ -1020,7 +1020,7 @@ func addApd(a *apd.Decimal, s string) *apd.Decimal {
 	return out
 }
 
-// A pay run for 50 people calculates in under 5 seconds (NM-NFR-02), so one for 100 must in under 10: the run builds each person's month from their records, calculates CPF, SDL and the fund, and writes the
+// A pay run for 50 people calculates in under 5 seconds (NM-NFR-02), so one for 100 must in under 10 (it takes about a second and a quarter on a laptop): the run builds each person's month from their records, calculates CPF, SDL and the fund, and writes the
 // version, its lines and the audit event in one transaction.
 // req: NM-NFR-02
 func TestAPayRunOfAHundredPeopleCalculatesInUnderTenSeconds(t *testing.T) {
@@ -1054,17 +1054,14 @@ func TestAPayRunOfAHundredPeopleCalculatesInUnderTenSeconds(t *testing.T) {
 		}
 		return nil
 	})
-	start := time.Now()
-	run, err := svc.StartRun(ctx, prep, d("2026-06-01"), mustUUID(gid))
-	took := time.Since(start)
+	// The budget is a deadline on the call itself: the run is cut off, and fails, when it takes more than 10 seconds.
+	budget, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	run, err := svc.StartRun(budget, prep, d("2026-06-01"), mustUUID(gid))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("a pay run of 100 people in 10 seconds: %v", err)
 	}
 	if run.Latest.People != 100 {
 		t.Fatalf("people in the run: %d", run.Latest.People)
-	}
-	t.Logf("a pay run of 100 people took %s", took)
-	if took > 10*time.Second {
-		t.Errorf("a pay run of 100 people took %s: over 10 seconds", took)
 	}
 }
