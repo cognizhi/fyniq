@@ -148,6 +148,14 @@ def _deductions(draw: st.DrawFn) -> list[dict[str, Any]]:
 
 
 @st.composite
+def _overrides(draw: st.DrawFn) -> list[dict[str, str]]:
+    """FR-PAY-06: one to three overrides, each of a different figure, in cents, with a reason of the length the rule asks for."""
+    fields = draw(st.lists(st.sampled_from(["cpf_employee", "cpf_employer", "sdl", "shg"]), min_size=1, max_size=3, unique=True))
+    return [{"field": f, "value": _text(draw(_cents(300_000))), "reason": draw(st.sampled_from(["The CPF Board's figure", "Agreed with the employee", "x" * 10, "y" * 500]))}
+            for f in fields]
+
+
+@st.composite
 def _facts(draw: st.DrawFn, month: date, person: dict[str, Any]) -> dict[str, Any]:
     facts: dict[str, Any] = {"items": draw(_items(month))}
     if draw(st.integers(0, 7)) != 0:  # mostly known; a missing year to date is a refusal when additional wages are paid
@@ -162,6 +170,8 @@ def _facts(draw: st.DrawFn, month: date, person: dict[str, Any]) -> dict[str, An
         facts["final"] = True
     if draw(st.integers(0, 6)) == 0:
         facts["held"] = _text(draw(st.integers(1, 500_000)))
+    if draw(st.integers(0, 5)) == 0:
+        facts["overrides"] = draw(_overrides())
     return facts
 
 

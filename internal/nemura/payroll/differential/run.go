@@ -56,7 +56,14 @@ type deductionDoc struct {
 	IsAdvance  bool   `json:"is_advance"`
 }
 
+type overrideDoc struct {
+	Field  string `json:"field"`
+	Value  string `json:"value"`
+	Reason string `json:"reason"`
+}
+
 type factsDoc struct {
+	Overrides      []overrideDoc  `json:"overrides"`
 	Items          []itemDoc      `json:"items"`
 	YTD            *ytdDoc        `json:"ytd"`
 	LastMonth      bool           `json:"last_month"`
@@ -257,6 +264,22 @@ func errorCode(err error) string {
 	return "invalid: " + err.Error()
 }
 
+// overridden applies the month's overrides (FR-PAY-06) to its result, in order: the engine's own Check refuses one that names no figure or has no reason.
+func overridden(r payroll.Result, os []overrideDoc) (payroll.Result, error) {
+	for _, o := range os {
+		v, err := money(o.Value)
+		if err != nil {
+			return r, err
+		}
+		ov := payroll.Override{Field: o.Field, Value: v, Reason: o.Reason}
+		if err := ov.Check(); err != nil {
+			return r, invalid("override of %s: %v", o.Field, err)
+		}
+		r = ov.Apply(r)
+	}
+	return r, nil
+}
+
 // Run works a run document out through the engine.
 func Run(d RunDoc) (map[string]any, error) {
 	first, err := date(d.Month)
@@ -289,6 +312,9 @@ func Run(d RunDoc) (map[string]any, error) {
 			people = append(people, map[string]any{"id": e.ID, "error": errorCode(err)})
 			continue
 		}
+		if res, err = overridden(res, e.Overrides); err != nil {
+			return nil, err
+		}
 		counted = append(counted, res)
 		shown := figures(res)
 		shown["id"] = e.ID
@@ -298,6 +324,9 @@ func Run(d RunDoc) (map[string]any, error) {
 				return nil, err
 			}
 			if before, err := payroll.Calculate(pm, packs); err == nil {
+				if before, err = overridden(before, e.Posted.Overrides); err != nil {
+					return nil, err
+				}
 				diff := payroll.Diff(res, &before)
 				shown["difference"] = map[string]any{
 					"gross": text(diff.Gross), "cpf_employee": text(diff.EmployeeCPF), "cpf_employer": text(diff.EmployerCPF), "sdl": text(diff.SDL),

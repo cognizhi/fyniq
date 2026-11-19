@@ -43,6 +43,7 @@
           "deductions": {"$ref": "#/$defs/deductions"},
           "final": {"type": "boolean"},
           "held": {"$ref": "#/$defs/money"},
+          "overrides": {"$ref": "#/$defs/overrides"},
           "posted": {
             "type": "object",
             "description": "The same person's facts as last posted; the difference from them is what the later run posts",
@@ -55,7 +56,8 @@
               "reimbursements": {"$ref": "#/$defs/reimbursements"},
               "deductions": {"$ref": "#/$defs/deductions"},
               "final": {"type": "boolean"},
-              "held": {"$ref": "#/$defs/money"}
+              "held": {"$ref": "#/$defs/money"},
+              "overrides": {"$ref": "#/$defs/overrides"}
             }
           }
         }
@@ -65,6 +67,20 @@
   "$defs": {
     "money": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,2})?$"},
     "reimbursements": {"type": "array", "items": {"$ref": "#/$defs/money"}},
+    "overrides": {
+      "type": "array",
+      "description": "Overrides (FR-PAY-06): each replaces one figure the engine works out, with a reason; the figure is taken as given",
+      "items": {
+        "type": "object",
+        "required": ["field", "value", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "field": {"enum": ["cpf_employee", "cpf_employer", "sdl", "shg"]},
+          "value": {"$ref": "#/$defs/money"},
+          "reason": {"type": "string", "minLength": 10, "maxLength": 500}
+        }
+      }
+    },
     "ytd": {
       "type": "object",
       "required": ["ow", "aw_subject", "aw_paid"],

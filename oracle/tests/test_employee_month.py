@@ -621,3 +621,61 @@ def test_a_joint_application_at_full_rates_for_both_is_the_full_table():  # req:
     # The full-rates election applies only in the first two years, and only with a joint application.
     third = person(residency="permanent_resident", pr_start="2024-01-10", joint_election=True, employee_full_rate=True)
     assert figures(work(person=third, items=basic("5000.00"), **month), "cpf_total") == {"cpf_total": 1850}
+
+
+# --- overrides (FR-PAY-06) ------------------------------------------------------------------------------------------------------------
+
+REASON = "Per the CPF Board's own figure"
+
+
+def over(field, value, reason=REASON):
+    return {"field": field, "value": value, "reason": reason}
+
+
+def test_an_override_replaces_the_figure_and_what_follows_from_it():  # req: FR-PAY-06
+    # A citizen on 5,000: CPF 1,850 (employee 1,000, employer 850), SDL 11.25, net 4,000, cost 5,861.25. The CPF Board's own figure for the employee is 999.50:
+    # the employee's share is that, the CPF total follows its two shares, 999.50 + 850 = 1,849.50, net 5,000 - 999.50 = 4,000.50, the cost is unchanged.
+    got = work(items=basic("5000.00"), overrides=[over("cpf_employee", "999.50")])
+    assert figures(got, "cpf_employee", "cpf_employer", "cpf_total", "net", "disburse", "employer_cost") == {
+        "cpf_employee": Decimal("999.50"), "cpf_employer": 850, "cpf_total": Decimal("1849.50"), "net": Decimal("4000.50"),
+        "disburse": Decimal("4000.50"), "employer_cost": Decimal("5861.25")}
+    # The employer's share replaced by 800: total 1,800; the cost is 5,000 + 800 + 11.25 = 5,811.25; net pay is untouched.
+    got = work(items=basic("5000.00"), overrides=[over("cpf_employer", "800.00")])
+    assert figures(got, "cpf_total", "net", "employer_cost") == {"cpf_total": 1800, "net": 4000, "employer_cost": Decimal("5811.25")}
+
+
+def test_an_override_of_the_sdl_or_the_shg_fund_changes_the_cost_or_net_pay():  # req: FR-PAY-06
+    # SDL 11.25 replaced by 5.00: the cost is 5,000 + 850 + 5.00 = 5,855.00 and net pay does not change.
+    got = work(items=basic("5000.00"), overrides=[over("sdl", "5.00")])
+    assert figures(got, "sdl", "net", "employer_cost") == {"sdl": 5, "net": 4000, "employer_cost": 5855}
+    # A citizen on 3,000 giving to CDAC pays 1.00; replaced by 2.50: net 3,000 - 600 - 2.50 = 2,397.50.
+    got = work(person=person(shg_fund="CDAC"), items=basic("3000.00"), overrides=[over("shg", "2.50")])
+    assert figures(got, "shg", "net") == {"shg": Decimal("2.50"), "net": Decimal("2397.50")}
+
+
+def test_an_override_is_the_figure_given_with_no_dollar_rounding():  # req: FR-PAY-06 [accountant to confirm]
+    # RND-CPF's dollar rounding belongs to the calculation; an override is the person's figure, as the CPF Board or the bank showed it.
+    assert Decimal(work(items=basic("5000.00"), overrides=[over("cpf_employee", "1000.49")])["cpf_employee"]) == Decimal("1000.49")
+
+
+def test_an_override_with_no_reason_or_an_unknown_figure_is_refused():  # req: FR-PAY-06
+    for bad in (over("cpf_employee", "1.00", "too short"), over("cpf_employee", "1.00", "x" * 501), over("gross", "1.00"), over("sdl", "1.005")):
+        with pytest.raises(em.PayrollError):
+            work(overrides=[bad])
+
+
+def test_overridden_sdl_amounts_are_added_then_rounded_down_once_in_a_run():  # req: FR-PAY-06, FR-PAY-03
+    # Two employees whose SDL (11.25 each) is replaced by 5.50 and 7.50: 13.00 in all, 13 payable; the cost carries 13, the entry balances.
+    people = [{"id": n, "person": person(), "items": basic("5000.00"), "overrides": [over("sdl", v)]} for n, v in (("A", "5.50"), ("B", "7.50"))]
+    out = em.payroll_run({"schema": "fyniq-payroll-run@1", "name": "r", "month": "2026-06-01", "people": people})
+    t = {k: Decimal(v) for k, v in out["totals"].items()}
+    assert t["sdl_employees"] == 13 and t["sdl_payable"] == 13 and t["employer_cost"] == 10000 + 1700 + 13
+    assert out["balanced"] is True
+
+
+def test_the_difference_of_a_later_run_counts_an_override_on_either_side():  # req: FR-PAY-06, B.3
+    # Posted with the employee's CPF replaced by 999.50; now the calculated 1,000: the difference of the employee's CPF is +0.50 and net pay -0.50.
+    entry = {"id": "A", "person": person(), "items": basic("5000.00"), "posted": {"items": basic("5000.00"), "overrides": [over("cpf_employee", "999.50")]}}
+    out = em.payroll_run({"schema": "fyniq-payroll-run@1", "name": "later", "month": "2026-06-01", "people": [entry]})
+    d = {k: Decimal(v) for k, v in out["people"][0]["difference"].items()}
+    assert d["cpf_employee"] == Decimal("0.50") and d["net"] == Decimal("-0.50") and d["gross"] == 0

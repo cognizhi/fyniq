@@ -85,6 +85,8 @@ HALF = Decimal("0.5")
 QUARTER = Decimal("0.25")
 MAX_ADVANCE_INSTALMENTS = 12
 
+OVERRIDE_FIELDS = ("cpf_employee", "cpf_employer", "sdl", "shg")
+
 RESIDENCIES = ("citizen", "permanent_resident", "foreigner")
 FUNDS = ("CDAC", "ECF", "MBMF", "SINDA")
 
@@ -341,7 +343,15 @@ def _facts(doc: dict[str, Any]) -> dict[str, Any]:
                 "is_advance": bool(raw.get("is_advance", False)),
             }
         )
+    overrides = []
+    for raw in doc.get("overrides") or []:
+        if raw["field"] not in OVERRIDE_FIELDS:
+            raise PayrollError(f"override: {raw['field']!r} is not one of {', '.join(OVERRIDE_FIELDS)}")
+        if len(raw["reason"].strip()) < 10 or len(raw["reason"]) > 500:
+            raise PayrollError(f"override of {raw['field']}: the reason is 10 to 500 characters")
+        overrides.append({"field": raw["field"], "value": _money(raw["value"], f"override of {raw['field']}")})
     return {
+        "overrides": overrides,
         "items": items,
         "ytd": ytd,
         "last_month": bool(doc.get("last_month", False)),
@@ -422,6 +432,20 @@ def employee_month(person: dict[str, Any], month: date, facts: dict[str, Any], p
     shg = ZERO
     if employee and person.get("shg_fund") and not person.get("shg_opt_out"):
         shg = shg_fund_amount(shg_id, month, person["shg_fund"], gross)
+
+    # FR-PAY-06: an override replaces one calculated figure with the figure given (no dollar rounding: it is the person's figure, [accountant to confirm]); the CPF total
+    # follows its two shares; net pay, the amount to disburse and the employer's cost follow from the figures they are made of.
+    for ov in facts["overrides"]:
+        if ov["field"] == "cpf_employee":
+            cpf_employee = ov["value"]
+        elif ov["field"] == "cpf_employer":
+            cpf_employer = ov["value"]
+        elif ov["field"] == "sdl":
+            sdl = ov["value"]
+        else:
+            shg = ov["value"]
+    if any(ov["field"] in ("cpf_employee", "cpf_employer") for ov in facts["overrides"]):
+        cpf_total = cpf_employee + cpf_employer
 
     deductions_total = sum((d["amount"] for d in facts["deductions"]), ZERO)
     reimbursements = sum(facts["reimbursements"], ZERO)
