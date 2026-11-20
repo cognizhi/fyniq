@@ -46,7 +46,13 @@ true-up: it moves the revenue the ledger holds to what is earned, and the differ
 liability** (invoiced ahead of the work).
 
 **Propose the month's journal** makes it as a draft, every line carrying the project, for a person to approve and post like any journal. A month is proposed
-once, in order, and only after the earlier months' journals are posted. The three accounts are set under organisation settings (Projects). If some of the costs posted to the project do not show progress (waste, rework, a cost out of proportion to the work), enter the running total to
+once, in order, and only after the earlier months' journals are posted. The three accounts are set under organisation settings (Projects). A **fixed-fee project in another currency** is worked in the base currency: its fee (the milestones) and its estimate are converted at the rate of the
+month's last day (today's, in the month under way), the page shows that rate and its date, and a month with no rate for the day is refused until you enter
+one. Each month re-measures the fee at that day's rate. Every month, early on the first days of the next, Fyniq also **proposes the month that has just ended
+by itself** as a draft journal for each project elected for revenue over time (when nothing is yet to be moved, the earlier month is not posted, or the accounts are
+not set up, it waits and tries again the next day); it only ever makes the draft, and a person approves and posts it.
+
+If some of the costs posted to the project do not show progress (waste, rework, a cost out of proportion to the work), enter the running total to
 **leave out of progress** with the reason when you elect it, and progress is measured by the costs posted less those: the page shows both. More left
 out than was posted is refused. When the cost
 reaches the estimate the whole fee is earned and the page says to revisit the estimate. The method is for the accountant to confirm: Fyniq follows the
