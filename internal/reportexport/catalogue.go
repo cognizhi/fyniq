@@ -30,7 +30,7 @@ var Exported = []string{
 	"pd_breach_step", "pd_request", "pd_request_step", "pd_shredding_run", "pd_transfer", "period", "period_close",
 	"period_close_check", "period_reopen", "period_variance_explanation", "policy_acknowledgement", "policy_draft",
 	"policy_version", "project", "project_member", "project_task", "billing_rate", "person_cost_rate", "project_billed_item", "project_milestone", "quote_outcome", "time_entry", "time_timer", "timesheet_submission", "recurring_bill", "recurring_bill_version", "recurring_invoice",
-	"recurring_invoice_version", "recurring_journal", "recurring_journal_version", "report_export", "restore_drill",
+	"recurring_invoice_version", "recurring_journal", "recurring_journal_version", "report_export", "restore_drill", "retention_hold",
 	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "role_assignment_scope", "sales_reminder",
 	"security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",
 	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "user_preference", "user_saved_item", "record_comment", "withholding_decision", "people_source", "salary_batch", "payroll_arrangement", "payroll_import", "person_projection", "payroll_mapping", "payroll_mapping_entry", "payroll_run_receipt", "payroll_run_refusal", "people_leave",

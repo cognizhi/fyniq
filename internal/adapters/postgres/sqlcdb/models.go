@@ -3873,6 +3873,23 @@ type FyniqRestoreDrill struct {
 	RecordedAt      time.Time
 }
 
+type FyniqRetentionHold struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	DocumentID     *uuid.UUID
+	ContactID      *uuid.UUID
+	YearNumber     *int32
+	YearStartsOn   pgtype.Date
+	YearEndsOn     pgtype.Date
+	Reason         string
+	PlacedBy       string
+	PlacedAt       time.Time
+	LiftedBy       *string
+	LiftedAt       *time.Time
+	LiftReason     *string
+}
+
 type FyniqReviewLogEntry struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

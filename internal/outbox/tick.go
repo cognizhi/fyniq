@@ -42,6 +42,9 @@ var PlatformSchedules = []Schedule{
 	{Job: "audit.erase", Every: 24 * time.Hour, Offset: 17*time.Hour + 30*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
 	// The purge after retention, weekly, where an organisation switched it on (AUD-09, AUD-10).
 	{Job: "retention.purge", Every: 7 * 24 * time.Hour, Offset: 17*time.Hour + 45*time.Minute, Lease: 2 * time.Hour, Stale: 8 * 24 * time.Hour},
+	// Daily at 01:40 Singapore time, the evidence files' storage-level legal holds made equal to the holds in force, files attached
+	// since included (AUD-11; p2-security-certification design D2).
+	{Job: "retention.holds", Every: 24 * time.Hour, Offset: 17*time.Hour + 40*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
 	// Daily at 01:55 Singapore time, the assistant's conversations past their retention, and those their people deleted
 	// (§11.9; p1-ai-assistant design D11).
 	{Job: "ai.conversations.purge", Every: 24 * time.Hour, Offset: 17*time.Hour + 55*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
