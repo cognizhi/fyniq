@@ -547,6 +547,7 @@ var codeFacts = map[string]struct {
 	CodeAuditConfirm:              {403, "A second Owner confirms an engagement in Team mode"},
 	CodeAuditOpen:                 {422, "That member does not hold the right role for the engagement"},
 	CodeCapGrantOwner:             {403, "Only an Owner grants the full cap table"},
+	CodeWaterfallRefused:          {422, "The waterfall does not model that structure"},
 	CodeCapGrantNone:              {403, "No grant of the full cap table"},
 	storage.CodeKPIAlert:          {409, "A raised alert is never changed"},
 	storage.CodeBoardPack:         {409, "A board pack changes only as a draft, and a published one never"},

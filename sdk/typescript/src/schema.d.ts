@@ -8157,6 +8157,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/exit-waterfall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Model what an exit pays each class and holder
+         * @description A sandbox (FR-EQ-29): for an exit value, what each share class and each holder would receive under the liquidation preferences the register records (a non-participating preference of a multiple of the money invested, which converts when that pays the class more; an uncapped participating preference; seniority between classes, classes of one seniority sharing pari passu), next to every class converted with no preference. The money invested in a class is its issues up to the day, shared among its holders by shares. A capped participating preference and a cumulative dividend are refused by name (EQ-WF-01), never approximated, until a lawyer or accountant confirms them. Nothing is posted or saved. Read-only.
+         */
+        get: operations["getExitWaterfall"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/expense-claims": {
         parameters: {
             query?: never;
@@ -38010,6 +38030,39 @@ export interface components {
             /** @description The tabletop exercises, oldest first. */
             items: components["schemas"]["BreachExerciseView"][];
         };
+        ExitWaterfall: {
+            /** @description Every class converted, no preference: each share the same. */
+            as_converted: components["schemas"]["WaterfallClassView"][];
+            /**
+             * @description False until a class with a liquidation preference is recorded: nothing is modelled.
+             * @example true
+             */
+            available: boolean;
+            /** @description Under the preferences, each class's proceeds, in the order of its name. */
+            classes: components["schemas"]["WaterfallClassView"][];
+            /**
+             * @description The base currency every amount is in.
+             * @example SGD
+             */
+            currency: string;
+            /** @description What the shareholders receive after debts and sale costs. */
+            exit_value: components["schemas"]["Money"];
+            /**
+             * @description Why it is not available.
+             * @example No share class records a liquidation preference.
+             */
+            message?: string;
+            /** @description The structures the waterfall models: the others are refused by name, never approximated. */
+            modelled: string[];
+            /** @description What the register records that the waterfall does not model. */
+            notes: string[];
+            /**
+             * Format: date
+             * @description The day of the register it reads.
+             * @example 2027-03-12
+             */
+            on: string;
+        };
         ExpenseClaim: {
             /**
              * Format: uuid
@@ -63516,6 +63569,74 @@ export interface components {
              * @example -12.5
              */
             variance_percent?: string;
+        };
+        WaterfallClassView: {
+            /**
+             * @description The class's ID, or account:<id> for the shares of an account with no recorded class.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+             */
+            class_id: string;
+            /**
+             * @description True for a non-participating preference class that does better converting.
+             * @example false
+             */
+            converts: boolean;
+            /**
+             * @description Whether it has a liquidation preference.
+             * @example true
+             */
+            has_preference: boolean;
+            /** @description Its holders' parts. */
+            holders: components["schemas"]["WaterfallHolderView"][];
+            /**
+             * @description The multiple of the money invested its preference pays first.
+             * @example 1
+             */
+            multiple?: string;
+            /**
+             * @description Its name.
+             * @example Series Seed
+             */
+            name: string;
+            /**
+             * @description Whether it shares the rest as converted after its preference, with no cap.
+             * @example false
+             */
+            participating?: boolean;
+            /** @description What it takes as its preference: zero for a class that converts or has none. */
+            preference: components["schemas"]["Money"];
+            /** @description What it takes of the rest, as converted. */
+            residual: components["schemas"]["Money"];
+            /**
+             * Format: int64
+             * @description 1 is paid first; classes of the same seniority share pari passu.
+             * @example 1
+             */
+            seniority?: number;
+            /** @description Its proceeds. */
+            total: components["schemas"]["Money"];
+        };
+        WaterfallHolderView: {
+            /**
+             * Format: uuid
+             * @description The holder.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+             */
+            holder_id: string;
+            /**
+             * @description Their name.
+             * @example Seedling Ventures Pte. Ltd.
+             */
+            holder_name: string;
+            /** @description The money invested in the class that is theirs: the class's issues shared by shares (ALLOC-PRORATA). */
+            invested: components["schemas"]["Money"];
+            /**
+             * @description Their shares of the class, as converted.
+             * @example 1500000
+             */
+            shares: string;
+            /** @description What they receive. */
+            total: components["schemas"]["Money"];
         };
         WithdrawFXRateRequest: {
             /**
@@ -127827,6 +127948,86 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getExitWaterfall: {
+        parameters: {
+            query: {
+                /** @description What the shareholders receive, in the base currency, as a plain decimal. */
+                exit_value: string;
+                /** @description The day of the register to read; left out, the organisation's today. */
+                on?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExitWaterfall"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `EQ-WF-01` The waterfall does not model that structure. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -411,6 +411,10 @@ Source: PRD-001 §8.23 · Priority C · Phase P2
 - **THEN** the waterfall refuses that class and names the structure it does not model
 - **AND** a non-participating preference of a multiple, an uncapped participating one and seniority are modelled
 
+#### Scenario: The sandbox reads the register (rev 0.592)
+- **WHEN** the exit waterfall is asked for an exit value on a day
+- **THEN** it reads each class's recorded rights in force, its holders' shares as converted and the money invested in it, which is the class's issues up to the day shared among its holders by shares
+- **AND** it is read under the whole cap table's unqualified view, so a Board viewer's own-holding view is not it, and a class with a cap on its participation or a cumulative dividend is refused by name, never approximated
 
 ### Requirement: FR-EQ-27 Basic and Expert
 The equity features SHALL be split between Basic and Expert modes (§7.8).

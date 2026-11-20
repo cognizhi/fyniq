@@ -1859,6 +1859,10 @@
       "label": "Investor updates",
       "tooltip": "An update built from a published board pack, sent once to the members you choose. They are told by a notification that links to the signed-in update; it carries no figure."
     },
+    "equity.exit-waterfall": {
+      "label": "Exit waterfall",
+      "tooltip": "A sandbox: what an exit value would pay each share class and holder under the liquidation preferences the register records, next to a plain split by shares. It posts and saves nothing."
+    },
     "audit.engagement": {
       "label": "Auditor engagement",
       "tooltip": "A time-boxed engagement an Owner opens for the auditor and a second Owner confirms. While it is active the auditor asks for items and draws samples of posted lines, and the people asked answer with evidence."

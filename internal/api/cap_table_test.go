@@ -203,6 +203,9 @@ func TestCapTable(t *testing.T) {
 
 // matrixCapTable are the authorisation matrix's rows for the cap table (FR-EQ-20): reads only, so none changes anything.
 var matrixCapTable = map[string]func(e *env, tok string) (response, func() bool){
+	"getExitWaterfall": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/exit-waterfall?exit_value=1000000.00", tok, nil), nil
+	},
 	"getCapTable": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/cap-table", tok, nil), nil
 	},

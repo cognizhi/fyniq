@@ -1646,6 +1646,8 @@ var (
 // option pool (FR-EQ-19).
 var (
 	GetCapTable    = Policy{Operation: "getCapTable", Capability: CapTable, Need: View, Unqualified: true}
+	// The exit waterfall sandbox (FR-EQ-29, rev 0.591) shows every holder's proceeds, so it is read under the whole cap table's unqualified V: a Board viewer's "own holding" is not it.
+	GetExitWaterfall = Policy{Operation: "getExitWaterfall", Capability: CapTable, Need: View, Unqualified: true}
 	ExportCapTable = Policy{Operation: "exportCapTable", Capability: CapTable, Need: View, Unqualified: true}
 	GetMyHolding   = Policy{Operation: "getMyHolding", Capability: CapTable, Need: View, Unqualified: true,
 		Qualified: []string{"own holding; all if granted"}}
