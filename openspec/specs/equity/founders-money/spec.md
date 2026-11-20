@@ -476,6 +476,10 @@ Source: PRD-001 §8.22 · Priority C · Phase P2
 - **WHEN** a grant's tranche vests
 - **THEN** its total is its shares times the fair value rounded once, spread over the whole calendar months from the service start's month to its vest day's month by ALLOC-EVEN, and a month's expense is the tranches' parts
 
+#### Scenario: A month of the expense is a draft journal (rev 0.616)
+- **WHEN** a month of a recorded grant's expense is proposed
+- **THEN** a draft journal debits the grant's expense account and credits its reserve, an approver posts it, the month is proposed once, and the grant's figures stay as they were
+
 #### Scenario: Employment income and no tax deduction
 - **WHEN** the year's payroll returns are prepared
 - **THEN** the grant provides employment-income data for IR8A [verify valuation]
