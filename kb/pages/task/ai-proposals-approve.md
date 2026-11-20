@@ -4,7 +4,7 @@ type: task
 title: Review, approve or reject a change the AI proposed
 summary: Review, approve, reject or undo an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
 sources:
-  - docs/user-guide/ai-proposals.md sha256:b6fd54b660c14649811b1fc02f117d04cf1a35f617b90fb2c34545e736e06e6e
+  - docs/user-guide/ai-proposals.md sha256:3ac2e6e0ddbaa0a3ec119dba79c61976427445b98163307be11e705f56c5a34c
 data_class: general
 taint: trusted
 status: draft
@@ -29,6 +29,10 @@ aliases:
   - undo what the AI did
   - AI update contact
   - ct.update_contact
+  - AI recurring journal
+  - recur.create_template
+  - AI budget draft
+  - plan.propose_budget
   - sec.draft_reminder
 ---
 
@@ -133,6 +137,21 @@ aliases:
 - A draft the AI made is not undone: it posts nothing, so a person edits or ignores it; a message sent cannot be unsent. The proposal stays **Executed**, and the review then says **Undone**, when and why.
 
 (src: docs/user-guide/ai-proposals.md#undo-a-change-the-ai-made)
+
+## Review a recurring journal the AI proposed
+
+- Add a recurring journal (`recur.create_template`, tier 2) adds a recurring journal, as Add a recurring journal does: a name, the memo and balancing lines, whether each draft reverses on the first day of the next month, and a schedule of every 1, 3, 6 or 12 months on a day of the month. The scheduler then makes a draft journal on each occurrence, which a person posts under the usual approvals: nothing recurring posts by itself.
+- Its lines keep to income, cost, prepayment, deferred revenue and depreciation accounts in the base currency: never a bank, equity, sub-ledger, tax, payroll or director's account. Its monthly equivalent is limited to S$5,000. A recurring bill or invoice is made by a person.
+- It is tier 2: an Accountant other than the person who asked approves it. If an account it names changed after the review, nothing is made and the proposal is out of date. **Undo this change** pauses the template; drafts the scheduler already made stay for a person to post or ignore.
+
+(src: docs/user-guide/ai-proposals.md#review-a-recurring-journal-the-ai-proposed)
+
+## Review a budget the AI drafted
+
+- Draft a budget version (`plan.propose_budget`, tier 2) drafts a budget for a financial year, as Draft a budget does: income and expense accounts with twelve monthly amounts, for the whole company. It is only a draft: not approved or recorded; a person asks for its approval, which records and locks it. A line for one department or project is a person's.
+- An Accountant other than the person who asked approves it. A budget draft cannot be undone, since no function deletes one: a person edits it or leaves it.
+
+(src: docs/user-guide/ai-proposals.md#review-a-budget-the-ai-drafted)
 
 ## Approval quality
 

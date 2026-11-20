@@ -63,7 +63,8 @@
   terms, default category, default GST code), a column-limited executor grant on exactly those and `version`, a trigger that refuses the
   executor a person's contact or an inactive one, the narrow `UpdateContactAIFields` query (also the undo's), the dry run's before and after per
   field, the undo, the attack tests and the `ct-update-contact` (proposal) and `ct-update-contact-redteam` suites. Individuals, directors,
-  shareholders, investors and linked members are refused (their values are sealed in the audit trail). **Left:** the other two.
+  shareholders, investors and linked members are refused (their values are sealed in the audit trail).
+  **Built (rev 0.462):** `recur.create_template` (recurring journals only; migration 000961, **needs human review**: INSERT on the API's insert columns of `recurring_journal` and its version, no update; its undo is a pause) and `plan.propose_budget` (a whole-company draft; migration 000962, **needs human review**: EXECUTE on the two pure validators the budget guard calls, and a trigger that refuses the executor any change of a budget document; a draft is not undoable, design D4). Both tier 2 with the Accountant as the only role that can approve them (Appendix D gives the Controller and Owner no create right on journals or budgets: Appendix E's "Controller" is the owner's to decide, see the report). Their proposal suites need an asker with the right: `evalsuite.Suite.Asker` makes one. `ct.update_contact` went to version 2 (its approvers named roles that cannot approve).
 - [ ] 4.2 `gl.post_journal`, `ar.post_invoice`, `ap.post_bill` (design D2, D3, D7).
   **Left (the riskiest, last by design D2):** they post to the ledger as the approving person, so each widens the executor's ledger grants,
   carries its limit and its undo, and its attack tests; not started while the owner is away.

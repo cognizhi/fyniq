@@ -139,6 +139,27 @@ status: draft
 - A **draft** the AI made is not undone: it posts nothing, so you edit it or ignore it. A message that was sent cannot be unsent.
   The proposal itself stays **Executed**, and the review then says **Undone**, when and why.
 
+## Review a recurring journal the AI proposed
+
+- **Add a recurring journal** (`recur.create_template`, tier 2) adds a recurring journal, as **Add a recurring journal** does: a name,
+  the memo and balancing lines, whether each draft reverses on the first day of the next month, and a schedule of every 1, 3, 6 or 12
+  months on a day of the month. The scheduler then makes a draft journal on each occurrence, which a person posts under the usual
+  approvals: nothing recurring posts by itself.
+- Its lines keep to income, cost, prepayment, deferred revenue and depreciation accounts in your base currency: never a bank, equity,
+  sub-ledger, tax, payroll or director's account. Its monthly equivalent (the debits over the months between occurrences) is limited to
+  S$5,000. A recurring bill or invoice is made by a person.
+- It is tier 2: an Accountant other than the person who asked approves it. If an account it names changed after the review, nothing is
+  made and the proposal is out of date. **Undo this change** pauses the template; drafts the scheduler already made stay for a person to
+  post or ignore.
+
+## Review a budget the AI drafted
+
+- **Draft a budget version** (`plan.propose_budget`, tier 2) drafts a budget for a financial year, as **Draft a budget** does: income
+  and expense accounts with the twelve monthly amounts, for the whole company. It is only a draft: it is not approved or recorded, and a
+  person asks for its approval, which records and locks it. A line for one department or project is a person's.
+- An Accountant other than the person who asked approves it. A budget draft cannot be undone, since no function deletes one: you edit it
+  or leave it.
+
 ## Approval quality
 
 - The **Approval quality** tab on the AI tasks page, for the Owner and the DPO, shows how each month's AI proposals were decided: how many were made,
