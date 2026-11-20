@@ -221,7 +221,7 @@ func TestAPaperIsCheckedBeforeItIsLaidOut(t *testing.T) {
 	}
 }
 
-// FR-AR-13 (rev 0.597): an invoice with a live payment link says where to pay online in its payment details, once, whatever the template's text; a template that places {{payment.link}} itself is not told twice; no
+// FR-AR-13 (rev 0.599): an invoice with a live payment link says where to pay online in its payment details, once, whatever the template's text; a template that places {{payment.link}} itself is not told twice; no
 // other document type and no invoice without a link changes.
 // req: FR-AR-13
 // req: FR-TPL-03

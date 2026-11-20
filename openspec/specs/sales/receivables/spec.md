@@ -567,7 +567,7 @@ Source: PRD-001 §8.5 · Priority S · Phase P2
 - **THEN** the email ends with a line giving the link, and the payment provider is asked for nothing while it is sent
 - **AND** an invoice with no link, a cancelled link or an expired link carries no such line, and an Owner can switch the line off
 
-#### Scenario: The link on every issuing path and on the PDF (rev 0.598)
+#### Scenario: The link on every issuing path and on the PDF (rev 0.599)
 - **GIVEN** automatic payment links are on and a payment provider is connected
 - **WHEN** an invoice is issued by a person, by an approval or by the scheduler of a recurring invoice
 - **THEN** the link job is queued once by the invoice service, and an invoice mirrored from a billing provider queues none

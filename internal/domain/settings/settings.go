@@ -350,7 +350,7 @@ var Catalogue = []Definition{
 		Reason: "An invoice emailed while it has a live payment link says where to pay it online; the link is the one already made for the invoice, so sending never calls the payment provider (FR-AR-13, rev 0.575)",
 		Guide:  guide + "payment-link-in-the-invoice-email", Requirement: "FR-AR-13"},
 	{Key: "invoices.payment_link_in_pdf", Group: "Defaults", Label: "Put an invoice's payment link on its PDF", Kind: Switch, Recommended: "true",
-		Reason: "An invoice's PDF, as emailed or downloaded while the invoice has a live payment link, says where to pay it online in its payment details; the link is the one already made for the invoice, so no page of it ever calls the payment provider (FR-AR-13, rev 0.597)",
+		Reason: "An invoice's PDF, as emailed or downloaded while the invoice has a live payment link, says where to pay it online in its payment details; the link is the one already made for the invoice, so no page of it ever calls the payment provider (FR-AR-13, rev 0.599)",
 		Guide:  guide + "payment-link-on-the-invoice-pdf", Requirement: "FR-AR-13"},
 	{Key: "invoices.payment_link_on_issue", Group: "Defaults", Label: "Make a payment link when an invoice is issued", Kind: Switch, Recommended: "false",
 		Reason: "Off until your payment provider is connected: when on, issuing an invoice queues a job that asks the provider for its payment link outside the request, and the invoice's email carries the link once it exists (FR-AR-13, rev 0.588)",

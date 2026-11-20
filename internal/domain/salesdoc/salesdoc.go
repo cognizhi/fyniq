@@ -318,7 +318,7 @@ func switchOn(ctx context.Context, u storage.UnitOfWork, key string, on time.Tim
 	return settings.On(def, changes, on).Value == "true", nil
 }
 
-// PDFLinkSetting is the organisation's switch for the payment link on an invoice's PDF (FR-AR-13, rev 0.597).
+// PDFLinkSetting is the organisation's switch for the payment link on an invoice's PDF (FR-AR-13, rev 0.599).
 const PDFLinkSetting = "invoices.payment_link_in_pdf"
 
 // LiveLink is the URL of the invoice's live payment link at now, "" when it has none or the organisation's switch (setting) is off: a link counts while it is live and has not run out, and its URL is https

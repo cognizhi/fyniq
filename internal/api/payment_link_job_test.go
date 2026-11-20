@@ -142,7 +142,7 @@ func TestIssuingAnInvoiceQueuesALinkJobThatTheWorkerRunsOutsideTheRequest(t *tes
 	if !found {
 		t.Error("the email does not carry the link")
 	}
-	// The invoice's PDF, as downloaded, says where to pay (FR-AR-13, rev 0.597); with the PDF setting off it does not; an invoice without a link has no such line.
+	// The invoice's PDF, as downloaded, says where to pay (FR-AR-13, rev 0.599); with the PDF setting off it does not; an invoice without a link has no such line.
 	pdfText := func(invoice string) string {
 		doc := e.call(http.MethodGet, "/v1/invoices/"+invoice+"/document", e.as(authz.Accountant), nil)
 		raw, err := base64.StdEncoding.DecodeString(doc.str("pdf"))
@@ -181,7 +181,7 @@ func TestIssuingAnInvoiceQueuesALinkJobThatTheWorkerRunsOutsideTheRequest(t *tes
 	}
 }
 
-// FR-AR-13 (rev 0.597): the link is asked for whichever way an invoice is issued: an invoice the scheduler issues from an approved recurring invoice and one a second person's approval issues each
+// FR-AR-13 (rev 0.599): the link is asked for whichever way an invoice is issued: an invoice the scheduler issues from an approved recurring invoice and one a second person's approval issues each
 // queue the job when the setting is on, a billing provider's own invoice (already collected) queues none, and a preview posts nothing and queues nothing.
 // req: FR-AR-13
 // req: FR-AR-07
