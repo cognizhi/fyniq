@@ -22,6 +22,7 @@ export function PortalLinksCard({ contactId, mayMake }: { contactId: string; may
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [busy, setBusy] = useState(false);
   const [label, setLabel] = useState("");
+  const [email, setEmail] = useState(false);
   const [made, setMade] = useState<Made | null>(null);
   const [copied, setCopied] = useState(false);
   const links = useQuery({
@@ -35,12 +36,13 @@ export function PortalLinksCard({ contactId, mayMake }: { contactId: string; may
   const make = async () => {
     setBusy(true);
     setProblem(null);
-    const out = await api.POST("/v1/contacts/{contact_id}/portal-links", { params: { path: { contact_id: contactId } }, body: { label: label.trim() || undefined } });
+    const out = await api.POST("/v1/contacts/{contact_id}/portal-links", { params: { path: { contact_id: contactId } }, body: { label: label.trim() || undefined, send_email: email || undefined } });
     setBusy(false);
     if (!out.data) return setProblem(problemOf(out.error));
     setMade(out.data);
     setCopied(false);
     setLabel("");
+    setEmail(false);
     await queries.invalidateQueries({ queryKey: key });
   };
   const revoke = async (linkId: string) => {
@@ -83,13 +85,19 @@ export function PortalLinksCard({ contactId, mayMake }: { contactId: string; may
                   {copied ? "Copied" : "Copy"}
                 </Button>
               </div>
-              <span className="fy-small">Send it to the customer yourself. It works until {date(made.expires_at.slice(0, 10))}.</span>
+              <span className="fy-small">
+                {made.emailed_to ? `It was emailed to ${made.emailed_to}. ` : "Send it to the customer yourself. "}It works until {date(made.expires_at.slice(0, 10))}.
+              </span>
             </div>
           </div>
         )}
         {mayMake && (
           <div className="fy-row fy-row--wrap gap-2">
             <input className="fy-input" aria-label="A note about who it is for" value={label} maxLength={200} placeholder="Such as: sent to ap@acme.example" onChange={(e) => setLabel(e.target.value)} />
+            <label className="fy-check">
+              <input type="checkbox" checked={email} onChange={(e) => setEmail(e.target.checked)} />
+              Email it to the customer's billing address
+            </label>
             <Button type="button" variant="secondary" onClick={() => void make()} disabled={busy} title={make$.tooltip}>
               <Icon of={Link2} />
               {make$.label}

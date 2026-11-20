@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "month": {
+      "description": "The month's first day: after the last month proposed, up to this month.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "month"
+  ],
+  "title": "ProposeProjectRevenueInputBody",
+  "type": "object"
+}

@@ -4,7 +4,7 @@ type: task
 title: Keep your contacts, items and prices
 summary: Add or change a contact, its balances and activity, duplicates, a vendor's bank details and their approved changes, its templates, and items with prices
 sources:
-  - docs/user-guide/contacts-and-items.md sha256:fc4cf74b21fd356d56ea65f545d02962af21e87244e48d9cc8c07bc20e0ed272
+  - docs/user-guide/contacts-and-items.md sha256:261a56d83e00d25662a78c098a866b0cfd9039830ed9c10f11aab5f7d0b5503f
 data_class: general
 taint: trusted
 status: draft
@@ -111,7 +111,7 @@ aliases:
 
 ## The customer portal
 
-- On a customer's page, an Accountant or an AR specialist selects **Make a portal link** (with an optional note) and copies the link: it is shown only once, since Fyniq keeps just a fingerprint of it; send it to the customer yourself.
+- On a customer's page, an Accountant or an AR specialist selects **Make a portal link** (with an optional note) and copies the link: it is shown only once, since Fyniq keeps just a fingerprint of it; send it to the customer yourself, or tick **Email it to the customer's billing address** to have Fyniq email it to the billing email on the customer's record (no other address) in the same step.
 - It works for 30 days (at most 90) or until you **Revoke** it. A link that ended, was revoked or never existed shows the same plain message.
 - It shows that customer's documents and nothing else, with no sign-in; whoever holds it sees what the customer sees. The customer's page lists when each link was made, ends and was first opened, never the link.
 - **Pay now** appears only for an invoice that already has a payment link; the portal never makes one.

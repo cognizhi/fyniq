@@ -50,4 +50,17 @@ describe("a customer's portal links", () => {
     expect(screen.queryByRole("button", { name: "Make a portal link" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Revoke" })).toBeNull();
   });
+
+  // req: FR-AR-14
+  it("emails the link to the customer's billing address when asked, and says so", async () => {
+    const sent = answer({
+      "GET /v1/contacts/c1/portal-links": { status: 200, body: { links: [] } },
+      "POST /v1/contacts/c1/portal-links": { status: 201, body: { ...link(), token: "t".repeat(43), path: `/portal/#${"t".repeat(43)}`, emailed_to: "ap@acme.example" } },
+    });
+    renderPage(Card(true), { session: undefined });
+    fireEvent.click(await screen.findByLabelText("Email it to the customer's billing address"));
+    fireEvent.click(screen.getByRole("button", { name: "Make a portal link" }));
+    await waitFor(() => expect(sent.find((s) => s.method === "POST")?.body).toEqual({ send_email: true }));
+    expect(await screen.findByText(/It was emailed to ap@acme.example/)).toBeTruthy();
+  });
 });

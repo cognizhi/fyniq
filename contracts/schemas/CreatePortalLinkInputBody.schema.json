@@ -19,6 +19,13 @@
       ],
       "maxLength": 200,
       "type": "string"
+    },
+    "send_email": {
+      "description": "Also email the link to the customer's billing email address, from the statements sender; nothing is made if it cannot be queued. The address is the contact's own and cannot be chosen here.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
     }
   },
   "title": "CreatePortalLinkInputBody",

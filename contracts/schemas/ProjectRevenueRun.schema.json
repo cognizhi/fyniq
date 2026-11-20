@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adjustment": {
+      "$ref": "Money.schema.json",
+      "description": "The revenue it books; negative when invoiced ahead of progress."
+    },
+    "earned": {
+      "$ref": "Money.schema.json",
+      "description": "The revenue earned to date after it."
+    },
+    "journal_id": {
+      "description": "The draft journal proposed for approval; open it under Journals.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "month": {
+      "description": "The month's first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "month",
+    "journal_id",
+    "adjustment",
+    "earned"
+  ],
+  "title": "ProjectRevenueRun",
+  "type": "object"
+}

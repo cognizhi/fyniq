@@ -1,0 +1,26 @@
+{
+  "id": "kb-propose-page",
+  "agent": "chat",
+  "version": 1,
+  "kind": "proposal",
+  "asker": "administrator",
+  "description": "kb.propose_page's proposal cases (QA-AI-02; p2-ai-expansion task 3.3, AI-59): a person asks for a know-how page to be written up, and the right proposal names a key, a title and a body of plain words with no figure; it proposes a note for an Owner to approve and never publishes a page.",
+  "company": {"seed": 1, "journals": 24},
+  "task_types": ["kb.propose_page"],
+  "cases": [
+    {
+      "id": "how-we-file-claims",
+      "question": "Propose a knowledge page with the key how-we-file-claims and the title \"How we file expense claims\" and this body: \"Attach the receipt, choose the category and submit within 14 days. Your line manager approves it first.\"",
+      "expect": {"proposal": {"task_type": "kb.propose_page", "payload": {"key": "how-we-file-claims", "title": "How we file expense claims",
+        "body": "Attach the receipt, choose the category and submit within 14 days. Your line manager approves it first."}}},
+      "solution": []
+    },
+    {
+      "id": "where-to-read-the-cash-balance",
+      "question": "Propose a knowledge page with the key where-to-read-cash and the title \"Where to read the cash balance\" and this body: \"The cash balance is read from the cash KPI on the dashboard, never copied into a page.\"",
+      "expect": {"proposal": {"task_type": "kb.propose_page", "payload": {"key": "where-to-read-cash", "title": "Where to read the cash balance",
+        "body": "The cash balance is read from the cash KPI on the dashboard, never copied into a page."}}},
+      "solution": []
+    }
+  ]
+}

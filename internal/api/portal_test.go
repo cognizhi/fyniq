@@ -273,3 +273,39 @@ func (e *env) portalTokenOf() string {
 	}
 	return e.portalToken
 }
+
+// FR-AR-14 (rev 0.574): a portal link may be emailed from Fyniq in the same step: the contact's own billing address and nobody else's, the link made only when the email is
+// queued, the token in the email and never in the delivery log, and the email from the statements sender.
+// req: FR-AR-14
+// asvs: V2.1.1
+func TestAPortalLinkIsEmailedToTheCustomersBillingAddressOrNotMade(t *testing.T) {
+	e := newEnv(t)
+	e.api.deps.Origin = "https://fyniq.example"
+	contact := e.customer()
+	acc := e.as(authz.Accountant)
+	body := map[string]any{"label": "Welcome", "send_email": true}
+	e.customerDetails("2 Sample Street, Singapore 000002", "")
+	if r := e.call(http.MethodPost, "/v1/contacts/"+contact+"/portal-links", acc, body); r.Status != http.StatusUnprocessableEntity {
+		t.Fatalf("a link to email with no billing address = %d: %s", r.Status, r.Raw)
+	}
+	if l := e.call(http.MethodGet, "/v1/contacts/"+contact+"/portal-links", acc, nil); len(l.Body["links"].([]any)) != 0 {
+		t.Errorf("a link was made though the email could not be queued: %s", l.Raw)
+	}
+	e.customerDetails("2 Sample Street, Singapore 000002", "ap@acme.example")
+	made := e.call(http.MethodPost, "/v1/contacts/"+contact+"/portal-links", acc, body)
+	if made.Status != http.StatusCreated || made.str("emailed_to") != "ap@acme.example" {
+		t.Fatalf("a link emailed = %d: %s", made.Status, made.Raw)
+	}
+	log := e.call(http.MethodGet, "/v1/organisation/email/messages?purpose=statement", e.as(authz.Administrator), nil)
+	items, _ := log.Body["items"].([]any)
+	if log.Status != 200 || len(items) != 1 || items[0].(map[string]any)["recipient"] != "ap@acme.example" || strings.Contains(log.Raw, made.str("token")) {
+		t.Errorf("the delivery log: %d %s", log.Status, log.Raw)
+	}
+	// A link made without send_email queues nothing.
+	if plain := e.makePortalLink(contact, 30); plain.Status != http.StatusCreated || plain.str("emailed_to") != "" {
+		t.Errorf("a plain link: %d %s", plain.Status, plain.Raw)
+	}
+	if again := e.call(http.MethodGet, "/v1/organisation/email/messages?purpose=statement", e.as(authz.Administrator), nil); len(again.Body["items"].([]any)) != 1 {
+		t.Errorf("a plain link queued an email: %s", again.Raw)
+	}
+}

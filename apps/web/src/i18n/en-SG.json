@@ -2175,6 +2175,10 @@
       "label": "Subscriptions",
       "tooltip": "What your billing provider, such as Stripe, bills your customers, mirrored read-only: each subscription, and each invoice with the provider's attempts and the invoice Fyniq made of it. Fyniq never retries or charges."
     },
+    "project.revenue-over-time": {
+      "label": "Revenue over time",
+      "tooltip": "For a fixed-fee project, recognise revenue by the work done (cost to date over the estimated total cost) instead of as each milestone is invoiced. The month's journal is a draft for a person to approve."
+    },
     "subscription.contract": {
       "label": "New contract",
       "tooltip": "Record a customer's subscription: what it is, the monthly value and the day it starts. It is a record, not a posting: invoices post as they do, and the contracted MRR is worked out from it."

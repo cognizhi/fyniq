@@ -2587,6 +2587,22 @@ project_milestone | accepted_on | date | null |
 project_milestone | version | integer | not null | 1
 project_milestone | created_at | timestamp with time zone | not null | now()
 project_milestone | changed_at | timestamp with time zone | not null | now()
+project_revenue_election | organisation_id | uuid | not null | current_org()
+project_revenue_election | project_id | uuid | not null | 
+project_revenue_election | method | text | not null | 
+project_revenue_election | estimated_cost | numeric(20,4) | null | 
+project_revenue_election | version | integer | not null | 1
+project_revenue_election | set_by | text | not null | 
+project_revenue_election | set_at | timestamp with time zone | not null | 
+project_revenue_run | organisation_id | uuid | not null | current_org()
+project_revenue_run | id | uuid | not null | uuidv7()
+project_revenue_run | project_id | uuid | not null | 
+project_revenue_run | month | date | not null | 
+project_revenue_run | journal_id | uuid | not null | 
+project_revenue_run | adjustment | numeric(20,4) | not null | 
+project_revenue_run | earned | numeric(20,4) | not null | 
+project_revenue_run | created_by | text | not null | 
+project_revenue_run | created_at | timestamp with time zone | not null | 
 project_task | organisation_id | uuid | not null | current_org()
 project_task | id | uuid | not null | uuidv7()
 project_task | project_id | uuid | not null | 
@@ -7424,6 +7440,34 @@ project_milestone | project_milestone_retainer_unaccepted | CHECK (((kind = 'mil
 project_milestone | project_milestone_version_not_null | NOT NULL version
 project_milestone | project_milestone_version_positive | CHECK ((version >= 1))
 project_milestone | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+project_revenue_election | project_revenue_election_by_form | CHECK ((set_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+project_revenue_election | project_revenue_election_estimate_form | CHECK ((((method = 'over_time'::text) = (estimated_cost IS NOT NULL)) AND ((estimated_cost IS NULL) OR ((estimated_cost <> 'NaN'::numeric) AND (estimated_cost > (0)::numeric)))))
+project_revenue_election | project_revenue_election_method_known | CHECK ((method = ANY (ARRAY['milestone'::text, 'over_time'::text])))
+project_revenue_election | project_revenue_election_method_not_null | NOT NULL method
+project_revenue_election | project_revenue_election_organisation_id_not_null | NOT NULL organisation_id
+project_revenue_election | project_revenue_election_pkey | PRIMARY KEY (organisation_id, project_id)
+project_revenue_election | project_revenue_election_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+project_revenue_election | project_revenue_election_project_id_not_null | NOT NULL project_id
+project_revenue_election | project_revenue_election_set_at_not_null | NOT NULL set_at
+project_revenue_election | project_revenue_election_set_by_not_null | NOT NULL set_by
+project_revenue_election | project_revenue_election_version_not_null | NOT NULL version
+project_revenue_election | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+project_revenue_run | project_revenue_run_adjustment_not_null | NOT NULL adjustment
+project_revenue_run | project_revenue_run_amounts | CHECK (((adjustment <> 'NaN'::numeric) AND (earned <> 'NaN'::numeric) AND (earned >= (0)::numeric)))
+project_revenue_run | project_revenue_run_by_form | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+project_revenue_run | project_revenue_run_created_at_not_null | NOT NULL created_at
+project_revenue_run | project_revenue_run_created_by_not_null | NOT NULL created_by
+project_revenue_run | project_revenue_run_earned_not_null | NOT NULL earned
+project_revenue_run | project_revenue_run_id_not_null | NOT NULL id
+project_revenue_run | project_revenue_run_journal_fkey | FOREIGN KEY (organisation_id, journal_id) REFERENCES document(organisation_id, id)
+project_revenue_run | project_revenue_run_journal_id_not_null | NOT NULL journal_id
+project_revenue_run | project_revenue_run_month_first | CHECK ((month = (date_trunc('month'::text, (month)::timestamp with time zone))::date))
+project_revenue_run | project_revenue_run_month_not_null | NOT NULL month
+project_revenue_run | project_revenue_run_organisation_id_not_null | NOT NULL organisation_id
+project_revenue_run | project_revenue_run_pkey | PRIMARY KEY (organisation_id, id)
+project_revenue_run | project_revenue_run_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+project_revenue_run | project_revenue_run_project_id_not_null | NOT NULL project_id
+project_revenue_run | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 project_task | project_task_billable_not_null | NOT NULL billable
 project_task | project_task_changed_at_not_null | NOT NULL changed_at
 project_task | project_task_created_at_not_null | NOT NULL created_at
@@ -9210,6 +9254,9 @@ CREATE UNIQUE INDEX project_member_person_key ON fyniq.project_member USING btre
 CREATE UNIQUE INDEX project_member_pkey ON fyniq.project_member USING btree (organisation_id, id)
 CREATE UNIQUE INDEX project_milestone_pkey ON fyniq.project_milestone USING btree (organisation_id, id)
 CREATE UNIQUE INDEX project_pkey ON fyniq.project USING btree (organisation_id, id)
+CREATE UNIQUE INDEX project_revenue_election_pkey ON fyniq.project_revenue_election USING btree (organisation_id, project_id)
+CREATE UNIQUE INDEX project_revenue_run_month ON fyniq.project_revenue_run USING btree (organisation_id, project_id, month)
+CREATE UNIQUE INDEX project_revenue_run_pkey ON fyniq.project_revenue_run USING btree (organisation_id, id)
 CREATE UNIQUE INDEX project_task_live_name ON fyniq.project_task USING btree (organisation_id, project_id, lower(btrim(name))) WHERE is_active
 CREATE UNIQUE INDEX project_task_pkey ON fyniq.project_task USING btree (organisation_id, id)
 CREATE UNIQUE INDEX project_task_project_key ON fyniq.project_task USING btree (organisation_id, project_id, id)
@@ -9437,6 +9484,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.person_cost_rate D
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_acknowledgement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_acknowledgement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_draft DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_draft', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_version', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.project_revenue_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project_revenue_run', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_balance', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_charge_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_charge_invoice', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_dispute_credit DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_dispute_credit', 'id')
@@ -9552,6 +9600,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.portal_l
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_milestone DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_revenue_election DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project_revenue_election', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_account', 'money_account_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_customer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_customer', 'id')
@@ -9848,6 +9897,7 @@ CREATE TRIGGER journal_line_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_l
 CREATE TRIGGER journal_line_no_truncate BEFORE TRUNCATE ON fyniq.journal_line FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER kb_lint_finding_guard BEFORE DELETE OR UPDATE ON fyniq.kb_lint_finding FOR EACH ROW EXECUTE FUNCTION kb_guard()
 CREATE TRIGGER kb_lint_finding_no_truncate BEFORE TRUNCATE ON fyniq.kb_lint_finding FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER kb_note_executor_guard BEFORE INSERT ON fyniq.kb_note FOR EACH ROW EXECUTE FUNCTION kb_note_executor_guard()
 CREATE TRIGGER kb_note_guard BEFORE DELETE OR UPDATE ON fyniq.kb_note FOR EACH ROW EXECUTE FUNCTION kb_guard()
 CREATE TRIGGER kb_note_no_truncate BEFORE TRUNCATE ON fyniq.kb_note FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER kb_page_version_guard BEFORE DELETE OR UPDATE ON fyniq.kb_page_version FOR EACH ROW EXECUTE FUNCTION kb_guard()
@@ -10017,6 +10067,9 @@ CREATE TRIGGER project_billing_follows_invoice AFTER UPDATE OF status ON fyniq.d
 CREATE TRIGGER project_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project FOR EACH ROW EXECUTE FUNCTION project_guard()
 CREATE TRIGGER project_member_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_member FOR EACH ROW EXECUTE FUNCTION project_part_guard()
 CREATE TRIGGER project_milestone_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_milestone FOR EACH ROW EXECUTE FUNCTION project_milestone_guard()
+CREATE TRIGGER project_revenue_election_no_truncate BEFORE TRUNCATE ON fyniq.project_revenue_election FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER project_revenue_run_guard BEFORE DELETE OR UPDATE ON fyniq.project_revenue_run FOR EACH ROW EXECUTE FUNCTION project_revenue_run_guard()
+CREATE TRIGGER project_revenue_run_no_truncate BEFORE TRUNCATE ON fyniq.project_revenue_run FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER project_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_task FOR EACH ROW EXECUTE FUNCTION project_part_guard()
 CREATE TRIGGER psp_balance_guard BEFORE DELETE OR UPDATE ON fyniq.psp_balance FOR EACH ROW EXECUTE FUNCTION psp_balance_guard()
 CREATE TRIGGER psp_balance_no_truncate BEFORE TRUNCATE ON fyniq.psp_balance FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -10337,6 +10390,8 @@ project | tenant_isolation | * | (organisation_id = current_org()) | (organisati
 project_billed_item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_member | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_milestone | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+project_revenue_election | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+project_revenue_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10628,6 +10683,8 @@ project | enabled | forced
 project_billed_item | enabled | forced
 project_member | enabled | forced
 project_milestone | enabled | forced
+project_revenue_election | enabled | forced
+project_revenue_run | enabled | forced
 project_task | enabled | forced
 psp_account | enabled | forced
 psp_balance | enabled | forced
@@ -10931,6 +10988,7 @@ journal_line_balances() → trigger | security definer | v | search_path=pg_cata
 journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 55a3d18429a41eae4bbb8231d3bf02d4
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b9269db42a6b251fcf5f6ec4576b4fb8
 kb_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 02422d85fbd6befcedcfdf5c3323050f
+kb_note_executor_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f7276216ba9e29eeb9965968ba30dbe5
 kb_org_search(p_terms text[], p_classes text[], p_limit integer) → TABLE(key text, title text, summary text, snippet text, rank real) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 15760a3c14a0882488f678a84615fbad
 kb_platform_index(p_roles text[], p_classes text[]) → TABLE(key text, type text, title text, summary text, status text, data_class text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7b424e41cfdc6ce4aae26d2373cd74dd
 kb_platform_info() → TABLE(version text, schema text, digest text, loaded_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02dda96e1273c149a12b7ce0e8a0f6a3
@@ -11035,6 +11093,7 @@ project_billing_follows_invoice() → trigger | security definer | v | search_pa
 project_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 263feebbc9e8c9cfa868c0c58b30e881
 project_milestone_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b8dc234f6537bead909f4c0fcb746635
 project_part_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abaebce4c4cd3919837dd8db7382ce2a
+project_revenue_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1723e85c023956ca99dbdf840f1cece1
 projection_department(p_user uuid) → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 9c59f4f8ec0087af12988bbdc1e6b189
 psp_balance_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 718c45d122dfe60b1f6507609c283752
 psp_charge_invoice_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b529b7a5d6214720ee0b83bca89111bd

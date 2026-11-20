@@ -114,6 +114,8 @@ type UnitOfWork interface {
 	InvoiceDisputes() InvoiceDisputes
 	// Subscriptions are the subscription contracts and their amendments (FR-AR-15).
 	Subscriptions() Subscriptions
+	// ProjectRevenue are the elections of revenue over time for fixed-fee projects and each month's proposed journal (FR-PRJ-11).
+	ProjectRevenue() ProjectRevenue
 	Notifications() Notifications
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates
