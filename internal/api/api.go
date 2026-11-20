@@ -548,6 +548,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerPortal(a)
 	registerInvoiceDisputes(a)
 	registerSubscriptions(a)
+	registerSubscriptionEvidence(a)
 	registerProjectRevenue(a)
 	registerPaymentProviderInvoices(a)
 	registerDocumentSends(a)

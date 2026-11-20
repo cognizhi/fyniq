@@ -639,20 +639,20 @@ var (
 	RevokeIntegrationClient = Policy{Operation: "revokeIntegrationClient", Capability: ConnectedApps, Need: Create}
 	// The link to the people platform (FR-PPL-01, FR-PPL-16): a person with C on "People and HR" asks, the Owner and a second approver approve; the
 	// link's client alone calls the event operations, with the scope each names (PRD-002 Appendix E).
-	GetPeopleLink                = Policy{Operation: "getPeopleLink", Capability: PeopleAndHR, Need: View}
-	FinishPeopleUnlink           = Policy{Operation: "finishPeopleUnlink", Capability: PeopleAndHR, Need: Create}
-	GetPeopleLinkHealth          = Policy{Operation: "getPeopleLinkHealth", Capability: PeopleAndHR, Need: View}
-	RepairPeopleLink             = Policy{Operation: "repairPeopleLink", Capability: PeopleAndHR, Need: Create}
-	RequestPeopleLink            = Policy{Operation: "requestPeopleLink", Capability: PeopleAndHR, Need: Create}
-	RequestPeopleUnlink          = Policy{Operation: "requestPeopleUnlink", Capability: PeopleAndHR, Need: Create}
-	ReceivePeopleProjectionEvent = Policy{Operation: "receivePeopleProjectionEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.projection.write"}
-	ListPeopleProjection         = Policy{Operation: "listPeopleProjection", Capability: PeopleAndHR, Need: View}
-	MapPersonToUser              = Policy{Operation: "mapPersonToUser", Capability: PeopleAndHR, Need: Create}
-	GetPayrollMapping            = Policy{Operation: "getPayrollMapping", Capability: PayRuns, Need: View}
-	ListPayrollRuns              = Policy{Operation: "listPayrollRuns", Capability: PayRuns, Need: View}
-	SetPayrollMapping            = Policy{Operation: "setPayrollMapping", Capability: PayRuns, Need: Create}
-	SubmitPayrollRun             = Policy{Operation: "submitPayrollRun", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.journal.submit"}
-	ReceivePeopleHoldEvent       = Policy{Operation: "receivePeopleHoldEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.holds.write"}
+	GetPeopleLink                  = Policy{Operation: "getPeopleLink", Capability: PeopleAndHR, Need: View}
+	FinishPeopleUnlink             = Policy{Operation: "finishPeopleUnlink", Capability: PeopleAndHR, Need: Create}
+	GetPeopleLinkHealth            = Policy{Operation: "getPeopleLinkHealth", Capability: PeopleAndHR, Need: View}
+	RepairPeopleLink               = Policy{Operation: "repairPeopleLink", Capability: PeopleAndHR, Need: Create}
+	RequestPeopleLink              = Policy{Operation: "requestPeopleLink", Capability: PeopleAndHR, Need: Create}
+	RequestPeopleUnlink            = Policy{Operation: "requestPeopleUnlink", Capability: PeopleAndHR, Need: Create}
+	ReceivePeopleProjectionEvent   = Policy{Operation: "receivePeopleProjectionEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.projection.write"}
+	ListPeopleProjection           = Policy{Operation: "listPeopleProjection", Capability: PeopleAndHR, Need: View}
+	MapPersonToUser                = Policy{Operation: "mapPersonToUser", Capability: PeopleAndHR, Need: Create}
+	GetPayrollMapping              = Policy{Operation: "getPayrollMapping", Capability: PayRuns, Need: View}
+	ListPayrollRuns                = Policy{Operation: "listPayrollRuns", Capability: PayRuns, Need: View}
+	SetPayrollMapping              = Policy{Operation: "setPayrollMapping", Capability: PayRuns, Need: Create}
+	SubmitPayrollRun               = Policy{Operation: "submitPayrollRun", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.journal.submit"}
+	ReceivePeopleHoldEvent         = Policy{Operation: "receivePeopleHoldEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.holds.write"}
 	ReceivePeopleAvailabilityEvent = Policy{Operation: "receivePeopleAvailabilityEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.availability.write"}
 	ListPeopleAvailability         = Policy{Operation: "listPeopleAvailability", Capability: PeopleAndHR, Need: View}
 	// ReceivePeopleSessionEvent is the one door by which Nemura ends sessions here (owner's decision of 21 Nov 2026): the link's client with identity.sessions.write, for a person mapped to a person of the link.
@@ -1197,32 +1197,34 @@ var (
 	ListPaymentProviderInvoices = Policy{Operation: "getPaymentProviderInvoices", Capability: BankTransactions, Need: View}
 	PostPaymentProviderInvoices = Policy{Operation: "postPaymentProviderInvoices", Capability: Invoices, Need: Post}
 	// Subscription contracts and their dated amendments (FR-AR-15): records, not postings, entered by those who may post invoices, read by those who see them.
-	CreateSubscriptionContract  = Policy{Operation: "createSubscriptionContract", Capability: Invoices, Need: Post}
-	ListSubscriptionContracts   = Policy{Operation: "listSubscriptionContracts", Capability: Invoices, Need: View}
-	GetSubscriptionContract     = Policy{Operation: "getSubscriptionContract", Capability: Invoices, Need: View}
-	AmendSubscriptionContract   = Policy{Operation: "amendSubscriptionContract", Capability: Invoices, Need: Post}
-	GetContractedMRR            = Policy{Operation: "getContractedMRR", Capability: Invoices, Need: View}
-	CreateInvoiceDispute        = Policy{Operation: "createInvoiceDispute", Capability: Invoices, Need: Post}
-	GetInvoiceDisputes          = Policy{Operation: "getInvoiceDisputes", Capability: Invoices, Need: View}
-	ResolveInvoiceDispute       = Policy{Operation: "resolveInvoiceDispute", Capability: Invoices, Need: Post}
-	CreatePortalLink            = Policy{Operation: "createPortalLink", Capability: Invoices, Need: Post}
-	GetContactPortalLinks       = Policy{Operation: "getContactPortalLinks", Capability: Invoices, Need: View}
-	RevokePortalLink            = Policy{Operation: "revokePortalLink", Capability: Invoices, Need: Post}
-	GetPortal                   = Policy{Operation: "getPortal", Capability: Invoices, Need: View, Public: true}
-	GetPortalInvoicePDF         = Policy{Operation: "getPortalInvoicePDF", Capability: Invoices, Need: View, Public: true}
-	GetPortalStatement          = Policy{Operation: "getPortalStatement", Capability: Invoices, Need: View, Public: true}
-	CreateInvoicePaymentLink    = Policy{Operation: "createInvoicePaymentLink", Capability: Invoices, Need: Post}
-	GetInvoicePaymentLink       = Policy{Operation: "getInvoicePaymentLink", Capability: Invoices, Need: View}
-	CancelInvoicePaymentLink    = Policy{Operation: "cancelInvoicePaymentLink", Capability: Invoices, Need: Post}
-	ResolvePaymentProviderEvent = Policy{Operation: "resolvePaymentProviderEvent", Capability: BankTransactions, Need: Create}
-	ResolveBankGap              = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
-	ListStatementMappings       = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
-	CreateStatementMapping      = Policy{Operation: "createStatementMapping", Capability: BankTransactions, Need: Create}
-	ReplaceStatementMapping     = Policy{Operation: "replaceStatementMapping", Capability: BankTransactions, Need: Create}
-	ImportBankStatements        = Policy{Operation: "importBankStatements", Capability: BankTransactions, Need: Create}
-	ListBankStatements          = Policy{Operation: "listBankStatements", Capability: BankTransactions, Need: View}
-	ListBankLines               = Policy{Operation: "listBankLines", Capability: BankTransactions, Need: View}
-	GetBankLine                 = Policy{Operation: "getBankLine", Capability: BankTransactions, Need: View}
+	CreateSubscriptionContract       = Policy{Operation: "createSubscriptionContract", Capability: Invoices, Need: Post}
+	ListSubscriptionContracts        = Policy{Operation: "listSubscriptionContracts", Capability: Invoices, Need: View}
+	GetSubscriptionContract          = Policy{Operation: "getSubscriptionContract", Capability: Invoices, Need: View}
+	AmendSubscriptionContract        = Policy{Operation: "amendSubscriptionContract", Capability: Invoices, Need: Post}
+	GetContractedMRR                 = Policy{Operation: "getContractedMRR", Capability: Invoices, Need: View}
+	AddSubscriptionContractEvidence  = Policy{Operation: "addSubscriptionContractEvidence", Capability: Invoices, Need: Post}
+	ListSubscriptionContractEvidence = Policy{Operation: "listSubscriptionContractEvidence", Capability: Invoices, Need: View}
+	CreateInvoiceDispute             = Policy{Operation: "createInvoiceDispute", Capability: Invoices, Need: Post}
+	GetInvoiceDisputes               = Policy{Operation: "getInvoiceDisputes", Capability: Invoices, Need: View}
+	ResolveInvoiceDispute            = Policy{Operation: "resolveInvoiceDispute", Capability: Invoices, Need: Post}
+	CreatePortalLink                 = Policy{Operation: "createPortalLink", Capability: Invoices, Need: Post}
+	GetContactPortalLinks            = Policy{Operation: "getContactPortalLinks", Capability: Invoices, Need: View}
+	RevokePortalLink                 = Policy{Operation: "revokePortalLink", Capability: Invoices, Need: Post}
+	GetPortal                        = Policy{Operation: "getPortal", Capability: Invoices, Need: View, Public: true}
+	GetPortalInvoicePDF              = Policy{Operation: "getPortalInvoicePDF", Capability: Invoices, Need: View, Public: true}
+	GetPortalStatement               = Policy{Operation: "getPortalStatement", Capability: Invoices, Need: View, Public: true}
+	CreateInvoicePaymentLink         = Policy{Operation: "createInvoicePaymentLink", Capability: Invoices, Need: Post}
+	GetInvoicePaymentLink            = Policy{Operation: "getInvoicePaymentLink", Capability: Invoices, Need: View}
+	CancelInvoicePaymentLink         = Policy{Operation: "cancelInvoicePaymentLink", Capability: Invoices, Need: Post}
+	ResolvePaymentProviderEvent      = Policy{Operation: "resolvePaymentProviderEvent", Capability: BankTransactions, Need: Create}
+	ResolveBankGap                   = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
+	ListStatementMappings            = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
+	CreateStatementMapping           = Policy{Operation: "createStatementMapping", Capability: BankTransactions, Need: Create}
+	ReplaceStatementMapping          = Policy{Operation: "replaceStatementMapping", Capability: BankTransactions, Need: Create}
+	ImportBankStatements             = Policy{Operation: "importBankStatements", Capability: BankTransactions, Need: Create}
+	ListBankStatements               = Policy{Operation: "listBankStatements", Capability: BankTransactions, Need: View}
+	ListBankLines                    = Policy{Operation: "listBankLines", Capability: BankTransactions, Need: View}
+	GetBankLine                      = Policy{Operation: "getBankLine", Capability: BankTransactions, Need: View}
 	// A line's actions and transfers post, or undo what posted (FR-BNK-05…09): "Bank transactions, categorise" with P; keeping or
 	// excluding a line posts nothing, so C.
 	CategoriseBankLine    = Policy{Operation: "categoriseBankLine", Capability: BankTransactions, Need: Post}
@@ -2277,7 +2279,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid, RequestBankRuleAutoApply,
-	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, SettleDisputeCredit, CreateInvoicePaymentLink, GetInvoicePaymentLink, CancelInvoicePaymentLink, ListPaymentProviderInvoices, PostPaymentProviderInvoices, CreateInvoiceDispute, GetInvoiceDisputes, ResolveInvoiceDispute, CreateSubscriptionContract, GetProjectRevenue, SetProjectRevenueElection, ProposeProjectRevenueJournal, ListSubscriptionContracts, GetSubscriptionContract, AmendSubscriptionContract, GetContractedMRR, CreatePortalLink, GetContactPortalLinks, RevokePortalLink, GetPortal, GetPortalInvoicePDF, GetPortalStatement, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
+	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, SettleDisputeCredit, CreateInvoicePaymentLink, GetInvoicePaymentLink, CancelInvoicePaymentLink, ListPaymentProviderInvoices, PostPaymentProviderInvoices, CreateInvoiceDispute, GetInvoiceDisputes, ResolveInvoiceDispute, CreateSubscriptionContract, GetProjectRevenue, SetProjectRevenueElection, ProposeProjectRevenueJournal, ListSubscriptionContracts, GetSubscriptionContract, AmendSubscriptionContract, GetContractedMRR, AddSubscriptionContractEvidence, ListSubscriptionContractEvidence, CreatePortalLink, GetContactPortalLinks, RevokePortalLink, GetPortal, GetPortalInvoicePDF, GetPortalStatement, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
 	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
 	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
 	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,

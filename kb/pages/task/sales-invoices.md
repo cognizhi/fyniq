@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:5c6d65e9785737b23eb4b3c584f1784948bb25c69b52a63b1162af2a671f31ac
+  - docs/user-guide/invoices.md sha256:ab353e22aafc4208a40b7c68823f62a812d2cbb5c2736e6b1081525482e88bc2
 data_class: general
 taint: trusted
 status: draft
@@ -147,7 +147,7 @@ aliases:
 
 - Under **Sales › Subscriptions** (Expert mode), **Your subscription contracts** records a customer's subscription: a name, the currency, the monthly value, the start day and an optional agreed end (an Accountant or AR specialist).
 - **Amend** records an upgrade or downgrade (a new monthly value from a day), a cancellation or a renewal after it ended; each day is on or after the start, after the last amendment and in an open month (a closed month is never rewritten).
-- The page shows each contract's status and monthly value today and the contracted MRR by currency (the contracts in force, not converted), which is not the revenue booked in the ledger. Contracts and amendments are records, not postings. A separate "Converted into" figure adds the totals in the base currency, each currency converted once at the day's rate, shown with each rate and its date; a currency with no rate is named and left out.
+- The page shows each contract's status and monthly value today and the contracted MRR by currency (the contracts in force, not converted), which is not the revenue booked in the ledger. Contracts and amendments are records, not postings. **Files** on a contract row attaches the signed order form, the customer's email or an amendment letter (optionally naming the amendment); a file is committed at once and cannot be changed or removed. A separate "Converted into" figure adds the totals in the base currency, each currency converted once at the day's rate, shown with each rate and its date; a currency with no rate is named and left out.
 
 (src: docs/user-guide/invoices.md#subscription-contracts)
 

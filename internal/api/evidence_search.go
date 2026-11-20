@@ -31,7 +31,7 @@ type EvidenceActivity struct {
 // EvidenceActivities are the kinds of record a search covers, in the order a filter offers them.
 var EvidenceActivities = []EvidenceActivity{
 	{"bill", "Bills and vendor credits", authz.Bills, []storage.DocumentType{storage.DocumentBill, storage.DocumentVendorCredit}},
-	{"invoice", "Invoices and credit notes", authz.Invoices, []storage.DocumentType{storage.DocumentInvoice, storage.DocumentCreditNote}},
+	{"invoice", "Invoices, credit notes and subscription contracts", authz.Invoices, []storage.DocumentType{storage.DocumentInvoice, storage.DocumentCreditNote, storage.DocumentSubscriptionFile}},
 	{"journal", "Journals", authz.Journals, []storage.DocumentType{storage.DocumentJournal}},
 	{"bank", "Bank transactions and agreements", authz.BankTransactions, []storage.DocumentType{storage.DocumentBankTransaction, storage.DocumentBankAgreement}},
 	{"claim", "Expense claims", authz.ExpenseClaims, []storage.DocumentType{storage.DocumentExpenseClaim}},

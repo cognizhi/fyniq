@@ -1138,6 +1138,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/subscription-contracts` (createSubscriptionContract): Record a customer's subscription contract
 - `GET /v1/subscription-contracts/{contract_id}` (getSubscriptionContract): Read a subscription contract with its amendments and schedule
 - `POST /v1/subscription-contracts/{contract_id}/amendments` (amendSubscriptionContract): Amend a subscription contract from a day
+- `GET /v1/subscription-contracts/{contract_id}/evidence` (listSubscriptionContractEvidence): List a subscription contract's files
+- `POST /v1/subscription-contracts/{contract_id}/evidence` (addSubscriptionContractEvidence): Attach a file to a subscription contract or one of its amendments
 - `GET /v1/subscription-mrr` (getContractedMRR): Read the contracted MRR on a day
 - `POST /v1/super-admins` (acceptSuperAdminInvitation): Become a Super admin with an invitation
 - `POST /v1/super-admins/invitations` (createSuperAdminInvitation): Invite the second Super admin
