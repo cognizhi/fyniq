@@ -1367,3 +1367,36 @@ func TestMarkupIsTheCostTimesThePercentRoundedOnceHalfAwayFromZero(t *testing.T)
 		t.Error("a plain percentage is refused")
 	}
 }
+
+// RND-RECOGNISE (PRD-001 §10.4, FR-PRJ-11): the revenue earned to date is round(fee x cost / estimate, minor units), half away from zero, once on the cumulative
+// figure; a cost at or above the estimate earns the whole fee; a negative fee or cost and an estimate of nothing are refused.
+// req: FR-PRJ-11
+func TestRecognisedIsTheFeeTimesProgressRoundedOnceHalfAwayFromZero(t *testing.T) {
+	for _, c := range []struct{ fee, cost, estimate, want string }{
+		{"10000.00", "1000.01", "3000.00", "3333.37"}, // 3333.3666...
+		{"1.00", "1.00", "8.00", "0.13"},              // 0.125 is a tie: away from zero
+		{"1.00", "3.00", "8.00", "0.38"},              // 0.375
+		{"10000.00", "6000.00", "6000.00", "10000.00"},
+		{"10000.00", "7500.00", "6000.00", "10000.00"},
+		{"10000.00", "0.00", "6000.00", "0.00"},
+		{"0.00", "10.00", "60.00", "0.00"},
+	} {
+		got, err := Recognised(m(t, c.fee, sgd), m(t, c.cost, sgd), m(t, c.estimate, sgd))
+		if err != nil || got.String() != c.want {
+			t.Errorf("%s x %s / %s = %s, %v; want %s", c.fee, c.cost, c.estimate, got, err, c.want)
+		}
+	}
+	if got, err := Recognised(m(t, "1000000", jpy), m(t, "100001", jpy), m(t, "700000", jpy)); err != nil || got.String() != "142859" {
+		t.Errorf("a currency with no minor units: %s, %v", got, err)
+	}
+	for name, a := range map[string][3]money.Money{
+		"a negative fee":         {m(t, "-1.00", sgd), m(t, "1.00", sgd), m(t, "2.00", sgd)},
+		"a negative cost":        {m(t, "1.00", sgd), m(t, "-1.00", sgd), m(t, "2.00", sgd)},
+		"an estimate of nothing": {m(t, "1.00", sgd), m(t, "1.00", sgd), m(t, "0.00", sgd)},
+		"two currencies":         {m(t, "1.00", sgd), m(t, "1.00", usd), m(t, "2.00", sgd)},
+	} {
+		if _, err := Recognised(a[0], a[1], a[2]); err == nil {
+			t.Errorf("%s was worked", name)
+		}
+	}
+}

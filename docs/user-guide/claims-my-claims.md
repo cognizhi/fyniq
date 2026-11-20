@@ -114,11 +114,11 @@ card's statement.
 1. Select **Complete** on a payment.
 2. Say what it was for: the category and the GST code of its receipt. If it was for yourself,
    choose personal spend instead.
-3. Attach its receipt. If the receipt is already in your own inbox (a file you or your own
-   address took in, which the model has read), it is **suggested** under **Receipt** when its total
+3. Attach its receipt. If the receipt is already in your own inbox (mail to your own capture
+   address, which the model has read), it is **suggested** under **Receipt** when its total
    is the payment's amount to the cent and its date is within 5 days of the booking: choose
    **Attach** and it becomes the receipt. Nothing is attached unless you choose it, the reading is
-   the model's and only a suggestion, and only your own captures are considered.
+   the model's and only a suggestion, and only mail to your own capture address is considered.
 
 Fyniq reminds you once a day, in one notice, while a payment of your card has had no receipt for
 more than 3 days (an Owner can change the days under organisation settings).

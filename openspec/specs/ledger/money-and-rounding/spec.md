@@ -405,6 +405,16 @@ Source: PRD-001 §10.4
 - **THEN** markup = round(cost × percent ÷ 100, minor units), half away from zero, computed exactly before its one rounding
 - **AND** the percent is from 0 to 999.99 with at most two decimals, and what is billed is the cost plus the markup
 
+### Requirement: RND-RECOGNISE Revenue recognised over time
+The revenue of a fixed-fee project recognised to date by cost-to-cost progress SHALL be the fee times the cost to date divided by the estimated total cost, rounded to the currency's minor units, half away from zero, once, on the cumulative figure and never per month (new, FR-PRJ-11).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Recognition formula
+- **WHEN** the revenue earned to date of a fixed-fee project is computed
+- **THEN** earned = round(fee × cost ÷ estimate, minor units), half away from zero, computed exactly before its one rounding, and a cost at or above the estimate earns the whole fee
+- **AND** the months' adjustments add up to the cumulative figure exactly, and a negative fee or cost or an estimate of nothing is refused
+
 ### Requirement: RND-DISPLAY Display never re-rounds
 Display SHALL never re-round stored amounts, and totals SHALL be sums of stored amounts, so every report foots and cross-foots exactly (new).
 

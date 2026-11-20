@@ -46,7 +46,6 @@ export function SubscriptionContracts({ may }: { may: boolean }) {
   });
   const customers = useQuery({
     queryKey: ["contacts", "customers"],
-    enabled: adding,
     queryFn: async () => {
       const { data, error } = await api.GET("/v1/contacts", { params: { query: { role: "customer", page_size: 500 } } });
       if (error) throw error;
