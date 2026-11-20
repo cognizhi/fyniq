@@ -144,7 +144,7 @@
   imports screens (each replaces its own table), the ≥ 50 fps Playwright trace of NFR-PERF-UI-02 (it needs a screen that hosts the grid), and statement tables on TanStack Table.)
   (20 Nov 2026, PRD-001 rev 0.421: the grid is in use in the journal editor's **Enter lines in a grid** (`PasteLines.tsx`, Expert mode; the ready rows join the journal, which still checks
   them); a cell change is announced in the status region, nothing needs dragging (fill down is Ctrl+D or a button: WCAG 2.5.7) and the header sits outside the scrolling body so
-  it never hides the focused cell (2.4.11). Tests `PasteLines.test.tsx`, `EntryGrid.test.tsx`. **Left:** bill and invoice lines, bank categorisation, budgets, opening balances and imports,
+  it never hides the focused cell (2.4.11). Tests `PasteLines.test.tsx`, `EntryGrid.test.tsx`. (Also the budget editor's **Enter lines in a grid**, `PasteBudget.tsx`, rev 0.422.) **Left:** bill and invoice lines, bank categorisation, opening balances and imports,
   each replacing its own table; the 50 fps trace is `[live-verify]`: a headless trace on a laptop proves nothing about the budget's devices, so it waits for the dev cloud's device lab.)
 - [ ] 3.2 Plain and Accountant views, status chips, guided set-up with the sample company, and teaching empty states. Tests `// req: FR-UX-08`, `// req: FR-UX-09`, `// req: FR-UX-10` and `// req: FR-UX-11`
   (20 Oct 2026, in part: Home's "Set up the company" checklist with progress, from what the API can tell (the profile's
