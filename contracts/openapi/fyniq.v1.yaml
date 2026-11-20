@@ -7088,6 +7088,7 @@ components:
             - kb_publication.publish
             - people_link.link
             - people_link.unlink
+            - people_link.source
             - salary_batch.approve
         policy:
           description: The approval policy's version it keeps (G4-057).
