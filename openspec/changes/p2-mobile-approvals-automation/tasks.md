@@ -10,7 +10,7 @@
 - [x] 2.2 Reminders and escalation, notify only (D2). `// req: FR-APR-08`
   (Built, rev 0.618: the hourly job `approvals.remind`, the settings `approvals.reminder_hours` and `approvals.escalate_hours`, the insert-only `approval_reminder` log, the types `approval.reminder`, `approval.escalated`, `approval.delegated`; `TestAPendingApprovalIsRemindedAndEscalatedButNeverDecided`.)
 - [x] 2.3 Approve by email link and in the PWA (D3). `// req: FR-APR-07`
-  (Built, rev 0.618 and 0.621: the email half, a link with no token and no action (`TestAnApprovalEmailLinksToTheRequestAndOpeningItDecidesNothing`), and the installed app, which is the same web app with the same confirmation.)
+  (Built, rev 0.618 and 0.622: the email half, a link with no token and no action (`TestAnApprovalEmailLinksToTheRequestAndOpeningItDecidesNothing`), and the installed app, which is the same web app with the same confirmation.)
 
 ## 3. Automation
 - [x] 3.1 Workflow rules without code (D5). `// req: FR-AUT-03`
@@ -20,9 +20,9 @@
 
 ## 4. The PWA
 - [x] 4.1 Manifest, service worker, installability (D4). `// req: FR-UX-16`
-  (Built, rev 0.621: `public/manifest.webmanifest`, the icons, `public/sw.js` for the app's own files only (`pwa/sw.test.ts` holds that it never touches `/api` or a write), registration in production only, the sign-out clean-up. **[live-verify]** installing on iOS and Android. D4 changed, `[owner to decide]`: no offline reads of approvals, as the API says `no-store`; options in the PRD row.)
+  (Built, rev 0.622: `public/manifest.webmanifest`, the icons, `public/sw.js` for the app's own files only (`pwa/sw.test.ts` holds that it never touches `/api` or a write), registration in production only, the sign-out clean-up. **[live-verify]** installing on iOS and Android. D4 changed, `[owner to decide]`: no offline reads of approvals, as the API says `no-store`; options in the PRD row.)
 - [x] 4.2 Camera capture and the offline receipt queue (D4). **[live-verify]** on a real phone. `// req: FR-UX-16`
-  (Built, rev 0.621: `Take a photo`, `pwa/queue.ts` (sealed AES-GCM, non-extractable key, time limit from `pwa.offline_queue_hours`, per person, off on a shared device, cleared at sign-out) with 15 tests, uploaded through `captureDocument` with the receipt's ID as the Idempotency-Key. **Left:** trying the camera and IndexedDB on real phones.)
+  (Built, rev 0.622: `Take a photo`, `pwa/queue.ts` (sealed AES-GCM, non-extractable key, time limit from `pwa.offline_queue_hours`, per person, off on a shared device, cleared at sign-out) with 15 tests, uploaded through `captureDocument` with the receipt's ID as the Idempotency-Key. **Left:** trying the camera and IndexedDB on real phones.)
 
 ## 5. Soft locks
 - [ ] 5.1 Soft-locked periods and per-module soft locks (D6). `// req: FR-GL-09`

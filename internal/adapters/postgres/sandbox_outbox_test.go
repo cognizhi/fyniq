@@ -28,7 +28,7 @@ func TestAttackASandboxOrganisationsOutboundWorkIsNotRun(t *testing.T) {
 	creator := founder(t, st, real, 61, clock.System{}.Now().UTC().Truncate(time.Microsecond))
 	sandbox := placeSandbox(t, creator)
 	outbound := []string{"bank.sync", "payment_link.make", "psp.run", "psp.process", "ai.models.read", "ai.prices.read", "ai.qualify", "agents.run", "kb.compile", "inbound.fetch",
-		"people_link.send", "payments.remittance", "a.kind.added.tomorrow"}
+		"people_link.send", "payments.remittance", "chat.send", "a.kind.added.tomorrow"}
 	inside := []string{"email.send", "notify.fanout", "checks.refresh", "evidence.commit", "reports.export", "proposal.execute"}
 	var ran atomic.Int32
 	kinds := map[string]outbox.Work{}
