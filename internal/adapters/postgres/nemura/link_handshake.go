@@ -100,8 +100,13 @@ func ActivateLink(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, a
 		return LinkRow{}, linkError(err)
 	}
 	l.State, l.FyniqKey, l.FyniqClientID, l.Version = "active", fyniqKey, fyniqClientID, l.Version+1
-	return l, Audit(ctx, tx, org, at, actor, "nemura.fyniq_link.linked", audit.Object{Type: "fyniq_link", ID: l.ID},
-		map[string]audit.Change{"state": {"proposed", "active"}, "epoch": {nil, l.Epoch}}, "")
+	if err := Audit(ctx, tx, org, at, actor, "nemura.fyniq_link.linked", audit.Object{Type: "fyniq_link", ID: l.ID},
+		map[string]audit.Change{"state": {"proposed", "active"}, "epoch": {nil, l.Epoch}}, ""); err != nil {
+		return LinkRow{}, err
+	}
+	// What Nemura already knows goes to Fyniq as the link opens: the people, their bank-detail versions and their holds (NM-INT-01, NM-INT-08).
+	_, err = SnapshotLinkEvents(ctx, tx, org, at)
+	return l, err
 }
 
 // LinkSecrets are the private halves the worker signs with. Only the worker's role can read them.

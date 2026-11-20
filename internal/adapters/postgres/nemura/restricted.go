@@ -426,7 +426,12 @@ ON CONFLICT (organisation_id, person_id) DO UPDATE SET bank_sealed = EXCLUDED.ba
 		Payload: []byte(`{"notice":"bank_account_changed","person":"` + person.String() + `","change":"` + change.String() + `"}`)}); err != nil {
 		return err
 	}
-	return Audit(ctx, tx, org, at, user(by), "nemura.bank_account.change_confirmed", audit.Object{Type: "bank_account_change", ID: change}, nil, "")
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.bank_account.change_confirmed", audit.Object{Type: "bank_account_change", ID: change}, nil, ""); err != nil {
+		return err
+	}
+	// A linked organisation tells Fyniq the new version of the details, never the account, in the same transaction (NM-INT-09).
+	_, err = QueueBankEvent(ctx, tx, org, at, person)
+	return err
 }
 
 // BankChangeView is a change as it is shown: the account masked.

@@ -148,6 +148,7 @@ var NotPersonal = map[string]string{
 	"api_client_request.name":      "the name an Owner gives an API client, such as Payroll bridge, not a person",
 	"link_inbox.payload_sha256":    "the SHA-256 of a message from Fyniq, which holds none of it",
 	"link_inbox.outcome":           "the code of what the link did with a message (applied, duplicate or a refusal), not a person's data",
+	"link_department.name":         "the name of a department as Fyniq has it, such as Engineering, not of a person",
 	"ai_proposal.payload_hash":     "the SHA-256 of a draft's text, which holds none of it",
 	"ai_settings.own_pay":          "whether the Owner turned on explaining a person's own pay: a setting of the company, always off until a second approver exists",
 	"pay_group.name":               "the name of a pay group, such as Monthly, not of a person",

@@ -280,7 +280,7 @@ func TestAnApprovedPayRunPostsOnlyAfterItsAuthorityVerifies(t *testing.T) {
 	}
 	// Nemura is told what became of the run, in the same unit of work: the posting's reference, at the link's next sequence number.
 	answers := w.answers(t)
-	if len(answers) != 1 || answers[0].Sequence != 1 || answers[0].ObjectID != run || answers[0].ObjectVersion != 1 || answers[0].Type != linksend.TypeRunPosted {
+	if len(answers) != 1 || answers[0].Sequence != 2 || answers[0].ObjectID != run || answers[0].ObjectVersion != 1 || answers[0].Type != linksend.TypeRunPosted {
 		t.Fatalf("the answer queued for Nemura: %+v", answers)
 	}
 	var told linksend.RunPosted
@@ -496,8 +496,20 @@ var matrixPeopleMapping = map[string]func(e *env, tok string) (response, func() 
 	},
 }
 
-// answers are the events queued for Nemura so far, oldest first, as the worker would read them.
+// answers are the answers to runs queued for Nemura so far, oldest first, as the worker would read them; the mapping's own events (people.department.changed) are listed by queued.
 func (w *runWorld) answers(t *testing.T) []linksend.Queued {
+	t.Helper()
+	var out []linksend.Queued
+	for _, q := range w.queued(t) {
+		if q.Type == linksend.TypeRunPosted {
+			out = append(out, q)
+		}
+	}
+	return out
+}
+
+// queued are every event queued for Nemura so far, oldest first.
+func (w *runWorld) queued(t *testing.T) []linksend.Queued {
 	t.Helper()
 	ctx := context.Background()
 	c, err := pgx.Connect(ctx, w.readonly) // the world's own database, which startSessions made fresh

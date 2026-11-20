@@ -147,6 +147,8 @@ type Deps struct {
 	LinkHolds LinkHolds
 	// LinkAdmin is how the people team proposes and approves the link; nil: the deployment has none.
 	LinkAdmin LinkAdmin
+	// RunLink is the pay run's door to the link: its approval envelope, the approval with proof and what became of the submission; nil: the deployment has none.
+	RunLink RunLink
 	// Idempotency stores the Idempotency-Keys of writes; nil turns the header off (a deployment with no database for it never runs).
 	Idempotency Idempotency
 	Assistant   AssistantAdmin
@@ -189,6 +191,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerPayroll()
 	a.registerLink()
 	a.registerLinkAdmin()
+	a.registerRunLink()
 	a.registerLinkHold()
 	a.registerAssistant()
 	a.registerSignIn()

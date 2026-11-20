@@ -338,6 +338,12 @@ func (p PayrollService) Approve(ctx context.Context, s api.Session, id uuid.UUID
 		stepUp = *s.StepUpAt
 	}
 	return p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		// While the apps are linked a run is approved with the envelope's proof or not at all: Fyniq posts only what carries it (NM-INT-06), so the plain approval is closed.
+		if state, err := runLinkState(ctx, tx); err != nil {
+			return err
+		} else if state != "" {
+			return &payroll.Refusal{Code: payroll.CodeConflict, Message: "Nemura is linked to Fyniq: approve the run with the approval envelope and your passkey (the envelope is on the run's page), so that Fyniq can verify it."}
+		}
 		return ApproveRun(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, id, version, confirmed, stepUp)
 	})
 }

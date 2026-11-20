@@ -230,6 +230,40 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 	if !held {
 		t.Error("the hold did not reach Fyniq's projection")
 	}
+	// The person who existed before the link went ahead with it (a snapshot at activation): Ben reaches Fyniq's projection with the figures accounting needs, and a later change is the next version.
+	var ahead []queuedRow
+	if err := nst.InOrg(ctx, norg, func(ctx context.Context, tx pgx.Tx) error {
+		rs, err := tx.Query(ctx, `SELECT id, payload FROM nemura.outbox WHERE kind = $1 AND payload->>'type' = 'people.person.upserted' ORDER BY created_at`, nemura.KindLinkSend)
+		if err != nil {
+			return err
+		}
+		defer rs.Close()
+		for rs.Next() {
+			var o queuedRow
+			if err := rs.Scan(&o.id, &o.payload); err != nil {
+				return err
+			}
+			ahead = append(ahead, o)
+		}
+		return rs.Err()
+	}); err != nil || len(ahead) != 1 {
+		t.Fatalf("the person queued with the link: %d %v", len(ahead), err)
+	}
+	if err := deliver(ahead[0].id, ahead[0].payload); err != nil {
+		t.Fatalf("the person's delivery: %v", err)
+	}
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		p, err := u.PeopleLinks().Person(ctx, nperson)
+		if err != nil {
+			return err
+		}
+		if !p.Known() || p.DisplayName != "Ben Lim" || p.Status != "active" || p.Version != 1 || p.Removed || p.BankVersion != 0 {
+			t.Errorf("Ben in Fyniq's projection: %+v", p)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
 	// The same event again is a duplicate in Fyniq: the delivery succeeds and nothing is applied twice.
 	if err := deliver(holdRow, holdPayload); err != nil {
 		t.Errorf("a retry of the same event: %v", err)
@@ -431,6 +465,11 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 }
 
 // outboxRow is a row of Nemura's outbox as the worker's handler receives it.
+type queuedRow struct {
+	id      uuid.UUID
+	payload []byte
+}
+
 func outboxRow(id uuid.UUID, payload []byte) nout.Row { return nout.Row{ID: id, Payload: payload} }
 
 // fyniqKeys0 is the ID of the events' client at Nemura, read with the worker's role: what a client that is not the asking one would sign in as.

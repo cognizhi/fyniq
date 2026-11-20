@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -190,6 +191,47 @@ type paymentStatusEvent struct {
 	EvidenceRef string    `json:"evidence_ref"`
 }
 
+// departmentChangedEvent is people.department.changed: the version of Fyniq's payroll account mapping and the departments in it (PRD-002 Appendix E). Departments come from Fyniq (NM-INT-01), so Nemura keeps
+// each version as Fyniq said it and uses the newest.
+type departmentChangedEvent struct {
+	MappingVersion int `json:"mapping_version"`
+	Departments    []struct {
+		DepartmentID uuid.UUID  `json:"department_id"`
+		Name         string     `json:"name"`
+		CostCentreID *uuid.UUID `json:"cost_centre_id"`
+	} `json:"departments"`
+}
+
+// applyDepartments keeps a mapping version and its departments once: a version no newer than the newest held is ignored (a late older event never replaces a newer mapping), so a run is always
+// calculated against the newest version Fyniq has told Nemura of.
+func applyDepartments(ctx context.Context, tx pgx.Tx, now time.Time, event uuid.UUID, ev departmentChangedEvent) (string, error) {
+	if ev.MappingVersion < 1 || len(ev.Departments) > 500 {
+		return "", &payroll.Refusal{Code: payroll.CodeInvalid, Message: "A mapping has a version of 1 or more and at most 500 departments."}
+	}
+	var newest int
+	if err := tx.QueryRow(ctx, `SELECT coalesce(max(mapping_version), 0) FROM nemura.link_mapping`).Scan(&newest); err != nil {
+		return "", err
+	}
+	if ev.MappingVersion <= newest {
+		return "ignored_older", nil
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO nemura.link_mapping (mapping_version, event_id, received_at) VALUES ($1, $2, $3)`, ev.MappingVersion, event, now); err != nil {
+		return "", err
+	}
+	seen := map[uuid.UUID]bool{}
+	for _, d := range ev.Departments {
+		name := strings.TrimSpace(d.Name)
+		if d.DepartmentID == uuid.Nil || name == "" || len(name) > 200 || seen[d.DepartmentID] {
+			return "", &payroll.Refusal{Code: payroll.CodeInvalid, Message: "A department has its own ID, once, and a name of up to 200 characters."}
+		}
+		seen[d.DepartmentID] = true
+		if _, err := tx.Exec(ctx, `INSERT INTO nemura.link_department (mapping_version, department_id, name, cost_centre_id) VALUES ($1, $2, $3, $4)`, ev.MappingVersion, d.DepartmentID, name, d.CostCentreID); err != nil {
+			return "", err
+		}
+	}
+	return "applied", nil
+}
+
 type runPostedEvent struct {
 	RunID      uuid.UUID `json:"run_id"`
 	Version    int       `json:"version"`
@@ -203,6 +245,7 @@ type runPostedEvent struct {
 const (
 	TypePayrollRunPosted     = "payroll.run.posted"
 	TypePayrollPaymentStatus = "payroll.payments.status"
+	TypeDepartmentChanged    = "people.department.changed"
 )
 
 // ReceiveLinkEvent verifies and applies one event Fyniq sent (NM-INT-10): the envelope against the link as Nemura holds it (organisations, epoch, a 5-minute window, Fyniq's signature,
@@ -277,6 +320,14 @@ func ReceiveLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Ti
 				} else {
 					applyErr = &payroll.Refusal{Code: payroll.CodeInvalid, Message: "The posting answer has a status other than posted or refused, or lacks its reference or its code."}
 				}
+			}
+		}
+	case TypeDepartmentChanged:
+		var ev departmentChangedEvent
+		if applyErr = strict(&ev); applyErr == nil {
+			var o string
+			if o, applyErr = applyDepartments(ctx, sp, now, eventID, ev); applyErr == nil {
+				outcome = o
 			}
 		}
 	default:

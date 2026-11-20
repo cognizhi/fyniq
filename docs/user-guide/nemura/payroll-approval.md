@@ -3,7 +3,7 @@ key: nemura.payroll-approval
 title: Read and approve a pay run
 mode: expert
 roles: [payroll_admin, owner]
-requirements: [FR-PAY-07, NM-ROLE-04, NM-PAY-09, NM-PAY-11]
+requirements: [FR-PAY-07, NM-ROLE-04, NM-PAY-09, NM-PAY-11, NM-INT-03, NM-INT-06]
 ---
 
 # Read and approve a pay run
@@ -29,6 +29,17 @@ digest. The person who prepared a version cannot approve it: the database refuse
 6. Open any person under **Each person's month** to see their items with their class and the working of each figure.
 7. Select **Confirm with my passkey and approve**.
 
+## When Nemura is linked to Fyniq
+
+A run is then approved with proof, so that Fyniq can check that the people who approved it really did before it posts anything. The page shows **Approve with proof for Fyniq** instead of the plain button.
+
+1. Read the figures Fyniq will post: the gross pay of each of Fyniq's departments, the month's CPF, SDL and self-help group funds, the deductions by kind, the claims paid with the salary, and the version of Fyniq's account mapping the run was calculated against. If something is missing, the page says what in plain words: a person with no department, a department Fyniq does not have (departments come from Fyniq: add it there), no mapping yet, or someone who has not signed in once.
+2. Select **Confirm, sign the figures and approve**. Your browser asks for your passkey twice: once to confirm it is you, and once to sign the digest of the figures.
+3. Sign with **the passkey you enrolled in Fyniq**. Fyniq checks your signature against it, so every approver signs in to Fyniq once and adds a passkey in its security settings. That gives you no Fyniq role.
+4. Under **What Fyniq did with it** you see whether it was sent, and Fyniq's answer: the posting's reference, or the code and words of its refusal, with which the run waits. If the refusal is about something Fyniq's side can put right (you have no passkey there, a period is closed), put it right and select **Send it to Fyniq again**: the same approval goes again as a new message. If Fyniq refused the figures or the proof, calculate the run again and approve the new version.
+
+While the apps are linked the plain approval is closed: a run is approved with proof or not at all.
+
 ## What happens next
 
 - The approval is written once with what your passkey confirmed. A correction of an approved month is a new version that needs a reason; once approved, it supersedes the one before.
@@ -43,6 +54,8 @@ digest. The person who prepared a version cannot approve it: the database refuse
 - **Nobody approves the run they prepared.** Ask another Payroll administrator or the Owner.
 - **The digest you confirmed is not this version's.** Someone calculated the next version while you read: open the run again.
 - **The version has failing checks.** Resolve each, calculate the next version, then approve it.
+- **Fyniq says the approver has no passkey enrolled there (PPL-19).** Sign in to Fyniq once, add a passkey in its security settings, then select **Send it to Fyniq again**.
+- **Your passkey did not sign the figures.** Use the passkey you enrolled in Fyniq, from Nemura's own address, and confirm with your fingerprint, face or PIN.
 
 ## Related
 

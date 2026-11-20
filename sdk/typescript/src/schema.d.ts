@@ -13932,7 +13932,7 @@ export interface paths {
         put?: never;
         /**
          * Set the next version of the account mapping
-         * @description Sets the next version of the mapping pay runs post by (FR-EMP-02's minimum): each department's salary expense account and each kind of deduction's account. A new version makes a run calculated against the old one refused until Nemura recalculates it. Side effects: the new version and its audit event. Idempotent with Idempotency-Key. On the never-list for the AI and MCP (§9.6). Left: dual control by the approval engine.
+         * @description Sets the next version of the mapping pay runs post by (FR-EMP-02's minimum): each department's salary expense account and each kind of deduction's account. A new version makes a run calculated against the old one refused until Nemura recalculates it. Side effects: the new version and its audit event, and, with a link that has keys, `people.department.changed` for Nemura (the mapping's version and its departments by ID and name, never an account). Idempotent with Idempotency-Key. On the never-list for the AI and MCP (§9.6). Left: dual control by the approval engine.
          */
         post: operations["setPayrollMapping"];
         delete?: never;

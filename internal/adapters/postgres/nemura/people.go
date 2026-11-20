@@ -73,7 +73,9 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, id, p.MemberID, p.LegalName, 
 	if err := syncReportingLine(ctx, tx, org, at, by, id, j.Manager, p.EmploymentStart); err != nil {
 		return err
 	}
-	return nil
+	// A linked organisation tells Fyniq, in the same transaction, so a person is never lost between the two (NM-INT-01); none when standalone.
+	_, err := QueuePersonEvent(ctx, tx, org, at, id)
+	return err
 }
 
 func dayPtr(t *time.Time) *string {
@@ -129,7 +131,11 @@ func ChangeJob(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, 
 	if err := insertJob(ctx, tx, org, at, by, person, from, j); err != nil {
 		return err
 	}
-	return syncReportingLine(ctx, tx, org, at, by, person, j.Manager, from)
+	if err := syncReportingLine(ctx, tx, org, at, by, person, j.Manager, from); err != nil {
+		return err
+	}
+	_, err = QueuePersonEvent(ctx, tx, org, at, person)
+	return err
 }
 
 // SetClassification ends the current classification on from and starts the new one.
@@ -175,7 +181,11 @@ func UpdatePerson(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, b
 		person, p.LegalName, orNil(p.PreferredName), orNil(p.WorkEmail), orNil(p.Phone), dayPtr(p.ProbationEnd), dayPtr(p.LeavingDate), orNil(p.LeavingReason)); err != nil {
 		return err
 	}
-	return Audit(ctx, tx, org, at, user(by), "nemura.person.updated", audit.Object{Type: "person", ID: person}, map[string]audit.Change{"leaving_date": {nil, dayPtr(p.LeavingDate)}}, "")
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.person.updated", audit.Object{Type: "person", ID: person}, map[string]audit.Change{"leaving_date": {nil, dayPtr(p.LeavingDate)}}, ""); err != nil {
+		return err
+	}
+	_, err := QueuePersonEvent(ctx, tx, org, at, person)
+	return err
 }
 
 // syncReportingLine keeps the members' reporting line, which scopes what a manager may see, in step with the person's manager when both have
