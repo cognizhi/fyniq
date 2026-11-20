@@ -26,6 +26,8 @@ import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
 import { Erasures } from "./pages/Erasures";
 import { VerifyLetter } from "./pages/VerifyLetter";
+import { Concerns } from "./pages/Concerns";
+import { Grievances } from "./pages/Grievances";
 import { FyniqLink } from "./pages/FyniqLink";
 import { Shell } from "./pages/Shell";
 import { rememberPage, switchProvider, switchedIn } from "./workspace";
@@ -38,6 +40,8 @@ import { AssistantSettings } from "./pages/AssistantSettings";
 import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
+import { OnboardingPlans } from "./components/OnboardingPlans";
+import { MyOnboarding } from "./components/MyOnboarding";
 import { Delegations } from "./components/Delegations";
 import { AskQuestion } from "./pages/AskQuestion";
 import { PeopleRequests } from "./pages/PeopleRequests";
@@ -318,9 +322,9 @@ describe("the people pages", () => {
 // req: NM-FEAT-01, NM-FEAT-03
 describe("the feature switches", () => {
   const list = { features: [
-    { id: "leave", name: "Leave", phase: "P1", state: "on", needs: [] },
-    { id: "payroll", name: "Payroll", phase: "P1", state: "off", needs: ["leave"] },
-    { id: "hiring", name: "Hiring", phase: "P2", state: "off", needs: [] },
+    { id: "leave", name: "Leave", phase: "P1", built: true, state: "on", needs: [] },
+    { id: "payroll", name: "Payroll", phase: "P1", built: true, state: "off", needs: ["leave"] },
+    { id: "hiring", name: "Hiring", phase: "P2", built: false, state: "off", needs: [] },
   ] };
 
   it("lists each feature with its state and what it needs, and says which are later", async () => {
@@ -1825,5 +1829,100 @@ describe("verifying a letter", () => {
     render(<VerifyLetter />);
     await waitFor(() => expect(screen.getByText(/This link does not work/)).toBeTruthy());
     window.location.hash = "";
+  });
+});
+
+// part of NM-SEC-06
+describe("raising and handling a concern", () => {
+  const g = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1";
+  it("files in confidence, naming who it is about, and shows the outcome but never the inquiry", async () => {
+    answer("GET /v1/me/grievances", { status: 200, body: { items: [{ id: g, filed_at: "2026-11-20T10:00:00Z", state: "decided", handler: "Sarah Koh", finding: "partly_substantiated", outcome: "The inquiry found that the remark was made.", decided_at: "2026-12-04T10:00:00Z" }] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", name: "Ben Lim" }] } });
+    answer("POST /v1/me/grievances", { status: 201, body: { id: g, state: "open", handler: "Sarah Koh" } });
+    const { container } = render(<Concerns roles={["employee"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    expect(await screen.findByText(/Partly substantiated\. The inquiry found that the remark was made\./)).toBeTruthy();
+    expect(screen.queryByText(/Interview/)).toBeNull();
+    await screen.findByRole("option", { name: "Ben Lim" });
+    fireEvent.change(screen.getByLabelText(/What happened, when and who was there/), { target: { value: "On the twelfth, in the meeting room, a remark was made that I found demeaning." } });
+    fireEvent.change(screen.getByLabelText(/Who it is about/), { target: { value: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send in confidence" }));
+    expect(await screen.findByText("Sent. Sarah Koh is looking into it.")).toBeTruthy();
+    expect((bodies.get("POST /v1/me/grievances") as { about?: string[] }).about).toEqual(["0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"]);
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("shows a handler the inquiry and lets them record, decide and pass on, and shows nothing to anyone else", async () => {
+    answer("GET /v1/grievances", { status: 200, body: { assigned: [{ id: g, filed_at: "2026-11-20T10:00:00Z", state: "open" }], unrouted: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9", filed_at: "2026-11-21T10:00:00Z", state: "open", reason: "handler_left" }] } });
+    answer(`GET /v1/grievances/${g}`, { status: 200, body: { id: g, filed_at: "2026-11-20T10:00:00Z", state: "open", complainant: "Nurul Aziz", summary: "A remark was made.", about: [{ person_id: "p", name: "Sam Seah" }], entries: [{ id: "e1", kind: "routing", body: "Filed and routed.", by: "Nurul Aziz", at: "2026-11-20T10:00:00Z" }] } });
+    answer(`POST /v1/grievances/${g}/entries`, { status: 201, body: { done: true } });
+    answer(`POST /v1/grievances/${g}/outcome`, { status: 200, body: { done: true } });
+    answer("POST /v1/grievances/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9/taking", { status: 200, body: { done: true } });
+    answer("GET /v1/grievances/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9", { status: 200, body: { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9", filed_at: "2026-11-21T10:00:00Z", state: "open", complainant: "Dev Rao", summary: "Waiting one.", about: [], entries: [] } });
+    const { container } = render(<Grievances roles={["hr_admin"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    expect(await screen.findByText(/Waiting: its handler has left/)).toBeTruthy();
+    fireEvent.click((await screen.findAllByRole("button", { name: "Open" }))[0]!);
+    expect(await screen.findByText("Nurul Aziz")).toBeTruthy();
+    expect(screen.getByText(/Sam Seah/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("What to record"), { target: { value: "Spoke with the complainant." } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(await screen.findByText("Recorded.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/grievances/${g}/entries`)).toEqual({ kind: "note", note: "Spoke with the complainant." });
+    fireEvent.change(screen.getByLabelText(/The outcome, which the person who raised it reads/), { target: { value: "The inquiry found that the remark was made and it was dealt with." } });
+    fireEvent.click(screen.getByRole("button", { name: "Write the outcome" }));
+    expect(await screen.findByText(/The outcome is written/)).toBeTruthy();
+    expect((bodies.get(`POST /v1/grievances/${g}/outcome`) as { finding: string }).finding).toBe("not_substantiated");
+    fireEvent.click(screen.getByRole("button", { name: "Take it" }));
+    expect(await screen.findByText("It is yours now.")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    cleanup();
+    render(<Grievances roles={["employee"]} />);
+    expect(await screen.findByText("Only an HR administrator or the Owner handles grievances.")).toBeTruthy();
+  });
+});
+
+// req: NM-ONB-01, QA-UI-05
+describe("onboarding plans", () => {
+  const task = (id: string, assignee: string, state: string, overdue = false) => ({ id, plan_id: "p1", person_id: "pp", person: "Jon Joiner", title: `Task ${id}`, assignee, due_on: "2026-12-05", state, overdue });
+  const plan = { id: "p1", person_id: "pp", person: "Jon Joiner", template: "Standard", start_date: "2026-12-01", done: 1, total: 2, tasks: [task("t1", "it", "done"), task("t2", "hr", "open", true)] };
+
+  it("shows the people team the plans with each task's assignee and due date, marks a task done or skipped, makes a plan and a template, and is accessible", async () => {
+    answer("GET /v1/onboarding/plans", { status: 200, body: { plans: [plan] } });
+    answer("GET /v1/onboarding/templates", { status: 200, body: { templates: [{ id: "tp1", name: "Office joiner", archived: false, tasks: [{ title: "a", assignee: "hr", due_offset_days: 0 }] }] } });
+    answer("POST /v1/onboarding/plan-tasks/t2/decision", { status: 204, body: undefined });
+    answer("POST /v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/onboarding-plan", { status: 201, body: plan });
+    answer("POST /v1/onboarding/templates", { status: 201, body: { id: "tp2", name: "Sales", archived: false, tasks: [] } });
+    const { container } = render(<OnboardingPlans people={[{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", name: "Ben Lim" } as never]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    expect(await screen.findByText(/Jon Joiner, starts 2026-12-01: 1 of 2 done/)).toBeTruthy();
+    expect(screen.getByText("Overdue")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Skip: Task t2" }));
+    expect(await screen.findByText("Saved.")).toBeTruthy();
+    expect(bodies.get("POST /v1/onboarding/plan-tasks/t2/decision")).toEqual({ state: "skipped" });
+    fireEvent.click(screen.getByRole("button", { name: "Start the plan" }));
+    expect(await screen.findByText("The plan is made, with each task due from the start date.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Sales" } });
+    fireEvent.click(screen.getByRole("button", { name: "Make the template" }));
+    expect(await screen.findByText("The template is made.")).toBeTruthy();
+    expect(bodies.get("POST /v1/onboarding/templates")).toEqual({ name: "Sales" });
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("tells the people team when Onboarding is off, and shows a person only the tasks that are theirs", async () => {
+    answer("GET /v1/onboarding/plans", { status: 409, body: { code: "NM_FEATURE_OFF", detail: "Onboarding is switched off." } });
+    answer("GET /v1/onboarding/templates", { status: 409, body: { code: "NM_FEATURE_OFF", detail: "Onboarding is switched off." } });
+    render(<OnboardingPlans people={[]} />);
+    expect(await screen.findByText(/Onboarding is switched off for this company/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Start the plan" })).toBeNull();
+    cleanup();
+    answer("GET /v1/me/onboarding", { status: 200, body: { tasks: [task("t3", "joiner", "open")] } });
+    answer("POST /v1/onboarding/plan-tasks/t3/decision", { status: 204, body: undefined });
+    const { container } = render(<MyOnboarding />);
+    const { fireEvent } = await import("@testing-library/react");
+    expect(await screen.findByText(/Task t3: Jon Joiner, due 2026-12-05/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Done: Task t3" }));
+    await waitFor(() => expect(bodies.get("POST /v1/onboarding/plan-tasks/t3/decision")).toEqual({ state: "done" }));
+    expect(await violations(container)).toEqual([]);
   });
 });

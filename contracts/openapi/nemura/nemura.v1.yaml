@@ -2186,6 +2186,11 @@ components:
     Feature:
       additionalProperties: false
       properties:
+        built:
+          description: Whether a feature of a later phase is built, so that it can be switched on.
+          examples:
+            - false
+          type: boolean
         external_system:
           description: The system that holds its data, when external.
           examples:
@@ -2230,6 +2235,7 @@ components:
         - id
         - name
         - phase
+        - built
         - state
         - needs
       type: object
@@ -2812,6 +2818,387 @@ components:
             - "null"
       required:
         - blocks
+      type: object
+    GrievanceDetail:
+      additionalProperties: false
+      properties:
+        about:
+          description: The people it is about; empty when it is about a practice.
+          items:
+            $ref: "#/components/schemas/GrievanceSubject"
+          type: array
+        complainant:
+          description: Who filed it.
+          examples:
+            - Nurul Aziz
+          type: string
+        decided_at:
+          description: When it was written.
+          examples:
+            - "2026-12-04T10:00:00Z"
+          format: date-time
+          type: string
+        entries:
+          description: The inquiry record, oldest first.
+          items:
+            $ref: "#/components/schemas/GrievanceEntry"
+          type: array
+        filed_at:
+          description: When it was filed.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        finding:
+          description: What the outcome concludes.
+          enum:
+            - substantiated
+            - partly_substantiated
+            - not_substantiated
+            - no_finding
+          examples:
+            - not_substantiated
+          type: string
+        id:
+          description: The grievance.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+          format: uuid
+          type: string
+        outcome:
+          description: The written outcome.
+          examples:
+            - The inquiry found…
+          type: string
+        reason:
+          description: "Why it waits to be taken, in the list of grievances that wait: unrouted (nobody who is not involved could handle it) or handler_left (its handler has been deactivated or can no longer handle one)."
+          enum:
+            - unrouted
+            - handler_left
+          examples:
+            - handler_left
+          type: string
+        state:
+          description: Where it is.
+          enum:
+            - unrouted
+            - open
+            - decided
+          examples:
+            - open
+          type: string
+        summary:
+          description: What the complainant wrote.
+          examples:
+            - On 12 November…
+          type: string
+      required:
+        - complainant
+        - summary
+        - about
+        - entries
+        - id
+        - filed_at
+        - state
+      type: object
+    GrievanceDoneOutputBody:
+      additionalProperties: false
+      properties:
+        done:
+          description: True once it is recorded.
+          examples:
+            - true
+          type: boolean
+      required:
+        - done
+      type: object
+    GrievanceEntry:
+      additionalProperties: false
+      properties:
+        at:
+          description: When.
+          examples:
+            - "2026-11-21T10:00:00Z"
+          format: date-time
+          type: string
+        body:
+          description: What was recorded.
+          examples:
+            - Spoke with the complainant on the day.
+          type: string
+        by:
+          description: Who recorded it.
+          examples:
+            - Sarah Koh
+          type: string
+        id:
+          description: The entry.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea2
+          format: uuid
+          type: string
+        kind:
+          description: What kind of entry.
+          enum:
+            - note
+            - interview
+            - finding
+            - handover
+            - routing
+          examples:
+            - note
+          type: string
+      required:
+        - id
+        - kind
+        - body
+        - by
+        - at
+      type: object
+    GrievanceEntryInputBody:
+      additionalProperties: false
+      properties:
+        kind:
+          description: What kind of entry.
+          enum:
+            - note
+            - interview
+            - finding
+          examples:
+            - note
+          type: string
+        note:
+          description: What to record.
+          examples:
+            - Spoke with the complainant on the day.
+          maxLength: 4000
+          minLength: 1
+          type: string
+      required:
+        - kind
+        - note
+      type: object
+    GrievanceFileInputBody:
+      additionalProperties: false
+      properties:
+        about:
+          description: The people it is about, by person ID; leave out when it is about a practice.
+          examples:
+            - - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          items:
+            type: string
+          maxItems: 5
+          type: array
+        summary:
+          description: What happened, when and who was there.
+          examples:
+            - On 12 November my manager…
+          maxLength: 4000
+          minLength: 20
+          type: string
+      required:
+        - summary
+      type: object
+    GrievanceFiled:
+      additionalProperties: false
+      properties:
+        handler:
+          description: The name of the person handling it, when it has one.
+          examples:
+            - Sarah Koh
+          type: string
+        id:
+          description: The grievance.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+          format: uuid
+          type: string
+        state:
+          description: "open: someone is handling it; unrouted: nobody who is not involved can handle it yet, and it waits."
+          enum:
+            - open
+            - unrouted
+          examples:
+            - open
+          type: string
+      required:
+        - id
+        - state
+      type: object
+    GrievanceHandledOutputBody:
+      additionalProperties: false
+      properties:
+        assigned:
+          description: The grievances the caller handles, newest first.
+          items:
+            $ref: "#/components/schemas/GrievanceRow"
+          type: array
+        unrouted:
+          description: "Grievances that wait to be taken, each with its reason: nobody who is not involved could handle it, or its handler has left. The caller, if neither the complainant nor involved, may take one."
+          items:
+            $ref: "#/components/schemas/GrievanceRow"
+          type: array
+      required:
+        - assigned
+        - unrouted
+      type: object
+    GrievanceHandoverInputBody:
+      additionalProperties: false
+      properties:
+        reason:
+          description: Why it is passed on; it goes in the inquiry record.
+          examples:
+            - I have a conflict of interest.
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - reason
+      type: object
+    GrievanceMine:
+      additionalProperties: false
+      properties:
+        decided_at:
+          description: When the outcome was written.
+          examples:
+            - "2026-12-04T10:00:00Z"
+          format: date-time
+          type: string
+        filed_at:
+          description: When it was filed.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        finding:
+          description: What the outcome concludes, once decided.
+          enum:
+            - substantiated
+            - partly_substantiated
+            - not_substantiated
+            - no_finding
+          examples:
+            - partly_substantiated
+          type: string
+        handler:
+          description: Who handles it.
+          examples:
+            - Sarah Koh
+          type: string
+        id:
+          description: The grievance.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+          format: uuid
+          type: string
+        outcome:
+          description: The written outcome, once decided.
+          examples:
+            - The inquiry found…
+          type: string
+        state:
+          description: "unrouted: waiting for someone who is not involved to take it; open: being handled; decided: the outcome is written."
+          enum:
+            - unrouted
+            - open
+            - decided
+          examples:
+            - open
+          type: string
+      required:
+        - id
+        - filed_at
+        - state
+      type: object
+    GrievanceMineOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The caller's own grievances, newest first.
+          items:
+            $ref: "#/components/schemas/GrievanceMine"
+          type: array
+      required:
+        - items
+      type: object
+    GrievanceOutcomeInputBody:
+      additionalProperties: false
+      properties:
+        finding:
+          description: What the inquiry concludes.
+          enum:
+            - substantiated
+            - partly_substantiated
+            - not_substantiated
+            - no_finding
+          examples:
+            - partly_substantiated
+          type: string
+        outcome:
+          description: The written outcome, which the complainant reads.
+          examples:
+            - The inquiry found…
+          maxLength: 4000
+          minLength: 20
+          type: string
+      required:
+        - finding
+        - outcome
+      type: object
+    GrievanceRow:
+      additionalProperties: false
+      properties:
+        filed_at:
+          description: When it was filed.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: The grievance.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+          format: uuid
+          type: string
+        reason:
+          description: "Why it waits to be taken, in the list of grievances that wait: unrouted (nobody who is not involved could handle it) or handler_left (its handler has been deactivated or can no longer handle one)."
+          enum:
+            - unrouted
+            - handler_left
+          examples:
+            - handler_left
+          type: string
+        state:
+          description: Where it is.
+          enum:
+            - unrouted
+            - open
+            - decided
+          examples:
+            - open
+          type: string
+      required:
+        - id
+        - filed_at
+        - state
+      type: object
+    GrievanceSubject:
+      additionalProperties: false
+      properties:
+        name:
+          description: Their name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+      required:
+        - person_id
+        - name
       type: object
     GroupsOutputBody:
       additionalProperties: false
@@ -6696,6 +7083,347 @@ components:
       required:
         - pay_group_id
         - basic_monthly
+      type: object
+    Plan:
+      additionalProperties: false
+      properties:
+        done:
+          description: Tasks done or skipped.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        id:
+          description: The plan.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a21
+          format: uuid
+          type: string
+        person:
+          description: The joiner's legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The joiner.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        start_date:
+          description: The start date its tasks are due from.
+          examples:
+            - "2026-12-01"
+          format: date
+          type: string
+        tasks:
+          description: Its tasks, soonest due first.
+          items:
+            $ref: "#/components/schemas/PlanTask"
+          type: array
+        template:
+          description: The name of the template it was made from.
+          examples:
+            - Office joiner
+          type: string
+        total:
+          description: All its tasks.
+          examples:
+            - 8
+          format: int64
+          type: integer
+      required:
+        - id
+        - person_id
+        - person
+        - template
+        - start_date
+        - done
+        - total
+        - tasks
+      type: object
+    PlanDecisionInputBody:
+      additionalProperties: false
+      properties:
+        note:
+          description: A note.
+          examples:
+            - Collected on the first day.
+          maxLength: 300
+          type: string
+        state:
+          description: Done; or skipped because it does not apply (the HR team only).
+          enum:
+            - done
+            - skipped
+          examples:
+            - done
+          type: string
+      required:
+        - state
+      type: object
+    PlanStartInputBody:
+      additionalProperties: false
+      properties:
+        template_id:
+          description: The template to use; empty uses the standard template.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a01
+          format: uuid
+          type: string
+      type: object
+    PlanTask:
+      additionalProperties: false
+      properties:
+        assignee:
+          description: Who it is for.
+          enum:
+            - hr
+            - manager
+            - it
+            - joiner
+          examples:
+            - hr
+          type: string
+        decided_at:
+          description: When.
+          examples:
+            - "2026-12-02T10:00:00Z"
+          format: date-time
+          type: string
+        decided_by:
+          description: Who marked it done or skipped.
+          examples:
+            - Sarah Koh
+          type: string
+        detail:
+          description: How, or what good looks like.
+          examples:
+            - Within 14 days of the start date.
+          type: string
+        due_on:
+          description: The day it is due.
+          examples:
+            - "2026-12-15"
+          format: date
+          type: string
+        id:
+          description: The task.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a11
+          format: uuid
+          type: string
+        note:
+          description: The note left when it was decided.
+          examples:
+            - Collected on the first day.
+          type: string
+        overdue:
+          description: An open task past its due date.
+          examples:
+            - false
+          type: boolean
+        person:
+          description: The joiner's legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The joiner.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        plan_id:
+          description: Its plan.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a21
+          format: uuid
+          type: string
+        state:
+          description: Where it is.
+          enum:
+            - open
+            - done
+            - skipped
+          examples:
+            - open
+          type: string
+        title:
+          description: What is to be done.
+          examples:
+            - Issue the key employment terms (KETs)
+          type: string
+      required:
+        - id
+        - plan_id
+        - person_id
+        - person
+        - title
+        - assignee
+        - due_on
+        - state
+        - overdue
+      type: object
+    PlanTaskInput:
+      additionalProperties: false
+      properties:
+        assignee:
+          description: Who it is for.
+          enum:
+            - hr
+            - manager
+            - it
+            - joiner
+          examples:
+            - hr
+          type: string
+        detail:
+          description: How, or what good looks like.
+          examples:
+            - The building office needs two days.
+          maxLength: 1000
+          type: string
+        due_on:
+          description: The day it is due.
+          examples:
+            - "2026-12-03"
+          format: date
+          type: string
+        title:
+          description: What is to be done.
+          examples:
+            - Order a security pass
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - title
+        - assignee
+        - due_on
+      type: object
+    PlanTasksOutputBody:
+      additionalProperties: false
+      properties:
+        tasks:
+          description: The tasks the caller can act on, soonest due first, with those decided in the last 14 days.
+          items:
+            $ref: "#/components/schemas/PlanTask"
+          type: array
+      required:
+        - tasks
+      type: object
+    PlanTemplate:
+      additionalProperties: false
+      properties:
+        archived:
+          description: "Whether it was archived: plans already made from it are unchanged."
+          examples:
+            - false
+          type: boolean
+        id:
+          description: The template.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a01
+          format: uuid
+          type: string
+        name:
+          description: What it is for.
+          examples:
+            - Office joiner
+          type: string
+        tasks:
+          description: Its tasks in order.
+          items:
+            $ref: "#/components/schemas/PlanTemplateTask"
+          type: array
+      required:
+        - id
+        - name
+        - archived
+        - tasks
+      type: object
+    PlanTemplateInputBody:
+      additionalProperties: false
+      properties:
+        name:
+          description: What it is for.
+          examples:
+            - Office joiner
+          maxLength: 100
+          minLength: 1
+          type: string
+        tasks:
+          description: Its tasks. Leave empty to start from the standard template, which you then own.
+          items:
+            $ref: "#/components/schemas/PlanTemplateTask"
+          maxItems: 60
+          type:
+            - array
+            - "null"
+      required:
+        - name
+      type: object
+    PlanTemplateTask:
+      additionalProperties: false
+      properties:
+        assignee:
+          description: "Who it is for: the HR team, the joiner's line manager, IT (an Administrator, HR administrator or the Owner) or the joiner."
+          enum:
+            - hr
+            - manager
+            - it
+            - joiner
+          examples:
+            - it
+          type: string
+        detail:
+          description: How, or what good looks like.
+          examples:
+            - Order, set up and label what the role needs.
+          maxLength: 1000
+          type: string
+        due_offset_days:
+          description: "Days from the start date it is due: negative before it."
+          examples:
+            - -3
+          format: int64
+          maximum: 365
+          minimum: -60
+          type: integer
+        title:
+          description: What is to be done.
+          examples:
+            - Prepare the laptop and equipment
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - title
+        - assignee
+        - due_offset_days
+      type: object
+    PlanTemplatesOutputBody:
+      additionalProperties: false
+      properties:
+        templates:
+          description: The templates, the live ones first.
+          items:
+            $ref: "#/components/schemas/PlanTemplate"
+          type: array
+      required:
+        - templates
+      type: object
+    PlansOutputBody:
+      additionalProperties: false
+      properties:
+        plans:
+          description: The plans, the ones with the most left first.
+          items:
+            $ref: "#/components/schemas/Plan"
+          type: array
+      required:
+        - plans
       type: object
     PolicyOutputBody:
       additionalProperties: false
@@ -11252,6 +11980,446 @@ paths:
       summary: Record a claim filed on the portal
       tags:
         - Leave
+  /v1/grievances:
+    get:
+      description: "The grievances assigned to the caller, and the unrouted ones the caller, if not involved, may take: by identity, with no words. Only an HR administrator or the Owner. It changes nothing."
+      operationId: listGrievances
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceHandledOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The grievances you handle
+      tags:
+        - Grievances
+  /v1/grievances/{id}:
+    get:
+      description: The grievance with its inquiry record, for its handler or for an authorised person who is not involved and reads an unrouted one. A grievance the caller is not entitled to is not found, whoever they are, and a person it is about gets not found whatever role they hold. Reading it is audited.
+      operationId: getGrievance
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The grievance.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The grievance.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceDetail"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Read a grievance you handle
+      tags:
+        - Grievances
+  /v1/grievances/{id}/entries:
+    post:
+      description: The handler records a note, an interview or a finding in the inquiry. Entries are never changed or removed. Audited. It is on the never-list for the AI and MCP surfaces.
+      operationId: recordGrievanceEntry
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The grievance.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The grievance.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrievanceEntryInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceDoneOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Add to the inquiry record
+      tags:
+        - Grievances
+  /v1/grievances/{id}/handover:
+    post:
+      description: The handler passes it to the next eligible person (an HR administrator or the Owner who is neither the complainant nor anyone it is about, and not the caller), with a reason that goes in the inquiry record. When nobody else is eligible it is refused (NM_GRIEVANCE_NO_HANDLER). Audited. It is on the never-list for the AI and MCP surfaces.
+      operationId: handOverGrievance
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The grievance.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The grievance.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrievanceHandoverInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceDoneOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Pass a grievance to someone else
+      tags:
+        - Grievances
+  /v1/grievances/{id}/outcome:
+    post:
+      description: The handler, an HR administrator or the Owner, writes what the inquiry concludes and the outcome in words; the complainant then reads it. Once only. Audited. It is on the never-list for the AI and MCP surfaces.
+      operationId: decideGrievance
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The grievance.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The grievance.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrievanceOutcomeInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceDoneOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Write the outcome of a grievance
+      tags:
+        - Grievances
+  /v1/grievances/{id}/taking:
+    post:
+      description: An HR administrator or the Owner who is neither the complainant nor anyone it is about takes a grievance that waits (nobody could handle it at filing, or its handler has been deactivated or no longer holds a role that may handle one), and becomes its handler; the inquiry record kept so far becomes theirs to read. Audited. It is on the never-list for the AI and MCP surfaces.
+      operationId: takeGrievance
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The grievance.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The grievance.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceDoneOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Take a grievance that waits
+      tags:
+        - Grievances
   /v1/info:
     get:
       description: "Names the service and its build. It needs no sign-in and changes nothing: a client uses it to check that it is talking to Nemura's API and which version."
@@ -14279,6 +15447,117 @@ paths:
       summary: Make a formal flexible work request
       tags:
         - Leave
+  /v1/me/grievances:
+    get:
+      description: The caller's own grievances, newest first, with their state, who handles each and, once decided, the written outcome. The inquiry record is never shown to the complainant.
+      operationId: listMyGrievances
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceMineOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The grievances you filed
+      tags:
+        - Grievances
+    post:
+      description: PRD-002 NM-SEC-06. Any member who has not left files a confidential grievance, optionally naming the people it is about. It is routed to an HR administrator or the Owner who is neither the complainant nor anyone it is about; when nobody is eligible it waits (state unrouted). The people it is about can never read it. It is on the never-list for the AI and MCP surfaces.
+      operationId: fileGrievance
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrievanceFileInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceFiled"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: File a grievance
+      tags:
+        - Grievances
   /v1/me/leave-requests:
     post:
       description: "Asks for leave for the signed-in person: the days are counted and reserved in the ledger in the same transaction, a request beyond the balance is refused with the days left (NM_LEAVE_BALANCE), and one that overlaps leave already asked for is refused (NM_LEAVE_CONFLICT). The approver is told. It is audited."
@@ -14808,6 +16087,59 @@ paths:
       summary: Withdraw the verification of your own letter
       tags:
         - Letters
+  /v1/me/onboarding:
+    get:
+      description: "The onboarding tasks the caller can act on: their own as a joiner, those of the people who report to them, IT's when they are an Administrator, HR administrator or the Owner, and HR's when they are in the people team; soonest due first, with those decided in the last 14 days. Any signed-in member. It changes nothing."
+      operationId: listMyOnboardingTasks
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanTasksOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: My onboarding tasks
+      tags:
+        - Onboarding
   /v1/me/overtime:
     post:
       description: Records the signed-in Part IV employee's overtime, rest-day work or public-holiday work for a day, without clocking. It starts pending. Overtime beyond the country pack's monthly limit stays recorded and is flagged for HR, never refused. A person who is not a Part IV employee on that day is refused. It is audited.
@@ -15339,6 +16671,217 @@ paths:
       summary: People who are leaving
       tags:
         - Onboarding
+  /v1/onboarding/plan-tasks/{id}/decision:
+    post:
+      description: Marks a task done, once. A joiner's task is done by the joiner, a manager's by the joiner's line manager, IT's by an Administrator, HR administrator or the Owner, and any by the people team, who alone may skip one that does not apply. Anyone else is told there is no such task. It is audited.
+      operationId: decideOnboardingTask
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The task.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The task.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a11
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanDecisionInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Mark an onboarding task done or skipped
+      tags:
+        - Onboarding
+  /v1/onboarding/plans:
+    get:
+      description: Every person's plan with its tasks, the ones with the most left first. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: listOnboardingPlans
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlansOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Onboarding plans
+      tags:
+        - Onboarding
+  /v1/onboarding/plans/{id}/tasks:
+    post:
+      description: Adds one task to a person's plan, for HR, the manager, IT or the joiner, due on a day. Its words and date never change once added. The HR officer, the HR administrator and the Owner. It is audited.
+      operationId: addOnboardingTask
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The plan.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The plan.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a21
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanTaskInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanTask"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Add a task to a plan
+      tags:
+        - Onboarding
   /v1/onboarding/settings:
     get:
       description: Whether adding a person raises a task to invite them to Fyniq. The HR administrator, the Administrator and the Owner. It changes nothing.
@@ -15564,6 +17107,200 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Internal Server Error
       summary: Mark an invitation task done or dismissed
+      tags:
+        - Onboarding
+  /v1/onboarding/templates:
+    get:
+      description: PRD-002 NM-ONB-01. The company's templates of onboarding tasks, the live ones first. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: listOnboardingTemplates
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanTemplatesOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Onboarding templates
+      tags:
+        - Onboarding
+    post:
+      description: "Makes a template of tasks, each for HR, the manager, IT or the joiner and due a number of days from the start date. With no tasks it copies the standard template (offer documents, equipment, accounts, pass collection, introductions, bank and CPF details, the key employment terms within 14 days, a first check-in). A template is never edited: make a new one and archive the old. The HR officer, the HR administrator and the Owner. It is audited."
+      operationId: makeOnboardingTemplate
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanTemplateInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanTemplate"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Make an onboarding template
+      tags:
+        - Onboarding
+  /v1/onboarding/templates/{id}/archive:
+    post:
+      description: Archives a template so no new plan is made from it; plans already made are unchanged. The HR officer, the HR administrator and the Owner. It is audited.
+      operationId: archiveOnboardingTemplate
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The template.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The template.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a01
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Archive an onboarding template
       tags:
         - Onboarding
   /v1/overtime:
@@ -19427,6 +21164,87 @@ paths:
       summary: Withdraw a person's leaving
       tags:
         - Onboarding
+  /v1/people/{id}/onboarding-plan:
+    post:
+      description: "Makes the person's plan from a template (the standard one when none is named): each task is due from the person's start date. A person has one plan. The HR officer, the HR administrator and the Owner. It is audited."
+      operationId: startOnboardingPlan
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person who joins.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person who joins.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanStartInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Start a person's onboarding plan
+      tags:
+        - Onboarding
   /v1/people/{id}/pay:
     get:
       description: "The person's pay record on a day: the pay group, the monthly basic salary, the fund, the allowances and fixed deductions, whether a joint election is in force and the year to date. Pay is for the Payroll administrator and the Owner alone: anyone else is refused, and every read is of one person. It changes nothing."
@@ -21176,6 +22994,8 @@ tags:
     name: Self-service
   - description: Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07).
     name: Letters
+  - description: "The confidential grievance channel: filing, routing away from the people it is about, the inquiry record and the written outcome (NM-SEC-06)."
+    name: Grievances
   - description: Erasure of a former employee's personal data after its retention, by two people (NM-SEC-08).
     name: Privacy
   - description: "The link to Fyniq: the events Fyniq sends back, signed and received once (NM-INT-10, NM-INT-03)."

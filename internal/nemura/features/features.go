@@ -36,6 +36,8 @@ type Feature struct {
 	Name  string
 	Phase string   // when it is built: P1, P2 or P3
 	Needs []string // features that must be on, or external, for this one to be
+	// Built is set for a feature of a later phase once it is built: until then it cannot be switched on.
+	Built bool
 }
 
 // Registry is every optional feature of NM-FEAT-01, in the order the screen shows them. People records is always on and is not listed. Payroll needs
@@ -48,7 +50,7 @@ var Registry = []Feature{
 	{ID: "letters", Name: "Letters", Phase: "P1"},
 	{ID: "hiring", Name: "Hiring", Phase: "P2"},
 	{ID: "performance", Name: "Performance", Phase: "P2"},
-	{ID: "onboarding", Name: "Onboarding", Phase: "P2", Needs: []string{"letters"}},
+	{ID: "onboarding", Name: "Onboarding", Phase: "P2", Needs: []string{"letters"}, Built: true},
 	{ID: "time", Name: "Time and attendance", Phase: "P3"},
 }
 
@@ -107,7 +109,7 @@ func Change(current Switches, id, state, system string) error {
 	if len(system) > 100 {
 		return &Refusal{CodeInvalid, "The system's name is longer than 100 characters: shorten it."}
 	}
-	if state != Off && f.Phase != "P1" {
+	if state != Off && f.Phase != "P1" && !f.Built {
 		return &Refusal{CodeUnavailable, fmt.Sprintf("%s is built in %s and cannot be switched on yet.", f.Name, f.Phase)}
 	}
 	if id == "payroll" && state == On {

@@ -95,7 +95,8 @@
         "api_client",
         "kb_publication",
         "people_link",
-        "salary_batch"
+        "salary_batch",
+        "board_pack_pdf"
       ]
     },
     "row": {

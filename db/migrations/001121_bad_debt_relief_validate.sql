@@ -1,4 +1,4 @@
--- Validates the document-type check 001110 widened for claims of GST bad debt relief (PRD-001 FR-AR-11).
+-- Validates the document-type check 001120 widened for claims of GST bad debt relief (PRD-001 FR-AR-11).
 
 -- +goose Up
 -- Fail fast instead of queueing behind live traffic (squawk: require-lock-timeout).

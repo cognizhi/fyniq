@@ -19,7 +19,9 @@
           "equity",
           "filing",
           "gst_forecast",
-          "corporate"
+          "tax_paper",
+          "corporate",
+          "board_pack"
         ],
         "examples": [
           "bill"

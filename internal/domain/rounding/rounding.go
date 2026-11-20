@@ -455,7 +455,7 @@ func DepositPart(left, amount, remaining money.Money) (money.Money, error) {
 	return money.FromRounded(halfAwayFromZero(&quotient, left.Currency().MinorUnits), left.Currency())
 }
 
-// BadDebtGST is RND-BDR (PRD-001 §10.4, rev 0.607; provisional until the accountant's sign-off [accountant to confirm]): the output tax of an
+// BadDebtGST is RND-BDR (PRD-001 §10.4, rev 0.609; provisional until the accountant's sign-off [accountant to confirm]): the output tax of an
 // invoice that a write-off of part of what the customer owed brings into GST bad debt relief (FR-AR-11), in the base currency
 // = round(the output tax the invoice posted × the amount written off ÷ the amount the invoice made the customer owe, the base
 // currency's minor units), half away from zero, computed exactly before its one rounding. writtenBefore is what the invoice's

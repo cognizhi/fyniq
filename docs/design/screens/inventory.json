@@ -6266,66 +6266,66 @@
    ]
   },
   {
-    "id": "nm-my-details",
-    "file": "NmMyDetails",
-    "title": "My details",
-    "canvas": "nemura-me",
-    "module": "Self-service",
-    "route": "/me/details",
-    "kind": "form",
-    "phase": "P1",
-    "roles": [
-      "Employee"
-    ],
-    "mode": "basic",
-    "requirements": [
-      "NM-ESS-03",
-      "NM-ESS-04"
-    ],
-    "purpose": "Change contact details and emergency contacts at once, and ask for a change of legal name, residency or NRIC or FIN with evidence.",
-    "content": [
-      "Contact details (saved at once)",
-      "Emergency contacts (up to three)",
-      "Ask to change a legal name, residency or NRIC or FIN",
-      "Evidence upload",
-      "What needs approval and why"
-    ],
-    "states": [
-      "saved",
-      "waiting for approval"
-    ]
+   "id": "nm-my-details",
+   "file": "NmMyDetails",
+   "title": "My details",
+   "canvas": "nemura-me",
+   "module": "Self-service",
+   "route": "/me/details",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-ESS-03",
+    "NM-ESS-04"
+   ],
+   "purpose": "Change contact details and emergency contacts at once, and ask for a change of legal name, residency or NRIC or FIN with evidence.",
+   "content": [
+    "Contact details (saved at once)",
+    "Emergency contacts (up to three)",
+    "Ask to change a legal name, residency or NRIC or FIN",
+    "Evidence upload",
+    "What needs approval and why"
+   ],
+   "states": [
+    "saved",
+    "waiting for approval"
+   ]
   },
   {
-    "id": "nm-people-requests",
-    "file": "NmPeopleRequests",
-    "title": "Requests",
-    "canvas": "nemura-team",
-    "module": "People team",
-    "route": "/people/requests",
-    "kind": "list",
-    "phase": "P1",
-    "roles": [
-      "HR officer",
-      "HR administrator",
-      "Owner"
-    ],
-    "mode": "basic",
-    "requirements": [
-      "NM-ESS-03",
-      "NM-ESS-04"
-    ],
-    "purpose": "Decide the changes of details people asked for, with their evidence, and answer their questions.",
-    "content": [
-      "Queue soonest due first",
-      "Change of details with its evidence",
-      "Approve or refuse with a reason",
-      "Questions and answers",
-      "Never your own request"
-    ],
-    "states": [
-      "empty queue",
-      "your own request (cannot decide)"
-    ]
+   "id": "nm-people-requests",
+   "file": "NmPeopleRequests",
+   "title": "Requests",
+   "canvas": "nemura-team",
+   "module": "People team",
+   "route": "/people/requests",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "HR officer",
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-ESS-03",
+    "NM-ESS-04"
+   ],
+   "purpose": "Decide the changes of details people asked for, with their evidence, and answer their questions.",
+   "content": [
+    "Queue soonest due first",
+    "Change of details with its evidence",
+    "Approve or refuse with a reason",
+    "Questions and answers",
+    "Never your own request"
+   ],
+   "states": [
+    "empty queue",
+    "your own request (cannot decide)"
+   ]
   },
   {
    "id": "nm-report-sick",
@@ -7061,6 +7061,73 @@
    "states": [
     "waiting for a second person",
     "erased"
+   ]
+  },
+  {
+   "id": "nm-my-concerns",
+   "file": "NmMyConcerns",
+   "title": "Raise a concern",
+   "canvas": "nemura-me",
+   "module": "Me",
+   "route": "/me/grievances",
+   "kind": "form",
+   "phase": "P2",
+   "roles": [
+    "Employee",
+    "Line manager",
+    "HR officer",
+    "HR administrator",
+    "Payroll administrator",
+    "Administrator",
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-SEC-06"
+   ],
+   "purpose": "Raise a concern in confidence, optionally naming the people it is about, and read who handles it and its written outcome.",
+   "content": [
+    "What happened, when and who was there",
+    "Who it is about, up to five people, optional",
+    "Your concerns with state, who handles each and the outcome once decided",
+    "That the people named can never read it"
+   ],
+   "states": [
+    "waiting for someone who is not involved",
+    "being looked into",
+    "decided"
+   ]
+  },
+  {
+   "id": "nm-grievances",
+   "file": "NmGrievances",
+   "title": "Grievances",
+   "canvas": "nemura-setup",
+   "module": "Setup",
+   "route": "/people/grievances",
+   "kind": "detail",
+   "phase": "P2",
+   "roles": [
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "NM-SEC-06"
+   ],
+   "purpose": "Handle the grievances assigned to you: read, record the inquiry, write the outcome or pass it on, and take one nobody who is not involved could handle.",
+   "content": [
+    "Grievances assigned to you",
+    "Waiting ones you may take",
+    "A grievance with who raised it, who it is about and the inquiry",
+    "Add a note, interview or finding",
+    "Write the outcome once",
+    "Pass it on with a reason"
+   ],
+   "states": [
+    "being looked into",
+    "waiting",
+    "decided"
    ]
   },
   {

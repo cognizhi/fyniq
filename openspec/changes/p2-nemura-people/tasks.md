@@ -12,10 +12,14 @@ Nemura's migrations are in `db/nemura/migrations` (continue from the highest num
   (Built, 21 Nov 2026, PRD-002 rev 0.62: migration 000062 (`content_hash` in the directory, `letter_disclosure` revocable once, `public_rate_hit`), `POST /v1/letter-verification/file` (the browser sends only the SHA-256), `POST /v1/letter-disclosure`, `POST|GET /v1/me/letters/{id}/disclosure-links`, `POST /v1/me/letter-disclosure-links/{id}/revocation`; `LetterShares` on My letters; `TestADocumentIsVerifiedByItsHashAndAPersonSharesTheirLettersFactsThroughARevocableLink`, `TestThePublicLimitIsSharedByEveryInstance`. **Left:** the *replaced* state, which needs a replacement flow for issued letters; the disclosure page is the verification page with `#token`, its design fragment `NmVerifyLetter` shows the file look-up and the link note but not the facts list.)
 
 ## 2. Grievances (NM-SEC-06)
-- [ ] 2.1 Inquiries with restricted access, routing away from a handler who is the subject, a written outcome; data-inventory class, Appendix B row, attack tests. `// req: NM-SEC-06`
+- [x] 2.1 Inquiries with restricted access, routing away from a handler who is the subject, a written outcome; data-inventory class, Appendix B row, attack tests. `// req: NM-SEC-06`
+  (Built, 21 Nov 2026, PRD-002 rev 0.63: migration 000063 (`grievance`, `grievance_entry`, the restrictive `not_the_subject` policy, guard and fill triggers, `is_subject_member`, `can_handle_grievance`), `internal/nemura/grievance` (routing), `grievance.go`, `/v1/me/grievances`, `/v1/grievances…`, the pages `/me/grievances` and `/people/grievances`, the guide `nemura.grievances` and its kb page, the Appendix B row and the data class; `TestAGrievanceIsReadOnlyByItsComplainantAndItsHandlerAndNeverByThePersonComplainedAbout`, `TestAGrievanceAboutTheDefaultHandlerGoesToAnotherAndWaitsWhenNoOneIsLeft`, `TestAHandlerRecordsPassesOnAndDecidesAGrievanceAndTheComplainantReadsTheOutcome`. **Left:** see 2.2.)
+- [x] 2.2 The gaps of 2.1: a grievance whose handler has left (option A), the worker's alerts, retention deletion, and the tests for a handler deactivated mid-flight and a login given to a person complained about after filing. `// req: NM-SEC-06, NM-SEC-05`
+  (Built, 21 Nov 2026, PRD-002 rev 0.64: migration 000064 (`is_stranded`, the widened read and take, `grievances_waiting`, `grievances_for_retention`, `purge_grievances`), the waiting list's `reason`, `RaiseGrievanceWatch` and `RunGrievanceRetention` in the worker's sweep, five years from the outcome **[owner to confirm]**; `TestAGrievanceWhoseHandlerIsDeactivated…`, `TestAGrievanceIsRoutedPastADeactivatedHandler…`, `TestTheWorkersGrievanceJobs…`. **Left:** the page and operation where a person reviews deletion reports (the engine has no page for any record type), the audit explorer's exclusion for the people it is about, email notices.)
 
 ## 3. Onboarding plans (NM-ONB-01)
-- [ ] 3.1 Templates and plans with tasks for HR, the manager, IT and the joiner, due dates relative to the start date. `// req: NM-ONB-01`
+- [x] 3.1 Templates and plans with tasks for HR, the manager, IT and the joiner, due dates relative to the start date. `// req: NM-ONB-01`
+  (Built, 21 Nov 2026, PRD-002 rev 0.65: migration 000065, `internal/nemura/onboarding/plan.go`, `plans.go` in the adapter, the `/v1/onboarding/…` operations, the Plans section of Joiners and leavers and Your onboarding tasks on My home, the Onboarding feature switchable; `TestATemplateIsWholeAndItsTasksAreDueFromTheStartDate`, `TestAPlanIsMadeFromATemplate…`, `TestEachPersonReadsAndDecidesOnlyTheTasksThatAreTheirs`, `TestOnboardingPlanOperationsAre…`. **Left:** the KETs and Fyniq-invitation tasks are not closed by their own flows (marked by hand), and a plan is not yet made at hire (4.4).)
 
 ## 4. Hiring (NM-REC-01 to 06, NM-AI-05)
 - [ ] 4.1 Requisitions, approval, the plan flag when linked. `// req: NM-REC-01`
@@ -39,7 +43,7 @@ Nemura's migrations are in `db/nemura/migrations` (continue from the highest num
 |---|---|---|
 | NM-LTR-05 | 1 | planned |
 | NM-SEC-06 | 2 | planned |
-| NM-ONB-01 | 3 | planned |
+| NM-ONB-01 | 3 | built |
 | NM-REC-01…06, NM-AI-05 | 4 | planned |
 | NM-PRF-01…05 | 5 | planned |
 | NM-EXT-04, NM-EXT-05 | 6 | planned |

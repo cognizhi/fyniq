@@ -30,6 +30,7 @@ const activities: Record<Activity, string> = {
   filing: "Statutory filings and payments",
   gst_forecast: "GST forecasts",
   corporate: "The corporate profile",
+  board_pack: "Board packs",
 };
 
 // recordLink is where a record's page is, for the kinds that have one: the record itself, or the page that lists it.
@@ -68,6 +69,8 @@ export function recordLink(type: string, id: string): string | undefined {
       return "/compliance/calendar";
     case "gst_forecast":
       return "/compliance/gst";
+    case "board_pack_pdf":
+      return "/reports/board-pack";
     default:
       return undefined;
   }

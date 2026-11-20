@@ -332,3 +332,32 @@ func TestACapTableGrantIsLiveOnceAndEndsOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// A board pack's PDF is kept as evidence only under an approved board_pack_pdf.keep request that its requester did not sign alone: posting a draft kept-PDF document with no request at all, or
+// reversing one, is refused at commit (FR-RPT-06, FR-DOC-13, CTL-FIN-07; FYR12).
+// req: FR-RPT-06
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackAKeptBoardPackPDFIsPostedOnlyByApproval(t *testing.T) {
+	ctx := context.Background()
+	books := porttest.NewBooks(t, store(t, "fyniq_api"), "Kept pack Pte Ltd")
+	payload := []byte(`{"pack_id":"` + uuid.NewString() + `","pack_version":1,"month":"2026-10","date":"2026-11-04","sha256":"00","file_name":"board-pack-2026-10-v1.pdf"}`)
+	err := store(t, "fyniq_api").Do(ctx, books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentBoardPackPDF, Payload: payload})
+		if err != nil {
+			return err
+		}
+		return u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted)
+	})
+	if storage.CodeOf(err) != storage.CodeBoardPackPDF {
+		t.Errorf("a kept PDF posted with no approved request: %v", err)
+	}
+	// Left a draft it is harmless, and the worker holds no right to make one.
+	err = store(t, "fyniq_worker").Do(ctx, books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentBoardPackPDF, Payload: payload})
+		return err
+	})
+	if err == nil {
+		t.Error("the worker made a kept-PDF document")
+	}
+}

@@ -42,7 +42,7 @@ var Categories = []Category{
 		Purpose:    "To run employment: who works here, in what role and under whom, and to meet the employer's record-keeping duties (Employment Act)",
 		Capability: "People records (not restricted)",
 		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "MOM: employment records of a former employee are kept for 1 year after they leave"},
-		Columns:    []string{"person.legal_name", "person.preferred_name", "person.work_email", "person.phone", "person.leaving_reason", "join_task.note"},
+		Columns:    []string{"person.legal_name", "person.preferred_name", "person.work_email", "person.phone", "person.leaving_reason", "join_task.note", "onboarding_task.note"},
 	},
 	{
 		Key: "legal-classification", What: "A person's legal classification: contract of service or for service, Employment Act cover and Part IV class, residency and the date residence began, and date of birth",
@@ -126,6 +126,13 @@ var Categories = []Category{
 		Columns:    []string{"letter_request.purpose", "letter_request.data", "letter_request.decision_reason", "letter_issued.data", "letter_template_version.note", "letter_delegation.revoked_reason"},
 	},
 	{
+		Key: "grievances", What: "A concern a member raised in confidence: what happened in their words, the people it is about (by person), who handles it, the inquiry record (notes, interviews, findings and hand-overs) and the written outcome with what it concludes",
+		Purpose:    "To look into a workplace concern fairly and in confidence, to give the person who raised it a written outcome and to show the company handled it (Workplace Fairness Act and the Tripartite Guidelines, NM-SEC-06)",
+		Capability: "Grievances (NM-SEC-06)",
+		Retention:  Rule{MinMonths: 60, After: "the outcome is written", Reason: "No statutory period is stated for the channel; kept five years so the company can show how it handled the concern, then listed for review and deleted with its inquiry record, a legal hold keeping it (NM-SEC-05) [owner to confirm the period]"},
+		Columns:    []string{"grievance.summary", "grievance.subject_people", "grievance.outcome", "grievance_entry.body", "grievance_entry.subject_people"},
+	},
+	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
 		Purpose:    "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)",
 		Capability: "Own file beyond routine release (NM-SEC-07)",
@@ -142,6 +149,8 @@ var Categories = []Category{
 
 // NotPersonal are columns whose names look personal and are not, with why. A column here needs a reason a reviewer can read.
 var NotPersonal = map[string]string{
+	"onboarding_template.name":         "what a company calls an onboarding template, such as Office joiner, not a person",
+	"onboarding_plan.template_name":    "the name of the template a plan was made from, copied when the plan was made",
 	"erasure_order.reason":             "why an Owner or an HR administrator asked for an erasure (the retention periods have run): the person is named by ID, and the reason names no one",
 	"bank_account_change.bank_version": "the number of a confirmed change in a person's run of changes, which a restore can raise: a count, no account",
 	"idempotency_key.body":             "the stored answer of a write that cannot carry pay or restricted data, kept 24 hours; an answer that may is never stored",

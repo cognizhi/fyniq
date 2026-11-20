@@ -347,6 +347,10 @@ Source: PRD-001 §10.4
 - **WHEN** an amount is split by weights
 - **THEN** the parts are found by the largest-remainder method
 
+#### Scenario: A part a key cannot place is the last weight (rev 0.608)
+- **WHEN** an allocation key cannot place part of a cost
+- **THEN** that part is the last weight, so it is the last of equal remainders and stays unallocated
+
 #### Scenario: Ties broken by stable order
 - **GIVEN** two parts with equal remainders
 - **WHEN** the amount is split by weights
@@ -551,7 +555,7 @@ Source: PRD-001 §10.4
 - **THEN** it takes all that is left of its base amount and GST, so the uses add up to the deposit exactly, whatever order they are made and voided in
 
 ### Requirement: RND-BDR The GST of a bad debt written off
-The output tax of an invoice that a write-off of part of what the customer owed brings into GST bad debt relief SHALL be round(the output tax the invoice posted × the amount written off ÷ the amount the invoice made the customer owe, the base currency's minor units), half away from zero, at most what earlier claims left of the output tax, a write-off that completes the debt taking all that is left (rev 0.607; provisional, accountant to confirm).
+The output tax of an invoice that a write-off of part of what the customer owed brings into GST bad debt relief SHALL be round(the output tax the invoice posted × the amount written off ÷ the amount the invoice made the customer owe, the base currency's minor units), half away from zero, at most what earlier claims left of the output tax, a write-off that completes the debt taking all that is left (rev 0.609; provisional, accountant to confirm).
 
 Source: PRD-001 §10.4
 

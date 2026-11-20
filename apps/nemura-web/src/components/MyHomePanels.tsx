@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
 import { t } from "../i18n";
+import { MyOnboarding } from "./MyOnboarding";
 
 type Row = components["schemas"]["RequestRow"];
 
@@ -57,6 +58,7 @@ export function MyHomePanels() {
           ))}
         </ul>
       </section>
+      <MyOnboarding />
       <section className="fy-stack fy-stack--2" aria-labelledby="glance-h">
         <h2 className="fy-h2" id="glance-h">{t("glance.title")}</h2>
         <dl className="fy-stack fy-stack--1">

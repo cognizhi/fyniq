@@ -320,7 +320,7 @@ def rnd_deposit(left_base: Decimal, used: Decimal, left: Decimal, minor_units: i
 
 
 def rnd_bdr(output: Decimal, owed: Decimal, written_before: Decimal, written: Decimal, claimed_before: Decimal, minor_units: int) -> Decimal:
-    """``RND-BDR`` (§10.4, rev 0.607): the output tax of an invoice that a write-off of ``written`` of the ``owed`` brings into GST bad debt
+    """``RND-BDR`` (§10.4, rev 0.609): the output tax of an invoice that a write-off of ``written`` of the ``owed`` brings into GST bad debt
     relief = round(output × written ÷ owed), half away from zero, at most what is left of the output tax after the earlier claims
     (``claimed_before``); a write-off that completes the debt (the earlier ``written_before`` and this one are all that was owed) takes all
     that is left."""

@@ -39,7 +39,7 @@ Submission of GST Return (F5), File GST Return (F5 and F8), Edit Past GST Return
 Submission of Corporate Tax Records (Form C-S and pre-fill), all CorpPass-authorised. Their payload structure is behind IRAS's
 sign-in: **not guessed**; the mapping is `[live-verify]`.
 
-### D3 as built (rev 0.607, 21 Nov 2026; options and what was chosen, `[owner to confirm]`, `[accountant to confirm]`)
+### D3 as built (rev 0.609, 21 Nov 2026; options and what was chosen, `[owner to confirm]`, `[accountant to confirm]`)
 
 - **The GST share.** The posting leg is the output tax the invoice posted to the GST control account (read from its entry, net of what deposits bore) times the amount written off over the amount the invoice made the customer owe, `RND-BDR`, half away from zero, in the base currency; a foreign invoice's share is therefore computed on its base output tax, never on a foreign-currency GST. Options: (a) the invoice's GST in its own currency converted at its rate (two roundings, rejected); (b) the share of the base output tax (chosen: one rounding, additive); (c) the claimer types the amount (rejected: the differential would prove nothing).
 - **Several write-offs of one invoice** are claimed one by one; each is capped at what earlier claims left and the write-off that completes the debt takes all that is left, so the claims add up to the output tax exactly.

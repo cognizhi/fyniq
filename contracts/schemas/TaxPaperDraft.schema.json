@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adjustments": {
+      "description": "What the tax agent adds to or takes off the profit.",
+      "items": {
+        "$ref": "TaxAdjustmentEntry.schema.json"
+      },
+      "maxItems": 100,
+      "type": "array"
+    },
+    "cash_grant_eligible": {
+      "description": "The company met the cash grant's local employee condition.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "financial_year_end": {
+      "description": "The last day of the financial year, which must be a closed month's end in the books.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "scheme": {
+      "description": "sute: the start-up exemption; pte: the partial exemption.",
+      "enum": [
+        "sute",
+        "pte"
+      ],
+      "examples": [
+        "pte"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "financial_year_end",
+    "scheme",
+    "adjustments"
+  ],
+  "title": "TaxPaperDraft",
+  "type": "object"
+}

@@ -68,7 +68,10 @@ func TestAWriteKeepsItsIdempotencyKeyAcrossRetries(t *testing.T) {
 		t.Errorf("a long Retry-After: %v", err)
 	}
 	// A write is not retried after a 503: its outcome is unknown.
-	down, calls := server(t, func(n int, w http.ResponseWriter, r *http.Request) { w.Header().Set("Retry-After", "1"); http.Error(w, "down", 503) })
+	down, calls := server(t, func(n int, w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Retry-After", "1")
+		http.Error(w, "down", 503)
+	})
 	if _, err := down.CreateJournal(context.Background(), map[string]any{}); err == nil || len(*calls) != 1 {
 		t.Errorf("a write after 503: %v, %d calls", err, len(*calls))
 	}

@@ -30,7 +30,7 @@ classes:
     retention: "MOM: employment records of a former employee are kept for 1 year after they leave"
     protection: "Row-level security per organisation; every change is audited; job history is never edited, only ended"
     transfers: "None"
-    columns: [person.legal_name, person.preferred_name, person.work_email, person.phone, person.leaving_reason, join_task.note]
+    columns: [person.legal_name, person.preferred_name, person.work_email, person.phone, person.leaving_reason, join_task.note, onboarding_task.note]
   - key: legal-classification
     what: "A person's legal classification: contract of service or for service, Employment Act cover and Part IV class, residency and the date residence began, and date of birth"
     why: "To apply the right statutory rules to the person (leave, hours, retirement and re-employment) and no others"
@@ -130,6 +130,15 @@ classes:
     protection: "Row-level security; a request, a checked letter and an issued letter are evidence that never change; the PDF's SHA-256 is checked whenever it is read; a link's token is kept as a hash; the audit event carries the reference and the hash, never the letter's text"
     transfers: "None"
     columns: [letter_request.purpose, letter_request.data, letter_request.decision_reason, letter_issued.data, letter_template_version.note, letter_delegation.revoked_reason]
+  - key: grievances
+    what: "A concern a member raised in confidence: what happened in their words, the people it is about (by person), who handles it, the inquiry record (notes, interviews, findings and hand-overs) and the written outcome with what it concludes"
+    why: "To look into a workplace concern fairly and in confidence, to give the person who raised it a written outcome and to show the company handled it (Workplace Fairness Act and the Tripartite Guidelines, NM-SEC-06)"
+    where: "Nemura's database, in Singapore"
+    who: "The person who raised it, their own grievance and its outcome; the HR administrator or the Owner who handles it, the inquiry record too (Appendix B: Grievances); never a person it is about, whatever their role, and never an HR administrator or the Owner who is neither; not the assistant or the read-only role; the worker only learns by identity which ones wait and which are due for deletion"
+    retention: "No statutory period is stated for the channel; kept five years so the company can show how it handled the concern, then listed for review and deleted with its inquiry record, a legal hold keeping it (NM-SEC-05) [owner to confirm the period]"
+    protection: "Row-level security with a restrictive policy that hides it from the people it is about and from everyone with no acting person; the inquiry record is append-only; a decided grievance never changes; every read by a handler is audited; the audit events carry identities and states, never the words or the names"
+    transfers: "None"
+    columns: [grievance.summary, grievance.subject_people, grievance.outcome, grievance_entry.body, grievance_entry.subject_people]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"
