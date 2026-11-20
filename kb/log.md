@@ -993,3 +993,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura payroll approval: the IR8A file of a year of more than 2,000 people is made in parts (NM-PAY-14)
 
 ## [2026-11-20] compile | nemura payroll approval: the IR8A file of a year of more than 2,000 people is made in parts (NM-PAY-14)
+
+## [2026-11-20] compile | nemura.hiring: new advert after a change, the 3-month rule and the careers page (NM-REC-02)

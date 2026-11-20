@@ -4,7 +4,7 @@ type: task
 title: Ask to hire, get a requisition approved and publish a job post
 summary: Requisitions the Owner approves, a job post checked for fair wording, and the advert dates the Fair Consideration Framework asks for
 sources:
-  - docs/user-guide/nemura/hiring.md sha256:645d8fc8e71bfedf2740969a46ad0910034d3d46909eabd6063f4a45789b3789
+  - docs/user-guide/nemura/hiring.md sha256:766d3e81aa832e7fe1bb9af7b37e60060fe5d4441a3c60bd44b28fe84cca8471
 data_class: general
 taint: trusted
 status: published
@@ -33,6 +33,11 @@ aliases:
 2. The Recruiter saves a draft post. The wording check lists any age, nationality, sex, marital status, pregnancy, caregiving, race, religion, language, disability or mental-health criterion; it decides nothing.
 3. Publishing needs an approved requisition; a flagged criterion stays only with the genuine occupational requirement recorded. A published post never changes.
 4. For a role that needs a pass, post the advert on MyCareersFuture yourself and record its day: no offer is made until 14 consecutive days have run, unless an exemption (fewer than 10 employees, an Employment Pass at S$22,500 or more a month, a role of one month or less, a transferee, an S Pass exemption) is recorded with its evidence. (src: docs/user-guide/nemura/hiring.md#steps)
+5. A change of the occupation, salary, number of vacancies or UEN after the advert needs a new advert: record its day under the renewal form and the 14 days start again; the old advert is kept as evidence. An advert that came down more than 3 months ago cannot be used. (src: docs/user-guide/nemura/hiring.md#steps)
+
+## The careers page
+
+- The Recruiter, the HR administrator or the Owner chooses an address, the company's name and some words and switches the page on; anyone then reads /careers/<address> with no sign-in: each published post's title, team, text and day, never a salary or a person. No other company can use the address. (src: docs/user-guide/nemura/hiring.md#the-careers-page)
 
 ## When it looks wrong
 
