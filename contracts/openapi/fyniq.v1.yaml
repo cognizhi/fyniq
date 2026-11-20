@@ -28974,6 +28974,8 @@ components:
           type: array
         note:
           description: How the causes are worked out.
+          examples:
+            - A kept projection is compared with the cash at the end of its fourth and thirteenth week.
           type: string
       required:
         - items

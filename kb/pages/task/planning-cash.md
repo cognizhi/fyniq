@@ -4,7 +4,7 @@ type: task
 title: Cash ahead, the short-term cash flow
 summary: The bank balance day by day for 30 to 180 days or 13 weeks, its lowest point, the buffer line, what is not included yet, and what-ifs
 sources:
-  - docs/user-guide/cash-flow.md sha256:d66674482dce63dba76c1711d67d48c6146708a11814933927d6fb9708a46fda
+  - docs/user-guide/cash-flow.md sha256:0d228550a01a1aabd01b89262f3617f98c9cff388ce8119ccaa07698674b9b2e
 data_class: general
 taint: trusted
 status: draft
@@ -58,8 +58,7 @@ aliases:
 
 ## How the forecast did
 
-- Each week Fyniq keeps the 13-week projection as it was. Four and thirteen weeks later, once that week has ended, **How the forecast did** at the foot of the page sets each kept projection against the money accounts' balance on the day: what it said, what it was and the difference.
-- The difference is split into three causes that add to it exactly: receipts later (invoices expected in the window and not settled by its end), timing (bills not paid by its end, and invoices or bills settled earlier than expected) and unplanned (the rest, including recurring occurrences and batches). A kept projection is never recalculated.
+- Each week Fyniq keeps the 13-week projection. Four and thirteen weeks later, How the forecast did at the foot of the page sets each against the money accounts' balance that day and splits the difference into receipts later, timing and unplanned, which add to it exactly. A kept projection is never recalculated.
 
 (src: docs/user-guide/cash-flow.md#how-the-forecast-did)
 

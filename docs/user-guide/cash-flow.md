@@ -66,8 +66,7 @@ projection, the lowest balance and the buffer are worked out again with the chan
 
 ## How the forecast did
 
-Each week Fyniq keeps the 13-week projection as it was that week. Four and thirteen weeks later, once that week has ended, **How the forecast did** (at the foot of the page) sets each kept projection against the money accounts' balance on the day:
-what it said the balance would be, what it was, and the **difference**. The difference is split into three causes that add to it exactly. **Receipts later** are invoices the projection expected in the window that were not settled by its end. **Timing** is bills expected in the window not paid by its end, and invoices or bills that settled earlier than expected. **Unplanned** is the rest: spend and receipts the projection did not hold, recurring occurrences and payment batches, and anything else that moved cash. A kept projection is never recalculated; the table appears once a week has ended.
+Each week Fyniq keeps the 13-week projection. Four and thirteen weeks later, **How the forecast did** (at the foot of the page) sets each against the money accounts' balance that day and splits the difference into **Receipts later**, **Timing** and **Unplanned**, which add to it exactly. A kept projection is never recalculated.
 
 ## Nothing here posts
 

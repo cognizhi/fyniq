@@ -38969,7 +38969,10 @@ export interface components {
         ForecastAccuracyOutputBody: {
             /** @description The kept projections whose window has ended, newest first, at most 52 weeks back. */
             items: components["schemas"]["ForecastAccuracyRow"][];
-            /** @description How the causes are worked out. */
+            /**
+             * @description How the causes are worked out.
+             * @example A kept projection is compared with the cash at the end of its fourth and thirteenth week.
+             */
             note: string;
         };
         ForecastAccuracyRow: {

@@ -35,7 +35,6 @@ CREATE TABLE fyniq.auditor_engagement (
   CONSTRAINT auditor_engagement_state CHECK ((status = 'pending' AND confirmed_at IS NULL AND closed_at IS NULL) OR (status = 'active' AND confirmed_at IS NOT NULL AND confirmed_by IS NOT NULL AND closed_at IS NULL)
     OR (status = 'closed' AND closed_at IS NOT NULL AND closed_by IS NOT NULL))
 );
-CREATE UNIQUE INDEX auditor_engagement_id ON fyniq.auditor_engagement (id);
 
 CREATE TABLE fyniq.auditor_request (
   organisation_id uuid        NOT NULL DEFAULT fyniq.current_org(),
@@ -64,7 +63,6 @@ CREATE TABLE fyniq.auditor_request (
   CONSTRAINT auditor_request_state CHECK ((status = 'open' AND answered_at IS NULL AND closed_at IS NULL) OR (status = 'answered' AND answered_at IS NOT NULL AND answered_by IS NOT NULL AND answer IS NOT NULL AND closed_at IS NULL)
     OR (status = 'closed' AND closed_at IS NOT NULL AND closed_by IS NOT NULL))
 );
-CREATE UNIQUE INDEX auditor_request_id ON fyniq.auditor_request (id);
 
 CREATE TABLE fyniq.auditor_sample (
   organisation_id uuid        NOT NULL DEFAULT fyniq.current_org(),
@@ -81,7 +79,6 @@ CREATE TABLE fyniq.auditor_sample (
   CONSTRAINT auditor_sample_form CHECK (jsonb_typeof(rule) = 'object' AND jsonb_typeof(items) = 'array' AND jsonb_array_length(items) <= 200 AND population >= jsonb_array_length(items)
     AND length(seed) BETWEEN 1 AND 64 AND drawn_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$')
 );
-CREATE UNIQUE INDEX auditor_sample_id ON fyniq.auditor_sample (id);
 
 -- +goose StatementBegin
 CREATE FUNCTION fyniq.auditor_engagement_guard() RETURNS trigger

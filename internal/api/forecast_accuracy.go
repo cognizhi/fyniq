@@ -44,7 +44,7 @@ type forecastAccuracyInput struct {
 type forecastAccuracyOutput struct {
 	Body struct {
 		Items []ForecastAccuracyRow `json:"items" nullable:"false" doc:"The kept projections whose window has ended, newest first, at most 52 weeks back."`
-		Note  string                `json:"note" doc:"How the causes are worked out."`
+		Note  string                `json:"note" doc:"How the causes are worked out." example:"A kept projection is compared with the cash at the end of its fourth and thirteenth week."`
 	}
 }
 
