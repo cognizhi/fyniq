@@ -53,6 +53,7 @@
   forecast whose inputs (a cash projection's assumptions) the proposal would have to carry in full; `ar.draft_reminders` waits for the
   sales reminder drafts to be a record a person approves. Each needs its record first.
 - [ ] 3.2 `bank.categorise_lines`, `bank.match_payments`, `bank.rule_upsert` (design D7, D8).
+  **Built (rev 0.463):** `bank.rule_upsert` (migration 000963, **needs human review**: the API's columns minus the two auto-apply ones, SELECT on `bank_rule` only, a trigger that marks the executor's rules as an AI proposal's; its undo switches a created rule off or restores a changed one; suites `bank-rule-upsert` and `bank-rule-redteam`).
   **Left:** these post to the ledger (bank categorisation and matching, Appendix B.1), so they widen the executor's ledger grants and need
   their undo (a reversing entry) with their attack tests; they are built together with the tier-2 posting types in a slice of their own.
 
