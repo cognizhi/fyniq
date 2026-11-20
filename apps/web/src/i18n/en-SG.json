@@ -1167,6 +1167,10 @@
       "label": "People and HR",
       "tooltip": "Where people records, payroll, leave and letters live (Nemura, an external system, or none), the link's state and how the month's statutory payroll outputs are met."
     },
+    "people.health": {
+      "label": "Link health",
+      "tooltip": "How the link to Nemura stands: events waiting, failing or refused, and any run of events Nemura says it delivered that Fyniq never received, which it can send again."
+    },
     "people.arrange": {
       "label": "Record the arrangement",
       "tooltip": "Records, as evidence, how one item is met from this month. A pay run is not approved for payment while an item has none."

@@ -137,8 +137,9 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	// FR-PPL-13: at the release of a payment to a person, Nemura (the hold's authority) is asked whether they are held, with the link's read-only client; its API, token endpoint and audience are the
 	// deployment's settings, and with none the projection alone decides.
 	if nemuraAPI, nemuraToken := os.Getenv("FYNIQ_NEMURA_API_URL"), os.Getenv("FYNIQ_NEMURA_TOKEN_URL"); nemuraAPI != "" && nemuraToken != "" {
-		d.Holds = &linksend.HoldAsker{HTTP: wiring.People(egress.HostOf(nemuraAPI), egress.HostOf(nemuraToken)), APIURL: strings.TrimSuffix(nemuraAPI, "/"), TokenURL: nemuraToken,
+		asker := &linksend.HoldAsker{HTTP: wiring.People(egress.HostOf(nemuraAPI), egress.HostOf(nemuraToken)), APIURL: strings.TrimSuffix(nemuraAPI, "/"), TokenURL: nemuraToken,
 			Audience: os.Getenv("FYNIQ_NEMURA_API_AUDIENCE"), Clock: deps.Clock}
+		d.Holds, d.LinkLog = asker, asker // one read-only client: the ask at release and the link's log by identity
 	}
 	d.Connectors = api.ConnectorDeps{Catalogue: kit.Connectors, Secrets: kit.ConnectorSecrets, Names: kit.ConnectorNames, Runtime: kit.Runtime(deps.Clock)}
 	// The email providers' webhooks (FR-INT-21), each only with its secret: delivery events and the suppression list.

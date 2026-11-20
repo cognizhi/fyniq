@@ -14077,6 +14077,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people-link/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show how the link to the people platform stands
+         * @description Reads Nemura's event log by identity (sequence, type, object and state, never a payload) with the link's read-only client and sets it against what Fyniq's inbox received (PRD-001 FR-PPL-08, FR-PPL-15): how many events wait, fail or were refused, the highest sequence on each side and the runs of sequence numbers Nemura says it delivered and Fyniq never received, which is a gap. When Nemura cannot be read it says why and the numbers are Fyniq's own. Needs People and HR's right. Read-only; no side effects. Nothing here reaches the AI or MCP (§9.6).
+         */
+        get: operations["getPeopleLinkHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people-link/hold-events": {
         parameters: {
             query?: never;
@@ -14191,6 +14211,26 @@ export interface paths {
          * @description Nemura's `people.person.upserted`, `people.bank_details.changed` and `identity.access.changed` (PRD-002 Appendix E; the last says whether a sign-in identity is an active member there and approves pay runs, by issuer and subject and two yes or no answers: a door and a hint, never a grant, with the version the sending event's sequence): an envelope (NM-INT-10) whose header the link key signed, with the payload's canonical SHA-256 in it. It needs the link's client and the scope people.projection.write, and the envelope is checked against the link as Fyniq holds it: its organisations, its epoch, a signing time within 5 minutes, its signature and its digest; nothing the message carries decides who may send it. An event received before does nothing (duplicate); a version no newer than the one applied is ignored and recorded (a late version 1 never sets the manager back); a payload with a field Appendix E does not list is refused (NM-INT-05). Side effects: the projection's change and its audit event, by field name and never by value, and the inbox row (identities and a digest, never the payload). Pay and bank details are never logged. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).
          */
         post: operations["receivePeopleProjectionEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people-link/repair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask Nemura to send again what Fyniq missed
+         * @description Finds the gaps in the link as getPeopleLinkHealth does and sends Nemura one link.replay.requested for each run of missing sequence numbers (at most 10,000 wide), signed like every event, through the link's one event scope. Nemura answers by sending the current state of the objects the run names, at the version they have now, never an old payload; Fyniq applies a version it missed and ignores one it holds. Side effects: one event queued for each run and its audit event (the range, never a payload). Idempotent with Idempotency-Key; Prefer: return=preview shows what it would ask and queues nothing. Needs People and HR's right. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["repairPeopleLink"];
         delete?: never;
         options?: never;
         head?: never;
@@ -47792,6 +47832,67 @@ export interface components {
              */
             type: string;
         };
+        PeopleLinkHealth: {
+            /**
+             * Format: date-time
+             * @description When this was worked out.
+             * @example 2026-11-21T09:00:00Z
+             */
+            checked_at: string;
+            /**
+             * Format: int64
+             * @description Events Nemura tried and could not deliver: it tries again.
+             * @example 0
+             */
+            failing: number;
+            /** @description The runs of sequence numbers Nemura says it delivered and Fyniq's inbox never received: a gap. Ask Nemura to send them again with repairPeopleLink. */
+            missing: components["schemas"]["SequenceRange"][];
+            /**
+             * Format: int64
+             * @description The highest sequence Nemura has queued for Fyniq (0 when it could not be read).
+             * @example 57
+             */
+            nemura_highest_sequence: number;
+            /**
+             * @description Why Nemura's log could not be read, in plain words.
+             * @example Nemura did not answer: try again in a minute.
+             */
+            note?: string;
+            /**
+             * @description True when Nemura's event log was read just now. False with a note when the link is not active, this deployment does not know where Nemura is, the link was made before the log could be read (it is approved again to hold link.sync.read), or Nemura did not answer: the other numbers are then Fyniq's own.
+             * @example true
+             */
+            reachable: boolean;
+            /**
+             * Format: int64
+             * @description The highest of Nemura's sequence numbers Fyniq's inbox holds.
+             * @example 55
+             */
+            received_highest_sequence: number;
+            /**
+             * Format: int64
+             * @description Events Fyniq refused for good, with the code on Nemura's page.
+             * @example 0
+             */
+            refused: number;
+            /**
+             * @description The link's state.
+             * @example active
+             * @enum {string}
+             */
+            state: "none" | "active" | "suspended" | "unlinking" | "unlinked";
+            /**
+             * @description True when Nemura's log is longer than one look reads; the oldest part was left out.
+             * @example false
+             */
+            truncated?: boolean;
+            /**
+             * Format: int64
+             * @description Events Nemura queued and has not delivered yet: not a gap, they are on their way.
+             * @example 2
+             */
+            waiting: number;
+        };
         PeopleLinkInbox: {
             /**
              * Format: int64
@@ -47825,6 +47926,12 @@ export interface components {
              * @enum {string}
              */
             outcome: "applied" | "ignored_older" | "duplicate";
+        };
+        PeopleLinkRepair: {
+            /** @description How the link stood when it was asked. */
+            health: components["schemas"]["PeopleLinkHealth"];
+            /** @description The runs of sequence numbers Nemura was asked to send again: one request each. Empty when there was nothing missing. */
+            requested: components["schemas"]["SequenceRange"][];
         };
         PeopleLinkRequest: {
             /**
@@ -54259,6 +54366,20 @@ export interface components {
              * @example eyJhZnRlciI6ImpvdXJuYWwifQ
              */
             next_cursor?: string;
+        };
+        SequenceRange: {
+            /**
+             * Format: int64
+             * @description The first sequence number missing.
+             * @example 12
+             */
+            from: number;
+            /**
+             * Format: int64
+             * @description The last sequence number missing of this run.
+             * @example 14
+             */
+            to: number;
         };
         SessionInfo: {
             /**
@@ -168134,6 +168255,99 @@ export interface operations {
             };
         };
     };
+    getPeopleLinkHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleLinkHealth"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     receivePeopleHoldEvent: {
         parameters: {
             query?: never;
@@ -168694,6 +168908,107 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PPL-01` The event is not well formed; `PPL-09` The event carries more than the people platform shares (PRD-002 Appendix E). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    repairPeopleLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleLinkRepair"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PEOPLE-LINK-01` The link or a person of the projection moved against its course. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

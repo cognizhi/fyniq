@@ -397,8 +397,8 @@ var (
 	TakeAwaySavedItem          = Policy{Operation: "takeAwaySavedItem", Capability: OwnNotifications, Need: Create}
 	// A practice organisation (FR-UX-36; the owner's decision of 21 Nov 2026): opened by an Owner only, who holds A on the row, one at a time.
 	// The organisations a person works in and the choice of which a session is in: their own memberships, nothing else of any tenant.
-	ListMyOrganisations = Policy{Operation: "listMyOrganisations", Capability: Session, Need: View, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser: their own memberships only."}
-	SwitchMyOrganisation = Policy{Operation: "switchMyOrganisation", Capability: Session, Need: Create, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser, and an active membership of the organisation chosen."}
+	ListMyOrganisations        = Policy{Operation: "listMyOrganisations", Capability: Session, Need: View, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser: their own memberships only."}
+	SwitchMyOrganisation       = Policy{Operation: "switchMyOrganisation", Capability: Session, Need: Create, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser, and an active membership of the organisation chosen."}
 	CreatePracticeOrganisation = Policy{Operation: "createPracticeOrganisation", Capability: UsersAndRoles, Need: Approve,
 		Note: "An Owner of an organisation that keeps books, stepped up in the last 5 minutes, who holds no practice organisation: the database's function decides."}
 	// Comments and @mentions on a record (FR-UX-13, rev 0.382): any member may read, write and mention on a record they may see; the
@@ -625,6 +625,8 @@ var (
 	// The link to the people platform (FR-PPL-01, FR-PPL-16): a person with C on "People and HR" asks, the Owner and a second approver approve; the
 	// link's client alone calls the event operations, with the scope each names (PRD-002 Appendix E).
 	GetPeopleLink                = Policy{Operation: "getPeopleLink", Capability: PeopleAndHR, Need: View}
+	GetPeopleLinkHealth          = Policy{Operation: "getPeopleLinkHealth", Capability: PeopleAndHR, Need: View}
+	RepairPeopleLink             = Policy{Operation: "repairPeopleLink", Capability: PeopleAndHR, Need: Create}
 	RequestPeopleLink            = Policy{Operation: "requestPeopleLink", Capability: PeopleAndHR, Need: Create}
 	RequestPeopleUnlink          = Policy{Operation: "requestPeopleUnlink", Capability: PeopleAndHR, Need: Create}
 	ReceivePeopleProjectionEvent = Policy{Operation: "receivePeopleProjectionEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.projection.write"}
@@ -1162,12 +1164,12 @@ var (
 	PrepareDisputeLoss          = Policy{Operation: "prepareDisputeLoss", Capability: Journals, Need: Create}
 	// SettleDisputeCredit settles an issued credit note's credit against a lost dispute's money (dispute_settlement@1), as a refund
 	// is recorded: under "Invoices" with the right to post.
-	SettleDisputeCredit         = Policy{Operation: "settleDisputeCredit", Capability: Invoices, Need: Post}
+	SettleDisputeCredit = Policy{Operation: "settleDisputeCredit", Capability: Invoices, Need: Post}
 	// The payment link of an invoice (FR-AR-13, FR-PSP-02): asked for, read and cancelled under "Invoices"; asking and cancelling are
 	// the right to post. No AI or MCP route reaches them.
-	CreateInvoicePaymentLink = Policy{Operation: "createInvoicePaymentLink", Capability: Invoices, Need: Post}
-	GetInvoicePaymentLink    = Policy{Operation: "getInvoicePaymentLink", Capability: Invoices, Need: View}
-	CancelInvoicePaymentLink = Policy{Operation: "cancelInvoicePaymentLink", Capability: Invoices, Need: Post}
+	CreateInvoicePaymentLink    = Policy{Operation: "createInvoicePaymentLink", Capability: Invoices, Need: Post}
+	GetInvoicePaymentLink       = Policy{Operation: "getInvoicePaymentLink", Capability: Invoices, Need: View}
+	CancelInvoicePaymentLink    = Policy{Operation: "cancelInvoicePaymentLink", Capability: Invoices, Need: Post}
 	ResolvePaymentProviderEvent = Policy{Operation: "resolvePaymentProviderEvent", Capability: BankTransactions, Need: Create}
 	ResolveBankGap              = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
 	ListStatementMappings       = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
@@ -2073,7 +2075,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, RecordSalaryLineState, MatchSalaryBankLine, GetPayrollArrangements, SetPayrollArrangement, ListPayrollImports, ImportPayrollJournal, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ReceivePeopleSessionEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, RecordSalaryLineState, MatchSalaryBankLine, GetPayrollArrangements, SetPayrollArrangement, ListPayrollImports, ImportPayrollJournal, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, GetPeopleLinkHealth, RepairPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ReceivePeopleSessionEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,

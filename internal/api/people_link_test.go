@@ -322,6 +322,12 @@ var matrixPeopleLink = map[string]func(e *env, tok string) (response, func() boo
 	"getPeopleLink": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/people-link", tok, nil), nil
 	},
+	"getPeopleLinkHealth": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/people-link/health", tok, nil), nil
+	},
+	"repairPeopleLink": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/people-link/repair", tok, nil, "Prefer", "return=preview"), nil
+	},
 	"requestPeopleLink": func(e *env, tok string) (response, func() bool) {
 		was, aud := e.api.deps.OAuthClients, e.api.deps.APIAudience
 		defer func() { e.api.deps.OAuthClients, e.api.deps.APIAudience = was, aud }()

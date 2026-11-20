@@ -19,6 +19,13 @@ what Fyniq received from Nemura, and records how each month's statutory payroll 
 - Linking Nemura, changing where a feature lives and unlinking need the Owner and a second approver; they are asked for through the API today.
 - While payroll lives in Nemura, a provider's payroll journal or a file import is not taken: the pay run posts through the link, so it is never posted from two sources.
 
+## Link health
+
+- While the link is active, **Link health** shows how it stands, by identity only: how many events Nemura has queued for Fyniq, the highest number Fyniq's inbox holds, and how many events wait to be delivered, fail or were refused. Nothing in it is a payload, a name or a figure.
+- A **gap** is a run of event numbers that Nemura says it delivered and Fyniq never received. The page names the runs and offers **Ask Nemura to send them again**: Nemura then sends the current state of what those events were about, never an old payload, and Fyniq applies what it missed and ignores what it already holds. Asking twice with nothing new missing asks for nothing.
+- If Nemura's log cannot be read, the page says why (the link is not active, Nemura did not answer, or the link was made before the log could be read and is approved again to allow it) and shows no number it does not know. **Check again** looks once more.
+- It needs People and HR's right.
+
 ## People who approve pay runs in Nemura
 
 - A pay run approved in Nemura while the apps are linked is signed with **a passkey enrolled in Fyniq**. Nemura tells Fyniq, signed, which sign-in accounts approve pay runs there (an account and a yes or no, never a role name or an email).

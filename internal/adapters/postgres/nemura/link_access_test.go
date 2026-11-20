@@ -396,3 +396,46 @@ func TestFyniqsReadOnlyClientReadsTheLinksEventLogByIdentityAndNothingMore(t *te
 		t.Error("an ended link answered")
 	}
 }
+
+// A gap in what Nemura told Fyniq of an identity is repaired as the others are (NM-INT-10): Fyniq's replay request names a range of Nemura's sequence numbers and Nemura tells Fyniq again what each identity
+// of the members the range names may enter, as it stands now (never an old answer), and nothing for a range that names none.
+// part of NM-INT-10
+// asvs: V8.2.1, V13.2.1
+func TestAReplayTellsFyniqAgainWhatAnIdentityMayEnterAsItStandsNow(t *testing.T) {
+	lt := newLeaveTeam(t)
+	now := today.Add(10 * time.Hour)
+	by := audit.Actor{Type: "user", ID: lt.c.owner.String()}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.LinkIdentity(ctx, tx, lt.c.org, now, by, lt.c.owner, identity.Identity{Issuer: "https://idp-a.example.test", Subject: "owner-a", Tenant: "t"})
+	})
+	_, fyniqPriv, fyniqOrg := linked(t, lt, now, &fakeOAuth{})
+	count := func() (n int) {
+		for _, e := range eventLog(t, lt) {
+			if e.Type == nemura.TypeIdentityAccess {
+				n++
+			}
+		}
+		return n
+	}
+	if count() != 1 {
+		t.Fatalf("activating the link told Fyniq of the owner's identity: %d", count())
+	}
+	var first, last int64
+	for _, e := range eventLog(t, lt) {
+		if first == 0 {
+			first = e.Sequence
+		}
+		last = e.Sequence
+	}
+	// The owner is deactivated after the answer was queued: the replay says what is true now.
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.DeactivateMember(ctx, tx, lt.c.org, now, lt.c.hr, lt.c.owner, now)
+	})
+	before := count()
+	if out, err := lt.receive(t, fyniqSays(t, fyniqPriv, lt, fyniqOrg, now, nemura.TypeReplayRequested, "link", "l", 1, 80, map[string]any{"from_sequence": first, "to_sequence": last}), now); err != nil || out != "applied" {
+		t.Fatalf("the replay request: %q %v", out, err)
+	}
+	if count() != before+1 {
+		t.Errorf("the replay told Fyniq again of the identity: %d then %d", before, count())
+	}
+}

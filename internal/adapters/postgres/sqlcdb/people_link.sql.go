@@ -223,6 +223,36 @@ func (q *Queries) PeopleInboxCounts(ctx context.Context, linkID uuid.UUID) ([]Pe
 	return items, nil
 }
 
+const peopleInboxSequences = `-- name: PeopleInboxSequences :many
+SELECT DISTINCT sequence FROM fyniq.people_link_inbox WHERE link_id = $1 AND sequence BETWEEN $2::bigint AND $3::bigint ORDER BY sequence
+`
+
+type PeopleInboxSequencesParams struct {
+	LinkID       uuid.UUID
+	FromSequence int64
+	ToSequence   int64
+}
+
+func (q *Queries) PeopleInboxSequences(ctx context.Context, arg PeopleInboxSequencesParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, peopleInboxSequences, arg.LinkID, arg.FromSequence, arg.ToSequence)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var sequence int64
+		if err := rows.Scan(&sequence); err != nil {
+			return nil, err
+		}
+		items = append(items, sequence)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const peopleLinkForUpdate = `-- name: PeopleLinkForUpdate :one
 SELECT id, state, epoch, nemura_organisation_id, nemura_origin, link_key, client_id, approval_id, version, created_by, created_at, changed_at
 FROM fyniq.people_link WHERE id = $1 FOR UPDATE

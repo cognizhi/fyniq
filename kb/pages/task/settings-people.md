@@ -4,7 +4,7 @@ type: task
 title: People and HR: where payroll lives and how its outputs are met
 summary: See where payroll lives, the Nemura link's state, how a month's statutory outputs are met, and how a provider's payroll journal becomes a draft
 sources:
-  - docs/user-guide/settings-people.md sha256:7a88c19f406040086ac4ceab16fc41769063aee7c6c7a7dc2d37c95c004b3d91
+  - docs/user-guide/settings-people.md sha256:580701b5cb05d5eaa9c1928b91a851a8ac9e96ee2d49c1b2402ae3995caf02c0
 data_class: general
 taint: trusted
 status: draft
@@ -19,6 +19,8 @@ aliases:
   - provider payroll journal
   - payroll import
   - nemura link
+  - link health
+  - ask nemura to send them again
   - add a passkey to approve pay runs in nemura
   - finance people switch
 ---
@@ -38,6 +40,14 @@ aliases:
 - While payroll lives in Nemura a provider's payroll journal or a file import is not taken: the pay run posts through the link, so it is never posted from two sources.
 
 (src: docs/user-guide/settings-people.md#where-each-feature-lives)
+
+## Link health
+
+- While the link is active, **Link health** shows how it stands, by identity only: how many events Nemura has queued for Fyniq, the highest number Fyniq's inbox holds, and how many events wait to be delivered, fail or were refused. Nothing in it is a payload, a name or a figure.
+- A gap is a run of event numbers that Nemura says it delivered and Fyniq never received. The page names the runs and offers **Ask Nemura to send them again**: Nemura sends the current state of what those events were about, never an old payload, and Fyniq applies what it missed and ignores what it holds.
+- If Nemura's log cannot be read, the page says why and shows no number it does not know; **Check again** looks once more. It needs People and HR's right.
+
+(src: docs/user-guide/settings-people.md#link-health)
 
 ## People who approve pay runs in Nemura
 

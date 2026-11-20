@@ -462,6 +462,12 @@ func registerReimbursements(a *API) {
 			"Idempotent with Idempotency-Key; Prefer: return=preview posts nothing and shows the entry.",
 	}, recordCodes, func(ctx context.Context, in *recordReimbursementInput) (*reimbursementOutput, error) {
 		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (ClaimReimbursement, error) {
+			// FR-PPL-13: a claimant Nemura holds for tax clearance is not paid, by hand any more than in a batch.
+			if claimant, perr := uuid.Parse(in.Body.ClaimantID); perr == nil {
+				if err := heldPeople(ctx, u, a.deps.Holds, claimant); err != nil {
+					return ClaimReimbursement{}, err
+				}
+			}
 			r, err := reimbursementDraftOf(in.Body)
 			if err != nil {
 				return ClaimReimbursement{}, err

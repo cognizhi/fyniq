@@ -868,11 +868,11 @@ func holdStatus(ctx context.Context, u storage.UnitOfWork, authority HoldAuthori
 func holdRefusal(held, unknown []string) error {
 	if len(held) > 0 {
 		return problem(peoplelink.CodeHold, "These people are held for tax clearance, so nothing is released to them: "+strings.Join(held, ", ")+".",
-			"Take their lines out of the batch, or wait for Nemura to lift the hold after IRAS's notice or directive")
+			"Wait for Nemura to lift the hold after IRAS's notice or directive; in a batch, take their lines out of it")
 	}
 	if len(unknown) > 0 {
 		return problem(peoplelink.CodeHoldUnknown, "Nemura did not say within five seconds whether these people are held for tax clearance, so nothing is released to them: "+strings.Join(unknown, ", ")+".",
-			"Try the release again; check that Nemura is linked and running, or take their lines out of the batch")
+			"Try again; check that Nemura is linked and running; in a batch, take their lines out of it")
 	}
 	return nil
 }

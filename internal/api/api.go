@@ -51,7 +51,9 @@ import (
 // Deps are what the API needs.
 type Deps struct {
 	// Holds asks Nemura whether a person is held at the release of a payment (FR-PPL-13); nil asks no one.
-	Holds        HoldAuthority
+	Holds HoldAuthority
+	// LinkLog reads Nemura's event log by identity for the link's health and its repair; nil reads nothing (FR-PPL-08).
+	LinkLog      LinkLog
 	Store        storage.Store
 	Installation storage.Installation // first-run setup and Super admins; nil when there is no database
 	Outbox       *outbox.Dispatcher   // queues background work, such as token revocations; nil when there is none
@@ -582,6 +584,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSession(a)
 	registerIntegrationClients(a)
 	registerPeopleLink(a)
+	registerPeopleLinkHealth(a)
 	registerPayrollRuns(a)
 	registerPayrollPayments(a)
 	registerSalaryBatches(a)

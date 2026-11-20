@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "health": {
+      "$ref": "PeopleLinkHealth.schema.json",
+      "description": "How the link stood when it was asked."
+    },
+    "requested": {
+      "description": "The runs of sequence numbers Nemura was asked to send again: one request each. Empty when there was nothing missing.",
+      "items": {
+        "$ref": "SequenceRange.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "requested",
+    "health"
+  ],
+  "title": "PeopleLinkRepair",
+  "type": "object"
+}

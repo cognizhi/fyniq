@@ -867,12 +867,14 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/payroll-mapping` (setPayrollMapping): Set the next version of the account mapping
 - `GET /v1/people-link` (getPeopleLink): Show the link to the people platform and where each feature lives
 - `POST /v1/people-link` (requestPeopleLink): Ask to link the organisation to a Nemura organisation
+- `GET /v1/people-link/health` (getPeopleLinkHealth): Show how the link to the people platform stands
 - `POST /v1/people-link/hold-events` (receivePeopleHoldEvent): Receive a tax-clearance hold event from Nemura
 - `POST /v1/people-link/payroll-payments` (receivePayrollPayments): Receive the payment lines of a posted pay run from Nemura
 - `POST /v1/people-link/payroll-runs` (submitPayrollRun): Receive an approved pay run from Nemura and post it
 - `GET /v1/people-link/people` (listPeopleProjection): List the people of the employee projection
 - `POST /v1/people-link/people/{person_id}/user` (mapPersonToUser): Map a person of the projection to a Fyniq user
 - `POST /v1/people-link/projection-events` (receivePeopleProjectionEvent): Receive a person, bank-details or identity event from Nemura
+- `POST /v1/people-link/repair` (repairPeopleLink): Ask Nemura to send again what Fyniq missed
 - `POST /v1/people-link/session-events` (receivePeopleSessionEvent): Receive a sign-out or removal from Nemura
 - `POST /v1/people-link/unlink` (requestPeopleUnlink): Ask to end the link to the people platform
 - `GET /v1/periods` (listPeriods): List the periods

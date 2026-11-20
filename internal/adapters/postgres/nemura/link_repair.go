@@ -173,19 +173,23 @@ func applyReplay(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Time, e
 	if ev.FromSequence < 1 || ev.ToSequence < ev.FromSequence || ev.ToSequence-ev.FromSequence >= 10000 {
 		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "A replay asks for a range of Nemura's sequence numbers, from 1, of at most 10,000."}
 	}
-	rows, err := tx.Query(ctx, `SELECT DISTINCT object_type, object_id FROM nemura.link_event WHERE sequence BETWEEN $1 AND $2 AND object_type IN ('person', 'bank_details', 'tax_hold')`, ev.FromSequence, ev.ToSequence)
+	rows, err := tx.Query(ctx, `SELECT DISTINCT object_type, object_id, type FROM nemura.link_event WHERE sequence BETWEEN $1 AND $2 AND (object_type IN ('person', 'bank_details', 'tax_hold') OR type = $3)`, ev.FromSequence, ev.ToSequence, TypeIdentityAccess)
 	if err != nil {
 		return err
 	}
-	var persons []uuid.UUID
+	var persons, members []uuid.UUID
 	for rows.Next() {
-		var t, id string
-		if err := rows.Scan(&t, &id); err != nil {
+		var t, id, typ string
+		if err := rows.Scan(&t, &id, &typ); err != nil {
 			rows.Close()
 			return err
 		}
 		if p, err := uuid.Parse(id); err == nil {
-			persons = append(persons, p)
+			if typ == TypeIdentityAccess {
+				members = append(members, p) // what an identity may enter is the member's: told again as it stands now
+			} else {
+				persons = append(persons, p)
+			}
 		}
 	}
 	rows.Close()
@@ -193,6 +197,15 @@ func applyReplay(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Time, e
 		return err
 	}
 	seen := map[uuid.UUID]bool{}
+	for _, m := range members {
+		if seen[m] {
+			continue
+		}
+		seen[m] = true
+		if _, err := QueueAccessEvents(ctx, tx, org, now, m); err != nil {
+			return err
+		}
+	}
 	for _, p := range persons {
 		if seen[p] {
 			continue

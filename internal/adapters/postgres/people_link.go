@@ -409,3 +409,11 @@ func (r peopleLinks) SaveAccess(ctx context.Context, a storage.PeopleAccess) (bo
 	}
 	return true, r.u.event(ctx, "people_link_access.changed", "people_link_access", id, nil, map[string][2]any{"people_access": {nil, a.PeopleAccess}, "payroll_approver": {nil, a.PayrollApprover}})
 }
+
+func (r peopleLinks) InboxSequences(ctx context.Context, link uuid.UUID, from, to int64) ([]int64, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	out, err := r.u.q.PeopleInboxSequences(ctx, sqlcdb.PeopleInboxSequencesParams{LinkID: link, FromSequence: from, ToSequence: to})
+	return out, mapError(err)
+}
