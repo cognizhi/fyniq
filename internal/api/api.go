@@ -838,7 +838,9 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 		d = authz.Decision{Reason: "the link's client reaches only the link's operations"}
 		refusal = problem(CodeForbidden, "The link's client may only call the link's operations.", "Nemura sends its events and runs through the link, and does nothing else.")
 	default:
-		if d = authz.Decide(policy, p.Roles, p.AI()); !d.Allowed {
+		if d = authz.Decide(policy, p.Roles, p.AI()); !d.Allowed && policy.NamedApprover && a.namesApprover(ctx.Context(), p) {
+			d = authz.Decision{Allowed: true, Right: policy.Need} // the request's own steps decide, and the handler checks they are named by this one
+		} else if !d.Allowed {
 			refusal = problem(CodeForbidden, fmt.Sprintf("Your roles hold no %q right on %q.", string(policy.Need), policy.Capability),
 				"Ask an Owner or Administrator for a role with that right (PRD-001 Appendix D).")
 		} else if narrowedRefused(p, policy) {

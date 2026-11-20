@@ -6915,6 +6915,7 @@ components:
             - api_client
             - kb_publication
             - people_link
+            - salary_batch
         operation:
           description: What executes on its approval.
           examples:
@@ -7002,6 +7003,7 @@ components:
             - kb_publication.publish
             - people_link.link
             - people_link.unlink
+            - salary_batch.approve
         policy:
           description: The approval policy's version it keeps (G4-057).
           examples:
@@ -7305,6 +7307,7 @@ components:
             - api_client
             - kb_publication
             - people_link
+            - salary_batch
         row:
           description: The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
           examples:
@@ -7458,6 +7461,7 @@ components:
             - api_client
             - kb_publication
             - people_link
+            - salary_batch
         row:
           description: The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
           examples:

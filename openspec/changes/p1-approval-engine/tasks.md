@@ -199,7 +199,7 @@
   (20 Nov 2026, checked: accountant-review is built (`screens/accounting/AccountantReviews.tsx`, task 3.4), the batch's
   approval part is `screens/purchases/PaymentBatchPage.tsx` (release, the approval's steps and break-glass), and FM-4 to
   FM-7's screens are the close, reconciliation, review-log and accountant-review pages above.) **Left:** personal-approvals
-  (`/me/approve`): a line manager approves the claims of their reports, and Fyniq holds no line-manager relationship until
+  (`/me/approve`): a line manager approves the claims of their reports; the API is built (21 Nov 2026, `p1-payroll-link` 3.4: the request names the manager from the people projection and they reach it with no role), the screen is not, and Fyniq holds no line-manager relationship until
   the people projection (FR-PPL-06, FR-EMP-01) is connected (the line manager's UAT script, `docs/uat/roles/line-manager.md`,
   records it as "not available yet"); the Inbox's keyboard triage (J/K, A opens the confirmation) with p1-app-shell 2.2.)
 - [ ] 5.2 Finish with `make check` and `make test`

@@ -104,7 +104,8 @@
         "corporate_document",
         "api_client",
         "kb_publication",
-        "people_link"
+        "people_link",
+        "salary_batch"
       ]
     },
     "row": {

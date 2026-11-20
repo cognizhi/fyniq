@@ -855,3 +855,23 @@ func peopleLinkDependencies(ctx context.Context, u storage.UnitOfWork) (int, map
 	}
 	return l.Version, map[string]any{"state": l.State, "epoch": l.Epoch}, nil
 }
+
+// lineManagerOf is the Fyniq user who is the line manager of a user, by the people projection: the user's person (mapped explicitly, never by email: FR-PPL-18), their line manager's person, and the
+// user that person was mapped to. uuid.Nil when any link of that chain is missing, or when the manager is the user themselves. Line manager is a relationship and grants no role (§6.2).
+func lineManagerOf(ctx context.Context, u storage.UnitOfWork, user uuid.UUID) (uuid.UUID, error) {
+	person, err := u.PeopleLinks().PersonOfUser(ctx, user)
+	if errors.Is(err, ports.ErrNotFound) || err == nil && (person.LineManager == uuid.Nil || person.Removed) {
+		return uuid.Nil, nil
+	}
+	if err != nil {
+		return uuid.Nil, err
+	}
+	mgr, err := u.PeopleLinks().Person(ctx, person.LineManager)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if !mgr.Known() || mgr.Removed || mgr.UserID == uuid.Nil || mgr.UserID == user || mgr.Status != "" && mgr.Status != "active" {
+		return uuid.Nil, nil
+	}
+	return mgr.UserID, nil
+}

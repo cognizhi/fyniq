@@ -146,7 +146,8 @@
         "corporate_document",
         "api_client",
         "kb_publication",
-        "people_link"
+        "people_link",
+        "salary_batch"
       ]
     },
     "operation": {
@@ -236,7 +237,8 @@
         "api_client.reclass",
         "kb_publication.publish",
         "people_link.link",
-        "people_link.unlink"
+        "people_link.unlink",
+        "salary_batch.approve"
       ]
     },
     "policy": {

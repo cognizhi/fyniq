@@ -2648,7 +2648,7 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 				text = own
 			}
 			cell := authztest.ParseCell(text)
-			if (c == authz.ExpenseClaims || c == authz.PaymentBatches || c == authz.DirectorAccounts || c == authz.CapTable) && cell.Qualifier != "" {
+			if (c == authz.ExpenseClaims || c == authz.PaymentBatches || c == authz.DirectorAccounts || c == authz.CapTable || c == authz.PayRuns) && cell.Qualifier != "" {
 				continue // an Employee's own claims are reached from the claim, not the approvals (design D10); nor is "C (salaries)",
 				// nor a qualified view of director accounts (own, deferred pay, share issues, repayments), nor an Employee's own
 				// grants or the Board's own holding on the cap table

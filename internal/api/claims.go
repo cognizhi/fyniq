@@ -903,6 +903,13 @@ func registerClaims(a *API) {
 			if policy.Finance { // a line above its category's limit or past the deadline: finance approves too (FR-AP-17)
 				then = []approval.Step{{Quorum: 1, Roles: []string{string(authz.Controller)}}}
 			}
+			// The claimant's line manager, by the people projection, approves first (FR-AP-17); with no projection, no manager, or a manager with no Fyniq user, the policy's own steps stand.
+			var before []approval.Step
+			if mgr, err := lineManagerOf(ctx, u, p.UserID); err != nil {
+				return Approval{}, err
+			} else if mgr != uuid.Nil {
+				before = []approval.Step{{Quorum: 1, Users: []uuid.UUID{mgr}}}
+			}
 			owed := checked.Owed.String()
 			name := cmpOr(c.Claimant.Name, "a member")
 			what := cmpOr(c.Number, "claim")
@@ -911,7 +918,7 @@ func registerClaims(a *API) {
 				Execute: map[string]any{"claim_id": id.String(), "claim_version": doc.Version},
 				Diff: []ApprovalDiff{{Field: "status", Before: "draft", After: "posted"}, {Field: "owed", After: owed + " " + v.base.Code},
 					{Field: "finance_step", After: strconv.FormatBool(policy.Finance)}},
-				Amounts: []approval.Amount{{Amount: owed, Currency: v.base.Code}}, Then: then, Values: claimValues(c.Lines)})
+				Amounts: []approval.Amount{{Amount: owed, Currency: v.base.Code}}, Then: then, Before: before, Values: claimValues(c.Lines)})
 		})
 		if err != nil {
 			return nil, err

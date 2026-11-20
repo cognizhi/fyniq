@@ -127,7 +127,7 @@ const (
 // registration (FR-INT-02, p1-public-api task 3.1).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
 	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable,
-	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps, KnowledgeBase, PeopleAndHR}
+	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps, KnowledgeBase, PeopleAndHR, PayRuns}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -330,6 +330,9 @@ type Policy struct {
 	// ByRecord operations reach records of several kinds, whose own Appendix D rows decide past the policy: a record the
 	// caller may not see is not found, as a search leaves it out (an evidence file, rev 0.188).
 	ByRecord bool
+	// NamedApprover marks an approvals operation that a person also reaches when a pending request names them as its first approver, though no role of theirs holds a right on the row: a claim's line
+	// manager, by the people projection (FR-AP-17, FR-UX-39; §6.2 "line manager is a relationship, not a role"). The request's own steps and the handler decide what they may do with it.
+	NamedApprover bool
 	// LinkScope marks an operation only the link's client may call, holding this scope (PRD-002 Appendix E; p1-payroll-link design D1): no
 	// role decides it, and the link's client reaches nothing else.
 	LinkScope string
@@ -1396,13 +1399,13 @@ var (
 const approvalNote = "Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6)."
 
 var (
-	ListApprovals = Policy{Operation: "listApprovals", Capability: Approvals, Need: View,
+	ListApprovals = Policy{Operation: "listApprovals", Capability: Approvals, Need: View, NamedApprover: true,
 		Note: approvalNote + " Lists the requests the caller made or holds a right on the object of."}
-	GetApproval = Policy{Operation: "getApproval", Capability: Approvals, Need: View,
+	GetApproval = Policy{Operation: "getApproval", Capability: Approvals, Need: View, NamedApprover: true,
 		Note: approvalNote + " Shows a request to its requester and to whoever holds a right on its object."}
-	ApproveApproval = Policy{Operation: "approveApproval", Capability: Approvals, Need: Approve,
+	ApproveApproval = Policy{Operation: "approveApproval", Capability: Approvals, Need: Approve, NamedApprover: true,
 		Note: approvalNote + " Needs A on the object's row, a person signed in who passed step-up in the last 5 minutes, and someone other than the requester (FM-1)."}
-	RejectApproval = Policy{Operation: "rejectApproval", Capability: Approvals, Need: Approve,
+	RejectApproval = Policy{Operation: "rejectApproval", Capability: Approvals, Need: Approve, NamedApprover: true,
 		Note: approvalNote + " Needs A on the object's row, a person signed in who passed step-up in the last 5 minutes, and someone other than the requester."}
 	ListReviewLog = Policy{Operation: "listReviewLog", Capability: Approvals, Need: View,
 		Note: approvalNote + " Lists the high-risk actions the caller may see, by the row of what each changed (FM-3)."}
@@ -2229,7 +2232,7 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 			// claim (design D10), and never the approvals or the review log; nor is the Payroll administrator's "C
 			// (salaries)" on payment batches, nor a qualified view of director accounts (own, deferred pay, share issues,
 			// repayments), nor an Employee's own grants or the Board's own holding on the cap table.
-			q.Unqualified = row == ExpenseClaims || row == PaymentBatches || row == DirectorAccounts || row == CapTable
+			q.Unqualified = row == ExpenseClaims || row == PaymentBatches || row == DirectorAccounts || row == CapTable || row == PayRuns
 			if r, ok := holds(q, roles); ok {
 				return Decision{Allowed: true, Right: r}
 			}

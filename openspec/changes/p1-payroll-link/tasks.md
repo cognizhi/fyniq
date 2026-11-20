@@ -44,6 +44,7 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
   once against holidays (FR-PRJ-12); the month-end accrual arrives as a draft journal (P2 part).
 - [ ] 3.4 What reads the projection: claim routing to the line manager (FR-AP-17), the approvers' department figures, the personal approvals page of
   `p1-approval-engine` 5.1; project cost rates stay in Fyniq, restricted (FR-PAY-13).
+  (Built, 21 Nov 2026, claim routing: `lineManagerOf` reads the claimant's person, their line manager's person and the user that person was mapped to, and a submitted claim's request has the manager's step first (`pendingChange.Before`); a person a pending claim request names as its first approver reaches the four approvals operations for that request alone, with no role (`NamedApprover`, `namedFirstApprover`); finance cannot go ahead of the manager. `TestALineManagerApprovesTheirReportsClaimFirstWithNoRole`. **Left:** the personal-approvals screen (`p1-approval-engine` 5.1) and the Approver's department figures following the projection: today an Approver's scope is fixed when the role is given (FR-ADM-01); making it follow Nemura's department moves a fixed, audited scope, which the owner decides (PRD revision 0.426).)
 
 ## 4. Verified payroll authority and segregation (FR-PPL-09, 10)
 

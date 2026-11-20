@@ -69,7 +69,17 @@ func approverOf(p authn.Principal, r storage.ApprovalRequest) bool {
 	if rule, ok := proposalRuleOf(r); ok {
 		return !p.AI() && proposal.Approves(rule.TaskType, rule.Command, p.Roles)
 	}
-	return mayApprove(p, r.ObjectType) && !narrowedOut(p, r, func(q authn.Principal) bool { return mayApprove(q, r.ObjectType) })
+	return mayApprove(p, r.ObjectType) && !narrowedOut(p, r, func(q authn.Principal) bool { return mayApprove(q, r.ObjectType) }) || namedFirstApprover(p, r)
+}
+
+// namedFirstApprover reports whether p is the person a claim's request names as its first approver: the line manager of the claimant, by the people projection (FR-AP-17, FR-PPL-06). It is a
+// relationship, not a role: it reaches that request alone, and nothing else (§6.2).
+func namedFirstApprover(p authn.Principal, r storage.ApprovalRequest) bool {
+	if r.ObjectType != approval.ObjectClaim || p.UserID == uuid.Nil || p.AI() || r.RequestedBy == p.UserID {
+		return false
+	}
+	steps := domainSteps(r.PolicySteps)
+	return len(steps) > 1 && len(steps[0].Users) > 0 && slices.Contains(steps[0].Users, p.UserID)
 }
 
 // approvesRequest reports whether a member's roles hold the right to sign r, for the recheck before it executes.
@@ -332,4 +342,22 @@ func proposalItems(items []ProposalItem) []int {
 		out[i] = int(n)
 	}
 	return out
+}
+
+// namesApprover reports whether a pending request names p as its first approver (a claim's line manager, FR-AP-17): the one reason a person with no right on the approvals' rows reaches the approvals
+// operations a policy marks NamedApprover. It reads the requests only for a person who would otherwise be refused, and never for the AI or a client with no person.
+func (a *API) namesApprover(ctx context.Context, p authn.Principal) bool {
+	if p.UserID == uuid.Nil || p.Organisation == uuid.Nil || p.AI() || p.Via != authn.ViaSession {
+		return false
+	}
+	found := false
+	_ = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		pending, err := u.Approvals().List(ctx, string(approval.Pending))
+		if err != nil {
+			return err
+		}
+		found = slices.ContainsFunc(pending, func(r storage.ApprovalRequest) bool { return namedFirstApprover(p, r) })
+		return nil
+	})
+	return found
 }
