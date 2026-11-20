@@ -11,8 +11,10 @@ compiled into the knowledge base, and the oracle's half where it calculates. Loa
 - [ ] 2.2 The oracle's half (`oracle/src/oracle/consolidation.py`), its schema and hand cases, differential scenarios and `make differential`. `// req: QA-ENG-02`
 
 ## 3. Groups and the link
-- [ ] 3.1 Migration: invitation registry, `group_entity`, `group_membership`, acceptance and the two read functions, with grants and attack tests. `// req: FR-ENT-04`, `// req: SEC-02`
-- [ ] 3.2 Store, API (invite, accept, list, end), matrix rows, audit in both trails. `// req: FR-ENT-04`
+- [x] 3.1 Migration: invitation registry, `group_entity`, `group_membership`, acceptance and the two read functions, with grants and attack tests. `// req: FR-ENT-04`, `// req: SEC-02`
+  Built (rev 0.628): migration 001350, the grants listed for review. Tests: `TestAttackAGroupLinkNeedsBothOwnersAndReadsOnlyWhileItStands`, `TestAttackAGroupHasOneLevelAndAnOrganisationOneGroup`, `TestAttackAGroupLinkIsReachedOnlyThroughItsFunctions`.
+- [x] 3.2 Store, API (invite, accept, list, end), matrix rows, audit in both trails. `// req: FR-ENT-04`
+  Built: `EntityGroups` (port and adapter), `internal/api/entity_groups.go` (getEntityGroup, inviteGroupEntity, withdrawGroupInvitation, acceptGroupInvitation, endGroupLink), matrix rows `matrixEntityGroups`, `TestAnOwnerInvitesAnEntityItsOwnerAcceptsAndEitherEndsIt`.
 - [ ] 3.3 Screen `entity-setup`, help, guide and kb. `// req: QA-UI-05`
 
 ## 4. Consolidation
