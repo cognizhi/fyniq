@@ -17,6 +17,11 @@ import (
 // the apps, design D7). It is queued in the unit of work of the change that moved either (a role given or ended, a member removed or joined, a passkey enrolled or revoked, the link approved), through the
 // link's one event scope, by issuer and subject and never an email or a role name. Nothing is queued with no active link that has keys. A door and a hint, never a grant: Nemura's own sign-in and roles
 // decide what a person may do there.
+// CrossOnlyMappedMembers is the one switch of what crosses to Nemura (owner's question of 21 Nov 2026, built on the safer answer, owner to confirm): true, only a member mapped to a person of the link
+// (mapPersonToUser) has their identities' access told to Nemura, so no issuer or subject of someone Nemura does not know leaves Fyniq; false, every member's does, which is what a Nemura approver with no
+// mapping needs to be reminded of a missing passkey and to see the switch. Flipping it is this constant and nothing else.
+const CrossOnlyMappedMembers = true
+
 func (a *API) tellNemuraAccess(ctx context.Context, u storage.UnitOfWork, user uuid.UUID) error {
 	l, err := u.PeopleLinks().Live(ctx)
 	if errors.Is(err, ports.ErrNotFound) || (err == nil && l.State != storage.LinkActive) {
@@ -24,6 +29,13 @@ func (a *API) tellNemuraAccess(ctx context.Context, u storage.UnitOfWork, user u
 	}
 	if err != nil {
 		return err
+	}
+	if CrossOnlyMappedMembers {
+		if _, err := u.PeopleLinks().PersonOfUser(ctx, user); errors.Is(err, ports.ErrNotFound) {
+			return nil // nobody mapped them to a person Nemura knows: their identity stays here
+		} else if err != nil {
+			return err
+		}
 	}
 	sessions, ok := a.deps.Installation.(storage.Sessions)
 	if !ok {

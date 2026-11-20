@@ -1167,6 +1167,10 @@
       "label": "People and HR",
       "tooltip": "Where people records, payroll, leave and letters live (Nemura, an external system, or none), the link's state and how the month's statutory payroll outputs are met."
     },
+    "people.passkey-reminder": {
+      "label": "Add a passkey to approve pay runs in Nemura",
+      "tooltip": "Nemura signs a pay run's approval with a passkey enrolled here. This reminder goes when you add one, and it gives you no role in Fyniq."
+    },
     "people.health": {
       "label": "Link health",
       "tooltip": "How the link to Nemura stands: events waiting, failing or refused, and any run of events Nemura says it delivered that Fyniq never received, which it can send again."

@@ -17,3 +17,7 @@ checks:
     status: running
     how: "attestation access-review"
     evidence: "the quarterly access review (GET /v1/access-review) lists every integration client that is not revoked with its owner, class, scopes and end date, and its attestation records the report's hash (FR-CTL-06, C.2 #7)"
+  - frequency: CI
+    status: running
+    how: "test TestAttackOnlyTheLinkHoldsTheLinkScopes"
+    evidence: "the link's seven scopes (identity.sessions.write among them) can be held by the link's client alone: the database refuses each to an integration client, a personal token and an agent, and the link's client an ordinary scope; threat model docs/security/threat-models/nemura-link-identity.md; CI artefact test-report (90 days)"
