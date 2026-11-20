@@ -97,9 +97,12 @@ what is open on the invoice, with the invoice's number as its reference, and sho
 - When the customer pays, HitPay's charge arrives on the provider's clearing account and **Reconcile now**
   (or the hourly one) records the receipt on the invoice by itself, once. A payment of another amount, a
   second payment on the same link, or one on a link you cancelled is not matched: it stays in the queue
-  with the reason **link mismatch**, for a person to decide.
+  with the reason **link mismatch**, for a person to decide. A payment above the per-line limit of automatic
+  reconciliation (S$500 by default) also waits for a person, as every large line does.
 - **Cancel the link** closes it in Fyniq, with a reason, so a new one can be made. HitPay's page stays
   payable until it expires, so a payment made on it afterwards waits for a person.
+- A link shows as **Expired** after its date (30 days after the invoice's due date) and as **Paid** once the
+  invoice has nothing open; an expired link is replaced by making a new one.
 - A foreign-currency invoice needs a provider account in that currency. The PayNow QR image of the
   checkout and Stripe payment links are not built yet.
 

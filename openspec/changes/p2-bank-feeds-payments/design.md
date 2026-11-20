@@ -14,15 +14,17 @@ Creating a payment request is the one write Model A needs (FR-AR-13: "an invoice
 Decision: **B** (`[owner to confirm]`). Rules: the amount and currency come from the invoice's open balance read on the
 server in the same transaction, never from the client; one live link per invoice (a unique partial index); an invoice
 that is draft, void, paid, or in a foreign currency the provider account cannot collect is refused (PSP-09); a link
-expires at the invoice's due date plus 30 days, whichever the setting says; the worker never holds the capability (it is
-declared `used_by: api`); the capability's trigger is a human authority (a person with Invoices/Post) or the system rule
-"the sending of an invoice", never the AI (never-list unchanged, no tool added).
+expires at the invoice's due date plus 30 days, whichever the setting says; no worker handler calls the capability (a test
+holds every caller of `Runtime.PaymentLinks` to the API); the capability's trigger is a
+system rule that only a person's request with Invoices/Post fires (the approval engine's human authority needs an approval, which a
+link is not), never the AI (never-list unchanged, no tool added) `[owner to confirm]`.
 
-## D2. The webhook names, the GET decides
+## D2. The charge names the request; the sweep mirrors it
 
-The `payment_request` completed event names a payment request; the worker fetches it with the existing read-only client
-(`GET /v1/payment-requests/{id}`) and mirrors its payments in `payment_link_payment`, unique per provider payment ID.
-Nothing is read from the payload. Anything that does not fit parks with a warning for a person: a payment of a different
+HitPay's charge object names the payment request it was made under (`payment_request_id`, `[live-verify]`). The sweep's list
+of the provider's charges, which the `charge` event only prompts, carries it, and the worker mirrors a charge under one of the
+organisation's links in `payment_link_payment`, unique per provider charge. No payment request is fetched and nothing is read
+from a webhook payload. Anything that does not fit parks with a warning for a person: a payment of a different
 amount or currency than the link, a payment on a link whose invoice is void or already paid, a second payment, an unknown
 status. A refund is not a link event (FR-PSP-04 is the route).
 
@@ -30,7 +32,8 @@ status. A refund is not a link event (FR-PSP-04 is the route).
 
 A charge line on the provider's clearing account whose reference is a mirrored link payment, equal to the invoice's open
 balance, with the invoice issued and unpaid, is an exact match: `banking.AutoReconcile` records the receipt (Dr clearing
-gross, Cr AR) through the existing receipt command, within the existing per-line cap, open periods and undo. The fee and
+gross, Cr AR) through the existing receipt command, within the existing per-line cap (S$500 by default: a larger payment
+waits for a person; whether a link-certified receipt may pass it is the owner's `[owner to confirm]`), open periods and undo. The fee and
 the payout are the existing provider legs. This replaces nothing: the P1 exact match by number and contact stays, and
 beats nothing the link does not certify. No posting rule changes, so there is no oracle half; the differential suite gets
 a provider-link scenario only if a rule changes (none does).

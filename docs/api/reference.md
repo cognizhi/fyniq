@@ -6273,11 +6273,8 @@ Makes a link that opens one customer's portal: their invoices still due, where t
 - **Permission:** Post on Invoices, credit notes
 - **Parameters:**
   - `contact_id` (path, required): The contact's ID.
-  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
-  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
 - **Request body:** [`CreatePortalLinkInputBody`](../../contracts/schemas/CreatePortalLinkInputBody.schema.json)
 - **Responses:**
-  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PortalLinkMade`](../../contracts/schemas/PortalLinkMade.schema.json)
   - `201` Created [`PortalLinkMade`](../../contracts/schemas/PortalLinkMade.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
@@ -7168,7 +7165,7 @@ Asks for another person's approval to issue a draft invoice at the version read 
 
 **Read the payment link of an invoice** (`getInvoicePaymentLink`)
 
-The invoice's latest payment link: live or closed, its URL, the amount it was made for, and the charges the provider made under it (FR-AR-13). Read-only; not found when the invoice never had one.
+The invoice's latest payment link: live, expired (past its date), paid (the invoice has nothing open) or cancelled, its URL, the amount it was made for, and the charges the provider made under it (FR-AR-13). Read-only; not found when the invoice never had one.
 
 - **Permission:** View on Invoices, credit notes
 - **Parameters:**

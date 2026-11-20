@@ -262,7 +262,7 @@ type ImportedLine struct {
 // AutoReconciled is what a run of auto-reconcile did.
 type AutoReconciled struct {
 	Reconciled int            `json:"reconciled" doc:"Lines reconciled by the system." example:"12"`
-	Left       map[string]int `json:"left" doc:"Lines left for a person, by why: no_match, ambiguous, line_cap, rule_cap, no_rate, refused." example:"{\"no_match\":20,\"line_cap\":2}"`
+	Left       map[string]int `json:"left" doc:"Lines left for a person, by why: no_match, ambiguous, line_cap, rule_cap, no_rate, refused, link_mismatch." example:"{\"no_match\":20,\"line_cap\":2}"`
 }
 
 // EmailAddress, DateLayout and ColumnName are the items of a source's senders and a mapping's date layouts and

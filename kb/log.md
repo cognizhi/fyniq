@@ -847,3 +847,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | sales.invoices: a disputed invoice or a promise to pay (FR-AR-08)
 
 ## [2026-11-20] compile | banking pages: the MT942 intraday report makes signals only (FR-BNK-17)
+
+## [2026-11-20] compile | sales.invoices: the payment link's statuses and the per-line limit (FR-AR-13)

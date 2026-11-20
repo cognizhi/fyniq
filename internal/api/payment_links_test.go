@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -279,4 +280,105 @@ func TestARefusedPaymentRequestLeavesNoLinkAndShowsNoProviderWords(t *testing.T)
 	if r := e.call(http.MethodPost, "/v1/invoices/"+id+"/payment-link", e.as(authz.Accountant), map[string]any{}); r.Status != http.StatusUnprocessableEntity || !strings.Contains(r.Raw, CodeLinkConnector) {
 		t.Fatalf("no connector = %d: %s", r.Status, r.Raw)
 	}
+}
+
+// FR-AR-13, FR-PSP-02: a payment above auto-reconcile's per-line cap (S$500 by default) waits for a person even when its link certifies it; a link
+// shows as expired after its date, and a new one may then be made for the invoice, the old one closed as expired.
+// req: FR-AR-13
+// req: FR-PSP-02
+func TestALargePaymentWaitsForAPersonAndAnExpiredLinkIsReplaced(t *testing.T) {
+	e := newEnv(t)
+	f := &fakeLinkProvider{fakeLedgerProvider: fakeLedgerProvider{payouts: map[string][]string{}, balance: "0.00"}}
+	b := fakeLinkConnector(t, f)
+	cat, err := connector.NewCatalogue(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt := &connector.Runtime{Catalogue: cat, Secrets: e.api.deps.Connectors.Runtime.Secrets, Egress: &egress.Guard{Local: true}, Clock: e.clock}
+	e.api.deps.Connectors = ConnectorDeps{Catalogue: cat, Secrets: e.api.deps.Connectors.Secrets, Runtime: rt}
+	var c storage.InstalledConnector
+	m := b.Manifest
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if c, err = u.Connectors().InstallOrganisation(ctx, storage.NewConnector{Connector: m.ID, ManifestVersion: m.Version, ManifestHash: m.Hash(),
+			SecretNames: []string{"token"}, Consent: m.Consent(), Position: 1, At: e.clock.Now()}); err != nil {
+			return err
+		}
+		for _, step := range []struct{ s, state string }{{storage.StepConfigure, storage.ConnectorConfigured}, {storage.StepTest, storage.ConnectorTested},
+			{storage.StepEnable, storage.ConnectorEnabled}} {
+			if step.s == storage.StepTest {
+				c.Test = &storage.ConnectorTest{Passed: true, Reason: "Read.", At: e.clock.Now()}
+			}
+			if c, err = u.Connectors().ChangeOrganisation(ctx, c.ID, c.Version, storage.ConnectorChange{Step: step.s, State: step.state,
+				Configuration: map[string]any{}, Position: 1, Test: c.Test, ManifestVersion: m.Version, ManifestHash: m.Hash(), SecretNames: []string{"token"},
+				Consent: m.Consent(), At: e.clock.Now()}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	clearing := e.fedAccount("SGD", c)
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.PSP().SaveAccount(ctx, storage.NewPSPAccount{MoneyAccountID: clearing.ID, ConnectorID: c.ID, FeeAccountID: e.books.Rent.ID, At: e.clock.Now()}, 0)
+		return err
+	})
+	invoiceID, _ := e.issuedInvoice("1", "600.00")
+	made := e.call(http.MethodPost, "/v1/invoices/"+invoiceID+"/payment-link", e.as(authz.Accountant), map[string]any{})
+	if made.Status != http.StatusCreated || made.str("amount", "amount") != "600.00" {
+		t.Fatalf("createInvoicePaymentLink = %d: %s", made.Status, made.Raw)
+	}
+	var request string
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		ls, err := u.PaymentLinks().OfInvoice(ctx, uuid.MustParse(invoiceID))
+		request = ls[0].ProviderRequestID
+		return err
+	})
+	charge := bt("ch_big", "charge", "600.00", "18.00", "582.00", 11, ports.ProviderCharge, "ch_big")
+	charge.Links[ports.ProviderInvoice] = []string{request}
+	f.txns = []ports.ProviderObject{charge}
+	worker, err := postgres.Open(context.Background(), db.URL("fyniq_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(worker.Close)
+	ctx := context.Background()
+	if _, err := (bankfeed.Syncer{Store: worker, Runtime: rt, Clock: e.clock}).Sync(ctx, e.books.Org, c.ID); err != nil {
+		t.Fatal(err)
+	}
+	if res, err := (psp.Runner{Store: worker, Runtime: rt, Clock: e.clock}).Run(ctx, e.books.Org, c.ID); err != nil || len(res.Errors) != 0 {
+		t.Fatalf("the sweep: %+v, %v", res, err)
+	}
+	auto, err := banking.AutoReconcile(ctx, journal.BankTransactions{Store: e.store, Clock: e.clock}, e.books.Org, nil, e.clock.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	waits := false
+	for _, x := range auto.Reconciled {
+		if x.Line.Reference == "ch_big" {
+			t.Fatal("a payment above the per-line cap was reconciled by itself")
+		}
+	}
+	for _, l := range auto.Left {
+		if l.Line.Reference == "ch_big" && l.Why == banking.LeftLineCap {
+			waits = true
+		}
+	}
+	if !waits {
+		t.Fatalf("the large payment was not left for a person over the line cap: %+v", auto.Left)
+	}
+	// Past its date a link shows as expired, a new one may be made, and the old one is closed as expired.
+	e.clock.Advance(90 * 24 * time.Hour)
+	if g := e.call(http.MethodGet, "/v1/invoices/"+invoiceID+"/payment-link", e.as(authz.Accountant), nil); g.Status != http.StatusOK || g.str("status") != "expired" {
+		t.Fatalf("an old link = %d: %s", g.Status, g.Raw)
+	}
+	again := e.call(http.MethodPost, "/v1/invoices/"+invoiceID+"/payment-link", e.as(authz.Accountant), map[string]any{})
+	if again.Status != http.StatusCreated || again.str("status") != "live" {
+		t.Fatalf("a new link after the old one expired = %d: %s", again.Status, again.Raw)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		ls, err := u.PaymentLinks().OfInvoice(ctx, uuid.MustParse(invoiceID))
+		if err != nil || len(ls) != 2 || ls[0].Status != storage.LinkLive || ls[1].Status != storage.LinkExpired {
+			t.Errorf("the links: %+v, %v", ls, err)
+		}
+		return nil
+	})
 }

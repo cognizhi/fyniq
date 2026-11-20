@@ -10338,7 +10338,7 @@ export interface paths {
         };
         /**
          * Read the payment link of an invoice
-         * @description The invoice's latest payment link: live or closed, its URL, the amount it was made for, and the charges the provider made under it (FR-AR-13). Read-only; not found when the invoice never had one.
+         * @description The invoice's latest payment link: live, expired (past its date), paid (the invoice has nothing open) or cancelled, its URL, the amount it was made for, and the charges the provider made under it (FR-AR-13). Read-only; not found when the invoice never had one.
          */
         get: operations["getInvoicePaymentLink"];
         put?: never;
@@ -23895,7 +23895,7 @@ export interface components {
         };
         AutoReconciled: {
             /**
-             * @description Lines left for a person, by why: no_match, ambiguous, line_cap, rule_cap, no_rate, refused.
+             * @description Lines left for a person, by why: no_match, ambiguous, line_cap, rule_cap, no_rate, refused, link_mismatch.
              * @example {
              *       "line_cap": 2,
              *       "no_match": 20
@@ -97529,12 +97529,7 @@ export interface operations {
     createPortalLink: {
         parameters: {
             query?: never;
-            header?: {
-                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
-                "Idempotency-Key"?: string;
-                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
-                Prefer?: string;
-            };
+            header?: never;
             path: {
                 /** @description The contact's ID. */
                 contact_id: string;
@@ -97547,21 +97542,6 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
-            200: {
-                headers: {
-                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
-                    "Preference-Applied"?: string;
-                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
-                    RateLimit?: string;
-                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
-                    "RateLimit-Policy"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PortalLinkMade"];
-                };
-            };
             /** @description Created */
             201: {
                 headers: {

@@ -74,7 +74,17 @@ type cancelPaymentLinkInput struct {
 	}
 }
 
-func paymentLinkOf(l storage.PaymentLink, payments []storage.PaymentLinkPayment) InvoicePaymentLink {
+func paymentLinkOf(l storage.PaymentLink, payments []storage.PaymentLinkPayment, now time.Time, stillOpen bool) InvoicePaymentLink {
+	// A link stays live in the database until a person cancels it or a new one replaces it; it shows as paid once the invoice has nothing open
+	// and the provider charged under it, and as expired after its date.
+	if l.Status == storage.LinkLive {
+		switch {
+		case len(payments) > 0 && !stillOpen:
+			l.Status = storage.LinkPaid
+		case paymentlink.Expired(l, now):
+			l.Status = storage.LinkExpired
+		}
+	}
 	out := InvoicePaymentLink{ID: l.ID.String(), InvoiceID: l.InvoiceID.String(), ConnectorID: l.ConnectorID.String(), URL: l.URL, Reference: l.Reference,
 		Amount: moneyOf(l.Amount, l.Currency), Status: l.Status, ClosedReason: l.ClosedReason, ExpiresAt: l.ExpiresAt, CreatedAt: &l.CreatedAt, Version: l.Version,
 		Payments: []PaymentLinkPayment{}}
@@ -155,7 +165,7 @@ func registerPaymentLinks(a *API) {
 				if err != nil {
 					return InvoicePaymentLink{}, linkProviderProblem(err)
 				}
-				return paymentLinkOf(l, nil), nil
+				return paymentLinkOf(l, nil, now, true), nil
 			})
 			if err != nil {
 				return nil, err
@@ -166,7 +176,7 @@ func registerPaymentLinks(a *API) {
 	register(a, authz.GetInvoicePaymentLink, huma.Operation{
 		OperationID: "getInvoicePaymentLink", Method: http.MethodGet, Path: "/v1/invoices/{invoice_id}/payment-link", Tags: []string{"Sales"},
 		Summary: "Read the payment link of an invoice",
-		Description: "The invoice's latest payment link: live or closed, its URL, the amount it was made for, and the charges the provider made under it (FR-AR-13). " +
+		Description: "The invoice's latest payment link: live, expired (past its date), paid (the invoice has nothing open) or cancelled, its URL, the amount it was made for, and the charges the provider made under it (FR-AR-13). " +
 			"Read-only; not found when the invoice never had one.",
 	}, []string{CodeNotFound}, func(ctx context.Context, in *InvoicePath) (*getPaymentLinkOutput, error) {
 		id, err := parseID("invoice_id", in.InvoiceID)
@@ -184,8 +194,13 @@ func registerPaymentLinks(a *API) {
 				return ports.ErrNotFound
 			}
 			pay, err := u.PaymentLinks().PaymentsOf(ctx, links[0].ID)
-			out = paymentLinkOf(links[0], pay)
-			return err
+			if err != nil {
+				return err
+			}
+			now := a.deps.Clock.Now()
+			_, openErr := paymentlink.OpenInvoice(ctx, u, id, now)
+			out = paymentLinkOf(links[0], pay, now, openErr == nil)
+			return nil
 		})
 		if err != nil {
 			return nil, err
@@ -213,7 +228,7 @@ func registerPaymentLinks(a *API) {
 			if err != nil {
 				return InvoicePaymentLink{}, err
 			}
-			if len(links) == 0 || links[0].Status != storage.LinkLive {
+			if len(links) == 0 || links[0].Status != storage.LinkLive || paymentlink.Expired(links[0], a.deps.Clock.Now()) {
 				return InvoicePaymentLink{}, problem(CodeLinkClosed, "The invoice has no live payment link.", "Only a live link is cancelled")
 			}
 			ctx = storage.WithReason(ctx, reason)
@@ -222,7 +237,7 @@ func registerPaymentLinks(a *API) {
 				return InvoicePaymentLink{}, err
 			}
 			pay, err := u.PaymentLinks().PaymentsOf(ctx, l.ID)
-			return paymentLinkOf(l, pay), err
+			return paymentLinkOf(l, pay, a.deps.Clock.Now(), true), err
 		})
 		if err != nil {
 			return nil, err
