@@ -583,7 +583,7 @@ func (k *Kit) PSPEvents(clock ports.Clock) pspevents.Processor {
 func (k *Kit) PSPHandlers(clock ports.Clock) map[ports.ProviderKind]pspevents.Handler {
 	h := psp.Handler{Dispatcher: k.dispatcher(clock), Clock: clock}
 	return map[ports.ProviderKind]pspevents.Handler{ports.ProviderPayout: h, ports.ProviderCharge: h, ports.ProviderRefund: h, ports.ProviderDispute: h,
-		ports.ProviderInvoice: h, ports.ProviderCustomer: h, ports.ProviderSubscription: h}
+		ports.ProviderInvoice: h, ports.ProviderCustomer: h, ports.ProviderSubscription: h, ports.ProviderCreditNote: h}
 }
 
 // PSPRunner sweeps the payment-provider connectors (FR-PSP-06); their lines are reconciled in the API.
