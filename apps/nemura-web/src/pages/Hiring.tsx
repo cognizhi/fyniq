@@ -36,6 +36,8 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
   const [kind, setKind] = useState<(typeof exemptions)[number]>("fewer_than_10_employees");
   const [exNote, setExNote] = useState("");
   const [found, setFound] = useState<Finding[]>([]);
+  const [draft, setDraft] = useState<{ title: string; body: string } | null>(null);
+  const people_team = roles.some((x) => ["hr_officer", "hr_admin", "owner"].includes(x)); // who asks the assistant and approves its draft (NM-AI-05)
   const owner = roles.includes("owner");
   const recruiter = roles.includes("recruiter") || owner || roles.includes("hr_admin"); // who may ask and write: Appendix B (rev 0.69) gives it to the Recruiter, the HR administrator and the Owner
   const allowed = recruiter || owner || roles.some((r) => r === "hr_officer" || r === "hr_admin");
@@ -108,6 +110,16 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
                       {(!post(r) || post(r)!.state === "draft") && (
                         <form className="fy-stack fy-stack--2" aria-label={t("hiring.postForm")} onSubmit={async (e) => { e.preventDefault(); done((await api.PUT("/v1/requisitions/{id}/job-post", { params: { path: { id: r.id } }, body: { title, body } })).error, t("hiring.postSaved")); await check(title + "\n" + body); }}>
                           <h3 className="fy-h3">{t("hiring.postForm")}</h3>
+                          {people_team && (
+                            <div className="fy-stack fy-stack--1">
+                              <p className="fy-secondary" title={helpText("draft.assistant").tooltip}>{t("draft.lead")}</p>
+                              <span className="fy-row" style={{ gap: "var(--space-2)" }}>
+                                <button className="fy-btn fy-btn--secondary fy-btn--sm" type="button" onClick={async () => done((await api.POST("/v1/assistant/drafts", { body: { task_type: "people.draft_job_post", request_id: r.id } })).error, t("draft.asked"))}>{t("draft.ask")}</button>
+                                <button className="fy-btn fy-btn--secondary fy-btn--sm" type="button" onClick={async () => { const got = await api.GET("/v1/assistant/drafts", { params: { query: { request_id: r.id } } }); const p = got.data?.drafts?.find((x) => x.kind === "job_post")?.payload as { title?: string; body?: string } | undefined; setDraft(p ? { title: p.title ?? "", body: p.body ?? "" } : null); if (p) { setTitle(p.title ?? ""); setBody(p.body ?? ""); setNote({ ok: true, text: t("draft.used") }); } else setNote({ ok: false, text: t("draft.failed") }); }}>{t("draft.use")}</button>
+                              </span>
+                              {draft && <span className="fy-secondary">{draft.title}</span>}
+                            </div>
+                          )}
                           <label className="fy-field"><span>{t("hiring.postTitle")}</span><input className="fy-input" required maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} /></label>
                           <label className="fy-field"><span>{t("hiring.postBody")}</span><textarea className="fy-input" required maxLength={8000} value={body} onChange={(e) => setBody(e.target.value)} /></label>
                           <button className="fy-btn fy-btn--secondary" type="submit">{t("hiring.saveDraft")}</button>
@@ -153,7 +165,7 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
                           <button className="fy-btn fy-btn--secondary" type="submit">{t("hiring.recordExemption")}</button>
                         </form>
                       )}
-                      {r.state === "approved" && <Pipeline requisition={r.id} canWrite={recruiter} canHire={owner || roles.includes("hr_admin")} />}
+                      {r.state === "approved" && <Pipeline requisition={r.id} canWrite={recruiter} canHire={owner || roles.includes("hr_admin")} canDraft={people_team} />}
                       {post(r)?.state === "published" && <button className="fy-btn fy-btn--secondary" type="button" onClick={async () => done((await api.POST("/v1/requisitions/{id}/job-post/closing", { params: { path: { id: r.id } } })).error, t("hiring.closed"))}>{t("hiring.close")}</button>}
                     </div>
                   )}

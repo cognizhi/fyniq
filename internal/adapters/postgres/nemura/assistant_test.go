@@ -511,3 +511,118 @@ func payrollSwitch(t *testing.T, lt *leaveTeam, at time.Time, state string) {
 		return nemura.Audit(ctx, tx, lt.c.org, at, audit.Actor{Type: "user", ID: lt.c.owner.String()}, "nemura.feature.changed", audit.Object{Type: "feature_state", ID: id}, map[string]audit.Change{"state": {nil, state}}, "")
 	})
 }
+
+// The assistant drafts a job post and an interview kit for a requisition from the role and the team alone: the draft goes through the assistant's own role as a proposal, a person approves it, and the executor
+// attaches it beside the requisition; a title that names a criterion the guidelines ask employers not to use is not repeated; the executor reads only the requisition's state, never the salary range, and writes
+// nothing of the requisition, the post or the kit; a draft for a requisition that has been rejected is refused (NM-AI-05, NM-REC-03, NM-ARC-06).
+// req: NM-AI-05, NM-REC-03, NM-ARC-06
+// asvs: V8.2.1, V8.3.1, V1.4.1
+func TestTheAssistantDraftsAJobPostAndAKitFromTheRoleAloneAndTheExecutorReadsNoSalary(t *testing.T) {
+	c := newHiringCo(t)
+	ctx := context.Background()
+	st := store(t, "nemura_api")
+	exec := nemura.ExecutorService{Store: store(t, "nemura_executor"), Clock: clock.NewFrozen(c.now)}
+	svc := nemura.AssistantService{Store: st, Clock: clock.NewFrozen(c.now), AllowScripted: true, Runtime: store(t, "nemura_assistant")}
+	hr, owner := c.sess(c.hr), c.sess(c.owner)
+	if _, err := svc.Draft(ctx, hr, api.AIDraftInput{Task: "people.draft_job_post", RequestID: c.req.String()}); aiCode(err) != assistant.CodeOff {
+		t.Errorf("a draft while the assistant is off: %v", err)
+	}
+	if err := svc.SetSettings(ctx, owner, api.AISettingsInput{Enabled: true, Route: "scripted", TaskTypes: []string{"people.draft_job_post", "people.draft_interview_kit"}}); err != nil {
+		t.Fatal(err)
+	}
+	flagged := uuid.Nil
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
+		in := api.RequisitionInput{Title: "Young digital native designer", Department: "Product", Reason: "new", SalaryMin: "7777.00", SalaryMax: "8888.00", TargetStart: "2099-06-01"}
+		flagged, err = nemura.RequestRequisition(ctx, tx, c.org, c.now, c.hr, in)
+		return
+	})
+	run := func(task string, req uuid.UUID) (uuid.UUID, map[string]any) {
+		res, err := svc.Draft(ctx, hr, api.AIDraftInput{Task: task, RequestID: req.String()})
+		if err != nil {
+			t.Fatalf("%s: %v", task, err)
+		}
+		pid := uuid.MustParse(res.ProposalID)
+		p, err := svc.Proposal(ctx, hr, pid)
+		if err != nil || p.State != "pending" {
+			t.Fatalf("%s: %+v %v", task, p, err)
+		}
+		return pid, p.Payload
+	}
+	pid, post := run("people.draft_job_post", c.req)
+	if title, _ := post["title"].(string); title != "Analyst" || !strings.Contains(post["body"].(string), "Finance") {
+		t.Errorf("the post: %+v", post)
+	}
+	if body, _ := json.Marshal(post); strings.Contains(string(body), "5000") || strings.Contains(string(body), "6000") {
+		t.Errorf("a salary in the draft: %s", body)
+	}
+	_, fl := run("people.draft_job_post", flagged)
+	if body, _ := json.Marshal(fl); strings.Contains(strings.ToLower(string(body)), "young") || strings.Contains(strings.ToLower(string(body)), "digital native") {
+		t.Errorf("a flagged title was repeated: %s", body)
+	}
+	if n, refused := exec.ApplyApproved(ctx, c.org); n != 0 || len(refused) != 0 {
+		t.Errorf("the executor applied an unapproved draft: %d %v", n, refused)
+	}
+	if err := svc.Decide(ctx, owner, pid, api.AIDecision{Approve: true}); err != nil {
+		t.Fatal(err)
+	}
+	kid, _ := run("people.draft_interview_kit", c.req)
+	if err := svc.Decide(ctx, owner, kid, api.AIDecision{Approve: true}); err != nil {
+		t.Fatal(err)
+	}
+	if n, refused := exec.ApplyApproved(ctx, c.org); n != 2 || len(refused) != 0 {
+		t.Fatalf("the executor: %d %v", n, refused)
+	}
+	drafts, err := svc.Drafts(ctx, hr, c.req)
+	kinds := map[string]bool{}
+	for _, dr := range drafts {
+		kinds[dr.Kind] = true
+	}
+	if err != nil || len(drafts) != 2 || !kinds["job_post"] || !kinds["interview_kit"] {
+		t.Fatalf("drafts: %+v %v", drafts, err)
+	}
+	// Nothing of the requisition, its post or its kit changed: the draft is beside them, and a person writes them.
+	var posts, kits int
+	connect(t, db.SuperURL()).QueryRow(ctx, `SELECT (SELECT count(*) FROM nemura.job_post WHERE requisition_id = $1), (SELECT count(*) FROM nemura.interview_kit WHERE requisition_id = $1)`, c.req).Scan(&posts, &kits)
+	if posts != 0 || kits != 0 {
+		t.Errorf("the executor wrote a post (%d) or a kit (%d)", posts, kits)
+	}
+	// The executor learns a requisition's state and nothing else.
+	for _, q := range []string{"SELECT salary_min FROM nemura.requisition", "SELECT count(*) FROM nemura.candidate", "UPDATE nemura.requisition SET state = 'cancelled'", "INSERT INTO nemura.job_post (requisition_id) VALUES (gen_random_uuid())", "INSERT INTO nemura.interview_kit (requisition_id) VALUES (gen_random_uuid())"} {
+		err := store(t, "nemura_executor").InOrg(ctx, c.org, func(ctx context.Context, tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, q)
+			return err
+		})
+		if err == nil || !strings.Contains(err.Error(), "permission denied") {
+			t.Errorf("the executor ran %q: %v", q, err)
+		}
+	}
+	var st2 *string
+	if err := store(t, "nemura_executor").InOrg(ctx, c.org, func(ctx context.Context, tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `SELECT nemura.requisition_state_for_draft($1)`, c.req).Scan(&st2)
+	}); err != nil || st2 == nil || *st2 != "approved" {
+		t.Errorf("the state the executor reads: %v %v", st2, err)
+	}
+	// A requisition rejected after the draft was approved: the executor refuses it; one rejected before is refused at the asking.
+	var gone uuid.UUID
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
+		in := api.RequisitionInput{Title: "Engineer", Department: "Product", Reason: "new", SalaryMin: "5000.00", SalaryMax: "6000.00", TargetStart: "2099-06-01"}
+		gone, err = nemura.RequestRequisition(ctx, tx, c.org, c.now, c.hr, in)
+		return
+	})
+	late, _ := run("people.draft_job_post", gone)
+	if err := svc.Decide(ctx, owner, late, api.AIDecision{Approve: true}); err != nil {
+		t.Fatal(err)
+	}
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.DecideRequisition(ctx, tx, c.org, c.now, c.owner, gone, false, "Not now.")
+	})
+	if n, refused := exec.ApplyApproved(ctx, c.org); n != 0 || len(refused) != 1 || !strings.Contains(refused[0].Error(), "closed") {
+		t.Errorf("a draft for a requisition rejected after approval: %d %v", n, refused)
+	}
+	if _, err := svc.Draft(ctx, hr, api.AIDraftInput{Task: "people.draft_interview_kit", RequestID: gone.String()}); aiCode(err) != assistant.CodeConflict {
+		t.Errorf("a draft for a rejected requisition: %v", err)
+	}
+	if _, err := svc.Draft(ctx, hr, api.AIDraftInput{Task: "people.draft_job_post", RequestID: uuid.NewString()}); aiCode(err) != assistant.CodeNotFound {
+		t.Errorf("a draft for a requisition that is not there: %v", err)
+	}
+}
