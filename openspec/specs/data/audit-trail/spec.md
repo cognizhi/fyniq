@@ -333,6 +333,20 @@ Source: PRD-001 §11.5 · Priority S · Phase P2
 - **THEN** each carries a reason and is in the audit trail
 - **AND** the DPO's Compliance page lists the hold while it stands
 
+#### Scenario: What a hold covers (rev 0.617)
+- **WHEN** a hold stands on a record, a contact or a financial year
+- **THEN** a record's hold covers its source document, that document's events, entries and evidence files; a contact's covers the contact, every document that names it, a ledger entry with a line for it, and their events and evidence; a year's covers every ledger entry dated in it, every event that occurred in it and the evidence of documents dated in it
+- **AND** the purges go oldest first and stop at the first covered event or year, so a hold keeps every later one too
+
+#### Scenario: Evidence files keep a storage hold (rev 0.617)
+- **WHEN** a hold covers evidence files, including files attached after it was placed
+- **THEN** each keeps a storage-level legal hold, which is cleared only when no hold in force covers it
+
+#### Scenario: Placing, lifting and a held contact (rev 0.617)
+- **WHEN** a hold is lifted
+- **THEN** it needs a reason, asks nobody else, and tells the Owners and the DPO
+- **AND** a held contact is not erased or shredded
+
 #### Scenario: After go-live (rev 0.288)
 - **WHEN** Fyniq goes live
-- **THEN** holds are not yet built: the purge is off until an organisation switches it on, and nothing is purged within the 5-year minimum
+- **THEN** the purge is off until an organisation switches it on, and nothing is purged within the 5-year minimum

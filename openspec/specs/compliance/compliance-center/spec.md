@@ -136,6 +136,25 @@ Source: PRD-001 §14.7 · Priority S · Phase P1
 - **THEN** the Owner or the DPO publishes it (Appendix D, Policy library)
 - **AND** every member acknowledges it within 30 days of its publication
 
+
+### Requirement: CMP-08 Readiness by framework
+The Compliance Center SHALL show, for each framework, its stage, the controls mapped to it by status and the gaps in plain words, and for ISO/IEC 27001:2022 Annex A the clause numbers no control maps to, as readiness and never as a certificate.
+
+Source: PRD-001 §14.7 · Priority S · Phase P2
+
+#### Scenario: Controls by status (rev 0.617)
+- **WHEN** a framework's readiness is shown
+- **THEN** it counts the mapped controls that pass, fail, are overdue, planned or not assessed, and names those that are not passing
+
+#### Scenario: Annex A clauses without a control (rev 0.617)
+- **WHEN** ISO/IEC 27001:2022 Annex A's readiness is shown
+- **THEN** it lists the clause numbers of its 93 (5.1 to 5.37, 6.1 to 6.8, 7.1 to 7.14, 8.1 to 8.34) that no control maps to, as gaps
+
+#### Scenario: Never a certificate (rev 0.617)
+- **WHEN** readiness is shown
+- **THEN** it says nothing is certified
+- **AND** the Owner, the Finance controller, the Auditor and the DPO can read it
+
 ### Requirement: Control registry as code
 Every control SHALL live in the repository's control registry (`compliance/controls/*.yaml`) with its ID, description, owner, framework mappings, the automated check that proves it, its frequency and the evidence it produces.
 
