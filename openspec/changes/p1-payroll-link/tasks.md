@@ -92,6 +92,7 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
 
 ## 8. Screens, help and the close
 
+  (Built, 21 Nov 2026, the checks Fyniq can see: `payroll.arrangements-recorded` (C.2 #45, G4-009 ✖), `payroll.counted-twice` (C.1 #21 ⚠) and `payroll.held-payment-released` (C.2 #44 ✖), `TestThePayrollChecksFindWhatTheyAreFor`; **Left of the checks:** C.1 #19 and #20, C.2 #14 and #24 (see PRD revision 0.429).)
   (Built in part, 21 Nov 2026, the gate: migration 000914 `payroll_arrangement`, `getPayrollArrangements`, `setPayrollArrangement` (evidence, a named provider, a reason for "not applicable"; Nemura's own issuing counts only while the link is active and Nemura holds payroll), and a salary batch is not asked for approval (`PPL-30`) while an item is missing for its wage month, checked again by the executor; `TestThePayrollGoLiveGateHoldsAPayRunUntilItsArrangementsAreRecorded`. **Left:** the checks themselves on Checks (C.1 #19 to #21, C.2 #14, #24, #45 and G4-009's ✖), a director on "No salary" excepted from the gate, and the gate on a payroll journal imported for payment.)
 
 - [ ] 8.1 `people-hr-settings`, `payroll-overview`, `pay-run`, `salary-batch`, `employee-record` as designed; help keys, user-guide pages compiled into `kb/`.

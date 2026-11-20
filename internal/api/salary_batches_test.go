@@ -18,7 +18,10 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/checks"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payrollimport"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/salarybatch"
@@ -930,4 +933,105 @@ var matrixPayrollOutside = map[string]func(e *env, tok string) (response, func()
 		return e.call(http.MethodPost, "/v1/payroll-imports", tok, map[string]any{"source_system": "matrix", "period": "2026-10", "version": 1, "content_base64": csvOf("account,debit,credit", "9999,1.00,")},
 			"Prefer", "return=preview"), nil
 	},
+}
+
+// runCheck works one check of the catalogue out against the world's books, as the Checks engine does.
+func (w *salaryWorld) runCheck(t *testing.T, key string) checks.Result {
+	t.Helper()
+	d, ok := checks.Find(key)
+	if !ok {
+		t.Fatalf("no check %s", key)
+	}
+	var out checks.Result
+	if err := w.e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		out, err = d.Run(ctx, u, &checks.Env{Base: money.MustLookup("SGD"), Today: time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// The checks of payroll that Fyniq sees for itself (PRD-001 Appendix C: C.2 #45 with FR-PAY-15, C.1 #21, C.2 #44): a month with payroll and no recorded arrangement is ✖ until each is recorded, and with
+// payroll in Nemura its own payslips and KETs count; a salary account with a posting besides a posted pay run's is ⚠; a payment released to a person who was held when it was released is ✖; and no item
+// names a person or an amount (FR-PPL-17).
+// part of FR-PAY-15, FR-PAY-10, FR-PAY-07 (the checks' pages and the other payroll rows of Appendix C are open)
+// asvs: V8.2.1, V16.3.2
+func TestThePayrollChecksFindWhatTheyAreFor(t *testing.T) {
+	w := newSalaryWorldWithoutGate(t)
+	e := w.e
+	// C.2 #45: October has a pay run and a salary batch, and nothing recorded.
+	if got := w.runCheck(t, "payroll.arrangements-recorded"); got.Status != checks.Error || got.Count != 1 || got.Items[0].ID != "2026-10" || !strings.Contains(got.Items[0].Detail, "itemised payslips") ||
+		strings.Contains(got.Items[0].Detail, "Ana") {
+		t.Fatalf("with nothing recorded: %+v", got)
+	}
+	w.arrange(t, "2026-10", storage.ArrangePayslips, storage.ArrangeKETs, storage.ArrangeCPF, storage.ArrangeAIS)
+	if got := w.runCheck(t, "payroll.arrangements-recorded"); got.Status != checks.Error || !strings.Contains(got.Items[0].Detail, "IR21") {
+		t.Fatalf("with IR21 left: %+v", got)
+	}
+	w.arrange(t, "2026-10", storage.ArrangeIR21)
+	if got := w.runCheck(t, "payroll.arrangements-recorded"); got.Status != checks.OK {
+		t.Fatalf("with everything recorded: %+v", got)
+	}
+
+	// C.1 #21: only the pay run posts to the salary accounts of its month; then a journal does too.
+	if got := w.runCheck(t, "payroll.counted-twice"); got.Status != checks.OK {
+		t.Fatalf("pay run alone: %+v", got)
+	}
+	var gaID, cpfID uuid.UUID
+	for id, code := range w.code {
+		switch code {
+		case "6013":
+			gaID = id
+		case "2110":
+			cpfID = id
+		}
+	}
+	sgd := money.MustLookup("SGD")
+	hundred, _ := money.Parse("100.00", sgd)
+	draft, err := (journal.Service{Store: e.store}).Create(context.Background(), w.org, journal.Draft{Date: time.Date(2026, 10, 20, 0, 0, 0, 0, time.UTC), Memo: "Salary again",
+		Lines: []ledger.JournalLine{{AccountID: gaID, Amount: hundred}, {AccountID: cpfID, Amount: hundred.Neg()}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := (journal.Service{Store: e.store}).Post(context.Background(), w.org, draft.ID); err != nil {
+		t.Fatal(err)
+	}
+	if got := w.runCheck(t, "payroll.counted-twice"); got.Status != checks.Warning || got.Count != 1 || !strings.Contains(got.Items[0].Label, "6013") || strings.Contains(got.Detail+got.Items[0].Detail, "100") {
+		t.Fatalf("with a journal on the salary account: %+v", got)
+	}
+
+	// C.2 #44: a payment released to a person who was held by then: Nemura's hold arrives late, dated before the release.
+	if got := w.runCheck(t, "payroll.held-payment-released"); got.Status != checks.OK {
+		t.Fatalf("nothing released: %+v", got)
+	}
+	id, _, asked, _ := w.preparedBatch(t)
+	if d := w.decideSalary(w.approver, asked); d.Status != http.StatusOK {
+		t.Fatalf("approving: %d %s", d.Status, d.Raw)
+	}
+	w.holds.answer[w.ana] = linksend.HoldAnswer{Status: "released"}
+	w.holds.answer[w.cai] = linksend.HoldAnswer{Status: "released"}
+	tag := e.call(http.MethodGet, "/v1/salary-batches/"+id, w.payroll, nil).Header.Get("ETag")
+	if rel := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/release", w.releaser, nil, "If-Match", tag); rel.Status != http.StatusOK || rel.Body["released"] != float64(2) {
+		t.Fatalf("the release: %d %s", rel.Status, rel.Raw)
+	}
+	if got := w.runCheck(t, "payroll.held-payment-released"); got.Status != checks.OK {
+		t.Fatalf("released to people who were free: %+v", got)
+	}
+	if err := e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		p, err := u.PeopleLinks().Person(ctx, w.ana)
+		if err != nil {
+			return err
+		}
+		from := e.clock.Now().Add(-time.Hour)
+		p.Held, p.HoldVersion, p.HoldID, p.HoldFrom = true, 1, uuid.New(), &from
+		return u.PeopleLinks().SavePerson(ctx, p)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	got := w.runCheck(t, "payroll.held-payment-released")
+	if got.Status != checks.Error || got.Count != 1 || got.Items[0].Label != "SB-0001" || strings.Contains(got.Detail+got.Items[0].Detail, "Ana") {
+		t.Fatalf("released to a person held by then: %+v", got)
+	}
 }
