@@ -286,6 +286,10 @@ Source: PRD-001 §8.11 · Priority S · Phase P2
 - **THEN** it starts from the ledger's profit, adds the adjustments entered with reasons and evidence, and ends at the chargeable income with the exemption and rebate from the pack
 - **AND** it names the form (C-S Lite, C-S or C) by revenue
 
+#### Scenario: The form by revenue (rev 0.513)
+- **WHEN** a company's annual revenue is S$200,000, S$200,000.01 and S$5,000,000.01
+- **THEN** it may file Form C-S (Lite) or Form C-S, then Form C-S, then Form C
+
 ### Requirement: FR-TAX-07 Statutory calendar
 The system SHALL keep a statutory calendar of the organisation's obligations, with dates derived from its FY and GST periods, reminders and Inbox tasks.
 
