@@ -819,3 +819,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | settings.practice: practice organisation
 
 ## [2026-11-20] compile | payroll-records.md, my-pay.md -> kb (part month in working days)
+
+## [2026-11-20] compile | sales.invoices: a payment link on an invoice (FR-AR-13, FR-PSP-02)

@@ -4,7 +4,7 @@
   "publisher": "Fyniq",
   "version": "1.0.0",
   "min_platform": "0.1.0",
-  "summary": "Reads a HitPay business into the books, read-only: its charges, their fees and its payouts feed each money account, and its signed webhooks name the charge or payout to fetch. Fyniq never charges, refunds or pays out at HitPay.",
+  "summary": "Reads a HitPay business into the books, and makes one write: a payment link on an issued invoice, which a person asks for. Charges, fees and payouts feed each money account; Fyniq never charges, refunds or pays out.",
   "scope": "organisation",
   "capabilities": [
     {
@@ -15,6 +15,14 @@
       "on_disable": "hold",
       "in_flight": "finish",
       "parser_version": "hitpay@1"
+    },
+    {
+      "kind": "payment-link",
+      "trigger": "system-rule",
+      "trigger_rule": "A person with a right on Invoices asks for a payment link on an issued invoice, or an invoice is sent while the organisation's setting adds one (FR-AR-13). Never the AI.",
+      "on_pause": "hold",
+      "on_disable": "hold",
+      "in_flight": "finish"
     },
     {
       "kind": "bank-data",
@@ -53,7 +61,7 @@
     {
       "name": "api_key",
       "title": "Business API key",
-      "description": "The business API key (Developers › API keys). Fyniq only reads charges, payouts and balances with it: HitPay documents no read-only key, so keep it in this connector only.",
+      "description": "The business API key (Developers › API keys). Fyniq reads charges, payouts and balances with it and makes one kind of write, a payment request for an invoice's open balance; HitPay documents no read-only key, so keep it in this connector only.",
       "used_by": [
         "worker",
         "api"

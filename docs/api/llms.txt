@@ -628,6 +628,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/invoices/{invoice_id}/evidence/{evidence_id}` (removeInvoiceEvidence): Remove evidence from a draft invoice
 - `POST /v1/invoices/{invoice_id}/issue` (issueInvoice): Issue a draft invoice
 - `POST /v1/invoices/{invoice_id}/issue-approval` (requestInvoiceIssue): Ask for approval to issue an invoice
+- `GET /v1/invoices/{invoice_id}/payment-link` (getInvoicePaymentLink): Read the payment link of an invoice
+- `POST /v1/invoices/{invoice_id}/payment-link` (createInvoicePaymentLink): Ask the payment provider for a payment link on an invoice
+- `POST /v1/invoices/{invoice_id}/payment-link/cancellation` (cancelInvoicePaymentLink): Cancel an invoice's live payment link
 - `POST /v1/invoices/{invoice_id}/void` (voidInvoice): Void an issued invoice
 - `POST /v1/invoices/{invoice_id}/void-approval` (requestInvoiceVoid): Ask for approval to void an invoice
 - `GET /v1/items` (listItems): List the items
