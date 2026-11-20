@@ -287,3 +287,25 @@ func TestAPaymentRecordedByHandToAHeldPersonIsRefusedAndGoesAheadOnceTheHoldIsLi
 		}
 	}
 }
+
+// The people projection only narrows an Approver's department scope (design D23): the API's reading is the database's.
+// req: FR-ADM-01
+func TestTheProjectionOnlyNarrowsAnApproversScopeInTheAPIToo(t *testing.T) {
+	a, b, c := uuid.New(), uuid.New(), uuid.New()
+	scope := authn.DepartmentScope{Narrowed: true, Values: []uuid.UUID{a, b}}
+	if got := narrowedByProjection(scope, a); !got.Narrowed || len(got.Values) != 1 || got.Values[0] != a {
+		t.Errorf("a department in the scope: %+v", got)
+	}
+	if got := narrowedByProjection(scope, c); !got.Narrowed || len(got.Values) != 0 {
+		t.Errorf("a department outside it widened or kept the scope: %+v", got)
+	}
+	if got := narrowedByProjection(scope, uuid.Nil); len(got.Values) != 2 {
+		t.Errorf("no word of the projection: %+v", got)
+	}
+	if got := narrowedByProjection(authn.DepartmentScope{Narrowed: true}, a); len(got.Values) != 0 {
+		t.Errorf("a scope with no values was given one: %+v", got)
+	}
+	if got := narrowedByProjection(authn.DepartmentScope{}, a); got.Narrowed || len(got.Values) != 0 {
+		t.Errorf("an unscoped role was narrowed: %+v", got)
+	}
+}

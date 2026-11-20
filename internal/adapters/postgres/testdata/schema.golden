@@ -10402,7 +10402,7 @@ current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db6
 data_inventory_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1dc593065673ca2a9bed7ad2e347d0a5
 decide_installation_change(p_by uuid, p_id uuid, p_hash bytea, p_approve boolean, p_mfa_at timestamp with time zone, p_reason text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 338fe991475e9f427093a25bef17d1d0
 decide_join_request(p_by uuid, p_id uuid, p_approve boolean, p_now timestamp with time zone, OUT user_id uuid, OUT membership_id uuid, OUT role_assignment_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7989699e7aeef23a35e52dbc46bc826a
-dept_scope() → uuid[] | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c4b2cb171b6c9d9b53988f480eec737e
+dept_scope() → uuid[] | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 6058137c5720297a38eca1bb6480e37c
 destroyed_installation_connector_secret(p_ref text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 87e77fee8faaf36987cfc16b94dc2d7c
 dimension_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6222e01e146f6948cd2702cac2428d63
 dimension_set_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 646ba8ce3dffe9bcedfa0157c5b0a85f
@@ -10600,6 +10600,7 @@ project_billing_follows_invoice() → trigger | security definer | v | search_pa
 project_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 263feebbc9e8c9cfa868c0c58b30e881
 project_milestone_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b8dc234f6537bead909f4c0fcb746635
 project_part_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abaebce4c4cd3919837dd8db7382ce2a
+projection_department(p_user uuid) → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 9c59f4f8ec0087af12988bbdc1e6b189
 psp_balance_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 718c45d122dfe60b1f6507609c283752
 psp_charge_invoice_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b529b7a5d6214720ee0b83bca89111bd
 psp_dispute_credit_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3ff52623e3d9977b1183a6afe837b287

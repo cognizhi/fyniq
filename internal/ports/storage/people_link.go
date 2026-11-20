@@ -135,6 +135,9 @@ type PeopleLinks interface {
 	RecordReplay(ctx context.Context, link uuid.UUID, from, to int64, at time.Time) error
 	// ReplaysSince are the runs Fyniq asked for after a moment: what the link's health calls asked for and not missing.
 	ReplaysSince(ctx context.Context, link uuid.UUID, since time.Time) ([][2]int64, error)
+	// ProjectionDepartment is the department value of the person the user was mapped to while the link is active and the person is not removed, or uuid.Nil: the one word the projection has on an Approver's
+	// department scope, read by the same database function the scope itself reads (design D23).
+	ProjectionDepartment(ctx context.Context, user uuid.UUID) (uuid.UUID, error)
 	// InboxCounts says how many events of each outcome the link received (FR-PPL-08).
 	InboxCounts(ctx context.Context, link uuid.UUID) ([]InboxCount, error)
 	// Person is a person of the projection, locked for the change that follows; the zero Person, not Known, when unknown.

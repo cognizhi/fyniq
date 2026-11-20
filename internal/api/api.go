@@ -897,6 +897,11 @@ func (a *API) approverScope(ctx context.Context, p authn.Principal) authn.Depart
 			return err
 		}
 		out = approverScopeOf(assigned)
+		dept, err := u.PeopleLinks().ProjectionDepartment(ctx, p.UserID) // the projection only narrows (design D23)
+		if err != nil {
+			return err
+		}
+		out = narrowedByProjection(out, dept)
 		return nil
 	})
 	if err != nil {
@@ -929,6 +934,19 @@ func approverScopeOf(assigned []storage.RoleAssignment) authn.DepartmentScope {
 		return authn.DepartmentScope{}
 	}
 	return out
+}
+
+// narrowedByProjection applies the people projection's word on an Approver's department scope (design D23), and only ever narrows: a scope that has values, for a user mapped to a person of the active link whose
+// department is one of them, becomes that department, and for one whose department is not among them, nothing. No scope, no department and no mapping (the zero department) leave it as it is; it never adds a
+// department. The database's dept_scope() does the same.
+func narrowedByProjection(s authn.DepartmentScope, dept uuid.UUID) authn.DepartmentScope {
+	if dept == uuid.Nil || !s.Narrowed || len(s.Values) == 0 {
+		return s
+	}
+	if slices.Contains(s.Values, dept) {
+		return authn.DepartmentScope{Narrowed: true, Values: []uuid.UUID{dept}}
+	}
+	return authn.DepartmentScope{Narrowed: true}
 }
 
 func requestID(ctx context.Context) string {
