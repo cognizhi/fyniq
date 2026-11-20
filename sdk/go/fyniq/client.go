@@ -268,8 +268,11 @@ func retryAfter(h http.Header) (time.Duration, bool) {
 	if n, err := strconv.Atoi(raw); err == nil {
 		return time.Duration(n) * time.Second, true
 	}
+	// An HTTP date is read against the answer's own Date header, so the client needs no clock of its own.
 	if t, err := http.ParseTime(raw); err == nil {
-		return max(time.Until(t), 0), true
+		if now, err := http.ParseTime(h.Get("Date")); err == nil {
+			return max(t.Sub(now), 0), true
+		}
 	}
 	return 0, false
 }
