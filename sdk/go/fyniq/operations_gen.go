@@ -63,6 +63,7 @@ var Operations = map[string]Operation{
 	"getAccountsTemplate": {ID: "getAccountsTemplate", Method: "GET", Path: "/v1/imports/accounts/template", Summary: "Get the template for accounts of the chart", PathParams: nil, Query: []string{"format"}, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getAssetDisposal": {ID: "getAssetDisposal", Method: "GET", Path: "/v1/asset-disposals/{disposal_id}", Summary: "Get a disposal of a fixed asset", PathParams: []string{"disposal_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getBadDebtRelief": {ID: "getBadDebtRelief", Method: "GET", Path: "/v1/tax/bad-debt-relief", Summary: "The GST bad debt relief queue", PathParams: nil, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.compliance"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
+	"getBadDebtReliefClaim": {ID: "getBadDebtReliefClaim", Method: "GET", Path: "/v1/tax/bad-debt-relief/claims/{claim_id}", Summary: "Get a claim of GST bad debt relief", PathParams: []string{"claim_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.compliance"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getBankLine": {ID: "getBankLine", Method: "GET", Path: "/v1/bank-lines/{line_id}", Summary: "Get a bank line", PathParams: []string{"line_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.banking", "fyniq.write.banking"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getBankReconciliation": {ID: "getBankReconciliation", Method: "GET", Path: "/v1/money-accounts/{money_account_id}/reconciliations/{period_id}", Summary: "Get a money account's reconciliation for a period", PathParams: []string{"money_account_id", "period_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.banking", "fyniq.write.banking"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getBankRule": {ID: "getBankRule", Method: "GET", Path: "/v1/bank-rules/{rule_id}", Summary: "Get a bank rule", PathParams: []string{"rule_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.banking", "fyniq.write.banking"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
@@ -628,6 +629,11 @@ func (c *Client) GetAssetDisposal(ctx context.Context, disposalID string, opts .
 // GetBadDebtRelief: The GST bad debt relief queue (GET /v1/tax/bad-debt-relief; scopes fyniq.read.compliance).
 func (c *Client) GetBadDebtRelief(ctx context.Context, opts ...CallOption) (*Response, error) {
 	return c.Do(ctx, Operations["getBadDebtRelief"], []string{}, nil, opts)
+}
+
+// GetBadDebtReliefClaim: Get a claim of GST bad debt relief (GET /v1/tax/bad-debt-relief/claims/{claim_id}; scopes fyniq.read.compliance).
+func (c *Client) GetBadDebtReliefClaim(ctx context.Context, claimID string, opts ...CallOption) (*Response, error) {
+	return c.Do(ctx, Operations["getBadDebtReliefClaim"], []string{claimID}, nil, opts)
 }
 
 // GetBankLine: Get a bank line (GET /v1/bank-lines/{line_id}; scopes fyniq.read.banking, fyniq.write.banking).

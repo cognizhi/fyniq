@@ -59,4 +59,37 @@ describe("the bad debt relief queue", () => {
     expect(screen.getByText(/SGD 0.83/)).toBeTruthy();
     await noViolations(document.body);
   });
+
+  // req: FR-AR-11
+  it("offers a claim only on an eligible row, sends the claim as typed, and shows what the server posted; axe finds nothing", async () => {
+    const row = { write_off_id: "w-1", invoice_id: "i-1", invoice_number: "INV-0001", supply_date: "2026-10-14", written_off_on: "2026-10-31", written_off: { amount: "10.00", currency: "SGD" },
+      gst: { amount: "0.83", currency: "SGD" }, eligible_from: "2027-10-14", claim_by: "2031-10-13", status: "eligible", pack: "sg-tax-filings@2026.1" };
+    const seen = answer({
+      "GET /v1/tax/bad-debt-relief": { status: 200, body: { today: "2027-10-20", items: [row, { ...row, write_off_id: "w-2", invoice_number: "INV-0002", status: "not_yet" }] } },
+      "POST /v1/tax/bad-debt-relief/claims": { status: 201, body: { claim: { id: "c-1", status: "posted", version: 1, write_off_id: "w-1", invoice_id: "i-1", date: "2027-10-14", written_off: { amount: "10.00", currency: "SGD" },
+        gst: { amount: "0.83", currency: "SGD" }, pack: "sg-tax-filings@2026.1", eligible_from: "2027-10-14", claim_by: "2031-10-13" }, entry: { lines: [] } } },
+    });
+    renderPage(BadDebts, { path: "/sales/bad-debts", route: "/sales/bad-debts", session: taxAgent });
+    expect(await screen.findByText("INV-0002")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: /Claim relief for/ })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Claim relief for INV-0001" }));
+    fireEvent.change(screen.getByLabelText("Claim date"), { target: { value: "2027-10-14" } });
+    fireEvent.change(screen.getByLabelText("GST return period ends"), { target: { value: "2027-12-31" } });
+    fireEvent.change(screen.getByLabelText(/Steps taken to recover the debt/), { target: { value: "Three reminders" } });
+    await noViolations(document.body);
+    fireEvent.click(screen.getByRole("button", { name: "Claim relief" }));
+    expect(await screen.findByText(/Claimed 0.83 of GST on/)).toBeTruthy();
+    expect(seen.find((s) => s.method === "POST")?.body).toEqual({ write_off_id: "w-1", date: "2027-10-14", f5_period_end: "2027-12-31", note: "Three reminders" });
+  });
+
+  // req: FR-AR-11
+  it("shows no claim button to a reader of the books", async () => {
+    answer({
+      "GET /v1/tax/bad-debt-relief": { status: 200, body: { today: "2027-10-20", items: [{ write_off_id: "w-1", invoice_id: "i-1", invoice_number: "INV-0001", supply_date: "2026-10-14", written_off_on: "2026-10-31",
+        written_off: { amount: "10.00", currency: "SGD" }, gst: { amount: "0.83", currency: "SGD" }, eligible_from: "2027-10-14", claim_by: "2031-10-13", status: "eligible", pack: "sg-tax-filings@2026.1" }] } },
+    });
+    renderPage(BadDebts, { path: "/sales/bad-debts", route: "/sales/bad-debts", session: auditor });
+    expect(await screen.findByText("INV-0001")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Claim relief/ })).toBeNull();
+  });
 });

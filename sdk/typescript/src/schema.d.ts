@@ -19018,11 +19018,71 @@ export interface paths {
         };
         /**
          * The GST bad debt relief queue
-         * @description The invoices written off as a bad debt that bore GST, each with the GST in the part written off, when a claim may be made and until when (FR-AR-11): from twelve months after the date of supply, or from the write-off when the debtor became insolvent sooner, and within five years of the supply, as the sg-tax-filings pack says. The claim goes in the GST return and is not yet recorded here. Read-only; no side effects.
+         * @description The invoices written off as a bad debt that bore GST, each with the GST in the part written off, when a claim may be made and until when (FR-AR-11): from twelve months after the date of supply, or from the write-off when the debtor became insolvent sooner, and within five years of the supply, as the sg-tax-filings pack says. A claim made with claimBadDebtRelief shows on its row. Read-only; no side effects.
          */
         get: operations["getBadDebtRelief"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tax/bad-debt-relief/claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim GST bad debt relief for a write-off
+         * @description Claims the GST bad debt relief of a posted bad-debt write-off (FR-AR-11) and posts it at once: Dr the GST control account, Cr the account the write-off took the debt to, in the base currency, for the invoice's output tax in the part written off (RND-BDR, half away from zero, capped at what earlier claims of the invoice left [accountant to confirm]; the posting rule bad_debt_relief@1). Refused unless the date is within the sg-tax-filings pack's dates and not after today, the write-off is a posted bad debt and not claimed already, and no credit note credits its invoice. The conditions of the claim that are not dates (reasonable steps to recover the debt, open market value) are the claimer's declaration: say how in note, and attach files as evidence. Side effects: the claim, its entry, a new ledger revision, balances and audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["claimBadDebtRelief"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tax/bad-debt-relief/claims/{claim_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a claim of GST bad debt relief
+         * @description Returns a claim with its ETag: the write-off, the GST claimed, the F5 period, the dates it was allowed by and its status (FR-AR-11). Read-only; no side effects.
+         */
+        get: operations["getBadDebtReliefClaim"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tax/bad-debt-relief/claims/{claim_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Void a claim of GST bad debt relief
+         * @description Voids a posted claim with a reversing entry on the date given, with a reason (FR-GL-12); posted history never changes. The write-off can then be claimed again or voided. Side effects: the reversing entry, a new ledger revision, balances and audit events with the reason. Needs If-Match with the claim's ETag. Idempotent with Idempotency-Key; Prefer: return=preview voids nothing.
+         */
+        post: operations["voidBadDebtReliefClaim"];
         delete?: never;
         options?: never;
         head?: never;
@@ -25660,6 +25720,8 @@ export interface components {
             state: "pending" | "dispatched" | "running" | "done" | "failed" | "unknown_outcome" | "dead";
         };
         BadDebtRelief: {
+            /** @description The live claim of this write-off, when it is claimed (FR-AR-11). */
+            claim?: components["schemas"]["BadDebtReliefClaimRef"];
             /**
              * Format: date
              * @description The last day to claim: five years from the supply, the day before the anniversary [accountant to confirm].
@@ -25716,6 +25778,125 @@ export interface components {
              * @example 2027-03-10
              */
             written_off_on: string;
+        };
+        BadDebtReliefClaim: {
+            /**
+             * Format: date
+             * @description The last day to claim.
+             * @example 2031-01-14
+             */
+            claim_by: string;
+            /**
+             * Format: date
+             * @description The day it was claimed.
+             * @example 2027-03-10
+             */
+            date: string;
+            /**
+             * Format: date
+             * @description The first day a claim could be made.
+             * @example 2027-01-15
+             */
+            eligible_from: string;
+            /**
+             * Format: date
+             * @description The last day of the F5 period it goes in.
+             * @example 2027-03-31
+             */
+            f5_period_end?: string;
+            /** @description The GST claimed, in the base currency: RND-BDR of the invoice's output tax in the part written off [accountant to confirm]. */
+            gst: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The claim's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8b01
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description Its invoice.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02
+             */
+            invoice_id: string;
+            /**
+             * @description The note it was made with.
+             * @example Three reminders and a letter of demand
+             */
+            note?: string;
+            /**
+             * @description The sg-tax-filings version whose dates allowed it.
+             * @example sg-tax-filings@2026.1
+             */
+            pack: string;
+            /** @description Who claimed it. */
+            posted_by?: components["schemas"]["Person"];
+            /**
+             * @description posted, or reversed by a void.
+             * @example posted
+             * @enum {string}
+             */
+            status: "posted" | "reversed";
+            /**
+             * Format: int64
+             * @description The version of its content (always 1: a claim is never edited); with the status it makes the ETag.
+             * @example 1
+             */
+            version: number;
+            /**
+             * Format: uuid
+             * @description The write-off claimed for.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01
+             */
+            write_off_id: string;
+            /** @description What was written off, in the invoice's currency. */
+            written_off: components["schemas"]["Money"];
+        };
+        BadDebtReliefClaimPosting: {
+            /** @description The claim after the command. */
+            claim: components["schemas"]["BadDebtReliefClaim"];
+            /** @description The entry the claim posted, or the reversing entry a void posted. */
+            entry: components["schemas"]["Entry"];
+        };
+        BadDebtReliefClaimRef: {
+            /**
+             * Format: date
+             * @description The day it was claimed.
+             * @example 2027-03-10
+             */
+            date: string;
+            /** @description The GST it claimed, in the base currency. */
+            gst: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The claim.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8b01
+             */
+            id: string;
+        };
+        BadDebtReliefClaimRequest: {
+            /**
+             * Format: date
+             * @description The day it is claimed: within the pack's dates (twelve months from the supply, five years at most) and not after today.
+             * @example 2027-03-10
+             */
+            date: string;
+            /**
+             * Format: date
+             * @description The last day of the GST return period the claim goes in; on or after the claim's date.
+             * @example 2027-03-31
+             */
+            f5_period_end?: string;
+            /**
+             * @description The steps taken to recover the debt, or the debtor's insolvency, in plain words; files attach to the claim as evidence.
+             * @example Three reminders and a letter of demand
+             */
+            note?: string;
+            /**
+             * Format: uuid
+             * @description The posted bad-debt write-off to claim relief for; each is claimed once.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01
+             */
+            write_off_id: string;
         };
         BadDebtReliefQueue: {
             items: components["schemas"]["BadDebtRelief"][];
@@ -208763,6 +208944,434 @@ export interface operations {
             };
             /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    claimBadDebtRelief: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BadDebtReliefClaimRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadDebtReliefClaimPosting"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadDebtReliefClaimPosting"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `RELIEF-04` The write-off is claimed already; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-49` A line on 2700 needs its SAFE or note; `LEDGER-52` No GST is left to claim; `RELIEF-03` Not a posted bad-debt write-off; `RELIEF-05` A credit note credits the invoice; `RELIEF-06` No pack holds the relief dates; `RELIEF-07` The twelve months have not passed; `RELIEF-08` The time to claim is over; `RELIEF-09` The claim is dated after today; `RELIEF-10` The F5 period ends before the claim; `RELIEF-11` The note is too long; `STORAGE-INPUT-01` The request is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getBadDebtReliefClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The claim's ID. */
+                claim_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadDebtReliefClaim"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `RELIEF-01` Not a claim of GST bad debt relief. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `RELIEF-02` The saved claim cannot be read. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    voidBadDebtReliefClaim: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The claim's ID. */
+                claim_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Reversal"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadDebtReliefClaimPosting"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `RELIEF-01` Not a claim of GST bad debt relief. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `RELIEF-12` The claim is not posted; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-49` A line on 2700 needs its SAFE or note; `RELIEF-02` The saved claim cannot be read; `RELIEF-13` The void is dated before the claim; `STORAGE-INPUT-01` The request is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
                 headers: {
                     [name: string]: unknown;
                 };

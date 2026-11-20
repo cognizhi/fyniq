@@ -59,6 +59,7 @@ OPERATIONS = {
     "getAccountsTemplate": {"method": "GET", "path": "/v1/imports/accounts/template", "summary": "Get the template for accounts of the chart", "path_params": [], "query": ["format"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getAssetDisposal": {"method": "GET", "path": "/v1/asset-disposals/{disposal_id}", "summary": "Get a disposal of a fixed asset", "path_params": ["disposal_id"], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBadDebtRelief": {"method": "GET", "path": "/v1/tax/bad-debt-relief", "summary": "The GST bad debt relief queue", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.compliance"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
+    "getBadDebtReliefClaim": {"method": "GET", "path": "/v1/tax/bad-debt-relief/claims/{claim_id}", "summary": "Get a claim of GST bad debt relief", "path_params": ["claim_id"], "query": [], "body": False, "scopes": ["fyniq.read.compliance"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBankLine": {"method": "GET", "path": "/v1/bank-lines/{line_id}", "summary": "Get a bank line", "path_params": ["line_id"], "query": [], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBankReconciliation": {"method": "GET", "path": "/v1/money-accounts/{money_account_id}/reconciliations/{period_id}", "summary": "Get a money account's reconciliation for a period", "path_params": ["money_account_id", "period_id"], "query": [], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBankRule": {"method": "GET", "path": "/v1/bank-rules/{rule_id}", "summary": "Get a bank rule", "path_params": ["rule_id"], "query": [], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
@@ -572,6 +573,10 @@ class OperationsMixin:
     def get_bad_debt_relief(self, **options):
         """The GST bad debt relief queue (GET /v1/tax/bad-debt-relief; scopes fyniq.read.compliance)."""
         return self.call("getBadDebtRelief", [], None, **options)
+
+    def get_bad_debt_relief_claim(self, claim_id, **options):
+        """Get a claim of GST bad debt relief (GET /v1/tax/bad-debt-relief/claims/{claim_id}; scopes fyniq.read.compliance)."""
+        return self.call("getBadDebtReliefClaim", [claim_id], None, **options)
 
     def get_bank_line(self, line_id, **options):
         """Get a bank line (GET /v1/bank-lines/{line_id}; scopes fyniq.read.banking, fyniq.write.banking)."""

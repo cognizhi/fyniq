@@ -5332,7 +5332,7 @@ document | document_posted_together | CHECK (((posted_by IS NULL) = (posted_at I
 document | document_reversed_posted | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
 document | document_status_not_null | NOT NULL status
-document | document_type_known | CHECK ((type = ANY (ARRAY['account_merge'::text, 'acra_extract'::text, 'asset_disposal'::text, 'bank_agreement'::text, 'bank_transaction'::text, 'bill'::text, 'bill_payment'::text, 'budget'::text, 'cash_advance'::text, 'claim_reimbursement'::text, 'claimant_bank_change'::text, 'controller_entry'::text, 'corporate_detail'::text, 'corporate_document'::text, 'corporate_officer'::text, 'credit_application'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_deposit'::text, 'customer_receipt'::text, 'customer_refund'::text, 'director_confirmation'::text, 'director_fee'::text, 'director_pay_choice'::text, 'director_repayment'::text, 'director_settlement'::text, 'equity_transaction'::text, 'exempt_status'::text, 'expense_claim'::text, 'feasibility_study'::text, 'fixed_asset'::text, 'forecast'::text, 'fx_revaluation'::text, 'gst_forecast'::text, 'holder_record'::text, 'instrument'::text, 'instrument_template'::text, 'investor_right'::text, 'invoice'::text, 'journal'::text, 'nominee_entry'::text, 'opening_balance'::text, 'option_event'::text, 'option_grant'::text, 'option_pool'::text, 'owner_succession'::text, 'payee_bank_change'::text, 'payment_batch'::text, 'pre_incorporation_cost'::text, 'purchase_order'::text, 'quote'::text, 'round_scenario'::text, 'sales_order'::text, 'share_class'::text, 'statement'::text, 'statements_approval'::text, 'statutory_filing'::text, 'subscription_file'::text, 'supplier_refund'::text, 'vendor_credit'::text, 'write_off'::text])))
+document | document_type_known | CHECK ((type = ANY (ARRAY['account_merge'::text, 'acra_extract'::text, 'asset_disposal'::text, 'bad_debt_relief'::text, 'bank_agreement'::text, 'bank_transaction'::text, 'bill'::text, 'bill_payment'::text, 'budget'::text, 'cash_advance'::text, 'claim_reimbursement'::text, 'claimant_bank_change'::text, 'controller_entry'::text, 'corporate_detail'::text, 'corporate_document'::text, 'corporate_officer'::text, 'credit_application'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_deposit'::text, 'customer_receipt'::text, 'customer_refund'::text, 'director_confirmation'::text, 'director_fee'::text, 'director_pay_choice'::text, 'director_repayment'::text, 'director_settlement'::text, 'equity_transaction'::text, 'exempt_status'::text, 'expense_claim'::text, 'feasibility_study'::text, 'fixed_asset'::text, 'forecast'::text, 'fx_revaluation'::text, 'gst_forecast'::text, 'holder_record'::text, 'instrument'::text, 'instrument_template'::text, 'investor_right'::text, 'invoice'::text, 'journal'::text, 'nominee_entry'::text, 'opening_balance'::text, 'option_event'::text, 'option_grant'::text, 'option_pool'::text, 'owner_succession'::text, 'payee_bank_change'::text, 'payment_batch'::text, 'pre_incorporation_cost'::text, 'purchase_order'::text, 'quote'::text, 'round_scenario'::text, 'sales_order'::text, 'share_class'::text, 'statement'::text, 'statements_approval'::text, 'statutory_filing'::text, 'subscription_file'::text, 'supplier_refund'::text, 'vendor_credit'::text, 'write_off'::text])))
 document | document_type_not_null | NOT NULL type
 document | expense_claim_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | payee_bank_change_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -10060,6 +10060,7 @@ CREATE TRIGGER auditor_request_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.
 CREATE TRIGGER auditor_request_no_truncate BEFORE TRUNCATE ON fyniq.auditor_request FOR EACH STATEMENT EXECUTE FUNCTION auditor_child_guard()
 CREATE TRIGGER auditor_sample_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.auditor_sample FOR EACH ROW EXECUTE FUNCTION auditor_child_guard()
 CREATE TRIGGER auditor_sample_no_truncate BEFORE TRUNCATE ON fyniq.auditor_sample FOR EACH STATEMENT EXECUTE FUNCTION auditor_child_guard()
+CREATE TRIGGER bad_debt_relief_posts BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((new.type = 'bad_debt_relief'::text) AND (new.status = 'posted'::text) AND (old.status IS DISTINCT FROM 'posted'::text))) EXECUTE FUNCTION bad_debt_relief_posts()
 CREATE TRIGGER bank_agreement_guard BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN ((new.type = 'bank_agreement'::text)) EXECUTE FUNCTION bank_agreement_guard()
 CREATE TRIGGER bank_feed_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_feed FOR EACH ROW EXECUTE FUNCTION bank_feed_guard()
 CREATE TRIGGER bank_feed_no_truncate BEFORE TRUNCATE ON fyniq.bank_feed FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -10534,6 +10535,7 @@ CREATE TRIGGER webhook_endpoint_no_truncate BEFORE TRUNCATE ON fyniq.webhook_end
 CREATE TRIGGER webhook_guard BEFORE DELETE OR UPDATE ON fyniq.webhook_delivery FOR EACH ROW EXECUTE FUNCTION webhook_guard()
 CREATE TRIGGER webhook_guard BEFORE DELETE OR UPDATE ON fyniq.webhook_endpoint FOR EACH ROW EXECUTE FUNCTION webhook_guard()
 CREATE TRIGGER withholding_decision_immutable BEFORE DELETE OR UPDATE ON fyniq.withholding_decision FOR EACH ROW EXECUTE FUNCTION withholding_decision_immutable()
+CREATE TRIGGER write_off_with_relief_stays BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((old.type = 'write_off'::text) AND (new.status = 'reversed'::text) AND (old.status IS DISTINCT FROM 'reversed'::text))) EXECUTE FUNCTION write_off_with_relief_stays()
 
 ## policies
 access_review_attestation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -11191,6 +11193,7 @@ audit_recovery_guard() → trigger | security definer | v | search_path=pg_catal
 audit_request_detail_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 67a6785cc368830387635f0fb5aa797c
 auditor_child_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 73936615d90033601ab9c8a92929f74f
 auditor_engagement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9a7254df65329a945d9e3efa3bc57cc8
+bad_debt_relief_posts() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4ebbe77c21888f787658ca63a058c5b4
 balance_differences() → TABLE(account_id uuid, period_id uuid, dimension_set_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | db220537924bcf527c3806307453ed67
 balance_lines_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c1c7750d26a82cb498c82056eec78082
 balances_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | a0314e0bf5258f5fa563b982ba8175e2
@@ -11602,6 +11605,7 @@ webhook_attempt_guard() → trigger | security invoker | v | search_path=pg_cata
 webhook_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9f8909a9a50e43e3ac6c780584b2caf
 withdraw_installation_announcement(p_by uuid, p_id uuid, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | caf961eaa1cce1a0fac2670193fc940f
 withholding_decision_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1b6bc116037949c933d0c5d75c0da1f0
+write_off_with_relief_stays() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df16e7bcb4168d10edab98b3cf535795
 
 ## extensions
 btree_gin | fyniq_ext
