@@ -9,6 +9,7 @@ import { Home } from "./pages/Home";
 import { Join } from "./pages/Join";
 import { VerifyLetter } from "./pages/VerifyLetter";
 import { Careers } from "./pages/Careers";
+import { PersonGoals } from "./pages/PersonGoals";
 import { LeaverHome } from "./pages/LeaverHome";
 import { RequestLetter } from "./pages/RequestLetter";
 import { Letters } from "./pages/Letters";
@@ -119,6 +120,7 @@ export function App() {
     if (state.status === "in" && route.id === "government-leave") return <GovernmentLeave roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "team-leave") return <TeamLeave roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "my-leave") return <MyLeave roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "person-goals") return <PersonGoals roles={state.session.roles ?? []} personId={matched?.params.id ?? ""} />;
     if (state.status === "in" && route.id === "person-leave") return <MyLeave roles={state.session.roles ?? []} personId={matched?.params.id ?? ""} />;
     if (state.status === "in" && route.id === "person") return <Person id={matched?.params.id ?? ""} roles={state.session.roles ?? []} />;
     if (state.status === "in") return <Home session={state.session} screen={route.id === "people-home" ? "people" : "me"} />;

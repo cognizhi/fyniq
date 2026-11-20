@@ -665,6 +665,38 @@ components:
       required:
         - proposals
       type: object
+    AlignedGoal:
+      additionalProperties: false
+      properties:
+        id:
+          description: The aligned goal.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a02
+          format: uuid
+          type: string
+        person:
+          description: The owner of a personal goal.
+          examples:
+            - Ben Lim
+          type: string
+        progress:
+          description: Its progress.
+          examples:
+            - 40
+          format: int64
+          maximum: 100
+          minimum: 0
+          type: integer
+        title:
+          description: Its title.
+          examples:
+            - Ship the pilot dashboard
+          type: string
+      required:
+        - id
+        - title
+        - progress
+      type: object
     AppliedOutputBody:
       additionalProperties: false
       properties:
@@ -2017,6 +2049,101 @@ components:
       required:
         - delegations
       type: object
+    DeletionReportView:
+      additionalProperties: false
+      properties:
+        created_on:
+          description: The day the report was made.
+          examples:
+            - "2027-05-02"
+          format: date
+          type: string
+        due:
+          description: How many records are due for deletion.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        held:
+          description: How many a legal hold keeps.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        id:
+          description: The report.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01
+          format: uuid
+          type: string
+        overdue:
+          description: The review date has passed with no review;
+          examples:
+            - false
+          type: boolean
+        record_type:
+          description: "The kind of record that is due: grievances or candidates."
+          examples:
+            - candidates
+          type: string
+        review_by:
+          description: "The day the report must have been reviewed: 30 days after it was made."
+          examples:
+            - "2027-06-01"
+          format: date
+          type: string
+        reviewed_by:
+          description: Who reviewed it.
+          examples:
+            - Hana HR
+          type: string
+        reviewed_on:
+          description: When.
+          examples:
+            - "2027-05-03"
+          format: date
+          type: string
+        state:
+          description: Waiting for review, reviewed and waiting for the nightly job, or deleted.
+          enum:
+            - pending
+            - reviewed
+            - deleted
+          examples:
+            - pending
+          type: string
+      required:
+        - id
+        - record_type
+        - due
+        - held
+        - created_on
+        - review_by
+        - state
+        - overdue
+      type: object
+    DeletionReportsOutputBody:
+      additionalProperties: false
+      properties:
+        reports:
+          description: The reports, the newest first.
+          items:
+            $ref: "#/components/schemas/DeletionReportView"
+          type: array
+      required:
+        - reports
+      type: object
+    DeletionReviewOutputBody:
+      additionalProperties: false
+      properties:
+        reviewed:
+          description: True once the report is reviewed.
+          examples:
+            - true
+          type: boolean
+      required:
+        - reviewed
+      type: object
     Dependant:
       additionalProperties: false
       properties:
@@ -3240,6 +3367,13 @@ components:
     Goal:
       additionalProperties: false
       properties:
+        aligned:
+          description: "The goals aligned with it that the reader may read: a personal goal is shown only to the person, their line manager and the people team."
+          items:
+            $ref: "#/components/schemas/AlignedGoal"
+          type:
+            - array
+            - "null"
         due_on:
           description: When it is due.
           examples:
@@ -3278,6 +3412,14 @@ components:
           description: The average progress of its key results, a whole percentage rounded down; 0 with none.
           examples:
             - 60
+          format: int64
+          maximum: 100
+          minimum: 0
+          type: integer
+        rollup_progress:
+          description: The average, rounded down, of its own key results' progress and its aligned goals' progress that the reader may read; empty when it has neither.
+          examples:
+            - 55
           format: int64
           maximum: 100
           minimum: 0
@@ -13502,6 +13644,134 @@ paths:
       summary: The people checks
       tags:
         - Packs
+  /v1/deletion-reports:
+    get:
+      description: "PRD-002 NM-SEC-05. For each kind of record the retention engine deletes (grievances, candidates): how many are due, how many a legal hold keeps, the day the report must be reviewed and its state. No person and no record is named. Only an Owner or an HR administrator. It changes nothing."
+      operationId: listDeletionReports
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletionReportsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The reports of records due for deletion
+      tags:
+        - Privacy
+  /v1/deletion-reports/{id}/review:
+    post:
+      description: PRD-002 NM-SEC-05. Records that a person has seen what is due and what a hold keeps; only then does the nightly job delete what is still due and not held, with a proof of each that holds no content. A report is reviewed once. Only an Owner or an HR administrator. It is audited and is on the never-list for the AI and MCP surfaces.
+      operationId: reviewDeletionReport
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The report.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The report.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletionReviewOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Review a report of records due for deletion
+      tags:
+        - Privacy
   /v1/details-changes/{id}/decision:
     post:
       description: Approves or refuses a change of details after reading its evidence. Nobody decides a change to their own details. Approving a legal name or a residency applies it to the person's record from the day of the decision; approving a change of NRIC or FIN records that the evidence was checked, and the new number is then recorded through the restricted fields. Refusing needs a reason. The HR officer, the HR administrator and the Owner. It is audited.

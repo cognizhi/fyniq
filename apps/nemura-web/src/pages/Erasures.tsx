@@ -7,6 +7,7 @@ import { helpText, t } from "../i18n";
 import { Shell, team } from "./Shell";
 
 type Order = components["schemas"]["ErasureOrderView"];
+type Report = components["schemas"]["DeletionReportView"];
 type Note = { ok: boolean; text: string } | null;
 interface Go {
   (): Promise<Note>;
@@ -20,7 +21,12 @@ export function Erasures({ roles }: { roles: readonly string[] }) {
   const [person, setPerson] = useState("");
   const [reason, setReason] = useState("");
   const [note, setNote] = useState<Note>(null);
+  const [reports, setReports] = useState<Report[]>([]);
   const allowed = roles.some((r) => r === "owner" || r === "hr_admin");
+  const loadReports = () => {
+    if (allowed) api.GET("/v1/deletion-reports").then(({ data }) => setReports(data?.reports ?? []), () => setReports([]));
+  };
+  useEffect(loadReports, []); // eslint-disable-line react-hooks/exhaustive-deps
   const load = () => {
     if (allowed) api.GET("/v1/erasures").then(({ data }) => setOrders(data?.items ?? []), () => setOrders([]));
   };
@@ -83,6 +89,25 @@ export function Erasures({ roles }: { roles: readonly string[] }) {
               )}
             </section>
             <p className="fy-secondary">{t("erasure.keeps")}</p>
+            <section className="fy-stack fy-stack--2" aria-label={t("reports.title")}>
+              <h2 className="fy-h2">{t("reports.title")}</h2>
+              <p className="fy-secondary">{t("reports.lead")}</p>
+              {reports.length === 0 && <p className="fy-secondary">{t("reports.none")}</p>}
+              <ul className="fy-stack fy-stack--2">
+                {reports.map((r) => (
+                  <li key={r.id} className="fy-card fy-card--pad fy-stack fy-stack--2">
+                    <span className="fy-strong">{t("reports.head", { type: t(`reports.type.${r.record_type}`), due: String(r.due), held: String(r.held) })}</span>
+                    <span className="fy-secondary">{t("reports.line", { on: r.created_on, by: r.review_by, state: t(`reports.state.${r.state}`) })}</span>
+                    {r.overdue && <span className="fy-chip">{t("reports.overdue")}</span>}
+                    {r.reviewed_by && <span className="fy-secondary">{t("reports.reviewed", { by: r.reviewed_by, on: r.reviewed_on ?? "" })}</span>}
+                    {r.state === "pending" && (
+                      <button className="fy-btn fy-btn--primary fy-btn--sm" type="button" aria-label={t("reports.review", { type: t(`reports.type.${r.record_type}`) })}
+                        onClick={async () => { const e = (await api.POST("/v1/deletion-reports/{id}/review", { params: { path: { id: r.id } } })).error; setNote(e ? { ok: false, text: problem(e) } : { ok: true, text: t("reports.reviewedOk") }); if (!e) loadReports(); }}>{t("reports.reviewButton")}</button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
           </>
         )}
       </main>
