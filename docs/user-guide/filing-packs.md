@@ -13,7 +13,7 @@ status: draft
 
 **Compliance › Year-end tax** works out, for the tax agent, a financial year's corporate income tax from the books: the profit before tax and the revenue come from the ledger, the
 adjustments come from you with their reasons, and the exemption, the rate and the rebate of the Year of Assessment come from the statutory packs. It files nothing and keeps nothing:
-it is a calculation the tax agent signs.
+the paper it works out is the tax agent's, and the adjustments can be kept with their evidence (below).
 
 ## Work out a year
 
@@ -25,6 +25,13 @@ it is a calculation the tax agent signs.
    S$5 million, otherwise Form C. A company within the Lite limit may file Form C-S too.
 
 A Year of Assessment with no announced rebate has none. The accountant confirms how the tax is rounded.
+
+## Keep and record the paper
+
+**Keep as a draft paper** saves the year, the exemption and the adjustments with their reasons as a draft under **Kept papers**. Attach what supports them to the draft (the invoices of the non-deductible
+expenses, the capital allowance schedule, the tax agent's note): the files are scanned and stored as any evidence is. **Record the paper** signs the working: a paper with adjustments needs at
+least one file, the figures it worked out at that moment are kept with it, and from then on it changes no more and its files are kept for the retention period. Work the year again and keep a new
+paper to change it: the latest recorded paper of the year is the one in force, and the earlier shows as superseded. Recording posts nothing and files nothing with IRAS.
 
 ## Statutory updates
 

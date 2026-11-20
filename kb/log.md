@@ -973,3 +973,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.grievances: waiting to be taken and the five-year retention
 
 ## [2026-11-20] compile | nemura.onboarding: onboarding plans (NM-ONB-01)
+
+## [2026-11-20] compile | compliance.filing-packs: keep and record the tax working paper with its evidence (FR-TAX-06)
