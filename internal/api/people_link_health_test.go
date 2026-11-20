@@ -16,6 +16,9 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/payee"
+	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/linksend"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -376,5 +379,39 @@ func TestFinishingAnUnlinkWaitsForWorkInFlightAndThenEndsTheLink(t *testing.T) {
 	}
 	if again := finish(); again.Status == http.StatusOK {
 		t.Errorf("an ended link was finished again: %s", again.Raw)
+	}
+}
+
+// A director's repayment is held for tax clearance like any payment to a person (FR-PPL-13, FR-PAY-10; design D24 (b)): it is not recorded by hand, it is a director line of a payment batch whose payee is the
+// director's person, so the one release check (`heldPayees`) refuses it while Nemura holds the mapped person, naming them and no figure, and lets it go once the hold is lifted.
+// req: FR-PPL-13
+// asvs: V8.2.1, V8.3.1
+func TestADirectorsRepaymentInAPaymentBatchIsHeldLikeAnyPaymentToAPerson(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	director := uuid.New()
+	now := e.clock.Now()
+	person := uuid.New()
+	amount, _ := money.Parse("12345.67", paymentbatch.SGD)
+	batch := paymentbatch.Batch{Payments: []paymentbatch.Payment{{Payee: payee.Person(director), Director: director, Amount: amount}}}
+	release := func() error {
+		return e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error { return heldPayees(ctx, u, batch, nil) })
+	}
+	save := func(p peoplelink.Person) {
+		t.Helper()
+		if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error { return u.PeopleLinks().SavePerson(ctx, p) }); err != nil {
+			t.Fatal(err)
+		}
+	}
+	p := peoplelink.Person{ID: person, Version: 1, DisplayName: "Dee Rector", UserID: director, UpdatedAt: now, HoldVersion: 1, HoldID: uuid.New(), Held: true}
+	save(p)
+	var pr *Problem
+	if err := release(); !errors.As(err, &pr) || pr.Code != peoplelink.CodeHold || !strings.Contains(pr.Detail, "Dee Rector") || strings.Contains(pr.Detail, "12345") {
+		t.Fatalf("a director's repayment to a held person: %v", err)
+	}
+	p.HoldVersion, p.Held = 2, false
+	save(p)
+	if err := release(); err != nil {
+		t.Errorf("after Nemura lifts the hold: %v", err)
 	}
 }

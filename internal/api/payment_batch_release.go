@@ -908,7 +908,7 @@ func heldPeople(ctx context.Context, u storage.UnitOfWork, authority HoldAuthori
 }
 
 // heldPayees refuses a payment batch's release that would pay a person Nemura holds for tax clearance (FR-PPL-13, FR-PAY-10), by an approval or by break-glass (FR-PPL-10): its claimants and
-// directors who are mapped people of the projection. A payment batch is released once, so the whole batch waits until the hold is lifted by Nemura, after IRAS's notice or directive, or the line
+// directors (a director line of the batch has the director's person as its payee) who are mapped people of the projection. A payment batch is released once, so the whole batch waits until the hold is lifted by Nemura, after IRAS's notice or directive, or the line
 // is taken out; a salary batch releases the rest and keeps the held people's lines waiting (releaseSalaryBatch).
 func heldPayees(ctx context.Context, u storage.UnitOfWork, b paymentbatch.Batch, authority HoldAuthority) error {
 	var users []uuid.UUID
