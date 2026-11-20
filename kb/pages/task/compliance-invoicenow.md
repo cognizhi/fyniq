@@ -4,7 +4,7 @@ type: task
 title: Send invoices through InvoiceNow and receive suppliers' invoices
 summary: Queue a sale, follow it to IRAS's acknowledgement ID, hold the GST return to the filing gate, and turn a supplier's invoice into a draft bill
 sources:
-  - docs/user-guide/invoicenow.md sha256:1d79b7a83d4c929acf9cfa4422ccfa9b9308f63b5c08b8504ce5e6afa1bcaaab
+  - docs/user-guide/invoicenow.md sha256:14c10222caeb51c8de7f0b7450e5a6b2d5917b65836fbc504e49305fff4263e3
 data_class: general
 taint: trusted
 status: draft
@@ -32,11 +32,13 @@ IRAS requires a GST-registered business to submit the invoice data behind its GS
 2. Select **Queue for InvoiceNow** beside a sale that was not sent. Fyniq builds the PINT-SG document and checks it against IRAS's published rules first; a document that breaks one is refused with the rule and the field, and never queued.
 3. Follow the submission: queued, sent, acknowledged with IRAS's acknowledgement ID, or failed with why. **Send now** and **Check status** do by hand what a run every 15 minutes does; **Queue again** puts a failed one back.
 
+To leave a document out, select **Leave it out** beside it and choose the reason: a reverse charge supply, an import under a permit, a deemed supply, financial services, a supplier not registered for GST, input tax that cannot be claimed, out of scope of GST, or another reason in a few words. It is no longer waited for, and withdrawing the exclusion brings it back.
+
 (src: docs/user-guide/invoicenow.md#the-filing-gate)
 
 ## When the network is down
 
-One person with the right to prepare the return asks to file with the gap, with the reason and the evidence of the outage; the Owner or the Finance controller approves it, never the person who asked. The unsent documents stay queued and are sent when service returns.
+One person with the right to prepare the return asks to file with the gap, with the reason and the evidence of the outage; the request shows on the gate as waiting, and the Owner or the Finance controller selects **Approve the request**, never the person who asked. The unsent documents stay queued and are sent when service returns.
 
 (src: docs/user-guide/invoicenow.md#when-the-network-is-down)
 

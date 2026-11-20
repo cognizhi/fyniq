@@ -879,3 +879,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | sales.invoices: subscription contracts (FR-AR-15)
 
 ## [2026-11-20] compile | nemura.payroll-approval: the IR8A file and the CPF and IR8A buttons (p2-payroll-outputs)
+
+## [2026-11-20] compile | compliance.invoicenow: the exclusion form and the contingency approval button

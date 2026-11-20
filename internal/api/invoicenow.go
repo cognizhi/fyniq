@@ -94,6 +94,7 @@ type InvoiceNowGate struct {
 	Excluded     int                    `json:"excluded" doc:"The excluded." example:"2"`
 	Missing      []InvoiceNowMissing    `json:"missing" doc:"What the gate waits for, in date order."`
 	Contingency  *InvoiceNowContingency `json:"contingency,omitempty" doc:"The approved contingency that lets the return be filed."`
+	Pending      *InvoiceNowContingency `json:"pending_contingency,omitempty" doc:"The newest request for a contingency that nobody has approved yet: it lets nothing through until someone other than its requester approves it."`
 }
 
 type (
@@ -322,17 +323,19 @@ func registerInvoiceNow(a *API) {
 				out.Body.Missing = append(out.Body.Missing, InvoiceNowMissing{DocumentID: m.DocumentID, Number: m.Number, Kind: m.Kind, Date: m.Date.Format(time.DateOnly),
 					State: m.State, NeedsChoice: needs[m.DocumentID]})
 			}
-			if g.Contingency != nil {
-				cs, err := u.InvoiceNow().Contingencies(ctx, from, to)
-				if err != nil {
-					return err
+			cs, err := u.InvoiceNow().Contingencies(ctx, from, to)
+			if err != nil {
+				return err
+			}
+			var pendingAt time.Time
+			for _, c := range cs {
+				if c.ApprovedBy == "" && c.RequestedAt.After(pendingAt) {
+					v := contingencyOut(c)
+					out.Body.Pending, pendingAt = &v, c.RequestedAt
 				}
-				for _, c := range cs {
-					if c.ApprovedBy != "" && c.ApprovedBy == g.Contingency.ApprovedBy && c.RequestedBy == g.Contingency.RequestedBy {
-						v := contingencyOut(c)
-						out.Body.Contingency = &v
-						break
-					}
+				if g.Contingency != nil && c.ApprovedBy != "" && c.ApprovedBy == g.Contingency.ApprovedBy && c.RequestedBy == g.Contingency.RequestedBy && out.Body.Contingency == nil {
+					v := contingencyOut(c)
+					out.Body.Contingency = &v
 				}
 			}
 			return nil

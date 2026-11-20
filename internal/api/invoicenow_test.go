@@ -155,8 +155,8 @@ func TestInvoiceNowFromTheGateToIRASsAcknowledgement(t *testing.T) {
 	if c.Status != 201 || c.str("approved_by") != "" {
 		t.Fatalf("contingency requested: %d %s", c.Status, c.Raw)
 	}
-	if g := e.gateOf(acc); g.str("state") != "blocked" {
-		t.Fatalf("a request lets nothing through: %s", g.Raw)
+	if g := e.gateOf(acc); g.str("state") != "blocked" || !strings.Contains(g.Raw, `"pending_contingency":{`) || !strings.Contains(g.Raw, c.str("id")) || strings.Contains(g.Raw, `"contingency":{`) {
+		t.Fatalf("a request lets nothing through and is shown as pending: %s", g.Raw)
 	}
 	if r := e.call(http.MethodPost, "/v1/invoicenow/contingencies/"+c.str("id")+"/approve", acc, nil); r.Status != 403 {
 		t.Errorf("an Accountant holds create, not approve: %d %s", r.Status, r.Raw)
@@ -165,6 +165,9 @@ func TestInvoiceNowFromTheGateToIRASsAcknowledgement(t *testing.T) {
 		t.Fatalf("approved by someone else: %d %s", ap.Status, ap.Raw)
 	}
 	g = e.gateOf(acc)
+	if strings.Contains(g.Raw, `"pending_contingency"`) {
+		t.Errorf("an approved request is no longer pending: %s", g.Raw)
+	}
 	if g.str("state") != "ready" || !strings.Contains(g.Raw, `"contingency"`) || !strings.Contains(g.Raw, `"state":"queued"`) {
 		t.Fatalf("an approved contingency lets the return be filed, the gap still listed: %s", g.Raw)
 	}
@@ -495,5 +498,42 @@ func TestTheDispatchJobSendsTheQueueAsTheWorker(t *testing.T) {
 	}
 	if g := e.gateOf(acc); g.str("state") != "ready" {
 		t.Errorf("the gate: %s", g.Raw)
+	}
+}
+
+// Each reason a document may be left out has its own fixture (FR-TAX-10, G4-034): a document of the period is excluded for it, the gate counts it and lets the return through for it, the
+// reason and its words are kept, and withdrawing the exclusion puts the document back among what the gate waits for. "Other" needs its words.
+// req: FR-TAX-10
+func TestEveryExclusionReasonLetsADocumentThroughAndWithdrawingBringsItBack(t *testing.T) {
+	e := newEnv(t)
+	e.invoiceNowReady()
+	acc := e.as(authz.Accountant)
+	for _, reason := range []string{"reverse_charge", "import_permit", "deemed_supply", "financial_services", "unregistered_supplier", "blocked_input_tax", "out_of_scope", "other"} {
+		id, _ := e.issuedInvoice("1", "10.00")
+		body := map[string]any{"document_id": id, "reason": reason}
+		if reason == "other" {
+			body["detail"] = "A supply IRAS told us needs none"
+		}
+		ex := e.call(http.MethodPost, "/v1/invoicenow/exclusions", acc, body)
+		if ex.Status != 201 || ex.str("reason") != reason || ex.Body["withdrawn"] != false {
+			t.Fatalf("%s: %d %s", reason, ex.Status, ex.Raw)
+		}
+		if reason == "other" && ex.str("detail") != "A supply IRAS told us needs none" {
+			t.Errorf("the words of other are kept: %s", ex.Raw)
+		}
+		if g := e.gateOf(acc); g.str("state") != "ready" || strings.Contains(g.Raw, id) {
+			t.Fatalf("%s: an excluded document is not waited for: %s", reason, g.Raw)
+		}
+		w := e.call(http.MethodPost, "/v1/invoicenow/exclusions/"+ex.str("id")+"/withdraw", acc, nil)
+		if w.Status != 200 || w.Body["withdrawn"] != true {
+			t.Fatalf("%s: withdrawn: %d %s", reason, w.Status, w.Raw)
+		}
+		if g := e.gateOf(acc); g.str("state") != "blocked" || !strings.Contains(g.Raw, id) {
+			t.Fatalf("%s: a withdrawn exclusion brings the document back: %s", reason, g.Raw)
+		}
+		// leave it out again so the next document's gate is judged alone
+		if r := e.call(http.MethodPost, "/v1/invoicenow/exclusions", acc, body); r.Status != 201 {
+			t.Fatalf("%s: excluded again: %d %s", reason, r.Status, r.Raw)
+		}
 	}
 }
