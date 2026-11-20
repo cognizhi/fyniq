@@ -96,14 +96,21 @@ func DecideJoinTask(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time,
 	if len(note) > 300 {
 		return &onboarding.Refusal{Code: onboarding.CodeInvalid, Message: "The note is up to 300 characters."}
 	}
-	tag, err := tx.Exec(ctx, "UPDATE nemura.join_task SET state = $2, decided_by = $3, decided_at = $4, note = $5 WHERE id = $1 AND state = 'open'", id, state, by, at, orNil(note))
+	var person uuid.UUID
+	err := tx.QueryRow(ctx, "UPDATE nemura.join_task SET state = $2, decided_by = $3, decided_at = $4, note = $5 WHERE id = $1 AND state = 'open' RETURNING person_id", id, state, by, at, orNil(note)).Scan(&person)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return &onboarding.Refusal{Code: onboarding.CodeNotFound, Message: "There is no such task waiting."}
+	}
 	if err != nil {
 		return onboardingError(err)
 	}
-	if tag.RowsAffected() != 1 {
-		return &onboarding.Refusal{Code: onboarding.CodeNotFound, Message: "There is no such task waiting."}
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.join_task."+state, audit.Object{Type: "join_task", ID: id}, map[string]audit.Change{"state": {"open", state}}, note); err != nil {
+		return err
 	}
-	return Audit(ctx, tx, org, at, user(by), "nemura.join_task."+state, audit.Object{Type: "join_task", ID: id}, map[string]audit.Change{"state": {"open", state}}, note)
+	if state == "done" { // the person was invited: the plan's invitation task closes by this flow (NM-ONB-01, rev 0.75)
+		_, err = CloseOnboardingTasksByFlow(ctx, tx, org, at, by, person, onboarding.ClosesInvitation)
+	}
+	return err
 }
 
 // OffboardingRow is a person's offboarding as it is stored.

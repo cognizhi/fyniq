@@ -113,7 +113,18 @@ func PurgeLedger(ctx context.Context, store storage.Store, blobs ports.BlobStore
 		for i, p := range periods {
 			plan[i] = Period{StartsOn: p.StartsOn, EndsOn: p.EndsOn, Open: p.Status != storage.PeriodClosed}
 		}
-		year, ok := NextYear(cal, years, earliest, plan, nil, now) // records cannot be held yet, so none is passed
+		held, err := u.Retention().HeldLedgerDates(ctx) // AUD-11: a year with a held date in it stays; the database refuses it too (001300)
+		if err != nil {
+			return err
+		}
+		var holds []time.Time
+		for _, h := range held {
+			if h.Before(previous) { // of a year already purged: what it kept stays, held or not
+				continue
+			}
+			holds = append(holds, h)
+		}
+		year, ok := NextYear(cal, years, earliest, plan, holds, now)
 		if !ok {
 			return nil
 		}

@@ -219,6 +219,16 @@ func registerShredding(a *API) {
 				if err != nil {
 					return AnonymisationView{}, err
 				}
+				holds, err := u.Retention().Holds(ctx, true) // AUD-11: a legal hold keeps the contact's details as they are
+				if err != nil {
+					return AnonymisationView{}, err
+				}
+				for _, h := range holds {
+					if h.Kind == storage.HoldContact && h.ContactID != nil && *h.ContactID == id {
+						return AnonymisationView{}, &storage.Error{Code: storage.CodeHeld, Message: "A legal hold keeps this contact's details",
+							Hint: "Lift the hold with a reason on Compliance, Data protection, Holds, then anonymise the contact (AUD-11)"}
+					}
+				}
 				if !c.Individual && !c.Director {
 					return AnonymisationView{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.contact_id", Message: "is a company, not a person",
 						Fix: "Anonymise a director, or a contact marked as a person"}})

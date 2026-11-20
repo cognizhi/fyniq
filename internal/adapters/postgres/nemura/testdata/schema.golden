@@ -900,6 +900,7 @@ onboarding_task | state | text | true | 'open'::text
 onboarding_task | decided_by | uuid | false | 
 onboarding_task | decided_at | timestamp with time zone | false | 
 onboarding_task | note | text | false | 
+onboarding_task | closes | text | false | 
 onboarding_template | organisation_id | uuid | true | nemura.current_org()
 onboarding_template | id | uuid | true | uuidv7()
 onboarding_template | name | text | true | 
@@ -914,6 +915,7 @@ onboarding_template_task | title | text | true |
 onboarding_template_task | detail | text | true | ''::text
 onboarding_template_task | assignee | text | true | 
 onboarding_template_task | due_offset_days | integer | true | 
+onboarding_template_task | closes | text | false | 
 organisation | organisation_id | uuid | true | nemura.current_org()
 organisation | name | text | true | 
 organisation | created_at | timestamp with time zone | true | now()
@@ -2551,6 +2553,7 @@ onboarding_settings | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 onboarding_task | onboarding_task_assignee_known | CHECK ((assignee = ANY (ARRAY['hr'::text, 'manager'::text, 'it'::text, 'joiner'::text])))
 onboarding_task | onboarding_task_assignee_not_null | NOT NULL assignee
 onboarding_task | onboarding_task_by_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
+onboarding_task | onboarding_task_closes_known | CHECK (((closes IS NULL) OR (closes = ANY (ARRAY['kets'::text, 'fyniq_invitation'::text]))))
 onboarding_task | onboarding_task_decided_whole | CHECK (((state = 'open'::text) = ((decided_at IS NULL) AND (decided_by IS NULL))))
 onboarding_task | onboarding_task_detail_length | CHECK ((length(detail) <= 1000))
 onboarding_task | onboarding_task_detail_not_null | NOT NULL detail
@@ -2580,6 +2583,7 @@ onboarding_template | onboarding_template_pkey | PRIMARY KEY (organisation_id, i
 onboarding_template | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 onboarding_template_task | onboarding_template_task_assignee_known | CHECK ((assignee = ANY (ARRAY['hr'::text, 'manager'::text, 'it'::text, 'joiner'::text])))
 onboarding_template_task | onboarding_template_task_assignee_not_null | NOT NULL assignee
+onboarding_template_task | onboarding_template_task_closes_known | CHECK (((closes IS NULL) OR (closes = ANY (ARRAY['kets'::text, 'fyniq_invitation'::text]))))
 onboarding_template_task | onboarding_template_task_detail_length | CHECK ((length(detail) <= 1000))
 onboarding_template_task | onboarding_template_task_detail_not_null | NOT NULL detail
 onboarding_template_task | onboarding_template_task_due_offset_days_not_null | NOT NULL due_offset_days
@@ -5280,7 +5284,7 @@ CREATE OR REPLACE FUNCTION nemura.onboarding_task_guard()
 AS $function$
 BEGIN
   IF TG_OP = 'DELETE' OR OLD.state <> 'open' OR NEW.state = 'open'
-     OR (NEW.plan_id, NEW.person_id, NEW.position, NEW.title, NEW.detail, NEW.assignee, NEW.due_on) IS DISTINCT FROM (OLD.plan_id, OLD.person_id, OLD.position, OLD.title, OLD.detail, OLD.assignee, OLD.due_on) THEN
+     OR (NEW.plan_id, NEW.person_id, NEW.position, NEW.title, NEW.detail, NEW.assignee, NEW.due_on, NEW.closes) IS DISTINCT FROM (OLD.plan_id, OLD.person_id, OLD.position, OLD.title, OLD.detail, OLD.assignee, OLD.due_on, OLD.closes) THEN
     RAISE EXCEPTION 'An onboarding task is done or skipped once, and its words and due date never change' USING ERRCODE = 'NM212';
   END IF;
   RETURN NEW;

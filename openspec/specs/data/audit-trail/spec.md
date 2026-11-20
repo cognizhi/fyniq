@@ -344,8 +344,8 @@ Source: PRD-001 §11.5 · Priority S · Phase P2
 
 #### Scenario: Placing, lifting and a held contact (rev 0.617)
 - **WHEN** a hold is lifted
-- **THEN** it needs a reason, asks nobody else, and tells the Owners and the DPO
-- **AND** a held contact is not erased or shredded
+- **THEN** it needs a reason and the person's step-up authentication, asks nobody else, and tells those who read the holds
+- **AND** a held contact is not anonymised, and the keys of a held contact or a held year are not shredded
 
 #### Scenario: After go-live (rev 0.288)
 - **WHEN** Fyniq goes live

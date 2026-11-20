@@ -128,6 +128,11 @@ func TestTheKeyEmploymentTermsAreRecordedInTwoPartsAndFilledFromTheRecord(t *tes
 	if err != nil {
 		t.Fatalf("request: %v", err)
 	}
+	// Cy's onboarding plan has a KETs task that closes by this letter (NM-ONB-01, rev 0.75).
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		_, err := nemura.StartOnboardingPlan(ctx, tx, lt.c.org, now, lt.c.owner, lt.cy, nil)
+		return err
+	})
 	// Ben (HR administrator, a different person) checks; the Owner signs; the PDF carries the facts.
 	ref, sha, err := svc.Check(ctx, hr, mustUUID(id))
 	if err != nil || !strings.HasPrefix(ref, "KE-2026-") {
@@ -135,6 +140,14 @@ func TestTheKeyEmploymentTermsAreRecordedInTwoPartsAndFilledFromTheRecord(t *tes
 	}
 	if _, err := svc.Sign(ctx, owner, mustUUID(id), sha); err != nil {
 		t.Fatal(err)
+	}
+	var ketsState string
+	var ketsBy uuid.UUID
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `SELECT state, decided_by FROM nemura.onboarding_task WHERE person_id = $1 AND closes = 'kets'`, lt.cy).Scan(&ketsState, &ketsBy)
+	})
+	if ketsState != "done" || ketsBy != lt.c.owner {
+		t.Errorf("the KETs task after the letter was issued: %s by %s", ketsState, ketsBy)
 	}
 	_, pdf, err := svc.File(ctx, owner, mustUUID(id), true)
 	if err != nil || !bytes.HasPrefix(pdf, []byte("%PDF")) {

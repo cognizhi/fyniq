@@ -54,7 +54,9 @@ type SignedBoundary struct {
 }
 
 // BoundaryKey is where a boundary is written, once.
-func BoundaryKey(org uuid.UUID, seq int64) string { return fmt.Sprintf("audit-boundaries/%s/%020d.json", org, seq) }
+func BoundaryKey(org uuid.UUID, seq int64) string {
+	return fmt.Sprintf("audit-boundaries/%s/%020d.json", org, seq)
+}
 
 // Check verifies a boundary's signature and that it is the one recorded.
 func (sb SignedBoundary) Check(s ports.Signer, org uuid.UUID, b storage.AuditBoundary) error {
@@ -141,7 +143,22 @@ func PurgeTrail(ctx context.Context, store storage.Store, blobs ports.BlobStore,
 			if err != nil {
 				return err
 			}
+			if len(batch) == 0 {
+				break
+			}
+			// AUD-11: the run stops before the first event a hold in force covers; the database refuses to delete one as well (001300).
+			held, err := u.Retention().HeldEvents(ctx, batch[0].Seq, batch[len(batch)-1].Seq)
+			if err != nil {
+				return err
+			}
+			heldAt := make(map[int64]bool, len(held))
+			for _, seq := range held {
+				heldAt[seq] = true
+			}
 			for _, e := range batch {
+				if heldAt[e.Seq] {
+					break scan
+				}
 				var body struct {
 					Action     string    `json:"action"`
 					OccurredAt time.Time `json:"occurred_at"`

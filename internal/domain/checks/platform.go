@@ -60,6 +60,7 @@ var ScheduledJobs = map[string]string{
 	"kb.lint":                    "The knowledge base's weekly lint",
 	"audit.erase":                "Security events' details erased after their retention",
 	"retention.purge":            "The purge after retention, where it is switched on",
+	"retention.holds":            "Evidence files' storage holds kept equal to the legal holds in force",
 	"pdpa.shred":                 "Personal data's keys shredded after their retention",
 	"ai.conversations.purge":     "The assistant's conversations removed after their retention",
 	"ai.proposals.expire":        "The AI's proposals past their expiry ended",

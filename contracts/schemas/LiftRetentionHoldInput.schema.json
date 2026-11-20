@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why it is lifted.",
+      "examples": [
+        "The dispute is settled"
+      ],
+      "maxLength": 500,
+      "minLength": 3,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "LiftRetentionHoldInput",
+  "type": "object"
+}

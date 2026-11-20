@@ -253,6 +253,8 @@ var fyCodes = map[string]string{
 	"FY313": storage.CodeDPIA,               // an impact assessment's version out of order, an approval of an earlier one, or any change (000304)
 	"FY314": storage.CodePDRequest,          // a request's step out of order, an extension late or to an earlier day, or any change (000305)
 	"FY315": storage.CodeBreach,             // a breach's step out of order, prescribed data decided not notifiable, or any change (000306)
+	"FY360": storage.CodeHold,               // a hold outside its rules, changed, deleted or lifted twice (001300)
+	"FY361": storage.CodeHeld,               // a delete of a row a hold covers, or a hold asked about for another organisation (001300)
 	"FY362": storage.CodeAssessment,         // the register of security assessments changed or deleted, or a finding's step out of order (001301)
 	"FY316": storage.CodeTransfer,           // a transfer's version out of order, a changed flow, or any change (000307)
 	"FY317": storage.CodeShredding,          // a person key changed, or deleted outside its approved run (000308, 000309)
@@ -348,6 +350,9 @@ var fyCodes = map[string]string{
 
 // constraintCodes maps named constraints to the port's stable codes and plain messages.
 var constraintCodes = map[string]struct{ code, message string }{
+	"retention_hold_record_once":                {storage.CodeHold, "that record is on hold already: lift the hold first to place another"},
+	"retention_hold_contact_once":               {storage.CodeHold, "that contact is on hold already: lift the hold first to place another"},
+	"retention_hold_year_once":                  {storage.CodeHold, "that financial year is on hold already: lift the hold first to place another"},
 	"invoicenow_exclusion_live":                 {storage.CodeInvoiceNow, "the document has a live exclusion already: withdraw it to record another"},
 	"invoicenow_submission_version_key":         {storage.CodeInvoiceNow, "that version of the document is queued already"},
 	"ai_feedback_once":                          {storage.CodeDuplicate, "the person rated this answer already"},

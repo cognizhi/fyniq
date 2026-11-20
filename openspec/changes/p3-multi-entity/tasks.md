@@ -8,7 +8,7 @@ compiled into the knowledge base, and the oracle's half where it calculates. Loa
 
 ## 2. The consolidation calculation
 - [x] 2.1 `RND-TRANSLATE` and `internal/domain/consolidation`: translation, the reserve, eliminations, differences, with hand-worked cases. `// req: FR-ENT-02`, `// req: RND-TRANSLATE`
-  Built (rev 0.626): `rounding.Translate`, `internal/domain/consolidation`, `TestATranslatedLineRoundsOnceHalfAwayFromZero`, `TestAConsolidationThatCannotBeWorkedIsRefusedInPlainWords`. **Left:** the package is not in the mutation list (its tests are the differential's).
+  Built (rev 0.627): `rounding.Translate`, `internal/domain/consolidation`, `TestATranslatedLineRoundsOnceHalfAwayFromZero`, `TestAConsolidationThatCannotBeWorkedIsRefusedInPlainWords`. **Left:** the package is not in the mutation list (its tests are the differential's).
 - [x] 2.2 The oracle's half (`oracle/src/oracle/consolidation.py`), its schema and hand cases, differential scenarios and `make differential`. `// req: QA-ENG-02`
   Built: `oracle/src/oracle/consolidation.py`, `consolidation.schema.json`, `consolidations/hand.json` (11 cases worked by hand) and `generated.json` (240), `TestTheConsolidationCasesConformAndTheEngineReproducesEach`, `oracle/tests/test_consolidation.py`.
 

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
-import { Banknote, ChevronRight, ClockAlert, FilePen, FileSearch, FileText, Landmark, Mail, PlugZap, ReceiptText, ScrollText, Send, ShieldAlert, UserCog, UserPlus, Wallet } from "lucide-react";
+import { Banknote, ChevronRight, ClockAlert, FilePen, FileSearch, FileText, Landmark, Mail, PlugZap, ReceiptText, ScrollText, Send, ShieldAlert, UserCog, UserPlus, Wallet, Lock } from "lucide-react";
 import { api } from "../api/client";
 import { formatAmount } from "../format/amount";
 import { date } from "../format/date";
@@ -244,6 +244,15 @@ export const work: Work[] = [
     meta: "Recorded and not yet closed: assess each, and notify the PDPC and the people affected when it is notifiable",
     to: "/compliance/data-protection",
     read: () => tally(() => api.GET("/v1/compliance/breaches", {}), (b) => b.status !== "closed"),
+  },
+  {
+    id: "holds-in-force",
+    roles: ["dpo"],
+    icon: Lock,
+    title: (n, one) => `${n} legal ${one ? "hold" : "holds"} in force`,
+    meta: "Records, contacts and financial years the purge after retention leaves alone until each hold is lifted (AUD-11)",
+    to: "/compliance/data-protection",
+    read: () => tally(() => api.GET("/v1/compliance/holds", {}), () => true),
   },
 ];
 
