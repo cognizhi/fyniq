@@ -329,7 +329,7 @@ def ratio(amount: Decimal, num: Decimal, den: Decimal) -> Decimal:
 
 
 def derived_amount(item: dict[str, Any]) -> Decimal:
-    """The amount of an item the facts give as a ratio, by NM-PAY-12: a part month's pay is the calendar days over the days of the month; an unpaid-leave
+    """The amount of an item the facts give as a ratio, by NM-PAY-12: a part month's pay is the working days of the span over the working days of the month (NM-PAY-12, owner decision of 21 Nov 2026: MOM's method; ``days`` and ``of`` are those working days, counted by ``oracle.part_month``); an unpaid-leave
     deduction the day's share of the month's working days (a half day counts as one half), taken off; overtime pay twelve months of basic salary over fifty-two
     weeks of the normal hours, times the multiple, times the hours. Each amount is rounded once, on its own."""
     spec, key = item["derive"], item["key"]

@@ -17,6 +17,7 @@ a self-help group fund, no-pay leave and any other), your overtime hours, overti
 ## Before you start
 
 - Sign in first: see [Sign in to Nemura](sign-in.md). Your login must be linked to your person record.
+- In the month you join or leave, your basic salary is your monthly pay times the working days you were employed over the working days of the month: your rest days are left out and public holidays are counted.
 - A payslip appears once the people who run payroll have approved the run and published its payslips, when your salary is paid or within three working days of payment.
 
 ## Steps

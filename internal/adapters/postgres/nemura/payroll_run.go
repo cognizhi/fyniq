@@ -55,10 +55,11 @@ type payRec struct {
 	Items     []payroll.RecurringItem
 }
 
-// segmentDays is the calendar days a pay record covers in a month once the person's start and leaving days are taken into account (payroll.PartMonthMethod): from the later of the month's first day, the
-// record's start and the person's start, to the earlier of the month's last day, the day before the record's end (an end is the first day of the next record) and the leaving day, both included.
-func segmentDays(rec payRec, start time.Time, leaving *time.Time, month time.Time) int {
-	from, to := month, monthEnd(month)
+// segmentSpan is the span of a month a pay record covers once the person's start and leaving days are taken into account: from the later of the month's first day, the record's start and the person's
+// start, to the earlier of the month's last day, the day before the record's end (an end is the first day of the next record) and the leaving day, both included. The pay for the span is counted in
+// working days (payroll.PartMonthMethod); ok is false when the record covers nothing of the month.
+func segmentSpan(rec payRec, start time.Time, leaving *time.Time, month time.Time) (from, to time.Time, ok bool) {
+	from, to = month, monthEnd(month)
 	if rec.From.After(from) {
 		from = rec.From
 	}
@@ -71,10 +72,17 @@ func segmentDays(rec payRec, start time.Time, leaving *time.Time, month time.Tim
 	if leaving != nil && leaving.Before(to) {
 		to = *leaving
 	}
-	if to.Before(from) {
-		return 0
+	return from, to, !to.Before(from)
+}
+
+// worksOn says whether the person works on a weekday by their working pattern: Monday to Friday when none is set.
+func worksOn(p leave.Pattern, set bool) func(time.Weekday) bool {
+	return func(d time.Weekday) bool {
+		if !set {
+			return d != time.Saturday && d != time.Sunday
+		}
+		return p.Works(d)
 	}
-	return int(to.Sub(from).Hours()/24) + 1
 }
 
 // RunFact is a source row a pay item came from.
@@ -162,17 +170,26 @@ WHERE person_id = $1 AND pay_group_id = $2 AND effective_from <= $3 AND (effecti
 	if err := rows.Err(); err != nil {
 		return mb, err
 	}
-	days := monthEnd(month).Day()
+	// A part month is counted in the working days of the person's pattern (payroll.PartMonthMethod): rest days are left out, public holidays are counted.
+	pat, set, err := WorkingPatternOn(ctx, tx, person, monthEnd(month))
+	if err != nil {
+		return mb, err
+	}
+	works := worksOn(pat, set)
+	den := payroll.WorkingDays(works, month, monthEnd(month))
 	basic, itemSum := apd.New(0, 0), map[string]*payroll.Item{}
 	dedSum := map[string]*payroll.Deduction{}
 	var order []string
 	for i, r := range recs {
-		n := segmentDays(r, p.Start, p.LeavingDate, month)
-		if n == 0 {
+		from, to, covered := segmentSpan(r, p.Start, p.LeavingDate, month)
+		n := 0
+		if covered {
+			n = payroll.WorkingDays(works, from, to)
+		}
+		if n == 0 || den == 0 {
 			continue
 		}
-		_, _ = ids, i
-		part := payroll.Ratio(r.Basic, n, days)
+		part := payroll.Ratio(r.Basic, n, den)
 		basic = addDec(basic, part)
 		m.Person.SHGFund, m.Person.SHGOptOut = r.SHGFund, r.SHGOptOut
 		irows, err := tx.Query(ctx, "SELECT key, name, kind, nature, amount::text, cpf_wages FROM nemura.person_pay_item WHERE pay_id = $1 ORDER BY key", ids[i])
@@ -185,7 +202,7 @@ WHERE person_id = $1 AND pay_group_id = $2 AND effective_from <= $3 AND (effecti
 				irows.Close()
 				return mb, err
 			}
-			amt := payroll.Ratio(dec(it.Amount), n, days)
+			amt := payroll.Ratio(dec(it.Amount), n, den)
 			if it.Kind == payroll.KindAllowance {
 				if cur, ok := itemSum[it.Key]; ok {
 					cur.Amount = addDec(cur.Amount, amt)
@@ -254,10 +271,6 @@ WHERE person_id = $1 AND pay_group_id = $2 AND effective_from <= $3 AND (effecti
 		return mb, err
 	}
 	// Unpaid leave: the day's share of the month's working days by the person's pattern.
-	pat, set, err := WorkingPatternOn(ctx, tx, person, monthEnd(month))
-	if err != nil {
-		return mb, err
-	}
 	wd := workingDays(pat, set, month)
 	urows, err := tx.Query(ctx, `SELECT id, days::text, from_date FROM nemura.pay_input WHERE person_id = $1 AND kind = 'unpaid_leave' AND from_date >= $2 AND from_date <= $3 AND (used_in_run IS NULL OR used_in_run = $4) ORDER BY from_date, id`,
 		person, day(month), day(monthEnd(month)), runID)

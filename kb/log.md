@@ -817,3 +817,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | settings.people: People and HR, the go-live gate and a provider's journal (p1-payroll-link task 8.1)
 
 ## [2026-11-20] compile | settings.practice: practice organisation
+
+## [2026-11-20] compile | payroll-records.md, my-pay.md -> kb (part month in working days)

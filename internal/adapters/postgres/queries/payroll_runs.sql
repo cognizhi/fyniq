@@ -25,3 +25,6 @@ VALUES (sqlc.arg(link_id), sqlc.arg(epoch), sqlc.arg(source_system), sqlc.arg(ru
         sqlc.arg(approver_issuer), sqlc.arg(approver_subject), sqlc.arg(preparer_issuer), sqlc.arg(preparer_subject), sqlc.arg(mapping_version), sqlc.arg(entry_id),
         sqlc.arg(totals), sqlc.arg(received_at))
 RETURNING id;
+
+-- name: PayrollReceiptMonths :many
+SELECT DISTINCT wage_month FROM fyniq.payroll_run_receipt ORDER BY wage_month;

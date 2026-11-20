@@ -222,3 +222,27 @@ func (q *Queries) PayrollMappingEntries(ctx context.Context, mappingID uuid.UUID
 	}
 	return items, nil
 }
+
+const payrollReceiptMonths = `-- name: PayrollReceiptMonths :many
+SELECT DISTINCT wage_month FROM fyniq.payroll_run_receipt ORDER BY wage_month
+`
+
+func (q *Queries) PayrollReceiptMonths(ctx context.Context) ([]time.Time, error) {
+	rows, err := q.db.Query(ctx, payrollReceiptMonths)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []time.Time
+	for rows.Next() {
+		var wage_month time.Time
+		if err := rows.Scan(&wage_month); err != nil {
+			return nil, err
+		}
+		items = append(items, wage_month)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -4,7 +4,7 @@ type: task
 title: Read your payslips in Nemura
 summary: What My pay shows, the twelve items every payslip holds, how to print or save one, and what a corrected payslip is
 sources:
-  - docs/user-guide/nemura/my-pay.md sha256:e86fcc7c957abea104a10f633ac8625d0bbdc3010cdb4e4d9ce868438435e190
+  - docs/user-guide/nemura/my-pay.md sha256:d448d4a879add3a549b654f9e75819599a228d05005e7b53eda84d5bcbebe74b
 data_class: personal
 taint: trusted
 status: published
@@ -37,6 +37,7 @@ aliases:
 
 ## What happens next
 
+- In the month a person joins or leaves, basic salary is the monthly pay times the working days employed over the working days of the month; rest days are left out and public holidays are counted. (src: docs/user-guide/nemura/my-pay.md#what-happens-next)
 - A correction of the pay is a new payslip for that month; the first stays, marked corrected. After leaving, the narrow account keeps payslips for the record-keeping period; see [[nemura.leaver-account]]. (src: docs/user-guide/nemura/my-pay.md#what-happens-next)
 
 ## When it looks wrong

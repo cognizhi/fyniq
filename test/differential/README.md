@@ -1705,10 +1705,12 @@ Rules the sources leave open, decided in the oracle and marked for confirmation 
   dollars ("Employee's share = ($2,260 / 32.5%) x 17% = $1,182 (cents should be dropped)"; https://www.cpf.gov.sg/service/article/why-does-the-excess-cpf-from-the-additional-wage-ceiling-calculator-differ-from-the-automatic-refund-and-how-do-I-calculate-my-employee-s-share);
   the refund's total is the refunded wages at the full table's total rate, to the nearest dollar with 50 cents up (`RND-CPF`'s total). Both are compared.
   `[accountant to confirm]` the total's rounding: the same page says the calculator rounds monthly and the automatic refund works over the year, so its figure can differ by a few dollars.
-- **Part-month pay** (NM-PAY-12, `RND-PAY-RATIO`): the PRD counts **calendar days** of each pay record over the days of the month. MOM's page counts **working days**:
-  "Monthly gross rate of pay / Total number of working days in that month x Total number of days the employee actually worked in that month", working days
-  "excludes rest days and non-working days, but includes public holidays" (https://www.mom.gov.sg/employment-practices/salary/monthly-and-daily-salary). The two differ for
-  a joiner or a leaver. This is the owner's decision (O5 of `p1-nemura-payroll`); it is reported, not changed. `[accountant to confirm]`
+- **Part-month pay** (NM-PAY-12, `RND-PAY-RATIO`; revised 21 Nov 2026 by the owner's decision to follow MOM): the pay of a part month is the monthly rate × the working days of the person's pattern the pay record
+  covers ÷ the working days of the month, rounded once; rest days and non-working days are left out and public holidays are counted ("Monthly gross rate of pay / Total number of working days in that month x Total number of days
+  the employee actually worked in that month", working days "excludes rest days and non-working days, but includes public holidays": https://www.mom.gov.sg/employment-practices/salary/monthly-and-daily-salary, retrieved 21 Nov 2026).
+  The PRD's first text counted calendar days; it is kept marked superseded. The hand-worked cases are `part-months/part-months.json` (schema `part-month.schema.json`), reproduced by the Go engine
+  (`internal/differential/partmonth_test.go`) and by the oracle's own module (`oracle/src/oracle/part_month.py`, written from the rule). A pay run's document still carries the day counts as inputs
+  (`derive.part_month`: `days` and `of` are working days); a generated cross-run of the counting from a pattern is not drawn. `[accountant to confirm]`: which rest days, a holiday on a rest day.
 - **Overrides** (FR-PAY-06; the PRD says only "with a reason and an approval; flagged"): an override replaces one of `cpf_employee`, `cpf_employer`, `sdl`, `shg`
   with the person's figure, taken as given with no dollar rounding; the CPF total follows its two shares, net pay, the amount to disburse and the employer's cost
   follow from the figures they are made of, and a run's SDL payable adds the overridden amounts and rounds down once. A reason is 10 to 500 characters. `[accountant to confirm]`
