@@ -1380,15 +1380,15 @@ Names the SGD bank account the batch is paid from, the payment date and the meth
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`SalaryBatch`](../../contracts/schemas/SalaryBatch.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
-  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `SB-13` There is no such line in the salary batch.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SB-04` The salary batch is not in the state the command needs; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
-  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO; `SB-14` A salary line's bank has no BIC Fyniq knows.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `SB-02`, `SB-04`, `SB-10`, `SB-11`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SALARY-BATCH-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `SB-02`, `SB-04`, `SB-10`, `SB-11`, `SB-13`, `SB-14`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SALARY-BATCH-01`
 
 ### `POST /v1/salary-batches/{batch_id}/release`
 
@@ -1409,12 +1409,12 @@ Releases an approved salary batch (FR-PAY-11, FR-PPL-13): the Payment releaser, 
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PPL-21` A person held for tax clearance is not paid; `PPL-22` Nemura did not say whether a person is held, so nothing is released to them; `SB-03` No line of the salary batch can be released now; `SB-04` The salary batch is not in the state the command needs; `SB-05` The salary batch needs approving again; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
-  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account; `SB-14` A salary line's bank has no BIC Fyniq knows.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-15`, `PAYFILE-01`, `PAYFILE-02`, `PPL-21`, `PPL-22`, `SB-02`, `SB-03`, `SB-04`, `SB-05`, `SB-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SALARY-BATCH-01`, `TEAM-04`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-15`, `PAYFILE-01`, `PAYFILE-02`, `PPL-21`, `PPL-22`, `SB-02`, `SB-03`, `SB-04`, `SB-05`, `SB-06`, `SB-14`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SALARY-BATCH-01`, `TEAM-04`
 
 ### `GET /v1/salary-batches/{batch_id}/releases/{release_id}/file`
 

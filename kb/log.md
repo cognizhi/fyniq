@@ -883,3 +883,9 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | claims.my-claims: receipt suggestions come from the holder's own capture address (FR-AP-08)
 
 ## [2026-11-20] compile | compliance.invoicenow: the exclusion form and the contingency approval button
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (the BIC from the bank code)
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (payroll in the books)
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (a person from Nemura)

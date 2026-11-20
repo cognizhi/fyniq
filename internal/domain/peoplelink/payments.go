@@ -35,7 +35,9 @@ type PaymentLine struct {
 	LineID            uuid.UUID `json:"line_id"`
 	PersonID          uuid.UUID `json:"person_id"`
 	PayeeName         string    `json:"payee_name"`
-	BankBIC           string    `json:"bank_bic"`
+	BankBIC           string    `json:"bank_bic,omitempty"`  // optional: when it is left out Fyniq derives it from BankCode (design D26)
+	BankCode          string    `json:"bank_code,omitempty"` // the bank's Singapore code, four digits or four and a three-digit branch
+	BankName          string    `json:"bank_name,omitempty"` // the bank's name as Nemura holds it
 	AccountName       string    `json:"account_name"`
 	AccountNumber     string    `json:"account_number"`
 	Amount            string    `json:"amount"`
@@ -59,6 +61,7 @@ var (
 	digestRE = regexp.MustCompile(`^[0-9a-f]{64}$`)
 	amountRE = regexp.MustCompile(`^[0-9]{1,16}\.[0-9]{2}$`)
 	bicRE    = regexp.MustCompile(`^[A-Z0-9]{8}([A-Z0-9]{3})?$`)
+	codeRE   = regexp.MustCompile(`^[0-9]{4}([0-9]{3})?$`)
 )
 
 // ParsePayments reads the payload strictly and checks what needs no storage: each line has its fields in shape and appears once, the run and its parties are named. It never repeats a value in
@@ -94,7 +97,9 @@ func ParsePayments(payload []byte) (PaymentsReady, error) {
 			return bad(fmt.Sprintf("line %d's amount is not dollars and cents above zero", i+1))
 		case !digestRE.MatchString(l.BankDetailDigest) || l.BankDetailVersion < 1:
 			return bad(fmt.Sprintf("line %d's bank-detail version or digest is not valid", i+1))
-		case !bicRE.MatchString(l.BankBIC) || strings.TrimSpace(l.PayeeName) == "" || strings.TrimSpace(l.AccountName) == "" || len(l.AccountNumber) < 5 || len(l.AccountNumber) > 34 ||
+		case l.BankBIC == "" && !codeRE.MatchString(l.BankCode), l.BankBIC != "" && !bicRE.MatchString(l.BankBIC), l.BankCode != "" && !codeRE.MatchString(l.BankCode), len(l.BankName) > 140:
+			return bad(fmt.Sprintf("line %d's bank is not in shape: send its BIC, or its bank code", i+1))
+		case strings.TrimSpace(l.PayeeName) == "" || strings.TrimSpace(l.AccountName) == "" || len(l.AccountNumber) < 5 || len(l.AccountNumber) > 34 ||
 			len(l.PayeeName) > 140 || len(l.AccountName) > 140:
 			return bad(fmt.Sprintf("line %d's payee, bank or account is not in shape", i+1))
 		}

@@ -1076,3 +1076,84 @@ func TestPayLinesToReviewListsTheBatchesWithLinesThatWait(t *testing.T) {
 		t.Fatalf("a held person's line: %+v", got)
 	}
 }
+
+// Nemura sends a bank's code and name, and Fyniq looks its BIC up (design D26, the owner's decision of 21 Nov 2026): a known code gives the BIC with none sent, a code the table lacks leaves the line
+// without one, a batch with such a line is not asked for approval (SB-14, no name and no figure), a person fills the BIC in when preparing the batch (a new version of the line, so an earlier approval is stale),
+// a malformed BIC and a line that already has one are refused, and the file Fyniq writes carries the BIC.
+// req: FR-PPL-12
+// part of FR-PAY-11
+// asvs: V8.2.1, V5.1.3
+func TestABankCodeGivesTheBICAndAnUnknownBankNeedsAPersonToFillItIn(t *testing.T) {
+	w := newSalaryWorld(t)
+	e := w.e
+	refA, refB := orderedRefs()
+	byCode := func(line map[string]any, code string) map[string]any {
+		delete(line, "bank_bic")
+		line["bank_code"], line["bank_name"] = code, "A bank"
+		return line
+	}
+	got := w.payments(w.run, byCode(w.line(refA, w.ana, "Ana Lim", "9000.11", 1), "7339"), byCode(w.line(refB, w.cai, "Cai Yu", "7000.33", 1), "9999"))
+	if got.Status != http.StatusOK || got.str("outcome") != "received" {
+		t.Fatalf("a submission with bank codes and no BIC: %d %s", got.Status, got.Raw)
+	}
+	id := got.str("batch_id")
+	read := e.call(http.MethodGet, "/v1/salary-batches/"+id, w.payroll, nil)
+	prepare := func(etag string, bics map[string]string, preview ...string) response {
+		body := map[string]any{"money_account_id": w.bank.String(), "payment_date": "2026-10-31", "method": "fast"}
+		if bics != nil {
+			body["bank_bics"] = bics
+		}
+		return e.call(http.MethodPost, "/v1/salary-batches/"+id+"/prepare", w.payroll, body, append([]string{"If-Match", etag}, preview...)...)
+	}
+	prep := prepare(read.Header.Get("ETag"), nil)
+	if prep.Status != http.StatusOK {
+		t.Fatalf("preparing: %d %s", prep.Status, prep.Raw)
+	}
+	if ask := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/approval", w.payroll, nil, "If-Match", prep.Header.Get("ETag")); ask.Status != http.StatusConflict && ask.Status != http.StatusUnprocessableEntity ||
+		!strings.Contains(ask.Raw, salarybatch.CodeBIC) || strings.Contains(ask.Raw, "Cai") || strings.Contains(ask.Raw, "7000") || strings.Contains(ask.Raw, "0123456789") {
+		t.Fatalf("asking with a line that has no BIC: %d %s", ask.Status, ask.Raw)
+	}
+	// A line that has one, and a BIC that is not one, are refused; so is a line that is not in the batch.
+	for what, bics := range map[string]map[string]string{"a line that has a BIC": {refA.String(): "DBSSSGSG"}, "a malformed BIC": {refB.String(): "DBS"}, "a line not in the batch": {uuid.NewString(): "DBSSSGSG"}} {
+		if r := prepare(prep.Header.Get("ETag"), bics); r.Status < 400 || r.Status > 499 {
+			t.Errorf("%s: %d %s", what, r.Status, r.Raw)
+		}
+	}
+	// Preview saves nothing; the fill is a new version of Cai's line and the batch moves on.
+	before := e.call(http.MethodGet, "/v1/salary-batches/"+id, w.payroll, nil)
+	if r := prepare(prep.Header.Get("ETag"), map[string]string{refB.String(): "ocbcsgsg"}, "Prefer", "return=preview"); r.Status != http.StatusOK {
+		t.Fatalf("the preview: %d %s", r.Status, r.Raw)
+	}
+	if after := e.call(http.MethodGet, "/v1/salary-batches/"+id, w.payroll, nil); after.Header.Get("ETag") != before.Header.Get("ETag") {
+		t.Errorf("a preview changed the batch")
+	}
+	filled := prepare(prep.Header.Get("ETag"), map[string]string{refB.String(): "ocbcsgsg"})
+	if filled.Status != http.StatusOK {
+		t.Fatalf("filling the BIC: %d %s", filled.Status, filled.Raw)
+	}
+	if filled.Header.Get("ETag") == prep.Header.Get("ETag") {
+		t.Errorf("the batch's version did not move on")
+	}
+	ask := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/approval", w.payroll, nil, "If-Match", filled.Header.Get("ETag"))
+	if ask.Status != http.StatusAccepted {
+		t.Fatalf("asking once the BIC is filled in: %d %s", ask.Status, ask.Raw)
+	}
+	// The file carries the derived BIC and the one filled in.
+	if d := w.decideSalary(w.approver, ask); d.Status != http.StatusOK {
+		t.Fatalf("approving: %d %s", d.Status, d.Raw)
+	}
+	w.holds.answer[w.ana] = linksend.HoldAnswer{Status: "released"}
+	w.holds.answer[w.cai] = linksend.HoldAnswer{Status: "released"}
+	tag := e.call(http.MethodGet, "/v1/salary-batches/"+id, w.payroll, nil).Header.Get("ETag")
+	if rel := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/release", w.releaser, nil, "If-Match", tag); rel.Status != http.StatusOK || rel.Body["released"] != float64(2) {
+		t.Fatalf("the release: %d %s", rel.Status, rel.Raw)
+	}
+	rel := e.call(http.MethodGet, "/v1/salary-batches/"+id, w.releaser, nil)
+	rid := rel.Body["releases"].([]any)[0].(map[string]any)["id"].(string)
+	fileResp := e.call(http.MethodGet, "/v1/salary-batches/"+id+"/releases/"+rid+"/file", w.releaser, nil)
+	data, _ := base64.StdEncoding.DecodeString(fileResp.str("content_base64"))
+	file := string(data)
+	if !strings.Contains(file, "OCBCSGSG") {
+		t.Errorf("the file lacks the BIC the bank code gave or the one filled in: %q", file)
+	}
+}

@@ -32,6 +32,7 @@ const (
 	CodeMethod      = "SB-11" // the method is not FAST or GIRO
 	CodeState       = "SB-12" // the state is not one a line may move to from where it is, or its source cannot give it
 	CodeLine        = "SB-13" // there is no such line in the batch
+	CodeBIC         = "SB-14" // a line's bank has no BIC Fyniq knows: a person fills it in when preparing the batch (design D26)
 )
 
 // SGD is the currency a salary batch pays in, as the payment batch does.
@@ -46,7 +47,9 @@ const (
 // Detail is what a line seals: who is paid and where (SEC-11).
 type Detail struct {
 	PayeeName     string `json:"payee_name"`
-	BankBIC       string `json:"bank_bic"`
+	BankBIC       string `json:"bank_bic"`            // empty while Fyniq does not know the bank's BIC: a person fills it in when preparing the batch (design D26)
+	BankCode      string `json:"bank_code,omitempty"` // the bank's code as Nemura sent it
+	BankName      string `json:"bank_name,omitempty"`
 	AccountName   string `json:"account_name"`
 	AccountNumber string `json:"account_number"`
 }

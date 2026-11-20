@@ -57049,6 +57049,11 @@ export interface components {
              */
             line_version: number;
             /**
+             * @description True when Fyniq does not know this line's bank's BIC: fill it in when preparing the batch (bank_bics on prepareSalaryBatch), or the batch cannot be asked for approval.
+             * @example false
+             */
+            needs_bic?: boolean;
+            /**
              * Format: uuid
              * @description The person of the employee projection.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c12
@@ -57081,6 +57086,15 @@ export interface components {
             next_cursor?: string;
         };
         SalaryBatchPrepare: {
+            /**
+             * @description The BIC of the bank of each line Fyniq could not derive it for (the line's ID to an 8 or 11 character BIC). Fyniq looks a BIC up from the bank code Nemura sends; a code it does not know needs a person to fill it in here, from the bank's own advice. Each becomes a new version of the line, so an earlier approval is stale.
+             * @example {
+             *       "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10": "DBSSSGSG"
+             *     }
+             */
+            bank_bics?: {
+                [key: string]: string;
+            };
             /**
              * @description FAST pays within minutes, up to the bank's limit; GIRO over the next working days.
              * @example giro
@@ -195404,7 +195418,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `SB-13` There is no such line in the salary batch. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -195431,7 +195445,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO; `SB-14` A salary line's bank has no BIC Fyniq knows. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -195565,7 +195579,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account; `SB-14` A salary line's bank has no BIC Fyniq knows. */
             422: {
                 headers: {
                     [name: string]: unknown;

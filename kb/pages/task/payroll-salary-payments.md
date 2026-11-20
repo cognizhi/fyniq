@@ -4,7 +4,7 @@ type: task
 title: Pay salaries from a pay run
 summary: Prepare a salary batch, have another person approve it, release the lines free to go, and see each payment paid from the bank feed or a person's evidence
 sources:
-  - docs/user-guide/payroll-salary-payments.md sha256:1030953ad4e188667599c7879c621b2c52c42a05313b77d0afda9df87cb44065
+  - docs/user-guide/payroll-salary-payments.md sha256:39e17fcd8bf74e4ec5f604a935ce509444934e0f290c2159099524501bc54b4b
 data_class: general
 taint: trusted
 status: draft
@@ -48,6 +48,7 @@ aliases:
 - **Payroll › Salary payments**, open the batch and **Prepare the batch**: the bank account, the payment date, GIRO or FAST.
 - A batch prepared again needs its approval again.
 - **Cancel the batch** is for a batch with nothing released.
+- Nemura sends each person's bank by code and name and Fyniq looks the BIC up from the code; for a bank it does not know, fill in that bank's BIC when preparing the batch, or it cannot be asked for approval. The line becomes a new version, so an earlier approval is stale.
 
 (src: docs/user-guide/payroll-salary-payments.md#prepare-a-salary-batch)
 
@@ -85,3 +86,18 @@ aliases:
 - Names and accounts are in no notification, audit trail entry or log.
 
 (src: docs/user-guide/payroll-salary-payments.md#who-sees-the-lines)
+
+## Payroll in the books
+
+- **Payroll** in the sidebar, when the organisation has payroll switched on, shows Fyniq's part of payroll on one page: where each feature lives, the link's state with a warning when it is not delivering everything, whether every statutory output of the month has a recorded arrangement, and the latest salary batches.
+- Each part is read on its own, so a role that may not see one still sees the others. Linking, unlinking and recording arrangements are in Settings › People and HR.
+
+(src: docs/user-guide/payroll-salary-payments.md#payroll-in-the-books)
+
+## A person from Nemura
+
+- A person opened from Payroll shows what Nemura told Fyniq: status, department, line manager and any tax-clearance hold. Pay, bank numbers and NRIC stay in Nemura.
+- **Map to this user** says which Fyniq user the person is. A person chooses it, it is never matched by email and it grants no role; only an Owner, an Administrator or the People and HR right may map.
+
+(src: docs/user-guide/payroll-salary-payments.md#a-person-from-nemura)
+

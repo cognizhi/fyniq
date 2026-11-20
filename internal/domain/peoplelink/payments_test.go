@@ -25,6 +25,11 @@ func TestPaymentLinesAreReadStrictlyAndRefusalsNameNoPerson(t *testing.T) {
 	if _, err := ParsePayments(paymentsPayload(nil)); err != nil {
 		t.Fatalf("good lines: %v", err)
 	}
+	if _, err := ParsePayments(paymentsPayload(func(p *PaymentsReady) {
+		p.Lines[0].BankBIC, p.Lines[0].BankCode, p.Lines[0].BankName = "", "7171", "DBS Bank"
+	})); err != nil {
+		t.Fatalf("a bank code in place of the BIC (design D26): %v", err)
+	}
 	for name, edit := range map[string]func(*PaymentsReady){
 		"an amount of one decimal":  func(p *PaymentsReady) { p.Lines[0].Amount = "100.5" },
 		"an amount of zero":         func(p *PaymentsReady) { p.Lines[0].Amount = "0.00" },
@@ -32,6 +37,9 @@ func TestPaymentLinesAreReadStrictlyAndRefusalsNameNoPerson(t *testing.T) {
 		"a line twice":              func(p *PaymentsReady) { p.Lines = append(p.Lines, p.Lines[0]) },
 		"no lines":                  func(p *PaymentsReady) { p.Lines = nil },
 		"a bank that is not a BIC":  func(p *PaymentsReady) { p.Lines[0].BankBIC = "DBS" },
+		"neither a BIC nor a code":  func(p *PaymentsReady) { p.Lines[0].BankBIC = "" },
+		"a code that is not one":    func(p *PaymentsReady) { p.Lines[0].BankBIC, p.Lines[0].BankCode = "", "71A1" },
+		"a bank name too long":      func(p *PaymentsReady) { p.Lines[0].BankName = strings.Repeat("x", 141) },
 		"a digest of the wrong len": func(p *PaymentsReady) { p.Lines[0].BankDetailDigest = "abc" },
 		"a bank detail version 0":   func(p *PaymentsReady) { p.Lines[0].BankDetailVersion = 0 },
 		"no approver":               func(p *PaymentsReady) { p.Approver = Party{} },
