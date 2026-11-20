@@ -149,7 +149,7 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 	nsrv := httptest.NewServer(nmux)
 	t.Cleanup(nsrv.Close)
 	napi.New(nmux, napi.Deps{LinkAuth: &linkauth.Introspector{OAuth: s.admin, Routes: nst, Audience: apiclient.Audience, Clock: nemuraNow}, Sessions: noNemuraSessions{}, Clock: nemuraNow,
-		Link: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, LinkHolds: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, CookieNames: []string{"nemura_session"}})
+		Link: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, LinkHolds: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, LinkSync: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, CookieNames: []string{"nemura_session"}})
 
 	// The handshake. Leg 1: an Owner proposes, and Nemura makes its keys and the ID Fyniq's client will have at its OAuth server.
 	svc := nemura.LinkService{Store: nst, OAuth: s.admin, Clock: clock.System{}}
@@ -507,6 +507,41 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 	rl := nemura.RunLinkService{Store: nst, Clock: clock.System{}}
 	if env, _ := rl.Envelope(ctx, napi.Session{Organisation: norg, Member: nowner, Issuer: idp, Subject: owen}, uuid.New(), 1); env.FyniqPasskey != "missing" { // (there is no such run: the hint is read before it)
 		t.Errorf("Fyniq said Owen has no passkey enrolled: %q", env.FyniqPasskey)
+	}
+
+	// Nemura tells Fyniq Owen signed out, through the scope identity.sessions.write the link's client was registered with: Fyniq has no user of that identity, so it answers and ends nothing.
+	var tok string
+	if err := nst.InOrg(ctx, norg, func(ctx context.Context, tx pgx.Tx) (err error) {
+		tok, err = nemura.StartSession(ctx, tx, norg, real, nowner, identity.Via{Provider: "zoho", Issuer: idp, Subject: owen})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := nst.CloseSession(ctx, tok, real); err != nil {
+		t.Fatal(err)
+	}
+	signoutRow, signoutPayload := rowOf(nemura.KindLinkSend)
+	if !strings.Contains(string(signoutPayload), nemura.TypeSessionRevoked) {
+		t.Fatalf("signing out queued: %s", signoutPayload)
+	}
+	if err := deliver(signoutRow, signoutPayload); err != nil {
+		t.Fatalf("Nemura's sign-out reaching Fyniq's door for sessions: %v", err)
+	}
+	// Fyniq's read-only client reads Nemura's log by identity with its other scope; the client that sends events cannot get a token for it.
+	page, err := asker.Sync(ctx, askKey, "")
+	if err != nil || len(page.Events) == 0 || page.HighestSequence < int64(len(page.Events)) {
+		t.Fatalf("the link's event log by identity: %+v %v", page, err)
+	}
+	for _, ev := range page.Events {
+		if ev.EventID == "" || ev.Type == "" || ev.State == "" {
+			t.Errorf("an event of the log: %+v", ev)
+		}
+	}
+	if _, err := toNemura.Token(ctx, apiclient.SyncScope); err == nil {
+		t.Error("the client that sends events got a token for the log")
+	}
+	if _, err := toFyniq.Token(ctx, "link.sync.read"); err == nil {
+		t.Error("Nemura's client got a token for a Nemura scope")
 	}
 }
 

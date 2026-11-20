@@ -136,7 +136,7 @@ func TestTheLinkIsProposedByAnOwnerAndApprovedByAnotherWithFyniqsHalf(t *testing
 	if len(oauth.registered) != 2 {
 		t.Fatalf("clients registered: %d", len(oauth.registered))
 	}
-	if a := oauth.registered[1]; a.ClientID != offer.PeerAskClientID || strings.Join(a.Scopes, " ") != apiclient.AskScope || a.ClientID == offer.PeerClientID || a.Audience != apiclient.Audience {
+	if a := oauth.registered[1]; a.ClientID != offer.PeerAskClientID || strings.Join(a.Scopes, " ") != apiclient.AskScope+" "+apiclient.SyncScope || a.ClientID == offer.PeerClientID || a.Audience != apiclient.Audience {
 		t.Errorf("the client registered for the ask at release: %+v", a)
 	}
 	g := oauth.registered[0]

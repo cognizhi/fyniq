@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/go-jose/go-jose/v4"
@@ -244,7 +245,7 @@ func (c LinkService) Activate(ctx context.Context, s api.Session, fyniqKey ed255
 	}
 	// The second client, for the ask at release: one scope that only reads a hold's status, its own key, its own ID.
 	askID, err := c.OAuth.RegisterIntegration(ctx, ports.IntegrationRegistration{ClientID: askPeer, Name: "Fyniq link (ask)", Class: "integration", Audience: apiclient.Audience,
-		Scopes: []string{apiclient.AskScope}, Key: askKey, Alg: "ES256", TokenLifespan: 15 * time.Minute, Organisation: s.Organisation.String()})
+		Scopes: []string{apiclient.AskScope, apiclient.SyncScope}, Key: askKey, Alg: "ES256", TokenLifespan: 15 * time.Minute, Organisation: s.Organisation.String()})
 	if err != nil {
 		_ = c.OAuth.RemoveClient(context.WithoutCancel(ctx), hydraID)
 		return err
@@ -367,6 +368,48 @@ func (c LinkService) Hold(ctx context.Context, caller linkauth.Caller, person uu
 			if h.Held {
 				out.Status = "held"
 			}
+		}
+		return nil
+	})
+	return out, err
+}
+
+// Sync reads the link's event log by identity for the asking client of the live link at its epoch: the highest sequence Nemura has queued and, after a sequence, each event's sequence, ID, type, object,
+// version and state, never a payload (the owner's decision of 21 Nov 2026: link.sync.read, identities only, for Fyniq's gap detection and health). The client that sends events is refused by the token's check and here.
+func (c LinkService) Sync(ctx context.Context, caller linkauth.Caller, after int64, limit int) (api.LinkSync, error) {
+	var out api.LinkSync
+	err := c.Store.InOrg(ctx, caller.Organisation, func(ctx context.Context, tx pgx.Tx) error {
+		l, err := LiveLink(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if l.ID != caller.Link || l.Epoch != caller.Epoch || l.State != "active" || l.PeerAskClientID != caller.ClientID || caller.Scope != apiclient.SyncScope {
+			return &payroll.Refusal{Code: CodeLinkNone, Message: "The call is not from the link's read-only client at the link's epoch."}
+		}
+		out = api.LinkSync{Epoch: l.Epoch, Events: []api.LinkSyncEvent{}}
+		if err := tx.QueryRow(ctx, `SELECT coalesce(max(sequence), 0) FROM nemura.link_event WHERE link_id = $1`, l.ID).Scan(&out.HighestSequence); err != nil {
+			return err
+		}
+		rows, err := tx.Query(ctx, `SELECT sequence, event_id, type, object_type, object_id, object_version, state FROM nemura.link_event WHERE link_id = $1 AND sequence > $2 ORDER BY sequence LIMIT $3`, l.ID, after, limit+1)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var e api.LinkSyncEvent
+			var id uuid.UUID
+			if err := rows.Scan(&e.Sequence, &id, &e.Type, &e.ObjectType, &e.ObjectID, &e.ObjectVersion, &e.State); err != nil {
+				return err
+			}
+			e.EventID = id.String()
+			out.Events = append(out.Events, e)
+		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		if len(out.Events) > limit {
+			out.Events = out.Events[:limit]
+			out.NextCursor = strconv.FormatInt(out.Events[limit-1].Sequence, 10)
 		}
 		return nil
 	})

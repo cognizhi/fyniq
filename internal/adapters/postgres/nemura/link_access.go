@@ -131,3 +131,55 @@ func FyniqAccessOf(ctx context.Context, tx pgx.Tx, issuer, subject string) (fina
 	}
 	return finance, passkey, err == nil, err
 }
+
+// SessionRevokedEvent is the payload of identity.session.revoked from Nemura, and the whole of it: the identity by issuer and subject, never an email, and why (signed_out or removed). Fyniq ends the person's
+// sessions when they are mapped to a person of the link, and only then (the owner's decision of 21 Nov 2026: the one scope identity.sessions.write).
+type SessionRevokedEvent struct {
+	Issuer  string `json:"issuer"`
+	Subject string `json:"subject"`
+	Reason  string `json:"reason"`
+}
+
+// QueueSessionRevoked tells Fyniq that a person was signed out of Nemura with the identity they signed in with, in the transaction that ended the session, when the link is active; nothing is queued with no
+// active link. Fyniq's own revocation, which Nemura applies by ending sessions in one function, never comes back this way.
+func QueueSessionRevoked(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, issuer, subject, reason string) error {
+	_, err := queueLinkEvent(ctx, tx, org, at, TypeSessionRevoked, "identity", uuid.NewString(), 1, SessionRevokedEvent{Issuer: issuer, Subject: subject, Reason: reason})
+	return err
+}
+
+// QueueMemberSessionsRevoked tells Fyniq, for each sign-in identity of a member, that they were removed from Nemura.
+func QueueMemberSessionsRevoked(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, member uuid.UUID, reason string) error {
+	l, err := LiveLink(ctx, tx)
+	if err != nil {
+		if noLink(err) {
+			return nil
+		}
+		return err
+	}
+	if l.State != "active" {
+		return nil
+	}
+	rows, err := tx.Query(ctx, `SELECT issuer, subject FROM nemura.member_identities($1)`, member)
+	if err != nil {
+		return err
+	}
+	var ids []SessionRevokedEvent
+	for rows.Next() {
+		var ev SessionRevokedEvent
+		if err := rows.Scan(&ev.Issuer, &ev.Subject); err != nil {
+			rows.Close()
+			return err
+		}
+		ids = append(ids, ev)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, ev := range ids {
+		if err := QueueSessionRevoked(ctx, tx, org, at, ev.Issuer, ev.Subject, reason); err != nil {
+			return err
+		}
+	}
+	return nil
+}

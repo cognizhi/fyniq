@@ -300,8 +300,8 @@ func TestNoOneButTheLinksClientReachesAnEventOperation(t *testing.T) {
 		map[string]any{"person_id": uuid.NewString(), "display_name": "x", "deleted": false})
 	for _, class := range []string{authn.ClassUser, authn.ClassIntegration, authn.ClassAgent} {
 		tok := e.principal(authn.Principal{Client: "x", Class: class, Organisation: e.books.Org, Roles: []authz.Role{authz.Owner}, Scoped: class != authn.ClassUser,
-			Scopes: []string{"people.projection.write", "people.holds.write", "payroll.journal.submit"}})
-		for _, path := range []string{"/v1/people-link/projection-events", "/v1/people-link/hold-events"} {
+			Scopes: []string{"people.projection.write", "people.holds.write", "payroll.journal.submit", "identity.sessions.write"}})
+		for _, path := range []string{"/v1/people-link/projection-events", "/v1/people-link/hold-events", "/v1/people-link/session-events"} {
 			if r := e.call(http.MethodPost, path, tok, ev); r.Status != http.StatusForbidden {
 				t.Errorf("a %s principal claiming the link's scopes reached %s: %d %s", class, path, r.Status, r.Raw)
 			}
@@ -340,6 +340,9 @@ var matrixPeopleLink = map[string]func(e *env, tok string) (response, func() boo
 	},
 	"receivePeopleHoldEvent": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/people-link/hold-events", tok, map[string]any{}), nil
+	},
+	"receivePeopleSessionEvent": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/people-link/session-events", tok, map[string]any{}), nil
 	},
 }
 

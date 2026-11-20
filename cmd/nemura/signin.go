@@ -127,6 +127,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 		d.LinkAuth = &linkauth.Introspector{OAuth: server, Routes: store, Audience: apiclient.Audience, Clock: deps.Clock, TTL: linkauth.MaxCache}
 		d.Link = nemura.LinkService{Store: store, OAuth: oauth, Clock: deps.Clock}
 		d.LinkHolds = nemura.LinkService{Store: store, OAuth: oauth, Clock: deps.Clock}
+		d.LinkSync = nemura.LinkService{Store: store, OAuth: oauth, Clock: deps.Clock}
 	}
 	api.New(s, d)
 	s.Handle("/", webApp(nemuraweb.Files()))
