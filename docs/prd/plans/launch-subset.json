@@ -183,6 +183,8 @@
     "access/roles-and-segregation: Permission matrix: Compliance Center",
     "access/roles-and-segregation: Permission matrix: Policy library",
     "access/roles-and-segregation: Permission matrix: Data protection (PDPA)",
+    "access/roles-and-segregation: Permission matrix: Retention holds",
+    "access/roles-and-segregation: Permission matrix: Security assessments",
     "access/roles-and-segregation: Permission matrix: Own personal-data requests",
     "access/roles-and-segregation: Permission matrix: Statutory calendar",
     "access/roles-and-segregation: Permission matrix: Checks and books health",
@@ -906,6 +908,7 @@
     "CTL-STAT-02",
     "CTL-STAT-03",
     "CTL-STAT-04",
+    "CTL-AUD-07",
     "CTL-IAM-01",
     "CTL-IAM-02",
     "CTL-IAM-03",
@@ -932,7 +935,8 @@
     "CTL-NM-04",
     "CTL-NM-05",
     "CTL-NM-06",
-    "CTL-NM-07"
+    "CTL-NM-07",
+    "CTL-CHG-12"
    ],
    "scenarios": []
   },

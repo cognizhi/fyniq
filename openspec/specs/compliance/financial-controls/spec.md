@@ -455,3 +455,17 @@ Source: PRD-001 §F.8
 #### Scenario: Framework mapping
 - **WHEN** the control is listed in the control registry
 - **THEN** it is mapped to the Income Tax Act and the Companies Act
+
+### Requirement: CTL-AUD-07 A legal hold keeps what it covers
+The purge after retention SHALL skip held records, years and contacts, and the database SHALL refuse to delete a held audit event or ledger entry (AUD-11). The control is checked on every change in CI by attack tests as the purge's own role and nightly by the storage-hold reconcile, with the test report and the reconcile log kept as evidence.
+
+Source: PRD-001 §F.2
+
+#### Scenario: A held row cannot be deleted
+- **GIVEN** a hold in force on a record, a contact or a financial year
+- **WHEN** the CI attack test deletes a covered audit event or ledger entry as the purge's role
+- **THEN** the database refuses it
+
+#### Scenario: Framework mapping
+- **WHEN** the control is listed in the control registry
+- **THEN** it is mapped to ISO 5.33 and 5.34, the PDPA's retention limitation and SOC2 C1.2
