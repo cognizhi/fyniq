@@ -657,6 +657,8 @@ export const actions = [
   { kind: "action", id: "invoice.save", mode: "basic", help: "invoice.save", guide: "sales.invoices#enter-an-invoice" },
   { kind: "action", id: "invoice.issue", mode: "basic", help: "invoice.issue", guide: "sales.invoices#check-and-issue-an-invoice" },
   { kind: "action", id: "invoice.ask-approval", mode: "basic", help: "invoice.ask-approval", guide: "sales.invoices#invoices-above-the-self-approval-threshold" },
+  { kind: "action", id: "invoice.payment-link", mode: "basic", help: "invoice.payment-link", guide: "sales.invoices#a-payment-link-on-an-invoice" },
+  { kind: "action", id: "invoice.payment-link-cancel", mode: "expert", help: "invoice.payment-link-cancel", guide: "sales.invoices#a-payment-link-on-an-invoice" },
   { kind: "action", id: "invoice.email", mode: "basic", help: "invoice.email", guide: "sales.invoices#email-an-invoice" },
   { kind: "action", id: "invoice.void", mode: "basic", help: "invoice.void", guide: "sales.invoices#void-or-edit-an-issued-invoice" },
   { kind: "action", id: "invoice.ask-void", mode: "basic", help: "invoice.ask-void", guide: "sales.invoices#void-or-edit-an-issued-invoice" },

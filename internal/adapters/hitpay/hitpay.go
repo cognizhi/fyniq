@@ -494,9 +494,13 @@ func (c *Client) listTransactions(ctx context.Context, from, to time.Time) (port
 		}
 		id := str(ch, "id")
 		raw, _ := json.Marshal(ch)
+		links := map[ports.ProviderKind][]string{ports.ProviderCharge: {id}}
+		if pr := str(ch, "payment_request_id"); pr != "" { // the payment link the charge was made under (FR-PSP-02)
+			links[ports.ProviderInvoice] = []string{pr}
+		}
 		page.Objects = append(page.Objects, ports.ProviderObject{Kind: ports.ProviderBalanceTransaction, ID: id, Status: str(ch, "status"),
 			Created: when(ch, "closed_at", "created_at"), Amount: gross.String(), Currency: code, Type: "charge", Category: "charge", Fee: fee.String(),
-			Net: net.String(), Links: map[ports.ProviderKind][]string{ports.ProviderCharge: {id}}, Raw: raw})
+			Net: net.String(), Links: links, Raw: raw})
 	}
 	for _, po := range payouts {
 		code := strings.ToUpper(str(po, "currency"))

@@ -851,6 +851,7 @@
     "Tabs: Details · Lines · Ledger impact (open for accountants; collapsed plain summary in Basic) · Attachments · Activity (history, approvals, comments, @mentions) · Related (receipts, allocations, credit notes, source quote)",
     "Right panel: checks for this record, AI suggestions (violet), evidence",
     "Send status timeline: sent, opened, accepted (quotes), paid; secure online link; PayNow QR or payment link (P2)",
+    "Payment link card (P2, FR-AR-13, FR-PSP-02): Add a payment link on an issued invoice with something open; the link to copy or open, its amount and reference; the charges HitPay made under it; Cancel the link with a reason",
     "Peppol transmission status up to the IRAS acknowledgement ID (P2)",
     "Disputed amount and promise-to-pay date pausing reminders (P2)",
     "Quote variant: validity date, status Draft/Sent/Accepted/Declined/Invoiced/Expired, customer acceptance evidence (name, date, comment), 'Convert to invoice'",

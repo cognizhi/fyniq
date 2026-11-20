@@ -2115,6 +2115,14 @@
       "label": "Issue",
       "tooltip": "Number it and post it to the ledger on its date: it adds its total to what the customer owes."
     },
+    "invoice.payment-link": {
+      "label": "Add a payment link",
+      "tooltip": "Ask your payment provider for a page where the customer pays what is open on this invoice. When they pay, Fyniq matches the provider's line to the invoice by itself."
+    },
+    "invoice.payment-link-cancel": {
+      "label": "Cancel the link",
+      "tooltip": "Close the link here so a new one can be made. The provider's page stays payable until it expires; a payment on it waits for a person in Banking."
+    },
     "invoice.ask-approval": {
       "label": "Ask for approval",
       "tooltip": "Its total is above the self-approval threshold: another person approves it, and it is issued as they do."
