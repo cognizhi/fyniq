@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { CircleCheck, CircleHelp, Hourglass, Plus, Trash2 } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -122,7 +122,10 @@ export function ThirdPartyApps({ labelledBy }: { labelledBy?: string }) {
                   ID <span className="fy-mono">{a.client_id}</span>
                 </span>
               </span>
-              <span className={`fy-chip ${a.status === "approved" ? "fy-chip--success" : a.status === "pending" ? "fy-chip--warning" : "fy-chip--neutral"}`}>{statuses[a.status]}</span>
+              <span className={`fy-chip ${a.status === "approved" ? "fy-chip--success" : a.status === "pending" ? "fy-chip--warning" : "fy-chip--neutral"}`}>
+                <Icon of={a.status === "approved" ? CircleCheck : a.status === "pending" ? Hourglass : CircleHelp} />
+                {statuses[a.status]}
+              </span>
               {registers && a.status !== "removed" && (
                 <Button variant="secondary" size="sm" disabled={busy} onClick={() => remove(a)} aria-label={`Remove ${a.name}`} title={helpText("mcp.remove-third-party").tooltip}>
                   <Icon of={Trash2} />
