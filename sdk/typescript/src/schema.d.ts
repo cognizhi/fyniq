@@ -29034,9 +29034,8 @@ export interface components {
             /**
              * @description The kind of service; a model provider (AI-71) is connected through AI connections, not installed.
              * @example outbound-email
-             * @enum {string}
              */
-            kind: "sign-in" | "outbound-email" | "inbound-email" | "messaging" | "ticketing" | "payment-provider" | "payment-link" | "bank-data" | "e-invoicing" | "document-ai" | "model-provider";
+            kind: string;
             /**
              * @description What disabling does to its queued work; pausing always holds it (FR-INT-26).
              * @example hold

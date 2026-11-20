@@ -16715,7 +16715,10 @@ components:
           type: string
         kind:
           description: The kind of service; a model provider (AI-71) is connected through AI connections, not installed.
-          enum:
+          examples:
+            - outbound-email
+          type: string
+          x-extensible-enum:
             - sign-in
             - outbound-email
             - inbound-email
@@ -16727,9 +16730,6 @@ components:
             - e-invoicing
             - document-ai
             - model-provider
-          examples:
-            - outbound-email
-          type: string
         on_disable:
           description: What disabling does to its queued work; pausing always holds it (FR-INT-26).
           enum:
