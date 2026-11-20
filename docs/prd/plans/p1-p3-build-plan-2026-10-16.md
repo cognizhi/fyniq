@@ -11,9 +11,9 @@ behind the specs or the screens.
 
 <!-- roadmap:summary -->
 
-That is all 1,405 requirements:
+That is all 1,407 requirements:
 - 117 belong to the P0 changes, which built them or hold them for the cloud gate;
-- the other 1,288 are spread over 66 changes below;
+- the other 1,290 are spread over 66 changes below;
 - all 204 designed screens after P0 sit with the change that owns most of their requirements.
 
 <!-- /roadmap -->
@@ -749,7 +749,7 @@ Each change is planned against its sandbox, like the P1 connectors.
 | 1 | `p2-invoicenow` | InvoiceNow (Peppol) sending and receiving, the submission population and the filing gate | 4 | 1 | `p1-gst` | Against an access point's sandbox | A Peppol access point; Q2 | Tax agent | — |
 | 1 | `p2-bank-feeds-payments` | Bank feeds, bank APIs and host-to-host, DBS RAPID or IDEAL Connect, card feeds, payment links (Model A), online payment, corporate cards | 4 | 0 | `p1-bank-import-reconcile`, `p1-payment-providers` | Against sandboxes | Q24; a licensed feed provider; HitPay | Co-founder | — |
 | 1 | `p2-tax-filings` | Corporate income tax support, F7 and F8, IRAS API filing, published pack updates, bad-debt relief with GST | 3 | 2 | `p1-gst` | Against IRAS's sandbox | IRAS API access | Tax agent | — |
-| 1 | `p2-payroll-outputs` | Payslip documents, the CPF submission file, IR8A and the Auto-Inclusion Scheme (in Nemura where it runs payroll) | 3 | 1 | `p1-nemura-payroll` | — | CPF Board and IRAS formats | Payroll administrator | — |
+| 1 | `p2-payroll-outputs` | Payslip documents, the CPF submission file, IR8A and the Auto-Inclusion Scheme (in Nemura where it runs payroll) | 5 | 1 | `p1-nemura-payroll` | — | CPF Board and IRAS formats | Payroll administrator | — |
 | 2 | `p2-reporting-planning` | Report builder, board pack, scheduled reports, deferral roll-forward, configurable dashboards, customer counts, anomaly alerts, industry benchmarks, rolling forecast, the funding plan, investor updates, access, obligations and the exit waterfall, shares for services, allocation rules, asset reports; the auditor's engagement | 19 | 7 | `p1-reports`, `p1-planning`, `p1-equity-register` | — | — | Accountant | — |
 | 2 | `p2-customer-portal-subscriptions` | The customer portal, subscription revenue schedules, disputes and promise-to-pay, revenue over time for fixed-fee projects | 3 | 1 | `p1-sales`, `p1-projects` | — | — | — | — |
 | 2 | `p2-api-third-parties` | Third-party API clients, webhooks and events, the semantic metrics endpoint, the sandbox, Go and Python SDKs, third-party MCP clients, ticketing connectors, Slack and Zoho Cliq | 8 | 2 | `p1-public-api`, `p1-mcp-first-party` | — | Q22 | Security | — |
@@ -847,7 +847,7 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `p2-invoicenow` | `purchases/payables`: FR-AP-05; `sales/receivables`: FR-AR-12; `tax/gst-and-filings`: FR-TAX-10, FR-TAX-11<br>Screens: invoicenow-submissions |
 | `p2-bank-feeds-payments` | `banking/bank-transactions`: FR-BNK-03; `banking/payment-providers`: FR-PSP-02; `purchases/expense-claims`: FR-AP-08; `sales/receivables`: FR-AR-13 |
 | `p2-tax-filings` | `sales/receivables`: FR-AR-11; `tax/gst-and-filings`: FR-TAX-06; `tax/statutory-parameters`: ENG-33<br>Screens: bad-debt-relief, filing-packs |
-| `p2-payroll-outputs` | `payroll/pay-runs`: FR-PAY-08, FR-PAY-09, FR-PAY-10<br>Screens: ir21-clearance |
+| `p2-payroll-outputs` | `payroll/pay-runs`: FR-PAY-08, FR-PAY-09, FR-PAY-10; `people/payroll`: NM-PAY-13, NM-PAY-14<br>Screens: ir21-clearance |
 | `p2-reporting-planning` | `equity/cap-table-and-investors`: FR-EQ-28, FR-EQ-23, FR-EQ-24, FR-EQ-29; `equity/founders-money`: FR-EQ-13; `experience/navigation`: FR-UX-42; `experience/visualisation`: FR-VIZ-09; `ledger/chart-of-accounts`: FR-DIM-03; `ledger/fixed-assets`: FR-FA-04; `planning/budgets-and-forecasts`: FR-PLN-04, FR-PLN-07; `reporting/dashboards-and-kpis`: FR-KPI-04, FR-KPI-05, FR-KPI-06, FR-KPI-07; `reporting/reports`: FR-RPT-04, FR-RPT-06, FR-RPT-07, FR-RPT-13<br>Screens: board-pack, board-portal, dashboards, exit-waterfall, investor-updates, management-report, report-builder |
 | `p2-customer-portal-subscriptions` | `projects/time-and-costs`: FR-PRJ-11; `sales/receivables`: FR-AR-14, FR-AR-15<br>Screens: customer-portal |
 | `p2-api-third-parties` | `ai/mcp-and-agents`: AI-46; `communication/email-and-notifications`: FR-NTF-04; `integrations/connectors`: FR-INT-23, FR-INT-24; `integrations/public-api`: FR-INT-04, FR-INT-12, FR-INT-15, FR-INT-18<br>Screens: routing-rules, webhooks |

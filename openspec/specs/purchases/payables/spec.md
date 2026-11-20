@@ -144,6 +144,10 @@ Source: PRD-001 §8.6 · Priority M with FR-AR-12 · Phase P2
 - **WHEN** a supplier's invoice arrives by InvoiceNow
 - **THEN** a draft bill is created from it
 
+#### Scenario: A duplicate received invoice is refused (rev 0.480)
+- **WHEN** the same sender sends the same invoice number again
+- **THEN** no second draft bill is made and the refusal names the first
+
 ### Requirement: FR-AP-06 AP ageing and cash requirement
 The system SHALL report AP ageing, the bills to pay by due date and a cash requirement forecast.
 
