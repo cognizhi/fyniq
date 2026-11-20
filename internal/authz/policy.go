@@ -379,7 +379,7 @@ var (
 	ListDimensionValues   = Policy{Operation: "listDimensionValues", Capability: DimensionValues, Need: View}
 	CreateDimensionValue  = Policy{Operation: "createDimensionValue", Capability: ChartOfAccounts, Need: Create}
 	ReplaceDimensionValue = Policy{Operation: "replaceDimensionValue", Capability: ChartOfAccounts, Need: Create}
-	// Webhook endpoints (FR-INT-12, rev 0.602): an organisation integration, an Administrator's to make and change, read by those who view integrations; never the AI.
+	// Webhook endpoints (FR-INT-12, rev 0.605): an organisation integration, an Administrator's to make and change, read by those who view integrations; never the AI.
 	ListWebhookEndpoints          = Policy{Operation: "listWebhookEndpoints", Capability: Integrations, Need: View}
 	GetWebhookEndpoint            = Policy{Operation: "getWebhookEndpoint", Capability: Integrations, Need: View}
 	CreateWebhookEndpoint         = Policy{Operation: "createWebhookEndpoint", Capability: Integrations, Need: Create}

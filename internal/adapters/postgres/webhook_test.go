@@ -14,7 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// Webhook records keep their rules in the database (FR-INT-12, rev 0.602): the API makes and changes an endpoint but cannot touch a delivery beyond putting a dead one back;
+// Webhook records keep their rules in the database (FR-INT-12, rev 0.605): the API makes and changes an endpoint but cannot touch a delivery beyond putting a dead one back;
 // the worker queues deliveries, records attempts and counts failures, and pauses or disables an active endpoint, and nothing else of an endpoint; a delivered delivery, a
 // delivery's payload and every attempt never change; nothing is deleted; a delivery is queued once per event and endpoint; and another organisation sees none of it.
 // req: FR-INT-12

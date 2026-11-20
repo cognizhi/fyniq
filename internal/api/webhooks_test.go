@@ -137,7 +137,7 @@ func (w *webhookEnv) create(url string, types ...string) response {
 	return w.e.call(http.MethodPost, "/v1/webhook-endpoints", w.admin, map[string]any{"url": url, "label": "Accounting sync", "event_types": types})
 }
 
-// FR-INT-12 (p2-api-third-parties, rev 0.602): an endpoint is off until an Owner switches webhooks on; an Administrator signed in and stepped up adds one for event types on the
+// FR-INT-12 (p2-api-third-parties, rev 0.605): an endpoint is off until an Owner switches webhooks on; an Administrator signed in and stepped up adds one for event types on the
 // allow-list, at a web address, and gets its secret once; it is pending until it echoes the challenge of a signed verification event; then an event the fan-out records reaches it
 // as a CloudEvent signed as Standard Webhooks, carrying IDs and times and never the title; the delivery is logged; a person who is not a signed-in person with step-up cannot make one.
 // req: FR-INT-12
