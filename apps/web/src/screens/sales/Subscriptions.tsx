@@ -116,6 +116,9 @@ export function Subscriptions() {
           <Icon of={Clock} size={24} />
           <h2 className="fy-h3">No provider is billing customers yet</h2>
           <p className="fy-secondary">Name a revenue account on a Stripe provider account under Banking, then its subscriptions and invoices appear here.</p>
+          <Link className="fy-btn fy-btn--primary" to="/banking/payouts">
+            Set up a provider account
+          </Link>
         </div>
       )}
       {subs.length > 0 && (
