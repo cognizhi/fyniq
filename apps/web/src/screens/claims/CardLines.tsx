@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, Paperclip } from "lucide-react";
+import { CreditCard, Paperclip, Sparkles } from "lucide-react";
 import { useId, useState } from "react";
 import { api, newKey } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
@@ -107,10 +107,66 @@ export function CardLines() {
       )}
       {receipt && (
         <Dialog open onOpenChange={(o) => !o && setReceipt(null)} title="The receipt" eyebrow={receipt.counterparty || receipt.description || "Card payment"} wide>
+          {receipt.document_id && <Suggestions line={receipt} onAttached={setSaid} />}
           <EvidencePanel record={{ kind: "card-line", id: receipt.id, etag: `"${receipt.version}"` }} draft={false} mayAttach onChanged={setSaid} />
         </Dialog>
       )}
     </section>
+  );
+}
+
+// Suggestions are the receipts the member's own inbox holds, read by the model, of the line's amount near its date (FR-AP-08): suggested, never attached
+// by themselves. The model's reading is labelled as such.
+function Suggestions({ line, onAttached }: { line: CardLine; onAttached: (message: string) => void }) {
+  const queries = useQueryClient();
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const [busy, setBusy] = useState(false);
+  const h = helpText("card-line.suggestions");
+  const q = useQuery({
+    queryKey: ["card-lines", "suggestions", line.id],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/card-lines/{line_id}/receipt-suggestions", { params: { path: { line_id: line.id } } });
+      if (error) throw error;
+      return data.items;
+    },
+  });
+  const attach = async (capture: string) => {
+    setBusy(true);
+    setProblem(null);
+    const out = await api.POST("/v1/card-lines/{line_id}/receipt-suggestions/attach", {
+      params: { path: { line_id: line.id }, header: { "Idempotency-Key": newKey(), "If-Match": `"${line.version}"` } },
+      body: { capture_id: capture },
+    });
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    onAttached("The receipt is attached.");
+    await queries.invalidateQueries();
+  };
+  const items = q.data ?? [];
+  if (items.length === 0 && !problem) return null;
+  return (
+    <div className="fy-stack fy-stack--2" aria-label="Suggested receipts">
+      <h3 className="fy-h4" title={h.tooltip}>
+        <Icon of={Sparkles} /> {h.label}
+      </h3>
+      {problem && <Refusal problem={problem} title="The receipt was not attached" />}
+      <ul className="fy-list">
+        {items.map((s) => (
+          <li key={s.capture_id} className="fy-row">
+            <span>
+              {s.file_name}
+              <span className="fy-small fy-muted block">
+                Read from the file by the model: {s.supplier ? `${s.supplier}, ` : ""}
+                {date(s.date)}, {s.total}
+              </span>
+            </span>
+            <Button size="sm" disabled={busy} onClick={() => void attach(s.capture_id)} aria-label={`Attach ${s.file_name} as the receipt`}>
+              Attach
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

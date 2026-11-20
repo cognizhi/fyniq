@@ -620,6 +620,7 @@ export const actions = [
   { kind: "action", id: "pre-incorporation.decide", mode: "basic", help: "pre-incorporation.decide", guide: "equity.pre-incorporation-costs#what-the-accountant-decides" },
   { kind: "action", id: "pre-incorporation-cost.attach-evidence", mode: "basic", help: "pre-incorporation-cost.attach-evidence", guide: "equity.pre-incorporation-costs#record-a-cost" },
   { kind: "action", id: "card-line.complete", mode: "basic", help: "card-line.complete", guide: "claims.my-claims#complete-your-company-card-lines" },
+  { kind: "action", id: "card-line.suggestions", mode: "basic", help: "card-line.suggestions", guide: "claims.my-claims#complete-your-company-card-lines" },
   { kind: "action", id: "card-line.attach-evidence", mode: "basic", help: "card-line.attach-evidence", guide: "claims.my-claims#complete-your-company-card-lines" },
   { kind: "action", id: "bill.post", mode: "basic", help: "bill.post", guide: "purchases.bills#check-and-post-a-bill" },
   { kind: "action", id: "bill.ask-approval", mode: "basic", help: "bill.ask-approval", guide: "purchases.bills#bills-above-the-self-approval-threshold" },
