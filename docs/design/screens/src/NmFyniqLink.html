@@ -48,4 +48,22 @@
       </section>
     </aside>
   </div>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="undel-title">
+      <div class="fy-card__head"><h2 class="fy-h2" id="undel-title">Not delivered</h2><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="refresh-cw"></i>Send the current state again</button></div>
+      <table class="fy-table fy-table--cards">
+        <thead><tr><th scope="col">Event</th><th scope="col">About</th><th scope="col">State</th><th scope="col" class="fy-from-expanded">Fyniq's code</th></tr></thead>
+        <tbody>
+          <tr><td data-card="title">Person upserted (number 9)</td><td data-card="meta">person, version 2</td><td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Refused by Fyniq</span></td><td data-card="meta" class="fy-from-expanded fy-small">PPL-09</td></tr>
+        </tbody>
+      </table>
+      <div class="fy-card__foot"><span class="fy-small fy-muted">Identities only: never the content. Fyniq ignores a version it already holds, so sending again is safe.</span></div>
+    </section>
+    <aside class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="rs-title">
+      <h2 class="fy-h3" id="rs-title">After a restore</h2>
+      <p class="fy-small fy-secondary">Nemura's database was restored, so the link is held and nothing is sent or paid. Decide each run Fyniq may have posted after the restore point, against Fyniq's own record.</p>
+      <div class="fy-row fy-row--wrap" style="gap: var(--space-3)"><span class="fy-small">June pay run, version 2</span><input class="fy-input" aria-label="Fyniq's posting reference" placeholder="Fyniq's posting reference" /><button class="fy-btn fy-btn--primary fy-btn--sm" type="button">Fyniq posted it</button><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Fyniq did not post it</button></div>
+    </aside>
+  </div>
 </div>

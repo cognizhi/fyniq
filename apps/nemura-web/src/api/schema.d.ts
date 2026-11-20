@@ -1055,13 +1055,37 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * The events queued for Fyniq after a sequence number
+         * @description The events Nemura queued for Fyniq after a sequence number, oldest first, with their state: for the people team to see what was sent and what was not. By identity only: the event's ID, number, type, object, version, state and Fyniq's code; never a payload. Cursor-paged. Only an Owner or an Administrator. It changes nothing.
+         */
+        get: operations["listLinkEvents"];
         put?: never;
         /**
          * Receive an event from Fyniq
          * @description Fyniq's link calls this with its client's bearer token and a signed envelope (PRD-002 NM-INT-10) carrying payroll.run.posted or payroll.payments.status. Nemura checks the token (the audience nemura-api, the scope link.events.write, and that the client is the live link's), then the envelope against the link: both organisations, the epoch, a signing time within five minutes, Fyniq's signature and the payload's digest. A payment's state goes through the one function of the payment events and a run's posting answer is kept for the run to show. Each event is applied once by its ID: a repeat answers duplicate. A refusal after the signature held is kept, by code and never with the payload. Only Fyniq's link client may call it: no session, no person and no ordinary API client; it changes only what the event says. It is on the never-list for the AI and MCP surfaces.
          */
         post: operations["receiveLinkEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/link/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The link's health
+         * @description Events by state, the oldest waiting, the last sent, whether the sync has failed for 24 hours (a warning on Checks), the checkpoint (the highest sequence number queued, sent and received), the newest events that failed or were refused, with Fyniq's codes, and a restore that is not reconciled yet. By identity only: never a payload. Only an Owner or an Administrator. It changes nothing.
+         */
+        get: operations["getLinkHealth"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1102,6 +1126,46 @@ export interface paths {
          * @description The first of three steps (PRD-002 NM-ARC-04). Only an Owner, confirmed with a passkey in the last five minutes, names the Fyniq organisation. Nemura makes its two keys and the ID Fyniq's client will have here and keeps the link as proposed; the answer holds what to give Fyniq. The private keys are kept for the worker and are never shown. Audited. It is on the never-list for the AI and MCP surfaces.
          */
         post: operations["proposeLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/link/repairs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send the current state to Fyniq again
+         * @description Repairs a gap (PRD-002 NM-INT-10): queues the current state of one person, or of everyone, for Fyniq again at the version it has now (Fyniq ignores a version it holds and applies one it missed), and queues again each object whose newest event failed or was refused. It is repair and never a change, and it needs an active link. Audited by its scope and number. Only an Owner or an Administrator. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["repairLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/link/restore/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide a run a restore holds
+         * @description After Nemura's database was restored the link is held and each run approved with proof whose answer the restored database lacks is unknown (PRD-002 NM-INT-13). An Owner or an Administrator, with a passkey confirmed in the last five minutes, decides each against Fyniq's own record: posted (with Fyniq's reference) or not posted (the same approval is then sent again). When the last is decided the restore is reconciled, the link resumes and the current state is sent again. Audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["decideLinkRestoreRun"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1942,6 +2006,26 @@ export interface paths {
          * @description Makes the itemised payslip of each person of an approved version: MOM's twelve items as data, the PDF drawn from them and its SHA-256, published to each person's My pay. Once for a version; a corrected version has its own. The employer's name is the letterhead's. The Payroll administrator and the Owner. It is audited without any amount.
          */
         post: operations["publishPayslips"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/runs/{id}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What Nemura kept of a run's life with Fyniq
+         * @description The run's receipt (PRD-002 NM-INT-13): the proof kept for each version approved while linked (its digest, the mapping version, when), each sending and where it stands, Fyniq's answers and the payment instructions and outcomes. No figure, no name and no account: it is what two databases are reconciled by. The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["getPayRunReceipt"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5356,6 +5440,74 @@ export interface components {
              */
             signature: string;
         };
+        LinkEventView: {
+            /**
+             * Format: int64
+             * @description How many times it was tried.
+             * @example 1
+             */
+            attempts: number;
+            /**
+             * @description The stable code of the last failure or refusal.
+             * @example PPL-19
+             */
+            code?: string;
+            /**
+             * Format: uuid
+             * @description The event's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            event_id: string;
+            /**
+             * @description The object's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            object_id: string;
+            /**
+             * @description The kind of object it is about.
+             * @example person
+             */
+            object_type: string;
+            /**
+             * Format: int64
+             * @description The object's version.
+             * @example 2
+             */
+            object_version: number;
+            /**
+             * Format: date-time
+             * @description When it was queued.
+             * @example 2026-11-25T09:00:00Z
+             */
+            queued_at: string;
+            /**
+             * Format: int64
+             * @description The link's running number.
+             * @example 41
+             */
+            sequence: number;
+            /**
+             * @description queued: waiting; sent: Fyniq took it; failed: not delivered yet, tried again; refused: Fyniq refused it for good.
+             * @example sent
+             * @enum {string}
+             */
+            state: "queued" | "sent" | "failed" | "refused";
+            /**
+             * @description The event type.
+             * @example people.person.upserted
+             */
+            type: string;
+        };
+        LinkEventsOutputBody: {
+            /** @description The events, oldest first, by identity. */
+            items: components["schemas"]["LinkEventView"][] | null;
+            /**
+             * Format: int64
+             * @description The sequence number to pass as cursor for the next page; absent on the last.
+             * @example 91
+             */
+            next_cursor?: number;
+        };
         LinkHeader: {
             /**
              * Format: uuid
@@ -5450,6 +5602,89 @@ export interface components {
              */
             type: string;
         };
+        LinkHealthView: {
+            /**
+             * Format: int64
+             * @description The link's epoch.
+             * @example 1
+             */
+            epoch?: number;
+            /**
+             * Format: int64
+             * @description Events not delivered yet, tried again.
+             * @example 0
+             */
+            failed: number;
+            /**
+             * @description True when the sync has failed for 24 hours (a warning on Checks, N.1 #7).
+             * @example false
+             */
+            failing_over_24_hours: boolean;
+            /**
+             * Format: date-time
+             * @description When the sync began failing: the oldest waiting event, when nothing was sent since.
+             * @example 2026-11-24T09:00:00Z
+             */
+            failing_since?: string;
+            /**
+             * Format: int64
+             * @description The highest Fyniq sequence number received.
+             * @example 12
+             */
+            last_fyniq_sequence: number;
+            /**
+             * Format: date-time
+             * @description When an event was last sent.
+             * @example 2026-11-25T09:00:01Z
+             */
+            last_sent?: string;
+            /**
+             * Format: int64
+             * @description The checkpoint: the highest sequence number queued.
+             * @example 41
+             */
+            last_sequence_queued: number;
+            /**
+             * Format: int64
+             * @description The highest sent.
+             * @example 41
+             */
+            last_sequence_sent: number;
+            /**
+             * Format: date-time
+             * @description When the oldest event not yet sent was queued.
+             * @example 2026-11-25T09:00:00Z
+             */
+            oldest_waiting?: string;
+            /**
+             * Format: int64
+             * @description Events waiting to be sent.
+             * @example 0
+             */
+            queued: number;
+            /**
+             * Format: int64
+             * @description Events Fyniq refused for good.
+             * @example 0
+             */
+            refused: number;
+            /** @description A restore not reconciled yet: the link is held. */
+            restore?: components["schemas"]["LinkRestoreView"];
+            /**
+             * Format: int64
+             * @description Events Fyniq took.
+             * @example 120
+             */
+            sent: number;
+            /**
+             * @description The link's state.
+             * @example active
+             * @enum {string}
+             */
+            state: "none" | "proposed" | "active" | "suspended" | "unlinking";
+            /** @description The newest events that failed or were refused, at most 50. */
+            undelivered: components["schemas"]["LinkEventView"][] | null;
+        };
         LinkHoldAnswer: {
             /**
              * Format: uuid
@@ -5497,6 +5732,123 @@ export interface components {
              * @enum {string}
              */
             outcome: "applied" | "ignored_older" | "duplicate";
+        };
+        LinkRepairInputBody: {
+            /**
+             * Format: uuid
+             * @description Repair one person; empty repairs everyone and sends again what failed.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id?: string;
+        };
+        LinkRepairOutputBody: {
+            /**
+             * Format: int64
+             * @description How many events were queued.
+             * @example 12
+             */
+            queued: number;
+        };
+        LinkRestoreDecisionInputBody: {
+            /**
+             * @description True if Fyniq's own record shows the run posted; false if it does not.
+             * @example true
+             */
+            posted: boolean;
+            /**
+             * @description Fyniq's posting reference, required when posted.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
+             */
+            reference?: string;
+            /**
+             * Format: uuid
+             * @description The run the restore holds.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+             */
+            run_id: string;
+            /**
+             * Format: int64
+             * @description The version.
+             * @example 2
+             */
+            version: number;
+        };
+        LinkRestoreDecisionOutputBody: {
+            /**
+             * @description True when this decision was the last: the restore is reconciled and the link resumed.
+             * @example false
+             */
+            resumed: boolean;
+        };
+        LinkRestoreRun: {
+            /**
+             * @description Empty until decided against Fyniq's own record.
+             * @example posted
+             * @enum {string}
+             */
+            outcome?: "posted" | "not_posted" | "";
+            /**
+             * @description Fyniq's posting reference, for a run decided as posted.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
+             */
+            reference?: string;
+            /**
+             * Format: uuid
+             * @description The run.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+             */
+            run_id: string;
+            /**
+             * Format: int64
+             * @description The version approved with proof.
+             * @example 2
+             */
+            version: number;
+        };
+        LinkRestoreView: {
+            /**
+             * Format: uuid
+             * @description The restore.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e11
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description The highest Fyniq sequence number it received.
+             * @example 12
+             */
+            last_fyniq_sequence: number;
+            /**
+             * Format: int64
+             * @description The highest sequence number the restored database knows it queued.
+             * @example 41
+             */
+            last_sequence_queued: number;
+            /**
+             * Format: int64
+             * @description The highest it knows it sent.
+             * @example 40
+             */
+            last_sequence_sent: number;
+            /**
+             * Format: date-time
+             * @description When the deployment's recovery recorded it.
+             * @example 2026-11-25T09:00:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description The two operators who ran the recovery.
+             * @example Ana Tan, Ben Lim
+             */
+            recorded_by: string;
+            /** @description The runs approved with proof whose answer the restored database does not hold. */
+            runs: components["schemas"]["LinkRestoreRun"][] | null;
+            /**
+             * @description open: the link is held until every run below is decided.
+             * @example open
+             * @enum {string}
+             */
+            state: "open" | "reconciled";
         };
         LinkState: {
             /** @description The organisation's live API clients as the link is made: they were registered before it, by one Owner alone, and the two people who approve it review them. Never a key. */
@@ -6949,6 +7301,98 @@ export interface components {
              */
             title: string;
         };
+        ReceiptApproval: {
+            /**
+             * Format: date-time
+             * @description When it was approved.
+             * @example 2026-11-25T09:00:00Z
+             */
+            approved_at: string;
+            /**
+             * @description The digest of the figures the approver signed.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            envelope_sha256: string;
+            /**
+             * Format: int64
+             * @description Fyniq's mapping version it was calculated against.
+             * @example 3
+             */
+            mapping_version: number;
+            /**
+             * Format: int64
+             * @description The version.
+             * @example 2
+             */
+            version: number;
+        };
+        ReceiptPayment: {
+            /**
+             * @description The bank instruction's ID.
+             * @example INSTR-1
+             */
+            instruction_id?: string;
+            /**
+             * Format: uuid
+             * @description The person paid.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            person_id: string;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-11-25T09:00:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description Where the state came from.
+             * @example fyniq
+             * @enum {string}
+             */
+            source: "fyniq" | "manual";
+            /**
+             * @description The state (NM-PAY-10).
+             * @example paid
+             */
+            state: string;
+        };
+        ReceiptSubmission: {
+            /**
+             * @description The stable code of a failure or refusal.
+             * @example PPL-19
+             */
+            code?: string;
+            /**
+             * Format: uuid
+             * @description The event.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            event_id: string;
+            /**
+             * Format: int64
+             * @description The link's running number.
+             * @example 41
+             */
+            sequence: number;
+            /**
+             * Format: date-time
+             * @description When it was sent or refused.
+             * @example 2026-11-25T09:00:01Z
+             */
+            settled_at?: string;
+            /**
+             * @description Where it stands.
+             * @example sent
+             * @enum {string}
+             */
+            state: "queued" | "sent" | "failed" | "refused";
+            /**
+             * Format: int64
+             * @description The version sent.
+             * @example 2
+             */
+            version: number;
+        };
         Record: {
             /** @description Their legal classification on the day asked; only the people team sees it. */
             classification?: components["schemas"]["Classification"];
@@ -7698,6 +8142,22 @@ export interface components {
              * @example MEUCIQ
              */
             signature: string;
+        };
+        RunReceiptView: {
+            /** @description The proof kept for each version approved while linked. */
+            approvals: components["schemas"]["ReceiptApproval"][] | null;
+            /** @description The payment instructions and outcomes, without an amount or a name. */
+            payments: components["schemas"]["ReceiptPayment"][] | null;
+            /** @description Fyniq's answers. */
+            postings: components["schemas"]["RunPosting"][] | null;
+            /**
+             * Format: uuid
+             * @description The run.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+             */
+            run_id: string;
+            /** @description Each sending of an approved version. */
+            submissions: components["schemas"]["ReceiptSubmission"][] | null;
         };
         RunRetryInputBody: {
             /**
@@ -12570,6 +13030,79 @@ export interface operations {
             };
         };
     };
+    listLinkEvents: {
+        parameters: {
+            query?: {
+                /** @description Return the events queued after this sequence number: pass the next_cursor of the last page. */
+                cursor?: number;
+                /** @description How many to return, at most 200; 50 when absent. */
+                limit?: number;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkEventsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     receiveLinkEvent: {
         parameters: {
             query?: never;
@@ -12615,6 +13148,74 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLinkHealth: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkHealthView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12754,6 +13355,168 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LinkState"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    repairLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkRepairInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkRepairOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideLinkRestoreRun: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkRestoreDecisionInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkRestoreDecisionOutputBody"];
                 };
             };
             /** @description Unauthorized */
@@ -16128,6 +16891,86 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPayRunReceipt: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunReceiptView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

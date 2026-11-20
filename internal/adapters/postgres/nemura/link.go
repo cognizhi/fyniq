@@ -322,6 +322,11 @@ func ReceiveLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Ti
 				}
 			}
 		}
+	case TypeReplayRequested:
+		var ev replayRequest
+		if applyErr = strict(&ev); applyErr == nil {
+			applyErr = applyReplay(ctx, sp, org, now, ev)
+		}
 	case TypeDepartmentChanged:
 		var ev departmentChangedEvent
 		if applyErr = strict(&ev); applyErr == nil {

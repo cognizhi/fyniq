@@ -32,6 +32,7 @@ export function Shell({ children, directory, features, roles }: { children: Reac
             {features && <a href="/settings/features">{t("nav.features")}</a>}
             {directory && <a href="/settings/packs">{t("nav.packs")}</a>}
             {directory && <a href="/settings/policy">{t("nav.policy")}</a>}
+            {linkAdmin(roles ?? []) && <a href="/settings/fyniq">{t("nav.fyniq")}</a>}
           </nav>
         </span>
         <form method="post" action="/api/auth/signout">
@@ -60,3 +61,6 @@ export const hr = (roles: readonly string[]): boolean => roles.some((r) => ["hr_
 
 // payroll reports whether the roles see pay: the Payroll administrator and the Owner alone.
 export const payroll = (roles: readonly string[]): boolean => roles.some((r) => r === "payroll_admin" || r === "owner");
+
+// linkAdmin reports whether the roles see the link to Fyniq: an Owner or an Administrator. The API decides; this only shows the link.
+export const linkAdmin = (roles: readonly string[]): boolean => roles.some((r) => r === "owner" || r === "administrator");

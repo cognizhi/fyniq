@@ -317,6 +317,11 @@ func (p *PacksService) Checks(ctx context.Context, s api.Session, on time.Time) 
 			return err
 		}
 		out = append(out, checks.Payments(payments)...)
+		linkFindings, err := LinkFindings(ctx, tx, on)
+		if err != nil {
+			return err
+		}
+		out = append(out, linkFindings...)
 		calendar, err := CalendarFacts(ctx, tx, on)
 		if err != nil {
 			return err

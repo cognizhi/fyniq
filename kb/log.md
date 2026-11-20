@@ -805,3 +805,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | payroll-approval.md -> nemura.payroll-approval (approval with proof when linked, p1-nemura-fyniq-link 3.1)
 
 ## [2026-11-20] compile | planning.budgets: entering lines in a grid
+
+## [2026-11-20] compile | docs/user-guide/nemura/fyniq-link.md -> nemura.fyniq-link (link page, health, repair and restore; p1-nemura-fyniq-link 5.1-5.3)
+
+## [2026-11-20] compile | payroll-approval.md -> nemura.payroll-approval (link to the Fyniq link page)

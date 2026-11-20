@@ -24,6 +24,7 @@ import { Person } from "./pages/Person";
 import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
+import { FyniqLink } from "./pages/FyniqLink";
 import { PayRunApproval } from "./pages/PayRunApproval";
 import { MyPay, Payslip } from "./pages/MyPay";
 import { FlexReplies } from "./components/FlexReplies";
@@ -43,8 +44,8 @@ import { reviewsFor, review, type Register } from "./review";
 import { SessionProvider } from "./session";
 import { answer, bodies, calls } from "./test/setup";
 
-const stepUp = vi.hoisted(() => ({ result: undefined as string | undefined }));
-vi.mock("./api/stepup", () => ({ confirmWithPasskey: async () => stepUp.result }));
+const stepUp = vi.hoisted(() => ({ result: undefined as string | undefined, proof: { authenticator_data: "AA", client_data: "AA", signature: "AA" } as { authenticator_data: string; client_data: string; signature: string } | string }));
+vi.mock("./api/stepup", () => ({ confirmWithPasskey: async () => stepUp.result, signApprovalEnvelope: async () => stepUp.proof }));
 
 const providers = { providers: [{ id: "local", name: "Local sign-in" }, { id: "google", name: "Google" }], setup_done: true };
 const session = { landing: "/me", member_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45", organisation_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44", roles: ["employee"], leaver: false };
@@ -1548,5 +1549,124 @@ describe("a permanent resident's joint election", () => {
     fireEvent.submit(screen.getByRole("form", { name: "Record a joint election" }));
     expect(await screen.findByText("The election is recorded.")).toBeTruthy();
     expect(bodies.get(`POST /v1/people/${person}/pr-election`)).toMatchObject({ evidence_document_id: doc, kind: "ff" });
+  });
+});
+
+// req: NM-INT-03, NM-INT-06
+describe("approving a pay run while linked to Fyniq", () => {
+  const rid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43";
+  const preparer = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45";
+  const other = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e46";
+  const digest = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
+  const sha = "1f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
+  const totals = { gross: "10000.00", cpf_employee: "2000.00", cpf_employer: "1700.00", sdl_payable: "22.00", shg: "0.00", deductions: "0.00", reimbursements: "0.00", net: "8000.00", disburse: "8000.00", employer_cost: "11722.00" };
+  const v = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f41", version: 2, state: "calculated", digest, prepared_by: preparer, prepared_at: "2026-11-20T10:00:00Z", people: 1, flags_failing: 0, flags_warning: 0, pack_versions: [], totals };
+  const run = { id: rid, month: "2026-06-01", pay_group_id: "g", pay_group: "Monthly", pay_day: "2026-06-25", latest: v, versions: [v], overrides: [], lines: [] };
+  const envelope = { organisation: "o", run_id: rid, version: 2, supersedes: 1, wage_month: "2026-06", departments: [{ department_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e70", gross: "10000.00" }], employee_cpf: "2000.00", employer_cpf: "1700.00", sdl: "22.00", shg: "0.00",
+    deductions: [], reimbursements: "0.00", pack_version: "sg-cpf@2026.1", policy_version: "sg-people@2026.1", mapping_version: 3, approver_right: "payroll.approve" };
+  const ready = { linked: true, ready: true, issues: [], envelope, envelope_sha256: sha, challenge: "Ych", rp_id: "example.test", origin: "https://people.example.test" };
+
+  it("shows the figures Fyniq will post, no plain button, and approves with the passkey's proof over the envelope", async () => {
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: run });
+    answer(`GET /v1/payroll/runs/${rid}/changes`, { status: 200, body: { has_previous: false, changes: [], unexplained: [] } });
+    answer(`GET /v1/payroll/runs/${rid}/approval-envelope`, { status: 200, body: ready });
+    answer(`GET /v1/payroll/runs/${rid}/submission`, { status: 200, body: { linked: true, version: 0, state: "none", retryable: false } });
+    answer(`POST /v1/payroll/runs/${rid}/linked-approval`, { status: 204, body: undefined });
+    stepUp.result = undefined;
+    stepUp.proof = { authenticator_data: "QQ", client_data: "Qg", signature: "Qw" };
+    const { container } = render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    expect(await screen.findByText("Approve with proof for Fyniq")).toBeTruthy();
+    expect(screen.getByText("Wage month 2026-06, calculated against Fyniq's account mapping version 3.")).toBeTruthy();
+    expect(screen.getByText("Department 0194f5a0: gross pay 10000.00")).toBeTruthy();
+    expect(screen.getByText(`Digest of these figures, which your passkey signs: ${sha}`)).toBeTruthy();
+    expect(screen.getByText(/Sign with the passkey you enrolled in Fyniq/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Confirm with my passkey and approve version 2" })).toBeNull();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Confirm, sign the figures and approve version 2" }));
+    expect(await screen.findByText("Approved with proof. Nemura is sending it to Fyniq: its answer shows below.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/payroll/runs/${rid}/linked-approval`)).toMatchObject({ version: 2, digest, envelope_sha256: sha, approval: { authenticator_data: "QQ", client_data: "Qg", signature: "Qw" } });
+  });
+
+  it("lists what stops the envelope being signed and disables the button; a passkey that did not sign says so", async () => {
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: run });
+    answer(`GET /v1/payroll/runs/${rid}/approval-envelope`, { status: 200, body: { ...ready, ready: false, issues: ["Fyniq has no department named Sales."], envelope_sha256: undefined, challenge: undefined } });
+    render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    expect(await screen.findByText("Fyniq has no department named Sales.")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Confirm, sign the figures and approve version 2" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("shows Fyniq's refusal with its code, tells an approver with no passkey there how to put it right and sends the approval again", async () => {
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: { ...run, latest: { ...v, state: "approved" }, versions: [{ ...v, state: "approved" }] } });
+    answer(`GET /v1/payroll/runs/${rid}/submission`, { status: 200, body: { linked: true, version: 2, state: "refused", code: "PPL-19", retryable: true, posting: { status: "refused", code: "PPL-19", message: "The approver has no passkey enrolled in Fyniq.", received_at: "2026-11-25T09:00:00Z" } } });
+    answer(`POST /v1/payroll/runs/${rid}/submission`, { status: 204, body: undefined });
+    render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    expect(await screen.findByText("Fyniq refused version 2 on the way in (PPL-19).")).toBeTruthy();
+    expect(screen.getByText(/Fyniq refused to post it \(PPL-19\): The approver has no passkey enrolled in Fyniq\./)).toBeTruthy();
+    expect(screen.getByText(/Sign in to Fyniq, add a passkey in its security settings, then select Send again\./)).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Send it to Fyniq again" }));
+    expect(await screen.findByText("Sent again. Fyniq's answer shows here.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/payroll/runs/${rid}/submission`)).toEqual({ version: 2 });
+  });
+});
+
+// req: NM-ARC-04, NM-INT-04, NM-INT-13
+describe("the link to Fyniq", () => {
+  const base = { epoch: 1, nemura_organisation_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44", fyniq_organisation_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45" };
+  const health = { state: "active", epoch: 1, queued: 1, failed: 0, sent: 12, refused: 1, failing_over_24_hours: true, failing_since: "2026-11-24T09:00:00Z", last_sent: "2026-11-24T08:00:00Z", last_sequence_queued: 14, last_sequence_sent: 13, last_fyniq_sequence: 6,
+    undelivered: [{ event_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e91", sequence: 9, type: "people.person.upserted", object_type: "person", object_id: "p", object_version: 2, state: "refused", code: "PPL-09", attempts: 1, queued_at: "2026-11-24T09:00:00Z" }] };
+
+  it("shows the health by identity with Fyniq's code and a warning after 24 hours, and repairs a gap by sending the current state again", async () => {
+    answer("GET /v1/link", { status: 200, body: { state: "active", ...base, api_clients: [{ id: "c", name: "Payroll bridge", scopes: ["directory.read"], client_id: "x", audience: "nemura-api" }] } });
+    answer("GET /v1/link/health", { status: 200, body: health });
+    answer("POST /v1/link/repairs", { status: 200, body: { queued: 3 } });
+    const { container } = render(<FyniqLink roles={["owner"]} />);
+    expect(await screen.findByText("Waiting 1, not delivered yet 0, sent 12, refused 1.")).toBeTruthy();
+    expect(screen.getByText("The link has not synced since 2026-11-24T09:00:00Z. Read why below, put it right and send again.")).toBeTruthy();
+    expect(screen.getByText("PPL-09")).toBeTruthy();
+    expect(screen.getByText("Refused by Fyniq")).toBeTruthy();
+    expect(screen.getByText("Payroll bridge: directory.read")).toBeTruthy();
+    expect(screen.getByText("Checkpoint: queued up to 14, sent up to 13, received from Fyniq up to 6.")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Send the current state to Fyniq again" }));
+    expect(await screen.findByText("Queued 3 events: Fyniq ignores what it holds and applies what it missed.")).toBeTruthy();
+  });
+
+  it("holds the link after a restore until each run is decided against Fyniq's record, with its reference for a posted one", async () => {
+    answer("GET /v1/link", { status: 200, body: { state: "suspended", ...base } });
+    answer("GET /v1/link/health", { status: 200, body: { ...health, state: "suspended", failing_over_24_hours: false, undelivered: [], restore: { id: "r", recorded_at: "2026-11-25T09:00:00Z", recorded_by: "Ann Lee, Bob Tan", last_sequence_queued: 14, last_sequence_sent: 13, last_fyniq_sequence: 6, state: "open",
+      runs: [{ run_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43", version: 2 }] } } });
+    answer("POST /v1/link/restore/decisions", { status: 200, body: { resumed: true } });
+    stepUp.result = undefined;
+    render(<FyniqLink roles={["administrator"]} />);
+    expect(await screen.findByText("Held: reconcile the restore first")).toBeTruthy();
+    expect(screen.getByText(/Nemura's database was restored by Ann Lee, Bob Tan/)).toBeTruthy();
+    const posted = screen.getByRole("button", { name: "Fyniq posted it" }) as HTMLButtonElement;
+    expect(posted.disabled).toBe(true);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Fyniq's posting reference"), { target: { value: "ref-9" } });
+    fireEvent.click(posted);
+    expect(await screen.findByText("Reconciled. The link is active and the current state is on its way to Fyniq.")).toBeTruthy();
+    expect(bodies.get("POST /v1/link/restore/decisions")).toEqual({ run_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43", version: 2, posted: true, reference: "ref-9" });
+  });
+
+  it("is for an Owner or an Administrator, proposes the link with a passkey and shows what to give Fyniq", async () => {
+    render(<FyniqLink roles={["hr_admin"]} />);
+    expect(await screen.findByText("Only an Owner or an Administrator sees the link to Fyniq.")).toBeTruthy();
+    cleanup();
+    answer("GET /v1/link", { status: 200, body: { state: "none" } });
+    answer("GET /v1/link/health", { status: 200, body: { state: "none", queued: 0, failed: 0, sent: 0, refused: 0, undelivered: [], last_sequence_queued: 0, last_sequence_sent: 0, last_fyniq_sequence: 0, failing_over_24_hours: false } });
+    answer("POST /v1/link/proposal", { status: 201, body: { state: "proposed", ...base, link_key: "KEY", nemura_client_id: "fyniq-link-1", nemura_ask_client_id: "fyniq-ask-1" } });
+    stepUp.result = undefined;
+    render(<FyniqLink roles={["owner"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(await screen.findByLabelText(/The Fyniq organisation's ID/), { target: { value: base.fyniq_organisation_id } });
+    answer("GET /v1/link", { status: 200, body: { state: "proposed", ...base, link_key: "KEY", nemura_client_id: "fyniq-link-1", nemura_ask_client_id: "fyniq-ask-1" } }); // what the page reads again after the proposal
+    fireEvent.click(screen.getByRole("button", { name: "Start the link with my passkey" }));
+    expect(await screen.findByText("What to give Fyniq")).toBeTruthy();
+    expect(screen.getByText("fyniq-link-1")).toBeTruthy();
+    expect(bodies.get("POST /v1/link/proposal")).toEqual({ fyniq_organisation_id: base.fyniq_organisation_id });
   });
 });

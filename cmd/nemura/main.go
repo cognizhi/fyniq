@@ -156,12 +156,15 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 
 // migrate is the migrate role: `up` applies every pending migration, `status` lists them.
 func migrate(ctx context.Context, getenv func(string) string, args []string, clock ports.Clock) error {
-	const usage = "usage: NEMURA_ROLE=migrate nemura up | nemura status | nemura setup-code | nemura owner-recovery <organisation id> <member id> \"<name>, <name>\""
+	const usage = "usage: NEMURA_ROLE=migrate nemura up | nemura status | nemura setup-code | nemura owner-recovery <organisation id> <member id> \"<name>, <name>\" | nemura link-restore <organisation id> \"<name>, <name>\""
 	if len(args) == 0 {
 		return errors.New(usage)
 	}
 	if args[0] == "owner-recovery" {
 		return ownerRecovery(ctx, getenv, args[1:], clock)
+	}
+	if args[0] == "link-restore" {
+		return linkRestore(ctx, getenv, args[1:], clock)
 	}
 	if len(args) != 1 || (args[0] != "up" && args[0] != "status" && args[0] != "setup-code") {
 		return errors.New(usage)
