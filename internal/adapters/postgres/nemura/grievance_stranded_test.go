@@ -236,7 +236,7 @@ func TestAGrievanceIsRoutedPastADeactivatedHandlerAndHiddenFromAPersonGivenALogi
 // The worker learns only which grievances wait and whom to tell, never a word; it tells each authorised person who is not involved once; a decided grievance is reported after five years for a person to
 // review, deleted with its inquiry record only once reviewed, kept while a legal hold names it or anyone involved, and refused by the database before its time (NM-SEC-06, NM-SEC-05).
 // req: NM-SEC-06, NM-SEC-05
-// asvs: V8.3.1, V8.3.4
+// asvs: V8.3.1, V8.3.2
 func TestTheWorkersGrievanceJobsTellWhoMustTakeOneAndDeleteADecidedOneOnlyAfterItsRetentionAndReview(t *testing.T) {
 	g := newGriefTeam(t)
 	c := g.c
