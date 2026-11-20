@@ -19,7 +19,11 @@ import (
 
 // AISInput is what only the employer knows of its Auto-Inclusion Scheme submission: who is authorised, how to reach them and whether this is the original, an amendment or a revision
 // (IRAS data items A5 to A8). Nothing here is guessed (p2-payroll-outputs design D2).
-type AISInput struct{ AuthorisedPerson, ContactNumber, Email, SubmissionType string }
+type AISInput struct {
+	AuthorisedPerson, ContactNumber, Email, SubmissionType string
+	Part                                                   int // which payload of a year of more than MaxAISRecords people; 0 is the first
+	Chunk                                                  int // the most records in a payload; 0 is IRAS's limit (tests use a smaller one)
+}
 
 type yearPerson struct {
 	id    uuid.UUID
@@ -117,7 +121,7 @@ func whole(d *apd.Decimal) *int64 {
 // ExportAIS makes the IR8A / Auto-Inclusion Scheme payload (IRAS AIS-API 2.0 version 2.6; PRD-002 NM-PAY-14, PRD-001 FR-PAY-10) of the income year the run's pay date falls in, from every
 // approved pay run of that year: each person's pay items sum into the IR8A's boxes by their nature (payroll.IR8AFrom: [accountant to confirm]), the employee's CPF is the year's,
 // the NRIC opens from its sealed form and the sex, address and designation from theirs, each read audited. A person with no NRIC of a kind IRAS takes, no particulars or no date of birth
-// is left out and listed with why; a payload that breaks one of IRAS's data-item rules is refused with each rule named, and a year of more than 2,000 people is refused until it can be sent in chunks.
+// is left out and listed with why; a payload that breaks one of IRAS's data-item rules is refused with each rule named, and a year of more than 2,000 people is made in parts of at most 2,000, a part at a time (AISInput.Part), as IRAS takes 2,000 records in a submission (A11).
 // The file is the payload to send, not proof that IRAS received it.
 func ExportAIS(ctx context.Context, tx pgx.Tx, c ports.Cipher, org uuid.UUID, at time.Time, by, run uuid.UUID, version int, in AISInput) ([]byte, Manifest, error) {
 	r, v, err := approvedVersion(ctx, tx, run, version)
@@ -211,8 +215,15 @@ FROM nemura.person p LEFT JOIN nemura.person_secret s ON s.person_id = p.id WHER
 	if len(people) == 0 {
 		return nil, Manifest{}, &payroll.Refusal{Code: payroll.CodeConflict, Message: fmt.Sprintf("Nobody paid in %d can go in the file: see who was left out and why.", year)}
 	}
-	if len(people) > payroll.MaxAISRecords {
-		return nil, Manifest{}, &payroll.Refusal{Code: payroll.CodeInvalid, Message: fmt.Sprintf("The file would hold %d people: IRAS takes %d in one submission, and the file cannot yet be sent in chunks.", len(people), payroll.MaxAISRecords)}
+	chunks := payroll.Chunks(people, in.Chunk)
+	part := max(in.Part, 1)
+	if part > len(chunks) {
+		return nil, Manifest{}, &payroll.Refusal{Code: payroll.CodeInvalid, Message: fmt.Sprintf("part: the year's file has %d part(s) of at most %d people (%d people in all); part %d does not exist.", len(chunks), payroll.MaxAISRecords, len(people), part)}
+	}
+	people = chunks[part-1]
+	total = 0
+	for _, p := range people {
+		total += p.TotalIncome()
 	}
 	file, findings := payroll.AISPayload(org8, people, false, false)
 	if len(findings) > 0 {
@@ -228,5 +239,9 @@ FROM nemura.person p LEFT JOIN nemura.person_secret s ON s.person_id = p.id WHER
 	}
 	m, err := record(ctx, tx, org, at, by, run, v, "ais", file, len(people), skipped, cents2(dec(fmt.Sprint(total))), r)
 	m.FileName = fmt.Sprintf("ir8a-%d.json", year)
+	if len(chunks) > 1 {
+		m.Parts, m.Part = len(chunks), part
+		m.FileName = fmt.Sprintf("ir8a-%d-part-%d-of-%d.json", year, part, len(chunks))
+	}
 	return file, m, err
 }
