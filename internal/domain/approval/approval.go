@@ -187,6 +187,11 @@ const (
 	// Admin or the Owner and approved by the Owner with a second approver (golden rule 6); its key is the organisation's ID, since an
 	// organisation has one link at a time.
 	ObjectPeopleLink = "people_link"
+	// ObjectSalaryBatch is a salary payment batch (FR-PAY-11, FR-PPL-10, FR-PPL-14, FR-PPL-17, FM-1; rev 0.390): approved by another person who holds A on "Pay runs,
+	// employee data" and who neither asked for it nor prepared or approved the run in Nemura (SOD-4); its key is the batch's ID. Its envelope holds the batch's version, status,
+	// total and a digest of its lines (each person's amount and bank-detail record, version and digest), never a name or an account, so an approver who sees only totals still
+	// signs for exactly these lines.
+	ObjectSalaryBatch = "salary_batch"
 	// ObjectAIProposal is an AI proposal to execute (AI-89, AI-P4, AI-P5, AI-10; rev 0.280): one step of the task type's
 	// approver roles who could do its command themselves signs the payload's hash; the person who asked may sign their
 	// own tier-1 proposal; no organisation changes its policy. Its key is the proposal's id.
@@ -346,6 +351,8 @@ const (
 	OpPeopleLink = "people_link.link"
 	// OpPeopleUnlink ends the link: work in flight settles first, then the link's client is revoked (FR-PPL-16).
 	OpPeopleUnlink = "people_link.unlink"
+	// OpSalaryBatchApprove approves a salary batch for release, or approves it again after a line or a bank detail changed (FR-PAY-11, FR-PPL-14).
+	OpSalaryBatchApprove = "salary_batch.approve"
 	// OpAPIClientReclass reclasses a personal access token from agent to integration (FR-INT-02).
 	OpAPIClientReclass = "api_client.reclass"
 	// OpAIDataPolicyChange makes the asked policy the organisation's next version (AI-75).
@@ -417,6 +424,7 @@ var Operations = map[string]string{
 	OpAPIClientCreate:          ObjectAPIClient,
 	OpPeopleLink:               ObjectPeopleLink,
 	OpPeopleUnlink:             ObjectPeopleLink,
+	OpSalaryBatchApprove:       ObjectSalaryBatch,
 	OpAPIClientReclass:         ObjectAPIClient,
 	OpAIProposalExecute:        ObjectAIProposal,
 	OpCorporateDetailRecord:    ObjectCorporateDetail,
@@ -548,6 +556,8 @@ var Dependencies = map[string][]string{
 	ObjectAPIClient: {"status"},
 	// the link's state and epoch: what is linked or unlinked
 	ObjectPeopleLink: {"state", "epoch"},
+	// the salary batch's version and status, its total, and a digest of its lines: what is released, and to whom, without saying who
+	ObjectSalaryBatch: {"status", "total", "lines", "run"},
 	// the proposal's status and its payload's hash: what executes
 	ObjectAIProposal: {"status", "payload_sha256"},
 	// the detail's version and status, and the day it takes effect: what is recorded
@@ -624,6 +634,7 @@ var Rows = map[string]string{
 	ObjectKBPublication:       "Knowledge base: compiled pages and index (rev 0.4)",
 	ObjectAPIClient:           "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)",
 	ObjectPeopleLink:          "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals",
+	ObjectSalaryBatch:         "Pay runs, employee data",
 	// Who signs a proposal is its task type's (the request names the roles and the command's right); who sees it is the
 	// AI activity log's: each member their own, the Owner and the DPO every one.
 	ObjectAIProposal:         "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)",
@@ -725,6 +736,7 @@ var Policies = map[string]Policy{
 	ObjectAIRoute:             {ObjectType: ObjectAIRoute, Version: "founder/ai_route@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAPIClient:           {ObjectType: ObjectAPIClient, Version: "founder/api_client@2026-11-17.1", Steps: []Step{{Quorum: 1}}},
 	ObjectPeopleLink:          {ObjectType: ObjectPeopleLink, Version: "founder/people_link@2026-11-20.1", Steps: []Step{{Quorum: 1}}},
+	ObjectSalaryBatch:         {ObjectType: ObjectSalaryBatch, Version: "founder/salary_batch@2026-11-21.1", Steps: []Step{{Quorum: 1}}},
 	ObjectKBPublication:       {ObjectType: ObjectKBPublication, Version: "founder/kb_publication@2026-11-19.1", Steps: []Step{{Quorum: 1}}},
 	// Fixed: no policy removes a proposal's step or automates it, in any team mode (AI-P4, AI-06, CTL-AI-03); the request
 	// narrows its step to the task type's approver roles.

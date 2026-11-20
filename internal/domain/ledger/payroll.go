@@ -351,3 +351,26 @@ func DecodePayrollPosted(version int, kept map[string]string, base money.Currenc
 	}
 	return out, nil
 }
+
+// NetPay is what a run's posted totals owe on 2100 Salaries payable: the net pay to be paid, with reimbursements paid with salary (FR-PAY-18), in the base currency and without sign. Payment
+// lines may pay no more than this (FR-PPL-12); it is zero when the run posted nothing there.
+func (p PayrollPosted) NetPay(s Settings, base money.Currency) (money.Money, error) {
+	acc, ok := s.byRole(RoleSalariesPayable)
+	if !ok {
+		return money.Zero(base), Problems{{CodeSystemRole, "account", "the chart has no salaries payable account (2100)", "Load the standard chart, or give an account the role " + RoleSalariesPayable}}
+	}
+	net := money.Zero(base)
+	for k, v := range p.Totals {
+		if k.Account != acc.ID {
+			continue
+		}
+		var err error
+		if net, err = net.Add(v); err != nil {
+			return net, err
+		}
+	}
+	if net.Sign() < 0 {
+		net = net.Neg()
+	}
+	return net, nil
+}

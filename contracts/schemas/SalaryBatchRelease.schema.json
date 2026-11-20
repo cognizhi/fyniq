@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "description": "The approval it was released under.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "file_name": {
+      "description": "The file's name.",
+      "examples": [
+        "SB-0003-R1-payment-list.csv"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The release.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c13"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "lines": {
+      "description": "How many people it pays.",
+      "examples": [
+        11
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "released_at": {
+      "description": "When it was released.",
+      "examples": [
+        "2026-11-30T09:30:00+08:00"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "released_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who released it."
+    },
+    "sha256": {
+      "description": "The SHA-256 of the file as written, in hexadecimal.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "What it pays in all."
+    },
+    "writer": {
+      "description": "The file's format and version.",
+      "examples": [
+        "payment-list@1"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "released_by",
+    "released_at",
+    "approval_id",
+    "writer",
+    "file_name",
+    "sha256",
+    "lines",
+    "total"
+  ],
+  "title": "SalaryBatchRelease",
+  "type": "object"
+}

@@ -2642,6 +2642,74 @@ role_assignment_scope | organisation_id | uuid | not null | current_org()
 role_assignment_scope | assignment_id | uuid | not null | 
 role_assignment_scope | dimension_value_id | uuid | not null | 
 role_assignment_scope | created_at | timestamp with time zone | not null | now()
+salary_batch | organisation_id | uuid | not null | current_org()
+salary_batch | id | uuid | not null | uuidv7()
+salary_batch | seq | integer | not null | 
+salary_batch | link_id | uuid | not null | 
+salary_batch | source_system | text | not null | 
+salary_batch | run_id | uuid | not null | 
+salary_batch | run_version | integer | not null | 
+salary_batch | receipt_id | uuid | not null | 
+salary_batch | wage_month | date | not null | 
+salary_batch | pay_date | date | null | 
+salary_batch | money_account_id | uuid | null | 
+salary_batch | method | text | null | 
+salary_batch | prepared_by | text | null | 
+salary_batch | status | text | not null | 'open'::text
+salary_batch | version | integer | not null | 1
+salary_batch | lines_version | integer | not null | 1
+salary_batch | cancel_reason | text | null | 
+salary_batch | created_at | timestamp with time zone | not null | 
+salary_batch | changed_at | timestamp with time zone | not null | 
+salary_batch_line | organisation_id | uuid | not null | current_org()
+salary_batch_line | id | uuid | not null | uuidv7()
+salary_batch_line | batch_id | uuid | not null | 
+salary_batch_line | line_ref | uuid | not null | 
+salary_batch_line | line_version | integer | not null | 
+salary_batch_line | person_id | uuid | not null | 
+salary_batch_line | amount | numeric(20,4) | not null | 
+salary_batch_line | bank_detail_id | uuid | not null | 
+salary_batch_line | bank_detail_version | integer | not null | 
+salary_batch_line | bank_detail_digest | text | not null | 
+salary_batch_line | sealed | bytea | not null | 
+salary_batch_line | event_id | uuid | not null | 
+salary_batch_line | created_at | timestamp with time zone | not null | 
+salary_line_event | organisation_id | uuid | not null | current_org()
+salary_line_event | id | uuid | not null | uuidv7()
+salary_line_event | batch_id | uuid | not null | 
+salary_line_event | line_ref | uuid | not null | 
+salary_line_event | person_id | uuid | not null | 
+salary_line_event | run_id | uuid | not null | 
+salary_line_event | state | text | not null | 
+salary_line_event | source | text | not null | 
+salary_line_event | instruction_id | text | null | 
+salary_line_event | amount | numeric(20,4) | null | 
+salary_line_event | on_date | date | null | 
+salary_line_event | bank_line_id | uuid | null | 
+salary_line_event | evidence_id | uuid | null | 
+salary_line_event | recorded_by | text | not null | 
+salary_line_event | at | timestamp with time zone | not null | 
+salary_release | organisation_id | uuid | not null | current_org()
+salary_release | id | uuid | not null | uuidv7()
+salary_release | batch_id | uuid | not null | 
+salary_release | batch_version | integer | not null | 
+salary_release | approval_id | uuid | not null | 
+salary_release | released_by | uuid | not null | 
+salary_release | released_at | timestamp with time zone | not null | 
+salary_release | writer | text | not null | 
+salary_release | file_name | text | not null | 
+salary_release | media_type | text | not null | 
+salary_release | file_sealed | bytea | not null | 
+salary_release | file_sha256 | bytea | not null | 
+salary_release | lines | integer | not null | 
+salary_release | total | numeric(20,4) | not null | 
+salary_release_line | organisation_id | uuid | not null | current_org()
+salary_release_line | id | uuid | not null | uuidv7()
+salary_release_line | release_id | uuid | not null | 
+salary_release_line | batch_id | uuid | not null | 
+salary_release_line | line_ref | uuid | not null | 
+salary_release_line | line_id | uuid | not null | 
+salary_release_line | instruction_id | text | not null | 
 sales_reminder | organisation_id | uuid | not null | current_org()
 sales_reminder | id | uuid | not null | uuidv7()
 sales_reminder | document_id | uuid | not null | 
@@ -3720,7 +3788,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text, 'fixed_asset'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'contact_member_link'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text, 'account'::text, 'bank_reconciliation'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text, 'instrument'::text, 'instrument_template'::text, 'option_pool'::text, 'option_grant'::text, 'option_event'::text, 'round_scenario'::text, 'investor_right'::text, 'controller_entry'::text, 'budget'::text, 'migration_commit'::text, 'tenant_export'::text, 'ai_connection'::text, 'ai_data_policy'::text, 'ai_route'::text, 'ai_proposal'::text, 'corporate_detail'::text, 'corporate_officer'::text, 'nominee_entry'::text, 'statements_approval'::text, 'corporate_document'::text, 'api_client'::text, 'kb_publication'::text, 'people_link'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text, 'fixed_asset'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'contact_member_link'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text, 'account'::text, 'bank_reconciliation'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text, 'instrument'::text, 'instrument_template'::text, 'option_pool'::text, 'option_grant'::text, 'option_event'::text, 'round_scenario'::text, 'investor_right'::text, 'controller_entry'::text, 'budget'::text, 'migration_commit'::text, 'tenant_export'::text, 'ai_connection'::text, 'ai_data_policy'::text, 'ai_route'::text, 'ai_proposal'::text, 'corporate_detail'::text, 'corporate_officer'::text, 'nominee_entry'::text, 'statements_approval'::text, 'corporate_document'::text, 'api_client'::text, 'kb_publication'::text, 'people_link'::text, 'salary_batch'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -3750,7 +3818,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK (((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])) OR ((object_type = 'ai_proposal'::text) AND (requester_mfa_method = ANY (ARRAY['ai_turn'::text, 'ai_run'::text, 'mcp_token'::text])))))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'membership'::text) AND (operation = 'member.remove'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))) OR ((object_type = 'claimant_bank_change'::text) AND (operation = 'claimant_bank_change.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.reapprove'::text))) OR ((object_type = 'contact_member_link'::text) AND (operation = 'contact_member_link.change'::text))) OR ((object_type = 'director_fee'::text) AND (operation = 'director_fee.post'::text))) OR ((object_type = 'director_settlement'::text) AND (operation = 'director_settlement.approve'::text))) OR ((object_type = 'director_repayment'::text) AND (operation = 'director_repayment.void'::text))) OR ((object_type = 'account'::text) AND (operation = 'account.merge'::text))) OR ((object_type = 'bank_reconciliation'::text) AND (operation = 'bank_reconciliation.sign'::text))) OR ((object_type = 'holder_record'::text) AND (operation = 'holder_record.record'::text))) OR ((object_type = 'share_class'::text) AND (operation = 'share_class.record'::text))) OR ((object_type = 'equity_transaction'::text) AND (operation = 'equity_transaction.approve'::text))) OR ((object_type = 'instrument'::text) AND (operation = 'instrument.record'::text))) OR ((object_type = 'instrument_template'::text) AND (operation = 'instrument_template.enable'::text))) OR ((object_type = 'option_pool'::text) AND (operation = 'option_pool.record'::text))) OR ((object_type = 'option_grant'::text) AND (operation = 'option_grant.record'::text))) OR ((object_type = 'option_event'::text) AND (operation = 'option_event.record'::text))) OR ((object_type = 'round_scenario'::text) AND (operation = 'round_scenario.approve'::text))) OR ((object_type = 'investor_right'::text) AND (operation = 'investor_right.record'::text))) OR ((object_type = 'controller_entry'::text) AND (operation = 'controller_entry.record'::text))) OR ((object_type = 'budget'::text) AND (operation = 'budget.record'::text))) OR ((object_type = 'migration_commit'::text) AND (operation = 'migration.commit'::text))) OR ((object_type = 'tenant_export'::text) AND (operation = 'tenant_export.prepare'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.create'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.change'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.credential'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.enable'::text))) OR ((object_type = 'ai_data_policy'::text) AND (operation = 'ai_data_policy.change'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.allow_model'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.price'::text))) OR ((object_type = 'ai_route'::text) AND (operation = 'ai_route.change'::text))) OR ((object_type = 'ai_proposal'::text) AND (operation = 'ai_proposal.execute'::text))) OR ((object_type = 'corporate_detail'::text) AND (operation = 'corporate_detail.record'::text))) OR ((object_type = 'corporate_officer'::text) AND (operation = 'corporate_officer.record'::text))) OR ((object_type = 'nominee_entry'::text) AND (operation = 'nominee_entry.record'::text))) OR ((object_type = 'statements_approval'::text) AND (operation = 'statements_approval.record'::text))) OR ((object_type = 'corporate_document'::text) AND (operation = 'corporate_document.record'::text))) OR ((object_type = 'api_client'::text) AND (operation = 'api_client.create'::text))) OR ((object_type = 'api_client'::text) AND (operation = 'api_client.reclass'::text))) OR ((object_type = 'kb_publication'::text) AND (operation = 'kb_publication.publish'::text))) OR ((object_type = 'people_link'::text) AND (operation = 'people_link.link'::text))) OR ((object_type = 'people_link'::text) AND (operation = 'people_link.unlink'::text))))
+approval_request | approval_request_object_known | CHECK ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'membership'::text) AND (operation = 'member.remove'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))) OR ((object_type = 'claimant_bank_change'::text) AND (operation = 'claimant_bank_change.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.reapprove'::text))) OR ((object_type = 'contact_member_link'::text) AND (operation = 'contact_member_link.change'::text))) OR ((object_type = 'director_fee'::text) AND (operation = 'director_fee.post'::text))) OR ((object_type = 'director_settlement'::text) AND (operation = 'director_settlement.approve'::text))) OR ((object_type = 'director_repayment'::text) AND (operation = 'director_repayment.void'::text))) OR ((object_type = 'account'::text) AND (operation = 'account.merge'::text))) OR ((object_type = 'bank_reconciliation'::text) AND (operation = 'bank_reconciliation.sign'::text))) OR ((object_type = 'holder_record'::text) AND (operation = 'holder_record.record'::text))) OR ((object_type = 'share_class'::text) AND (operation = 'share_class.record'::text))) OR ((object_type = 'equity_transaction'::text) AND (operation = 'equity_transaction.approve'::text))) OR ((object_type = 'instrument'::text) AND (operation = 'instrument.record'::text))) OR ((object_type = 'instrument_template'::text) AND (operation = 'instrument_template.enable'::text))) OR ((object_type = 'option_pool'::text) AND (operation = 'option_pool.record'::text))) OR ((object_type = 'option_grant'::text) AND (operation = 'option_grant.record'::text))) OR ((object_type = 'option_event'::text) AND (operation = 'option_event.record'::text))) OR ((object_type = 'round_scenario'::text) AND (operation = 'round_scenario.approve'::text))) OR ((object_type = 'investor_right'::text) AND (operation = 'investor_right.record'::text))) OR ((object_type = 'controller_entry'::text) AND (operation = 'controller_entry.record'::text))) OR ((object_type = 'budget'::text) AND (operation = 'budget.record'::text))) OR ((object_type = 'migration_commit'::text) AND (operation = 'migration.commit'::text))) OR ((object_type = 'tenant_export'::text) AND (operation = 'tenant_export.prepare'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.create'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.change'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.credential'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.enable'::text))) OR ((object_type = 'ai_data_policy'::text) AND (operation = 'ai_data_policy.change'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.allow_model'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.price'::text))) OR ((object_type = 'ai_route'::text) AND (operation = 'ai_route.change'::text))) OR ((object_type = 'ai_proposal'::text) AND (operation = 'ai_proposal.execute'::text))) OR ((object_type = 'corporate_detail'::text) AND (operation = 'corporate_detail.record'::text))) OR ((object_type = 'corporate_officer'::text) AND (operation = 'corporate_officer.record'::text))) OR ((object_type = 'nominee_entry'::text) AND (operation = 'nominee_entry.record'::text))) OR ((object_type = 'statements_approval'::text) AND (operation = 'statements_approval.record'::text))) OR ((object_type = 'corporate_document'::text) AND (operation = 'corporate_document.record'::text))) OR ((object_type = 'api_client'::text) AND (operation = 'api_client.create'::text))) OR ((object_type = 'api_client'::text) AND (operation = 'api_client.reclass'::text))) OR ((object_type = 'kb_publication'::text) AND (operation = 'kb_publication.publish'::text))) OR ((object_type = 'people_link'::text) AND (operation = 'people_link.link'::text))) OR ((object_type = 'people_link'::text) AND (operation = 'people_link.unlink'::text))) OR ((object_type = 'salary_batch'::text) AND (operation = 'salary_batch.approve'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -7111,6 +7179,114 @@ role_assignment_scope | role_assignment_scope_dimension_value_id_not_null | NOT 
 role_assignment_scope | role_assignment_scope_organisation_id_not_null | NOT NULL organisation_id
 role_assignment_scope | role_assignment_scope_pkey | PRIMARY KEY (organisation_id, assignment_id, dimension_value_id)
 role_assignment_scope | role_assignment_scope_value_fkey | FOREIGN KEY (organisation_id, dimension_value_id) REFERENCES dimension_value(organisation_id, id)
+salary_batch | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+salary_batch | salary_batch_account_fkey | FOREIGN KEY (organisation_id, money_account_id) REFERENCES account(organisation_id, id)
+salary_batch | salary_batch_approved_prepared | CHECK (((status <> 'approved'::text) OR (pay_date IS NOT NULL)))
+salary_batch | salary_batch_cancel_reason | CHECK ((((status = 'cancelled'::text) = (cancel_reason IS NOT NULL)) AND ((cancel_reason IS NULL) OR ((length(btrim(cancel_reason)) >= 1) AND (length(btrim(cancel_reason)) <= 500)))))
+salary_batch | salary_batch_changed_at_not_null | NOT NULL changed_at
+salary_batch | salary_batch_created_at_not_null | NOT NULL created_at
+salary_batch | salary_batch_id_not_null | NOT NULL id
+salary_batch | salary_batch_lines_version_not_null | NOT NULL lines_version
+salary_batch | salary_batch_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES people_link(organisation_id, id)
+salary_batch | salary_batch_link_id_not_null | NOT NULL link_id
+salary_batch | salary_batch_method_known | CHECK (((method IS NULL) OR (method = ANY (ARRAY['fast'::text, 'giro'::text]))))
+salary_batch | salary_batch_organisation_id_not_null | NOT NULL organisation_id
+salary_batch | salary_batch_pkey | PRIMARY KEY (organisation_id, id)
+salary_batch | salary_batch_positive | CHECK (((seq >= 1) AND (run_version >= 1) AND (version >= 1) AND (lines_version >= 1)))
+salary_batch | salary_batch_prepared_by_form | CHECK (((prepared_by IS NULL) OR (prepared_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+salary_batch | salary_batch_prepared_whole | CHECK ((((pay_date IS NULL) = (money_account_id IS NULL)) AND ((pay_date IS NULL) = (method IS NULL)) AND ((pay_date IS NULL) = (prepared_by IS NULL))))
+salary_batch | salary_batch_receipt_fkey | FOREIGN KEY (organisation_id, receipt_id) REFERENCES payroll_run_receipt(organisation_id, id)
+salary_batch | salary_batch_receipt_id_not_null | NOT NULL receipt_id
+salary_batch | salary_batch_run_id_not_null | NOT NULL run_id
+salary_batch | salary_batch_run_key | UNIQUE (organisation_id, source_system, run_id, run_version)
+salary_batch | salary_batch_run_version_not_null | NOT NULL run_version
+salary_batch | salary_batch_seq_key | UNIQUE (organisation_id, seq)
+salary_batch | salary_batch_seq_not_null | NOT NULL seq
+salary_batch | salary_batch_source_system_not_null | NOT NULL source_system
+salary_batch | salary_batch_status_known | CHECK ((status = ANY (ARRAY['open'::text, 'approved'::text, 'cancelled'::text])))
+salary_batch | salary_batch_status_not_null | NOT NULL status
+salary_batch | salary_batch_version_not_null | NOT NULL version
+salary_batch | salary_batch_wage_month_not_null | NOT NULL wage_month
+salary_batch_line | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+salary_batch_line | salary_batch_line_amount | CHECK (((amount <> 'NaN'::numeric) AND (amount = trunc(amount, 2)) AND (amount > (0)::numeric)))
+salary_batch_line | salary_batch_line_amount_not_null | NOT NULL amount
+salary_batch_line | salary_batch_line_bank_detail_digest_not_null | NOT NULL bank_detail_digest
+salary_batch_line | salary_batch_line_bank_detail_id_not_null | NOT NULL bank_detail_id
+salary_batch_line | salary_batch_line_bank_detail_version_not_null | NOT NULL bank_detail_version
+salary_batch_line | salary_batch_line_batch_fkey | FOREIGN KEY (organisation_id, batch_id) REFERENCES salary_batch(organisation_id, id)
+salary_batch_line | salary_batch_line_batch_id_not_null | NOT NULL batch_id
+salary_batch_line | salary_batch_line_created_at_not_null | NOT NULL created_at
+salary_batch_line | salary_batch_line_digest | CHECK ((bank_detail_digest ~ '^[0-9a-f]{64}$'::text))
+salary_batch_line | salary_batch_line_event_id_not_null | NOT NULL event_id
+salary_batch_line | salary_batch_line_id_not_null | NOT NULL id
+salary_batch_line | salary_batch_line_line_ref_not_null | NOT NULL line_ref
+salary_batch_line | salary_batch_line_line_version_not_null | NOT NULL line_version
+salary_batch_line | salary_batch_line_organisation_id_not_null | NOT NULL organisation_id
+salary_batch_line | salary_batch_line_person_id_not_null | NOT NULL person_id
+salary_batch_line | salary_batch_line_pkey | PRIMARY KEY (organisation_id, id)
+salary_batch_line | salary_batch_line_sealed | CHECK (((octet_length(sealed) >= 40) AND (octet_length(sealed) <= 4096)))
+salary_batch_line | salary_batch_line_sealed_not_null | NOT NULL sealed
+salary_batch_line | salary_batch_line_version_key | UNIQUE (organisation_id, batch_id, line_ref, line_version)
+salary_batch_line | salary_batch_line_versions | CHECK (((line_version >= 1) AND (bank_detail_version >= 1)))
+salary_line_event | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+salary_line_event | salary_line_event_amount | CHECK (((amount IS NULL) OR ((amount <> 'NaN'::numeric) AND (amount >= (0)::numeric))))
+salary_line_event | salary_line_event_at_not_null | NOT NULL at
+salary_line_event | salary_line_event_bank_feed_line | CHECK (((source = 'bank_feed'::text) = (bank_line_id IS NOT NULL)))
+salary_line_event | salary_line_event_batch_fkey | FOREIGN KEY (organisation_id, batch_id) REFERENCES salary_batch(organisation_id, id)
+salary_line_event | salary_line_event_batch_id_not_null | NOT NULL batch_id
+salary_line_event | salary_line_event_by_form | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+salary_line_event | salary_line_event_id_not_null | NOT NULL id
+salary_line_event | salary_line_event_line_ref_not_null | NOT NULL line_ref
+salary_line_event | salary_line_event_manual_evidence | CHECK (((source <> 'manual'::text) OR (evidence_id IS NOT NULL)))
+salary_line_event | salary_line_event_organisation_id_not_null | NOT NULL organisation_id
+salary_line_event | salary_line_event_paid_source | CHECK (((state <> ALL (ARRAY['paid'::text, 'rejected'::text, 'returned'::text, 'unknown'::text])) OR (source = ANY (ARRAY['bank_feed'::text, 'manual'::text]))))
+salary_line_event | salary_line_event_person_id_not_null | NOT NULL person_id
+salary_line_event | salary_line_event_pkey | PRIMARY KEY (organisation_id, id)
+salary_line_event | salary_line_event_recorded_by_not_null | NOT NULL recorded_by
+salary_line_event | salary_line_event_run_id_not_null | NOT NULL run_id
+salary_line_event | salary_line_event_source_known | CHECK ((source = ANY (ARRAY['arrival'::text, 'release'::text, 'bank_feed'::text, 'manual'::text])))
+salary_line_event | salary_line_event_source_not_null | NOT NULL source
+salary_line_event | salary_line_event_state_known | CHECK ((state = ANY (ARRAY['scheduled'::text, 'released'::text, 'sent'::text, 'accepted'::text, 'paid'::text, 'rejected'::text, 'returned'::text, 'unknown'::text])))
+salary_line_event | salary_line_event_state_not_null | NOT NULL state
+salary_release | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+salary_release | salary_release_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
+salary_release | salary_release_approval_id_not_null | NOT NULL approval_id
+salary_release | salary_release_batch_fkey | FOREIGN KEY (organisation_id, batch_id) REFERENCES salary_batch(organisation_id, id)
+salary_release | salary_release_batch_id_not_null | NOT NULL batch_id
+salary_release | salary_release_batch_version_not_null | NOT NULL batch_version
+salary_release | salary_release_by_fkey | FOREIGN KEY (released_by) REFERENCES app_user(user_id)
+salary_release | salary_release_file_name_not_null | NOT NULL file_name
+salary_release | salary_release_file_sealed_not_null | NOT NULL file_sealed
+salary_release | salary_release_file_sha256_not_null | NOT NULL file_sha256
+salary_release | salary_release_id_not_null | NOT NULL id
+salary_release | salary_release_lines_not_null | NOT NULL lines
+salary_release | salary_release_lines_positive | CHECK ((lines > 0))
+salary_release | salary_release_media_length | CHECK (((length(media_type) >= 3) AND (length(media_type) <= 100)))
+salary_release | salary_release_media_type_not_null | NOT NULL media_type
+salary_release | salary_release_name_length | CHECK (((length(file_name) >= 1) AND (length(file_name) <= 200)))
+salary_release | salary_release_organisation_id_not_null | NOT NULL organisation_id
+salary_release | salary_release_pkey | PRIMARY KEY (organisation_id, id)
+salary_release | salary_release_released_at_not_null | NOT NULL released_at
+salary_release | salary_release_released_by_not_null | NOT NULL released_by
+salary_release | salary_release_sealed_length | CHECK (((octet_length(file_sealed) >= 40) AND (octet_length(file_sealed) <= 16777216)))
+salary_release | salary_release_sha256_length | CHECK ((octet_length(file_sha256) = 32))
+salary_release | salary_release_total | CHECK (((total <> 'NaN'::numeric) AND (total = trunc(total, 2)) AND (total > (0)::numeric)))
+salary_release | salary_release_total_not_null | NOT NULL total
+salary_release | salary_release_writer_format | CHECK ((writer ~ '^[a-z0-9-]+@[0-9]+$'::text))
+salary_release | salary_release_writer_not_null | NOT NULL writer
+salary_release_line | salary_release_line_batch_id_not_null | NOT NULL batch_id
+salary_release_line | salary_release_line_id_not_null | NOT NULL id
+salary_release_line | salary_release_line_instruction | UNIQUE (organisation_id, instruction_id)
+salary_release_line | salary_release_line_instruction_id_not_null | NOT NULL instruction_id
+salary_release_line | salary_release_line_instruction_shape | CHECK ((instruction_id ~ '^[A-Z0-9-]{3,60}$'::text))
+salary_release_line | salary_release_line_line_fkey | FOREIGN KEY (organisation_id, line_id) REFERENCES salary_batch_line(organisation_id, id)
+salary_release_line | salary_release_line_line_id_not_null | NOT NULL line_id
+salary_release_line | salary_release_line_line_ref_not_null | NOT NULL line_ref
+salary_release_line | salary_release_line_once | UNIQUE (organisation_id, batch_id, line_ref)
+salary_release_line | salary_release_line_organisation_id_not_null | NOT NULL organisation_id
+salary_release_line | salary_release_line_pkey | PRIMARY KEY (organisation_id, id)
+salary_release_line | salary_release_line_release_fkey | FOREIGN KEY (organisation_id, release_id) REFERENCES salary_release(organisation_id, id)
+salary_release_line | salary_release_line_release_id_not_null | NOT NULL release_id
 sales_reminder | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 sales_reminder | sales_reminder_decided_at_not_null | NOT NULL decided_at
 sales_reminder | sales_reminder_decided_by_format | CHECK ((decided_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
@@ -7725,6 +7901,9 @@ CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organis
 CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
 CREATE INDEX risk_review_risk_idx ON fyniq.risk_review USING btree (organisation_id, risk_id, reviewed_at)
 CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
+CREATE INDEX salary_batch_line_person ON fyniq.salary_batch_line USING btree (organisation_id, person_id)
+CREATE INDEX salary_line_event_line ON fyniq.salary_line_event USING btree (organisation_id, batch_id, line_ref, at)
+CREATE INDEX salary_line_event_run_person ON fyniq.salary_line_event USING btree (organisation_id, run_id, person_id)
 CREATE INDEX security_incident_step_breach ON fyniq.security_incident_step USING btree (organisation_id, breach_id) WHERE (breach_id IS NOT NULL)
 CREATE INDEX security_incident_step_incident ON fyniq.security_incident_step USING btree (organisation_id, incident_id, at)
 CREATE INDEX share_issue_holder ON fyniq.share_issue USING btree (organisation_id, holder_id)
@@ -8156,6 +8335,16 @@ CREATE UNIQUE INDEX risk_version_pkey ON fyniq.risk_version USING btree (organis
 CREATE UNIQUE INDEX role_assignment_one_live ON fyniq.role_assignment USING btree (organisation_id, membership_id, role) WHERE (revoked_at IS NULL)
 CREATE UNIQUE INDEX role_assignment_pkey ON fyniq.role_assignment USING btree (organisation_id, id)
 CREATE UNIQUE INDEX role_assignment_scope_pkey ON fyniq.role_assignment_scope USING btree (organisation_id, assignment_id, dimension_value_id)
+CREATE UNIQUE INDEX salary_batch_line_pkey ON fyniq.salary_batch_line USING btree (organisation_id, id)
+CREATE UNIQUE INDEX salary_batch_line_version_key ON fyniq.salary_batch_line USING btree (organisation_id, batch_id, line_ref, line_version)
+CREATE UNIQUE INDEX salary_batch_pkey ON fyniq.salary_batch USING btree (organisation_id, id)
+CREATE UNIQUE INDEX salary_batch_run_key ON fyniq.salary_batch USING btree (organisation_id, source_system, run_id, run_version)
+CREATE UNIQUE INDEX salary_batch_seq_key ON fyniq.salary_batch USING btree (organisation_id, seq)
+CREATE UNIQUE INDEX salary_line_event_pkey ON fyniq.salary_line_event USING btree (organisation_id, id)
+CREATE UNIQUE INDEX salary_release_line_instruction ON fyniq.salary_release_line USING btree (organisation_id, instruction_id)
+CREATE UNIQUE INDEX salary_release_line_once ON fyniq.salary_release_line USING btree (organisation_id, batch_id, line_ref)
+CREATE UNIQUE INDEX salary_release_line_pkey ON fyniq.salary_release_line USING btree (organisation_id, id)
+CREATE UNIQUE INDEX salary_release_pkey ON fyniq.salary_release USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sales_reminder_once ON fyniq.sales_reminder USING btree (organisation_id, document_id, step)
 CREATE UNIQUE INDEX sales_reminder_pkey ON fyniq.sales_reminder USING btree (organisation_id, id)
 CREATE UNIQUE INDEX security_incident_pkey ON fyniq.security_incident USING btree (organisation_id, id)
@@ -8318,6 +8507,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.risk DEFERRABLE IN
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.risk_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('risk', 'risk_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.risk_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('risk', 'risk_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.role_assignment_scope DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment_scope', 'assignment_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.salary_batch_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('salary_batch', 'batch_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.salary_line_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('salary_batch', 'batch_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.salary_release DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('salary_batch', 'batch_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sales_reminder DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sales_reminder', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_incident DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_incident', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_incident_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_incident', 'incident_id')
@@ -8409,6 +8601,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurrin
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_journal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.report_export DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('report_export', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.salary_batch DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('salary_batch', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.statement_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statement_mapping', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_installation_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin_grant DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_grant_audit()
@@ -8852,6 +9045,19 @@ CREATE TRIGGER role_assignment_scope_guard BEFORE INSERT OR DELETE OR UPDATE ON 
 CREATE TRIGGER role_assignment_scope_no_truncate BEFORE TRUNCATE ON fyniq.role_assignment_scope FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER role_assignment_voids AFTER INSERT OR UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION role_assignment_voids()
 CREATE TRIGGER round_scenario_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION round_scenario_guard()
+CREATE TRIGGER salary_batch_guard BEFORE UPDATE ON fyniq.salary_batch FOR EACH ROW EXECUTE FUNCTION salary_batch_guard()
+CREATE TRIGGER salary_batch_line_guard BEFORE DELETE OR UPDATE ON fyniq.salary_batch_line FOR EACH ROW EXECUTE FUNCTION salary_append_only()
+CREATE TRIGGER salary_batch_line_insert_guard BEFORE INSERT ON fyniq.salary_batch_line FOR EACH ROW EXECUTE FUNCTION salary_line_insert_guard()
+CREATE TRIGGER salary_batch_line_no_truncate BEFORE TRUNCATE ON fyniq.salary_batch_line FOR EACH STATEMENT EXECUTE FUNCTION salary_append_only()
+CREATE TRIGGER salary_batch_no_delete BEFORE DELETE ON fyniq.salary_batch FOR EACH ROW EXECUTE FUNCTION salary_append_only()
+CREATE TRIGGER salary_batch_no_truncate BEFORE TRUNCATE ON fyniq.salary_batch FOR EACH STATEMENT EXECUTE FUNCTION salary_append_only()
+CREATE TRIGGER salary_line_event_guard BEFORE DELETE OR UPDATE ON fyniq.salary_line_event FOR EACH ROW EXECUTE FUNCTION salary_append_only()
+CREATE TRIGGER salary_line_event_no_truncate BEFORE TRUNCATE ON fyniq.salary_line_event FOR EACH STATEMENT EXECUTE FUNCTION salary_append_only()
+CREATE TRIGGER salary_release_guard BEFORE DELETE OR UPDATE ON fyniq.salary_release FOR EACH ROW EXECUTE FUNCTION salary_append_only()
+CREATE TRIGGER salary_release_insert_guard BEFORE INSERT ON fyniq.salary_release FOR EACH ROW EXECUTE FUNCTION salary_release_guard()
+CREATE TRIGGER salary_release_line_guard BEFORE DELETE OR UPDATE ON fyniq.salary_release_line FOR EACH ROW EXECUTE FUNCTION salary_append_only()
+CREATE TRIGGER salary_release_line_no_truncate BEFORE TRUNCATE ON fyniq.salary_release_line FOR EACH STATEMENT EXECUTE FUNCTION salary_append_only()
+CREATE TRIGGER salary_release_no_truncate BEFORE TRUNCATE ON fyniq.salary_release FOR EACH STATEMENT EXECUTE FUNCTION salary_append_only()
 CREATE TRIGGER sales_reminder_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sales_reminder FOR EACH ROW EXECUTE FUNCTION sales_reminder_guard()
 CREATE TRIGGER sales_reminder_no_truncate BEFORE TRUNCATE ON fyniq.sales_reminder FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.document_link FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
@@ -9108,6 +9314,11 @@ risk_review | tenant_isolation | * | (organisation_id = current_org()) | (organi
 risk_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 role_assignment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 role_assignment_scope | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+salary_batch | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+salary_batch_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+salary_line_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+salary_release | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+salary_release_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sales_reminder | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 security_incident | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 security_incident_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9364,6 +9575,11 @@ risk_review | enabled | forced
 risk_version | enabled | forced
 role_assignment | enabled | forced
 role_assignment_scope | enabled | forced
+salary_batch | enabled | forced
+salary_batch_line | enabled | forced
+salary_line_event | enabled | forced
+salary_release | enabled | forced
+salary_release_line | enabled | forced
 sales_reminder | enabled | forced
 security_incident | enabled | forced
 security_incident_step | enabled | forced
@@ -9749,6 +9965,11 @@ risk_register_guard() → trigger | security invoker | v | search_path=pg_catalo
 role_assignment_scope_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e502900abfd267f0dad280cdd03fb851
 role_assignment_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 802ca214ce4476cbc77f0a6d8d36eb9e
 round_scenario_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4641ddf455a04fbcd7e96e3203bcbdb2
+salary_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 854ba28b60e6b7bafd23b6ed149dadb7
+salary_batch_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fa21450cba6a4e615ecc6086741532e
+salary_is_run_party(org uuid, receipt uuid, who uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 5f9d938e77e03de78fd469c8a447f682
+salary_line_insert_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b810a5fb84146784957d2b042c7a827d
+salary_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 459a4750193bd423c30a4e47d90b7e6f
 sales_reminder_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cbd827bdca43d21c794de23c30d61fd7
 scheduled_invoice_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7b1f59fc29d82c1dc9f6f4ae5afc9272
 scheduled_issue_allowed(p_document uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 574b7af4c2dbb0a7e81f6dedebde4a8b

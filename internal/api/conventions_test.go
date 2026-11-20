@@ -39,7 +39,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "revokePasskey Prefer", "signOutDevice Prefer", "unlinkIdentity Prefer", "signOutOtherDevices Idempotency-Key", "signOutOtherDevices Prefer")
 	// An event of the link carries its own ID, which the inbox dedupes (FR-PPL-15); a preview of a signed message proves nothing.
 	want = append(want, "receivePeopleHoldEvent Idempotency-Key", "receivePeopleHoldEvent Prefer", "receivePeopleProjectionEvent Idempotency-Key", "receivePeopleProjectionEvent Prefer",
-		"submitPayrollRun Idempotency-Key", "submitPayrollRun Prefer")
+		"submitPayrollRun Idempotency-Key", "submitPayrollRun Prefer", "receivePayrollPayments Idempotency-Key", "receivePayrollPayments Prefer")
 	// A preview saves nothing, so a repeat is harmless and return=preview would answer the same (rev 0.97).
 	want = append(want, "previewDocumentTemplate Idempotency-Key", "previewDocumentTemplate Prefer")
 	// A back-test saves nothing either (FR-BNK-05).

@@ -843,6 +843,15 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		for k, v := range deps {
 			e.Dependencies[k] = v
 		}
+	case approval.ObjectSalaryBatch: // the salary batch's version and status, its total and a digest of its lines (FR-PAY-11, FR-PPL-14)
+		version, deps, err := a.salaryDependenciesOf(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
 	case approval.ObjectPeopleLink: // the link's state and epoch, "none" before it exists (FR-PPL-16)
 		version, deps, err := peopleLinkDependencies(ctx, u)
 		if err != nil {
@@ -1617,6 +1626,8 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		return repaymentExecutable(ctx, u, r, signer)
 	case approval.OpBatchApprove, approval.OpBatchReapprove: // FM-1: whoever prepared the batch never approves it
 		return batchExecutable(ctx, u, r, signer)
+	case approval.OpSalaryBatchApprove: // FR-PPL-10, SOD-4: never who prepared or approved the pay run in Nemura
+		return salaryExecutable(ctx, u, r, signer)
 	case approval.OpBillPost: // SOD-3: whoever prepared the bill never approves its post
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {
@@ -2243,6 +2254,8 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		return err
 	case approval.OpBatchApprove, approval.OpBatchReapprove: // FR-BNK-12: the batch numbered and approved, or approved again (G4-055)
 		return a.executeBatchApproval(ctx, u, r)
+	case approval.OpSalaryBatchApprove: // FR-PAY-11: the salary batch approved for release, or approved again after a line changed (FR-PPL-14)
+		return a.executeSalaryApproval(ctx, u, r)
 	case approval.OpClaimPost: // FR-AP-07: the approved claim posts, as its last approver
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {

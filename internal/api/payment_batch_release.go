@@ -825,39 +825,29 @@ type HoldAuthority interface {
 	Ask(ctx context.Context, key storage.PeopleLinkAskKey, person uuid.UUID) (linksend.HoldAnswer, error)
 }
 
-// heldPayees refuses a release that would pay a person Nemura holds for tax clearance (FR-PPL-13, FR-PAY-10): the projection keeps each person's hold state and version, and a held
-// person's lines are not released, by an approval or by break-glass (FR-PPL-10). With a live link that has an ask key and an authority, Nemura is asked at the release too, because its answer may be newer
-// than the projection: a person Nemura says is held is held, and one it cannot say within five seconds (or says with an older version than the projection already saw) is not paid either (PPL-22).
-// The batch waits until the hold is lifted by Nemura, after IRAS's notice or directive, or the line is taken out. Left (p1-payroll-link 6.3, with the salary batch): releasing the rest of the batch.
-func heldPayees(ctx context.Context, u storage.UnitOfWork, b paymentbatch.Batch, authority HoldAuthority) error {
-	var held, unknown []string
+// holdStatus says, for each mapped person given, whether they are held for tax clearance now (FR-PPL-13, FR-PAY-10): "held" when the projection or Nemura says so, "unknown" when Nemura cannot say within
+// five seconds (or answers with an older version than the projection already saw: PPL-22), and nothing for a person who is free. With a live link that has an ask key and an authority, Nemura is asked,
+// because its answer may be newer than the projection. It is the one check every release of money to a person uses: a payment batch, a salary batch, a claim's reimbursement, an advance and a
+// director's repayment.
+func holdStatus(ctx context.Context, u storage.UnitOfWork, authority HoldAuthority, people []peoplelink.Person) (map[uuid.UUID]string, error) {
+	out := map[uuid.UUID]string{}
 	var ask *storage.PeopleLinkAskKey
-	if authority != nil {
+	if authority != nil && len(people) > 0 {
 		if l, err := u.PeopleLinks().Live(ctx); err == nil && l.State == storage.LinkActive {
 			if k, err := u.PeopleLinks().AskKey(ctx, l.ID); err == nil {
 				ask = &k
 			} else if !errors.Is(err, ports.ErrNotFound) {
-				return err
+				return nil, err
 			}
 		} else if err != nil && !errors.Is(err, ports.ErrNotFound) {
-			return err
+			return nil, err
 		}
 	}
-	deadline, cancel := context.WithTimeout(ctx, linksend.HoldTimeout) // one deadline for the whole batch: a slow Nemura cannot hold a release open for a minute
+	deadline, cancel := context.WithTimeout(ctx, linksend.HoldTimeout) // one deadline for the whole release: a slow Nemura cannot hold it open for a minute
 	defer cancel()
-	for _, pay := range b.Payments {
-		if !pay.Payee.IsPerson() {
-			continue
-		}
-		p, err := u.PeopleLinks().PersonOfUser(ctx, pay.Payee.PersonID)
-		if errors.Is(err, ports.ErrNotFound) {
-			continue
-		}
-		if err != nil {
-			return err
-		}
+	for _, p := range people {
 		if p.Held {
-			held = append(held, p.DisplayName)
+			out[p.ID] = "held"
 			continue
 		}
 		if ask == nil {
@@ -866,11 +856,16 @@ func heldPayees(ctx context.Context, u storage.UnitOfWork, b paymentbatch.Batch,
 		ans, err := authority.Ask(deadline, *ask, p.ID)
 		switch {
 		case err != nil || ans.Version < p.HoldVersion:
-			unknown = append(unknown, p.DisplayName)
+			out[p.ID] = "unknown"
 		case ans.Status == "held":
-			held = append(held, p.DisplayName)
+			out[p.ID] = "held"
 		}
 	}
+	return out, nil
+}
+
+// holdRefusal is the refusal for people who are held or whose hold Nemura could not state: nothing is released to them.
+func holdRefusal(held, unknown []string) error {
 	if len(held) > 0 {
 		return problem(peoplelink.CodeHold, "These people are held for tax clearance, so nothing is released to them: "+strings.Join(held, ", ")+".",
 			"Take their lines out of the batch, or wait for Nemura to lift the hold after IRAS's notice or directive")
@@ -880,4 +875,47 @@ func heldPayees(ctx context.Context, u storage.UnitOfWork, b paymentbatch.Batch,
 			"Try the release again; check that Nemura is linked and running, or take their lines out of the batch")
 	}
 	return nil
+}
+
+// heldPeople refuses a payment to a person Nemura holds for tax clearance (FR-PPL-13, FR-PAY-10) when Fyniq maps the Fyniq user to a person of the projection: a claim's reimbursement, an advance
+// or a director's repayment recorded outside a batch. A user with no person in the projection (a vendor, an unmapped member) is not asked about.
+func heldPeople(ctx context.Context, u storage.UnitOfWork, authority HoldAuthority, users ...uuid.UUID) error {
+	var people []peoplelink.Person
+	for _, user := range users {
+		p, err := u.PeopleLinks().PersonOfUser(ctx, user)
+		if errors.Is(err, ports.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		people = append(people, p)
+	}
+	status, err := holdStatus(ctx, u, authority, people)
+	if err != nil {
+		return err
+	}
+	var held, unknown []string
+	for _, p := range people {
+		switch status[p.ID] {
+		case "held":
+			held = append(held, p.DisplayName)
+		case "unknown":
+			unknown = append(unknown, p.DisplayName)
+		}
+	}
+	return holdRefusal(held, unknown)
+}
+
+// heldPayees refuses a payment batch's release that would pay a person Nemura holds for tax clearance (FR-PPL-13, FR-PAY-10), by an approval or by break-glass (FR-PPL-10): its claimants and
+// directors who are mapped people of the projection. A payment batch is released once, so the whole batch waits until the hold is lifted by Nemura, after IRAS's notice or directive, or the line
+// is taken out; a salary batch releases the rest and keeps the held people's lines waiting (releaseSalaryBatch).
+func heldPayees(ctx context.Context, u storage.UnitOfWork, b paymentbatch.Batch, authority HoldAuthority) error {
+	var users []uuid.UUID
+	for _, pay := range b.Payments {
+		if pay.Payee.IsPerson() {
+			users = append(users, pay.Payee.PersonID)
+		}
+	}
+	return heldPeople(ctx, u, authority, users...)
 }

@@ -860,6 +860,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/people-link` (getPeopleLink): Show the link to the people platform and where each feature lives
 - `POST /v1/people-link` (requestPeopleLink): Ask to link the organisation to a Nemura organisation
 - `POST /v1/people-link/hold-events` (receivePeopleHoldEvent): Receive a tax-clearance hold event from Nemura
+- `POST /v1/people-link/payroll-payments` (receivePayrollPayments): Receive the payment lines of a posted pay run from Nemura
 - `POST /v1/people-link/payroll-runs` (submitPayrollRun): Receive an approved pay run from Nemura and post it
 - `GET /v1/people-link/people` (listPeopleProjection): List the people of the employee projection
 - `POST /v1/people-link/people/{person_id}/user` (mapPersonToUser): Map a person of the projection to a Fyniq user
@@ -985,6 +986,13 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/round-scenarios/{scenario_id}` (getRoundScenario): Get a round scenario
 - `PUT /v1/round-scenarios/{scenario_id}` (replaceRoundScenario): Change a round scenario
 - `POST /v1/round-scenarios/{scenario_id}/approval` (requestRoundScenarioApproval): Ask for approval of a round scenario
+- `GET /v1/salary-batches` (listSalaryBatches): List salary batches
+- `GET /v1/salary-batches/{batch_id}` (getSalaryBatch): Get a salary batch
+- `POST /v1/salary-batches/{batch_id}/approval` (requestSalaryBatchApproval): Ask for approval of a salary batch
+- `POST /v1/salary-batches/{batch_id}/cancel` (cancelSalaryBatch): Cancel a salary batch
+- `POST /v1/salary-batches/{batch_id}/prepare` (prepareSalaryBatch): Prepare a salary batch
+- `POST /v1/salary-batches/{batch_id}/release` (releaseSalaryBatch): Release the free lines of a salary batch
+- `GET /v1/salary-batches/{batch_id}/releases/{release_id}/file` (getSalaryBatchFile): Download a salary release's payment file
 - `GET /v1/sales-reminders` (listSalesReminders): List the reminders due to customers
 - `POST /v1/sales-reminders/{document_id}/send` (sendSalesReminder): Send a reminder due
 - `POST /v1/sales-reminders/{document_id}/skip` (skipSalesReminder): Skip a reminder due

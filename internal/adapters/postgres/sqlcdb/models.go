@@ -3385,6 +3385,89 @@ type FyniqRoleAssignmentScope struct {
 	CreatedAt        time.Time
 }
 
+type FyniqSalaryBatch struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Seq            int32
+	LinkID         uuid.UUID
+	SourceSystem   string
+	RunID          uuid.UUID
+	RunVersion     int32
+	ReceiptID      uuid.UUID
+	WageMonth      time.Time
+	PayDate        pgtype.Date
+	MoneyAccountID *uuid.UUID
+	Method         *string
+	PreparedBy     *string
+	Status         string
+	Version        int32
+	LinesVersion   int32
+	CancelReason   *string
+	CreatedAt      time.Time
+	ChangedAt      time.Time
+}
+
+type FyniqSalaryBatchLine struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	BatchID           uuid.UUID
+	LineRef           uuid.UUID
+	LineVersion       int32
+	PersonID          uuid.UUID
+	Amount            string
+	BankDetailID      uuid.UUID
+	BankDetailVersion int32
+	BankDetailDigest  string
+	Sealed            []byte
+	EventID           uuid.UUID
+	CreatedAt         time.Time
+}
+
+type FyniqSalaryLineEvent struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	BatchID        uuid.UUID
+	LineRef        uuid.UUID
+	PersonID       uuid.UUID
+	RunID          uuid.UUID
+	State          string
+	Source         string
+	InstructionID  *string
+	Amount         *string
+	OnDate         pgtype.Date
+	BankLineID     *uuid.UUID
+	EvidenceID     *uuid.UUID
+	RecordedBy     string
+	At             time.Time
+}
+
+type FyniqSalaryRelease struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	BatchID        uuid.UUID
+	BatchVersion   int32
+	ApprovalID     uuid.UUID
+	ReleasedBy     uuid.UUID
+	ReleasedAt     time.Time
+	Writer         string
+	FileName       string
+	MediaType      string
+	FileSealed     []byte
+	FileSha256     []byte
+	Lines          int32
+	Total          string
+}
+
+type FyniqSalaryReleaseLine struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ReleaseID      uuid.UUID
+	BatchID        uuid.UUID
+	LineRef        uuid.UUID
+	LineID         uuid.UUID
+	InstructionID  string
+}
+
 type FyniqSalesReminder struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

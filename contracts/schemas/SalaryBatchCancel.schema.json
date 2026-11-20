@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why it is cancelled: its lines are not paid in this batch.",
+      "examples": [
+        "The run was withdrawn in Nemura"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "SalaryBatchCancel",
+  "type": "object"
+}

@@ -117,6 +117,7 @@ type UnitOfWork interface {
 	PeopleLinks() PeopleLinks
 	// PayrollRuns are the pay-run mapping and the receipts of the runs posted from the people platform (FR-PPL-04, 09, 11).
 	PayrollRuns() PayrollRuns
+	SalaryBatches() SalaryBatches
 	// MCPOptIns are each person's opt-in to AI apps over MCP (AI-35).
 	MCPOptIns() MCPOptIns
 	// MCPCalls are the AI apps' calls over MCP, for the activity log, the limits and the detection (AI-43 to AI-45).

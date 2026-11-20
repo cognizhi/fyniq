@@ -581,6 +581,8 @@ func New(mux humago.Mux, d Deps) *API {
 	registerIntegrationClients(a)
 	registerPeopleLink(a)
 	registerPayrollRuns(a)
+	registerPayrollPayments(a)
+	registerSalaryBatches(a)
 	registerPersonalTokens(a)
 	a.registerInternal(mux)
 	approvalEnumsAreExtensible(a.API)

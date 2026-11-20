@@ -7,6 +7,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/comment"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/preference"
+	"github.com/cognizhi/fyniq/internal/domain/salarybatch"
 	"github.com/cognizhi/fyniq/internal/domain/saveditem"
 	"github.com/cognizhi/fyniq/internal/mcpgate"
 	"net/http"
@@ -280,6 +281,26 @@ var codeFacts = map[string]struct {
 	peoplelink.CodeHold:           {409, "A person held for tax clearance is not paid"},
 	peoplelink.CodeHoldUnknown:    {409, "Nemura did not say whether a person is held, so nothing is released to them"},
 	peoplelink.CodeRunPosting:     {422, "The ledger refused the posting"},
+	peoplelink.CodePayLines:       {422, "The payment lines are not those of the run's approval, or are not well formed"},
+	peoplelink.CodePayRun:         {409, "Fyniq has not posted this version of the run, or has posted a newer one"},
+	peoplelink.CodePayTotal:       {422, "The payment lines pay more than the run's net pay"},
+	peoplelink.CodePayPerson:      {409, "A payment line is for a person the projection does not hold"},
+	peoplelink.CodePayRelease:     {409, "A released line is not changed, and a cancelled batch takes no line"},
+	peoplelink.CodePayBlocked:     {409, "An unknown outcome blocks a new instruction for the person in this run"},
+	storage.CodeSalaryBatch:       {409, "A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver"},
+	salarybatch.CodeNotPrepared:   {409, "The salary batch has no money account, payment date and method yet"},
+	salarybatch.CodeAccount:       {422, "The money account is not an open SGD bank account"},
+	salarybatch.CodeNothing:       {409, "No line of the salary batch can be released now"},
+	salarybatch.CodeNotOpen:       {409, "The salary batch is not in the state the command needs"},
+	salarybatch.CodeReapprove:     {409, "The salary batch needs approving again"},
+	salarybatch.CodeSeparation:    {403, "The person prepared, asked for or approved the batch, or prepared or approved the pay run in Nemura"},
+	salarybatch.CodeBlocked:       {409, "A line's bank details are older than the person's newest approved version"},
+	salarybatch.CodeUnknown:       {409, "An unknown outcome blocks a new instruction for the person in the run"},
+	salarybatch.CodeReason:        {422, "Cancelling a salary batch needs a reason"},
+	salarybatch.CodeDate:          {422, "The payment date is not a date, or is before the wage month"},
+	salarybatch.CodeMethod:        {422, "The method is not FAST or GIRO"},
+	salarybatch.CodeState:         {422, "The line cannot move to that state, or its source cannot give it"},
+	salarybatch.CodeLine:          {404, "There is no such line in the salary batch"},
 	ledger.CodePayroll:            {422, "The pay run does not fit the posting rule"},
 	storage.CodePayrollRun:        {409, "A pay run's receipt is kept once, and a payroll entry needs one"},
 	CodeNoLink:                    {409, "The organisation has no active link to the people platform"},

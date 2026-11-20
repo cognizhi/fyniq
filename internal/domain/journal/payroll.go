@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -22,4 +23,13 @@ func PostPayrollRunIn(ctx context.Context, u storage.UnitOfWork, run ledger.Payr
 	}
 	stored, err := u.Ledger().Append(ctx, toStorage(entry, nil))
 	return entry, stored, err
+}
+
+// PayrollNetPay is what a run's posted totals owe on 2100 Salaries payable (FR-PPL-12): the most that payment lines for it may pay.
+func PayrollNetPay(ctx context.Context, u storage.UnitOfWork, posted ledger.PayrollPosted, base money.Currency) (money.Money, error) {
+	settings, err := loadSettings(ctx, u)
+	if err != nil {
+		return money.Money{}, err
+	}
+	return posted.NetPay(settings, base)
 }

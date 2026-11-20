@@ -13985,6 +13985,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people-link/payroll-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receive the payment lines of a posted pay run from Nemura
+         * @description Nemura's `payroll.payments.ready` (PRD-002 Appendix E): the link's envelope carrying one payment line per person for a run Fyniq posted: the person, the amount, the payee's bank and account (sealed here, never in an audit, a log or an outbox row) and the bank-detail record, version and digest each came from (FR-PPL-14). It needs the link's client and the scope payroll.payments.submit. Fyniq checks the link's signature and epoch, that the version is the one it posted last under the same preparer and approver, that each person is in the projection, that no unknown outcome blocks the person in this run and that the lines pay no more than the run's net pay on 2100; it then makes the run's salary batch, which a person prepares, another approves and the Payment releaser releases (FR-PAY-11). A later submission for the same run version with a higher object version revises lines (each a new version, and the batch is approved again); a line that was released is not changed. Side effects: the batch with its sealed lines and the inbox row, each audited with counts and IDs only. Idempotent on the event ID (a repeat answers duplicate). Only the link's client may call it; on the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["receivePayrollPayments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people-link/payroll-runs": {
         parameters: {
             query?: never;
@@ -16095,6 +16115,146 @@ export interface paths {
          * @description Asks another person to approve a scenario at the version read (FR-EQ-21, FM-1). Approving it checks and models it again, then drafts an issue for cash per investor at the round's price with the scenario's resolutions, and for a top-up a pool resolution; each draft then follows FR-EQ-17. The instruments' conversions are drafted from the round's issue once it is approved (draftInstrumentConversions). It needs the resolutions named, and a top-up a round on or before today. The answer is 202 with an approval request, which a person who holds A on "Cap table, holders, investors, equity transactions" approves, stepped up, never the one who asked. Needs a person signed in who passed step-up, and If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
          */
         post: operations["requestRoundScenarioApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/salary-batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List salary batches
+         * @description The salary payment batches, newest first, a page at a time, narrowed by status (FR-PAY-11): each with its run, state, total and counts. Names, accounts and amounts of lines are never in a list, and appear in a batch only for the roles with the salary-payments right (FR-PPL-17). Read-only; no side effects.
+         */
+        get: operations["listSalaryBatches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/salary-batches/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a salary batch
+         * @description One salary batch: its run, state, money account, payment date, method, total, counts, releases and what stops it now (FR-PAY-11). With the salary-payments right it also lists each line (the person, the amount, the account masked to its last four digits, the line's state and why it waits); without it the lines are not in the answer (FR-PPL-17). Read-only; no side effects.
+         */
+        get: operations["getSalaryBatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/salary-batches/{batch_id}/approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for approval of a salary batch
+         * @description Asks for another person's approval of a prepared salary batch at the version read, or for its approval again after a line or a bank detail changed (FR-PAY-11, FR-PPL-14, FM-1), in every team mode. The answer is 202 with the request, which a person who holds A on "Pay runs, employee data", did not ask for it and did not prepare or approve the run in Nemura (SOD-4), and passed step-up, approves; its envelope holds the batch's total and a digest of its lines (each person's amount and bank-detail record, version and digest), never a name or an account, so the approval is for exactly these lines. Needs a person signed in who passed step-up, and If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+         */
+        post: operations["requestSalaryBatchApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/salary-batches/{batch_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a salary batch
+         * @description Cancels a salary batch with no line released, with a reason (FR-PAY-11): it pays nothing. A batch with a line released is never cancelled: record what became of each payment (recordSalaryLineState). Side effects: the batch cancelled and its audit event with the reason. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["cancelSalaryBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/salary-batches/{batch_id}/prepare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Prepare a salary batch
+         * @description Names the SGD bank account the batch is paid from, the payment date and the method (FAST or GIRO) at the version read (FR-PAY-11). It raises the batch's version, so an earlier approval of it is stale and the batch is approved again. A cancelled batch, or one that has a line released, is not prepared again. Side effects: the batch's version and its audit event. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["prepareSalaryBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/salary-batches/{batch_id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release the free lines of a salary batch
+         * @description Releases an approved salary batch (FR-PAY-11, FR-PPL-13): the Payment releaser, a person stepped up in the last 5 minutes, who neither asked for, approved nor prepared the batch (SOD-2) and did not prepare or approve the pay run in Nemura (SOD-4, in every team mode). The latest approval must still hold the lines and the total (else SB-05: ask again). It asks Nemura, the hold's authority, within five seconds whether each person is held (PPL-21, PPL-22), and releases the lines that are free to go: a person held, one whose bank details changed, or one with an unknown outcome in the run waits while the others are paid, and goes in a later release (SB-03 when none can go). Side effects, in one transaction: the payment file the money account is set to, sealed (SEC-11) with its SHA-256, an instruction ID per line, each line recorded as released (never paid: that comes from the bank feed or a person's record with evidence), and the audit event with counts and the file's hash only. No break-glass releases a salary. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and releases nothing.
+         */
+        post: operations["releaseSalaryBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/salary-batches/{batch_id}/releases/{release_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a salary release's payment file
+         * @description Returns the file a release wrote, as it was written, in base64, with its SHA-256 (FR-PAY-11): the payment list or the bank's own file its money account was set to. For the Payment releaser, a person stepped up in the last 5 minutes. It holds names and full account numbers: key it into the bank or upload it there, then delete it. Side effects: an audit event of the download, with the file's hash and no name. Never cached.
+         */
+        get: operations["getSalaryBatchFile"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -46760,6 +46920,37 @@ export interface components {
                 [key: string]: string;
             };
         };
+        PayrollPaymentsReceipt: {
+            /**
+             * Format: uuid
+             * @description The salary batch.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            batch_id?: string;
+            /**
+             * Format: uuid
+             * @description The event's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            event_id: string;
+            /**
+             * Format: int64
+             * @description How many lines are new or revised by this submission.
+             * @example 12
+             */
+            lines?: number;
+            /**
+             * @description Its number.
+             * @example SB-0003
+             */
+            number?: string;
+            /**
+             * @description received: a salary batch was made for the run; revised: lines were replaced by newer versions and the batch must be approved again; unchanged: the submission states what Fyniq holds, or is older; duplicate: the event was received before.
+             * @example received
+             * @enum {string}
+             */
+            outcome: "received" | "revised" | "unchanged" | "duplicate";
+        };
         PayrollRunReceipt: {
             /**
              * Format: uuid
@@ -52523,6 +52714,266 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fb1
              */
             next_cursor?: string;
+        };
+        SalaryBatch: {
+            /**
+             * Format: uuid
+             * @description The approval request it waits for or was last approved under.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20
+             */
+            approval_id?: string;
+            /**
+             * @description Why it was cancelled.
+             * @example The run was withdrawn
+             */
+            cancel_reason?: string;
+            /** @description What stops it being asked for or released now (✖), without a name or an amount. */
+            checks: components["schemas"]["BillCheck"][];
+            /**
+             * Format: uuid
+             * @description The batch's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description How many people it pays.
+             * @example 12
+             */
+            line_count: number;
+            /** @description Each person's line; present only with the salary-payments right. */
+            lines?: components["schemas"]["SalaryBatchLine"][] | null;
+            /**
+             * Format: int64
+             * @description The latest payments.ready object version received.
+             * @example 1
+             */
+            lines_version: number;
+            /**
+             * @description Whether the caller holds the salary-payments right and so sees the lines (FR-PPL-17).
+             * @example false
+             */
+            lines_visible: boolean;
+            /**
+             * @description How the bank pays it, once prepared.
+             * @example giro
+             * @enum {string}
+             */
+            method?: "fast" | "giro";
+            /**
+             * Format: uuid
+             * @description The SGD bank account it is paid from, once prepared.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+             */
+            money_account_id?: string;
+            /**
+             * @description Its number.
+             * @example SB-0003
+             */
+            number: string;
+            /**
+             * Format: int64
+             * @description How many lines are paid.
+             * @example 0
+             */
+            paid: number;
+            /**
+             * Format: date
+             * @description The day the bank pays it, once prepared.
+             * @example 2026-11-30
+             */
+            payment_date?: string;
+            /**
+             * @description Approved: a line or a bank detail changed since its latest approval, so it is not released until it is approved again (FR-PPL-14).
+             * @example false
+             */
+            reapproval_needed: boolean;
+            /**
+             * Format: int64
+             * @description How many lines a release has taken.
+             * @example 11
+             */
+            released: number;
+            /** @description Its releases, oldest first. */
+            releases: components["schemas"]["SalaryBatchRelease"][];
+            /**
+             * Format: uuid
+             * @description The pay run in Nemura.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d01
+             */
+            run_id: string;
+            /**
+             * Format: int64
+             * @description The version of the run it pays.
+             * @example 1
+             */
+            run_version: number;
+            /**
+             * @description What a person reads: from its lines' states. A batch is paid only when every line is paid (FR-PPL-12).
+             * @example approved
+             * @enum {string}
+             */
+            state: "received" | "prepared" | "approved" | "released_in_part" | "released" | "paid_in_part" | "paid" | "cancelled";
+            /**
+             * @description open: waiting for preparation or approval; approved: ready to release; cancelled: before any release, with a reason.
+             * @example approved
+             * @enum {string}
+             */
+            status: "open" | "approved" | "cancelled";
+            /** @description What it pays in all, in SGD. */
+            total: components["schemas"]["Money"];
+            /**
+             * Format: int64
+             * @description The batch's version; with its status it makes the ETag.
+             * @example 1
+             */
+            version: number;
+            /**
+             * @description The wage month, YYYY-MM.
+             * @example 2026-11
+             */
+            wage_month: string;
+            /**
+             * Format: int64
+             * @description How many lines are not free to release now (held, new bank details, unknown outcome).
+             * @example 1
+             */
+            waiting: number;
+        };
+        SalaryBatchCancel: {
+            /**
+             * @description Why it is cancelled: its lines are not paid in this batch.
+             * @example The run was withdrawn in Nemura
+             */
+            reason: string;
+        };
+        SalaryBatchLine: {
+            /**
+             * @description The payee's bank and account, masked to its last four digits.
+             * @example DBSSSGSG ••••4321
+             */
+            account?: string;
+            /** @description What the line pays, in SGD. */
+            amount: components["schemas"]["Money"];
+            /**
+             * Format: int64
+             * @description The version of the bank-detail record the line was made from (FR-PPL-14).
+             * @example 3
+             */
+            bank_detail_version: number;
+            /**
+             * @description The instruction ID the release gave it.
+             * @example SB0003-R1-L07
+             */
+            instruction_id?: string;
+            /**
+             * Format: uuid
+             * @description Nemura's ID of the payment line.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c11
+             */
+            line_id: string;
+            /**
+             * Format: int64
+             * @description The line's version: a revised line is a new version, and the batch is approved again.
+             * @example 1
+             */
+            line_version: number;
+            /**
+             * Format: uuid
+             * @description The person of the employee projection.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c12
+             */
+            person_id: string;
+            /**
+             * @description The person's display name in the projection.
+             * @example Wei Jie Lim
+             */
+            person_name?: string;
+            /**
+             * @description Where the payment is (FR-PPL-12): paid only from the bank feed matching the debit or a person's record with evidence.
+             * @example scheduled
+             * @enum {string}
+             */
+            state: "scheduled" | "released" | "sent" | "accepted" | "paid" | "rejected" | "returned" | "unknown";
+            /**
+             * @description Why the line is not released now: held for tax clearance, Nemura did not say whether it is held, the person's bank details changed, or an unknown outcome blocks a new instruction.
+             * @example held
+             * @enum {string}
+             */
+            waiting?: "held" | "hold_unknown" | "bank_details" | "unknown_outcome";
+        };
+        SalaryBatchPage: {
+            items: components["schemas"]["SalaryBatch"][];
+            /**
+             * @description Pass it as cursor for the next page; absent on the last page.
+             * @example MTI
+             */
+            next_cursor?: string;
+        };
+        SalaryBatchPrepare: {
+            /**
+             * @description FAST pays within minutes, up to the bank's limit; GIRO over the next working days.
+             * @example giro
+             * @enum {string}
+             */
+            method: "fast" | "giro";
+            /**
+             * Format: uuid
+             * @description The SGD bank account the batch is paid from: the chart's money account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+             */
+            money_account_id: string;
+            /**
+             * Format: date
+             * @description The day the bank pays it.
+             * @example 2026-11-30
+             */
+            payment_date: string;
+        };
+        SalaryBatchRelease: {
+            /**
+             * Format: uuid
+             * @description The approval it was released under.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20
+             */
+            approval_id: string;
+            /**
+             * @description The file's name.
+             * @example SB-0003-R1-payment-list.csv
+             */
+            file_name: string;
+            /**
+             * Format: uuid
+             * @description The release.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c13
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description How many people it pays.
+             * @example 11
+             */
+            lines: number;
+            /**
+             * Format: date-time
+             * @description When it was released.
+             * @example 2026-11-30T09:30:00+08:00
+             */
+            released_at: string;
+            /** @description Who released it. */
+            released_by: components["schemas"]["Person"];
+            /**
+             * @description The SHA-256 of the file as written, in hexadecimal.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
+            /** @description What it pays in all. */
+            total: components["schemas"]["Money"];
+            /**
+             * @description The file's format and version.
+             * @example payment-list@1
+             */
+            writer: string;
         };
         SalesGSTCode: {
             /**
@@ -166151,6 +166602,103 @@ export interface operations {
             };
         };
     };
+    receivePayrollPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeopleLinkEvent"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollPaymentsReceipt"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PPL-02` The event's signature does not verify with the link key; `PPL-03` The event's payload is not the one its signed header names; `PPL-04` The event was signed more than 5 minutes from now; `PPL-05` The event is of another epoch of the link; `PPL-06` The event is not from the linked organisation to this one; `PPL-08` The event came through a client that is not the link's. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `PPL-07` The organisation has no active link to the people platform; `PPL-24` Fyniq has not posted this version of the run, or has posted a newer one; `PPL-26` A payment line is for a person the projection does not hold; `PPL-27` A released line is not changed, and a cancelled batch takes no line; `PPL-28` An unknown outcome blocks a new instruction for the person in this run; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PPL-01` The event is not well formed; `PPL-09` The event carries more than the people platform shares (PRD-002 Appendix E); `PPL-23` The payment lines are not those of the run's approval, or are not well formed; `PPL-25` The payment lines pay more than the run's net pay. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     submitPayrollRun: {
         parameters: {
             query?: never;
@@ -180971,6 +181519,832 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSalaryBatches: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only batches with this status. */
+                status?: "open" | "approved" | "cancelled";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalaryBatchPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getSalaryBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The salary batch's ID. */
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalaryBatch"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestSalaryBatchApproval: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The salary batch's ID. */
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `SB-01` The salary batch has no money account, payment date and method yet; `SB-04` The salary batch is not in the state the command needs; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    cancelSalaryBatch: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The salary batch's ID. */
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalaryBatchCancel"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalaryBatch"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SB-04` The salary batch is not in the state the command needs; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-09` Cancelling a salary batch needs a reason. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    prepareSalaryBatch: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The salary batch's ID. */
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SalaryBatchPrepare"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalaryBatch"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SB-04` The salary batch is not in the state the command needs; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    releaseSalaryBatch: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The salary batch's ID. */
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalaryBatch"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `SB-06` The person prepared, asked for or approved the batch, or prepared or approved the pay run in Nemura; `TEAM-04` Your roles conflict for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PPL-21` A person held for tax clearance is not paid; `PPL-22` Nemura did not say whether a person is held, so nothing is released to them; `SB-03` No line of the salary batch can be released now; `SB-04` The salary batch is not in the state the command needs; `SB-05` The salary batch needs approving again; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getSalaryBatchFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The salary batch's ID. */
+                batch_id: string;
+                /** @description The release's ID. */
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentBatchFile"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `PAYEE-15` Bank details cannot be kept here. */
             503: {
                 headers: {
                     [name: string]: unknown;
