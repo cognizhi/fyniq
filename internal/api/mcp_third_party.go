@@ -38,13 +38,13 @@ var ThirdPartyAppCodes = []string{CodeThirdPartyOff, CodeThirdPartyApp, CodeThir
 
 // ThirdPartyAppRegister is an app for an Administrator to register.
 type ThirdPartyAppRegister struct {
-	Name               string   `json:"name" minLength:"1" maxLength:"100" doc:"The name it is known by, in plain letters and digits; it cannot pass for Fyniq or a known brand." example:"Acme Books Assistant"`
-	Publisher          string   `json:"publisher" minLength:"1" maxLength:"100" doc:"Who publishes it, as you have verified it yourself: Fyniq does not fetch or check it." example:"Acme Software Pte Ltd"`
-	PublisherURL       string   `json:"publisher_url,omitempty" maxLength:"2048" doc:"The publisher's own https address, shown to the Owner; never fetched." example:"https://acme.example"`
-	RedirectURIs       []string `json:"redirect_uris" minItems:"1" maxItems:"5" doc:"The exact https (or loopback) addresses it signs people in on: no wildcard, query or fragment."`
-	Purpose            string   `json:"purpose" minLength:"1" maxLength:"300" doc:"What the organisation uses it for, for the data inventory." example:"Ask questions about the management accounts from an AI assistant"`
-	ProcessingLocation string   `json:"processing_location" minLength:"1" maxLength:"100" doc:"Where the publisher processes what it reads." example:"United States"`
-	OutsideSingapore   bool     `json:"outside_singapore" doc:"True when it processes outside Singapore: a transfer to assess under the PDPA before an Owner allows it (CMP-PD-06)." example:"true"`
+	Name               string        `json:"name" minLength:"1" maxLength:"100" doc:"The name it is known by, in plain letters and digits; it cannot pass for Fyniq or a known brand." example:"Acme Books Assistant"`
+	Publisher          string        `json:"publisher" minLength:"1" maxLength:"100" doc:"Who publishes it, as you have verified it yourself: Fyniq does not fetch or check it." example:"Acme Software Pte Ltd"`
+	PublisherURL       string        `json:"publisher_url,omitempty" maxLength:"2048" doc:"The publisher's own https address, shown to the Owner; never fetched." example:"https://acme.example"`
+	RedirectURIs       []RedirectURI `json:"redirect_uris" minItems:"1" maxItems:"5" doc:"The exact https (or loopback) addresses it signs people in on: no wildcard, query or fragment."`
+	Purpose            string        `json:"purpose" minLength:"1" maxLength:"300" doc:"What the organisation uses it for, for the data inventory." example:"Ask questions about the management accounts from an AI assistant"`
+	ProcessingLocation string        `json:"processing_location" minLength:"1" maxLength:"100" doc:"Where the publisher processes what it reads." example:"United States"`
+	OutsideSingapore   bool          `json:"outside_singapore" doc:"True when it processes outside Singapore: a transfer to assess under the PDPA before an Owner allows it (CMP-PD-06)." example:"true"`
 }
 
 // ThirdPartyApp is a registered app as the organisation holds it.
@@ -149,7 +149,7 @@ func registerThirdPartyApps(a *API) {
 			if err != nil {
 				return nil, err
 			}
-			reg, problems := pol.Check(mcpregister.Request{ClientName: b.Name, RedirectURIs: b.RedirectURIs})
+			reg, problems := pol.Check(mcpregister.Request{ClientName: b.Name, RedirectURIs: redirectStrings(b.RedirectURIs)})
 			if len(problems) > 0 {
 				return nil, regPolicy(problems)
 			}
@@ -260,4 +260,13 @@ func (a *API) thirdPartyAppOf(ctx context.Context, h storage.MCPThirdPartyApp) T
 	return ThirdPartyApp{ClientID: h.ClientID, Name: h.Name, Publisher: h.Publisher, PublisherURL: h.PublisherURL, RedirectURIs: redirects(h.RedirectURIs), Purpose: h.Purpose,
 		ProcessingLocation: h.ProcessingLocation, OutsideSingapore: h.OutsideSingapore, InventoryEntry: h.InventoryEntry.String(), Status: status, RegisteredBy: h.RegisteredBy.String(),
 		RegisteredAt: h.RegisteredAt.UTC(), RemovedAt: h.RemovedAt}
+}
+
+// redirectStrings is the redirect addresses as plain strings, for the registration policy.
+func redirectStrings(in []RedirectURI) []string {
+	out := make([]string, len(in))
+	for i, u := range in {
+		out[i] = string(u)
+	}
+	return out
 }
