@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "controls": {
+      "description": "How many controls map to it.",
+      "examples": [
+        34
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "fail": {
+      "description": "Those that fail.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "gaps": {
+      "description": "The controls that are not passing, with the worst first.",
+      "items": {
+        "$ref": "ReadinessGap.schema.json"
+      },
+      "type": "array"
+    },
+    "key": {
+      "description": "The framework's key, as the controls dashboard's filter has it.",
+      "examples": [
+        "csa-ct"
+      ],
+      "type": "string"
+    },
+    "not_applicable": {
+      "description": "Those that do not apply to this organisation.",
+      "examples": [
+        4
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "not_assessed": {
+      "description": "Those not assessed yet: a required input is missing.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "overdue": {
+      "description": "Those that are overdue.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "pass": {
+      "description": "Of them, those that pass.",
+      "examples": [
+        20
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "planned": {
+      "description": "Those with a check that arrives with a later change.",
+      "examples": [
+        5
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "stage": {
+      "description": "Where it sits in PRD-001's roadmap of assurance (section 14.8).",
+      "examples": [
+        "Stage 1, with the first employees"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "Its name.",
+      "examples": [
+        "CSA Cyber Trust"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "title",
+    "stage",
+    "controls",
+    "pass",
+    "fail",
+    "overdue",
+    "not_assessed",
+    "not_applicable",
+    "planned",
+    "gaps"
+  ],
+  "title": "FrameworkReadiness",
+  "type": "object"
+}

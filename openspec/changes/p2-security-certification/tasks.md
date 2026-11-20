@@ -18,12 +18,17 @@ Before each slice load `fyniq-security-compliance` (and `fyniq-feature-change`, 
 - [ ] 3.2 The Holds tab on Data protection, help keys, guide section, knowledge page, design fragment; the DPO's Home block; CTL-AUD-07; the threat model's "What remains" and the spec's "After go-live" scenario corrected. `// req: AUD-11`, `// req: QA-UI-08`
 
 ## 4. Security assessments (SEC-25)
-- [ ] 4.1 `security_assessment` and `security_finding`, guards, API, matrix rows, audit. `// req: SEC-25`
-- [ ] 4.2 Verification `security-assessments` and control CTL-CHG-12 (its planned gate for `p3-saas-platform`). `// req: SEC-25`
-- [ ] 4.3 The Security assessments screen, help keys, guide page, knowledge page, design fragment. `// req: SEC-25`
+- [x] 4.1 `security_assessment` and `security_finding`, guards, API, matrix rows, audit. `// req: SEC-25`
+  Built: migration 001301 (three insert-only tables), `internal/api/compliance_assessments.go`; `TestAttackTheRegisterOfSecurityAssessmentsIsOnlyAddedTo`, `TestTheRegisterOfSecurityAssessments`, `matrixSecurityAssessments`.
+- [x] 4.2 The review `security-assessments` and control CTL-CHG-12 (its gate for the first external customer arrives with `p3-saas-platform`). `// req: SEC-25`
+  Built: `compliance.assessmentsReview`, `FindingDue`, the attestation `security-assessments`; `TestTheSecurityAssessmentsReview`, `TestAFindingIsDueBySeverity`. **Left:** the gate (a check that fails the control once an external customer is onboarded without an independent test) waits for `p3-saas-platform`.
+- [x] 4.3 The Security assessments tab of Compliance › Controls, help keys, guide page, knowledge page, design fragment. `// req: SEC-25`
+  Built: `SecurityAssessments.tsx`, help keys `compliance.security-assessments`, `.assessment-record`, `.finding-step`, the guide's "Security assessments" and its knowledge page, the design inventory; `SecurityAssessments.test.tsx`.
 - [ ] 4.4 `[live-verify]` The independent test by an outside firm; DAST against staging (CTL-CHG-07's nightly check).
 
 ## 5. Readiness by framework (CMP-08)
-- [ ] 5.1 `GET /v1/compliance/readiness` from the registry and the dashboard, with Annex A's clause numbers; fixtures for CE, CT, ISO and SOC 2. `// req: CMP-08`
-- [ ] 5.2 The Readiness panel on Controls, help, guide, knowledge page, design fragment. `// req: CMP-08`
+- [x] 5.1 `GET /v1/compliance/readiness` from the registry and the dashboard, with Annex A's clause numbers; fixtures for CE, CT, ISO and SOC 2. `// req: CMP-08`
+  Built: `compliance.ISOClauses`, `AnnexA`, `FrameworkStages`, `internal/api/compliance_readiness.go`; `TestTheISOClausesAMappingNames`, `TestEveryISOClauseAControlNamesIsAnnexAs`, `TestReadinessByFramework`, `matrixReadiness`. The fixtures are the registry's own controls (the test sums them per framework).
+- [x] 5.2 The Readiness tab on Controls, help, guide, knowledge page, design fragment. `// req: CMP-08`
+  Built: `Readiness.tsx`, help key `compliance.readiness`, the guide's "Readiness by framework" and its knowledge page; `Readiness.test.tsx`.
 - [ ] 5.3 `[live-verify]` A certification body's reading of the gaps; the statement of applicability's wording.

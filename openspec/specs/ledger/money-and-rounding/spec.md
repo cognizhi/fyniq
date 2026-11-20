@@ -443,6 +443,16 @@ Source: PRD-001 §10.4
 - **THEN** each total is the sum of the stored amounts it covers
 - **AND** the report foots and cross-foots exactly
 
+### Requirement: RND-TRANSLATE Translation into the group currency
+A line translated into the group currency SHALL be the entity-currency amount times the month's closing or average rate, rounded to the group currency's minor units, half away from zero, once per entity, mapped account, counterparty and month, and the translation reserve SHALL be the balancing figure (new, FR-ENT-06).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Translation formula
+- **WHEN** an entity's line is translated
+- **THEN** the result is round(amount × rate, minor units), half away from zero, computed exactly before its one rounding, and a balance sheet account's cumulative amount is translated once at the last month's closing rate
+- **AND** the reserve is the negative sum of the entity's translated lines, so the translated trial balance foots exactly, and an eliminated amount is the smaller of two translated amounts, exact
+
 ### Requirement: RND-PERCENT Percentage shown
 A percentage shown SHALL be the part as a percentage of the whole's size, rounded to one decimal, half-up, with the part's sign; it SHALL be for showing only, never compared by a rule (new, FR-GL-14).
 

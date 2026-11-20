@@ -1816,6 +1816,41 @@ Source: PRD-001 §D
 - **WHEN** a user reads or changes the tasks integrations made
 - **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over them (—)
 
+### Requirement: Permission matrix: Entity groups and consolidation
+In Standard mode, each role SHALL hold only the rights over a group of entities and its consolidation that the permission matrix gives it (rev 0.625): the Owner alone issues, accepts and ends a link, with step-up.
+
+Source: PRD-001 §D
+
+#### Scenario: Create, prepare or approve
+- **WHEN** a user maps accounts, enters translation rates or runs a consolidation
+- **THEN** the Finance controller and the Accountant can create or prepare (C), and the Owner can create and sign (C/A)
+- **AND** issuing, accepting and ending a link is the Owner's alone (A)
+
+#### Scenario: View
+- **WHEN** a user reads a consolidation run
+- **THEN** the Administrator and the Auditor can view it (V)
+
+#### Scenario: No access
+- **WHEN** a user reads or runs a consolidation
+- **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over it (—)
+
+### Requirement: Permission matrix: Accountant firm and client links
+In Standard mode, each role SHALL hold only the rights over firm mode, client invitations and the practice dashboard that the permission matrix gives it (rev 0.625): the firm's Owner invites a client and the client's Owner accepts.
+
+Source: PRD-001 §D
+
+#### Scenario: Create or approve
+- **WHEN** a user switches on firm mode, invites or ends a client, or accepts or ends a firm
+- **THEN** the Owner can create and sign it (C/A)
+
+#### Scenario: View
+- **WHEN** a user reads the practice dashboard
+- **THEN** the Administrator, the Finance controller, the Accountant and the Tax agent can view it (V)
+
+#### Scenario: No access
+- **WHEN** a user reads the practice dashboard
+- **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over it (—)
+
 ### Requirement: Super admin outside the permission matrix
 The Super admin (FR-ADM-06/07) SHALL be an installation role outside the permission matrix that manages sign-in providers, installation-wide email and messaging connections and announcements to everyone, and SHALL see an organisation's data only as a member.
 

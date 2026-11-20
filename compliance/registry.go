@@ -142,6 +142,7 @@ var Attestations = map[string]string{
 	"breach":                 "Each breach is assessed within 30 days, and a notifiable one reported to the PDPC within 3 calendar days of the decision",
 	"breach-tabletop":        "The breach runbook is rehearsed in a tabletop exercise twice a year",
 	"transfers":              "Each flow of personal data abroad has a current transfer assessment, reviewed by its next review day",
+	"security-assessments":   "An independent penetration test is recorded each year, and each Critical or High finding is fixed and retested within its due day (the installation's)",
 	"heartbeat-drill":        "The tick paused in staging alerts the platform owner within 30 minutes and the Owners within 60, each quarter (the installation's)",
 	"restore-drill":          "A full restore drill recovers each quarter: the ledger, the audit chain, documents, keys, sign-in, the tick and the outbox work on the restored copy (the installation's)",
 }

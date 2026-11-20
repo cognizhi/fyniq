@@ -11,7 +11,7 @@ The system SHALL hold each organisation's data under that organisation, in the e
 Source: PRD-001 §11.4
 
 #### Scenario: Periods, accounts, dimensions and parameter packs
-- **WHEN** an organisation (and, from P3, each of its entities) is set up
+- **WHEN** an organisation is set up (rev 0.625: an entity of a group is an organisation, and the model has no entity level inside one)
 - **THEN** it holds periods whose status is open, soft-locked or closed, accounts with their versions, dimensions with their values, and effective-dated parameter pack versions (GST, CPF, …)
 
 #### Scenario: Memberships and master data
