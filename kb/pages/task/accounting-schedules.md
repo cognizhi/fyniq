@@ -4,7 +4,7 @@ type: task
 title: See what is spread over months
 summary: The schedules of costs paid ahead and income received ahead, each month posted, waiting or still ahead, and how Prepayments and Deferred revenue tie to them
 sources:
-  - docs/user-guide/schedules.md sha256:9d9ea1f451b19717f36cd660f2825b654a6091d04db92e1ca3e9baede7382040
+  - docs/user-guide/schedules.md sha256:900a7b7edf7d6ba7fe36f237b1a4ec5408f885129487e5d396a6428ab169cd99
 data_class: general
 taint: trusted
 status: draft
@@ -53,6 +53,15 @@ aliases:
 - **Differs by** an amount: a posting and its document disagree, and the close refuses the month until it is resolved; report it, never adjust it by journal.
 
 (src: docs/user-guide/schedules.md#check-prepayments-and-deferred-revenue)
+
+## The roll-forward
+
+- The **Roll-forward** tab shows how Prepayments (by supplier) and Deferred revenue (by customer) moved over a run of months, chosen as YYYY-MM: **Opening**, **Added**, **Released**, **Reversed** and **Closing**.
+- Closing is always Opening plus Added less Released plus Reversed; a reversed release, a credit note, an edit or a cancellation is Reversed and can move the balance either way. The total ties to the account in the ledger, and a difference is named and refused by the close.
+- Each customer also shows, in the base currency, what it was **Billed** (its invoices and credit notes dated inside the run, GST included, a credit note negative), what it **Collected** (its receipts), what was **Recognised** from it (released from its schedules plus what its invoices credited straight to revenue) and what is **Still deferred**.
+- The check beside each customer compares what it owes at the end of the run with the day before: billed less collected, plus its other documents (a refund, a credit applied, a write-off or a deposit), must explain the change. An amount no document explains is shown, never hidden: ask the Accountant to look at that customer.
+
+(src: docs/user-guide/schedules.md#the-roll-forward)
 
 ## Spread a line
 

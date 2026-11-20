@@ -294,3 +294,8 @@ Source: PRD-001 §8.12 · Priority S · Phase P2
 #### Scenario: Billed, collected and recognised revenue
 - **WHEN** deferred revenue is viewed per customer
 - **THEN** billed, collected and recognised revenue are shown side by side
+
+#### Scenario: What each customer owes moves by billed less collected (rev 0.598)
+- **WHEN** the roll-forward is produced for a run of months
+- **THEN** each customer shows billed (its invoices and credit notes dated in the run, GST included, a credit note negative), collected (its receipts), recognised (released from its schedules plus what its invoices put straight on revenue) and what is still deferred
+- **AND** the movement of what it owes between the day before the run and its end equals billed less collected plus its other documents, or the amount no document explains is shown

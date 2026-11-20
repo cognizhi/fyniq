@@ -100,7 +100,7 @@ func Of(ctx context.Context, u storage.UnitOfWork, base money.Currency, contact 
 	for _, d := range docs {
 		ev := Event{Document: d}
 		if d.Status != storage.DocumentDraft {
-			amount, value, ok, err := moved(ctx, u, d.ID, ar, ap, base)
+			amount, value, ok, err := Moved(ctx, u, d.ID, ar, ap, base)
 			if err != nil {
 				return out, err
 			}
@@ -133,19 +133,30 @@ func inYear(date string, y period.Span) bool {
 	return err == nil && !y.StartsOn.IsZero() && !d.Before(y.StartsOn) && !d.After(y.EndsOn)
 }
 
-// moved is what a document's current posting moved on the receivables or payables accounts, as owed (see Event), in
-// its currency and in the base currency; ok is false when it moved neither. The current posting is its latest entry
-// that reverses nothing: the posting itself, or an edit's replacement.
-func moved(ctx context.Context, u storage.UnitOfWork, doc uuid.UUID, ar, ap map[uuid.UUID]bool, base money.Currency) (money.Money, money.Money, bool, error) {
+// Current is a document's current posting that touches the receivables or payables accounts ar and ap: its latest entry that reverses nothing and has a line
+// on one of them, the posting itself or an edit's replacement. A spread invoice's releases carry its source too and touch neither account.
+func Current(ctx context.Context, u storage.UnitOfWork, doc uuid.UUID, ar, ap map[uuid.UUID]bool) (storage.Entry, bool, error) {
 	entries, err := u.Ledger().OfSource(ctx, doc)
 	if err != nil {
+		return storage.Entry{}, false, err
+	}
+	entries = slices.DeleteFunc(entries, func(e storage.Entry) bool {
+		return e.ReversesEntryID != nil || !slices.ContainsFunc(e.Lines, func(l storage.Line) bool { return ar[l.AccountID] || ap[l.AccountID] })
+	})
+	if len(entries) == 0 {
+		return storage.Entry{}, false, nil
+	}
+	return slices.MaxFunc(entries, func(x, y storage.Entry) int { return int(x.LedgerRevision - y.LedgerRevision) }), true, nil
+}
+
+// Moved is what a document's current posting moved on the receivables or payables accounts, as owed (see Event), in
+// its currency and in the base currency; ok is false when it moved neither. The current posting is its latest entry
+// that reverses nothing and touches one of the accounts: the posting itself, or an edit's replacement.
+func Moved(ctx context.Context, u storage.UnitOfWork, doc uuid.UUID, ar, ap map[uuid.UUID]bool, base money.Currency) (money.Money, money.Money, bool, error) {
+	e, ok, err := Current(ctx, u, doc, ar, ap)
+	if err != nil || !ok {
 		return money.Money{}, money.Money{}, false, err
 	}
-	entries = slices.DeleteFunc(entries, func(e storage.Entry) bool { return e.ReversesEntryID != nil })
-	if len(entries) == 0 {
-		return money.Money{}, money.Money{}, false, nil
-	}
-	e := slices.MaxFunc(entries, func(x, y storage.Entry) int { return int(x.LedgerRevision - y.LedgerRevision) })
 	var amount, value money.Money
 	found := false
 	for _, l := range e.Lines {
