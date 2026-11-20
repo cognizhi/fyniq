@@ -3,7 +3,7 @@ key: ai.proposals
 title: Approve a change the AI proposed
 mode: basic
 roles: [owner, admin, controller, accountant, bookkeeper, company_secretary, dpo]
-requirements: [AI-P3, AI-P4, AI-P5, AI-06, AI-07, AI-10, AI-14, AI-32, AI-89, AI-65]
+requirements: [AI-P3, AI-P4, AI-P5, AI-06, AI-07, AI-10, AI-14, AI-31, AI-32, AI-89, AI-91, AI-65]
 status: draft
 ---
 
@@ -115,6 +115,29 @@ status: draft
 - A bill is marked out of date, and drafts nothing, if the supplier changed after the review. A supplier that is not an active
   supplier, an account that cannot be costed, a GST code that is not a purchase code and a category that is not one of your
   claim categories are refused with the reason.
+
+## Review a contact change the AI proposed
+
+- **Update a contact's details** (`ct.update_contact`, tier 2) changes up to six details of a customer or supplier company, as
+  **Change a contact** does: the billing email, phone, address, payment terms, default category and default GST code. The
+  review shows each detail before and after.
+- It never changes a legal name, UEN or tax ID, Peppol ID, remittance email, country, tax residence, currency, discount terms,
+  customer group or any bank detail, and never the record of a person (an individual, a director, a shareholder, an investor
+  or a member who signs in): a person makes those changes. A detail cannot be cleared by the AI.
+- It is tier 2, so someone other than the person who asked approves it, and that person must be someone who may change contacts
+  themselves, such as the AR or AP specialist or the accountant. If the contact changed after the review, nothing is changed:
+  the proposal is marked out of date.
+
+## Undo a change the AI made
+
+- A change that **changes or posts a record** can be undone from the proposal's review, with **Undo this change**: you say why,
+  and Fyniq puts back what it replaced, as you, and keeps who, when and why in the audit trail. You need the right the change
+  itself needs, so someone who could not have made it cannot undo it.
+- It works once, and only while nobody has changed the same record since. If a person or another change has touched the contact
+  after, the undo is refused and says so: correct it by hand. For a posted entry the undo is a reversing entry, never an edit,
+  and needs the period to be open.
+- A **draft** the AI made is not undone: it posts nothing, so you edit it or ignore it. A message that was sent cannot be unsent.
+  The proposal itself stays **Executed**, and the review then says **Undone**, when and why.
 
 ## Approval quality
 

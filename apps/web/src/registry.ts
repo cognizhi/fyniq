@@ -277,6 +277,7 @@ export const actions = [
   { kind: "action", id: "assistant.feedback", mode: "basic", help: "assistant.feedback", guide: "ai.assistant#rate-an-answer" },
   { kind: "action", id: "assistant.simulate", mode: "basic", help: "assistant.simulate", guide: "ai.assistant#explain-and-simulate" },
   { kind: "action", id: "ai-proposal.items", mode: "basic", help: "ai-proposal.items", guide: "ai.proposals#approve-or-reject" },
+  { kind: "action", id: "ai-proposal.undo", mode: "basic", help: "ai-proposal.undo", guide: "ai.proposals#undo-a-change-the-ai-made" },
   { kind: "action", id: "ai-proposal.rationale", mode: "basic", help: "ai-proposal.rationale", guide: "ai.proposals#review-a-proposal" },
   { kind: "action", id: "ai-tasks.turn", mode: "basic", help: "ai-tasks.turn", guide: "ai.proposals#turn-a-task-type-on-or-off" },
   { kind: "action", id: "company-secretary.run-now", mode: "basic", help: "compliance.secretary-run-now", guide: "compliance.secretary#run-now-and-pause" },

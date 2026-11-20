@@ -2,9 +2,9 @@
 key: ai.proposals
 type: task
 title: Review, approve or reject a change the AI proposed
-summary: Review, approve or reject an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
+summary: Review, approve, reject or undo an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
 sources:
-  - docs/user-guide/ai-proposals.md sha256:78518f580d96876e20981ce604beae7622722586470679e8a4c43fb0bc84c24f
+  - docs/user-guide/ai-proposals.md sha256:b6fd54b660c14649811b1fc02f117d04cf1a35f617b90fb2c34545e736e06e6e
 data_class: general
 taint: trusted
 status: draft
@@ -25,6 +25,10 @@ aliases:
   - AI suggested task
   - sec.create_task
   - AI drafted reminder
+  - undo an AI change
+  - undo what the AI did
+  - AI update contact
+  - ct.update_contact
   - sec.draft_reminder
 ---
 
@@ -113,6 +117,22 @@ aliases:
 - A bill is out of date, and drafts nothing, if the supplier changed after the review. A supplier that is not an active supplier, an account that cannot be costed, a GST code that is not a purchase code and a category that is not a claim category are refused with the reason.
 
 (src: docs/user-guide/ai-proposals.md#review-a-bill-or-an-expense-claim-the-ai-drafted)
+
+## Review a contact change the AI proposed
+
+- Update a contact's details (`ct.update_contact`, tier 2) changes up to six details of a customer or supplier company, as Change a contact does: the billing email, phone, address, payment terms, default category and default GST code. The review shows each detail before and after.
+- It never changes a legal name, UEN or tax ID, Peppol ID, remittance email, country, tax residence, currency, discount terms, customer group or any bank detail, and never the record of a person (an individual, a director, a shareholder, an investor or a member who signs in): a person makes those changes. The AI cannot clear a detail.
+- It is tier 2: someone other than the person who asked approves it, and that person must be able to change contacts themselves, such as the AR or AP specialist or the accountant. If the contact changed after the review, nothing is changed and the proposal is out of date.
+
+(src: docs/user-guide/ai-proposals.md#review-a-contact-change-the-ai-proposed)
+
+## Undo a change the AI made
+
+- A change that changes or posts a record can be undone from the proposal's review with **Undo this change**: you say why, and Fyniq puts back what it replaced, as you, keeping who, when and why in the audit trail. You need the right the change itself needs.
+- It works once, and only while nobody has changed the same record since; otherwise it is refused and says so, and a person corrects it by hand. A posted entry is undone by a reversing entry, never an edit, and needs the period to be open.
+- A draft the AI made is not undone: it posts nothing, so a person edits or ignores it; a message sent cannot be unsent. The proposal stays **Executed**, and the review then says **Undone**, when and why.
+
+(src: docs/user-guide/ai-proposals.md#undo-a-change-the-ai-made)
 
 ## Approval quality
 
