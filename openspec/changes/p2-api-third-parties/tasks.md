@@ -15,7 +15,8 @@ Decisions are in design.md. Cloud and real-account checks are tagged `[live-veri
 
 ## 2. Inbound tasks (FR-INT-24)
 
-- [ ] 2.1 Scope `fyniq.write.tasks`; `POST /v1/tasks`, `PATCH /v1/tasks/{id}` (own tasks of the client only); source `integration`.
+- [x] 2.1 Scope `fyniq.write.tasks`; `POST /v1/tasks`, `PATCH /v1/tasks/{id}` (own tasks of the client only).
+  - Built (rev 0.607; the owner's decision of 21 Nov 2026, design D5 amended: a table of its own, `integration_task`, migration 001152, not a new source of `compliance_task`, so no client can reach a statutory or agent task by construction): a new Appendix D row "Tasks made by integrations" (Owner and Administrator C; Controller, Accountant and Auditor V; never the AI), the scope mapped to it, `createIntegrationTask`, `updateIntegrationTask` (own tasks, done or cancelled once), `getIntegrationTask`, `listIntegrationTasks`, the matrix rows, `TestAnIntegrationClientMakesAndUpdatesItsOwnTasks`, `TestNoOneButAScopedIntegrationClientTouchesAnIntegrationTask`, `TestATaskAnIntegrationMadeIsTheClientsOwn`, threat model `integration-tasks.md`, the grants for human review. **Left:** a person closing or editing a client's task in the Inbox; the Go and Python SDK methods exist from the contract.
 
 ## 3. Semantic metrics endpoint (FR-INT-15)
 

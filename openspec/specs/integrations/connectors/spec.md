@@ -137,6 +137,16 @@ Source: PRD-001 §8.24 · Priority S · Phase P2
 - **WHEN** a ticketing system or other integration tries to create or change a financial record
 - **THEN** it is refused
 
+#### Scenario: Only its own tasks
+- **GIVEN** an integration client holding `fyniq.write.tasks`
+- **WHEN** it updates a task another client made, or a compliance task (a statutory or agent task)
+- **THEN** the task is not found and nothing changes
+- **AND** a task it made it may finish once, as done or cancelled
+
+#### Scenario: Not a person, not the AI
+- **WHEN** a person in the browser, the AI, an agent-class client or the link's client calls an inbound task operation
+- **THEN** it is refused
+
 ### Requirement: FR-INT-25 Connectors and their manifest
 Every external integration SHALL be a connector: an adapter packaged with a manifest, shipped in a connector catalogue with each release.
 
