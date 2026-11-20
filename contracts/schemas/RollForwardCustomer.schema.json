@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billed": {
+      "$ref": "Money.schema.json",
+      "description": "What their invoices and credit notes dated inside the run moved on the receivables account, GST included, credit notes negative."
+    },
+    "collected": {
+      "$ref": "Money.schema.json",
+      "description": "What their receipts dated inside the run took off the receivables account."
+    },
+    "deferred_closing": {
+      "$ref": "Money.schema.json",
+      "description": "What their deferral schedules hold at the end of the run."
+    },
+    "direct": {
+      "$ref": "Money.schema.json",
+      "description": "The part of recognised credited straight to revenue by their invoices and credit notes."
+    },
+    "explained": {
+      "description": "True when nothing is unexplained.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "other_movement": {
+      "$ref": "Money.schema.json",
+      "description": "The receivable's movement less billed plus collected: refunds, credits applied, write-offs, deposits and anything else."
+    },
+    "party_id": {
+      "description": "The customer.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "party_name": {
+      "description": "Their name.",
+      "examples": [
+        "Acme Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "receivable_movement": {
+      "$ref": "Money.schema.json",
+      "description": "The movement of what they owe, from the receivables sub-ledger at the end of the run less the day before."
+    },
+    "recognised": {
+      "$ref": "Money.schema.json",
+      "description": "The revenue recognised from them inside the run: released from their deferral schedules plus what their invoices credited straight to revenue."
+    },
+    "released": {
+      "$ref": "Money.schema.json",
+      "description": "The part of recognised released from their deferral schedules (the Released column)."
+    },
+    "unexplained": {
+      "$ref": "Money.schema.json",
+      "description": "What is left of the other movement when their other documents' effect is taken off: zero when billed less collected plus those documents explains the movement."
+    }
+  },
+  "required": [
+    "party_id",
+    "party_name",
+    "billed",
+    "collected",
+    "recognised",
+    "released",
+    "direct",
+    "deferred_closing",
+    "receivable_movement",
+    "other_movement",
+    "unexplained",
+    "explained"
+  ],
+  "title": "RollForwardCustomer",
+  "type": "object"
+}

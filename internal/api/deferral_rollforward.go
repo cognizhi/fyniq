@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -12,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -41,12 +43,29 @@ type RollForwardHolding struct {
 	Ties        bool             `json:"ties" doc:"True when the closing total, the direct amounts and what other sources put on the account equal the ledger balance, so that nothing is unexplained." example:"true"`
 }
 
+// RollForwardCustomer is one customer's billed, collected and recognised over the run (FR-RPT-13, rev 0.594), in the base currency, next to its deferred revenue.
+type RollForwardCustomer struct {
+	PartyID     string `json:"party_id" format:"uuid" doc:"The customer." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a10"`
+	PartyName   string `json:"party_name" doc:"Their name." example:"Acme Pte Ltd"`
+	Billed      Money  `json:"billed" doc:"What their invoices and credit notes dated inside the run moved on the receivables account, GST included, credit notes negative."`
+	Collected   Money  `json:"collected" doc:"What their receipts dated inside the run took off the receivables account."`
+	Recognised  Money  `json:"recognised" doc:"The revenue recognised from them inside the run: released from their deferral schedules plus what their invoices credited straight to revenue."`
+	Released    Money  `json:"released" doc:"The part of recognised released from their deferral schedules (the Released column)."`
+	Direct      Money  `json:"direct" doc:"The part of recognised credited straight to revenue by their invoices and credit notes."`
+	Deferred    Money  `json:"deferred_closing" doc:"What their deferral schedules hold at the end of the run."`
+	Movement    Money  `json:"receivable_movement" doc:"The movement of what they owe, from the receivables sub-ledger at the end of the run less the day before."`
+	Other       Money  `json:"other_movement" doc:"The receivable's movement less billed plus collected: refunds, credits applied, write-offs, deposits and anything else."`
+	Unexplained Money  `json:"unexplained" doc:"What is left of the other movement when their other documents' effect is taken off: zero when billed less collected plus those documents explains the movement."`
+	Explained   bool   `json:"explained" doc:"True when nothing is unexplained." example:"true"`
+}
+
 // RollForward is the roll-forward of deferred revenue and prepayments over a run of months (FR-RPT-13).
 type RollForward struct {
-	Currency string               `json:"currency" doc:"The base currency every amount is in." example:"SGD"`
-	From     string               `json:"from" format:"date" doc:"The run's first day." example:"2026-10-01"`
-	To       string               `json:"to" format:"date" doc:"The run's last day." example:"2026-10-31"`
-	Holdings []RollForwardHolding `json:"holdings" nullable:"false" doc:"1210 Prepayments and 2400 Deferred revenue, each that the chart has."`
+	Currency  string                `json:"currency" doc:"The base currency every amount is in." example:"SGD"`
+	From      string                `json:"from" format:"date" doc:"The run's first day." example:"2026-10-01"`
+	To        string                `json:"to" format:"date" doc:"The run's last day." example:"2026-10-31"`
+	Holdings  []RollForwardHolding  `json:"holdings" nullable:"false" doc:"1210 Prepayments and 2400 Deferred revenue, each that the chart has."`
+	Customers []RollForwardCustomer `json:"customers" nullable:"false" doc:"Each customer with something billed, collected, recognised or moved in the run, side by side with its deferred revenue (rev 0.594)."`
 }
 
 type rollForwardInput struct {
@@ -115,7 +134,46 @@ func registerDeferralRollForward(a *API) {
 				}
 				return x
 			}
-			out = RollForward{Currency: base.Code, From: dateOf(first), To: dateOf(end), Holdings: []RollForwardHolding{}}
+			out = RollForward{Currency: base.Code, From: dateOf(first), To: dateOf(end), Holdings: []RollForwardHolding{}, Customers: []RollForwardCustomer{}}
+			released, deferred := map[uuid.UUID]money.Money{}, map[uuid.UUID]money.Money{}
+			for _, rf := range rfs {
+				if rf.Holding != ledger.RoleDeferredRevenue {
+					continue
+				}
+				for _, r := range rf.Rows {
+					released[r.Party], deferred[r.Party] = r.Released, r.Closing
+				}
+			}
+			acts, err := journal.CustomerActivities(ctx, u, base, first, end, released)
+			if err != nil {
+				return err
+			}
+			out.Customers = []RollForwardCustomer{}
+			for _, x := range acts {
+				if x.Party == uuid.Nil {
+					continue
+				}
+				z := money.Zero(base)
+				live := false
+				for _, m := range []money.Money{x.Billed, x.Collected, x.Recognised, x.Movement, x.Other, deferred[x.Party]} {
+					live = live || !m.IsZero()
+				}
+				if !live {
+					continue
+				}
+				d, ok := deferred[x.Party]
+				if !ok {
+					d = z
+				}
+				rel, ok := released[x.Party]
+				if !ok {
+					rel = z
+				}
+				out.Customers = append(out.Customers, RollForwardCustomer{PartyID: x.Party.String(), PartyName: nameOf(x.Party), Billed: moneyOut(x.Billed), Collected: moneyOut(x.Collected),
+					Recognised: moneyOut(x.Recognised), Released: moneyOut(rel), Direct: moneyOut(x.Direct), Deferred: moneyOut(d), Movement: moneyOut(x.Movement), Other: moneyOut(x.Other),
+					Unexplained: moneyOut(x.Unexplained), Explained: x.Unexplained.IsZero()})
+			}
+			sort.Slice(out.Customers, func(i, j int) bool { return out.Customers[i].PartyName < out.Customers[j].PartyName })
 			for _, rf := range rfs {
 				h := RollForwardHolding{Kind: scheduleKind(rf.Holding), AccountCode: rf.Account.Code, AccountName: rf.Account.Name, Rows: []RollForwardRow{}, Total: rowOf(rf.Total),
 					Ledger: moneyOut(rf.Ledger), Direct: moneyOut(rf.Direct), Unexplained: moneyOut(rf.Unexplained), Ties: rf.Unexplained.IsZero()}
