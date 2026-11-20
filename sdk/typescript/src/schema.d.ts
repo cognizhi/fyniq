@@ -5008,6 +5008,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the readiness of each framework
+         * @description For each framework of the registry (CMP-08), its stage, how many mapped controls pass, fail, are overdue, are not assessed or do not apply, how many have a check still to arrive, and the controls that are not passing in plain words; and for ISO/IEC 27001:2022 Annex A the control numbers no control maps to. Readiness, never a certificate. Read-only; no side effects.
+         */
+        get: operations["getReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/restore-drills": {
         parameters: {
             query?: never;
@@ -24939,6 +24959,28 @@ export interface components {
              */
             reason: string;
         };
+        AnnexAReadiness: {
+            /**
+             * @description The numbers some control's mapping names.
+             * @example [
+             *       "5.15"
+             *     ]
+             */
+            covered: string[];
+            /**
+             * Format: int64
+             * @description How many numbers Annex A has.
+             * @example 93
+             */
+            total: number;
+            /**
+             * @description The numbers no control maps to: gaps for the statement of applicability, whose wording waits for the certification body.
+             * @example [
+             *       "5.1"
+             *     ]
+             */
+            uncovered: string[];
+        };
         Announcement: {
             /**
              * @description Whether a person may dismiss it; never a critical one.
@@ -41997,6 +42039,67 @@ export interface components {
              */
             through: string;
         };
+        FrameworkReadiness: {
+            /**
+             * Format: int64
+             * @description How many controls map to it.
+             * @example 34
+             */
+            controls: number;
+            /**
+             * Format: int64
+             * @description Those that fail.
+             * @example 1
+             */
+            fail: number;
+            /** @description The controls that are not passing, with the worst first. */
+            gaps: components["schemas"]["ReadinessGap"][];
+            /**
+             * @description The framework's key, as the controls dashboard's filter has it.
+             * @example csa-ct
+             */
+            key: string;
+            /**
+             * Format: int64
+             * @description Those that do not apply to this organisation.
+             * @example 4
+             */
+            not_applicable: number;
+            /**
+             * Format: int64
+             * @description Those not assessed yet: a required input is missing.
+             * @example 3
+             */
+            not_assessed: number;
+            /**
+             * Format: int64
+             * @description Those that are overdue.
+             * @example 2
+             */
+            overdue: number;
+            /**
+             * Format: int64
+             * @description Of them, those that pass.
+             * @example 20
+             */
+            pass: number;
+            /**
+             * Format: int64
+             * @description Those with a check that arrives with a later change.
+             * @example 5
+             */
+            planned: number;
+            /**
+             * @description Where it sits in PRD-001's roadmap of assurance (section 14.8).
+             * @example Stage 1, with the first employees
+             */
+            stage: string;
+            /**
+             * @description Its name.
+             * @example CSA Cyber Trust
+             */
+            title: string;
+        };
         FundingPlan: {
             /**
              * Format: date
@@ -57552,6 +57655,40 @@ export interface components {
              * @example eyJhZnRlciI6IjIwMjYtMTAtMzF8MDE5MiJ9
              */
             next_cursor?: string;
+        };
+        Readiness: {
+            /** @description ISO/IEC 27001:2022 Annex A's control numbers, covered and not. */
+            annex_a: components["schemas"]["AnnexAReadiness"];
+            /** @description Every framework of the registry, in the order the dashboard lists them. */
+            frameworks: components["schemas"]["FrameworkReadiness"][];
+            /**
+             * @description What this is not.
+             * @example Readiness, not a certificate: nothing here says Fyniq is certified by any body.
+             */
+            notice: string;
+        };
+        ReadinessGap: {
+            /**
+             * @description What the control holds.
+             * @example Security Command Center high and critical findings fixed within SLA
+             */
+            control: string;
+            /**
+             * @description In plain words, why.
+             * @example The verification has not run for this organisation yet.
+             */
+            detail: string;
+            /**
+             * @description The control's ID.
+             * @example CTL-RES-04
+             */
+            id: string;
+            /**
+             * @description Why it is a gap: it fails, is overdue, or is not assessed yet.
+             * @example not_assessed
+             * @enum {string}
+             */
+            status: "fail" | "overdue" | "not_assessed";
         };
         Reading: {
             currency: components["schemas"]["Text"];
@@ -104859,6 +104996,99 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Readiness"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

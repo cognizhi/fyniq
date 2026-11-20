@@ -18793,6 +18793,24 @@ Records that the caller read and accepts the published version (CMP-07): each me
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `COMPLIANCE-03`, `STORAGE-LOCK-01`, `STORAGE-POLICY-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/compliance/readiness`
+
+**Get the readiness of each framework** (`getReadiness`)
+
+For each framework of the registry (CMP-08), its stage, how many mapped controls pass, fail, are overdue, are not assessed or do not apply, how many have a check still to arrive, and the controls that are not passing in plain words; and for ISO/IEC 27001:2022 Annex A the control numbers no control maps to. Readiness, never a certificate. Read-only; no side effects.
+
+- **Permission:** View on Compliance Center
+- **Responses:**
+  - `200` OK [`Readiness`](../../contracts/schemas/Readiness.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/compliance/restore-drills`
 
 **List the restore drills** (`listRestoreDrills`)
