@@ -26,9 +26,50 @@ var ErrEncrypted = errors.New("the file is PGP-encrypted, which Fyniq cannot ope
 type Statements struct {
 	Drop   ports.FileDrop
 	Format string // bankfile.FormatMT940, FormatCAMT053 or FormatOFX; MT940 when empty
+	// Intraday is the folder the bank leaves its MT942 intraday reports in, when it has one: its files are read as pending signals and never as statement lines.
+	Intraday ports.FileDrop
 }
 
-var _ ports.BankData = Statements{}
+var (
+	_ ports.BankData    = Statements{}
+	_ ports.BankReports = Statements{}
+)
+
+// MaxReports is the most intraday report files one call reads, newest last: the rest wait for the next call.
+const MaxReports = 200
+
+// IntradayReports are the intraday folder's files changed since the time, oldest first, whole; none when the bank has no such folder. A PGP-wrapped file stops the call with its reason.
+func (s Statements) IntradayReports(ctx context.Context, since time.Time) ([]ports.BankReport, error) {
+	if s.Intraday == nil {
+		return nil, nil
+	}
+	all, err := s.Intraday.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].ModTime.Before(all[j].ModTime) || (all[i].ModTime.Equal(all[j].ModTime) && all[i].Name < all[j].Name)
+	})
+	var out []ports.BankReport
+	for _, f := range all {
+		if f.ModTime.Before(since) {
+			continue
+		}
+		lower := strings.ToLower(f.Name)
+		if strings.HasSuffix(lower, ".pgp") || strings.HasSuffix(lower, ".gpg") || strings.HasSuffix(lower, ".asc") {
+			return nil, fmt.Errorf("%s: %w", f.Name, ErrEncrypted)
+		}
+		if len(out) == MaxReports {
+			break
+		}
+		data, err := s.Intraday.Read(ctx, f.Name, MaxFileBytes)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", f.Name, err)
+		}
+		out = append(out, ports.BankReport{Name: f.Name, Data: data})
+	}
+	return out, nil
+}
 
 func (s Statements) format() string {
 	if s.Format == "" {

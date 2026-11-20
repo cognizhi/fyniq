@@ -109,8 +109,9 @@ what is open on the invoice, with the invoice's number as its reference, and sho
 **Emailing an invoice with its link.** An invoice emailed while it has a live payment link ends with a line, "You can pay this invoice online:", and the
 link. It is the link already made for the invoice, so sending an email never asks the payment provider for anything: make the link first, then
 send the invoice, and a link made after a send goes with the next one (a reminder too). A cancelled, paid or expired link is left out. An
-Owner can switch this off with **Put an invoice's payment link in its email** under organisation settings. Making a link by itself when an invoice
-is issued, and printing the link on the invoice's PDF, are not built yet.
+Owner can switch this off with **Put an invoice's payment link in its email** under organisation settings. With **Make a payment link when an invoice is issued** switched on
+under organisation settings, issuing an invoice queues the link, made by a job, so the invoice has it a moment later. Printing the link on the invoice's PDF is
+not built yet.
 
 
 ## Recurring invoices
@@ -156,7 +157,9 @@ the monthly value, the day it starts and, if agreed, the day it ends. An Account
   own: each currency's total is converted once at the rate of the day (the organisation's rate, else the daily feed's, else the month's), the rate and
   its date are shown, and a currency with no rate for the day is named and left out, so the figure is then not the whole.
 - A contract and its amendments are records, not postings: issue the invoices and credit notes as you do, and the revenue follows your
-  revenue policy. Evidence for an amendment and the schedule's day-weighted revenue are not built yet.
+  revenue policy. The schedule's day-weighted revenue is not built yet.
+- **Files** on a contract row attaches the signed order form, the customer's email or an amendment letter. A file may name the amendment it supports; it is
+  committed at once and cannot be changed or removed. A contract's files are also found in the evidence search under invoices.
 
 ## Subscriptions a provider bills
 

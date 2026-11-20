@@ -38,6 +38,18 @@ type BankDataTransaction struct {
 	RunningBalance string // "" when the provider gives none
 }
 
+// BankReports is a bank-data source that also leaves intraday reports (MT942) in a folder (FR-BNK-16, FR-BNK-17): the reports whose files changed since a time, whole. They are
+// never transactions: each credit in them becomes a pending signal that speeds matching and is closed by the daily statement line.
+type BankReports interface {
+	IntradayReports(ctx context.Context, since time.Time) ([]BankReport, error)
+}
+
+// BankReport is one intraday report file.
+type BankReport struct {
+	Name string
+	Data []byte
+}
+
 // BankDataPage is a page of an account's transactions: Cursor continues after the last; More says another page waits.
 type BankDataPage struct {
 	Transactions []BankDataTransaction

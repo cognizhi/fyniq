@@ -310,3 +310,101 @@ func (q *Queries) PayrollReceiptMonths(ctx context.Context) ([]time.Time, error)
 	}
 	return items, nil
 }
+
+const payrollReceiptsOfMonth = `-- name: PayrollReceiptsOfMonth :many
+SELECT id, link_id, epoch, source_system, run_id, version, wage_month, envelope_sha256, approver_issuer, approver_subject, preparer_issuer, preparer_subject,
+       mapping_version, entry_id, totals, received_at
+FROM fyniq.payroll_run_receipt WHERE wage_month = $1 ORDER BY run_id, version
+`
+
+type PayrollReceiptsOfMonthRow struct {
+	ID              uuid.UUID
+	LinkID          uuid.UUID
+	Epoch           int32
+	SourceSystem    string
+	RunID           uuid.UUID
+	Version         int32
+	WageMonth       time.Time
+	EnvelopeSha256  string
+	ApproverIssuer  string
+	ApproverSubject string
+	PreparerIssuer  string
+	PreparerSubject string
+	MappingVersion  int32
+	EntryID         *uuid.UUID
+	Totals          []byte
+	ReceivedAt      time.Time
+}
+
+func (q *Queries) PayrollReceiptsOfMonth(ctx context.Context, wageMonth time.Time) ([]PayrollReceiptsOfMonthRow, error) {
+	rows, err := q.db.Query(ctx, payrollReceiptsOfMonth, wageMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PayrollReceiptsOfMonthRow
+	for rows.Next() {
+		var i PayrollReceiptsOfMonthRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LinkID,
+			&i.Epoch,
+			&i.SourceSystem,
+			&i.RunID,
+			&i.Version,
+			&i.WageMonth,
+			&i.EnvelopeSha256,
+			&i.ApproverIssuer,
+			&i.ApproverSubject,
+			&i.PreparerIssuer,
+			&i.PreparerSubject,
+			&i.MappingVersion,
+			&i.EntryID,
+			&i.Totals,
+			&i.ReceivedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const payrollRefusalsOfRun = `-- name: PayrollRefusalsOfRun :many
+SELECT run_id, version, code, refused_at FROM fyniq.payroll_run_refusal WHERE run_id = ANY($1::uuid[]) ORDER BY run_id, version, refused_at
+`
+
+type PayrollRefusalsOfRunRow struct {
+	RunID     uuid.UUID
+	Version   int32
+	Code      string
+	RefusedAt time.Time
+}
+
+func (q *Queries) PayrollRefusalsOfRun(ctx context.Context, runs []uuid.UUID) ([]PayrollRefusalsOfRunRow, error) {
+	rows, err := q.db.Query(ctx, payrollRefusalsOfRun, runs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PayrollRefusalsOfRunRow
+	for rows.Next() {
+		var i PayrollRefusalsOfRunRow
+		if err := rows.Scan(
+			&i.RunID,
+			&i.Version,
+			&i.Code,
+			&i.RefusedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

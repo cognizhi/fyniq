@@ -1303,6 +1303,8 @@ fyniq_worker    SELECT    control_state
 fyniq_worker    UPDATE    control_state (changed_at, checks, detail, failing_since, run_at, status, version)
 fyniq_worker    SELECT    conversion_step
 fyniq_worker    EXECUTE   count_super_admins()
+fyniq_worker    EXECUTE   create_payment_link_by_platform()
+fyniq_worker    EXECUTE   create_project_revenue_draft()
 fyniq_worker    EXECUTE   create_provider_invoice_draft()
 fyniq_worker    EXECUTE   create_scheduled_bill_draft()
 fyniq_worker    EXECUTE   create_scheduled_draft()

@@ -77,7 +77,7 @@ type Restricted interface {
 	AddDocument(ctx context.Context, s Session, id uuid.UUID, typ, title, class, contentType string, content []byte, viewers []string) (uuid.UUID, error)
 	Documents(ctx context.Context, s Session, id uuid.UUID) ([]Document, error)
 	Download(ctx context.Context, s Session, id, doc uuid.UUID) (contentType string, content []byte, err error)
-	ProposeBank(ctx context.Context, s Session, id uuid.UUID, account string) (uuid.UUID, error)
+	ProposeBank(ctx context.Context, s Session, id uuid.UUID, account, bankCode, bankName string) (uuid.UUID, error)
 	DecideBank(ctx context.Context, s Session, change uuid.UUID, approve bool, reason string) error
 	ConfirmBank(ctx context.Context, s Session, change uuid.UUID, freshPasskey bool) error
 	Bank(ctx context.Context, s Session, change uuid.UUID) (BankChange, error)
@@ -196,7 +196,9 @@ type proposeBankInput struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
 	ID     string `path:"id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
 	Body   struct {
-		Account string `json:"account" doc:"The new salary bank account number: 5 to 20 digits." example:"123-456-7890"`
+		Account  string `json:"account" doc:"The new salary bank account number: 5 to 20 digits." example:"123-456-7890"`
+		BankCode string `json:"bank_code,omitempty" pattern:"^[0-9]{4}([0-9]{3})?$" doc:"The bank's Singapore code, 4 digits or 4 and a 3-digit branch. Fyniq looks the bank's BIC up from it, and the approval binds it: give it with the bank's name, or neither." example:"7171"`
+		BankName string `json:"bank_name,omitempty" maxLength:"140" doc:"The bank's name, given with its code." example:"DBS Bank"`
 	}
 }
 
@@ -480,7 +482,7 @@ func (a *API) registerRestricted() {
 		if err != nil {
 			return nil, err
 		}
-		cid, err := a.d.Restricted.ProposeBank(ctx, s, id, in.Body.Account)
+		cid, err := a.d.Restricted.ProposeBank(ctx, s, id, in.Body.Account, in.Body.BankCode, in.Body.BankName)
 		if err != nil {
 			return nil, restrictedError(err)
 		}

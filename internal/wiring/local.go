@@ -170,7 +170,11 @@ func localFileDrop() (connector.Binding, error) {
 		if folder == "" {
 			return nil, errors.New("the folder is not set: enter a folder on this machine")
 		}
-		return filedrop.Statements{Format: c.String("format", bankfile.FormatMT940), Drop: local.Directory{Root: folder}}, nil
+		s := filedrop.Statements{Format: c.String("format", bankfile.FormatMT940), Drop: local.Directory{Root: folder}}
+		if f := c.String("intraday_folder", ""); f != "" {
+			s.Intraday = local.Directory{Root: f}
+		}
+		return s, nil
 	}}, nil
 }
 

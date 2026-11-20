@@ -59,7 +59,9 @@ On step 2, a bank or wallet account also shows **Payment file**: see
   (`SHA256:…`, from the bank), and keep the private key as the connector's secret; a server with any other key is refused. The money account's
   identifier is the account number the statements name. Fyniq only reads: it never writes to, renames or deletes in the bank's folder. A PGP-wrapped
   file stops the account's sync with a plain reason, because opening it is not built yet. Against a real bank this needs the bank's onboarding and
-  a fixed outgoing address, so it is unverified until then.
+  a fixed outgoing address, so it is unverified until then. If the bank also leaves **MT942 intraday reports** in a folder, enter it as the
+  **Intraday reports folder**: each credit in a report for the account becomes a pending "likely paid" signal (never a statement line), once per bank
+  reference, and the daily statement closes it. Only files changed in the last three days are read.
 
 Setting where the data comes from, and naming the bank-ingest address, is for an Administrator. A
 source starts on a day and is never changed for the days before it, so switching from emailed reports to

@@ -233,14 +233,14 @@ func (r RestrictedService) Download(ctx context.Context, s api.Session, id, doc 
 	return ct, content, err
 }
 
-func (r RestrictedService) ProposeBank(ctx context.Context, s api.Session, id uuid.UUID, account string) (uuid.UUID, error) {
+func (r RestrictedService) ProposeBank(ctx context.Context, s api.Session, id uuid.UUID, account, bankCode, bankName string) (uuid.UUID, error) {
 	if r.Cipher == nil {
 		return uuid.Nil, api.ErrUnavailable
 	}
 	var out uuid.UUID
 	err := r.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
 		var err error
-		out, err = ProposeBankChange(ctx, tx, r.Cipher, s.Organisation, r.Clock.Now(), s.Member, id, account)
+		out, err = ProposeBankChangeAt(ctx, tx, r.Cipher, s.Organisation, r.Clock.Now(), s.Member, id, account, bankCode, bankName)
 		return err
 	})
 	return out, err

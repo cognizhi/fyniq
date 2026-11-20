@@ -4,7 +4,7 @@ type: concept
 title: Bank accounts, their data sources and freshness
 summary: Money accounts and the cash position, where their data comes from, an account's statements and lines, duplicates, alerts and gaps
 sources:
-  - docs/user-guide/banking.md sha256:bdc2177c8bb0f0a6ea043d0475036f8601fa128c0eeff0245f18f79ff8973159
+  - docs/user-guide/banking.md sha256:7236d356783239a6e775152324b8b6ebf951d28970208349fbc0d113aea621e8
 data_class: general
 taint: trusted
 status: draft
@@ -46,7 +46,7 @@ aliases:
 - **Statement files**: the bank's export (CSV, XLSX, OFX, camt.053 or MT940), imported by a person; the default.
 - **Bank reports by email**: the bank emails its daily report and its incoming-funds alerts to the **bank-ingest address**; only the bank's registered addresses are accepted, and only when the bank's mail passes DMARC, anything else waiting in quarantine. Each report is imported as a statement and its lines wait for **Reconcile now**; a report in the **MT942** intraday format makes only pending "likely paid" signals for its credits, never statement lines, and the daily MT940 closes them. Alerts show an invoice as likely paid ([[settings.organisation]]).
 - **A connector** such as Wise or Airwallex, installed and turned on under **Settings → Integrations** ([[settings.integrations]]), reads the account's transactions every hour with a read-only key.
-- **A bank's SFTP folder**: the **Bank statement files over SFTP** connector reads the statement files (MT940, camt.053 or OFX) the bank leaves in its SFTP folder, in file-name order, every hour; the host key is pinned by its fingerprint, the private key is the connector's secret, and the money account's identifier is the account number the statements name. It only reads; a PGP-wrapped file stops the sync with a reason. Unverified against a real bank until onboarding.
+- **A bank's SFTP folder**: the **Bank statement files over SFTP** connector reads the statement files (MT940, camt.053 or OFX) the bank leaves in its SFTP folder, in file-name order, every hour; the host key is pinned by its fingerprint, the private key is the connector's secret, and the money account's identifier is the account number the statements name. It only reads; a PGP-wrapped file stops the sync with a reason. Unverified against a real bank until onboarding. An optional **Intraday reports folder** holds the bank's MT942 reports: each credit for the account becomes a pending "likely paid" signal once per bank reference, never a statement line, and the daily statement closes it; only files changed in the last three days are read.
 - Setting the source and naming the bank-ingest address is for an Administrator. A source starts on a day and never changes the days before it, so switching from emailed reports to a connector leaves no gap.
 
 (src: docs/user-guide/banking.md#where-its-data-comes-from)

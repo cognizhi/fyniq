@@ -45,6 +45,12 @@
         "description": "The server's host key as the bank gives it, SHA256:… (as ssh-keygen -l prints it). A server with any other key is refused.",
         "pattern": "^SHA256:[A-Za-z0-9+/]{43}$"
       },
+      "intraday_folder": {
+        "type": "string",
+        "title": "Intraday reports folder (optional)",
+        "description": "The folder the bank leaves its MT942 intraday reports in, if it has one. Each credit in them becomes a pending \"likely paid\" signal, never a statement line; the daily statement closes it.",
+        "pattern": "^[A-Za-z0-9._/-]{1,200}$"
+      },
       "format": {
         "type": "string",
         "title": "File format",

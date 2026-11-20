@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The versions received for the month, by run and version.",
+      "items": {
+        "$ref": "PayrollRunReceived.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "The cursor of the next page; none on the last.",
+      "examples": [
+        "eyJhZnRlciI6IjEwMDAifQ"
+      ],
+      "type": "string"
+    },
+    "refused": {
+      "description": "The runs refused and not posted since, whatever their month: they never reached a month.",
+      "items": {
+        "$ref": "PayrollRunRefused.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "items",
+    "refused"
+  ],
+  "title": "PayrollRunsPage",
+  "type": "object"
+}

@@ -79,6 +79,9 @@ type NewPaymentLinkPayment struct {
 type PaymentLinks interface {
 	// Create records a link; CodeDuplicate when the invoice has a live link already or the provider's request is recorded.
 	Create(ctx context.Context, n NewPaymentLink) (PaymentLink, error)
+	// CreateByFunction is Create through the database's narrow function, for the platform's job that holds no right on the table: only for a posted invoice and an enabled connector of the
+	// organisation, a live link and nothing else.
+	CreateByFunction(ctx context.Context, n NewPaymentLink) (PaymentLink, error)
 	Get(ctx context.Context, id uuid.UUID) (PaymentLink, error)
 	// OfInvoice are an invoice's links, newest first.
 	OfInvoice(ctx context.Context, invoice uuid.UUID) ([]PaymentLink, error)

@@ -42,7 +42,13 @@ func Binding() (connector.Binding, error) {
 		if format != bankfile.FormatMT940 && format != bankfile.FormatCAMT053 && format != bankfile.FormatOFX {
 			return nil, fmt.Errorf("%q is not a file format this connector reads: use mt940, camt053 or ofx", format)
 		}
-		return adapter.Statements{Format: format, Drop: sftp.Drop{Addr: addr, User: c.String("user", ""), Folder: c.String("folder", ""), PrivateKey: []byte(key),
-			HostKeySHA256: c.String("host_key_sha256", ""), Dial: c.Dial, Timeout: 30 * time.Second}}, nil
+		drop := func(folder string) sftp.Drop {
+			return sftp.Drop{Addr: addr, User: c.String("user", ""), Folder: folder, PrivateKey: []byte(key), HostKeySHA256: c.String("host_key_sha256", ""), Dial: c.Dial, Timeout: 30 * time.Second}
+		}
+		s := adapter.Statements{Format: format, Drop: drop(c.String("folder", ""))}
+		if f := c.String("intraday_folder", ""); f != "" {
+			s.Intraday = drop(f)
+		}
+		return s, nil
 	}}, nil
 }

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarRange, Plus } from "lucide-react";
+import { CalendarRange, Paperclip, Plus } from "lucide-react";
 import { useId, useState } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -26,6 +26,7 @@ export function SubscriptionContracts({ may }: { may: boolean }) {
   const [busy, setBusy] = useState(false);
   const [adding, setAdding] = useState(false);
   const [amending, setAmending] = useState<Contract | null>(null);
+  const [filing, setFiling] = useState<Contract | null>(null);
   const [form, setForm] = useState({ contact: "", name: "", currency: "SGD", starts: "", ends: "", mrr: "" });
   const [change, setChange] = useState({ kind: "upgrade", on: "", mrr: "", reason: "" });
   const list = useQuery({
@@ -223,6 +224,10 @@ export function SubscriptionContracts({ may }: { may: boolean }) {
                           {amendHelp.label}
                         </Button>
                       )}
+                      <Button size="sm" variant="ghost" type="button" onClick={() => setFiling(c)} aria-label={`Files: ${c.name}`}>
+                        <Icon of={Paperclip} />
+                        Files
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -230,6 +235,7 @@ export function SubscriptionContracts({ may }: { may: boolean }) {
             </table>
           </div>
         )}
+        {filing && <ContractFiles contract={filing} may={may} onClose={() => setFiling(null)} />}
         {amending && (
           <form
             className="fy-row fy-row--wrap gap-2"
@@ -281,6 +287,93 @@ export function SubscriptionContracts({ may }: { may: boolean }) {
           </form>
         )}
       </div>
+    </section>
+  );
+}
+
+// ContractFiles are a contract's files (FR-AR-15, FR-DOC-05): the signed order form, the customer's email, an amendment letter. A file is committed at once and cannot be changed or removed.
+function ContractFiles({ contract, may, onClose }: { contract: Contract; may: boolean; onClose: () => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const [kind, setKind] = useState("order form");
+  const [file, setFile] = useState<File | null>(null);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const [busy, setBusy] = useState(false);
+  const q = useQuery({
+    queryKey: ["subscription-files", contract.id],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/subscription-contracts/{contract_id}/evidence", { params: { path: { contract_id: contract.id }, query: { page_size: 100 } } });
+      if (error) throw error;
+      return data.items;
+    },
+  });
+  const add = async () => {
+    if (!file) return;
+    setBusy(true);
+    setProblem(null);
+    const out = await api.POST("/v1/subscription-contracts/{contract_id}/evidence", {
+      params: { path: { contract_id: contract.id }, header: { "Idempotency-Key": newKey(), "If-Match": `"${contract.version}"` } },
+      body: { file: file.name, evidence_type: kind.trim() },
+      bodySerializer: () => {
+        const form = new FormData();
+        form.append("file", file, file.name);
+        form.append("evidence_type", kind.trim());
+        return form;
+      },
+    });
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    setFile(null);
+    await queries.invalidateQueries({ queryKey: ["subscription-files", contract.id] });
+  };
+  return (
+    <section className="fy-stack fy-stack--2" aria-label={`Files of ${contract.name}`}>
+      <h3 className="fy-h4">Files of {contract.name}</h3>
+      {problem && <Refusal problem={problem} title="The file was not attached" />}
+      {q.isError && <Refusal problem={problemOf(q.error)} title="The files could not be read" />}
+      {q.data && q.data.length === 0 && <p className="fy-secondary">No files yet. Attach the signed order form or an amendment letter; a file cannot be changed or removed once attached.</p>}
+      <ul className="fy-list">
+        {(q.data ?? []).map((e) => (
+          <li className="fy-list__item" key={e.id}>
+            <span className="fy-list__main">
+              <span className="fy-list__title">{e.file_name}</span>
+              <span className="fy-list__meta">
+                {e.evidence_type}
+                {e.note ? `: ${e.note}` : ""}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {may && (
+        <div className="fy-row fy-row--wrap gap-2">
+          <div className="fy-field">
+            <label className="fy-label" htmlFor={`${id}-kind`}>
+              What the file is
+            </label>
+            <input className="fy-input" id={`${id}-kind`} value={kind} maxLength={100} onChange={(e) => setKind(e.target.value)} />
+          </div>
+          <div className="fy-field">
+            <label className="fy-label" htmlFor={`${id}-file`}>
+              File
+            </label>
+            <input className="fy-input" id={`${id}-file`} type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          </div>
+          <div className="fy-field self-end fy-row gap-2">
+            <Button type="button" variant="secondary" onClick={() => void add()} disabled={busy || !file || !kind.trim()}>
+              Attach the file
+            </Button>
+            <Button type="button" variant="ghost" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
+      {!may && (
+        <Button type="button" variant="ghost" onClick={onClose}>
+          Close
+        </Button>
+      )}
     </section>
   );
 }

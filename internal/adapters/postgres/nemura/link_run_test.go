@@ -3,6 +3,7 @@
 package nemura_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -19,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/identity"
 	"github.com/cognizhi/fyniq/internal/nemura/link"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
@@ -230,8 +232,11 @@ func TestAPayRunApprovedWhileLinkedCarriesItsProofAndWaitsOnFyniqsAnswer(t *test
 	}
 
 	// The sender posts exactly the bytes that were signed, with the assertion, to the run endpoint with the journal scope.
-	fy := newFyniqInMiniature(t, offer, "/v1/people-link/payroll-runs")
-	work := fy.sender(t, now).Work()
+	fy := newFyniqInMiniature(t, offer, "/v1/people-link/payroll-runs", "/v1/people-link/payroll-payments")
+	cipher, _ := local.NewFieldKeys(bytes.Repeat([]byte{7}, 64))
+	sender := fy.sender(t, now)
+	sender.Cipher = cipher
+	work := sender.Work()
 	if err := work(ctx, lt.c.org, run1); err != nil {
 		t.Fatalf("the submission: %v", err)
 	}
@@ -310,7 +315,52 @@ func TestAPayRunApprovedWhileLinkedCarriesItsProofAndWaitsOnFyniqsAnswer(t *test
 	if err := rl.Retry(ctx, approver, runID, 1); err != nil {
 		t.Errorf("sending again after Fyniq's answer was a refusal it can change: %v", err)
 	}
+	// Ben's bank, with its code, is on record before Fyniq posts: the posting queues his payment line (design D28).
+	var change uuid.UUID
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		change, err = nemura.ProposeBankChangeAt(ctx, tx, cipher, lt.c.org, now, lt.benLogin, lt.ben, "123-456-7890", "7171", "DBS Bank")
+		return err
+	})
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.DecideBankChange(ctx, tx, lt.c.org, now, lt.c.owner, []authz.Role{authz.Owner}, change, true, "")
+	})
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.ConfirmBankChange(ctx, tx, lt.c.org, now, lt.benLogin, change, true)
+	})
+	before := len(queuedRows(t, lt))
 	answerFrom(2, map[string]any{"run_id": runID.String(), "version": 1, "status": "posted", "posting_ref": uuid.NewString(), "code": "", "message": ""})
+	pending := queuedRows(t, lt)
+	if len(pending) != before+1 || strings.Contains(string(pending[len(pending)-1].Payload), "1234567890") || strings.Contains(string(pending[len(pending)-1].Payload), "7171") {
+		t.Fatalf("Fyniq's posting queued %d rows, or one holds the bank: %s", len(pending)-before, pending[len(pending)-1].Payload)
+	}
+	calls := len(fy.calls)
+	if err := work(ctx, lt.c.org, pending[len(pending)-1]); err != nil || len(fy.calls) != calls+1 {
+		t.Fatalf("sending the payment lines: %v (%d calls)", err, len(fy.calls)-calls)
+	}
+	readyEnv := fy.calls[len(fy.calls)-1]
+	var ready nemura.PaymentsReadyEvent
+	if err := json.Unmarshal(readyEnv.Payload, &ready); err != nil || readyEnv.Header.Type != nemura.TypePaymentsReady || readyEnv.Header.ObjectID != runID.String() || readyEnv.Header.ObjectVersion != 1 {
+		t.Fatalf("the payment lines' envelope: %+v %v", readyEnv.Header, err)
+	}
+	if ready.RunVersion != 1 || len(ready.Lines) != 1 || ready.Lines[0].PersonID != lt.ben || ready.Lines[0].AccountNumber != "1234567890" || ready.Lines[0].BankCode != "7171" || ready.Lines[0].BankName != "DBS Bank" ||
+		ready.Lines[0].BankDetailID != change || ready.Lines[0].BankDetailVersion != 1 || len(ready.Lines[0].BankDetailDigest) != 64 || ready.Lines[0].LineID != nemura.LineIDOf(runID, lt.ben) || ready.Approver.Subject == "" || ready.Preparer.Subject == "" {
+		t.Errorf("the payment lines: %+v", ready)
+	}
+	if strings.Contains(string(readyEnv.Payload), "nric") || strings.Contains(string(readyEnv.Payload), "bank_bic") {
+		t.Errorf("the payload carries more than Appendix E lists: %s", readyEnv.Payload)
+	}
+	var plainInTrail, reads int
+	su := connect(t, db.SuperURL())
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE body::text LIKE '%1234567890%' OR body::text LIKE '%123-456-7890%'`).Scan(&plainInTrail); err != nil {
+		t.Fatal(err)
+	}
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE body::text LIKE '%salary bank account for a payment line%' AND body::text LIKE '%"service"%'`).Scan(&reads); err != nil {
+		t.Fatal(err)
+	}
+	if plainInTrail != 0 || reads < 1 {
+		t.Errorf("the account is in the audit trail %d times, and the service's read was audited %d times", plainInTrail, reads)
+	}
 	if sv, _ = rl.Submission(ctx, approver, runID); sv.Posting == nil || sv.Posting.Status != "posted" || sv.Posting.Reference == "" {
 		t.Errorf("Fyniq's posting on the run: %+v", sv)
 	}

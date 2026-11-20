@@ -62,6 +62,7 @@ export const routes = [
   // My claims (FR-AP-14, FR-AP-18, FR-UX-39; p1-expense-claims task 8.1): a member's own claims, card lines and cash
   // advances; /me is where a person whose rights are personal only lands.
   { kind: "route", id: "personal", path: "/me", mode: "basic", signedIn: true, help: "claims.personal", guide: "claims.my-claims" },
+  { kind: "route", id: "personal-approvals", path: "/me/approve", mode: "basic", signedIn: true, help: "approvals.personal", guide: "claims.approve-team#approve-or-return-a-claim" },
   { kind: "route", id: "my-claims", path: "/me/claims", mode: "basic", signedIn: true, help: "claims.my-claims", guide: "claims.my-claims" },
   { kind: "route", id: "claim-new", path: "/me/claims/new", mode: "basic", signedIn: true, help: "claim.new", guide: "claims.my-claims#claim-a-receipt" },
   { kind: "route", id: "claim", path: "/me/claims/$claimId", mode: "basic", signedIn: true, help: "claims.claim", guide: "claims.my-claims#submit-a-claim" },
@@ -117,6 +118,7 @@ export const routes = [
   { kind: "route", id: "payment-batch", path: "/purchases/payment-batches/$batchId", mode: "basic", signedIn: true, help: "purchases.payment-batch", guide: "purchases.payment-batches#release-a-batch" },
   // Salary payments (FR-PAY-11, FR-PPL-12, FR-PPL-17; p1-payroll-link task 8.1): Basic, for the roles that prepare, approve or release them.
   { kind: "route", id: "payroll", path: "/payroll", mode: "basic", signedIn: true, help: "payroll.overview", guide: "payroll.salary-payments#payroll-in-the-books" },
+  { kind: "route", id: "pay-run", path: "/payroll/runs/$month", mode: "expert", signedIn: true, help: "payroll.pay-run", guide: "payroll.salary-payments#a-pay-run-from-nemura" },
   { kind: "route", id: "employee-record", path: "/payroll/employees/$personId", mode: "basic", signedIn: true, help: "payroll.employee", guide: "payroll.salary-payments#a-person-from-nemura" },
   { kind: "route", id: "salary-payments", path: "/payroll/salary-payments", mode: "basic", signedIn: true, help: "payroll.salary-payments", guide: "payroll.salary-payments" },
   { kind: "route", id: "salary-payment", path: "/payroll/salary-payments/$batchId", mode: "basic", signedIn: true, help: "payroll.salary-payment", guide: "payroll.salary-payments#release-the-free-lines" },

@@ -570,3 +570,57 @@ func (w *runWorld) queued(t *testing.T) []linksend.Queued {
 	}
 	return out
 }
+
+// The pay runs received for a month are readable, and say what became of each version (FR-PPL-09, FR-PPL-11; p1-payroll-link 8.1, the pay-run page): a version that posted names its entry, one that changed nothing says
+// so, the totals are by account and never by person, a run refused and not posted since is listed with its code and plain words until a version posts, and a role without the pay-run right reads none of it.
+// req: FR-PPL-09
+// part of FR-PPL-11 (the page reads this)
+// asvs: V8.2.1, V4.2.1
+func TestThePayRunsReceivedForAMonthAreReadableWithWhatBecameOfEach(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	run := uuid.NewString()
+	if r := w.send(w.approved(run, 1, "20000.00", "5100.00", nil), nil); r.str("outcome") != "posted" {
+		t.Fatalf("version 1: %d %s", r.Status, r.Raw)
+	}
+	if r := w.send(w.approved(run, 2, "20200.00", "5134.00", nil), nil); r.str("outcome") != "posted" {
+		t.Fatalf("version 2: %d %s", r.Status, r.Raw)
+	}
+	if r := w.send(w.approved(run, 3, "20200.00", "5134.00", nil), nil); r.str("outcome") != "unchanged" {
+		t.Fatalf("version 3: %d %s", r.Status, r.Raw)
+	}
+	reader := e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{authz.PayrollAdmin}})
+	got := e.call(http.MethodGet, "/v1/payroll-runs?month=2026-10", reader, nil)
+	items, _ := got.Body["items"].([]any)
+	if got.Status != http.StatusOK || len(items) != 3 {
+		t.Fatalf("the month's runs: %d %s", got.Status, got.Raw)
+	}
+	first, third := items[0].(map[string]any), items[2].(map[string]any)
+	if first["outcome"] != "posted" || first["entry_id"] == "" || first["version"] != float64(1) || third["outcome"] != "unchanged" || third["entry_id"] != nil || len(first["posted"].([]any)) == 0 {
+		t.Errorf("what became of each version: %s", got.Raw)
+	}
+	for _, leak := range []string{"Ana", "Wei", "issuer", "subject", "envelope"} {
+		if strings.Contains(got.Raw, leak) {
+			t.Errorf("the read carries %q: %s", leak, got.Raw)
+		}
+	}
+	if none := e.call(http.MethodGet, "/v1/payroll-runs?month=2026-09", reader, nil); none.Status != http.StatusOK || len(none.Body["items"].([]any)) != 0 {
+		t.Errorf("a month with none: %d %s", none.Status, none.Raw)
+	}
+	// A run refused is listed with its code and its words, and stays until a version posts.
+	refusedRun := uuid.NewString()
+	e.problemIs(w.send(w.approved(refusedRun, 1, "20000.00", "5100.00", func(x *peoplelink.RunEnvelope) { x.MappingVersion = 7 }), nil), "submitPayrollRun", 409, peoplelink.CodeRunMapping)
+	after := e.call(http.MethodGet, "/v1/payroll-runs?month=2026-10", reader, nil)
+	refused, _ := after.Body["refused"].([]any)
+	if len(refused) != 1 || refused[0].(map[string]any)["code"] != peoplelink.CodeRunMapping || refused[0].(map[string]any)["run_id"] != refusedRun || !strings.Contains(refused[0].(map[string]any)["message"].(string), "mapping") {
+		t.Errorf("the refused runs: %s", after.Raw)
+	}
+	if r := w.send(w.approved(refusedRun, 1, "20000.00", "5100.00", nil), nil); r.str("outcome") != "posted" {
+		t.Fatalf("the corrected run: %d %s", r.Status, r.Raw)
+	}
+	if again := e.call(http.MethodGet, "/v1/payroll-runs?month=2026-10", reader, nil); len(again.Body["refused"].([]any)) != 0 {
+		t.Errorf("a refused run listed after it posted: %s", again.Raw)
+	}
+	outsider := e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{authz.Bookkeeper}})
+	e.problemIs(e.call(http.MethodGet, "/v1/payroll-runs?month=2026-10", outsider, nil), "listPayrollRuns", 403, "API-AUTHZ-01")
+}

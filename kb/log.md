@@ -915,3 +915,15 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | projects.billing: costs left out of a project's progress (FR-PRJ-11)
 
 ## [2026-11-20] compile | docs/user-guide/fixed-assets.md → accounting.fixed-assets (the movement schedule and the capital allowance schedule, FR-FA-04)
+
+## [2026-11-20] compile | claims-approve-team.md -> kb (To approve for a department approver)
+
+## [2026-11-20] compile | banking.accounts: intraday reports from a drop folder (FR-BNK-17)
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (a pay run from Nemura)
+
+## [2026-11-20] compile | sales.invoices: files on a subscription contract (FR-AR-15)
+
+## [2026-11-20] compile | projects.billing: foreign-currency projects and the month-end draft (FR-PRJ-11)
+
+## [2026-11-20] compile | sales.invoices, settings.organisation: a payment link made when an invoice is issued (FR-AR-13)

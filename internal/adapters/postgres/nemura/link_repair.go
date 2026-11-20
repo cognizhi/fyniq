@@ -174,11 +174,11 @@ func applyReplay(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Time, e
 	if ev.FromSequence < 1 || ev.ToSequence < ev.FromSequence || ev.ToSequence-ev.FromSequence >= 10000 {
 		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "A replay asks for a range of Nemura's sequence numbers, from 1, of at most 10,000."}
 	}
-	rows, err := tx.Query(ctx, `SELECT DISTINCT object_type, object_id, type FROM nemura.link_event WHERE sequence BETWEEN $1 AND $2 AND (object_type IN ('person', 'bank_details', 'tax_hold', 'leave_request') OR type = $3)`, ev.FromSequence, ev.ToSequence, TypeIdentityAccess)
+	rows, err := tx.Query(ctx, `SELECT DISTINCT object_type, object_id, type FROM nemura.link_event WHERE sequence BETWEEN $1 AND $2 AND (object_type IN ('person', 'bank_details', 'tax_hold', 'leave_request') OR type IN ($3, 'payroll.payments.ready'))`, ev.FromSequence, ev.ToSequence, TypeIdentityAccess)
 	if err != nil {
 		return err
 	}
-	var persons, members, leaves []uuid.UUID
+	var persons, members, leaves, payRuns []uuid.UUID
 	for rows.Next() {
 		var t, id, typ string
 		if err := rows.Scan(&t, &id, &typ); err != nil {
@@ -186,7 +186,9 @@ func applyReplay(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Time, e
 			return err
 		}
 		if p, err := uuid.Parse(id); err == nil {
-			if t == "leave_request" {
+			if typ == TypePaymentsReady {
+				payRuns = append(payRuns, p) // the run's lines are made again at send time, at the version the run has now
+			} else if t == "leave_request" {
 				leaves = append(leaves, p) // the entry is told again at the version it has now
 			} else if typ == TypeIdentityAccess {
 				members = append(members, p) // what an identity may enter is the member's: told again as it stands now
@@ -220,6 +222,11 @@ func applyReplay(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Time, e
 	}
 	for _, r := range leaves {
 		if _, err := requeueLeave(ctx, tx, org, now, uuid.Nil, r); err != nil {
+			return err
+		}
+	}
+	for _, r := range payRuns {
+		if _, err := requeuePayments(ctx, tx, org, now, r); err != nil {
 			return err
 		}
 	}

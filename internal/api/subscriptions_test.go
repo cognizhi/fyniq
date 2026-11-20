@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -138,6 +139,12 @@ func TestASubscriptionContractIsAmendedFromDatedDaysAndItsMRRIsDerived(t *testin
 
 // matrixSubscriptions are the authorisation matrix's rows for subscription contracts.
 var matrixSubscriptions = map[string]func(e *env, tok string) (response, func() bool){
+	"addSubscriptionContractEvidence": func(e *env, tok string) (response, func() bool) {
+		return e.upload("/v1/subscription-contracts/"+uuid.NewString()+"/evidence", tok, map[string]string{"evidence_type": "order form"}, "o.pdf", []byte("%PDF-1.7 matrix "+uuid.NewString()), "If-Match", `"1"`), nil
+	},
+	"listSubscriptionContractEvidence": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/subscription-contracts/"+uuid.NewString()+"/evidence", tok, nil), nil
+	},
 	"createSubscriptionContract": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/subscription-contracts", tok, map[string]any{"contact_id": uuid.NewString(), "name": "Plan", "currency": "SGD", "starts_on": "2026-01-15", "mrr": "10.00"}), nil
 	},
@@ -153,4 +160,63 @@ var matrixSubscriptions = map[string]func(e *env, tok string) (response, func() 
 	"getContractedMRR": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/subscription-mrr", tok, nil), nil
 	},
+}
+
+// FR-AR-15, FR-DOC-05 through the API: a contract's files (the signed order form, an amendment letter) are evidence on a document of the contract's own, committed at once and append-only, a file
+// may name the amendment it supports, and only that contract's own amendments can be named; a stale contract version, a reader, another contract's amendment and a file that is no document are refused.
+// req: FR-AR-15
+// req: FR-DOC-05
+// asvs: V8.2.2
+func TestAContractsFilesAreEvidenceOnItsOwnDocumentAndNameOnlyItsOwnAmendments(t *testing.T) {
+	e := newEnv(t)
+	acc := e.as(authz.Accountant)
+	customer := e.customer()
+	mk := func(name string) response {
+		r := e.call(http.MethodPost, "/v1/subscription-contracts", acc, map[string]any{"contact_id": customer, "name": name, "currency": "SGD", "starts_on": "2026-01-15", "mrr": "100.00"})
+		if r.Status != http.StatusCreated {
+			t.Fatalf("a contract: %d %s", r.Status, r.Raw)
+		}
+		return r
+	}
+	one, two := mk("One"), mk("Two")
+	up := e.call(http.MethodPost, "/v1/subscription-contracts/"+one.str("id")+"/amendments", acc, map[string]any{"kind": "upgrade", "effective_on": "2026-04-01", "mrr": "150.00", "reason": "Bigger"}, "If-Match", one.Header.Get("ETag"))
+	if up.Status != http.StatusCreated {
+		t.Fatalf("the upgrade: %d %s", up.Status, up.Raw)
+	}
+	other := e.call(http.MethodPost, "/v1/subscription-contracts/"+two.str("id")+"/amendments", acc, map[string]any{"kind": "upgrade", "effective_on": "2026-04-01", "mrr": "150.00", "reason": "Bigger"}, "If-Match", two.Header.Get("ETag"))
+	amendmentOf := func(r response) string { return r.Body["amendments"].([]any)[0].(map[string]any)["id"].(string) }
+	url := "/v1/subscription-contracts/" + one.str("id") + "/evidence"
+	pdf := func(label string) []byte { return []byte("%PDF-1.7 " + label + " " + uuid.NewString()) }
+	attach := func(who, path string, fields map[string]string, tag string) response {
+		return e.upload(path, who, fields, "order.pdf", pdf("order"), "If-Match", tag)
+	}
+	tag := e.call(http.MethodGet, "/v1/subscription-contracts/"+one.str("id"), acc, nil).Header.Get("ETag")
+	if r := attach(e.as(authz.Auditor), url, map[string]string{"evidence_type": "order form"}, tag); r.Status != http.StatusForbidden {
+		t.Errorf("a reader attaching: %d %s", r.Status, r.Raw)
+	}
+	e.problemIs(attach(acc, url, map[string]string{"evidence_type": "order form"}, `"1"`), "addSubscriptionContractEvidence", 412, CodeStale)
+	first := attach(acc, url, map[string]string{"evidence_type": "order form", "note": "Signed 14 Jan"}, tag)
+	if first.Status != http.StatusCreated || first.str("file_name") != "order.pdf" {
+		t.Fatalf("the contract's file: %d %s", first.Status, first.Raw)
+	}
+	// A letter for the amendment names it; another contract's amendment, and one that does not exist, cannot be named.
+	letter := attach(acc, url+"?amendment_id="+amendmentOf(up), map[string]string{"evidence_type": "amendment letter"}, tag)
+	if letter.Status != http.StatusCreated || !strings.Contains(letter.str("note"), "Supports the upgrade from 2026-04-01") {
+		t.Fatalf("the amendment's file: %d %s", letter.Status, letter.Raw)
+	}
+	for _, bad := range []string{amendmentOf(other), uuid.NewString()} {
+		if r := attach(acc, url+"?amendment_id="+bad, map[string]string{"evidence_type": "amendment letter"}, tag); r.Status != http.StatusUnprocessableEntity {
+			t.Errorf("an amendment that is not this contract's: %d %s", r.Status, r.Raw)
+		}
+	}
+	// A file that is no document is refused, and the list shows exactly the two, on this contract only.
+	if r := e.upload(url, acc, map[string]string{"evidence_type": "order form"}, "x.exe", []byte("MZ\x90\x00"), "If-Match", tag); r.Status < 400 {
+		t.Errorf("an executable attached: %d %s", r.Status, r.Raw)
+	}
+	if l := e.call(http.MethodGet, url, e.as(authz.Auditor), nil); l.Status != 200 || len(l.Body["items"].([]any)) != 2 {
+		t.Errorf("listSubscriptionContractEvidence: %d %s", l.Status, l.Raw)
+	}
+	if l := e.call(http.MethodGet, "/v1/subscription-contracts/"+two.str("id")+"/evidence", acc, nil); l.Status != 200 || len(l.Body["items"].([]any)) != 0 {
+		t.Errorf("another contract's files: %d %s", l.Status, l.Raw)
+	}
 }

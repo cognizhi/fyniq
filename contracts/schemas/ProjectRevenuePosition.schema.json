@@ -14,6 +14,10 @@
       "$ref": "Money.schema.json",
       "description": "The contract liability after the journal: invoiced and not yet earned."
     },
+    "converted_at": {
+      "$ref": "ProjectRevenueRate.schema.json",
+      "description": "For a project in another currency: the rate the fee, the estimate and the costs left out were converted into the base currency at, with its date; the figures above are in the base currency."
+    },
     "cost_to_date": {
       "$ref": "Money.schema.json",
       "description": "What progress is measured by: the project's costs posted to the end of the month (direct and payroll-tagged) less those left out as not showing progress."

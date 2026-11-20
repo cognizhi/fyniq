@@ -147,7 +147,8 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock, Raise: raise}
 	// The events for Fyniq (NM-INT-01): sent to the API and token endpoint the deployment names, and to no other host (design D12).
 	apiURL, tokenURL := getenv("NEMURA_FYNIQ_API_URL"), getenv("NEMURA_FYNIQ_TOKEN_URL")
-	sender := &nemura.LinkSender{Store: store, Clock: deps.Clock, APIURL: strings.TrimSuffix(apiURL, "/"), TokenURL: tokenURL, Audience: getenv("NEMURA_FYNIQ_API_AUDIENCE")}
+	cipher, _ := restrictedWiring(getenv)
+	sender := &nemura.LinkSender{Store: store, Cipher: cipher, Clock: deps.Clock, APIURL: strings.TrimSuffix(apiURL, "/"), TokenURL: tokenURL, Audience: getenv("NEMURA_FYNIQ_API_AUDIENCE")}
 	if apiURL != "" && tokenURL != "" {
 		sender.HTTP = linkHTTP(egress.HostOf(apiURL), egress.HostOf(tokenURL))
 	}

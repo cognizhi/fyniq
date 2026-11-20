@@ -11,6 +11,8 @@ import (
 var (
 	nricShape = regexp.MustCompile(`^[STFGM][0-9]{7}[A-Z]$`)
 	bankShape = regexp.MustCompile(`^[0-9]{5,20}$`)
+	// BankCodeShape is a Singapore bank code: four digits, or four and the three of a branch.
+	BankCodeShape = regexp.MustCompile(`^[0-9]{4}([0-9]{3})?$`)
 	passShape = regexp.MustCompile(`^[A-Z0-9]{6,20}$`)
 )
 

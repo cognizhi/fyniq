@@ -4,6 +4,10 @@ VALUES (sqlc.arg(connector_id), sqlc.arg(invoice_id), sqlc.arg(provider_request_
   sqlc.arg(amount)::numeric, sqlc.arg(expires_at), sqlc.arg(created_by), sqlc.arg(created_at))
 RETURNING id, connector_id, invoice_id, provider_request_id, url, reference, currency, amount, status, closed_reason, expires_at, version, created_by, created_at, closed_at;
 
+-- name: CreatePaymentLinkByPlatform :one
+SELECT fyniq.create_payment_link_by_platform(sqlc.arg(invoice_id)::uuid, sqlc.arg(connector_id)::uuid, sqlc.arg(provider_request_id)::text, sqlc.arg(url)::text, sqlc.arg(reference)::text,
+  sqlc.arg(currency)::text, sqlc.arg(amount)::numeric, sqlc.narg(expires_at)::timestamptz)::uuid AS id;
+
 -- name: GetPaymentLink :one
 SELECT id, connector_id, invoice_id, provider_request_id, url, reference, currency, amount, status, closed_reason, expires_at, version, created_by, created_at, closed_at
   FROM fyniq.payment_link WHERE id = sqlc.arg(id);
