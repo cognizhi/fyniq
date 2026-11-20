@@ -602,6 +602,24 @@ components:
         - issued_on
         - expires_on
       type: object
+    AdvertInputBody:
+      additionalProperties: false
+      properties:
+        posted_on:
+          description: The day the advert went up on MyCareersFuture.
+          examples:
+            - "2026-10-05"
+          format: date
+          type: string
+        reference:
+          description: The advert's reference.
+          examples:
+            - MCF-2026-0042
+          maxLength: 100
+          type: string
+      required:
+        - posted_on
+      type: object
     AiAskInputBody:
       additionalProperties: false
       properties:
@@ -2005,6 +2023,31 @@ components:
       required:
         - codes
       type: object
+    ExemptionInputBody:
+      additionalProperties: false
+      properties:
+        kind:
+          description: The exemption.
+          enum:
+            - fewer_than_10_employees
+            - ep_salary_22500
+            - role_one_month_or_less
+            - transferee
+            - s_pass_exempt
+          examples:
+            - fewer_than_10_employees
+          type: string
+        note:
+          description: The evidence.
+          examples:
+            - Headcount 7 on 5 Oct.
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - kind
+        - note
+      type: object
     ExportFile:
       additionalProperties: false
       properties:
@@ -3399,6 +3442,123 @@ components:
         - job_title
         - worksite
         - employment_type
+      type: object
+    JobPost:
+      additionalProperties: false
+      properties:
+        advert_posted_on:
+          description: "The day the advert went up on MyCareersFuture, posted by a person: the 14 days run from it."
+          examples:
+            - "2026-10-05"
+          format: date
+          type: string
+        advert_reference:
+          description: The advert's reference.
+          examples:
+            - MCF-2026-0042
+          type: string
+        body:
+          description: The post's text.
+          examples:
+            - You will analyse data and build models.
+          type: string
+        closed_on:
+          description: The day it was closed.
+          examples:
+            - "2026-11-05"
+          format: date
+          type: string
+        exemption:
+          description: The recorded exemption from the advert.
+          enum:
+            - fewer_than_10_employees
+            - ep_salary_22500
+            - role_one_month_or_less
+            - transferee
+            - s_pass_exempt
+          examples:
+            - fewer_than_10_employees
+          type: string
+        exemption_note:
+          description: The evidence for the exemption.
+          examples:
+            - Headcount 7 on 5 Oct.
+          type: string
+        findings:
+          description: The criteria found in the current words, for the author to read.
+          items:
+            $ref: "#/components/schemas/WordingFinding"
+          type: array
+        id:
+          description: The post.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3b01
+          format: uuid
+          type: string
+        offer_blocked:
+          description: A role that needs a pass has neither an advert date nor an exemption recorded, so no offer may be made yet.
+          examples:
+            - false
+          type: boolean
+        offer_from:
+          description: "For a role that needs a pass, the first day an offer may be made: the advert's 14 consecutive days have run. Empty when no pass is needed, an exemption is recorded, or the advert is not yet recorded."
+          examples:
+            - "2026-10-19"
+          format: date
+          type: string
+        published_on:
+          description: The day it was published.
+          examples:
+            - "2026-10-05"
+          format: date
+          type: string
+        requirement_note:
+          description: The genuine occupational requirement recorded for a flagged criterion that was kept.
+          examples:
+            - The role handles Mandarin-language contracts.
+          type: string
+        state:
+          description: A draft, published or closed.
+          enum:
+            - draft
+            - published
+            - closed
+          examples:
+            - draft
+          type: string
+        title:
+          description: The post's title.
+          examples:
+            - Data scientist
+          type: string
+      required:
+        - id
+        - title
+        - body
+        - state
+        - offer_blocked
+        - findings
+      type: object
+    JobPostInputBody:
+      additionalProperties: false
+      properties:
+        body:
+          description: The post's text.
+          examples:
+            - You will analyse data and build models.
+          maxLength: 8000
+          minLength: 1
+          type: string
+        title:
+          description: The post's title.
+          examples:
+            - Data scientist
+          maxLength: 120
+          minLength: 1
+          type: string
+      required:
+        - title
+        - body
       type: object
     JoinDecisionInputBody:
       additionalProperties: false
@@ -7608,6 +7768,16 @@ components:
         - id
         - name
       type: object
+    PublishInputBody:
+      additionalProperties: false
+      properties:
+        requirement_note:
+          description: The genuine occupational requirement, needed to keep a criterion the check flagged.
+          examples:
+            - The role handles Mandarin-language contracts.
+          maxLength: 1000
+          type: string
+      type: object
     QuestionInputBody:
       additionalProperties: false
       properties:
@@ -8107,6 +8277,219 @@ components:
             - "null"
       required:
         - requests
+      type: object
+    Requisition:
+      additionalProperties: false
+      properties:
+        decided_at:
+          description: When.
+          examples:
+            - "2026-10-02T10:00:00Z"
+          format: date-time
+          type: string
+        decided_by:
+          description: The Owner who decided.
+          examples:
+            - Owen Owner
+          type: string
+        decision_reason:
+          description: Why.
+          examples:
+            - In the plan for Q1.
+          type: string
+        department:
+          description: The team.
+          examples:
+            - Engineering
+          type: string
+        id:
+          description: The requisition.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+          format: uuid
+          type: string
+        job_post:
+          $ref: "#/components/schemas/JobPost"
+          description: Its job post, once one is written.
+        pass_needed:
+          description: An Employment Pass or S Pass application is expected, so the Fair Consideration Framework may apply.
+          examples:
+            - false
+          type: boolean
+        plan_status:
+          description: Whether the role is in Fyniq's plan; unknown until the link tells Nemura.
+          enum:
+            - unknown
+            - in_plan
+            - not_in_plan
+          examples:
+            - unknown
+          type: string
+        reason:
+          description: A new role or a replacement.
+          enum:
+            - new
+            - replacement
+          examples:
+            - replacement
+          type: string
+        replaces:
+          description: Their legal name.
+          examples:
+            - Chen Yu
+          type: string
+        replaces_person_id:
+          description: The person a replacement replaces.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        requested_at:
+          description: When.
+          examples:
+            - "2026-10-01T10:00:00Z"
+          format: date-time
+          type: string
+        requested_by:
+          description: Who asked.
+          examples:
+            - Rita Recruiter
+          type: string
+        salary_max:
+          description: The top of the range in Singapore dollars, as a decimal string.
+          examples:
+            - "8200.00"
+          type: string
+        salary_min:
+          description: The bottom of the range in Singapore dollars, as a decimal string.
+          examples:
+            - "6500.00"
+          type: string
+        state:
+          description: Where it is.
+          enum:
+            - requested
+            - approved
+            - rejected
+            - filled
+            - cancelled
+          examples:
+            - requested
+          type: string
+        target_start:
+          description: The start date aimed for.
+          examples:
+            - "2027-02-01"
+          format: date
+          type: string
+        title:
+          description: The role.
+          examples:
+            - Data scientist
+          type: string
+      required:
+        - id
+        - title
+        - department
+        - reason
+        - salary_min
+        - salary_max
+        - target_start
+        - pass_needed
+        - plan_status
+        - state
+        - requested_by
+        - requested_at
+      type: object
+    RequisitionDecisionInputBody:
+      additionalProperties: false
+      properties:
+        approve:
+          description: Approve it; false rejects it.
+          examples:
+            - true
+          type: boolean
+        reason:
+          description: Why.
+          examples:
+            - In the plan for Q1.
+          maxLength: 500
+          type: string
+      required:
+        - approve
+      type: object
+    RequisitionInput:
+      additionalProperties: false
+      properties:
+        department:
+          description: The team.
+          examples:
+            - Engineering
+          maxLength: 120
+          minLength: 1
+          type: string
+        pass_needed:
+          description: An Employment Pass or S Pass application is expected.
+          examples:
+            - false
+          type: boolean
+        reason:
+          description: A new role or a replacement.
+          enum:
+            - new
+            - replacement
+          examples:
+            - replacement
+          type: string
+        replaces_person_id:
+          description: The person a replacement replaces.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        salary_max:
+          description: The top of the range in Singapore dollars, as a decimal string.
+          examples:
+            - "8200.00"
+          pattern: ^[0-9]{1,9}(\.[0-9]{1,2})?$
+          type: string
+        salary_min:
+          description: The bottom of the range in Singapore dollars, as a decimal string.
+          examples:
+            - "6500.00"
+          pattern: ^[0-9]{1,9}(\.[0-9]{1,2})?$
+          type: string
+        target_start:
+          description: The start date aimed for.
+          examples:
+            - "2027-02-01"
+          format: date
+          type: string
+        title:
+          description: The role.
+          examples:
+            - Data scientist
+          maxLength: 120
+          minLength: 1
+          type: string
+      required:
+        - title
+        - department
+        - reason
+        - salary_min
+        - salary_max
+        - target_start
+      type: object
+    RequisitionsOutputBody:
+      additionalProperties: false
+      properties:
+        requisitions:
+          description: The requisitions, the newest first, each with its job post.
+          items:
+            $ref: "#/components/schemas/Requisition"
+          type: array
+      required:
+        - requisitions
       type: object
     Run:
       additionalProperties: false
@@ -9951,6 +10334,59 @@ components:
       required:
         - days
       type: object
+    WordingFinding:
+      additionalProperties: false
+      properties:
+        category:
+          description: The criterion the guidelines ask an employer not to use.
+          enum:
+            - age
+            - nationality
+            - sex
+            - marital_status
+            - pregnancy
+            - caregiving
+            - race
+            - religion
+            - language
+            - disability
+            - mental_health
+          examples:
+            - age
+          type: string
+        phrase:
+          description: What was found, as written.
+          examples:
+            - young
+          type: string
+      required:
+        - category
+        - phrase
+      type: object
+    WordingInputBody:
+      additionalProperties: false
+      properties:
+        text:
+          description: A job post or an interview question.
+          examples:
+            - We want a young, energetic digital native.
+          maxLength: 8000
+          minLength: 1
+          type: string
+      required:
+        - text
+      type: object
+    WordingOutputBody:
+      additionalProperties: false
+      properties:
+        findings:
+          description: The criteria found; empty when none.
+          items:
+            $ref: "#/components/schemas/WordingFinding"
+          type: array
+      required:
+        - findings
+      type: object
     WorkingPattern:
       additionalProperties: false
       properties:
@@ -11432,6 +11868,71 @@ paths:
       summary: One stable error code
       tags:
         - Platform
+  /v1/fair-wording-check:
+    post:
+      description: Lists the age, nationality, sex, marital-status, pregnancy, caregiving, race, religion, language, disability and mental-health criteria found in a job post or an interview question (NM-REC-03). It decides nothing and keeps nothing. The Recruiter, the HR officer, the HR administrator and the Owner.
+      operationId: checkFairWording
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WordingInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WordingOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Check wording for criteria the guidelines name
+      tags:
+        - Hiring
   /v1/features:
     get:
       description: "Lists each optional feature and its state: on, off, or external (another system holds its data), with what it needs. Anyone who may see the settings (HR officer, HR administrator, Payroll administrator, Administrator, Owner). It changes nothing."
@@ -22497,6 +22998,625 @@ paths:
       summary: What waits for the people team
       tags:
         - Self-service
+  /v1/requisitions:
+    get:
+      description: PRD-002 NM-REC-01. The requests to hire, the newest first, each with its job post, the dates of its advert and the day an offer may be made. The Recruiter, the HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: listRequisitions
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequisitionsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Requisitions
+      tags:
+        - Hiring
+    post:
+      description: "Asks for a requisition: the role, the team, whether it is new or replaces someone, the salary range in Singapore dollars (decimal strings), the start date aimed for and whether a pass is expected. Whether the role is in Fyniq's plan stays unknown until the link tells Nemura. The Recruiter. It is audited."
+      operationId: requestRequisition
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequisitionInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requisition"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Ask to hire for a role
+      tags:
+        - Hiring
+  /v1/requisitions/{id}/decision:
+    post:
+      description: "The Owner approves or rejects a requisition, once. Approval opens the role: a job post may then be published. The Owner. It is audited."
+      operationId: decideRequisition
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The requisition.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The requisition.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequisitionDecisionInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requisition"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Approve or reject a requisition
+      tags:
+        - Hiring
+  /v1/requisitions/{id}/job-post:
+    put:
+      description: "Writes the requisition's job post as a draft, or changes the draft; a published post never changes. The response lists the criteria the guidelines ask an employer not to use that the check found in the words (NM-REC-03): it decides nothing. The Recruiter. It is audited."
+      operationId: writeJobPost
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The requisition.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The requisition.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobPostInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requisition"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Write or change a job post
+      tags:
+        - Hiring
+  /v1/requisitions/{id}/job-post/advert:
+    post:
+      description: Records the day a person posted the advert on MyCareersFuture (there is no posting API), once. For a role that needs a pass the offer waits until 14 consecutive days have run (NM-REC-02). The Recruiter. It is audited.
+      operationId: recordJobAdvert
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The requisition.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The requisition.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdvertInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requisition"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Record the day the advert went up
+      tags:
+        - Hiring
+  /v1/requisitions/{id}/job-post/closing:
+    post:
+      description: Closes a published post, once. The Recruiter. It is audited.
+      operationId: closeJobPost
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The requisition.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The requisition.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requisition"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Close a job post
+      tags:
+        - Hiring
+  /v1/requisitions/{id}/job-post/exemption:
+    post:
+      description: Records, once, an exemption from the Fair Consideration Framework's advert with its evidence, for a role that needs a pass. The offer is then not held back. The Recruiter. It is audited.
+      operationId: recordJobExemption
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The requisition.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The requisition.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExemptionInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requisition"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Record an exemption from the advert
+      tags:
+        - Hiring
+  /v1/requisitions/{id}/job-post/publication:
+    post:
+      description: Publishes the draft of an approved requisition. When the check flags a criterion, the post is published only with the genuine occupational requirement recorded (requirement_note); otherwise it is refused with the criteria named (NM_HIRING_WORDING). The Recruiter. It is audited.
+      operationId: publishJobPost
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The requisition.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The requisition.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requisition"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Publish a job post
+      tags:
+        - Hiring
   /v1/session:
     get:
       description: Returns the person the session cookie names, the organisation they are in, the roles they hold today and the page they land on. Roles are read again on each request, so a change is seen at once. It changes nothing; without a valid session it is NM_UNAUTHENTICATED.
@@ -22994,6 +24114,8 @@ tags:
     name: Self-service
   - description: Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07).
     name: Letters
+  - description: Requisitions approved by the Owner, job posts checked for fair wording and the Fair Consideration Framework's advert dates (NM-REC-01 to NM-REC-03).
+    name: Hiring
   - description: "The confidential grievance channel: filing, routing away from the people it is about, the inquiry record and the written outcome (NM-SEC-06)."
     name: Grievances
   - description: Erasure of a former employee's personal data after its retention, by two people (NM-SEC-08).

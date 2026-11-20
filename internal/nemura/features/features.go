@@ -48,7 +48,7 @@ var Registry = []Feature{
 	{ID: "payroll", Name: "Payroll", Phase: "P1", Needs: []string{"leave"}},
 	{ID: "self_service", Name: "Self-service", Phase: "P1"},
 	{ID: "letters", Name: "Letters", Phase: "P1"},
-	{ID: "hiring", Name: "Hiring", Phase: "P2"},
+	{ID: "hiring", Name: "Hiring", Phase: "P2", Built: true},
 	{ID: "performance", Name: "Performance", Phase: "P2"},
 	{ID: "onboarding", Name: "Onboarding", Phase: "P2", Needs: []string{"letters"}, Built: true},
 	{ID: "time", Name: "Time and attendance", Phase: "P3"},
