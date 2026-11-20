@@ -1211,6 +1211,10 @@
       "label": "Record the outcome",
       "tooltip": "Says what became of one payment, with a file of evidence. A payment is paid only when the bank feed shows its debit or you record it here."
     },
+    "salary.bank-match": {
+      "label": "Match a bank debit",
+      "tooltip": "Pays released lines from the bank feed: pick the debit of this batch's bank account that waits in the Categorise queue and tick the lines it paid. Their amounts must make the debit exactly."
+    },
     "salary.cancel": {
       "label": "Cancel the batch",
       "tooltip": "Cancels a batch with nothing released. It pays nothing."

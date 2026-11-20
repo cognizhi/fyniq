@@ -43,6 +43,7 @@ prepared, approved by another person and released like a payment batch. Fyniq ne
 ## What became of a payment
 
 - A line is **paid** only when the bank feed shows its debit, matched to the lines it paid, or when a person records the outcome with a file of evidence. A posted journal or a payment file is never taken as payment.
+- **Match a bank debit** on the batch pays released lines from the bank feed: choose the debit of the batch's bank account that waits in the Categorise queue, tick the lines it paid, and the amounts must make the debit exactly, to the cent. It posts to Salaries payable as categorising it does, and each paid line goes back to Nemura.
 - A person who did not prepare or approve the pay run in Nemura records it: sent, accepted, paid, rejected, returned or unknown, with the day and the evidence.
 - An unknown outcome means the money may have gone: that person cannot be paid again in the run until a person resolves it as paid, rejected or returned.
 - Each outcome goes back to Nemura.
