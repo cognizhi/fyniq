@@ -134,8 +134,8 @@ type Task struct {
 const Expiry = 72
 
 // Catalogue is what the people assistant may propose: two drafts for requests (P1) and, from P2, a draft of a job post and a draft of an interview kit for a requisition (rev 0.76), each for a human to edit
-// and approve. The review summary is P2 too (NM-PRF-04). The hiring drafts are decided by the people team (the HR officer, the HR administrator and the Owner); Appendix D names the Recruiter, who asks on the
-// Hiring page, and the approval stays with the team until the proposals list can show the Recruiter the hiring drafts alone [owner to confirm].
+// and approve. The review summary is P2 too (NM-PRF-04). The hiring drafts are asked for and decided by the Recruiter as well as the people team (the HR officer, the HR administrator and the Owner), the Recruiter through a list of
+// these two task types alone (rev 0.77): no wider than Hiring: create, which already writes the post and the kit [owner to confirm].
 var Catalogue = []Task{
 	{ID: "people.draft_letter", Version: 1, Tier: 1, ApproverRoles: []string{"hr_officer", "hr_admin", "owner"}, ExpiryHours: Expiry,
 		What:   "A letter from a template for a request, with the fields filled from the record",
@@ -143,13 +143,21 @@ var Catalogue = []Task{
 	{ID: "people.draft_fwa_reply", Version: 1, Tier: 1, ApproverRoles: []string{"hr_officer", "hr_admin", "owner"}, ExpiryHours: Expiry,
 		What:   "A written reply to a flexible-work request, with the reason for a refusal when the decision-maker has refused",
 		Fields: []Field{{Name: "request_id", Kind: UUID, Required: true}, {Name: "reply", Kind: Text, Required: true, Max: 4000}, {Name: "reason", Kind: Text, Max: 1000}, {Name: "rationale", Kind: Text, Max: 500}}},
-	{ID: "people.draft_job_post", Version: 1, Tier: 1, ApproverRoles: []string{"hr_officer", "hr_admin", "owner"}, ExpiryHours: Expiry,
+	{ID: "people.draft_job_post", Version: 1, Tier: 1, ApproverRoles: []string{"recruiter", "hr_officer", "hr_admin", "owner"}, ExpiryHours: Expiry,
 		What:   "A job post for a requisition, written from the role and the team alone, with fair-wording flags",
 		Fields: []Field{{Name: "requisition_id", Kind: UUID, Required: true}, {Name: "title", Kind: Text, Required: true, Max: 120}, {Name: "body", Kind: Text, Required: true, Max: 8000}, {Name: "rationale", Kind: Text, Max: 500}}},
-	{ID: "people.draft_interview_kit", Version: 1, Tier: 1, ApproverRoles: []string{"hr_officer", "hr_admin", "owner"}, ExpiryHours: Expiry,
+	{ID: "people.draft_interview_kit", Version: 1, Tier: 1, ApproverRoles: []string{"recruiter", "hr_officer", "hr_admin", "owner"}, ExpiryHours: Expiry,
 		What:   "Interview questions and a scorecard for a role, one on each line, with fair-wording flags",
 		Fields: []Field{{Name: "requisition_id", Kind: UUID, Required: true}, {Name: "questions", Kind: Text, Required: true, Max: 6000}, {Name: "criteria", Kind: Text, Required: true, Max: 1500}, {Name: "rationale", Kind: Text, Max: 500}}},
 }
+
+// IsHiringDraft says whether a task type is one of the two hiring drafts, the only ones the Recruiter asks for, sees and decides (NM-AI-05).
+func IsHiringDraft(id string) bool {
+	return id == "people.draft_job_post" || id == "people.draft_interview_kit"
+}
+
+// HiringDrafts are the task types of the hiring drafts.
+var HiringDrafts = []string{"people.draft_job_post", "people.draft_interview_kit"}
 
 // Lookup returns a task type by ID.
 func Lookup(id string) (Task, bool) {

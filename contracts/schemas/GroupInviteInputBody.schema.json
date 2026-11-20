@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "label": {
+      "description": "What this organisation calls the entity.",
+      "examples": [
+        "Cognizhi Sdn. Bhd."
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "label"
+  ],
+  "title": "GroupInviteInputBody",
+  "type": "object"
+}

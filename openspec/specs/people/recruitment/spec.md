@@ -146,6 +146,10 @@ Source: PRD-002 §12 · Priority M · Phase P2
 - **WHEN** a candidate asks for their data
 - **THEN** opinions formed only to evaluate them are not released (NM-SEC-07)
 
+#### Scenario: A hired candidate is not kept for future roles (rev 0.77)
+- **WHEN** the consent to be kept for future roles is given for a hired candidate
+- **THEN** it is refused with the reason, because they have joined and their record is final
+
 ### Requirement: NM-REC-06 Offer to hire
 An accepted offer SHALL turn the candidate into a person record with a start date and an onboarding plan, and SHALL track the work pass application date.
 
@@ -159,3 +163,12 @@ Source: PRD-002 §12 · Priority M · Phase P2
 - **GIVEN** a role that needs a pass, advertised from Mon 25 Feb, with no exemption
 - **WHEN** a recruiter moves a candidate to the offer stage before Mon 11 Mar
 - **THEN** it is refused until the advert's 14 days have run, and the hire records the day the pass application was made, once
+
+#### Scenario: The offer letter is made for the person at the hire (rev 0.77)
+- **GIVEN** a company that issues offer letters from a published template
+- **WHEN** an HR administrator hires a candidate and asks for the offer letter
+- **THEN** a letter request is made for the new person from their role, team, kind of employment and first day, with no pay, and another member of the people team checks it and the Owner signs it
+
+#### Scenario: A company that issues none refuses the whole hire (rev 0.77)
+- **WHEN** a hire asks for an offer letter and the company has not switched the type on or published a template
+- **THEN** the hire is refused with the reason and no person record is made

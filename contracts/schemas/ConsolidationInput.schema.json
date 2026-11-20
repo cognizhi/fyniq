@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "description": "The first month the run reports, YYYY-MM.",
+      "examples": [
+        "2026-07"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "to": {
+      "description": "The last month, YYYY-MM; the balance sheet is at its end.",
+      "examples": [
+        "2026-09"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "to"
+  ],
+  "title": "ConsolidationInput",
+  "type": "object"
+}

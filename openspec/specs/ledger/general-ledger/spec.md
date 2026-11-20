@@ -394,7 +394,7 @@ Source: PRD-001 §8.8 · Priority S · Phase P2
 - **WHEN** the exceptions report is run
 - **THEN** it lists postings dated near or before a lock date
 
-#### Scenario: A pass is the accountant's alone, with a reason (rev 0.628)
+#### Scenario: A pass is the accountant's alone, with a reason (rev 0.630)
 - **GIVEN** a soft-locked period, or a locked module of an open one
 - **WHEN** a person with the Accountant role, signed in and stepped up, makes a pass with a reason of at least 10 characters for 1 to 8 hours
 - **THEN** their own postings dated in the period are accepted while the pass lasts, each kept on the exceptions report with the reason

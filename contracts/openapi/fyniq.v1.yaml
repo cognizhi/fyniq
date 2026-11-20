@@ -19616,6 +19616,428 @@ components:
       required:
         - items
       type: object
+    Consolidation:
+      additionalProperties: false
+      properties:
+        accounts:
+          description: The accounts the run uses, by code.
+          items:
+            $ref: "#/components/schemas/ConsolidationAccount"
+          type: array
+        consolidated:
+          description: The consolidated figures by account and section.
+          items:
+            $ref: "#/components/schemas/ConsolidationTotal"
+          type: array
+        created_at:
+          description: When it was made.
+          examples:
+            - "2026-10-02T09:00:00Z"
+          format: date-time
+          type: string
+        currency:
+          description: The group currency.
+          examples:
+            - SGD
+          type: string
+        differences:
+          description: Every pair the entities do not agree on; nothing is plugged.
+          items:
+            $ref: "#/components/schemas/ConsolidationDifference"
+          type: array
+        eliminations:
+          description: What was taken off, by source.
+          items:
+            $ref: "#/components/schemas/ConsolidationLine"
+          type: array
+        from:
+          description: The first month.
+          examples:
+            - 2026-07
+          type: string
+        id:
+          description: The run's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8001
+          format: uuid
+          type: string
+        lines:
+          description: Every translated line of every source, before the eliminations.
+          items:
+            $ref: "#/components/schemas/ConsolidationLine"
+          type: array
+        provisional:
+          description: true when an entity's period in the run was not closed when it was read.
+          examples:
+            - false
+          type: boolean
+        rates:
+          description: The rates the run used.
+          items:
+            $ref: "#/components/schemas/ConsolidationRate"
+          type: array
+        sources:
+          description: "The organisations in the run: the parent first."
+          items:
+            $ref: "#/components/schemas/ConsolidationSource"
+          type: array
+        to:
+          description: The last month.
+          examples:
+            - 2026-09
+          type: string
+        translation_reserve:
+          description: "The sum of the entities' translation reserves: the balancing figure of the translation."
+          examples:
+            - "-412.33"
+          type: string
+      required:
+        - sources
+        - lines
+        - eliminations
+        - differences
+        - consolidated
+        - translation_reserve
+        - accounts
+        - rates
+        - id
+        - from
+        - to
+        - currency
+        - provisional
+        - created_at
+      type: object
+    ConsolidationAccount:
+      additionalProperties: false
+      properties:
+        code:
+          description: The account's code.
+          examples:
+            - "4000"
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Revenue
+          type: string
+        type:
+          description: Its type.
+          enum:
+            - asset
+            - liability
+            - equity
+            - revenue
+            - expense
+          examples:
+            - revenue
+          type: string
+      required:
+        - code
+        - name
+        - type
+      type: object
+    ConsolidationDifference:
+      additionalProperties: false
+      properties:
+        a:
+          description: The debit side's account code.
+          examples:
+            - "1350"
+          type: string
+        b:
+          description: The credit side's account code.
+          examples:
+            - "2350"
+          type: string
+        credit:
+          description: The credit side's amount, a credit negative.
+          examples:
+            - "-17639.23"
+          type: string
+        credit_entity:
+          description: The source holding the credit side's account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01
+          type: string
+        debit:
+          description: The debit side's amount.
+          examples:
+            - "18000.00"
+          type: string
+        debit_entity:
+          description: The source holding the debit side's account.
+          examples:
+            - parent
+          type: string
+        difference:
+          description: "The two sides' sum: what is not agreed, left in place and plugged nowhere. Positive: the debit side is larger."
+          examples:
+            - "360.77"
+          type: string
+        matched:
+          description: "What was eliminated from both: the smaller side."
+          examples:
+            - "17639.23"
+          type: string
+      required:
+        - debit_entity
+        - credit_entity
+        - a
+        - b
+        - debit
+        - credit
+        - matched
+        - difference
+      type: object
+    ConsolidationHeader:
+      additionalProperties: false
+      properties:
+        created_at:
+          description: When it was made.
+          examples:
+            - "2026-10-02T09:00:00Z"
+          format: date-time
+          type: string
+        currency:
+          description: The group currency.
+          examples:
+            - SGD
+          type: string
+        from:
+          description: The first month.
+          examples:
+            - 2026-07
+          type: string
+        id:
+          description: The run's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8001
+          format: uuid
+          type: string
+        provisional:
+          description: true when an entity's period in the run was not closed when it was read.
+          examples:
+            - false
+          type: boolean
+        to:
+          description: The last month.
+          examples:
+            - 2026-09
+          type: string
+      required:
+        - id
+        - from
+        - to
+        - currency
+        - provisional
+        - created_at
+      type: object
+    ConsolidationHeaderPage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The runs, newest first.
+          items:
+            $ref: "#/components/schemas/ConsolidationHeader"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEifQ
+          type: string
+      required:
+        - items
+      type: object
+    ConsolidationInput:
+      additionalProperties: false
+      properties:
+        from:
+          description: The first month the run reports, YYYY-MM.
+          examples:
+            - 2026-07
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        to:
+          description: The last month, YYYY-MM; the balance sheet is at its end.
+          examples:
+            - 2026-09
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+      required:
+        - from
+        - to
+      type: object
+    ConsolidationLine:
+      additionalProperties: false
+      properties:
+        account:
+          description: The account's code on the parent's chart.
+          examples:
+            - "4000"
+          type: string
+        amount:
+          description: In the group currency, a debit positive.
+          examples:
+            - "228400.00"
+          type: string
+        counterparty:
+          description: For an intercompany account, the other source's key.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01
+          type: string
+        entity:
+          description: The source's key.
+          examples:
+            - parent
+          type: string
+        section:
+          description: "balance: an asset or liability at the closing rate; equity: at each month's closing rate; result: the run's months at the average rates; brought_forward: earlier months' result."
+          enum:
+            - balance
+            - equity
+            - result
+            - brought_forward
+          examples:
+            - result
+          type: string
+      required:
+        - entity
+        - account
+        - section
+        - amount
+      type: object
+    ConsolidationPeriod:
+      additionalProperties: false
+      properties:
+        month:
+          description: The month.
+          examples:
+            - 2026-09
+          type: string
+        status:
+          description: Its state.
+          enum:
+            - open
+            - soft_locked
+            - closed
+          examples:
+            - closed
+          type: string
+      required:
+        - month
+        - status
+      type: object
+    ConsolidationRate:
+      additionalProperties: false
+      properties:
+        average:
+          description: The average rate.
+          examples:
+            - "0.3058000000"
+          type: string
+        closing:
+          description: The closing rate.
+          examples:
+            - "0.3056000000"
+          type: string
+        currency:
+          description: The entity's currency.
+          examples:
+            - MYR
+          type: string
+        month:
+          description: The month.
+          examples:
+            - 2026-09
+          type: string
+        note:
+          description: Its source.
+          examples:
+            - MAS daily rates
+          type: string
+      required:
+        - currency
+        - month
+        - closing
+        - average
+        - note
+      type: object
+    ConsolidationSource:
+      additionalProperties: false
+      properties:
+        currency:
+          description: Its base currency.
+          examples:
+            - SGD
+          type: string
+        key:
+          description: parent, or the entity's row ID.
+          examples:
+            - parent
+          type: string
+        label:
+          description: What the group calls it.
+          examples:
+            - Cognizhi Pte Ltd
+          type: string
+        ledger_revision:
+          description: Its ledger revision when read.
+          examples:
+            - 1204
+          format: int64
+          type: integer
+        link_ended:
+          description: "true when the entity's link has ended since: the figures are the parent's record of what it was shown."
+          examples:
+            - false
+          type: boolean
+        periods:
+          description: Its periods' state when read.
+          items:
+            $ref: "#/components/schemas/ConsolidationPeriod"
+          type: array
+        translation_reserve:
+          description: Its translation reserve in the group currency.
+          examples:
+            - "-412.33"
+          type: string
+      required:
+        - key
+        - label
+        - currency
+        - ledger_revision
+        - link_ended
+        - periods
+        - translation_reserve
+      type: object
+    ConsolidationTotal:
+      additionalProperties: false
+      properties:
+        account:
+          description: The account's code.
+          examples:
+            - "4000"
+          type: string
+        amount:
+          description: After the eliminations, in the group currency.
+          examples:
+            - "241610.40"
+          type: string
+        section:
+          description: The section.
+          enum:
+            - balance
+            - equity
+            - result
+            - brought_forward
+          examples:
+            - result
+          type: string
+      required:
+        - account
+        - section
+        - amount
+      type: object
     Contact:
       additionalProperties: false
       properties:
@@ -32837,6 +33259,648 @@ components:
       required:
         - user_id
         - reason
+      type: object
+    GroupAcceptInputBody:
+      additionalProperties: false
+      properties:
+        code:
+          description: "The one-time code the parent's Owner gave, as typed: case, spaces and dashes do not matter."
+          examples:
+            - ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z
+          maxLength: 60
+          minLength: 10
+          type: string
+      required:
+        - code
+      type: object
+    GroupEndInputBody:
+      additionalProperties: false
+      properties:
+        organisation_id:
+          description: "The other organisation of the link: as the parent, the entity's; as the entity, the parent's."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b02
+          format: uuid
+          type: string
+        reason:
+          description: Why the link ends, in your words; it stays in both audit trails.
+          examples:
+            - Sold the subsidiary
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - organisation_id
+        - reason
+      type: object
+    GroupEntityAccount:
+      additionalProperties: false
+      properties:
+        code:
+          description: The entity's account code.
+          examples:
+            - "2210"
+          type: string
+        has_figures:
+          description: true when it has a movement; only such an account needs a mapping.
+          examples:
+            - true
+          type: boolean
+        mapped:
+          description: true when it is mapped.
+          examples:
+            - false
+          type: boolean
+        name:
+          description: Its name.
+          examples:
+            - SST payable
+          type: string
+        suggested_group_account_id:
+          description: The parent's account with the same code, when it has one.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6002
+          format: uuid
+          type: string
+        type:
+          description: Its type.
+          enum:
+            - asset
+            - liability
+            - equity
+            - revenue
+            - expense
+          examples:
+            - liability
+          type: string
+      required:
+        - code
+        - name
+        - type
+        - has_figures
+        - mapped
+      type: object
+    GroupEntityAccountPage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The entity's accounts by code.
+          items:
+            $ref: "#/components/schemas/GroupEntityAccount"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEifQ
+          type: string
+      required:
+        - items
+      type: object
+    GroupEntityItem:
+      additionalProperties: false
+      properties:
+        ended_at:
+          description: When the link ended.
+          examples:
+            - "2026-11-22T09:00:00Z"
+          format: date-time
+          type: string
+        ended_reason:
+          description: Why it ended, in the Owner's words.
+          examples:
+            - Sold the subsidiary
+          type: string
+        entity_currency:
+          description: Its base currency when it accepted.
+          examples:
+            - MYR
+          type: string
+        entity_name:
+          description: The entity's name when it accepted.
+          examples:
+            - Cognizhi Sdn. Bhd.
+          type: string
+        entity_organisation_id:
+          description: The entity's organisation, once it accepted.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b02
+          format: uuid
+          type: string
+        id:
+          description: "The link's ID: the entity's row in this organisation's group."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01
+          format: uuid
+          type: string
+        invited_at:
+          description: When the invitation was made.
+          examples:
+            - "2026-11-21T09:00:00Z"
+          format: date-time
+          type: string
+        label:
+          description: What this organisation calls the entity.
+          examples:
+            - Cognizhi Sdn. Bhd.
+          type: string
+        linked_at:
+          description: When the entity's Owner accepted.
+          examples:
+            - "2026-11-21T09:30:00Z"
+          format: date-time
+          type: string
+        state:
+          description: invited until the entity's Owner accepts the code; active while both Owners consent; ended after either ended it.
+          enum:
+            - invited
+            - active
+            - ended
+          examples:
+            - active
+          type: string
+        version:
+          description: The row's version.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - id
+        - label
+        - state
+        - invited_at
+        - version
+      type: object
+    GroupInvitation:
+      additionalProperties: false
+      properties:
+        code:
+          description: "The one-time code for the entity's Owner, valid 24 hours: give it in person or on a call; it is never shown again and never in an email."
+          examples:
+            - ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z
+          type: string
+        ended_at:
+          description: When the link ended.
+          examples:
+            - "2026-11-22T09:00:00Z"
+          format: date-time
+          type: string
+        ended_reason:
+          description: Why it ended, in the Owner's words.
+          examples:
+            - Sold the subsidiary
+          type: string
+        entity_currency:
+          description: Its base currency when it accepted.
+          examples:
+            - MYR
+          type: string
+        entity_name:
+          description: The entity's name when it accepted.
+          examples:
+            - Cognizhi Sdn. Bhd.
+          type: string
+        entity_organisation_id:
+          description: The entity's organisation, once it accepted.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b02
+          format: uuid
+          type: string
+        expires_at:
+          description: When the code stops working.
+          examples:
+            - "2026-11-22T09:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: "The link's ID: the entity's row in this organisation's group."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01
+          format: uuid
+          type: string
+        invited_at:
+          description: When the invitation was made.
+          examples:
+            - "2026-11-21T09:00:00Z"
+          format: date-time
+          type: string
+        label:
+          description: What this organisation calls the entity.
+          examples:
+            - Cognizhi Sdn. Bhd.
+          type: string
+        linked_at:
+          description: When the entity's Owner accepted.
+          examples:
+            - "2026-11-21T09:30:00Z"
+          format: date-time
+          type: string
+        state:
+          description: invited until the entity's Owner accepts the code; active while both Owners consent; ended after either ended it.
+          enum:
+            - invited
+            - active
+            - ended
+          examples:
+            - active
+          type: string
+        version:
+          description: The row's version.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - code
+        - expires_at
+        - id
+        - label
+        - state
+        - invited_at
+        - version
+      type: object
+    GroupInviteInputBody:
+      additionalProperties: false
+      properties:
+        label:
+          description: What this organisation calls the entity.
+          examples:
+            - Cognizhi Sdn. Bhd.
+          maxLength: 100
+          minLength: 1
+          type: string
+      required:
+        - label
+      type: object
+    GroupLinkEnded:
+      additionalProperties: false
+      properties:
+        ended:
+          description: "Always true: both rows of the link are ended, so the parent's next read is refused."
+          examples:
+            - true
+          type: boolean
+        role:
+          description: "Which side ended it: the parent or the entity."
+          enum:
+            - parent
+            - entity
+          examples:
+            - entity
+          type: string
+      required:
+        - role
+        - ended
+      type: object
+    GroupMapping:
+      additionalProperties: false
+      properties:
+        account_code:
+          description: The entity's account code.
+          examples:
+            - "2210"
+          type: string
+        counterparty_entity_id:
+          description: For an intercompany account, the other entity of the group (its row's id).
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c02
+          format: uuid
+          type: string
+        counterparty_parent:
+          description: For an intercompany account, the parent itself is the other side.
+          examples:
+            - false
+          type: boolean
+        entity_id:
+          description: The entity's row in the group (its id in getEntityGroup); absent for the parent's own accounts.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01
+          format: uuid
+          type: string
+        group_account_id:
+          description: The parent's account it maps to.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6002
+          format: uuid
+          type: string
+        id:
+          description: The mapping's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6001
+          format: uuid
+          type: string
+        version:
+          description: The mapping's version.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - account_code
+        - group_account_id
+        - counterparty_parent
+        - version
+      type: object
+    GroupMappingInput:
+      additionalProperties: false
+      properties:
+        account_code:
+          description: The account's code in the entity's chart.
+          examples:
+            - "2210"
+          pattern: ^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$
+          type: string
+        counterparty_entity_id:
+          description: For an intercompany account, the other entity of the group.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c02
+          format: uuid
+          type: string
+        counterparty_parent:
+          description: For an intercompany account, the parent itself is the other side.
+          examples:
+            - false
+          type: boolean
+        entity_id:
+          description: The entity's row in the group; leave it out for the parent's own accounts (only an intercompany account needs a mapping of its own).
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01
+          format: uuid
+          type: string
+        group_account_id:
+          description: The parent's account (not a group account) it maps to.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6002
+          format: uuid
+          type: string
+      required:
+        - account_code
+        - group_account_id
+      type: object
+    GroupMappingPage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The mappings, the parent's own first, then each entity's by code.
+          items:
+            $ref: "#/components/schemas/GroupMapping"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEifQ
+          type: string
+      required:
+        - items
+      type: object
+    GroupMembershipItem:
+      additionalProperties: false
+      properties:
+        accepted_at:
+          description: When this organisation's Owner accepted.
+          examples:
+            - "2026-11-21T09:30:00Z"
+          format: date-time
+          type: string
+        ended_at:
+          description: When the link ended.
+          examples:
+            - "2026-11-22T09:00:00Z"
+          format: date-time
+          type: string
+        ended_reason:
+          description: Why it ended.
+          examples:
+            - We left the group
+          type: string
+        id:
+          description: The consent's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d01
+          format: uuid
+          type: string
+        parent_name:
+          description: The parent's name when this organisation accepted.
+          examples:
+            - Cognizhi Pte Ltd
+          type: string
+        parent_organisation_id:
+          description: The group's parent.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b01
+          format: uuid
+          type: string
+        scopes:
+          description: "What the parent may read: figures (each account's net movement by month, with its code, name and type, the ledger revision and the state of the periods) and intercompany (offers addressed to this organisation). Nothing else of this organisation is readable, and nothing is writable."
+          items:
+            description: "figures: each account's net movement by month; intercompany: offers addressed to the entity."
+            enum:
+              - figures
+              - intercompany
+            examples:
+              - figures
+            type: string
+          type: array
+        state:
+          description: active while both Owners consent.
+          enum:
+            - active
+            - ended
+          examples:
+            - active
+          type: string
+        version:
+          description: The row's version.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - parent_organisation_id
+        - parent_name
+        - scopes
+        - state
+        - accepted_at
+        - version
+      type: object
+    GroupPair:
+      additionalProperties: false
+      properties:
+        a:
+          description: "The account that normally holds a debit: due from, an intercompany expense, an investment."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6011
+          format: uuid
+          type: string
+        b:
+          description: "The account that normally holds a credit: due to, intercompany revenue, share capital."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6012
+          format: uuid
+          type: string
+      required:
+        - a
+        - b
+      type: object
+    GroupPairs:
+      additionalProperties: false
+      properties:
+        pairs:
+          description: At most 20 pairs.
+          items:
+            $ref: "#/components/schemas/GroupPair"
+          maxItems: 20
+          type: array
+      required:
+        - pairs
+      type: object
+    GroupRate:
+      additionalProperties: false
+      properties:
+        average:
+          description: The month's average rate, in the same terms.
+          examples:
+            - "0.3058000000"
+          type: string
+        closing:
+          description: Group currency per one unit of the entity's currency at the month's end.
+          examples:
+            - "0.3056000000"
+          type: string
+        currency:
+          description: The entity's currency.
+          examples:
+            - MYR
+          type: string
+        entered_at:
+          description: When it was entered; a newer entry of the same month and currency corrects an older.
+          examples:
+            - "2026-10-02T09:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: The entry's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7001
+          format: uuid
+          type: string
+        month:
+          description: The month, YYYY-MM.
+          examples:
+            - 2026-09
+          type: string
+        note:
+          description: Where the rates came from, in the person's words.
+          examples:
+            - MAS daily rates
+          type: string
+      required:
+        - id
+        - currency
+        - month
+        - closing
+        - average
+        - note
+        - entered_at
+      type: object
+    GroupRateInput:
+      additionalProperties: false
+      properties:
+        average:
+          description: The month's average, in the same terms.
+          examples:
+            - "0.3058"
+          pattern: ^[0-9]{1,10}(\.[0-9]{1,10})?$
+          type: string
+        closing:
+          description: Group currency per one unit of the entity's currency at the month's end, up to 10 decimals; above nothing.
+          examples:
+            - "0.3056"
+          pattern: ^[0-9]{1,10}(\.[0-9]{1,10})?$
+          type: string
+        currency:
+          description: The entity's currency.
+          examples:
+            - MYR
+          pattern: ^[A-Z]{3}$
+          type: string
+        month:
+          description: The month, YYYY-MM.
+          examples:
+            - 2026-09
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        note:
+          description: Where the rates came from.
+          examples:
+            - MAS daily rates
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - currency
+        - month
+        - closing
+        - average
+        - note
+      type: object
+    GroupRatePage:
+      additionalProperties: false
+      properties:
+        items:
+          description: Every entry, newest month first.
+          items:
+            $ref: "#/components/schemas/GroupRate"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEifQ
+          type: string
+      required:
+        - items
+      type: object
+    GroupReason:
+      additionalProperties: false
+      properties:
+        reason:
+          description: Why, in your words; it stays in the audit trail.
+          examples:
+            - Typed the wrong entity
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - reason
+      type: object
+    GroupView:
+      additionalProperties: false
+      properties:
+        entities:
+          description: As a parent, every entity invited, oldest first, with its state.
+          items:
+            $ref: "#/components/schemas/GroupEntityItem"
+          type: array
+        memberships:
+          description: As an entity, this organisation's consent to the group, the live one and the ended ones, oldest first.
+          items:
+            $ref: "#/components/schemas/GroupMembershipItem"
+          type: array
+        role:
+          description: "parent: this organisation has invited or holds entities and consolidates them; entity: it belongs to another's group; none: neither."
+          enum:
+            - none
+            - parent
+            - entity
+          examples:
+            - parent
+          type: string
+      required:
+        - role
+        - entities
+        - memberships
       type: object
     HeartbeatDrillInput:
       additionalProperties: false
@@ -165537,6 +166601,2303 @@ paths:
       x-fyniq-permission:
         capability: Period close / reopen
         right: C
+  /v1/group:
+    get:
+      description: "As a parent, the entities it invited with their state; as an entity, its own consent to a group and what the group may read (FR-ENT-04). Only this organisation's own link rows: nothing of any other organisation. Read-only; no side effects."
+      operationId: getEntityGroup
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupView"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Read this organisation's place in a group
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: V
+  /v1/group/accept:
+    post:
+      description: "Accepts the one-time code another organisation's Owner gave, in this organisation (FR-ENT-04). Only an Owner of this organisation, stepped up in the last 5 minutes. After it the group's parent may read this organisation's accounts' net monthly figures (with the account's code, name and type, the ledger revision and the periods' state) and intercompany offers addressed to this organisation, and nothing else: no document, contact, employee, bank, evidence, comment, audit or AI data, and no write. Every read is in both audit trails; either Owner ends the link at any time. A code that is wrong, used, withdrawn or older than 24 hours is refused with one answer (STORAGE-GROUP-02). Refused (STORAGE-GROUP-01) for the installation's, a practice and a sandbox organisation, an organisation in a group already and an organisation that is the parent of one. Side effects: this organisation's consent row, the parent's row made active, and audit events in both. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: acceptGroupInvitation
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupAcceptInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupMembershipItem"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupMembershipItem"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-GROUP-01` This is not yours to do in a group."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `STORAGE-GROUP-03` There is no live link to that organisation."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-GROUP-02` That invitation code is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Accept an invitation into a group, as the entity's Owner
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-GROUP-01
+        - STORAGE-GROUP-02
+        - STORAGE-GROUP-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: A
+  /v1/group/consolidations:
+    get:
+      description: The frozen runs of this group, newest first, a page at a time, without their figures (FR-RPT-12). Read-only; no side effects.
+      operationId: listConsolidations
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsolidationHeaderPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the consolidation runs
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: V
+    post:
+      description: "Reads each linked entity's figures through its link (audited in both organisations' trails), translates them into this organisation's currency with the group's own rates (RND-TRANSLATE; assets and liabilities at the closing rate of the last month, revenue and expense at each month's average, equity at each month's closing rate, the translation reserve as the balancing figure), eliminates the mirror accounts of the pairs, and freezes the run (FR-ENT-06, FR-RPT-12). The smaller side of a pair is eliminated and the rest stays, listed as a difference; nothing is plugged and nothing is posted to any ledger. An account with figures and no mapping, a counterparty that is no entity of the run and a month with no rate refuse the run and name what to fix. A run that read a period not yet closed is provisional. Side effects: the run and audit events. Idempotent with Idempotency-Key; Prefer: return=preview does everything but keep the run."
+      operationId: runConsolidation
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsolidationInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consolidation"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consolidation"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `STORAGE-GROUP-03` There is no live link to that organisation."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONSOL-01` The consolidation's input does not fit; `CONSOL-02` A translation rate is missing; `CONSOL-03` An account is not mapped; `CONSOL-04` A mapping's counterparty is not in the run; `CONSOL-05` There is nothing to consolidate."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Run a consolidation of the group
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CONSOL-01
+        - CONSOL-02
+        - CONSOL-03
+        - CONSOL-04
+        - CONSOL-05
+        - STORAGE-GROUP-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: C
+  /v1/group/consolidations/{run_id}:
+    get:
+      description: A frozen run with what it read, every translated line, the eliminations, every difference and the consolidated figures (FR-RPT-12). The figures are the parent's record of what it was shown while each link stood; a run whose entity's link has ended says so. Read-only; no side effects.
+      operationId: getConsolidation
+      parameters:
+        - description: The run's ID.
+          in: path
+          name: run_id
+          required: true
+          schema:
+            description: The run's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8001
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consolidation"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Read a consolidation run
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: V
+  /v1/group/end:
+    post:
+      description: "Ends the link with the other organisation, as the parent or as the entity, with a reason (FR-ENT-04). Both rows end together, so the parent's next read of the entity is refused. Figures already frozen into the parent's consolidation runs stay there, marked as link ended. Only an Owner of this organisation, stepped up in the last 5 minutes. Refused (STORAGE-GROUP-03) when no live link with that organisation exists. Side effects: both rows and an audit event in each organisation. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: endGroupLink
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupEndInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupLinkEnded"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-GROUP-01` This is not yours to do in a group."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `STORAGE-GROUP-03` There is no live link to that organisation."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-GROUP-02` That invitation code is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: End a link of the group, as either Owner
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-GROUP-01
+        - STORAGE-GROUP-02
+        - STORAGE-GROUP-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: A
+  /v1/group/entities:
+    post:
+      description: "Makes a one-time code, valid 24 hours, that the Owner of another organisation enters in that organisation to join this one's group (FR-ENT-04). Only an Owner of this organisation, stepped up in the last 5 minutes; refused (STORAGE-GROUP-01) for the installation's organisation, a practice or sandbox organisation, and an organisation that is itself an entity. The code is shown once, never in an email, and only its hash is kept. Joining lets this organisation read the entity's accounts' net monthly figures and intercompany offers addressed to it, and nothing else; either Owner ends it at any time. Side effects: the invitation row and its audit event. It takes no Idempotency-Key and no preview: its code makes it one-time (FR-INT-08)."
+      operationId: inviteGroupEntity
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupInviteInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupInvitation"
+          description: Created
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-GROUP-01` This is not yours to do in a group."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `STORAGE-GROUP-03` There is no live link to that organisation."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-GROUP-02` That invitation code is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Invite an organisation to be an entity of this group
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-GROUP-01
+        - STORAGE-GROUP-02
+        - STORAGE-GROUP-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: Its response carries a one-time secret, which a stored response would keep at rest; the code already makes the command one-time (FR-INT-08, rev 0.27).
+        Prefer: A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: A
+  /v1/group/entities/{entity_id}/accounts:
+    get:
+      description: Reads the accounts of a linked entity through the link, with whether each has figures and is mapped, and the account of this chart with the same code as a suggestion (FR-ENT-05). It is a read of another organisation under its consent, so it is in both organisations' audit trails. Refused (STORAGE-GROUP-03) when no live link with that entity exists. Read-only apart from the audit event.
+      operationId: listGroupEntityAccounts
+      parameters:
+        - description: The entity's row (its id in getEntityGroup).
+          in: path
+          name: entity_id
+          required: true
+          schema:
+            description: The entity's row (its id in getEntityGroup).
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01
+            format: uuid
+            type: string
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupEntityAccountPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `STORAGE-GROUP-03` There is no live link to that organisation."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List an entity's accounts, to map them
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-GROUP-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: C
+  /v1/group/entities/{entity_id}/withdraw:
+    post:
+      description: "Ends an invitation whose code was not used: the code stops working at once (FR-ENT-04). Only an Owner of this organisation, stepped up in the last 5 minutes, with a reason. An accepted link is ended with endGroupLink instead. Side effects: the ended row and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: withdrawGroupInvitation
+      parameters:
+        - description: The invitation's ID (the id of the entity row).
+          in: path
+          name: entity_id
+          required: true
+          schema:
+            description: The invitation's ID (the id of the entity row).
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupReason"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupEntityItem"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-GROUP-01` This is not yours to do in a group."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `STORAGE-GROUP-03` There is no live link to that organisation."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-GROUP-02` That invitation code is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Withdraw an invitation nobody accepted
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-GROUP-01
+        - STORAGE-GROUP-02
+        - STORAGE-GROUP-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: A
+  /v1/group/mappings:
+    get:
+      description: Where each entity's account lands on this organisation's chart (FR-ENT-05), the parent's own accounts first, then each entity's by code, a page at a time. Read-only; no side effects.
+      operationId: listGroupMappings
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupMappingPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the account mappings of the group
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: V
+    post:
+      description: "Maps an entity's account code to an account of this organisation's chart, or maps it again as the account's next version (FR-ENT-05). An intercompany account names the other entity (or this organisation) as its counterparty. The entity must be one of this group's rows, and the account a leaf of this chart. Side effects: the mapping and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: mapGroupAccount
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupMappingInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupMapping"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `STORAGE-GROUP-01` This is not yours to do in a group."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Map an account of an entity to this organisation's chart
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-GROUP-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: C
+  /v1/group/pairs:
+    get:
+      description: "The pairs of accounts of this organisation's chart that mirror each other, which a consolidation eliminates entity by entity (FR-ENT-06): due from and due to, intercompany revenue and expense, the parent's investment and an entity's share capital. The ETag is the set's version. Read-only; no side effects."
+      operationId: getGroupPairs
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupPairs"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The set-up's version, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Read the elimination pairs
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: V
+    put:
+      description: "Replaces the pairs of mirror accounts over the version you read (If-Match; \"0\" when none was ever set): at most 20, each account a leaf of this chart and used once as a debit side or a credit side (FR-ENT-06). Side effects: the new version and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: setGroupPairs
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupPairs"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupPairs"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The set-up's version, for If-Match.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Set the elimination pairs
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: C
+  /v1/group/rates:
+    get:
+      description: The closing and average rate of each month and currency this organisation entered for translating its entities (FR-ENT-05), newest month first; a newer entry of a month and currency corrects an older, and every entry is kept. Read-only; no side effects.
+      operationId: listGroupRates
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupRatePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the group's translation rates
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: V
+    post:
+      description: "Enters this group's own translation rates for an entity's currency in a month: group currency per one unit of the currency, up to 10 decimals, above nothing, with where they came from (FR-ENT-05). Never the entity's own FX rates. A newer entry corrects an older; nothing is overwritten. Side effects: the entry and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: addGroupRate
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupRateInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupRate"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupRate"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Enter the closing and average rate of a month
+      tags:
+        - Groups
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)"
+        right: C
   /v1/gst-forecasts:
     get:
       description: Every forecast of the taxable supplies of the next 12 months, the latest recorded first, then the drafts, a page at a time (FR-TAX-05). Read-only; no side effects.
@@ -276104,6 +279465,8 @@ tags:
     name: Search
   - description: Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05).
     name: Notifications
+  - description: "Groups of entities (FR-ENT-04): organisations linked by the consent of both Owners, so a parent reads each entity's accounts' net monthly figures and nothing else, and either Owner ends the link. Never on the AI or MCP surface."
+    name: Groups
   - description: "Workflow rules without code (FR-AUT-03): a fixed trigger, typed conditions and one fixed action, to tell members when a document of a kind is posted. A rule never posts, approves, pays or files anything, and never reaches the AI or MCP."
     name: Automation
   - description: "Tasks API clients made for people to do (FR-INT-24): a ticketing system or another integration with the scope fyniq.write.tasks makes tasks of its own and updates only those. Never a compliance task, never a financial record, never the AI."

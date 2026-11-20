@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The one-time code the parent's Owner gave, as typed: case, spaces and dashes do not matter.",
+      "examples": [
+        "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"
+      ],
+      "maxLength": 60,
+      "minLength": 10,
+      "type": "string"
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "title": "GroupAcceptInputBody",
+  "type": "object"
+}

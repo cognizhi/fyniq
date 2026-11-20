@@ -22,7 +22,7 @@ import (
 func TestConventionExemptions(t *testing.T) {
 	var want []string
 	for _, op := range []string{"acceptMemberInvitation", "acceptSuperAdminInvitation", "completeSetup", "confirmSuperAdminRecovery",
-		"createMemberInvitation", "createSuperAdminInvitation", "recoverSuperAdmin", "replaceSuperAdminRecoveryCodes", "replaceMyRecoveryCodes",
+		"createMemberInvitation", "inviteGroupEntity", "createSuperAdminInvitation", "recoverSuperAdmin", "replaceSuperAdminRecoveryCodes", "replaceMyRecoveryCodes",
 		"confirmAccountRecovery", "recoverAccount"} {
 		want = append(want, op+" Idempotency-Key", op+" Prefer")
 	}

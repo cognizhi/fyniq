@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "Its base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "parent, or the entity's row ID.",
+      "examples": [
+        "parent"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "What the group calls it.",
+      "examples": [
+        "Cognizhi Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "Its ledger revision when read.",
+      "examples": [
+        1204
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "link_ended": {
+      "description": "true when the entity's link has ended since: the figures are the parent's record of what it was shown.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "periods": {
+      "description": "Its periods' state when read.",
+      "items": {
+        "$ref": "ConsolidationPeriod.schema.json"
+      },
+      "type": "array"
+    },
+    "translation_reserve": {
+      "description": "Its translation reserve in the group currency.",
+      "examples": [
+        "-412.33"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "label",
+    "currency",
+    "ledger_revision",
+    "link_ended",
+    "periods",
+    "translation_reserve"
+  ],
+  "title": "ConsolidationSource",
+  "type": "object"
+}

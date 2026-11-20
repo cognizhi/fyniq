@@ -129,26 +129,26 @@ func TestThePeopleAssistantIsOffUntilTurnedOnAndOnlyEverInsertsProposalsAHumanDe
 		}
 	}
 	// The queue.
-	list, err := svc.Proposals(ctx, hr, "pending")
+	list, err := svc.Proposals(ctx, hr, "pending", false)
 	if err != nil || len(list) != 1 || list[0].Task != "people.draft_letter" || list[0].Asker == "" || list[0].Expired || list[0].State != "pending" || list[0].ExpiresAt == "" {
 		t.Fatalf("pending: %+v %v", list, err)
 	}
 	// Deciding: a rejection needs a reason; an edit is checked against the shape.
-	if err := svc.Decide(ctx, hr, id, api.AIDecision{Approve: false}); aiCode(err) != assistant.CodeInvalid {
+	if err := svc.Decide(ctx, hr, id, api.AIDecision{Approve: false}, false); aiCode(err) != assistant.CodeInvalid {
 		t.Errorf("a rejection with no reason: %v", err)
 	}
-	if err := svc.Decide(ctx, hr, id, api.AIDecision{Approve: true, Final: map[string]any{"request_id": reqID, "fields": map[string]any{"a": "b"}, "issue": true}}); aiCode(err) != assistant.CodeInvalid {
+	if err := svc.Decide(ctx, hr, id, api.AIDecision{Approve: true, Final: map[string]any{"request_id": reqID, "fields": map[string]any{"a": "b"}, "issue": true}}, false); aiCode(err) != assistant.CodeInvalid {
 		t.Errorf("an edit that adds a field: %v", err)
 	}
 	edited := map[string]any{"request_id": reqID, "fields": map[string]any{"job_title": "Senior Analyst", "purpose": secret}}
-	if err := svc.Decide(ctx, hr, id, api.AIDecision{Approve: true, Final: edited}); err != nil {
+	if err := svc.Decide(ctx, hr, id, api.AIDecision{Approve: true, Final: edited}, false); err != nil {
 		t.Fatal(err)
 	}
-	p, err := svc.Proposal(ctx, hr, id)
+	p, err := svc.Proposal(ctx, hr, id, false)
 	if err != nil || p.State != "approved" || p.DecidedBy == "" || p.Final["fields"].(map[string]any)["job_title"] != "Senior Analyst" || p.Payload["fields"].(map[string]any)["job_title"] != "Analyst" {
 		t.Fatalf("approved: %+v %v", p, err)
 	}
-	if err := svc.Decide(ctx, hr, id, api.AIDecision{Approve: false, Reason: "No."}); aiCode(err) != assistant.CodeConflict {
+	if err := svc.Decide(ctx, hr, id, api.AIDecision{Approve: false, Reason: "No."}, false); aiCode(err) != assistant.CodeConflict {
 		t.Errorf("deciding twice: %v", err)
 	}
 	// Expiry: a proposal that waited more than 72 hours cannot be approved.
@@ -163,7 +163,7 @@ func TestThePeopleAssistantIsOffUntilTurnedOnAndOnlyEverInsertsProposalsAHumanDe
 	if aiCode(err) != assistant.CodeConflict || !strings.Contains(err.Error(), "72 hours") {
 		t.Errorf("approving after 72 hours: %v", err)
 	}
-	if l, _ := (nemura.AssistantService{Store: st, Clock: clock.NewFrozen(late)}).Proposals(ctx, hr, "pending"); len(l) != 1 || !l[0].Expired {
+	if l, _ := (nemura.AssistantService{Store: st, Clock: clock.NewFrozen(late)}).Proposals(ctx, hr, "pending", false); len(l) != 1 || !l[0].Expired {
 		t.Errorf("an expired proposal is marked: %+v", l)
 	}
 	// Evidence: what the assistant proposed never changes, nothing is deleted, no step is skipped, and the executor applies only what was approved.
@@ -338,7 +338,7 @@ func TestAFlexibleWorkReplyIsDraftedApprovedAndAttachedByTheExecutorAndNothingEl
 		t.Fatal(err)
 	}
 	pid := uuid.MustParse(res.ProposalID)
-	p, err := svc.Proposal(ctx, hr, pid)
+	p, err := svc.Proposal(ctx, hr, pid, false)
 	reply, _ := p.Payload["reply"].(string)
 	if err != nil || p.State != "pending" || !strings.Contains(reply, "Thank you for your request for a flexible work arrangement (flexi place)") || !strings.Contains(reply, "States no decision") && !strings.Contains(reply, "The decision-maker adds the decision") {
 		t.Fatalf("the draft: %+v %v", p, err)
@@ -355,7 +355,7 @@ func TestAFlexibleWorkReplyIsDraftedApprovedAndAttachedByTheExecutorAndNothingEl
 	if err := store(t, "nemura_executor").InOrg(ctx, lt.c.org, func(ctx context.Context, tx pgx.Tx) error { return nemura.ApplyProposal(ctx, tx, lt.c.org, now, pid) }); aiCode(err) != assistant.CodeConflict {
 		t.Errorf("applying a pending proposal: %v", err)
 	}
-	if err := svc.Decide(ctx, owner, pid, api.AIDecision{Approve: true}); err != nil {
+	if err := svc.Decide(ctx, owner, pid, api.AIDecision{Approve: true}, false); err != nil {
 		t.Fatal(err)
 	}
 	su := connect(t, db.SuperURL())
@@ -370,11 +370,11 @@ func TestAFlexibleWorkReplyIsDraftedApprovedAndAttachedByTheExecutorAndNothingEl
 	if n, _ := exec.ApplyApproved(ctx, lt.c.org); n != 0 {
 		t.Errorf("applied twice: %d", n)
 	}
-	drafts, err := svc.Drafts(ctx, hr, req)
+	drafts, err := svc.Drafts(ctx, hr, req, false)
 	if err != nil || len(drafts) != 1 || drafts[0].Kind != "flex_reply" || drafts[0].Payload["reply"] != reply || drafts[0].ProposalID != pid.String() {
 		t.Fatalf("drafts: %+v %v", drafts, err)
 	}
-	if p, _ := svc.Proposal(ctx, hr, pid); p.State != "applied" {
+	if p, _ := svc.Proposal(ctx, hr, pid, false); p.State != "applied" {
 		t.Errorf("the proposal: %s", p.State)
 	}
 	// The request itself is untouched: still received, with no reply and no outcome; the executor cannot write to it.
@@ -400,14 +400,14 @@ func TestAFlexibleWorkReplyIsDraftedApprovedAndAttachedByTheExecutorAndNothingEl
 	}
 	// A rejected proposal applies nothing; a proposal approved for a request that has since been replied to stays approved and is refused.
 	res2, _ := svc.Draft(ctx, hr, api.AIDraftInput{Task: "people.draft_fwa_reply", RequestID: req.String()})
-	if err := svc.Decide(ctx, owner, uuid.MustParse(res2.ProposalID), api.AIDecision{Approve: false, Reason: "I will write it myself."}); err != nil {
+	if err := svc.Decide(ctx, owner, uuid.MustParse(res2.ProposalID), api.AIDecision{Approve: false, Reason: "I will write it myself."}, false); err != nil {
 		t.Fatal(err)
 	}
 	if n, _ := exec.ApplyApproved(ctx, lt.c.org); n != 0 {
 		t.Errorf("a rejected proposal was applied: %d", n)
 	}
 	res3, _ := svc.Draft(ctx, hr, api.AIDraftInput{Task: "people.draft_fwa_reply", RequestID: req.String()})
-	if err := svc.Decide(ctx, owner, uuid.MustParse(res3.ProposalID), api.AIDecision{Approve: true}); err != nil {
+	if err := svc.Decide(ctx, owner, uuid.MustParse(res3.ProposalID), api.AIDecision{Approve: true}, false); err != nil {
 		t.Fatal(err)
 	}
 	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
@@ -542,7 +542,7 @@ func TestTheAssistantDraftsAJobPostAndAKitFromTheRoleAloneAndTheExecutorReadsNoS
 			t.Fatalf("%s: %v", task, err)
 		}
 		pid := uuid.MustParse(res.ProposalID)
-		p, err := svc.Proposal(ctx, hr, pid)
+		p, err := svc.Proposal(ctx, hr, pid, false)
 		if err != nil || p.State != "pending" {
 			t.Fatalf("%s: %+v %v", task, p, err)
 		}
@@ -562,17 +562,17 @@ func TestTheAssistantDraftsAJobPostAndAKitFromTheRoleAloneAndTheExecutorReadsNoS
 	if n, refused := exec.ApplyApproved(ctx, c.org); n != 0 || len(refused) != 0 {
 		t.Errorf("the executor applied an unapproved draft: %d %v", n, refused)
 	}
-	if err := svc.Decide(ctx, owner, pid, api.AIDecision{Approve: true}); err != nil {
+	if err := svc.Decide(ctx, owner, pid, api.AIDecision{Approve: true}, false); err != nil {
 		t.Fatal(err)
 	}
 	kid, _ := run("people.draft_interview_kit", c.req)
-	if err := svc.Decide(ctx, owner, kid, api.AIDecision{Approve: true}); err != nil {
+	if err := svc.Decide(ctx, owner, kid, api.AIDecision{Approve: true}, false); err != nil {
 		t.Fatal(err)
 	}
 	if n, refused := exec.ApplyApproved(ctx, c.org); n != 2 || len(refused) != 0 {
 		t.Fatalf("the executor: %d %v", n, refused)
 	}
-	drafts, err := svc.Drafts(ctx, hr, c.req)
+	drafts, err := svc.Drafts(ctx, hr, c.req, false)
 	kinds := map[string]bool{}
 	for _, dr := range drafts {
 		kinds[dr.Kind] = true
@@ -610,7 +610,7 @@ func TestTheAssistantDraftsAJobPostAndAKitFromTheRoleAloneAndTheExecutorReadsNoS
 		return
 	})
 	late, _ := run("people.draft_job_post", gone)
-	if err := svc.Decide(ctx, owner, late, api.AIDecision{Approve: true}); err != nil {
+	if err := svc.Decide(ctx, owner, late, api.AIDecision{Approve: true}, false); err != nil {
 		t.Fatal(err)
 	}
 	c.must(func(ctx context.Context, tx pgx.Tx) error {
@@ -625,4 +625,77 @@ func TestTheAssistantDraftsAJobPostAndAKitFromTheRoleAloneAndTheExecutorReadsNoS
 	if _, err := svc.Draft(ctx, hr, api.AIDraftInput{Task: "people.draft_job_post", RequestID: uuid.NewString()}); aiCode(err) != assistant.CodeNotFound {
 		t.Errorf("a draft for a requisition that is not there: %v", err)
 	}
+}
+
+// The Recruiter, who holds Hiring: create and nothing of the people team's, asks for, lists, reads and decides the two hiring drafts and no other proposal of the assistant: a letter proposal is
+// absent from their list, is not found when they ask for it by ID, is not decided by them, and a draft of another kind attached to a request is not listed to them; the people team still sees all (NM-AI-05).
+// req: NM-AI-05, NM-AI-04
+// asvs: V4.2.1, V8.2.1
+func TestTheRecruiterListsAndDecidesTheHiringDraftsAloneAndNoOtherProposal(t *testing.T) {
+	c := newHiringCo(t)
+	ctx := context.Background()
+	exec := nemura.ExecutorService{Store: store(t, "nemura_executor"), Clock: clock.NewFrozen(c.now)}
+	svc := nemura.AssistantService{Store: store(t, "nemura_api"), Clock: clock.NewFrozen(c.now), AllowScripted: true, Runtime: store(t, "nemura_assistant")}
+	hr, owner := c.sess(c.hr), c.sess(c.owner)
+	if err := svc.SetSettings(ctx, owner, api.AISettingsInput{Enabled: true, Route: "scripted", TaskTypes: []string{"people.draft_letter", "people.draft_job_post"}}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := svc.Draft(ctx, hr, api.AIDraftInput{Task: "people.draft_job_post", RequestID: c.req.String()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hiringProposal := uuid.MustParse(res.ProposalID)
+	var letterProposal uuid.UUID
+	if err := store(t, "nemura_assistant").InOrg(ctx, c.org, func(ctx context.Context, tx pgx.Tx) (err error) {
+		letterProposal, err = nemura.Propose(ctx, tx, c.org, c.now, nemura.ProposalInput{Asker: c.hr, Task: "people.draft_letter", Payload: map[string]any{"request_id": uuid.NewString(), "fields": map[string]any{"purpose": "bank"}}, Rationale: "From the record.", ModelID: "scripted", PromptVersion: "people-assistant@1"})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// The people team sees both; the Recruiter's list holds the hiring draft only.
+	all, err := svc.Proposals(ctx, hr, "pending", false)
+	if err != nil || len(all) != 2 {
+		t.Fatalf("the team's list: %+v %v", all, err)
+	}
+	mine, err := svc.Proposals(ctx, hr, "pending", true)
+	if err != nil || len(mine) != 1 || mine[0].Task != "people.draft_job_post" {
+		t.Fatalf("the Recruiter's list: %+v %v", mine, err)
+	}
+	if _, err := svc.Proposal(ctx, hr, letterProposal, true); aiCode(err) != assistant.CodeNotFound {
+		t.Errorf("a letter proposal read by the Recruiter: %v", err)
+	}
+	if p, err := svc.Proposal(ctx, hr, hiringProposal, true); err != nil || p.Task != "people.draft_job_post" {
+		t.Errorf("the hiring proposal read by the Recruiter: %+v %v", p, err)
+	}
+	// A letter proposal is not decided by the Recruiter, and a refused decision leaves it pending; the hiring draft is.
+	if err := svc.Decide(ctx, hr, letterProposal, api.AIDecision{Approve: true}, true); aiCode(err) != assistant.CodeNotFound {
+		t.Errorf("a letter approved by the Recruiter: %v", err)
+	}
+	if err := nemuraDecideAs(ctx, t, c, letterProposal, []string{"recruiter"}); aiCode(err) != assistant.CodeRole {
+		t.Errorf("the catalogue lets the Recruiter decide a letter: %v", err)
+	}
+	if p, err := svc.Proposal(ctx, owner, letterProposal, false); err != nil || p.State != "pending" {
+		t.Errorf("the letter proposal after the refusals: %+v %v", p, err)
+	}
+	if err := svc.Decide(ctx, hr, hiringProposal, api.AIDecision{Approve: true}, true); err != nil {
+		t.Fatal(err)
+	}
+	if n, refused := exec.ApplyApproved(ctx, c.org); n != 1 || len(refused) != 0 {
+		t.Fatalf("the executor: %d %v", n, refused)
+	}
+	// The drafts of a requisition are listed to the Recruiter; the drafts of another kind never are.
+	if d, err := svc.Drafts(ctx, hr, c.req, true); err != nil || len(d) != 1 || d[0].Kind != "job_post" {
+		t.Errorf("the Recruiter's drafts: %+v %v", d, err)
+	}
+	if pending, err := svc.Proposals(ctx, hr, "pending", true); err != nil || len(pending) != 0 {
+		t.Errorf("the Recruiter's list after the decision: %+v %v", pending, err)
+	}
+}
+
+// nemuraDecideAs decides a proposal as the named approver role straight through the rule, to show the catalogue (not the page) refuses a role that is not an approver of the task.
+func nemuraDecideAs(ctx context.Context, t *testing.T, c *hiringCo, id uuid.UUID, roles []string) error {
+	t.Helper()
+	return store(t, "nemura_api").InOrg(ctx, c.org, func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.DecideProposal(ctx, tx, c.org, c.now, c.owner, roles, id, true, "", nil)
+	})
 }

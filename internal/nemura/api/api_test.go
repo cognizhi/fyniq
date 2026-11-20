@@ -359,19 +359,21 @@ func (f fakeAssistant) Settings(context.Context, Session) (AISettings, error) {
 	return AISettings{TaskTypes: []string{}, Catalogue: []AITask{}}, f.err
 }
 func (f fakeAssistant) SetSettings(context.Context, Session, AISettingsInput) error { return f.err }
-func (f fakeAssistant) Proposals(context.Context, Session, string) ([]AIProposal, error) {
+func (f fakeAssistant) Proposals(context.Context, Session, string, bool) ([]AIProposal, error) {
 	return nil, f.err
 }
-func (f fakeAssistant) Proposal(context.Context, Session, uuid.UUID) (AIProposal, error) {
+func (f fakeAssistant) Proposal(context.Context, Session, uuid.UUID, bool) (AIProposal, error) {
 	return AIProposal{}, f.err
 }
 func (f fakeAssistant) Draft(context.Context, Session, AIDraftInput) (AIDraftResult, error) {
 	return AIDraftResult{}, f.err
 }
-func (f fakeAssistant) Drafts(context.Context, Session, uuid.UUID) ([]AIDraft, error) {
+func (f fakeAssistant) Drafts(context.Context, Session, uuid.UUID, bool) ([]AIDraft, error) {
 	return nil, f.err
 }
-func (f fakeAssistant) Decide(context.Context, Session, uuid.UUID, AIDecision) error { return f.err }
+func (f fakeAssistant) Decide(context.Context, Session, uuid.UUID, AIDecision, bool) error {
+	return f.err
+}
 
 func (f fakePayroll) Export(context.Context, Session, uuid.UUID, ExportInput) (ExportFile, error) {
 	return ExportFile{Skipped: []ExportSkipped{}}, f.err
@@ -1512,6 +1514,9 @@ func (f fakePipeline) Hire(context.Context, Session, uuid.UUID, HireInput) (Cand
 	return Candidate{}, f.err
 }
 func (f fakePipeline) PassApplication(context.Context, Session, uuid.UUID, string) (Candidate, error) {
+	return Candidate{}, f.err
+}
+func (f fakePipeline) OfferLetter(context.Context, Session, uuid.UUID) (Candidate, error) {
 	return Candidate{}, f.err
 }
 func (f fakePipeline) Kit(context.Context, Session, uuid.UUID) (InterviewKit, error) {

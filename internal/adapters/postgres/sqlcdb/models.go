@@ -1368,6 +1368,31 @@ type FyniqConsentRecord struct {
 	Note           *string
 }
 
+type FyniqConsolidationRate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Currency       string
+	Month          time.Time
+	Closing        string
+	Average        string
+	Note           string
+	EnteredBy      uuid.UUID
+	EnteredAt      time.Time
+}
+
+type FyniqConsolidationRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	FromMonth      time.Time
+	ToMonth        time.Time
+	Currency       string
+	Provisional    bool
+	Inputs         []byte
+	Result         []byte
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+}
+
 type FyniqContact struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID
@@ -1848,6 +1873,77 @@ type FyniqFxRate struct {
 	WithdrawnBy     *string
 	WithdrawnAt     *time.Time
 	WithdrawnReason *string
+}
+
+type FyniqGroupAccountMap struct {
+	OrganisationID     uuid.UUID
+	ID                 uuid.UUID
+	EntityRow          *uuid.UUID
+	EntityAccountCode  string
+	GroupAccountID     uuid.UUID
+	CounterpartyRow    *uuid.UUID
+	CounterpartyParent bool
+	Version            int32
+	CreatedBy          uuid.UUID
+	CreatedAt          time.Time
+	UpdatedBy          uuid.UUID
+	UpdatedAt          time.Time
+}
+
+type FyniqGroupEntity struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Label          string
+	EntityOrg      *uuid.UUID
+	EntityName     *string
+	EntityCurrency *string
+	State          string
+	InvitedBy      uuid.UUID
+	InvitedAt      time.Time
+	LinkedBy       *uuid.UUID
+	LinkedAt       *time.Time
+	EndedBy        *uuid.UUID
+	EndedAt        *time.Time
+	EndedReason    *string
+	Version        int32
+}
+
+type FyniqGroupInvitation struct {
+	ID          uuid.UUID
+	Kind        string
+	CodeHash    []byte
+	ParentOrg   uuid.UUID
+	ParentRow   uuid.UUID
+	CreatedBy   uuid.UUID
+	CreatedAt   time.Time
+	ExpiresAt   time.Time
+	State       string
+	ConsumedOrg *uuid.UUID
+	ConsumedAt  *time.Time
+}
+
+type FyniqGroupMembership struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ParentOrg      uuid.UUID
+	ParentName     string
+	ParentRow      uuid.UUID
+	Scopes         []string
+	State          string
+	AcceptedBy     uuid.UUID
+	AcceptedAt     time.Time
+	EndedBy        *uuid.UUID
+	EndedAt        *time.Time
+	EndedReason    *string
+	Version        int32
+}
+
+type FyniqGroupSettings struct {
+	OrganisationID uuid.UUID
+	Pairs          []byte
+	Version        int32
+	UpdatedBy      uuid.UUID
+	UpdatedAt      time.Time
 }
 
 type FyniqGstRegistration struct {

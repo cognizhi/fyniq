@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The one-time code for the entity's Owner, valid 24 hours: give it in person or on a call; it is never shown again and never in an email.",
+      "examples": [
+        "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"
+      ],
+      "type": "string"
+    },
+    "ended_at": {
+      "description": "When the link ended.",
+      "examples": [
+        "2026-11-22T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "ended_reason": {
+      "description": "Why it ended, in the Owner's words.",
+      "examples": [
+        "Sold the subsidiary"
+      ],
+      "type": "string"
+    },
+    "entity_currency": {
+      "description": "Its base currency when it accepted.",
+      "examples": [
+        "MYR"
+      ],
+      "type": "string"
+    },
+    "entity_name": {
+      "description": "The entity's name when it accepted.",
+      "examples": [
+        "Cognizhi Sdn. Bhd."
+      ],
+      "type": "string"
+    },
+    "entity_organisation_id": {
+      "description": "The entity's organisation, once it accepted.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "When the code stops working.",
+      "examples": [
+        "2026-11-22T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The link's ID: the entity's row in this organisation's group.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "invited_at": {
+      "description": "When the invitation was made.",
+      "examples": [
+        "2026-11-21T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "label": {
+      "description": "What this organisation calls the entity.",
+      "examples": [
+        "Cognizhi Sdn. Bhd."
+      ],
+      "type": "string"
+    },
+    "linked_at": {
+      "description": "When the entity's Owner accepted.",
+      "examples": [
+        "2026-11-21T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "state": {
+      "description": "invited until the entity's Owner accepts the code; active while both Owners consent; ended after either ended it.",
+      "enum": [
+        "invited",
+        "active",
+        "ended"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The row's version.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "code",
+    "expires_at",
+    "id",
+    "label",
+    "state",
+    "invited_at",
+    "version"
+  ],
+  "title": "GroupInvitation",
+  "type": "object"
+}
