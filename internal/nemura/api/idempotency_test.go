@@ -190,7 +190,7 @@ func TestTheAnswerOfASensitiveWriteIsNeverStored(t *testing.T) {
 		pattern string
 		want    bool
 	}{
-		{"POST /v1/payroll/runs", true}, {"POST /v1/people/{id}/pay", true}, {"PUT /v1/people/{id}/nric", true}, {"POST /v1/people/{id}/bank-account-changes", true}, {"POST /v1/assistant/ask", true},
+		{"POST /v1/payroll/runs", true}, {"POST /v1/people/{id}/pay", true}, {"PUT /v1/people/{id}/nric", true}, {"PUT /v1/people/{id}/ir8a-particulars", true}, {"POST /v1/people/{id}/bank-account-changes", true}, {"POST /v1/assistant/ask", true},
 		{"POST /v1/me/questions", true}, {"POST /v1/people/{id}/tax-hold", true}, {"POST /v1/payroll/runs/{id}/exports", true}, {"PUT /v1/me/details", true},
 		{"POST /v1/people", false}, {"POST /v1/leave-requests/{id}/decision", false}, {"PUT /v1/features/{feature}", false},
 	} {

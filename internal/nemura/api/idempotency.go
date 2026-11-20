@@ -65,7 +65,7 @@ type Idempotency interface {
 // sensitiveOperation says whether an operation's answer may carry pay, a bank account, an NRIC, a file of pay, or the text of a question: its body is never stored.
 func sensitiveOperation(pattern string) bool {
 	p := strings.ToLower(pattern)
-	for _, s := range []string{"/payroll", "/pay", "pr-election", "tax-hold", "nric", "bank-account", "/assistant/", "/leave/settlement", "/exports", "/me/questions", "/questions/", "/details", "/emergency"} {
+	for _, s := range []string{"/payroll", "/pay", "pr-election", "tax-hold", "nric", "ir8a", "bank-account", "/assistant/", "/leave/settlement", "/exports", "/me/questions", "/questions/", "/details", "/emergency"} {
 		if strings.Contains(p, s) {
 			return true
 		}

@@ -3,6 +3,7 @@ package nemura
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -448,4 +449,64 @@ func BankChange(ctx context.Context, tx pgx.Tx, change uuid.UUID) (BankChangeVie
 		return v, &people.Refusal{Code: people.CodeNotFound, Message: "There is no such bank account change."}
 	}
 	return v, err
+}
+
+// IR8AParticulars are what the IR8A asks of a person besides what Nemura holds elsewhere (IRAS data items B6 to B11): kept sealed with the NRIC, for the statutory filing only.
+type IR8AParticulars struct {
+	Sex         string `json:"sex"`                    // M or F
+	AddressType string `json:"address_type,omitempty"` // L (local), F (foreign) or empty
+	Address1    string `json:"address_1,omitempty"`
+	Address2    string `json:"address_2,omitempty"`
+	Address3    string `json:"address_3,omitempty"`
+	PostalCode  string `json:"postal_code,omitempty"`
+	Country     string `json:"country,omitempty"`
+	Designation string `json:"designation,omitempty"`
+}
+
+// SetIR8AParticulars seals a person's IR8A particulars with the cipher under a context of their own (NM-PAY-14). The event says the field changed, never its value. The data items' own
+// rules (an address needs its type, a local one a post code) are checked when the file is made, with IRAS's names for them.
+func SetIR8AParticulars(ctx context.Context, tx pgx.Tx, c ports.Cipher, org uuid.UUID, at time.Time, by, person uuid.UUID, p IR8AParticulars) error {
+	if p.Sex != "M" && p.Sex != "F" {
+		return &people.Refusal{Code: people.CodeInvalid, Message: "sex: say M or F, as the IR8A takes it."}
+	}
+	if p.AddressType != "" && p.AddressType != "L" && p.AddressType != "F" {
+		return &people.Refusal{Code: people.CodeInvalid, Message: "address_type: say L for a Singapore address or F for a foreign one, or leave it out when there is no address."}
+	}
+	if err := personExists(ctx, tx, person); err != nil {
+		return err
+	}
+	raw, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+	sealed, err := c.Seal(ctx, raw, aad(org, person, "ir8a"))
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO nemura.person_secret (person_id, ir8a_sealed) VALUES ($1, $2)
+ON CONFLICT (organisation_id, person_id) DO UPDATE SET ir8a_sealed = EXCLUDED.ir8a_sealed, updated_at = $3`, person, sealed, at); err != nil {
+		return err
+	}
+	return Audit(ctx, tx, org, at, user(by), "nemura.person.ir8a_set", audit.Object{Type: "person_secret", ID: person}, map[string]audit.Change{"field": {nil, "ir8a"}}, "")
+}
+
+// ir8aOf opens a person's IR8A particulars for a filing, auditing the read like any read of a restricted field; ok is false when none are on record.
+func ir8aOf(ctx context.Context, tx pgx.Tx, c ports.Cipher, org uuid.UUID, at time.Time, by, person uuid.UUID) (IR8AParticulars, bool, error) {
+	var p IR8AParticulars
+	var sealed []byte
+	err := tx.QueryRow(ctx, "SELECT ir8a_sealed FROM nemura.person_secret WHERE person_id = $1 AND ir8a_sealed IS NOT NULL", person).Scan(&sealed)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return p, false, nil
+	}
+	if err != nil {
+		return p, false, err
+	}
+	if err := auditRead(ctx, tx, org, at, by, person, CapNRIC, access.Full); err != nil {
+		return p, false, err
+	}
+	plain, err := c.Open(ctx, sealed, aad(org, person, "ir8a"))
+	if err != nil {
+		return p, false, err
+	}
+	return p, true, json.Unmarshal(plain, &p)
 }

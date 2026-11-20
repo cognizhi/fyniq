@@ -53,9 +53,22 @@ type BankChange struct {
 	State  string `json:"state" enum:"proposed,approved,refused,confirmed" doc:"Where the change is." example:"proposed"`
 }
 
+// IR8AParticulars are what the IR8A asks of a person besides what Nemura holds elsewhere: kept sealed with the NRIC.
+type IR8AParticulars struct {
+	Sex         string `json:"sex" enum:"M,F" doc:"M or F, as the IR8A takes it (data item B6)." example:"F"`
+	AddressType string `json:"address_type,omitempty" enum:"L,F" doc:"L for a Singapore address, F for a foreign one; leave it out when there is no address (B7)." example:"L"`
+	Address1    string `json:"address_1,omitempty" maxLength:"100" doc:"The first address line: a real address, never NIL or N.A. (B8)." example:"Blk 123 Choa Chu Kang Rd #10-01"`
+	Address2    string `json:"address_2,omitempty" maxLength:"100" doc:"The second address line; only after the first." example:"Singapore"`
+	Address3    string `json:"address_3,omitempty" maxLength:"100" doc:"The third address line; only after the second." example:"Level 3"`
+	PostalCode  string `json:"postal_code,omitempty" pattern:"^[0-9]{6}$" doc:"The six-digit post code of a Singapore address (B9)." example:"670123"`
+	Country     string `json:"country,omitempty" maxLength:"3" doc:"IRAS's country code of a foreign address (B10)." example:"GB"`
+	Designation string `json:"designation,omitempty" maxLength:"30" doc:"A non-resident director's or seaman's designation (B11)." example:"Director"`
+}
+
 // Restricted is the restricted people data behind the API; the API decides who may call, the service seals, reads at a level and audits.
 type Restricted interface {
 	SetNRIC(ctx context.Context, s Session, id uuid.UUID, value string) error
+	SetIR8AParticulars(ctx context.Context, s Session, id uuid.UUID, p IR8AParticulars) error
 	Secret(ctx context.Context, s Session, id uuid.UUID, field string) (value, level string, err error)
 	AddPass(ctx context.Context, s Session, id uuid.UUID, kind, number string, issued, expires time.Time) (uuid.UUID, error)
 	Passes(ctx context.Context, s Session, id uuid.UUID) ([]Pass, error)
@@ -84,6 +97,12 @@ type nricInput struct {
 	Body   struct {
 		NRIC string `json:"nric" doc:"The NRIC or FIN: a letter, seven digits and a letter." example:"S1234567D"`
 	}
+}
+
+type ir8aInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Body   IR8AParticulars
 }
 
 type secretInput struct {
@@ -248,6 +267,17 @@ func (a *API) registerRestricted() {
 			return nil, err
 		}
 		return nil, restrictedErrOrNil(a.d.Restricted.SetNRIC(ctx, s, id, in.Body.NRIC))
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "setPersonIR8AParticulars", Method: "PUT", Path: "/v1/people/{id}/ir8a-particulars", Tags: []string{"People"}, Summary: "Set the particulars the IR8A asks of a person",
+		Description: "Seals the person's sex, address and, for a non-resident director or seaman, designation with the key service, for the Auto-Inclusion Scheme file only: never shown in a list, never in a log or an event, read only with the NRIC's right and audited. The HR officer and the HR administrator. It is audited.",
+		Errors:      []int{401, 403, 404, 422, 503},
+	}, func(ctx context.Context, in *ir8aInput) (*struct{}, error) {
+		s, id, err := person(ctx, in.Cookie, in.ID, true)
+		if err != nil {
+			return nil, err
+		}
+		return nil, restrictedErrOrNil(a.d.Restricted.SetIR8AParticulars(ctx, s, id, in.Body))
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "getPersonSecret", Method: "GET", Path: "/v1/people/{id}/secrets/{field}", Tags: []string{"People"}, Summary: "Read a restricted field",

@@ -157,6 +157,9 @@ func (f fakeFeatures) Set(context.Context, Session, string, string, string, []fe
 type fakeRestricted struct{ err error }
 
 func (f fakeRestricted) SetNRIC(context.Context, Session, uuid.UUID, string) error { return f.err }
+func (f fakeRestricted) SetIR8AParticulars(context.Context, Session, uuid.UUID, IR8AParticulars) error {
+	return f.err
+}
 func (f fakeRestricted) Secret(context.Context, Session, uuid.UUID, string) (string, string, error) {
 	return "S****567D", "masked", f.err
 }
@@ -1219,6 +1222,8 @@ func TestRestrictedPeopleDataIsReachedByTheRightRolesAndConfirmedWithAPasskey(t 
 		{"setting an NRIC, an employee", employee, false, "PUT", id + "/nric", nric, 403},
 		{"setting an NRIC, the HR officer", officer, false, "PUT", id + "/nric", nric, 204},
 		{"setting an NRIC, the HR administrator", admin, false, "PUT", id + "/nric", nric, 204},
+		{"setting the IR8A particulars, an employee", employee, false, "PUT", id + "/ir8a-particulars", `{"sex":"F"}`, 403},
+		{"setting the IR8A particulars, the HR officer", officer, false, "PUT", id + "/ir8a-particulars", `{"sex":"F"}`, 204},
 		{"reading a secret, an employee", employee, false, "GET", id + "/secrets/nric", "", 200},
 		{"adding a pass, an employee", employee, false, "POST", id + "/work-passes", pass, 403},
 		{"adding a pass, the HR officer", officer, false, "POST", id + "/work-passes", pass, 201},
