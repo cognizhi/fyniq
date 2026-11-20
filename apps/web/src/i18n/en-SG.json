@@ -1175,6 +1175,10 @@
       "label": "Ask to link Nemura",
       "tooltip": "Asks to link this organisation to Nemura with what Nemura's link page shows. The Owner and a second approver approve it, and Nemura approves its own half."
     },
+    "people.source": {
+      "label": "Ask to move it",
+      "tooltip": "Asks to move one feature (records, payroll, leave or letters) to Nemura, an external system or none, from a date. The Owner and a second approver approve it; nothing moves by asking."
+    },
     "people.unlink": {
       "label": "Ask to unlink Nemura",
       "tooltip": "Asks to end the link. The Owner and a second approver approve it; work in flight settles first, then the link ends and both sides keep their data."

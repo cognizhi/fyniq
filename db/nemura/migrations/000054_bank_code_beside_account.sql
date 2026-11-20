@@ -9,14 +9,14 @@ SET LOCAL statement_timeout = '60s';
 ALTER TABLE nemura.person_secret
   ADD COLUMN bank_code text,
   ADD COLUMN bank_name text,
-  ADD CONSTRAINT person_secret_bank_code CHECK (bank_code IS NULL OR bank_code ~ '^[0-9]{4}([0-9]{3})?$'),
-  ADD CONSTRAINT person_secret_bank_name CHECK (bank_name IS NULL OR char_length(bank_name) BETWEEN 1 AND 140);
+  ADD CONSTRAINT person_secret_bank_code CHECK (bank_code IS NULL OR bank_code ~ '^[0-9]{4}([0-9]{3})?$') NOT VALID,
+  ADD CONSTRAINT person_secret_bank_name CHECK (bank_name IS NULL OR char_length(bank_name) BETWEEN 1 AND 140) NOT VALID;
 
 ALTER TABLE nemura.bank_account_change
   ADD COLUMN new_bank_code text,
   ADD COLUMN new_bank_name text,
-  ADD CONSTRAINT bank_account_change_bank_code CHECK (new_bank_code IS NULL OR new_bank_code ~ '^[0-9]{4}([0-9]{3})?$'),
-  ADD CONSTRAINT bank_account_change_bank_name CHECK (new_bank_name IS NULL OR char_length(new_bank_name) BETWEEN 1 AND 140);
+  ADD CONSTRAINT bank_account_change_bank_code CHECK (new_bank_code IS NULL OR new_bank_code ~ '^[0-9]{4}([0-9]{3})?$') NOT VALID,
+  ADD CONSTRAINT bank_account_change_bank_name CHECK (new_bank_name IS NULL OR char_length(new_bank_name) BETWEEN 1 AND 140) NOT VALID;
 
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION nemura.bank_account_change_guard() RETURNS trigger

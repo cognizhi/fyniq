@@ -16,6 +16,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
@@ -492,5 +493,73 @@ func TestApprovedLeaveIsKeptByVersionAndInformsWhoIsAway(t *testing.T) {
 	})
 	if len(hit) > 0 {
 		t.Errorf("an audit event of leave holds a date or a name: %v", hit)
+	}
+}
+
+// Where a feature lives changes only with the Owner and a second approver (FR-PPL-16; design D29): asking makes an approval and changes nothing; a date in the past, a feature or a source that is not one, and a move to
+// Nemura with no active link are refused; once the approval is executed the source stands from its date, audited as people_source.set, and the page shows it; and the executor checks the link again, so a move to Nemura
+// approved after the link ended is refused.
+// req: FR-PPL-16
+// asvs: V8.2.1, V8.3.1
+func TestWhereAFeatureLivesChangesOnlyOnceTwoPeopleApproveIt(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	ctx := context.Background()
+	step := e.clock.Now()
+	owner := e.principal(authn.Principal{Client: "web", Via: authn.ViaSession, Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{authz.Administrator}, UserID: w.approverUser, StepUpAt: step})
+	day := e.clock.Now().AddDate(0, 0, 1).Format(time.DateOnly)
+	ask := func(body map[string]any) response {
+		return e.call(http.MethodPost, "/v1/people-link/sources", owner, body, "Idempotency-Key", uuid.NewString())
+	}
+	sources := func() string {
+		return e.call(http.MethodGet, "/v1/people-link", owner, nil).Raw
+	}
+	before := sources()
+	for what, body := range map[string]map[string]any{
+		"a date in the past":    {"feature": "payroll", "source": "none", "effective_from": "2020-01-01", "reason": "Why"},
+		"a feature that is not": {"feature": "benefits", "source": "none", "effective_from": day, "reason": "Why"},
+		"a source that is not":  {"feature": "payroll", "source": "somewhere", "effective_from": day, "reason": "Why"},
+		"no reason":             {"feature": "payroll", "source": "none", "effective_from": day, "reason": ""},
+	} {
+		if r := ask(body); r.Status < 400 || r.Status > 499 {
+			t.Errorf("%s: %d %s", what, r.Status, r.Raw)
+		}
+	}
+	asked := ask(map[string]any{"feature": "payroll", "source": "external", "effective_from": day, "reason": "Payroll moves to a provider"})
+	if asked.Status != http.StatusAccepted || asked.str("status") != "pending" || !strings.Contains(asked.Raw, "Move payroll to external") {
+		t.Fatalf("asking: %d %s", asked.Status, asked.Raw)
+	}
+	if sources() != before {
+		t.Errorf("asking changed where a feature lives")
+	}
+	// Executing the approved change sets the source from its date.
+	run := func(execute map[string]any) error {
+		return e.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			return e.api.executePeopleLink(ctx, u, storage.ApprovalRequest{ID: uuid.New(), Operation: approval.OpPeopleSource, RequestedBy: uuid.New()}, stored{Execute: execute})
+		})
+	}
+	if err := run(map[string]any{"feature": "payroll", "source": "external", "effective_from": day, "reason": "Payroll moves to a provider"}); err != nil {
+		t.Fatal(err)
+	}
+	got := e.call(http.MethodGet, "/v1/people-link", owner, nil)
+	if !strings.Contains(got.Raw, "external") || !strings.Contains(got.Raw, day) {
+		t.Errorf("the page after the move: %s", got.Raw)
+	}
+	// The link ends; a move to Nemura approved after that is refused at execution.
+	if err := e.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		l, err := u.PeopleLinks().Live(ctx)
+		if err != nil {
+			return err
+		}
+		_, err = u.PeopleLinks().SetState(ctx, l.ID, l.Version, storage.LinkSuspended, l.ClientID, e.clock.Now())
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := run(map[string]any{"feature": "payroll", "source": "nemura", "effective_from": day, "reason": "Back"}); err == nil {
+		t.Error("a move to Nemura was executed with no active link")
+	}
+	if r := ask(map[string]any{"feature": "payroll", "source": "nemura", "effective_from": day, "reason": "Back"}); r.problemCode() != CodeNoLink {
+		t.Errorf("asking to move to Nemura with no active link: %d %s", r.Status, r.Raw)
 	}
 }

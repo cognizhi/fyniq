@@ -2098,7 +2098,7 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		return a.executeKBPublication(ctx, u, r, s, signer)
 	case approval.OpAPIClientCreate: // FR-INT-02: the integration client registered with the OAuth server, then recorded
 		return a.executeAPIClient(ctx, u, r, s)
-	case approval.OpPeopleLink, approval.OpPeopleUnlink: // FR-PPL-01, FR-PPL-16: the link made, or ended once its work in flight is settled
+	case approval.OpPeopleLink, approval.OpPeopleUnlink, approval.OpPeopleSource: // FR-PPL-01, FR-PPL-16: the link made, or ended once its work in flight is settled
 		return a.executePeopleLink(ctx, u, r, s)
 	case approval.OpAPIClientReclass: // FR-INT-02: the personal access token reclassed from agent to integration
 		return a.executePersonalReclass(ctx, u, r, s)

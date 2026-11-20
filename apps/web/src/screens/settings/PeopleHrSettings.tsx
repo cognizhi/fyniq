@@ -11,7 +11,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
-import { LinkRequest, Unlink } from "./LinkForms";
+import { LinkRequest, SourceChange, Unlink } from "./LinkForms";
 
 type Item = components["schemas"]["PayrollArrangement"]["item"];
 type Method = components["schemas"]["PayrollArrangementChange"]["method"];
@@ -296,6 +296,10 @@ export function PeopleHrSettings() {
             )}
           </section>
           {l.state === "active" && <LinkHealth onDone={setStatus} />}
+          <section aria-label="Move a feature" className="fy-stack fy-stack--2">
+            <h2 className="fy-h2">Move where a feature lives</h2>
+            <SourceChange linkState={l.state} onDone={(w) => { setStatus(w); void queries.invalidateQueries({ queryKey: ["people-link"] }); }} />
+          </section>
           <section aria-label="Link or unlink" className="fy-stack fy-stack--2">
             <h2 className="fy-h2">{l.state === "none" || l.state === "unlinked" ? "Link Nemura" : "Unlink Nemura"}</h2>
             {l.state === "none" || l.state === "unlinked" ? (

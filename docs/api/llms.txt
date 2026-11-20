@@ -931,6 +931,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/people-link/projection-events` (receivePeopleProjectionEvent): Receive a person, bank-details or identity event from Nemura
 - `POST /v1/people-link/repair` (repairPeopleLink): Ask Nemura to send again what Fyniq missed
 - `POST /v1/people-link/session-events` (receivePeopleSessionEvent): Receive a sign-out or removal from Nemura
+- `POST /v1/people-link/sources` (requestPeopleSourceChange): Ask to move where a People and HR feature lives
 - `POST /v1/people-link/unlink` (requestPeopleUnlink): Ask to end the link to the people platform
 - `POST /v1/people-link/unlink/finish` (finishPeopleUnlink): Finish unlinking from the people platform
 - `GET /v1/periods` (listPeriods): List the periods

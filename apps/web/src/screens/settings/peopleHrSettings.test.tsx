@@ -137,4 +137,23 @@ describe("people and HR settings", () => {
     fireEvent.click(screen.getByRole("button", { name: "Finish unlinking" }));
     expect(await screen.findByText(/Work is still in flight/)).toBeTruthy();
   });
+
+  it("asks to move a feature with a date and a reason, and offers Nemura only while the link is active", async () => {
+    const seen = answer({
+      "GET /v1/people-link": { status: 200, body: link },
+      "GET /v1/payroll-arrangements": { status: 200, body: { month: "2026-11", in_force: [], missing: [], met: true } },
+      "GET /v1/payroll-imports": { status: 200, body: { items: [] } },
+      "POST /v1/people-link/sources": { status: 202, body: { id: "r3" } },
+    });
+    renderPage(PeopleHrSettings, { path: "/settings/people", session: owner });
+    const form = await screen.findByRole("form", { name: "Move a feature" });
+    const ask = within(form).getByRole("button", { name: "Ask to move it" }) as HTMLButtonElement;
+    expect(ask.disabled).toBe(true);
+    fireEvent.change(within(form).getByLabelText("From"), { target: { value: "2026-12-01" } });
+    fireEvent.change(within(form).getByLabelText("Why"), { target: { value: "Payroll moves to a provider" } });
+    fireEvent.click(ask);
+    await waitFor(() => expect(seen.some((s) => s.method === "POST" && s.path === "/v1/people-link/sources")).toBe(true));
+    expect(seen.find((s) => s.path === "/v1/people-link/sources")!.body).toEqual({ feature: "payroll", source: "external", effective_from: "2026-12-01", reason: "Payroll moves to a provider" });
+    expect(await screen.findByText(/Asked to move payroll to an external system/)).toBeTruthy();
+  });
 });

@@ -1238,6 +1238,29 @@ Nemura's `identity.session.revoked` (PRD-002 NM-INT-12, Appendix E): a person wa
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PPL-01`, `PPL-02`, `PPL-03`, `PPL-04`, `PPL-05`, `PPL-06`, `PPL-07`, `PPL-08`, `PPL-09`, `STORAGE-LOCK-01`, `STORAGE-PEOPLE-LINK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/people-link/sources`
+
+**Ask to move where a People and HR feature lives** (`requestPeopleSourceChange`)
+
+Asks to move one feature (records, payroll, leave or letters) to Nemura, to an external system or to none, from a date (FR-PPL-16). It is dual controlled like linking: the Owner and a second approver approve, and nothing changes until they do. Moving to Nemura needs an active link; moving payroll away does not end the link or touch any posted entry. Side effects: the approval request and its audit event; once approved, the source from that date, audited as people_source.set. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. Needs a person signed in with step-up. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PeopleSourceChangeRequest`](../../contracts/schemas/PeopleSourceChangeRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PPL-07` The organisation has no active link to the people platform; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PEOPLE-LINK-01` The link or a person of the projection moved against its course.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `PPL-07`, `STORAGE-LOCK-01`, `STORAGE-PEOPLE-LINK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/people-link/unlink`
 
 **Ask to end the link to the people platform** (`requestPeopleUnlink`)

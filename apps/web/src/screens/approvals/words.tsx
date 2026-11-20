@@ -87,6 +87,7 @@ const operations: Record<Approval["operation"], string> = {
   "nominee_entry.record": "Record a nominee director or shareholder",
   "statements_approval.record": "Record the directors' approval of the financial statements",
   "corporate_document.record": "Record a signed corporate document in the minute book",
+  "people_link.source": "Change where a People and HR feature lives",
 };
 
 export function operationLabel(op: string): string {

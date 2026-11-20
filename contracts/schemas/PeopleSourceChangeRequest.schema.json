@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "effective_from": {
+      "description": "The first day it applies, today or later.",
+      "examples": [
+        "2026-12-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "feature": {
+      "description": "The feature that moves.",
+      "enum": [
+        "records",
+        "payroll",
+        "leave",
+        "letters"
+      ],
+      "examples": [
+        "payroll"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it moves, for the access review.",
+      "examples": [
+        "Payroll moves to a provider from December."
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "source": {
+      "description": "Where it lives from the date: nemura (the link must be active), external (a payroll provider's file), or none (posted by manual journal).",
+      "enum": [
+        "nemura",
+        "external",
+        "none"
+      ],
+      "examples": [
+        "external"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "feature",
+    "source",
+    "effective_from",
+    "reason"
+  ],
+  "title": "PeopleSourceChangeRequest",
+  "type": "object"
+}
