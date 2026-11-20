@@ -59,6 +59,13 @@ expires = 2027-05-31
 [[waiver]]
 tool = "gitleaks"
 rule = "generic-api-key"
+path = "internal/webhooks/webhooks_test.go"
+reason = "A made-up Standard Webhooks signing secret (whsec_ and base64) of the public test vector, and secrets made by NewSecret in the same test: they sign nothing real and were never a credential."
+expires = 2027-05-31
+
+[[waiver]]
+tool = "gitleaks"
+rule = "generic-api-key"
 path = "internal/api/private_endpoints_test.go"
 reason = "A made-up UUID in the field named credential: the ID of the organisation's connector a private endpoint is bound to (SEC-37), never a secret."
 expires = 2027-05-31
