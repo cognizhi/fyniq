@@ -6479,6 +6479,488 @@ components:
         - tool_calls
         - run_tokens
       type: object
+    AllocationLine:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: The account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01
+          format: uuid
+          type: string
+        amount:
+          description: Debit positive, credit negative, in the base currency.
+          examples:
+            - "400.00"
+          type: string
+        description:
+          description: What the line says.
+          examples:
+            - Engineering
+          type: string
+        values:
+          description: The dimension values the line carries.
+          items:
+            type: string
+          type: array
+      required:
+        - account_id
+        - amount
+        - description
+        - values
+      type: object
+    AllocationPart:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Its part, in the base currency.
+          examples:
+            - "400.00"
+          type: string
+        target:
+          description: The target's label.
+          examples:
+            - Engineering
+          type: string
+      required:
+        - target
+        - amount
+      type: object
+    AllocationReport:
+      additionalProperties: false
+      properties:
+        from:
+          description: The first day.
+          examples:
+            - "2026-03-01"
+          format: date
+          type: string
+        journal_id:
+          description: The draft journal, once proposed.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a01
+          format: uuid
+          type: string
+        key:
+          description: The key it ran with.
+          enum:
+            - fixed
+            - headcount
+            - usage
+          examples:
+            - fixed
+          type: string
+        lines:
+          description: "The journal's lines: each part debited with its target's values, what was placed credited with none."
+          items:
+            $ref: "#/components/schemas/AllocationLine"
+          type: array
+        note:
+          description: What it is.
+          examples:
+            - "Nothing is posted: the journal is a draft for an approver."
+          type: string
+        proposed:
+          description: true once the draft journal is made.
+          examples:
+            - false
+          type: boolean
+        rule_id:
+          description: The rule.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
+          format: uuid
+          type: string
+        run_id:
+          description: The recorded run, once proposed.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a02
+          format: uuid
+          type: string
+        splits:
+          description: Each source account that held cost.
+          items:
+            $ref: "#/components/schemas/AllocationSplit"
+          type: array
+        to:
+          description: The last day.
+          examples:
+            - "2026-03-31"
+          format: date
+          type: string
+        unplaced_weight:
+          description: The weight the key could not place, in the same unit.
+          examples:
+            - 2500
+          format: int64
+          type: integer
+        weights:
+          description: What the key weighed each target at.
+          items:
+            $ref: "#/components/schemas/AllocationWeight"
+          type: array
+      required:
+        - rule_id
+        - key
+        - from
+        - to
+        - weights
+        - unplaced_weight
+        - splits
+        - lines
+        - note
+        - proposed
+      type: object
+    AllocationRule:
+      additionalProperties: false
+      properties:
+        accounts:
+          description: The expense accounts whose cost, with no dimension value, is split (IDs of accounts).
+          items:
+            type: string
+          maxItems: 20
+          minItems: 1
+          type: array
+        archived:
+          description: "true to put the rule out of use: it is not run again and its runs stay."
+          examples:
+            - false
+          type: boolean
+        id:
+          description: The rule's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
+          format: uuid
+          type: string
+        key:
+          description: "fixed: percentages on the targets; headcount: the people of each target's department in the people projection, those with no department being what it cannot place; usage: a usage file's quantities per code, the rows naming no target being what it cannot place."
+          enum:
+            - fixed
+            - headcount
+            - usage
+          examples:
+            - fixed
+          type: string
+        name:
+          description: The rule's name.
+          examples:
+            - Cloud hosting by department
+          maxLength: 80
+          minLength: 1
+          type: string
+        targets:
+          description: Where the cost goes.
+          items:
+            $ref: "#/components/schemas/AllocationTarget"
+          maxItems: 50
+          minItems: 1
+          type: array
+        version:
+          description: The version of its content; it makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - version
+        - name
+        - accounts
+        - key
+        - targets
+      type: object
+    AllocationRuleInput:
+      additionalProperties: false
+      properties:
+        accounts:
+          description: The expense accounts whose cost, with no dimension value, is split (IDs of accounts).
+          items:
+            type: string
+          maxItems: 20
+          minItems: 1
+          type: array
+        archived:
+          description: "true to put the rule out of use: it is not run again and its runs stay."
+          examples:
+            - false
+          type: boolean
+        key:
+          description: "fixed: percentages on the targets; headcount: the people of each target's department in the people projection, those with no department being what it cannot place; usage: a usage file's quantities per code, the rows naming no target being what it cannot place."
+          enum:
+            - fixed
+            - headcount
+            - usage
+          examples:
+            - fixed
+          type: string
+        name:
+          description: The rule's name.
+          examples:
+            - Cloud hosting by department
+          maxLength: 80
+          minLength: 1
+          type: string
+        targets:
+          description: Where the cost goes.
+          items:
+            $ref: "#/components/schemas/AllocationTarget"
+          maxItems: 50
+          minItems: 1
+          type: array
+      required:
+        - name
+        - accounts
+        - key
+        - targets
+      type: object
+    AllocationRulePage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The rules, latest first.
+          items:
+            $ref: "#/components/schemas/AllocationRule"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEifQ
+          type: string
+      required:
+        - items
+      type: object
+    AllocationRunInput:
+      additionalProperties: false
+      properties:
+        from:
+          description: The first day of the first month.
+          examples:
+            - "2026-03-01"
+          format: date
+          type: string
+        to:
+          description: The last day of the last month (the same month or a later one, at most a year in all).
+          examples:
+            - "2026-03-31"
+          format: date
+          type: string
+        usage:
+          $ref: "#/components/schemas/AllocationUsage"
+          description: "With the usage key: the usage file."
+      required:
+        - from
+        - to
+      type: object
+    AllocationRunPage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The runs, earliest first.
+          items:
+            $ref: "#/components/schemas/AllocationRunRecord"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEifQ
+          type: string
+      required:
+        - items
+      type: object
+    AllocationRunRecord:
+      additionalProperties: false
+      properties:
+        from:
+          description: The first day.
+          examples:
+            - "2026-03-01"
+          format: date
+          type: string
+        id:
+          description: The run.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a02
+          format: uuid
+          type: string
+        journal_id:
+          description: The journal it proposed.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a01
+          format: uuid
+          type: string
+        key:
+          description: The key.
+          enum:
+            - fixed
+            - headcount
+            - usage
+          examples:
+            - fixed
+          type: string
+        rule_version:
+          description: The version of the rule it ran.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        to:
+          description: The last day.
+          examples:
+            - "2026-03-31"
+          format: date
+          type: string
+      required:
+        - id
+        - rule_version
+        - from
+        - to
+        - journal_id
+        - key
+      type: object
+    AllocationSplit:
+      additionalProperties: false
+      properties:
+        account_code:
+          description: Its code.
+          examples:
+            - "6200"
+          type: string
+        account_id:
+          description: The account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01
+          format: uuid
+          type: string
+        account_name:
+          description: Its name.
+          examples:
+            - Cloud hosting
+          type: string
+        parts:
+          description: Each target's part, by ALLOC-PRORATA.
+          items:
+            $ref: "#/components/schemas/AllocationPart"
+          type: array
+        source:
+          description: Its cost in the months with no dimension value, in the base currency.
+          examples:
+            - "1000.00"
+          type: string
+        unallocated:
+          description: "What the key could not place: it stays on the account with no dimension value."
+          examples:
+            - "250.00"
+          type: string
+      required:
+        - account_id
+        - account_code
+        - account_name
+        - source
+        - parts
+        - unallocated
+      type: object
+    AllocationTarget:
+      additionalProperties: false
+      properties:
+        code:
+          description: "With the usage key: the code the usage file names this target by."
+          examples:
+            - customer-acme
+          maxLength: 80
+          type: string
+        label:
+          description: What the target is called.
+          examples:
+            - Engineering
+          maxLength: 80
+          minLength: 1
+          type: string
+        percent:
+          description: "With the fixed key: this target's percentage, above nothing, at most two decimals; together at most 100, the rest stays unallocated."
+          examples:
+            - "40"
+          pattern: ^[0-9]+(\.[0-9]{1,2})?$
+          type: string
+        values:
+          description: The dimension values the allocated lines carry, one of each dimension at most (the department, the project, a customer or a product).
+          items:
+            type: string
+          maxItems: 8
+          minItems: 1
+          type: array
+      required:
+        - label
+        - values
+      type: object
+    AllocationUsage:
+      additionalProperties: false
+      properties:
+        bill_id:
+          description: The supplier's bill the file explains.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b01
+          format: uuid
+          type: string
+        billed_total:
+          description: "What the file says was billed in all: it must equal the bill's total and the rows' sum, or the file is refused."
+          examples:
+            - "1250.00"
+          type: string
+        rows:
+          description: The file's rows.
+          items:
+            $ref: "#/components/schemas/AllocationUsageRow"
+          maxItems: 5000
+          minItems: 1
+          type: array
+      required:
+        - bill_id
+        - billed_total
+        - rows
+      type: object
+    AllocationUsageRow:
+      additionalProperties: false
+      properties:
+        billed:
+          description: What the row was billed, in the base currency.
+          examples:
+            - "312.40"
+          type: string
+        code:
+          description: The target code, or any other code the key cannot place.
+          examples:
+            - customer-acme
+          maxLength: 80
+          type: string
+        quantity:
+          description: The usage, zero or more with at most six decimals.
+          examples:
+            - "1250.5"
+          pattern: ^[0-9]+(\.[0-9]{1,6})?$
+          type: string
+      required:
+        - code
+        - quantity
+        - billed
+      type: object
+    AllocationWeight:
+      additionalProperties: false
+      properties:
+        target:
+          description: The target's label.
+          examples:
+            - Engineering
+          type: string
+        weight:
+          description: "In the key's unit: hundredths of a percent, people, or millionths of a unit of usage."
+          examples:
+            - 4000
+          format: int64
+          type: integer
+      required:
+        - target
+        - weight
+      type: object
     AmendSubscriptionInputBody:
       additionalProperties: false
       properties:
@@ -75292,6 +75774,1163 @@ paths:
       x-fyniq-permission:
         capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
         right: V
+  /v1/allocation-rules:
+    get:
+      description: Every allocation rule, the latest first, a page at a time (FR-DIM-03). Read-only; no side effects.
+      operationId: listAllocationRules
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationRulePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the allocation rules
+      tags:
+        - Accounting
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        right: V
+    post:
+      description: "Saves a rule (FR-DIM-03): the expense accounts whose cost with no dimension value is split, the key and the targets. The rule posts nothing; running it proposes a draft journal. Every problem comes back together. Side effects: the rule and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: createAllocationRule
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AllocationRuleInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationRule"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationRule"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The rule's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `ALLOC-07` The rule allocated those months already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Save an allocation rule
+      tags:
+        - Accounting
+      x-fyniq-error-codes:
+        - ALLOC-01
+        - ALLOC-02
+        - ALLOC-03
+        - ALLOC-04
+        - ALLOC-05
+        - ALLOC-06
+        - ALLOC-07
+        - ALLOC-08
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        right: C
+  /v1/allocation-rules/{rule_id}:
+    get:
+      description: A rule as saved, with its ETag (FR-DIM-03). Read-only; no side effects.
+      operationId: getAllocationRule
+      parameters:
+        - description: The rule.
+          in: path
+          name: rule_id
+          required: true
+          schema:
+            description: The rule.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationRule"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The rule's version, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get an allocation rule
+      tags:
+        - Accounting
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        right: V
+    put:
+      description: "Saves the rule's next version (FR-DIM-03); runs already recorded keep the version they ran. archived: true puts it out of use. Needs If-Match with its ETag. Side effects: the new version and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: replaceAllocationRule
+      parameters:
+        - description: The rule.
+          in: path
+          name: rule_id
+          required: true
+          schema:
+            description: The rule.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AllocationRuleInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationRule"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The rule's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `ALLOC-07` The rule allocated those months already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change an allocation rule
+      tags:
+        - Accounting
+      x-fyniq-error-codes:
+        - ALLOC-01
+        - ALLOC-02
+        - ALLOC-03
+        - ALLOC-04
+        - ALLOC-05
+        - ALLOC-06
+        - ALLOC-07
+        - ALLOC-08
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        right: C
+  /v1/allocation-rules/{rule_id}/preview:
+    post:
+      description: "Runs a rule over whole months and shows what it would do (FR-DIM-03): each source account's cost with no dimension value (read through the balance service), the key's weights, the split by ALLOC-PRORATA with what the key cannot place left unallocated, and the journal's lines. A usage file must add up to its stated total and equal the supplier's bill it explains, or it is refused (ALLOC-06). Nothing is saved or posted. Read-only; no side effects."
+      operationId: previewAllocation
+      parameters:
+        - description: The rule.
+          in: path
+          name: rule_id
+          required: true
+          schema:
+            description: The rule.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AllocationRunInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationReport"
+          description: OK
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              schema:
+                description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `ALLOC-07` The rule allocated those months already; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Work an allocation out without saving it
+      tags:
+        - Accounting
+      x-fyniq-error-codes:
+        - ALLOC-01
+        - ALLOC-02
+        - ALLOC-03
+        - ALLOC-04
+        - ALLOC-05
+        - ALLOC-06
+        - ALLOC-07
+        - ALLOC-08
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        right: V
+  /v1/allocation-rules/{rule_id}/runs:
+    get:
+      description: The runs recorded for a rule, earliest first, a page at a time (FR-DIM-03). Read-only; no side effects.
+      operationId: listAllocationRuns
+      parameters:
+        - description: The rule.
+          in: path
+          name: rule_id
+          required: true
+          schema:
+            description: The rule.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
+            format: uuid
+            type: string
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationRunPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List a rule's runs
+      tags:
+        - Accounting
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        right: V
+    post:
+      description: "Runs a rule over whole months (previewAllocation shows what it does) and makes the journal as a draft for an approver (FR-DIM-03): each part debited to its account with the target's dimension values, what was placed credited with none, so what the key cannot place stays on the account. A rule runs once for a month (ALLOC-07). The run is recorded, never changed and never reversed (FYR14). Side effects: the draft journal, the recorded run and their audit events. Nothing is posted. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: proposeAllocation
+      parameters:
+        - description: The rule.
+          in: path
+          name: rule_id
+          required: true
+          schema:
+            description: The rule.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AllocationRunInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationReport"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationReport"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `ALLOC-07` The rule allocated those months already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Run an allocation rule into a draft journal
+      tags:
+        - Accounting
+      x-fyniq-error-codes:
+        - ALLOC-01
+        - ALLOC-02
+        - ALLOC-03
+        - ALLOC-04
+        - ALLOC-05
+        - ALLOC-06
+        - ALLOC-07
+        - ALLOC-08
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        right: C
   /v1/announcements:
     get:
       description: "Every banner the organisation published, newest first, with its status: scheduled, live or ended (FR-NTF-03). Read-only; no side effects."

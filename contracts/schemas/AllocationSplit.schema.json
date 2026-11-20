@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "Its code.",
+      "examples": [
+        "6200"
+      ],
+      "type": "string"
+    },
+    "account_id": {
+      "description": "The account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "account_name": {
+      "description": "Its name.",
+      "examples": [
+        "Cloud hosting"
+      ],
+      "type": "string"
+    },
+    "parts": {
+      "description": "Each target's part, by ALLOC-PRORATA.",
+      "items": {
+        "$ref": "AllocationPart.schema.json"
+      },
+      "type": "array"
+    },
+    "source": {
+      "description": "Its cost in the months with no dimension value, in the base currency.",
+      "examples": [
+        "1000.00"
+      ],
+      "type": "string"
+    },
+    "unallocated": {
+      "description": "What the key could not place: it stays on the account with no dimension value.",
+      "examples": [
+        "250.00"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_id",
+    "account_code",
+    "account_name",
+    "source",
+    "parts",
+    "unallocated"
+  ],
+  "title": "AllocationSplit",
+  "type": "object"
+}

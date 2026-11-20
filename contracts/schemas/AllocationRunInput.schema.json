@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "description": "The first day of the first month.",
+      "examples": [
+        "2026-03-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "to": {
+      "description": "The last day of the last month (the same month or a later one, at most a year in all).",
+      "examples": [
+        "2026-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "usage": {
+      "$ref": "AllocationUsage.schema.json",
+      "description": "With the usage key: the usage file."
+    }
+  },
+  "required": [
+    "from",
+    "to"
+  ],
+  "title": "AllocationRunInput",
+  "type": "object"
+}

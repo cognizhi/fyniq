@@ -35,6 +35,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/aiprice"
 	"github.com/cognizhi/fyniq/internal/domain/aiqual"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
+	"github.com/cognizhi/fyniq/internal/domain/allocation"
 	"github.com/cognizhi/fyniq/internal/domain/apiclient"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
@@ -91,6 +92,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
 	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
+	"github.com/cognizhi/fyniq/internal/domain/sharepay"
 	"github.com/cognizhi/fyniq/internal/domain/statement"
 	"github.com/cognizhi/fyniq/internal/domain/subscription"
 	"github.com/cognizhi/fyniq/internal/domain/succession"
@@ -558,6 +560,7 @@ var codeFacts = map[string]struct {
 	storage.CodeKPIAlert:          {409, "A raised alert is never changed"},
 	storage.CodeBoardPack:         {409, "A board pack changes only as a draft, and a published one never"},
 	storage.CodeBoardPackDraft:    {409, "The month has a draft already"},
+	storage.CodeProposalRun:       {409, "A recorded run is never changed"},
 	storage.CodeBoardPackPDF:      {409, "A board pack's PDF is kept only on another person's approval, and never reversed"},
 	storage.CodeBoardPackPDFKept:  {409, "The pack's PDF is kept already"},
 	storage.CodeInvestorUpdate:    {409, "An investor update changes only as a draft"},
@@ -1261,6 +1264,16 @@ var codeFacts = map[string]struct {
 	forecasts.CodePlan:               {422, "The forecast does not fit"},
 	budget.CodeBudget:                {422, "The budget does not fit"},
 	feasibility.CodeStudy:            {422, "The feasibility study does not fit"},
+	allocation.CodePercent:           {422, "A percentage does not fit"},
+	allocation.CodeQuantity:          {422, "A usage quantity does not fit"},
+	allocation.CodeWeights:           {422, "The key gives nothing to split by"},
+	allocation.CodeRule:              {422, "The allocation rule does not fit"},
+	allocation.CodePeriod:            {422, "The months are not whole months of the books"},
+	allocation.CodeUsage:             {422, "The usage file is refused"},
+	allocation.CodeRun:               {409, "The rule allocated those months already"},
+	allocation.CodeNothing:           {422, "There is nothing to split"},
+	sharepay.CodeGrant:               {422, "The grant does not fit"},
+	sharepay.CodeTranche:             {422, "A tranche does not fit"},
 	budget.CodeRecorded:              {409, "The budget is approved and locked"},
 	budget.CodeImport:                {422, "The budget's sheet does not fit"},
 	forecasts.CodeRecorded:           {409, "The forecast is recorded"},
@@ -1540,6 +1553,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		dsp *disputes.Error
 		sub *subscription.Error
 		prv *projectrevenue.Error
+		ale *allocation.Error
+		spe *sharepay.Error
 		pfe *paymentfile.Error
 		cle *claim.Error
 		dre *director.Error
@@ -1588,6 +1603,10 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(ie.Code, sentence(ie.Message), sentence(ie.Fix))
 	case errors.As(err, &re):
 		return problem(re.Code, sentence(re.Message), sentence(re.Fix))
+	case errors.As(err, &ale):
+		return problem(ale.Code, sentence(ale.Message), sentence(ale.Fix))
+	case errors.As(err, &spe):
+		return problem(spe.Code, sentence(spe.Message), sentence(spe.Fix))
 	case errors.As(err, &we):
 		return problem(we.Code, sentence(we.Message), sentence(we.Fix))
 	case errors.As(err, &bpe):

@@ -102,6 +102,16 @@
     "status": "published"
   },
   {
+    "file": "allocations.md",
+    "key": "accounting.allocations",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "announcements.md",
     "key": "settings.announcements",
     "roles": [

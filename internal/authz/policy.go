@@ -2177,6 +2177,14 @@ var (
 	CreateBoardPackDraft = Policy{Operation: "createBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	EditBoardPackDraft   = Policy{Operation: "editBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	PublishBoardPack     = Policy{Operation: "publishBoardPack", Capability: ReportDefinitions, Need: Create}
+	// (rev 0.609) Allocation rules (FR-DIM-03): read on the Journals row; saving a rule and running it into a draft journal are a journal's Create, and the journal posts like any other.
+	ListAllocationRules   = Policy{Operation: "listAllocationRules", Capability: Journals, Need: View}
+	GetAllocationRule     = Policy{Operation: "getAllocationRule", Capability: Journals, Need: View}
+	ListAllocationRuns    = Policy{Operation: "listAllocationRuns", Capability: Journals, Need: View}
+	PreviewAllocation     = Policy{Operation: "previewAllocation", Capability: Journals, Need: View}
+	CreateAllocationRule  = Policy{Operation: "createAllocationRule", Capability: Journals, Need: Create}
+	ReplaceAllocationRule = Policy{Operation: "replaceAllocationRule", Capability: Journals, Need: Create}
+	ProposeAllocation     = Policy{Operation: "proposeAllocation", Capability: Journals, Need: Create}
 	// (rev 0.607) The published pack's PDF kept as evidence: asked by the Owner or Controller, approved by another person who holds A on this row.
 	RequestBoardPackKeeping = Policy{Operation: "requestBoardPackKeeping", Capability: ReportDefinitions, Need: Create, Note: "Another person approves it, stepped up."}
 	GetBoardPackKeeping     = Policy{Operation: "getBoardPackKeeping", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
@@ -2336,7 +2344,7 @@ var Policies = index(ListWebhookEndpoints, GetWebhookEndpoint, CreateWebhookEndp
 	AddInvestorRightsEvidence, ListInvestorRightsEvidence, GetInvestorRightsEvidence, RemoveInvestorRightsEvidence, CreateControllerEntry,
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
 	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListReportDefinitions, GetReportDefinition, RunReportDefinition, RunReportDraft, CreateReportDefinition, ReplaceReportDefinition,
-	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListCapTableGrants, GetForecastAccuracy, ListAuditEngagements, OpenAuditEngagement, ConfirmAuditEngagement, CloseAuditEngagement, ListAuditRequests, AskAuditRequest, AnswerAuditRequest, CloseAuditRequest, DrawAuditSample, ListAuditSamples, GrantCapTableAccess, RevokeCapTableAccess, GetGrantedCapTable, ListBoardPacks, GetBoardPack, ExportBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack, RequestBoardPackKeeping, GetBoardPackKeeping,
+	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListCapTableGrants, GetForecastAccuracy, ListAuditEngagements, OpenAuditEngagement, ConfirmAuditEngagement, CloseAuditEngagement, ListAuditRequests, AskAuditRequest, AnswerAuditRequest, CloseAuditRequest, DrawAuditSample, ListAuditSamples, GrantCapTableAccess, RevokeCapTableAccess, GetGrantedCapTable, ListBoardPacks, GetBoardPack, ExportBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack, RequestBoardPackKeeping, GetBoardPackKeeping, ListAllocationRules, GetAllocationRule, ListAllocationRuns, PreviewAllocation, CreateAllocationRule, ReplaceAllocationRule, ProposeAllocation,
 	ListKPIAlerts, GetDeferralRollForward, ListDashboardTiles, GetMyDashboard, GetRoleDashboard, SaveMyDashboard, SaveRoleDashboard, ListInvestorUpdates, GetInvestorUpdate, CreateInvestorUpdate, EditInvestorUpdate, SendInvestorUpdate, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
 	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetBadDebtRelief, WorkTaxPaper, ListStatutoryPackUpdates, GetInvoiceNowGate, ListInvoiceNowInbound, PollInvoiceNowInbound, DraftInvoiceNowInbound, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,

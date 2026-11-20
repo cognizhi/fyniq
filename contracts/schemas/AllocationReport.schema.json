@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "description": "The first day.",
+      "examples": [
+        "2026-03-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "journal_id": {
+      "description": "The draft journal, once proposed.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "key": {
+      "description": "The key it ran with.",
+      "enum": [
+        "fixed",
+        "headcount",
+        "usage"
+      ],
+      "examples": [
+        "fixed"
+      ],
+      "type": "string"
+    },
+    "lines": {
+      "description": "The journal's lines: each part debited with its target's values, what was placed credited with none.",
+      "items": {
+        "$ref": "AllocationLine.schema.json"
+      },
+      "type": "array"
+    },
+    "note": {
+      "description": "What it is.",
+      "examples": [
+        "Nothing is posted: the journal is a draft for an approver."
+      ],
+      "type": "string"
+    },
+    "proposed": {
+      "description": "true once the draft journal is made.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "rule_id": {
+      "description": "The rule.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "run_id": {
+      "description": "The recorded run, once proposed.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "splits": {
+      "description": "Each source account that held cost.",
+      "items": {
+        "$ref": "AllocationSplit.schema.json"
+      },
+      "type": "array"
+    },
+    "to": {
+      "description": "The last day.",
+      "examples": [
+        "2026-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "unplaced_weight": {
+      "description": "The weight the key could not place, in the same unit.",
+      "examples": [
+        2500
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "weights": {
+      "description": "What the key weighed each target at.",
+      "items": {
+        "$ref": "AllocationWeight.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "rule_id",
+    "key",
+    "from",
+    "to",
+    "weights",
+    "unplaced_weight",
+    "splits",
+    "lines",
+    "note",
+    "proposed"
+  ],
+  "title": "AllocationReport",
+  "type": "object"
+}

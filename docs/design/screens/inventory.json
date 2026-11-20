@@ -2358,6 +2358,38 @@
    ]
   },
   {
+   "id": "allocations",
+   "file": "Allocations",
+   "title": "Allocations",
+   "canvas": "insight",
+   "module": "Accounting",
+   "route": "/accounting/allocations",
+   "kind": "editor",
+   "phase": "P2",
+   "roles": [
+    "Accountant",
+    "Controller",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-DIM-03",
+    "ALLOC-PRORATA"
+   ],
+   "purpose": "Move a shared cost between departments, projects or customers by a rule, then run it into a draft journal.",
+   "content": [
+    "Rule: source expense accounts, key (fixed percentages, headcount, usage file) and targets with their dimension values",
+    "Preview a month: each account's cost with no dimension value, each target's part and the unallocated part",
+    "Propose the journal as a draft for an approver; a rule allocates a month once"
+   ],
+   "states": [
+    "no rules yet",
+    "preview",
+    "proposed",
+    "refused usage file"
+   ]
+  },
+  {
    "id": "fixed-assets",
    "file": "FixedAssets",
    "title": "Fixed asset register",

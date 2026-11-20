@@ -136,6 +136,7 @@ export const routes = [
   { kind: "route", id: "provider-payouts", path: "/banking/payouts", mode: "expert", signedIn: true, help: "banking.payouts", guide: "banking.accounts#payment-provider-payouts" },
   { kind: "route", id: "bank-reconciliation", path: "/banking/reconciliations/$accountId/$periodId", mode: "expert", signedIn: true, help: "banking.reconciliation", guide: "banking.accounts#reconcile-an-account-for-a-month" },
   { kind: "route", id: "accounting", path: "/accounting", mode: "expert", signedIn: true, help: "nav.accounting", guide: "accounting.journals" },
+  { kind: "route", id: "allocations", path: "/accounting/allocations", mode: "expert", signedIn: true, help: "accounting.allocations", guide: "accounting.allocations" },
   { kind: "route", id: "journals", path: "/accounting/journals", mode: "expert", signedIn: true, help: "accounting.journals", guide: "accounting.journals" },
   { kind: "route", id: "journal-new", path: "/accounting/journals/new", mode: "expert", signedIn: true, help: "journal.new", guide: "accounting.journals#prepare-a-journal" },
   { kind: "route", id: "journal", path: "/accounting/journals/$journalId", mode: "expert", signedIn: true, help: "accounting.journal", guide: "accounting.journals#check-and-post-a-journal" },

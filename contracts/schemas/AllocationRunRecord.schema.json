@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "description": "The first day.",
+      "examples": [
+        "2026-03-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The run.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "journal_id": {
+      "description": "The journal it proposed.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "key": {
+      "description": "The key.",
+      "enum": [
+        "fixed",
+        "headcount",
+        "usage"
+      ],
+      "examples": [
+        "fixed"
+      ],
+      "type": "string"
+    },
+    "rule_version": {
+      "description": "The version of the rule it ran.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "to": {
+      "description": "The last day.",
+      "examples": [
+        "2026-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "rule_version",
+    "from",
+    "to",
+    "journal_id",
+    "key"
+  ],
+  "title": "AllocationRunRecord",
+  "type": "object"
+}
