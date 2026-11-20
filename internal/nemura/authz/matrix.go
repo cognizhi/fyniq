@@ -21,6 +21,6 @@ var Rows = []Row{
 	{"Features, packs, policies", [RoleCount]string{"—", "—", "V", "C", "V", "—", "—", "V", "A", "—"}},
 	{"Roles (NM-ROLE-05)", [RoleCount]string{"—", "—", "—", "C (not payroll, signing or Owner rights)", "—", "—", "—", "C (not payroll, signing or Owner rights)", "A", "—"}},
 	{"Fyniq link and external systems", [RoleCount]string{"—", "—", "—", "C", "V", "—", "—", "C", "A (+ second approver)", "—"}},
-	{"Hiring (P2)", [RoleCount]string{"—", "V (own roles)", "V", "V", "—", "C", "V (assigned candidates only)", "—", "A (offers)", "C (drafts)"}},
-	{"Performance (P2)", [RoleCount]string{"O", "C (reports)", "V", "C", "—", "—", "—", "—", "A", "C (drafts)"}},
+	{"Hiring (P2)", [RoleCount]string{"—", "V (own roles)", "V", "C", "—", "C", "V (assigned candidates only)", "—", "C/A (requisitions, offers)", "C (drafts)"}},
+	{"Performance (P2)", [RoleCount]string{"O; V (company and team goals)", "C (reports)", "V", "C", "—", "—", "—", "—", "A", "C (drafts)"}},
 }

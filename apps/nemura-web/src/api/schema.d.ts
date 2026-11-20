@@ -3387,7 +3387,7 @@ export interface paths {
         put?: never;
         /**
          * Ask to hire for a role
-         * @description Asks for a requisition: the role, the team, whether it is new or replaces someone, the salary range in Singapore dollars (decimal strings), the start date aimed for and whether a pass is expected. Whether the role is in Fyniq's plan stays unknown until the link tells Nemura. The Recruiter. It is audited.
+         * @description Asks for a requisition: the role, the team, whether it is new or replaces someone, the salary range in Singapore dollars (decimal strings), the start date aimed for and whether a pass is expected. Whether the role is in Fyniq's plan stays unknown until the link tells Nemura. The Recruiter, the HR administrator and the Owner. It is audited.
          */
         post: operations["requestRequisition"];
         delete?: never;
@@ -3426,7 +3426,7 @@ export interface paths {
         get?: never;
         /**
          * Write or change a job post
-         * @description Writes the requisition's job post as a draft, or changes the draft; a published post never changes. The response lists the criteria the guidelines ask an employer not to use that the check found in the words (NM-REC-03): it decides nothing. The Recruiter. It is audited.
+         * @description Writes the requisition's job post as a draft, or changes the draft; a published post never changes. The response lists the criteria the guidelines ask an employer not to use that the check found in the words (NM-REC-03): it decides nothing. The Recruiter, the HR administrator and the Owner. It is audited.
          */
         put: operations["writeJobPost"];
         post?: never;
@@ -3447,7 +3447,7 @@ export interface paths {
         put?: never;
         /**
          * Record the day the advert went up
-         * @description Records the day a person posted the advert on MyCareersFuture (there is no posting API), once. For a role that needs a pass the offer waits until 14 consecutive days have run (NM-REC-02). The Recruiter. It is audited.
+         * @description Records the day a person posted the advert on MyCareersFuture (there is no posting API), once. For a role that needs a pass the offer waits until 14 consecutive days have run (NM-REC-02). The Recruiter, the HR administrator and the Owner. It is audited.
          */
         post: operations["recordJobAdvert"];
         delete?: never;
@@ -3467,7 +3467,7 @@ export interface paths {
         put?: never;
         /**
          * Close a job post
-         * @description Closes a published post, once. The Recruiter. It is audited.
+         * @description Closes a published post, once. The Recruiter, the HR administrator and the Owner. It is audited.
          */
         post: operations["closeJobPost"];
         delete?: never;
@@ -3487,7 +3487,7 @@ export interface paths {
         put?: never;
         /**
          * Record an exemption from the advert
-         * @description Records, once, an exemption from the Fair Consideration Framework's advert with its evidence, for a role that needs a pass. The offer is then not held back. The Recruiter. It is audited.
+         * @description Records, once, an exemption from the Fair Consideration Framework's advert with its evidence, for a role that needs a pass. The offer is then not held back. The Recruiter, the HR administrator and the Owner. It is audited.
          */
         post: operations["recordJobExemption"];
         delete?: never;
@@ -3507,7 +3507,7 @@ export interface paths {
         put?: never;
         /**
          * Publish a job post
-         * @description Publishes the draft of an approved requisition. When the check flags a criterion, the post is published only with the genuine occupational requirement recorded (requirement_note); otherwise it is refused with the criteria named (NM_HIRING_WORDING). The Recruiter. It is audited.
+         * @description Publishes the draft of an approved requisition. When the check flags a criterion, the post is published only with the genuine occupational requirement recorded (requirement_note); otherwise it is refused with the criteria named (NM_HIRING_WORDING). The Recruiter, the HR administrator and the Owner. It is audited.
          */
         post: operations["publishJobPost"];
         delete?: never;

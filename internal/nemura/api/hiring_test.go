@@ -8,7 +8,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 )
 
-// Appendix B's row Hiring decides who may do what: the Recruiter asks and writes, the HR officer, HR administrator and Owner read, the Owner alone approves; nobody else does anything, nobody without a session
+// Appendix B's row Hiring decides who may do what: the Recruiter, the HR administrator and the Owner ask and write (rev 0.69), the HR officer reads, the Owner alone approves (and may approve what they asked for); nobody else does anything, nobody without a session
 // does anything, and everything is refused with the reason while Hiring is switched off (NM-REC-01, NM-FEAT-01).
 // req: NM-REC-01, NM-REC-02, NM-REC-03, NM-FEAT-01
 // asvs: V8.2.1, V8.2.2, V8.3.1
@@ -45,8 +45,8 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 	}{
 		"a Recruiter":             {authz.Recruiter, true, true, false},
 		"an HR officer":           {authz.HROfficer, true, false, false},
-		"an HR administrator":     {authz.HRAdmin, true, false, false},
-		"the Owner":               {authz.Owner, true, false, true},
+		"an HR administrator":     {authz.HRAdmin, true, true, false},
+		"the Owner":               {authz.Owner, true, true, true},
 		"an employee":             {authz.Employee, false, false, false},
 		"a line manager":          {authz.LineManager, false, false, false},
 		"an interviewer":          {authz.Interviewer, false, false, false},

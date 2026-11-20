@@ -15,7 +15,7 @@ A **requisition** asks to hire for a role: the role, the team, whether it is new
 ## Before you start
 
 - Switch **Hiring** on under **Settings, Features**.
-- The Recruiter asks for requisitions and writes posts. The HR officer, the HR administrator and the Owner read them. Only the Owner approves.
+- The Recruiter, the HR administrator and the Owner ask for requisitions and write posts. The HR officer reads them. Only the Owner approves; when you are the Owner and asked for it yourself, you may still approve it.
 
 ## Steps
 

@@ -14,7 +14,7 @@ import (
 )
 
 // Hiring, the first slice (PRD-002 NM-REC-01 to NM-REC-03): requisitions approved by the Owner, a job post for each checked for fair wording, and the Fair Consideration Framework's advert dates kept as
-// evidence. Rights come from Appendix B's row Hiring (P2): the Recruiter requests and writes posts, the HR officer, HR administrator and Owner read, the Owner approves. Nothing here is on the AI or MCP surface.
+// evidence. Rights come from Appendix B's row Hiring (P2): the Recruiter, the HR administrator and the Owner request and write posts, the HR officer reads, the Owner approves. Nothing here is on the AI or MCP surface.
 
 const nemuraHiring = "Hiring (P2)"
 
@@ -173,7 +173,7 @@ func init() {
 
 func (a *API) registerHiring() {
 	available := func() error { return Err(CodeUnavailable, "Hiring is not set up in this deployment.") }
-	// who is what the caller may do on Hiring (P2) in Appendix B: Create (the Recruiter), View (the HR officer and administrator) and Approve (the Owner, who also reads).
+	// who is what the caller may do on Hiring (P2) in Appendix B: Create (the Recruiter, the HR administrator and the Owner), View (the HR officer) and Approve (the Owner).
 	type rights struct{ create, view, approve bool }
 	rightsOf := func(ctx context.Context, s Session) (rights, error) {
 		held, err := a.d.Sessions.RolesAt(ctx, s.Organisation, s.Member, a.d.Clock.Now())
@@ -220,7 +220,7 @@ func (a *API) registerHiring() {
 		return gate(ctx, c, func(r rights) bool { return r.view }, "Only the Recruiter, the HR officer, the HR administrator and the Owner read requisitions.")
 	}
 	writer := func(ctx context.Context, c string) (Session, error) {
-		return gate(ctx, c, func(r rights) bool { return r.create }, "Only the Recruiter asks for a requisition or writes a job post.")
+		return gate(ctx, c, func(r rights) bool { return r.create }, "Only the Recruiter, the HR administrator and the Owner ask for a requisition or write a job post.")
 	}
 	id := func(raw string) (uuid.UUID, error) {
 		u, err := uuid.Parse(raw)
@@ -247,7 +247,7 @@ func (a *API) registerHiring() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "requestRequisition", Method: http.MethodPost, Path: "/v1/requisitions", Tags: []string{"Hiring"}, DefaultStatus: http.StatusCreated, Summary: "Ask to hire for a role",
-		Description: "Asks for a requisition: the role, the team, whether it is new or replaces someone, the salary range in Singapore dollars (decimal strings), the start date aimed for and whether a pass is expected. Whether the role is in Fyniq's plan stays unknown until the link tells Nemura. The Recruiter. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
+		Description: "Asks for a requisition: the role, the team, whether it is new or replaces someone, the salary range in Singapore dollars (decimal strings), the start date aimed for and whether a pass is expected. Whether the role is in Fyniq's plan stays unknown until the link tells Nemura. The Recruiter, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
 	}, func(ctx context.Context, in *requisitionInput) (*requisitionOutput, error) {
 		s, err := writer(ctx, in.Cookie)
 		if err != nil {
@@ -279,7 +279,7 @@ func (a *API) registerHiring() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "writeJobPost", Method: http.MethodPut, Path: "/v1/requisitions/{id}/job-post", Tags: []string{"Hiring"}, Summary: "Write or change a job post",
-		Description: "Writes the requisition's job post as a draft, or changes the draft; a published post never changes. The response lists the criteria the guidelines ask an employer not to use that the check found in the words (NM-REC-03): it decides nothing. The Recruiter. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
+		Description: "Writes the requisition's job post as a draft, or changes the draft; a published post never changes. The response lists the criteria the guidelines ask an employer not to use that the check found in the words (NM-REC-03): it decides nothing. The Recruiter, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
 	}, func(ctx context.Context, in *jobPostInput) (*requisitionOutput, error) {
 		s, err := writer(ctx, in.Cookie)
 		if err != nil {
@@ -297,7 +297,7 @@ func (a *API) registerHiring() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "publishJobPost", Method: http.MethodPost, Path: "/v1/requisitions/{id}/job-post/publication", Tags: []string{"Hiring"}, Summary: "Publish a job post",
-		Description: "Publishes the draft of an approved requisition. When the check flags a criterion, the post is published only with the genuine occupational requirement recorded (requirement_note); otherwise it is refused with the criteria named (NM_HIRING_WORDING). The Recruiter. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
+		Description: "Publishes the draft of an approved requisition. When the check flags a criterion, the post is published only with the genuine occupational requirement recorded (requirement_note); otherwise it is refused with the criteria named (NM_HIRING_WORDING). The Recruiter, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
 	}, func(ctx context.Context, in *publishInput) (*requisitionOutput, error) {
 		s, err := writer(ctx, in.Cookie)
 		if err != nil {
@@ -315,7 +315,7 @@ func (a *API) registerHiring() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "recordJobAdvert", Method: http.MethodPost, Path: "/v1/requisitions/{id}/job-post/advert", Tags: []string{"Hiring"}, Summary: "Record the day the advert went up",
-		Description: "Records the day a person posted the advert on MyCareersFuture (there is no posting API), once. For a role that needs a pass the offer waits until 14 consecutive days have run (NM-REC-02). The Recruiter. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
+		Description: "Records the day a person posted the advert on MyCareersFuture (there is no posting API), once. For a role that needs a pass the offer waits until 14 consecutive days have run (NM-REC-02). The Recruiter, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
 	}, func(ctx context.Context, in *advertInput) (*requisitionOutput, error) {
 		s, err := writer(ctx, in.Cookie)
 		if err != nil {
@@ -333,7 +333,7 @@ func (a *API) registerHiring() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "recordJobExemption", Method: http.MethodPost, Path: "/v1/requisitions/{id}/job-post/exemption", Tags: []string{"Hiring"}, Summary: "Record an exemption from the advert",
-		Description: "Records, once, an exemption from the Fair Consideration Framework's advert with its evidence, for a role that needs a pass. The offer is then not held back. The Recruiter. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
+		Description: "Records, once, an exemption from the Fair Consideration Framework's advert with its evidence, for a role that needs a pass. The offer is then not held back. The Recruiter, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
 	}, func(ctx context.Context, in *exemptionInput) (*requisitionOutput, error) {
 		s, err := writer(ctx, in.Cookie)
 		if err != nil {
@@ -351,7 +351,7 @@ func (a *API) registerHiring() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "closeJobPost", Method: http.MethodPost, Path: "/v1/requisitions/{id}/job-post/closing", Tags: []string{"Hiring"}, Summary: "Close a job post",
-		Description: "Closes a published post, once. The Recruiter. It is audited.", Errors: []int{401, 403, 404, 409, 503},
+		Description: "Closes a published post, once. The Recruiter, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 503},
 	}, func(ctx context.Context, in *requisitionIDInput) (*requisitionOutput, error) {
 		s, err := writer(ctx, in.Cookie)
 		if err != nil {
