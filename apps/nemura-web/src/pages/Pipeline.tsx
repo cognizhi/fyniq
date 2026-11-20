@@ -1,13 +1,56 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
-import { t } from "../i18n";
+import { helpText, t } from "../i18n";
 
 type Candidate = components["schemas"]["Candidate"];
 type Kit = components["schemas"]["InterviewKit"];
+type Interviewer = components["schemas"]["Interviewer"];
+type AccessLink = components["schemas"]["CandidateAccessLink"];
 type Note = { ok: boolean; text: string } | null;
 const problem = (e: unknown): string => (e as { detail?: string } | undefined)?.detail ?? t("pipeline.failed");
 const next: Record<string, string[]> = { applied: ["screening", "interview", "not_progressing"], screening: ["interview", "not_progressing"], interview: ["offer", "not_progressing"], offer: ["interview", "not_progressing"], not_progressing: ["screening"] };
+
+// CandidateAccess is a candidate's own link (NM-REC-05): the hiring team makes it, for the days chosen, and sends it themselves; its token is shown once. The links made are listed with when each works until, and one is revoked here.
+function CandidateAccess({ candidate, name, onChange }: { candidate: string; name: string; onChange: (error: unknown, ok: string) => boolean }) {
+  const [days, setDays] = useState("14");
+  const [links, setLinks] = useState<AccessLink[]>([]);
+  const [made, setMade] = useState("");
+  const load = () => {
+    api.GET("/v1/candidates/{id}/access-links", { params: { path: { id: candidate } } }).then(({ data }) => setLinks(data?.links ?? []), () => setLinks([]));
+  };
+  useEffect(load, [candidate]); // eslint-disable-line react-hooks/exhaustive-deps
+  const make = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { data, error } = await api.POST("/v1/candidates/{id}/access-links", { params: { path: { id: candidate } }, body: { days: Number(days) } });
+    if (!onChange(error, t("pipeline.accessDone"))) return;
+    setMade(t("pipeline.accessMade", { path: data?.path ?? "", token: data?.token ?? "" }));
+    load();
+  };
+  const revoke = async (l: AccessLink) => {
+    if (onChange((await api.POST("/v1/candidate-access-links/{id}/revocation", { params: { path: { id: l.id } } })).error, t("pipeline.accessRevokedDone"))) load();
+  };
+  return (
+    <details className="fy-stack fy-stack--2">
+      <summary title={helpText("pipeline.access").tooltip}>{t("pipeline.access", { name })}</summary>
+      <p className="fy-secondary">{t("pipeline.accessLead")}</p>
+      <form className="fy-row" style={{ gap: "var(--space-2)" }} aria-label={t("pipeline.access", { name })} onSubmit={make}>
+        <label className="fy-field"><span>{t("pipeline.accessDays")}</span><input className="fy-input" type="number" min={1} max={30} required value={days} onChange={(e) => setDays(e.target.value)} /></label>
+        <button className="fy-btn fy-btn--secondary fy-btn--sm" type="submit">{t("pipeline.accessButton")}</button>
+      </form>
+      {made && <p role="status"><code>{made}</code></p>}
+      {links.length > 0 && <h5 className="fy-strong">{t("pipeline.accessList", { name })}</h5>}
+      <ul className="fy-stack fy-stack--1">
+        {links.map((l) => (
+          <li key={l.id} className="fy-row" style={{ gap: "var(--space-2)" }}>
+            <span>{t("pipeline.accessLine", { made: l.created_at.slice(0, 10), until: l.expires_at.slice(0, 10) })}{l.revoked_at ? ` (${t("pipeline.accessRevoked", { on: l.revoked_at.slice(0, 10) })})` : ""}</span>
+            {!l.revoked_at && <button className="fy-btn fy-btn--secondary fy-btn--sm" type="button" aria-label={t("pipeline.accessRevoke", { made: l.created_at.slice(0, 10) })} onClick={() => void revoke(l)}>{t("pipeline.revokeButton")}</button>}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
 
 // Pipeline is the candidates of one approved requisition (NM-REC-04, NM-REC-05): the board with each candidate's stage and consent, adding a candidate, moving one along the board with the reason of a decision,
 // a note, the person's consent to be kept for future roles, and the interview kit with its fair-wording check. A recruiter writes; the API and the database decide who reads what.
@@ -24,7 +67,10 @@ export function Pipeline({ requisition, canWrite, canHire = false }: { requisiti
   const [start, setStart] = useState("");
   const [employment, setEmployment] = useState<"full_time" | "part_time" | "contract" | "intern">("full_time");
   const [passOn, setPassOn] = useState("");
+  const [interviewers, setInterviewers] = useState<Interviewer[]>([]);
+  const [pick, setPick] = useState<Record<string, string>>({});
   const load = () => {
+    if (canWrite) api.GET("/v1/interviewers").then(({ data }) => setInterviewers(data?.interviewers ?? []), () => setInterviewers([]));
     api.GET("/v1/requisitions/{id}/candidates", { params: { path: { id: requisition } } }).then(({ data }) => setList(data?.candidates ?? []), () => setList([]));
     api.GET("/v1/requisitions/{id}/interview-kit", { params: { path: { id: requisition } } }).then(({ data }) => {
       setKit(data ?? null);
@@ -75,6 +121,22 @@ export function Pipeline({ requisition, canWrite, canHire = false }: { requisiti
                 <button className="fy-btn fy-btn--primary fy-btn--sm" type="submit">{t("pipeline.hireButton", { name: c.name })}</button>
               </form>
             )}
+            {c.retention_until && c.stage === "hired" && <span className="fy-secondary">{t("pipeline.hiredDue", { on: c.retention_until })}</span>}
+            {canWrite && c.stage !== "hired" && (
+              <form className="fy-row" style={{ gap: "var(--space-2)" }} aria-label={t("pipeline.assignLabel", { candidate: c.name })}
+                onSubmit={async (e) => { e.preventDefault(); done((await api.POST("/v1/candidates/{id}/interviewers", { params: { path: { id: c.id } }, body: { member_id: pick[c.id] ?? interviewers[0]?.member_id ?? "" } })).error, t("pipeline.assigned")); }}>
+                {interviewers.length === 0 ? <span className="fy-secondary">{t("pipeline.noInterviewers")}</span> : (
+                  <>
+                    <label className="fy-field"><span>{t("pipeline.interviewer")}</span>
+                      <select className="fy-input" value={pick[c.id] ?? interviewers[0]?.member_id ?? ""} onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })}>{interviewers.map((i) => <option key={i.member_id} value={i.member_id}>{i.name}</option>)}</select>
+                    </label>
+                    <button className="fy-btn fy-btn--secondary fy-btn--sm" type="submit" title={helpText("pipeline.assign").tooltip}>{t("pipeline.assignButton")}</button>
+                  </>
+                )}
+              </form>
+            )}
+            {(c.interviewers ?? []).length > 0 && <span className="fy-secondary">{t("pipeline.interviewers", { names: (c.interviewers ?? []).join(", ") })}</span>}
+            {canWrite && <CandidateAccess candidate={c.id} name={c.name} onChange={done} />}
             {canWrite && (
               <span className="fy-row" style={{ gap: "var(--space-2)" }}>
                 <button className="fy-btn fy-btn--secondary fy-btn--sm" type="button" aria-label={t(c.consent_future ? "pipeline.withdraw" : "pipeline.consent", { name: c.name })}

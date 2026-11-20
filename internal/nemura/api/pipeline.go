@@ -112,6 +112,15 @@ type Pipeline interface {
 	PassApplication(ctx context.Context, s Session, id uuid.UUID, on string) (Candidate, error)
 	Kit(ctx context.Context, s Session, requisition uuid.UUID) (InterviewKit, error)
 	SaveKit(ctx context.Context, s Session, requisition uuid.UUID, in InterviewKit) (InterviewKit, error)
+	MyInterviews(ctx context.Context, s Session) ([]MyInterview, error)
+	Interviewers(ctx context.Context, s Session) ([]Interviewer, error)
+	CreateAccess(ctx context.Context, s Session, candidate uuid.UUID, days int) (CandidateAccessCreated, error)
+	AccessLinks(ctx context.Context, s Session, candidate uuid.UUID) ([]CandidateAccessLink, error)
+	RevokeAccess(ctx context.Context, s Session, link uuid.UUID) error
+	// OwnData is what a live access link shows its candidate, with no sign-in; Found is false for a link that is unknown, expired or revoked.
+	OwnData(ctx context.Context, token string) (CandidateOwnView, error)
+	// OwnWithdraw is the candidate's withdrawal of the consent to be kept for future roles, through a live link.
+	OwnWithdraw(ctx context.Context, token string) (CandidateOwnView, error)
 	// Apply records an application made on the careers page: false when the address and the post do not name an open post.
 	Apply(ctx context.Context, slug string, post uuid.UUID, in CandidateInput) (bool, error)
 }
@@ -222,7 +231,8 @@ func init() {
 	IdempotencyExempt["POST /v1/careers/{slug}/applications"] = "an application made twice is two candidates the recruiter merges; it is rate-limited by email address"
 }
 
-func (a *API) registerPipeline(seen, writer, interviewer, hirer func(context.Context, string) (Session, error)) {
+func (a *API) registerPipeline(seen, writer, interviewer, hirer, lineManager func(context.Context, string) (Session, error)) {
+	a.registerHiringMore(seen, writer, interviewer, lineManager)
 	needs := func() error { return Err(CodeUnavailable, "Hiring is not set up in this deployment.") }
 	id := func(raw string) (uuid.UUID, error) {
 		u, err := uuid.Parse(raw)

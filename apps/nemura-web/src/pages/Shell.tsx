@@ -30,6 +30,8 @@ export function Shell({ children, directory, features, roles }: { children: Reac
             {directory && <a href="/people/onboarding">{t("nav.onboarding")}</a>}
             {payroll(roles ?? []) && <a href="/people/payroll">{t("nav.payroll")}</a>}
             {seesHiring(roles ?? []) && <a href="/people/hiring">{t("nav.hiring")}</a>}
+            {(roles ?? []).includes("interviewer") && <a href="/me/interviews">{t("nav.interviews")}</a>}
+            {(roles ?? []).includes("line_manager") && <a href="/me/hiring-roles">{t("nav.roles")}</a>}
             {handlesGrievances(roles ?? []) && <a href="/people/grievances">{t("nav.grievances")}</a>}
             {directory && <a href="/people/letters">{t("nav.letters")}</a>}
             {directory && <a href="/settings/letters">{t("nav.letterSettings")}</a>}
