@@ -1505,6 +1505,12 @@ func (f fakePipeline) Score(context.Context, Session, uuid.UUID, string, int, st
 func (f fakePipeline) Consent(context.Context, Session, uuid.UUID, bool) (Candidate, error) {
 	return Candidate{}, f.err
 }
+func (f fakePipeline) Hire(context.Context, Session, uuid.UUID, HireInput) (Candidate, error) {
+	return Candidate{}, f.err
+}
+func (f fakePipeline) PassApplication(context.Context, Session, uuid.UUID, string) (Candidate, error) {
+	return Candidate{}, f.err
+}
 func (f fakePipeline) Kit(context.Context, Session, uuid.UUID) (InterviewKit, error) {
 	return InterviewKit{}, f.err
 }

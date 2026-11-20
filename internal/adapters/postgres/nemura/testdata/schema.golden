@@ -35,6 +35,7 @@ gov_claim_event | nemura_migrator | true | true
 gov_leave | nemura_migrator | true | true
 grievance | nemura_migrator | true | true
 grievance_entry | nemura_migrator | true | true
+hire | nemura_migrator | true | true
 hr_question | nemura_migrator | true | true
 idempotency_key | nemura_migrator | true | true
 identity_directory | nemura_migrator | false | false
@@ -474,6 +475,17 @@ grievance_entry | body | text | true |
 grievance_entry | by_member | uuid | true | 
 grievance_entry | at | timestamp with time zone | true | 
 grievance_entry | subject_people | uuid[] | true | '{}'::uuid[]
+hire | organisation_id | uuid | true | nemura.current_org()
+hire | id | uuid | true | uuidv7()
+hire | candidate_id | uuid | true | 
+hire | requisition_id | uuid | true | 
+hire | person_id | uuid | true | 
+hire | plan_id | uuid | false | 
+hire | start_date | date | true | 
+hire | pass_needed | boolean | true | 
+hire | pass_application_on | date | false | 
+hire | hired_by | uuid | true | 
+hire | hired_at | timestamp with time zone | true | 
 hr_question | organisation_id | uuid | true | nemura.current_org()
 hr_question | id | uuid | true | uuidv7()
 hr_question | person_id | uuid | true | 
@@ -1908,6 +1920,23 @@ grievance_entry | grievance_entry_organisation_id_not_null | NOT NULL organisati
 grievance_entry | grievance_entry_pkey | PRIMARY KEY (organisation_id, id)
 grievance_entry | grievance_entry_subject_people_not_null | NOT NULL subject_people
 grievance_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+hire | hire_by_fkey | FOREIGN KEY (organisation_id, hired_by) REFERENCES nemura.member(organisation_id, id)
+hire | hire_candidate_fkey | FOREIGN KEY (organisation_id, candidate_id) REFERENCES nemura.candidate(organisation_id, id)
+hire | hire_candidate_id_not_null | NOT NULL candidate_id
+hire | hire_candidate_key | UNIQUE (organisation_id, candidate_id)
+hire | hire_hired_at_not_null | NOT NULL hired_at
+hire | hire_hired_by_not_null | NOT NULL hired_by
+hire | hire_id_not_null | NOT NULL id
+hire | hire_organisation_id_not_null | NOT NULL organisation_id
+hire | hire_pass_needed_not_null | NOT NULL pass_needed
+hire | hire_pass_whole | CHECK (((pass_application_on IS NULL) OR pass_needed))
+hire | hire_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+hire | hire_person_id_not_null | NOT NULL person_id
+hire | hire_pkey | PRIMARY KEY (organisation_id, id)
+hire | hire_requisition_fkey | FOREIGN KEY (organisation_id, requisition_id) REFERENCES nemura.requisition(organisation_id, id)
+hire | hire_requisition_id_not_null | NOT NULL requisition_id
+hire | hire_start_date_not_null | NOT NULL start_date
+hire | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 hr_question | hr_question_answered_whole | CHECK (((state = 'answered'::text) = ((replied_at IS NOT NULL) AND (replied_by IS NOT NULL) AND (length(btrim(COALESCE(reply, ''::text))) > 0))))
 hr_question | hr_question_asked_at_not_null | NOT NULL asked_at
 hr_question | hr_question_due_on_not_null | NOT NULL due_on
@@ -3320,6 +3349,8 @@ CREATE INDEX gov_leave_person_idx ON nemura.gov_leave USING btree (organisation_
 CREATE UNIQUE INDEX gov_leave_pkey ON nemura.gov_leave USING btree (organisation_id, id)
 CREATE UNIQUE INDEX grievance_entry_pkey ON nemura.grievance_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX grievance_pkey ON nemura.grievance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX hire_candidate_key ON nemura.hire USING btree (organisation_id, candidate_id)
+CREATE UNIQUE INDEX hire_pkey ON nemura.hire USING btree (organisation_id, id)
 CREATE INDEX hr_question_open_idx ON nemura.hr_question USING btree (organisation_id, due_on) WHERE (state = 'open'::text)
 CREATE INDEX hr_question_person_idx ON nemura.hr_question USING btree (organisation_id, person_id, asked_at)
 CREATE UNIQUE INDEX hr_question_pkey ON nemura.hr_question USING btree (organisation_id, id)
@@ -3559,6 +3590,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.grievan
 CREATE TRIGGER grievance_entry_append_only BEFORE DELETE OR UPDATE ON nemura.grievance_entry FOR EACH ROW EXECUTE FUNCTION nemura.grievance_entry_guard()
 CREATE TRIGGER grievance_entry_fill BEFORE INSERT ON nemura.grievance_entry FOR EACH ROW EXECUTE FUNCTION nemura.grievance_entry_fill()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.grievance_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('grievance_entry', 'id')
+CREATE TRIGGER hire_guard BEFORE DELETE OR UPDATE ON nemura.hire FOR EACH ROW EXECUTE FUNCTION nemura.hire_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.hire DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('candidate', 'candidate_id')
 CREATE TRIGGER hr_question_guard BEFORE DELETE OR UPDATE ON nemura.hr_question FOR EACH ROW EXECUTE FUNCTION nemura.hr_question_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.hr_question DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('hr_question', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.interview_kit DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('requisition', 'requisition_id')
@@ -3747,6 +3780,8 @@ grievance_entry | handler_writes |  | ((organisation_id = nemura.current_org()) 
   WHERE ((g.organisation_id = grievance_entry.organisation_id) AND (g.id = grievance_entry.grievance_id) AND (g.handler_member = nemura.current_person()))))))
 grievance_entry | not_the_subject | ((CURRENT_USER = 'nemura_migrator'::name) OR ((nemura.current_person() IS NOT NULL) AND (NOT nemura.is_subject_member(subject_people, nemura.current_person())))) | 
 grievance_entry | owner_functions | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+hire | hiring_scope | nemura.hiring_team() | nemura.hiring_team()
+hire | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 hr_question | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 idempotency_key | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 interview_kit | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -4523,6 +4558,23 @@ AS $function$
      WHERE a.organisation_id = nemura.current_org() AND a.member_id = nemura.current_person() AND a.role = wanted
        AND a.effective_from <= coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)
        AND (a.effective_to IS NULL OR a.effective_to > coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)))
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.hire_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR (NEW.organisation_id, NEW.id, NEW.candidate_id, NEW.requisition_id, NEW.person_id, NEW.plan_id, NEW.start_date, NEW.pass_needed, NEW.hired_by, NEW.hired_at)
+       IS DISTINCT FROM (OLD.organisation_id, OLD.id, OLD.candidate_id, OLD.requisition_id, OLD.person_id, OLD.plan_id, OLD.start_date, OLD.pass_needed, OLD.hired_by, OLD.hired_at) THEN
+    RAISE EXCEPTION 'A hire is never deleted or rewritten: only the pass application date is recorded, once' USING ERRCODE = 'NM216';
+  END IF;
+  IF OLD.pass_application_on IS NOT NULL AND NEW.pass_application_on IS DISTINCT FROM OLD.pass_application_on THEN
+    RAISE EXCEPTION 'The pass application date is recorded once' USING ERRCODE = 'NM216';
+  END IF;
+  RETURN NEW;
+END
 $function$
 
 CREATE OR REPLACE FUNCTION nemura.hiring_team()

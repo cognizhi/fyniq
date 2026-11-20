@@ -12,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/hiring"
+	"github.com/cognizhi/fyniq/internal/nemura/people"
 	"github.com/cognizhi/fyniq/internal/nemura/retention"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
@@ -116,6 +117,20 @@ func oneCandidate(ctx context.Context, tx pgx.Tx, id uuid.UUID, detail bool) (ap
 		c.Scores = append(c.Scores, x)
 	}
 	rows.Close()
+	var h api.HireView
+	var start time.Time
+	var pass *time.Time
+	var plan *uuid.UUID
+	switch e := tx.QueryRow(ctx, `SELECT h.person_id, h.plan_id, h.start_date, h.pass_needed, h.pass_application_on FROM nemura.hire h WHERE h.candidate_id = $1`, id).Scan(&h.PersonID, &plan, &start, &h.PassNeeded, &pass); {
+	case e == nil:
+		h.StartDate, h.PassApplicationOn = day(start), dayOrEmpty(pass)
+		if plan != nil {
+			h.PlanID = plan.String()
+		}
+		c.Hire = &h
+	case !errors.Is(e, pgx.ErrNoRows):
+		return c, e
+	}
 	rows, err = tx.Query(ctx, `SELECT b.display_name FROM nemura.candidate_interviewer i JOIN nemura.member b ON b.organisation_id = i.organisation_id AND b.id = i.member_id WHERE i.candidate_id = $1 ORDER BY i.assigned_at`, id)
 	if err != nil {
 		return c, err
@@ -224,10 +239,15 @@ func (p PipelineService) Move(ctx context.Context, s api.Session, id uuid.UUID, 
 			return err
 		}
 		if to == "hired" {
-			return &hiring.Refusal{Code: hiring.CodeConflict, Message: "A candidate is hired by the offer, not by a move: record the offer's acceptance."}
+			return &hiring.Refusal{Code: hiring.CodeConflict, Message: "A candidate is hired by the offer, not by a move: use Hire the candidate once the offer is accepted."}
 		}
 		if err := hiring.CheckMove(from, to, reason); err != nil {
 			return err
+		}
+		if to == "offer" {
+			if err := offerAllowed(ctx, tx, id, at); err != nil {
+				return err
+			}
 		}
 		if _, err := tx.Exec(ctx, `UPDATE nemura.candidate SET stage = $2, stage_reason = $3, stage_at = $4 WHERE id = $1`, id, to, orNil(strings.TrimSpace(reason)), at); err != nil {
 			return hiringError(err)
@@ -468,4 +488,136 @@ func (s *Store) RunCandidateRetention(ctx context.Context, org uuid.UUID, now ti
 		return err
 	})
 	return deleted, reported, err
+}
+
+// requisitionOf names the requisition of a candidate and whether it needs a pass, with the post's advert and exemption, for the Fair Consideration Framework's rule.
+func offerAllowed(ctx context.Context, tx pgx.Tx, candidate uuid.UUID, at time.Time) error {
+	var pass bool
+	var posted, closed *time.Time
+	var exemption *string
+	err := tx.QueryRow(ctx, `SELECT r.pass_needed, j.advert_posted_on, j.advert_closed_on, j.exemption FROM nemura.candidate c JOIN nemura.requisition r ON r.organisation_id = c.organisation_id AND r.id = c.requisition_id
+		LEFT JOIN nemura.job_post j ON j.organisation_id = r.organisation_id AND j.requisition_id = r.id WHERE c.id = $1`, candidate).Scan(&pass, &posted, &closed, &exemption)
+	if err != nil {
+		return err
+	}
+	ex := ""
+	if exemption != nil {
+		ex = *exemption
+	}
+	return hiring.CheckOffer(pass, posted, closed, ex, dateOf(at))
+}
+
+// HireCandidate is the offer's acceptance (NM-REC-06): the candidate at the offer stage becomes a person with a start date, an onboarding plan is started and the requisition is filled. A role that needs a
+// pass waits for the advert's days or an exemption (NM-REC-02). The candidate's own record stays as it was and is final.
+func HireCandidate(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, id uuid.UUID, in api.HireInput) (uuid.UUID, error) {
+	var name, stage string
+	var requisition uuid.UUID
+	if err := tx.QueryRow(ctx, `SELECT full_name, stage, requisition_id FROM nemura.candidate WHERE id = $1 FOR UPDATE`, id).Scan(&name, &stage, &requisition); errors.Is(err, pgx.ErrNoRows) {
+		return uuid.Nil, noCandidate
+	} else if err != nil {
+		return uuid.Nil, err
+	}
+	if stage != "offer" {
+		return uuid.Nil, &hiring.Refusal{Code: hiring.CodeConflict, Message: "Only a candidate at the offer stage is hired: move them to offer first, and read the page again."}
+	}
+	if err := offerAllowed(ctx, tx, id, at); err != nil {
+		return uuid.Nil, err
+	}
+	start, err := time.Parse(time.DateOnly, in.StartDate)
+	if err != nil {
+		return uuid.Nil, &hiring.Refusal{Code: hiring.CodeInvalid, Message: "The start date is the first day of employment: write it as 2027-02-01."}
+	}
+	var title, department string
+	var pass bool
+	if err := tx.QueryRow(ctx, `SELECT title, department, pass_needed FROM nemura.requisition WHERE id = $1 FOR UPDATE`, requisition).Scan(&title, &department, &pass); err != nil {
+		return uuid.Nil, err
+	}
+	if in.JobTitle != "" {
+		title = in.JobTitle
+	}
+	if in.Department != "" {
+		department = in.Department
+	}
+	if err := hiring.CheckHire(start, dateOf(at), title); err != nil {
+		return uuid.Nil, err
+	}
+	worksite := in.Worksite
+	if worksite == "" {
+		worksite = "SG"
+	}
+	person, err := AddPerson(ctx, tx, org, at, by, people.Person{LegalName: name, EmploymentStart: start}, people.Job{Title: title, Department: department, Worksite: worksite, EmploymentType: in.EmploymentType}, nil)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	var tpl *uuid.UUID
+	if in.TemplateID != "" {
+		t, err := uuid.Parse(in.TemplateID)
+		if err != nil {
+			return uuid.Nil, &hiring.Refusal{Code: hiring.CodeInvalid, Message: "The template is the ID of an onboarding template."}
+		}
+		tpl = &t
+	}
+	plan, err := StartOnboardingPlan(ctx, tx, org, at, by, person, tpl)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if _, err := tx.Exec(ctx, `UPDATE nemura.candidate SET stage = 'hired', stage_reason = NULL, stage_at = $2 WHERE id = $1`, id, at); err != nil {
+		return uuid.Nil, hiringError(err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO nemura.candidate_move (candidate_id, from_stage, to_stage, by_member, at) VALUES ($1, 'offer', 'hired', $2, $3)`, id, by, at); err != nil {
+		return uuid.Nil, hiringError(err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE nemura.requisition SET state = 'filled' WHERE id = $1`, requisition); err != nil {
+		return uuid.Nil, hiringError(err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO nemura.hire (candidate_id, requisition_id, person_id, plan_id, start_date, pass_needed, hired_by, hired_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, id, requisition, person, plan, day(start), pass, by, at); err != nil {
+		return uuid.Nil, hiringError(err)
+	}
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.requisition.filled", audit.Object{Type: "requisition", ID: requisition}, map[string]audit.Change{"state": {"approved", "filled"}}, ""); err != nil {
+		return uuid.Nil, err
+	}
+	return person, Audit(ctx, tx, org, at, user(by), "nemura.candidate.hired", audit.Object{Type: "candidate", ID: id}, map[string]audit.Change{"stage": {"offer", "hired"}, "start_date": {nil, day(start)}}, "")
+}
+
+func (p PipelineService) Hire(ctx context.Context, s api.Session, id uuid.UUID, in api.HireInput) (c api.Candidate, err error) {
+	err = p.as(ctx, s, func(ctx context.Context, tx pgx.Tx, at time.Time) error {
+		if _, err := HireCandidate(ctx, tx, s.Organisation, at, s.Member, id, in); err != nil {
+			return err
+		}
+		c, err = oneCandidate(ctx, tx, id, true)
+		return err
+	})
+	return c, err
+}
+
+// RecordPassApplication tracks the day the Employment Pass or S Pass application was made for a hire that needs one, once.
+func (p PipelineService) PassApplication(ctx context.Context, s api.Session, id uuid.UUID, on string) (c api.Candidate, err error) {
+	err = p.as(ctx, s, func(ctx context.Context, tx pgx.Tx, at time.Time) error {
+		d, perr := time.Parse(time.DateOnly, on)
+		var pass bool
+		if e := tx.QueryRow(ctx, `SELECT pass_needed FROM nemura.hire WHERE candidate_id = $1 FOR UPDATE`, id).Scan(&pass); errors.Is(e, pgx.ErrNoRows) {
+			return &hiring.Refusal{Code: hiring.CodeConflict, Message: "There is no hire for that candidate: the application is tracked once they are hired."}
+		} else if e != nil {
+			return e
+		}
+		if perr != nil {
+			d = time.Time{}
+		}
+		if err := hiring.CheckPassApplication(pass, d, dateOf(at)); err != nil {
+			return err
+		}
+		tag, err := tx.Exec(ctx, `UPDATE nemura.hire SET pass_application_on = $2 WHERE candidate_id = $1 AND pass_application_on IS NULL`, id, on)
+		if err != nil {
+			return hiringError(err)
+		}
+		if tag.RowsAffected() == 0 {
+			return &hiring.Refusal{Code: hiring.CodeConflict, Message: "The pass application's day is recorded already: it is recorded once."}
+		}
+		if err := Audit(ctx, tx, s.Organisation, at, user(s.Member), "nemura.hire.pass_application_recorded", audit.Object{Type: "candidate", ID: id}, map[string]audit.Change{"on": {nil, on}}, ""); err != nil {
+			return err
+		}
+		c, err = oneCandidate(ctx, tx, id, true)
+		return err
+	})
+	return c, err
 }

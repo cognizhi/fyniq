@@ -151,6 +151,8 @@ var Matrix = map[string]string{ // #nosec G101 -- operation names and who may ca
 	"POST /v1/candidates/{id}/notes":                      "Recruiter, HR administrator, Owner, with Hiring on",
 	"POST /v1/candidates/{id}/interviewers":               "Recruiter, HR administrator, Owner, with Hiring on; a member who holds the Interviewer role",
 	"POST /v1/candidates/{id}/scores":                     "Interviewer assigned to the candidate, with Hiring on; a criterion of the kit",
+	"POST /v1/candidates/{id}/hire":                       "HR administrator, Owner (Hiring: create and People records: create or approve), with Hiring on; a candidate at offer, a role needing a pass only after the advert's days or an exemption",
+	"POST /v1/candidates/{id}/pass-application":           "Recruiter, HR administrator, Owner, with Hiring on; once",
 	"POST /v1/candidates/{id}/future-consent":             "Recruiter, HR administrator, Owner, with Hiring on; given once, withdrawn once",
 	"GET /v1/requisitions/{id}/interview-kit":             "Recruiter, HR officer, HR administrator, Owner, Interviewer, with Hiring on",
 	"PUT /v1/requisitions/{id}/interview-kit":             "Recruiter, HR administrator, Owner, with Hiring on; questions checked for fair wording",

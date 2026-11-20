@@ -20,12 +20,13 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 		{"PUT", "/v1/requisitions/" + id + "/job-post", `{"title":"Data scientist","body":"You will analyse data."}`}, {"POST", "/v1/requisitions/" + id + "/job-post/publication", `{}`},
 		{"POST", "/v1/requisitions/" + id + "/job-post/advert", `{"posted_on":"2026-10-05"}`}, {"POST", "/v1/requisitions/" + id + "/job-post/advert/renewal", `{"change":"salary","posted_on":"2026-11-02"}`}, {"PUT", "/v1/careers-page", `{"slug":"acme-careers","enabled":true,"company":"Acme"}`},
 		{"POST", "/v1/requisitions/" + id + "/candidates", `{"name":"Chen Yu","email":"chen.yu@example.com"}`}, {"POST", "/v1/candidates/" + id + "/moves", `{"to":"screening"}`}, {"POST", "/v1/candidates/" + id + "/notes", `{"body":"Strong."}`},
-		{"POST", "/v1/candidates/" + id + "/interviewers", `{"member_id":"` + id + `"}`}, {"POST", "/v1/candidates/" + id + "/future-consent", `{"given":true}`},
+		{"POST", "/v1/candidates/" + id + "/interviewers", `{"member_id":"` + id + `"}`}, {"POST", "/v1/candidates/" + id + "/future-consent", `{"given":true}`}, {"POST", "/v1/candidates/" + id + "/pass-application", `{"on":"2027-01-15"}`},
 		{"PUT", "/v1/requisitions/" + id + "/interview-kit", `{"questions":["Why us?"],"criteria":["Skill"]}`},
 		{"POST", "/v1/requisitions/" + id + "/job-post/exemption", `{"kind":"transferee","note":"Intra-company."}`},
 		{"POST", "/v1/requisitions/" + id + "/job-post/closing", ``}}
 	seen := []op{{"GET", "/v1/requisitions/" + id + "/candidates", ""}, {"GET", "/v1/candidates/" + id, ""}, {"GET", "/v1/requisitions/" + id + "/interview-kit", ""}} // the team and an interviewer
 	scores := []op{{"POST", "/v1/candidates/" + id + "/scores", `{"criterion":"Skill","score":4}`}}                                                                    // an interviewer alone
+	hires := []op{{"POST", "/v1/candidates/" + id + "/hire", `{"start_date":"2027-02-01","employment_type":"full_time"}`}}                                             // the HR administrator and the Owner alone
 	approves := []op{{"POST", "/v1/requisitions/" + id + "/decision", `{"approve":true}`}}
 	call := func(o op, cookie string) int {
 		_, mux := testAPI(t)
@@ -40,7 +41,7 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 	}
 	ok := func(c int) bool { return c == 200 || c == 201 || c == 204 }
 	defer func() { testRoles, featuresOff = []authz.Role{authz.HRAdmin}, false }()
-	for _, o := range append(append(append(append(reads, writes...), approves...), seen...), scores...) {
+	for _, o := range append(append(append(append(append(reads, writes...), approves...), seen...), scores...), hires...) {
 		if code := call(o, ""); code != 401 {
 			t.Errorf("%s %s with no session: %d", o.method, o.path, code)
 		}
@@ -63,7 +64,7 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 		for kind, set := range map[string]struct {
 			ops  []op
 			want bool
-		}{"read": {reads, tc.read}, "write": {writes, tc.write}, "approve": {approves, tc.approving}, "seen": {seen, tc.read || tc.role == authz.Interviewer}, "score": {scores, tc.role == authz.Interviewer}} {
+		}{"read": {reads, tc.read}, "write": {writes, tc.write}, "approve": {approves, tc.approving}, "seen": {seen, tc.read || tc.role == authz.Interviewer}, "score": {scores, tc.role == authz.Interviewer}, "hire": {hires, tc.role == authz.HRAdmin || tc.role == authz.Owner}} {
 			for _, o := range set.ops {
 				if got := ok(call(o, "nemura_session=good-token")); got != set.want {
 					t.Errorf("%s: %s %s %s: allowed %v, want %v", name, kind, o.method, o.path, got, set.want)

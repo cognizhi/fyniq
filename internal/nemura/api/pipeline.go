@@ -57,8 +57,28 @@ type Candidate struct {
 	Notes              []CandidateNote  `json:"notes,omitempty" doc:"The hiring team's notes, in the detail and for the hiring team only. Opinions formed to evaluate a candidate are not released on an access request."`
 	Scores             []CandidateScore `json:"scores,omitempty" doc:"The scorecard's scores: the hiring team reads all of them, an interviewer only their own."`
 	InterviewerNames   []string         `json:"interviewers,omitempty" doc:"The interviewers assigned, in the detail."`
+	Hire               *HireView        `json:"hire,omitempty" doc:"The hire, once the candidate was hired."`
 	ConsentFutureAt    string           `json:"consent_future_at,omitempty" format:"date-time" doc:"When they consented to be kept for future roles." example:"2026-11-01T10:00:00Z"`
 	ConsentWithdrawnAt string           `json:"consent_future_withdrawn_at,omitempty" format:"date-time" doc:"When they withdrew it." example:"2026-12-01T10:00:00Z"`
+}
+
+// HireView is what a hire made: the person, their plan and the pass application.
+type HireView struct {
+	PersonID          string `json:"person_id" format:"uuid" doc:"The person record made at the hire." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	PlanID            string `json:"plan_id,omitempty" format:"uuid" doc:"The onboarding plan started for them." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d5a01"`
+	StartDate         string `json:"start_date" format:"date" doc:"Their first day." example:"2027-02-01"`
+	PassNeeded        bool   `json:"pass_needed" doc:"An Employment Pass or S Pass application is expected." example:"true"`
+	PassApplicationOn string `json:"pass_application_on,omitempty" format:"date" doc:"The day the pass application was made, recorded once." example:"2027-01-15"`
+}
+
+// HireInput is a hire: what the person record and plan are made from.
+type HireInput struct {
+	StartDate      string `json:"start_date" format:"date" doc:"The first day of employment, today or later." example:"2027-02-01"`
+	EmploymentType string `json:"employment_type" enum:"full_time,part_time,contract,intern" doc:"The kind of employment." example:"full_time"`
+	Worksite       string `json:"worksite,omitempty" maxLength:"11" doc:"The country code of the worksite; SG when left out." example:"SG"`
+	JobTitle       string `json:"job_title,omitempty" maxLength:"200" doc:"The job title; the requisition's role when left out." example:"Data scientist"`
+	Department     string `json:"department,omitempty" maxLength:"200" doc:"The team; the requisition's team when left out." example:"Engineering"`
+	TemplateID     string `json:"template_id,omitempty" format:"uuid" doc:"The onboarding template; the standard one when left out." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d5b01"`
 }
 
 // InterviewKit is a requisition's questions and scorecard.
@@ -88,6 +108,8 @@ type Pipeline interface {
 	Assign(ctx context.Context, s Session, id, member uuid.UUID) (Candidate, error)
 	Score(ctx context.Context, s Session, id uuid.UUID, criterion string, score int, comment string) (Candidate, error)
 	Consent(ctx context.Context, s Session, id uuid.UUID, given bool) (Candidate, error)
+	Hire(ctx context.Context, s Session, id uuid.UUID, in HireInput) (Candidate, error)
+	PassApplication(ctx context.Context, s Session, id uuid.UUID, on string) (Candidate, error)
 	Kit(ctx context.Context, s Session, requisition uuid.UUID) (InterviewKit, error)
 	SaveKit(ctx context.Context, s Session, requisition uuid.UUID, in InterviewKit) (InterviewKit, error)
 	// Apply records an application made on the careers page: false when the address and the post do not name an open post.
@@ -152,6 +174,18 @@ type candidateConsentInput struct {
 		Given bool `json:"given" doc:"True when the candidate consents to be kept for future roles, false when they withdraw that consent." example:"true"`
 	}
 }
+type candidateHireInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The candidate." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01"`
+	Body   HireInput
+}
+type candidatePassInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The candidate." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01"`
+	Body   struct {
+		On string `json:"on" format:"date" doc:"The day the Employment Pass or S Pass application was made." example:"2027-01-15"`
+	}
+}
 type kitSaveInput struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
 	ID     string `path:"id" format:"uuid" doc:"The requisition." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01"`
@@ -183,10 +217,12 @@ func init() {
 	IdempotencyExempt["POST /v1/candidates/{id}/interviewers"] = "an interviewer is assigned once: a repeat is refused (NM_HIRING_CONFLICT)"
 	IdempotencyExempt["POST /v1/candidates/{id}/scores"] = "a score is appended; the latest of an interviewer's scores for a criterion counts"
 	IdempotencyExempt["POST /v1/candidates/{id}/future-consent"] = "consent is given or withdrawn once each: a repeat is refused (NM_HIRING_CONFLICT)"
+	IdempotencyExempt["POST /v1/candidates/{id}/hire"] = "a candidate is hired once: a repeat is refused (NM_HIRING_CONFLICT)"
+	IdempotencyExempt["POST /v1/candidates/{id}/pass-application"] = "the day is recorded once: a repeat is refused (NM_HIRING_CONFLICT)"
 	IdempotencyExempt["POST /v1/careers/{slug}/applications"] = "an application made twice is two candidates the recruiter merges; it is rate-limited by email address"
 }
 
-func (a *API) registerPipeline(seen, writer, interviewer func(context.Context, string) (Session, error)) {
+func (a *API) registerPipeline(seen, writer, interviewer, hirer func(context.Context, string) (Session, error)) {
 	needs := func() error { return Err(CodeUnavailable, "Hiring is not set up in this deployment.") }
 	id := func(raw string) (uuid.UUID, error) {
 		u, err := uuid.Parse(raw)
@@ -368,6 +404,48 @@ func (a *API) registerPipeline(seen, writer, interviewer func(context.Context, s
 			return nil, needs()
 		}
 		c, err := a.d.Pipeline.Consent(ctx, s, u, in.Body.Given)
+		if err != nil {
+			return nil, hiringError(err)
+		}
+		return &candidateOutput{Body: c}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "hireCandidate", Method: http.MethodPost, Path: "/v1/candidates/{id}/hire", Tags: []string{"Hiring"}, DefaultStatus: http.StatusCreated, Summary: "Hire a candidate whose offer is accepted",
+		Description: "PRD-002 NM-REC-06. A candidate at the offer stage becomes a person record with the start date, the job and the employment type, an onboarding plan is started for them, the requisition is filled and the candidate is hired, once. For a role that needs an Employment Pass or S Pass, the hire waits until the advert's 14 consecutive days have run or an exemption is recorded, and an advert closed more than 3 months ago cannot be used (NM_HIRING_CONFLICT). The HR administrator and the Owner, who also hold the right to create a person record. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
+	}, func(ctx context.Context, in *candidateHireInput) (*candidateOutput, error) {
+		s, err := hirer(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		u, err := id(in.ID)
+		if err != nil {
+			return nil, err
+		}
+		if a.d.Pipeline == nil {
+			return nil, needs()
+		}
+		c, err := a.d.Pipeline.Hire(ctx, s, u, in.Body)
+		if err != nil {
+			return nil, hiringError(err)
+		}
+		return &candidateOutput{Body: c}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "recordPassApplication", Method: http.MethodPost, Path: "/v1/candidates/{id}/pass-application", Tags: []string{"Hiring"}, Summary: "Record the day the pass application was made",
+		Description: "PRD-002 NM-REC-06. Tracks the day the Employment Pass or S Pass application was made for a hire whose role needs one, once, a day up to today. The Recruiter, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
+	}, func(ctx context.Context, in *candidatePassInput) (*candidateOutput, error) {
+		s, err := writer(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		u, err := id(in.ID)
+		if err != nil {
+			return nil, err
+		}
+		if a.d.Pipeline == nil {
+			return nil, needs()
+		}
+		c, err := a.d.Pipeline.PassApplication(ctx, s, u, in.Body.On)
 		if err != nil {
 			return nil, hiringError(err)
 		}

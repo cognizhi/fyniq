@@ -2061,4 +2061,21 @@ describe("pipeline", () => {
     expect(bodies.get("POST /v1/requisitions/r1/candidates")).toMatchObject({ name: "Mei Tan", email: "mei.tan@example.com", consent_future: false });
     expect(await violations(container)).toEqual([]);
   });
+
+  it("hires a candidate at the offer stage with a start date, and offers no hire to someone who cannot", async () => {
+    const cand = { id: "c2", requisition_id: "r1", name: "Mei Tan", email: "mei.tan@example.com", stage: "offer", stage_at: "2026-11-02T10:00:00Z", applied_via: "recruiter", applied_at: "2026-11-01T10:00:00Z", consent_future: false };
+    answer("GET /v1/requisitions/r1/candidates", { status: 200, body: { candidates: [cand] } });
+    answer("GET /v1/requisitions/r1/interview-kit", { status: 200, body: { exists: false, questions: [], criteria: [], findings: [] } });
+    answer("POST /v1/candidates/c2/hire", { status: 201, body: { ...cand, stage: "hired", hire: { person_id: "p1", plan_id: "pl1", start_date: "2027-02-01", pass_needed: false } } });
+    render(<Pipeline requisition="r1" canWrite canHire={false} />);
+    expect(await screen.findByText("Mei Tan: Offer")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Hire Mei Tan" })).toBeNull();
+    cleanup();
+    render(<Pipeline requisition="r1" canWrite canHire />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(await screen.findByLabelText("First day of employment"), { target: { value: "2027-02-01" } });
+    fireEvent.click(screen.getByRole("button", { name: "Hire Mei Tan" }));
+    expect(await screen.findByText("The candidate is hired: their person record and onboarding plan are made.")).toBeTruthy();
+    expect(bodies.get("POST /v1/candidates/c2/hire")).toEqual({ start_date: "2027-02-01", employment_type: "full_time" });
+  });
 });

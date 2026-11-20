@@ -293,6 +293,16 @@ nemura_api | column nemura.grievance_entry.by_member | INSERT
 nemura_api | column nemura.grievance_entry.grievance_id | INSERT
 nemura_api | column nemura.grievance_entry.id | INSERT
 nemura_api | column nemura.grievance_entry.kind | INSERT
+nemura_api | column nemura.hire.candidate_id | INSERT
+nemura_api | column nemura.hire.hired_at | INSERT
+nemura_api | column nemura.hire.hired_by | INSERT
+nemura_api | column nemura.hire.id | INSERT
+nemura_api | column nemura.hire.pass_application_on | UPDATE
+nemura_api | column nemura.hire.pass_needed | INSERT
+nemura_api | column nemura.hire.person_id | INSERT
+nemura_api | column nemura.hire.plan_id | INSERT
+nemura_api | column nemura.hire.requisition_id | INSERT
+nemura_api | column nemura.hire.start_date | INSERT
 nemura_api | column nemura.hr_question.asked_at | INSERT
 nemura_api | column nemura.hr_question.due_on | INSERT
 nemura_api | column nemura.hr_question.id | INSERT
@@ -1141,6 +1151,7 @@ nemura_api | table nemura.gov_claim_event | SELECT
 nemura_api | table nemura.gov_leave | SELECT
 nemura_api | table nemura.grievance | SELECT
 nemura_api | table nemura.grievance_entry | SELECT
+nemura_api | table nemura.hire | SELECT
 nemura_api | table nemura.hr_question | SELECT
 nemura_api | table nemura.idempotency_key | DELETE
 nemura_api | table nemura.idempotency_key | SELECT
@@ -1321,6 +1332,7 @@ nemura_readonly | table nemura.goal | SELECT
 nemura_readonly | table nemura.gov_claim | SELECT
 nemura_readonly | table nemura.gov_claim_event | SELECT
 nemura_readonly | table nemura.gov_leave | SELECT
+nemura_readonly | table nemura.hire | SELECT
 nemura_readonly | table nemura.hr_question | SELECT
 nemura_readonly | table nemura.interview_kit | SELECT
 nemura_readonly | table nemura.interview_score | SELECT

@@ -276,6 +276,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/candidates/{id}/hire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hire a candidate whose offer is accepted
+         * @description PRD-002 NM-REC-06. A candidate at the offer stage becomes a person record with the start date, the job and the employment type, an onboarding plan is started for them, the requisition is filled and the candidate is hired, once. For a role that needs an Employment Pass or S Pass, the hire waits until the advert's 14 consecutive days have run or an exemption is recorded, and an advert closed more than 3 months ago cannot be used (NM_HIRING_CONFLICT). The HR administrator and the Owner, who also hold the right to create a person record. It is audited.
+         */
+        post: operations["hireCandidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/candidates/{id}/interviewers": {
         parameters: {
             query?: never;
@@ -330,6 +350,26 @@ export interface paths {
          * @description PRD-002 NM-REC-04. A note of the hiring team, kept as written. Notes are opinions formed to evaluate a candidate: they are not released on an access request (PDPC). The Recruiter, the HR administrator and the Owner. It is audited.
          */
         post: operations["noteCandidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/candidates/{id}/pass-application": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record the day the pass application was made
+         * @description PRD-002 NM-REC-06. Tracks the day the Employment Pass or S Pass application was made for a hire whose role needs one, once, a day up to today. The Recruiter, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["recordPassApplication"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4594,6 +4634,8 @@ export interface components {
              * @example chen.yu@example.com
              */
             email: string;
+            /** @description The hire, once the candidate was hired. */
+            hire?: components["schemas"]["HireView"];
             /**
              * Format: uuid
              * @description The candidate.
@@ -4745,6 +4787,14 @@ export interface components {
              * @example Strong on forecasting.
              */
             body: string;
+        };
+        CandidatePassInputBody: {
+            /**
+             * Format: date
+             * @description The day the Employment Pass or S Pass application was made.
+             * @example 2027-01-15
+             */
+            on: string;
         };
         CandidateScore: {
             /**
@@ -6648,6 +6698,72 @@ export interface components {
         GroupsOutputBody: {
             /** @description The pay groups by name. */
             groups: components["schemas"]["PayGroup"][] | null;
+        };
+        HireInput: {
+            /**
+             * @description The team; the requisition's team when left out.
+             * @example Engineering
+             */
+            department?: string;
+            /**
+             * @description The kind of employment.
+             * @example full_time
+             * @enum {string}
+             */
+            employment_type: "full_time" | "part_time" | "contract" | "intern";
+            /**
+             * @description The job title; the requisition's role when left out.
+             * @example Data scientist
+             */
+            job_title?: string;
+            /**
+             * Format: date
+             * @description The first day of employment, today or later.
+             * @example 2027-02-01
+             */
+            start_date: string;
+            /**
+             * Format: uuid
+             * @description The onboarding template; the standard one when left out.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d5b01
+             */
+            template_id?: string;
+            /**
+             * @description The country code of the worksite; SG when left out.
+             * @example SG
+             */
+            worksite?: string;
+        };
+        HireView: {
+            /**
+             * Format: date
+             * @description The day the pass application was made, recorded once.
+             * @example 2027-01-15
+             */
+            pass_application_on?: string;
+            /**
+             * @description An Employment Pass or S Pass application is expected.
+             * @example true
+             */
+            pass_needed: boolean;
+            /**
+             * Format: uuid
+             * @description The person record made at the hire.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * Format: uuid
+             * @description The onboarding plan started for them.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d5a01
+             */
+            plan_id?: string;
+            /**
+             * Format: date
+             * @description Their first day.
+             * @example 2027-02-01
+             */
+            start_date: string;
         };
         IR8AParticulars: {
             /**
@@ -13082,6 +13198,99 @@ export interface operations {
             };
         };
     };
+    hireCandidate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The candidate. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HireInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Candidate"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     assignInterviewer: {
         parameters: {
             query?: never;
@@ -13289,6 +13498,99 @@ export interface operations {
         responses: {
             /** @description Created */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Candidate"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordPassApplication: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The candidate. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidatePassInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

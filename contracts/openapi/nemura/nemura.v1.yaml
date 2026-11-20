@@ -960,6 +960,9 @@ components:
           examples:
             - chen.yu@example.com
           type: string
+        hire:
+          $ref: "#/components/schemas/HireView"
+          description: The hire, once the candidate was hired.
         id:
           description: The candidate.
           examples:
@@ -1192,6 +1195,18 @@ components:
           type: string
       required:
         - body
+      type: object
+    CandidatePassInputBody:
+      additionalProperties: false
+      properties:
+        "on":
+          description: The day the Employment Pass or S Pass application was made.
+          examples:
+            - "2027-01-15"
+          format: date
+          type: string
+      required:
+        - "on"
       type: object
     CandidateScore:
       additionalProperties: false
@@ -3961,6 +3976,90 @@ components:
             - "null"
       required:
         - groups
+      type: object
+    HireInput:
+      additionalProperties: false
+      properties:
+        department:
+          description: The team; the requisition's team when left out.
+          examples:
+            - Engineering
+          maxLength: 200
+          type: string
+        employment_type:
+          description: The kind of employment.
+          enum:
+            - full_time
+            - part_time
+            - contract
+            - intern
+          examples:
+            - full_time
+          type: string
+        job_title:
+          description: The job title; the requisition's role when left out.
+          examples:
+            - Data scientist
+          maxLength: 200
+          type: string
+        start_date:
+          description: The first day of employment, today or later.
+          examples:
+            - "2027-02-01"
+          format: date
+          type: string
+        template_id:
+          description: The onboarding template; the standard one when left out.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d5b01
+          format: uuid
+          type: string
+        worksite:
+          description: The country code of the worksite; SG when left out.
+          examples:
+            - SG
+          maxLength: 11
+          type: string
+      required:
+        - start_date
+        - employment_type
+      type: object
+    HireView:
+      additionalProperties: false
+      properties:
+        pass_application_on:
+          description: The day the pass application was made, recorded once.
+          examples:
+            - "2027-01-15"
+          format: date
+          type: string
+        pass_needed:
+          description: An Employment Pass or S Pass application is expected.
+          examples:
+            - true
+          type: boolean
+        person_id:
+          description: The person record made at the hire.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        plan_id:
+          description: The onboarding plan started for them.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d5a01
+          format: uuid
+          type: string
+        start_date:
+          description: Their first day.
+          examples:
+            - "2027-02-01"
+          format: date
+          type: string
+      required:
+        - person_id
+        - start_date
+        - pass_needed
       type: object
     IR8AParticulars:
       additionalProperties: false
@@ -12619,6 +12718,87 @@ paths:
       summary: Record a candidate's consent to be kept for future roles, or its withdrawal
       tags:
         - Hiring
+  /v1/candidates/{id}/hire:
+    post:
+      description: PRD-002 NM-REC-06. A candidate at the offer stage becomes a person record with the start date, the job and the employment type, an onboarding plan is started for them, the requisition is filled and the candidate is hired, once. For a role that needs an Employment Pass or S Pass, the hire waits until the advert's 14 consecutive days have run or an exemption is recorded, and an advert closed more than 3 months ago cannot be used (NM_HIRING_CONFLICT). The HR administrator and the Owner, who also hold the right to create a person record. It is audited.
+      operationId: hireCandidate
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The candidate.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The candidate.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HireInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Hire a candidate whose offer is accepted
+      tags:
+        - Hiring
   /v1/candidates/{id}/interviewers:
     post:
       description: PRD-002 NM-REC-04. Gives a member who holds the Interviewer role the right to read this candidate and score them, and nothing else; once for each pair. The Recruiter, the HR administrator and the Owner. It is audited.
@@ -12860,6 +13040,87 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Service Unavailable
       summary: Write a note about a candidate
+      tags:
+        - Hiring
+  /v1/candidates/{id}/pass-application:
+    post:
+      description: PRD-002 NM-REC-06. Tracks the day the Employment Pass or S Pass application was made for a hire whose role needs one, once, a day up to today. The Recruiter, the HR administrator and the Owner. It is audited.
+      operationId: recordPassApplication
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The candidate.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The candidate.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidatePassInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Record the day the pass application was made
       tags:
         - Hiring
   /v1/candidates/{id}/scores:

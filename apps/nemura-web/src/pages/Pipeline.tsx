@@ -11,7 +11,7 @@ const next: Record<string, string[]> = { applied: ["screening", "interview", "no
 
 // Pipeline is the candidates of one approved requisition (NM-REC-04, NM-REC-05): the board with each candidate's stage and consent, adding a candidate, moving one along the board with the reason of a decision,
 // a note, the person's consent to be kept for future roles, and the interview kit with its fair-wording check. A recruiter writes; the API and the database decide who reads what.
-export function Pipeline({ requisition, canWrite }: { requisition: string; canWrite: boolean }) {
+export function Pipeline({ requisition, canWrite, canHire = false }: { requisition: string; canWrite: boolean; canHire?: boolean }) {
   const [list, setList] = useState<Candidate[]>([]);
   const [kit, setKit] = useState<Kit | null>(null);
   const [note, setNote] = useState<Note>(null);
@@ -21,6 +21,9 @@ export function Pipeline({ requisition, canWrite }: { requisition: string; canWr
   const [requirement, setRequirement] = useState("");
   const [reason, setReason] = useState("");
   const [text, setText] = useState("");
+  const [start, setStart] = useState("");
+  const [employment, setEmployment] = useState<"full_time" | "part_time" | "contract" | "intern">("full_time");
+  const [passOn, setPassOn] = useState("");
   const load = () => {
     api.GET("/v1/requisitions/{id}/candidates", { params: { path: { id: requisition } } }).then(({ data }) => setList(data?.candidates ?? []), () => setList([]));
     api.GET("/v1/requisitions/{id}/interview-kit", { params: { path: { id: requisition } } }).then(({ data }) => {
@@ -56,6 +59,21 @@ export function Pipeline({ requisition, canWrite }: { requisition: string; canWr
                     onClick={async () => done((await api.POST("/v1/candidates/{id}/moves", { params: { path: { id: c.id } }, body: { to: to as "screening", reason: to === "not_progressing" ? reason : undefined } })).error, t("pipeline.moved"))}>{t(`pipeline.stage.${to}`)}</button>
                 ))}
               </span>
+            )}
+            {c.hire && <span className="fy-secondary">{t("pipeline.hired", { start: c.hire.start_date })}</span>}
+            {c.hire?.pass_needed && !c.hire.pass_application_on && canWrite && (
+              <form className="fy-row" style={{ gap: "var(--space-2)" }} aria-label={t("pipeline.pass", { name: c.name })} onSubmit={async (e) => { e.preventDefault(); done((await api.POST("/v1/candidates/{id}/pass-application", { params: { path: { id: c.id } }, body: { on: passOn } })).error, t("pipeline.passSaved")); }}>
+                <label className="fy-field"><span>{t("pipeline.passDay")}</span><input className="fy-input" type="date" required value={passOn} onChange={(e) => setPassOn(e.target.value)} /></label>
+                <button className="fy-btn fy-btn--secondary fy-btn--sm" type="submit">{t("pipeline.passRecord")}</button>
+              </form>
+            )}
+            {c.hire?.pass_application_on && <span className="fy-secondary">{t("pipeline.passOn", { on: c.hire.pass_application_on })}</span>}
+            {canHire && c.stage === "offer" && (
+              <form className="fy-row" style={{ gap: "var(--space-2)" }} aria-label={t("pipeline.hire", { name: c.name })} onSubmit={async (e) => { e.preventDefault(); done((await api.POST("/v1/candidates/{id}/hire", { params: { path: { id: c.id } }, body: { start_date: start, employment_type: employment } })).error, t("pipeline.hireSaved")); }}>
+                <label className="fy-field"><span>{t("pipeline.startDay")}</span><input className="fy-input" type="date" required value={start} onChange={(e) => setStart(e.target.value)} /></label>
+                <label className="fy-field"><span>{t("pipeline.employment")}</span><select className="fy-input" value={employment} onChange={(e) => setEmployment(e.target.value as typeof employment)}>{(["full_time", "part_time", "contract", "intern"] as const).map((k) => <option key={k} value={k}>{t(`pipeline.type.${k}`)}</option>)}</select></label>
+                <button className="fy-btn fy-btn--primary fy-btn--sm" type="submit">{t("pipeline.hireButton", { name: c.name })}</button>
+              </form>
             )}
             {canWrite && (
               <span className="fy-row" style={{ gap: "var(--space-2)" }}>

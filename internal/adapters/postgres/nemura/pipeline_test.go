@@ -313,3 +313,121 @@ func TestAnApplicationOnTheCareersPageIsRecordedOnlyForAnOpenPostOfAPageThatIsOn
 		t.Errorf("a page that is off: %v %v", ok, err)
 	}
 }
+
+// A candidate at the offer stage is hired once: a person record with the start date, an onboarding plan from the standard template and a filled requisition; a role that needs a pass waits for the
+// advert's 14 days or an exemption before an offer, and the pass application's day is tracked once (NM-REC-06, NM-REC-02).
+// req: NM-REC-06, NM-REC-02
+// asvs: V8.3.1
+func TestACandidateIsHiredOnceIntoAPersonAndAPlanAndARoleThatNeedsAPassWaitsForItsAdvert(t *testing.T) {
+	c := newHiringCo(t)
+	ctx := context.Background()
+	hr := c.sess(c.hr)
+	toOffer := func(svc nemura.PipelineService, req uuid.UUID, name string) (uuid.UUID, error) {
+		cand, err := svc.Add(ctx, hr, req, api.CandidateInput{Name: name, Email: "hire@example.com"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		id := uuid.MustParse(cand.ID)
+		for _, to := range []string{"screening", "interview", "offer"} {
+			if _, err := svc.Move(ctx, hr, id, to, ""); err != nil {
+				return id, err
+			}
+		}
+		return id, nil
+	}
+	// A role that needs no pass: hired at once.
+	id, err := toOffer(c.svc, c.req, "Chen Yu")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.svc.Hire(ctx, hr, id, api.HireInput{StartDate: "2099-02-01", EmploymentType: "full_time"}); hireCode(err) != hiring.CodeInvalid {
+		t.Errorf("a start date before today: %v", err)
+	}
+	got, err := c.svc.Hire(ctx, hr, id, api.HireInput{StartDate: "2099-04-01", EmploymentType: "full_time"})
+	if err != nil || got.Stage != "hired" || got.Hire == nil || got.Hire.PlanID == "" || got.Hire.StartDate != "2099-04-01" {
+		t.Fatalf("%+v %v", got, err)
+	}
+	if _, err := c.svc.Hire(ctx, hr, id, api.HireInput{StartDate: "2099-04-01", EmploymentType: "full_time"}); hireCode(err) != hiring.CodeConflict {
+		t.Errorf("hired twice: %v", err)
+	}
+	if _, err := c.svc.Move(ctx, hr, id, "screening", ""); hireCode(err) != hiring.CodeConflict {
+		t.Errorf("a hired candidate moved: %v", err)
+	}
+	var name, state string
+	var tasks int
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		if err := tx.QueryRow(ctx, `SELECT legal_name FROM nemura.person WHERE id = $1`, got.Hire.PersonID).Scan(&name); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, `SELECT state FROM nemura.requisition WHERE id = $1`, c.req).Scan(&state); err != nil {
+			return err
+		}
+		return tx.QueryRow(ctx, `SELECT count(*) FROM nemura.onboarding_task WHERE plan_id = $1`, got.Hire.PlanID).Scan(&tasks)
+	})
+	if name != "Chen Yu" || state != "filled" || tasks == 0 {
+		t.Errorf("person %q, requisition %q, plan tasks %d", name, state, tasks)
+	}
+	if _, err := c.svc.PassApplication(ctx, hr, id, "2099-02-20"); hireCode(err) != hiring.CodeInvalid {
+		t.Errorf("a pass application for a role that needs none: %v", err)
+	}
+	// A role that needs a pass.
+	var req2 uuid.UUID
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
+		in := api.RequisitionInput{Title: "Engineer", Department: "Product", Reason: "new", SalaryMin: "6000.00", SalaryMax: "7000.00", TargetStart: "2099-06-01", PassNeeded: true}
+		if req2, err = nemura.RequestRequisition(ctx, tx, c.org, c.now, c.hr, in); err != nil {
+			return
+		}
+		if err = nemura.DecideRequisition(ctx, tx, c.org, c.now, c.owner, req2, true, ""); err != nil {
+			return
+		}
+		if err = nemura.WriteJobPost(ctx, tx, c.org, c.now, c.hr, req2, "Engineer", "You will build things."); err != nil {
+			return
+		}
+		return nemura.PublishJobPost(ctx, tx, c.org, c.now, c.hr, req2, "")
+	})
+	cand, err := c.svc.Add(ctx, hr, req2, api.CandidateInput{Name: "Mei Tan", Email: "mei@example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	id2 := uuid.MustParse(cand.ID)
+	for _, to := range []string{"screening", "interview"} {
+		if _, err := c.svc.Move(ctx, hr, id2, to, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := c.svc.Move(ctx, hr, id2, "offer", ""); hireCode(err) != hiring.CodeConflict {
+		t.Errorf("an offer with no advert or exemption: %v", err)
+	}
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.RecordJobAdvert(ctx, tx, c.org, c.now, c.hr, req2, api.AdvertInput{PostedOn: "2099-02-25"})
+	})
+	if _, err := c.svc.Move(ctx, hr, id2, "offer", ""); hireCode(err) != hiring.CodeConflict {
+		t.Errorf("an offer before the advert's 14 days have run: %v", err)
+	}
+	later := nemura.PipelineService{Store: store(t, "nemura_api"), Clock: clock.NewFrozen(c.now.AddDate(0, 0, 10))}
+	if _, err := later.Move(ctx, hr, id2, "offer", ""); err != nil {
+		t.Fatal(err)
+	}
+	h, err := later.Hire(ctx, hr, id2, api.HireInput{StartDate: "2099-05-01", EmploymentType: "full_time", JobTitle: "Senior engineer"})
+	if err != nil || h.Hire == nil || !h.Hire.PassNeeded || h.Hire.PassApplicationOn != "" {
+		t.Fatalf("%+v %v", h, err)
+	}
+	if _, err := later.PassApplication(ctx, hr, id2, "2099-03-30"); hireCode(err) != hiring.CodeInvalid {
+		t.Errorf("a pass application dated in the future: %v", err)
+	}
+	if h, err = later.PassApplication(ctx, hr, id2, "2099-03-05"); err != nil || h.Hire.PassApplicationOn != "2099-03-05" {
+		t.Fatalf("%+v %v", h, err)
+	}
+	if _, err := later.PassApplication(ctx, hr, id2, "2099-03-06"); hireCode(err) != hiring.CodeConflict {
+		t.Errorf("the pass application recorded twice: %v", err)
+	}
+	// The hire is the hiring team's: nobody else reads it, and it never changes.
+	for name, q := range map[string]string{"a hire rewritten": `UPDATE nemura.hire SET start_date = '2099-12-01'`, "a hire deleted": `DELETE FROM nemura.hire`} {
+		if err := c.do(func(ctx context.Context, tx pgx.Tx) error { _, err := tx.Exec(ctx, q); return err }); pgErr(err) != "NM216" && pgErr(err) != "42501" {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	if got, err := c.svc.Candidate(ctx, c.sess(c.iv), id2); hireCode(err) != hiring.CodeNotFound {
+		t.Errorf("an interviewer reads a hired candidate they were not assigned to: %+v %v", got, err)
+	}
+}
