@@ -1,0 +1,76 @@
+{
+  "id": "plan-propose-budget",
+  "agent": "chat",
+  "version": 1,
+  "kind": "proposal",
+  "asker": "accountant",
+  "description": "plan.propose_budget's proposal cases (QA-AI-02; p1-ai-proposals task 4.1): a person asks for a budget draft, and the right proposal names income and expense accounts by their codes with twelve monthly decimal amounts, as an original version of the year, and waits for a person; it never approves or records a budget.",
+  "company": {
+    "seed": 1,
+    "journals": 24
+  },
+  "task_types": [
+    "plan.propose_budget"
+  ],
+  "cases": [
+    {
+      "id": "flat-budget",
+      "question": "Draft the original FY2027 budget named \"FY2027 budget\" for the year from 1 January 2027: 4010 revenue 10000.00 each month and 6120 Software 1500.00 each month.",
+      "expect": {
+        "proposal": {
+          "task_type": "plan.propose_budget",
+          "payload": {
+            "name": "FY2027 budget",
+            "kind": "original",
+            "financial_year": "2027-01-01",
+            "lines": [
+              {
+                "account": "4010",
+                "amounts": [
+                  "10000.00",
+                  "10000.00",
+                  "10000.00",
+                  "10000.00",
+                  "10000.00",
+                  "10000.00",
+                  "10000.00",
+                  "10000.00",
+                  "10000.00",
+                  "10000.00",
+                  "10000.00",
+                  "10000.00"
+                ]
+              },
+              {
+                "account": "6120",
+                "amounts": [
+                  "1500.00",
+                  "1500.00",
+                  "1500.00",
+                  "1500.00",
+                  "1500.00",
+                  "1500.00",
+                  "1500.00",
+                  "1500.00",
+                  "1500.00",
+                  "1500.00",
+                  "1500.00",
+                  "1500.00"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "solution": [
+        {
+          "tool": "records.search",
+          "input": {
+            "q": "Software",
+            "kind": "accounts"
+          }
+        }
+      ]
+    }
+  ]
+}

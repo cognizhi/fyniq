@@ -103,6 +103,10 @@
       "label": "Items to keep",
       "tooltip": "Clear any item you disagree with: the approval covers only the items you keep, and nothing else changes."
     },
+    "ai-proposal.undo": {
+      "label": "Undo this change",
+      "tooltip": "Puts back what the change replaced, as you, with a reason, once. It works only while nobody has changed the same record since."
+    },
     "ai-proposal.rationale": {
       "label": "The AI's reasons",
       "tooltip": "Why the AI proposes it, in its own words. Check them against Fyniq's summary, which says what really happens."

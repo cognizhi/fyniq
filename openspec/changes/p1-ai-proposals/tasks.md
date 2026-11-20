@@ -30,9 +30,14 @@
   own `Undo`, in one transaction, once, only for an Executed proposal whose command implements `Undoer` (AI-UNDO-01 to 04), and keeps who, when,
   why and what was reversed in `ai_proposal_undo` (append-only, FY951), audited; the proposal stays Executed. No real task type implements
   `Undoer` yet: the drafts are not undoable by design, and the posting and master-data types add it as they are built (tests use a test-only
-  undoable type). **Left:** the Undo button on the proposal review (web) and its guide text: nothing to undo until a real type implements `Undoer`, so the screen waits for the first.
+  undoable type). **Built (rev 0.461, with `ct.update_contact`, the first real `Undoer`):** the Undo section of the proposal review
+  (`getAIProposal` now says `can_undo`, `undone_at`, `undone_by`, `undo_reason`; the web asks why, undoes through `undoAIProposal` and shows the
+  server's answer), `ai.proposals`'s guide section and its kb page; `AI-31` and `AI-91` are tagged on `TestTheAIUpdatesAContactAndAPersonUndoesIt`.
 - [ ] 2.1a Each posting or master-data task type's own `Undo`, with its attack test (a reversing entry, a restored master-data version); the
   requirements AI-31 and AI-91 are proved when the first of them is built.
+  **Built so far (rev 0.461):** `ct.update_contact`'s undo (the old values, restored through the same column-limited query, as the person,
+  only while the contact is at the version the execution left it). `Execution.Undo` carries what an undo needs (the replaced values and the
+  version after), is kept in the proposal's execution record and is never shown on a review. **Left:** the undo of each later type.
 - [x] 2.2 Tier 3 in the engine (design D5): `proposalSteps` gives a tier-3 request two steps; the engine already refuses a second signature by
   the same person and the requester's own above tier 1. Proved on a request built with two steps (no catalogue loads a tier-3 type, and none
   is added for the test). Tests `// req: AI-09`, `// req: AI-92`.
@@ -54,9 +59,12 @@
 ## 4. Tier 2
 
 - [ ] 4.1 `ct.update_contact`, `recur.create_template`, `plan.propose_budget` (design D8).
-  **Left:** `ct.update_contact` needs a narrow executor update of the contact's allowed fields (the existing update writes every column, so
-  the executor would need grants on all of them, bank-adjacent remittance email included) and its undo (the previous values); the other two
-  need their domain commands checked against the executor's grants.
+  **Built (rev 0.461):** `ct.update_contact` (migration 000960, **needs human review**): six details (billing email, phone, address, payment
+  terms, default category, default GST code), a column-limited executor grant on exactly those and `version`, a trigger that refuses the
+  executor a person's contact or an inactive one, the narrow `UpdateContactAIFields` query (also the undo's), the dry run's before and after per
+  field, the undo, the attack tests and the `ct-update-contact` (proposal) and `ct-update-contact-redteam` suites. Individuals, directors,
+  shareholders, investors and linked members are refused (their values are sealed in the audit trail).
+  **Built (rev 0.462):** `recur.create_template` (recurring journals only; migration 000961, **needs human review**: INSERT on the API's insert columns of `recurring_journal` and its version, no update; its undo is a pause) and `plan.propose_budget` (a whole-company draft; migration 000962, **needs human review**: EXECUTE on the two pure validators the budget guard calls, and a trigger that refuses the executor any change of a budget document; a draft is not undoable, design D4). Both tier 2 with the Accountant as the only role that can approve them (Appendix D gives the Controller and Owner no create right on journals or budgets: Appendix E's "Controller" is the owner's to decide, see the report). Their proposal suites need an asker with the right: `evalsuite.Suite.Asker` makes one. `ct.update_contact` went to version 2 (its approvers named roles that cannot approve).
 - [ ] 4.2 `gl.post_journal`, `ar.post_invoice`, `ap.post_bill` (design D2, D3, D7).
   **Left (the riskiest, last by design D2):** they post to the ledger as the approving person, so each widens the executor's ledger grants,
   carries its limit and its undo, and its attack tests; not started while the owner is away.

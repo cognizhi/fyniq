@@ -1,0 +1,100 @@
+{
+  "id": "recur.create_template",
+  "version": 1,
+  "name": "Add a recurring journal",
+  "description": "Adds a recurring journal, exactly as a person's Add a recurring journal does: a name, the journal's memo and lines (each an active account's code, a signed amount in the organisation's base currency, a debit above zero and a credit below, and a description; the lines must balance), whether each draft reverses on the first day of the next month (an accrual), and a schedule of every 1, 3, 6 or 12 months on a day of the month from a start date, with an optional end. The scheduler then makes a draft journal on each occurrence, which a person posts under the usual approvals: nothing recurring posts by itself. Its lines keep to income, cost, prepayment, deferred revenue and depreciation accounts; never a bank, equity, sub-ledger, tax, payroll or director's account. Its monthly equivalent, the debits over the months between occurrences, is limited. A recurring bill or invoice is a person's. Copy figures exactly as the person gave them.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "name",
+      "lines",
+      "every_months",
+      "day_of_month",
+      "starts_on"
+    ],
+    "properties": {
+      "name": {
+        "type": "string",
+        "maxLength": 120,
+        "description": "What the journal is, such as Monthly rent accrual."
+      },
+      "memo": {
+        "type": "string",
+        "maxLength": 500,
+        "description": "The memo each draft carries."
+      },
+      "lines": {
+        "type": "array",
+        "maxItems": 20,
+        "description": "The journal's lines, which balance.",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account",
+            "amount"
+          ],
+          "properties": {
+            "account": {
+              "type": "string",
+              "pattern": "^[0-9]{4,6}$",
+              "description": "The code of an active account that takes postings, as records_search returned it."
+            },
+            "amount": {
+              "type": "string",
+              "pattern": "^-?(0|[1-9][0-9]{0,14})(\\.[0-9]{1,4})?$",
+              "description": "A signed decimal amount in the base currency: 250.00 for a debit, -250.00 for a credit."
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 200,
+              "description": "What the line is for."
+            }
+          }
+        }
+      },
+      "reverses": {
+        "type": "boolean",
+        "description": "True for an accrual that each draft reverses on the first day of the next month."
+      },
+      "every_months": {
+        "type": "integer",
+        "enum": [
+          1,
+          3,
+          6,
+          12
+        ],
+        "description": "How often it repeats, in months."
+      },
+      "day_of_month": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 31,
+        "description": "The day of the month of each occurrence; 29 to 31 mean the last day of a shorter month."
+      },
+      "starts_on": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "The first day it may repeat from, YYYY-MM-DD."
+      },
+      "ends_on": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "The last day, YYYY-MM-DD; leave it out for none."
+      }
+    }
+  },
+  "command": "CreateRecurring",
+  "tier": 2,
+  "limits": {
+    "items": 1,
+    "amount_per_item": "5000.00",
+    "currency": "SGD"
+  },
+  "approvers": [
+    "accountant"
+  ],
+  "expiry_hours": 72
+}

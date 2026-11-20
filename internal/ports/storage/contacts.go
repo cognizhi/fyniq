@@ -58,12 +58,33 @@ type ContactDuplicate struct {
 	SameName, SameUEN, SameEmail bool
 }
 
+// ContactAIFields are the six details an approved ct.update_contact proposal changes, and its undo restores: nothing else of a contact
+// (the executor's grant is column-limited to them: migration 000960). A field whose Set is false keeps what it holds; a set text of "" or a
+// nil terms or category sets none.
+type ContactAIFields struct {
+	SetBillingEmail    bool
+	BillingEmail       string
+	SetPhone           bool
+	Phone              string
+	SetAddress         bool
+	Address            string
+	SetPaymentTerms    bool
+	PaymentTermsDays   *int
+	SetDefaultCategory bool
+	DefaultAccountID   *uuid.UUID
+	SetDefaultGSTCode  bool
+	DefaultGSTCode     string
+}
+
 // Contacts are the organisation's contacts. Every create and change is audited; a contact is never deleted.
 type Contacts interface {
 	Create(ctx context.Context, d ContactDetails) (Contact, error)
 	Get(ctx context.Context, id uuid.UUID) (Contact, error)
 	// Update changes a contact at its version, and returns it at its next: CodeVersion when it changed since.
 	Update(ctx context.Context, id uuid.UUID, version int, d ContactDetails, active bool) (Contact, error)
+	// UpdateAIFields changes only the details of f at the contact's version, and returns it at its next: CodeVersion when it changed since. It is
+	// the one write the proposal executor holds on a contact, and its undo (ct.update_contact).
+	UpdateAIFields(ctx context.Context, id uuid.UUID, version int, f ContactAIFields) (Contact, error)
 	// Page returns at most limit contacts added after the contact after (uuid.Nil for the first page),
 	// customers or vendors only when role is "customer" or "vendor", directors and shareholders when it is "director",
 	// shareholders and investors when it is "holder" (FR-EQ-15).

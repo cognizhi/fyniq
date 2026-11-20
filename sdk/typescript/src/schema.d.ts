@@ -19371,6 +19371,11 @@ export interface components {
             /** @description The items approved, when an approval chose some. */
             approved_items?: number[] | null;
             /**
+             * @description Whether you may undo it now (AI-31): it executed, its task type can be undone, it was not undone already and you hold the right its command needs.
+             * @example false
+             */
+            can_undo: boolean;
+            /**
              * Format: date-time
              * @example 2026-11-15T10:00:00Z
              */
@@ -19490,6 +19495,23 @@ export interface components {
              * @example 1
              */
             tier: number;
+            /**
+             * @description Why it was undone.
+             * @example It was the wrong branch
+             */
+            undo_reason?: string;
+            /**
+             * Format: date-time
+             * @description When it was undone, if it was.
+             * @example 2026-11-15T11:00:00Z
+             */
+            undone_at?: string;
+            /**
+             * Format: uuid
+             * @description Who undid it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            undone_by?: string;
             /**
              * @description Whether you may sign its approval request now.
              * @example true
@@ -34042,9 +34064,8 @@ export interface components {
             /**
              * @description Why it was sent: a test message, a sign-in alert, a notification, a digest of them, an invoice or a quote emailed to a customer (FR-AR-06), a reminder of one, a statement of account (FR-AR-08), a supplier's remittance advice (FR-BNK-12), or a reminder the company secretary assistant drafted and a person approved (sec.draft_reminder).
              * @example test
-             * @enum {string}
              */
-            purpose: "test" | "sign_in_alert" | "notification" | "digest" | "invoice" | "quote" | "reminder" | "statement" | "remittance" | "secretary_reminder" | "invitation";
+            purpose: string;
             /**
              * @description Who it goes to.
              * @example accounts@example.com

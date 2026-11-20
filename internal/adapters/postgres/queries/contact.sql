@@ -66,3 +66,17 @@ SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing
 WHERE strpos(lower(concat_ws(' ', legal_name, uen_or_tax_id, billing_email, remittance_email)), lower(sqlc.arg(needle)::text)) > 0
 ORDER BY lower(legal_name), id
 LIMIT sqlc.arg(page_size);
+
+-- name: UpdateContactAIFields :one
+-- The six details ct.update_contact changes, by the executor and by the undo of it, and no other column (000960): a field not set keeps
+-- what it holds; an empty value sets none. At the version read.
+UPDATE fyniq.contact SET
+  billing_email = CASE WHEN sqlc.arg(set_billing_email)::boolean THEN sqlc.narg(billing_email) ELSE billing_email END,
+  phone = CASE WHEN sqlc.arg(set_phone)::boolean THEN sqlc.narg(phone) ELSE phone END,
+  address = CASE WHEN sqlc.arg(set_address)::boolean THEN sqlc.narg(address) ELSE address END,
+  payment_terms_days = CASE WHEN sqlc.arg(set_payment_terms_days)::boolean THEN sqlc.narg(payment_terms_days)::smallint ELSE payment_terms_days END,
+  default_account_id = CASE WHEN sqlc.arg(set_default_account_id)::boolean THEN sqlc.narg(default_account_id)::uuid ELSE default_account_id END,
+  default_gst_code = CASE WHEN sqlc.arg(set_default_gst_code)::boolean THEN sqlc.narg(default_gst_code) ELSE default_gst_code END,
+  version = version + 1
+WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
+RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, individual, member_user_id, is_active, version;

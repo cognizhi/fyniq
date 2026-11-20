@@ -8883,6 +8883,7 @@ CREATE TRIGGER break_glass_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.brea
 CREATE TRIGGER break_glass_no_truncate BEFORE TRUNCATE ON fyniq.break_glass FOR EACH STATEMENT EXECUTE FUNCTION break_glass_guard()
 CREATE TRIGGER break_glass_use_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.break_glass_use FOR EACH ROW EXECUTE FUNCTION break_glass_use_guard()
 CREATE TRIGGER break_glass_use_no_truncate BEFORE TRUNCATE ON fyniq.break_glass_use FOR EACH STATEMENT EXECUTE FUNCTION break_glass_use_guard()
+CREATE TRIGGER budget_executor_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION budget_executor_guard()
 CREATE TRIGGER budget_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION budget_guard()
 CREATE TRIGGER capture_address_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.capture_address FOR EACH ROW EXECUTE FUNCTION capture_address_guard()
 CREATE TRIGGER capture_address_no_truncate BEFORE TRUNCATE ON fyniq.capture_address FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -8910,6 +8911,7 @@ CREATE TRIGGER consent_record_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.c
 CREATE TRIGGER consent_record_no_truncate BEFORE TRUNCATE ON fyniq.consent_record FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER contact_document_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.contact_document_template FOR EACH ROW EXECUTE FUNCTION document_template_choice_guard()
 CREATE TRIGGER contact_document_template_no_truncate BEFORE TRUNCATE ON fyniq.contact_document_template FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER contact_executor_guard BEFORE UPDATE ON fyniq.contact FOR EACH ROW EXECUTE FUNCTION contact_executor_guard()
 CREATE TRIGGER contact_party_guard BEFORE INSERT OR UPDATE ON fyniq.contact FOR EACH ROW EXECUTE FUNCTION contact_party_guard()
 CREATE TRIGGER control_run_guard BEFORE DELETE OR UPDATE ON fyniq.control_run FOR EACH ROW EXECUTE FUNCTION control_run_guard()
 CREATE TRIGGER control_run_no_truncate BEFORE TRUNCATE ON fyniq.control_run FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
@@ -9869,6 +9871,7 @@ brand_version_guard() → trigger | security invoker | v | search_path=pg_catalo
 break_glass_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 962a60f5cbf377604e7f27ec16e6b71d
 break_glass_logged() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f70eaef3b0d084ec8e9d0c8a089609f8
 break_glass_use_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e1ad9c7c29fcd99d1d82045f444fa13b
+budget_executor_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8c30aeccd2a06832c8203b73ec7af1c6
 budget_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ed823e88db3e445f3fd462de6561bfd5
 capture_address_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 542a3470e64d74a54703cab8f90e82c9
 capture_route(p_local text) → TABLE(organisation_id uuid, address_id uuid, user_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 172d93473f532f3e8728708678490889
@@ -9892,6 +9895,7 @@ connector_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 connector_secret_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0663e962d68100701631e767b398d8c0
 connector_secret_named() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1a9173546f91feb840e7b1996f3342c4
 consent_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ed075cb6c7cdb3f1d863bdd888fe628f
+contact_executor_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b08cadb3b16afda50272e9d8109e25d0
 contact_member_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0faf2bd332726b6037d87c0a8160e65b
 contact_party_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 29b6cba43d21e49a9d9d42ebe0738728
 control_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 929292e05aad5f2537886f1e37766f67

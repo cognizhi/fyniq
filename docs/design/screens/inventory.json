@@ -257,6 +257,7 @@
     "executed",
     "failed",
     "superseded",
+    "undone (when, by whom and why; the proposal stays executed)",
     "requester cannot self-approve (needs another approver)"
    ]
   },
