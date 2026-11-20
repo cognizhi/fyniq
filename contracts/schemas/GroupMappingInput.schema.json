@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "The account's code in the entity's chart.",
+      "examples": [
+        "2210"
+      ],
+      "pattern": "^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$",
+      "type": "string"
+    },
+    "counterparty_entity_id": {
+      "description": "For an intercompany account, the other entity of the group.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "counterparty_parent": {
+      "description": "For an intercompany account, the parent itself is the other side.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "entity_id": {
+      "description": "The entity's row in the group; leave it out for the parent's own accounts (only an intercompany account needs a mapping of its own).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "group_account_id": {
+      "description": "The parent's account (not a group account) it maps to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6002"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_code",
+    "group_account_id"
+  ],
+  "title": "GroupMappingInput",
+  "type": "object"
+}

@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cognizhi/fyniq/internal/domain/comment"
+	"github.com/cognizhi/fyniq/internal/domain/consolidation"
 	"github.com/cognizhi/fyniq/internal/domain/dashboard"
+	"github.com/cognizhi/fyniq/internal/domain/groupconsol"
 	"github.com/cognizhi/fyniq/internal/domain/payrollimport"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/preference"
@@ -1095,6 +1097,11 @@ var codeFacts = map[string]struct {
 	storage.CodeClaim:                {409, "The expense claim record does not allow that"},
 	storage.CodePractice:             {403, "A practice organisation is not yours to open"},
 	storage.CodePracticeHeld:         {409, "You hold a practice organisation already"},
+	consolidation.CodeInput:          {422, "The consolidation's input does not fit"},
+	consolidation.CodeRate:           {422, "A translation rate is missing"},
+	groupconsol.CodeUnmapped:         {422, "An account is not mapped"},
+	groupconsol.CodeCounterparty:     {422, "A mapping's counterparty is not in the run"},
+	groupconsol.CodeNothing:          {422, "There is nothing to consolidate"},
 	storage.CodeGroup:                {403, "This is not yours to do in a group"},
 	storage.CodeGroupCode:            {422, "That invitation code is not valid"},
 	storage.CodeGroupLink:            {404, "There is no live link to that organisation"},

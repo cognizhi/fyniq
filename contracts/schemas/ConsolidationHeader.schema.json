@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "description": "When it was made.",
+      "examples": [
+        "2026-10-02T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "currency": {
+      "description": "The group currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The first month.",
+      "examples": [
+        "2026-07"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The run's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8001"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "provisional": {
+      "description": "true when an entity's period in the run was not closed when it was read.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "to": {
+      "description": "The last month.",
+      "examples": [
+        "2026-09"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "from",
+    "to",
+    "currency",
+    "provisional",
+    "created_at"
+  ],
+  "title": "ConsolidationHeader",
+  "type": "object"
+}

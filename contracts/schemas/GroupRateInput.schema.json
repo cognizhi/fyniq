@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "average": {
+      "description": "The month's average, in the same terms.",
+      "examples": [
+        "0.3058"
+      ],
+      "pattern": "^[0-9]{1,10}(\\.[0-9]{1,10})?$",
+      "type": "string"
+    },
+    "closing": {
+      "description": "Group currency per one unit of the entity's currency at the month's end, up to 10 decimals; above nothing.",
+      "examples": [
+        "0.3056"
+      ],
+      "pattern": "^[0-9]{1,10}(\\.[0-9]{1,10})?$",
+      "type": "string"
+    },
+    "currency": {
+      "description": "The entity's currency.",
+      "examples": [
+        "MYR"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "month": {
+      "description": "The month, YYYY-MM.",
+      "examples": [
+        "2026-09"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "note": {
+      "description": "Where the rates came from.",
+      "examples": [
+        "MAS daily rates"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "month",
+    "closing",
+    "average",
+    "note"
+  ],
+  "title": "GroupRateInput",
+  "type": "object"
+}

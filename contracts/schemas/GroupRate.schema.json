@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "average": {
+      "description": "The month's average rate, in the same terms.",
+      "examples": [
+        "0.3058000000"
+      ],
+      "type": "string"
+    },
+    "closing": {
+      "description": "Group currency per one unit of the entity's currency at the month's end.",
+      "examples": [
+        "0.3056000000"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "The entity's currency.",
+      "examples": [
+        "MYR"
+      ],
+      "type": "string"
+    },
+    "entered_at": {
+      "description": "When it was entered; a newer entry of the same month and currency corrects an older.",
+      "examples": [
+        "2026-10-02T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The entry's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c7001"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "month": {
+      "description": "The month, YYYY-MM.",
+      "examples": [
+        "2026-09"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Where the rates came from, in the person's words.",
+      "examples": [
+        "MAS daily rates"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "currency",
+    "month",
+    "closing",
+    "average",
+    "note",
+    "entered_at"
+  ],
+  "title": "GroupRate",
+  "type": "object"
+}

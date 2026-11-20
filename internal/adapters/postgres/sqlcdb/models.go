@@ -1368,6 +1368,31 @@ type FyniqConsentRecord struct {
 	Note           *string
 }
 
+type FyniqConsolidationRate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Currency       string
+	Month          time.Time
+	Closing        string
+	Average        string
+	Note           string
+	EnteredBy      uuid.UUID
+	EnteredAt      time.Time
+}
+
+type FyniqConsolidationRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	FromMonth      time.Time
+	ToMonth        time.Time
+	Currency       string
+	Provisional    bool
+	Inputs         []byte
+	Result         []byte
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+}
+
 type FyniqContact struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID
@@ -1850,6 +1875,21 @@ type FyniqFxRate struct {
 	WithdrawnReason *string
 }
 
+type FyniqGroupAccountMap struct {
+	OrganisationID     uuid.UUID
+	ID                 uuid.UUID
+	EntityRow          *uuid.UUID
+	EntityAccountCode  string
+	GroupAccountID     uuid.UUID
+	CounterpartyRow    *uuid.UUID
+	CounterpartyParent bool
+	Version            int32
+	CreatedBy          uuid.UUID
+	CreatedAt          time.Time
+	UpdatedBy          uuid.UUID
+	UpdatedAt          time.Time
+}
+
 type FyniqGroupEntity struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -1896,6 +1936,14 @@ type FyniqGroupMembership struct {
 	EndedAt        *time.Time
 	EndedReason    *string
 	Version        int32
+}
+
+type FyniqGroupSettings struct {
+	OrganisationID uuid.UUID
+	Pairs          []byte
+	Version        int32
+	UpdatedBy      uuid.UUID
+	UpdatedAt      time.Time
 }
 
 type FyniqGstRegistration struct {

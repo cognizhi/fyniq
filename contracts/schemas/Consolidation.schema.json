@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accounts": {
+      "description": "The accounts the run uses, by code.",
+      "items": {
+        "$ref": "ConsolidationAccount.schema.json"
+      },
+      "type": "array"
+    },
+    "consolidated": {
+      "description": "The consolidated figures by account and section.",
+      "items": {
+        "$ref": "ConsolidationTotal.schema.json"
+      },
+      "type": "array"
+    },
+    "created_at": {
+      "description": "When it was made.",
+      "examples": [
+        "2026-10-02T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "currency": {
+      "description": "The group currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "differences": {
+      "description": "Every pair the entities do not agree on; nothing is plugged.",
+      "items": {
+        "$ref": "ConsolidationDifference.schema.json"
+      },
+      "type": "array"
+    },
+    "eliminations": {
+      "description": "What was taken off, by source.",
+      "items": {
+        "$ref": "ConsolidationLine.schema.json"
+      },
+      "type": "array"
+    },
+    "from": {
+      "description": "The first month.",
+      "examples": [
+        "2026-07"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The run's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8001"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "lines": {
+      "description": "Every translated line of every source, before the eliminations.",
+      "items": {
+        "$ref": "ConsolidationLine.schema.json"
+      },
+      "type": "array"
+    },
+    "provisional": {
+      "description": "true when an entity's period in the run was not closed when it was read.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "rates": {
+      "description": "The rates the run used.",
+      "items": {
+        "$ref": "ConsolidationRate.schema.json"
+      },
+      "type": "array"
+    },
+    "sources": {
+      "description": "The organisations in the run: the parent first.",
+      "items": {
+        "$ref": "ConsolidationSource.schema.json"
+      },
+      "type": "array"
+    },
+    "to": {
+      "description": "The last month.",
+      "examples": [
+        "2026-09"
+      ],
+      "type": "string"
+    },
+    "translation_reserve": {
+      "description": "The sum of the entities' translation reserves: the balancing figure of the translation.",
+      "examples": [
+        "-412.33"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "sources",
+    "lines",
+    "eliminations",
+    "differences",
+    "consolidated",
+    "translation_reserve",
+    "accounts",
+    "rates",
+    "id",
+    "from",
+    "to",
+    "currency",
+    "provisional",
+    "created_at"
+  ],
+  "title": "Consolidation",
+  "type": "object"
+}

@@ -163,6 +163,7 @@ var fyCodes = map[string]string{
 	"FYE08": storage.CodeGroup,     // a reason of 1 to 500 characters
 	"FYE09": storage.CodeGroupLink, // no live link between the two organisations
 	"FYE10": storage.CodeGroupLink, // no live link that lets the group read the figures
+	"FYE12": storage.CodeGroup,     // a rate and a run are kept as made; the set-up changes as its next version
 	"FYE11": storage.CodeGroup,     // a link is kept and moves forward only
 	"FY960": storage.CodeSandbox,   // a sandbox flag changed, removed or given to an organisation that existed (001250)
 	"FY961": storage.CodeSandbox,   // a sandbox organisation's name or currency refused (001250)

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "pairs": {
+      "description": "At most 20 pairs.",
+      "items": {
+        "$ref": "GroupPair.schema.json"
+      },
+      "maxItems": 20,
+      "type": "array"
+    }
+  },
+  "required": [
+    "pairs"
+  ],
+  "title": "GroupPairs",
+  "type": "object"
+}
