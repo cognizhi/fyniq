@@ -16,6 +16,34 @@
       ],
       "type": "string"
     },
+    "outside_singapore": {
+      "description": "A transfer to assess under the PDPA before you allow it (CMP-PD-06).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "processing_location": {
+      "description": "Where the publisher processes what it reads.",
+      "examples": [
+        "United States"
+      ],
+      "type": "string"
+    },
+    "publisher": {
+      "description": "Who publishes it, as the Administrator who registered it stated: not verified.",
+      "examples": [
+        "Acme Software Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "purpose": {
+      "description": "What the organisation uses it for.",
+      "examples": [
+        "Ask questions about the management accounts"
+      ],
+      "type": "string"
+    },
     "redirect_uris": {
       "description": "Where it sends you to sign in: check this before you allow it.",
       "items": {

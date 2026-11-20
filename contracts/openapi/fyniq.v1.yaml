@@ -4382,6 +4382,13 @@ components:
     AccessReview:
       additionalProperties: false
       properties:
+        ai_apps:
+          description: The third-party AI apps an Administrator registered by hand that are not removed, each a processing path to review (AI-46).
+          items:
+            $ref: "#/components/schemas/AccessReviewAIApp"
+          type:
+            - array
+            - "null"
         as_at:
           description: When it was read.
           examples:
@@ -4445,7 +4452,61 @@ components:
         - invitations
         - connectors
         - integration_clients
+        - ai_apps
         - attestations
+      type: object
+    AccessReviewAIApp:
+      additionalProperties: false
+      properties:
+        client_id:
+          description: Its OAuth client ID.
+          examples:
+            - mcp-0123456789abcdef0123
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Acme Books Assistant
+          type: string
+        outside_singapore:
+          description: "Whether it processes outside Singapore: a transfer to assess (CMP-PD-06)."
+          examples:
+            - true
+          type: boolean
+        publisher:
+          description: "Who publishes it, as the Administrator stated it: not verified."
+          examples:
+            - Acme Software Pte Ltd
+          type: string
+        purpose:
+          description: What it is used for.
+          examples:
+            - Ask questions about the management accounts
+          type: string
+        registered_at:
+          description: When it was registered.
+          examples:
+            - "2026-11-21T09:30:00Z"
+          format: date-time
+          type: string
+        status:
+          description: "Where its approval stands: an Owner adds an approved app to the apps that may connect."
+          enum:
+            - pending
+            - approved
+            - denied
+            - expired
+          examples:
+            - approved
+          type: string
+      required:
+        - client_id
+        - name
+        - publisher
+        - purpose
+        - outside_singapore
+        - status
+        - registered_at
       type: object
     AccessReviewAttestation:
       additionalProperties: false
@@ -38555,6 +38616,26 @@ components:
           examples:
             - Acme Books Assistant
           type: string
+        outside_singapore:
+          description: A transfer to assess under the PDPA before you allow it (CMP-PD-06).
+          examples:
+            - true
+          type: boolean
+        processing_location:
+          description: Where the publisher processes what it reads.
+          examples:
+            - United States
+          type: string
+        publisher:
+          description: "Who publishes it, as the Administrator who registered it stated: not verified."
+          examples:
+            - Acme Software Pte Ltd
+          type: string
+        purpose:
+          description: What the organisation uses it for.
+          examples:
+            - Ask questions about the management accounts
+          type: string
         redirect_uris:
           description: "Where it sends you to sign in: check this before you allow it."
           items:
@@ -63076,6 +63157,164 @@ components:
       required:
         - value
         - confidence
+      type: object
+    ThirdPartyApp:
+      additionalProperties: false
+      properties:
+        client_id:
+          description: Its client ID at Fyniq's OAuth server.
+          examples:
+            - mcp-0123456789abcdef0123
+          type: string
+        inventory_entry:
+          description: The data inventory entry made with the registration.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c31
+          format: uuid
+          type: string
+        name:
+          examples:
+            - Acme Books Assistant
+          type: string
+        outside_singapore:
+          examples:
+            - true
+          type: boolean
+        processing_location:
+          examples:
+            - United States
+          type: string
+        publisher:
+          description: "As the Administrator stated it: Fyniq has not verified it."
+          examples:
+            - Acme Software Pte Ltd
+          type: string
+        publisher_url:
+          examples:
+            - https://acme.example
+          type: string
+        purpose:
+          examples:
+            - Ask questions about the management accounts
+          type: string
+        redirect_uris:
+          items:
+            description: An exact https or loopback redirect URI.
+            examples:
+              - https://acme.example/oauth/callback
+            type: string
+          maxItems: 5
+          type: array
+        registered_at:
+          examples:
+            - "2026-11-21T09:30:00Z"
+          format: date-time
+          type: string
+        registered_by:
+          description: The Administrator who registered it.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+          format: uuid
+          type: string
+        removed_at:
+          examples:
+            - "2026-12-01T09:30:00Z"
+          format: date-time
+          type: string
+        status:
+          description: pending until an Owner adds it to the apps that may connect; removed once an Administrator took it away.
+          enum:
+            - pending
+            - approved
+            - denied
+            - expired
+            - removed
+          examples:
+            - pending
+          type: string
+      required:
+        - client_id
+        - name
+        - publisher
+        - redirect_uris
+        - purpose
+        - processing_location
+        - outside_singapore
+        - inventory_entry
+        - status
+        - registered_by
+        - registered_at
+      type: object
+    ThirdPartyAppRegister:
+      additionalProperties: false
+      properties:
+        name:
+          description: The name it is known by, in plain letters and digits; it cannot pass for Fyniq or a known brand.
+          examples:
+            - Acme Books Assistant
+          maxLength: 100
+          minLength: 1
+          type: string
+        outside_singapore:
+          description: "True when it processes outside Singapore: a transfer to assess under the PDPA before an Owner allows it (CMP-PD-06)."
+          examples:
+            - true
+          type: boolean
+        processing_location:
+          description: Where the publisher processes what it reads.
+          examples:
+            - United States
+          maxLength: 100
+          minLength: 1
+          type: string
+        publisher:
+          description: "Who publishes it, as you have verified it yourself: Fyniq does not fetch or check it."
+          examples:
+            - Acme Software Pte Ltd
+          maxLength: 100
+          minLength: 1
+          type: string
+        publisher_url:
+          description: The publisher's own https address, shown to the Owner; never fetched.
+          examples:
+            - https://acme.example
+          maxLength: 2048
+          type: string
+        purpose:
+          description: What the organisation uses it for, for the data inventory.
+          examples:
+            - Ask questions about the management accounts from an AI assistant
+          maxLength: 300
+          minLength: 1
+          type: string
+        redirect_uris:
+          description: "The exact https (or loopback) addresses it signs people in on: no wildcard, query or fragment."
+          items:
+            type: string
+          maxItems: 5
+          minItems: 1
+          type:
+            - array
+            - "null"
+      required:
+        - name
+        - publisher
+        - redirect_uris
+        - purpose
+        - processing_location
+        - outside_singapore
+      type: object
+    ThirdPartyApps:
+      additionalProperties: false
+      properties:
+        apps:
+          description: Newest first, removed ones included, for the access review.
+          items:
+            $ref: "#/components/schemas/ThirdPartyApp"
+          maxItems: 200
+          type: array
+      required:
+        - apps
       type: object
     TimeCost:
       additionalProperties: false
@@ -118057,6 +118296,386 @@ paths:
       x-fyniq-permission:
         capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
         right: A
+  /v1/connected-apps/third-party-apps:
+    get:
+      description: The AI apps of other publishers registered by hand (AI-46), newest first, each with who publishes it as the Administrator stated it, what it is for, where it processes data, its redirect addresses and whether an Owner has approved it. Read-only; no side effects.
+      operationId: listMCPThirdPartyApps
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThirdPartyApps"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the third-party AI apps an Administrator registered
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: The registered apps are capped at 200 and read whole, like the registrations waiting for an Owner (AI-46).
+      x-fyniq-permission:
+        capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+        right: V
+    post:
+      description: "An Administrator, signed in and stepped up, registers an AI app of another publisher (AI-46): never automatic, never from a metadata document, nothing fetched. The name and redirect addresses pass the policy that checks a self-registering app (AI-90): a public client with PKCE, exact https or loopback redirects, a name that cannot pass for Fyniq or a known brand. The app is created as an agent with the default read scope alone and cannot connect until an Owner adds it to the apps that may connect. Refused (MCP-REG-05) until an Owner turns on both \"AI apps through MCP\" and \"An Administrator may register an AI app of another publisher\", each with a second approver. It makes a data inventory entry. Side effects: the client at the OAuth server, its registration, the app's record, the inventory entry and their audit events. Not idempotent: each call is a new client. Never on the AI's or MCP's tool list."
+      operationId: registerMCPThirdPartyApp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ThirdPartyAppRegister"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThirdPartyApp"
+          description: Created
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read; `MCP-REG-02` The registration breaks the policy."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `MCP-REG-01` AI apps cannot register here; `MCP-REG-05` Third-party AI apps are off for this organisation."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `MCP-REG-06` No such registered AI app."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `MCP-REG-07` A field of the registration is not acceptable."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests; `MCP-REG-03` Too many registrations."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Gateway: `MCP-REG-04` The sign-in service did not take the registration."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Register a third-party AI app by hand
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - MCP-REG-01
+        - MCP-REG-02
+        - MCP-REG-03
+        - MCP-REG-04
+        - MCP-REG-05
+        - MCP-REG-06
+        - MCP-REG-07
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: Each call is meant to make a new client, counted against the organisation's own allowance (AI-46).
+        Prefer: A preview would show a client ID that does not exist and spend the organisation's registration allowance (AI-46).
+      x-fyniq-permission:
+        capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+        right: C
+  /v1/connected-apps/third-party-apps/{client_id}:
+    delete:
+      description: "Removes a registered app at once (AI-46): it is taken out of the OAuth server, so it can sign no one in and its tokens stop, and a waiting registration is denied. It narrows, so no second person is needed; the record and its inventory entry stay for the access review. Side effects: the client at the OAuth server, the registration's status and the record's audit event. Never on the AI's or MCP's tool list."
+      operationId: removeMCPThirdPartyApp
+      parameters:
+        - description: The app's client ID.
+          in: path
+          name: client_id
+          required: true
+          schema:
+            description: The app's client ID.
+            examples:
+              - mcp-0123456789abcdef0123
+            pattern: ^mcp-[0-9a-f]{20}$
+            type: string
+      responses:
+        "204":
+          description: No Content
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `MCP-REG-06` No such registered AI app."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Remove a third-party AI app
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - MCP-REG-06
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: A removal happens once and a second call answers that nothing is registered, so a retry is safe without a key (AI-46).
+        Prefer: A removal narrows and takes effect at once, never held back for a second person (AI-46).
+      x-fyniq-permission:
+        capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+        note: "The Owner holds A on Connected apps, not C, and removes an app as the Administrator does: it narrows."
+        right: C
   /v1/connector-catalogue:
     get:
       description: "Every connector compiled into this release (FR-INT-25): what it implements and who may make it act, the data classes it sends out and where, its destinations, the secrets it needs (never their values), its webhooks, health check, test action and local substitute, and the JSON Schema of its configuration. Grouped by capability. Read-only; no side effects."

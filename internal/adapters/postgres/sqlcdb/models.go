@@ -2455,6 +2455,24 @@ type FyniqMcpSeen struct {
 	FirstSeen      time.Time
 }
 
+type FyniqMcpThirdPartyApp struct {
+	OrganisationID     uuid.UUID
+	ID                 uuid.UUID
+	ClientID           string
+	Name               string
+	Publisher          string
+	PublisherUrl       *string
+	RedirectUris       []string
+	Purpose            string
+	ProcessingLocation string
+	OutsideSingapore   bool
+	InventoryEntry     uuid.UUID
+	RegisteredBy       uuid.UUID
+	RegisteredAt       time.Time
+	RemovedAt          *time.Time
+	RemovedBy          *uuid.UUID
+}
+
 type FyniqMcpUserOptin struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
