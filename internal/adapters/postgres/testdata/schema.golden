@@ -2355,6 +2355,20 @@ policy_version | sha256 | bytea | not null |
 policy_version | from_draft | text | not null | 
 policy_version | published_by | text | not null | 
 policy_version | published_at | timestamp with time zone | not null | 
+portal_link | organisation_id | uuid | not null | current_org()
+portal_link | id | uuid | not null | uuidv7()
+portal_link | contact_id | uuid | not null | 
+portal_link | label | text | null | 
+portal_link | token_hash | text | not null | 
+portal_link | expires_at | timestamp with time zone | not null | 
+portal_link | created_by | text | not null | 
+portal_link | created_at | timestamp with time zone | not null | 
+portal_link | first_opened_at | timestamp with time zone | null | 
+portal_link | revoked_at | timestamp with time zone | null | 
+portal_link | revoked_by | text | null | 
+portal_link_token | token_hash | text | not null | 
+portal_link_token | owner | uuid | not null | 
+portal_link_token | link_id | uuid | not null | 
 practice_organisation | organisation_id | uuid | not null | 
 practice_organisation | created_by | uuid | not null | 
 practice_organisation | source_organisation_id | uuid | not null | 
@@ -6772,6 +6786,25 @@ policy_version | policy_version_title_length | CHECK (((length(btrim(title)) >= 
 policy_version | policy_version_title_not_null | NOT NULL title
 policy_version | policy_version_version_not_null | NOT NULL version
 policy_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+portal_link | portal_link_contact_fkey | FOREIGN KEY (organisation_id, contact_id) REFERENCES contact(organisation_id, id)
+portal_link | portal_link_contact_id_not_null | NOT NULL contact_id
+portal_link | portal_link_created_at_not_null | NOT NULL created_at
+portal_link | portal_link_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+portal_link | portal_link_created_by_not_null | NOT NULL created_by
+portal_link | portal_link_expires_at_not_null | NOT NULL expires_at
+portal_link | portal_link_expires_later | CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '90 days'::interval))))
+portal_link | portal_link_id_not_null | NOT NULL id
+portal_link | portal_link_label_length | CHECK (((label IS NULL) OR ((length(label) >= 1) AND (length(label) <= 200))))
+portal_link | portal_link_organisation_id_not_null | NOT NULL organisation_id
+portal_link | portal_link_pkey | PRIMARY KEY (organisation_id, id)
+portal_link | portal_link_revoked_by | CHECK ((((revoked_at IS NULL) = (revoked_by IS NULL)) AND ((revoked_by IS NULL) OR (revoked_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+portal_link | portal_link_token_format | CHECK ((token_hash ~ '^[0-9a-f]{64}$'::text))
+portal_link | portal_link_token_hash_not_null | NOT NULL token_hash
+portal_link | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+portal_link_token | portal_link_token_link_id_not_null | NOT NULL link_id
+portal_link_token | portal_link_token_owner_not_null | NOT NULL owner
+portal_link_token | portal_link_token_pkey | PRIMARY KEY (token_hash)
+portal_link_token | portal_link_token_token_hash_not_null | NOT NULL token_hash
 practice_organisation | practice_organisation_created_at_not_null | NOT NULL created_at
 practice_organisation | practice_organisation_created_by_not_null | NOT NULL created_by
 practice_organisation | practice_organisation_one_each | UNIQUE (created_by)
@@ -8025,6 +8058,7 @@ CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, date
 CREATE INDEX period_reopen_period ON fyniq.period_reopen USING btree (organisation_id, period_id, reopened_at)
 CREATE INDEX period_variance_explanation_period ON fyniq.period_variance_explanation USING btree (organisation_id, period_id, account_id, written_at)
 CREATE INDEX person_projection_manager ON fyniq.person_projection USING btree (organisation_id, line_manager_person_id)
+CREATE INDEX portal_link_contact ON fyniq.portal_link USING btree (organisation_id, contact_id, created_at)
 CREATE INDEX private_endpoint_serves ON fyniq.private_endpoint USING btree (serves, credential)
 CREATE INDEX project_billed_item_invoice_idx ON fyniq.project_billed_item USING btree (organisation_id, invoice_id)
 CREATE INDEX project_billed_item_project_idx ON fyniq.project_billed_item USING btree (organisation_id, project_id, kind)
@@ -8433,6 +8467,8 @@ CREATE UNIQUE INDEX policy_draft_once ON fyniq.policy_draft USING btree (organis
 CREATE UNIQUE INDEX policy_draft_pkey ON fyniq.policy_draft USING btree (organisation_id, id)
 CREATE UNIQUE INDEX policy_version_once ON fyniq.policy_version USING btree (organisation_id, key, version)
 CREATE UNIQUE INDEX policy_version_pkey ON fyniq.policy_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX portal_link_pkey ON fyniq.portal_link USING btree (organisation_id, id)
+CREATE UNIQUE INDEX portal_link_token_pkey ON fyniq.portal_link_token USING btree (token_hash)
 CREATE UNIQUE INDEX practice_organisation_one_each ON fyniq.practice_organisation USING btree (created_by)
 CREATE UNIQUE INDEX practice_organisation_pkey ON fyniq.practice_organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX private_endpoint_pkey ON fyniq.private_endpoint USING btree (id, version)
@@ -8746,6 +8782,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.pd_shred
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.person_projection DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('person_projection', 'person_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.portal_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('portal_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_milestone DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
@@ -9168,6 +9205,10 @@ CREATE TRIGGER policy_draft_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pol
 CREATE TRIGGER policy_draft_no_truncate BEFORE TRUNCATE ON fyniq.policy_draft FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER policy_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_version FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
 CREATE TRIGGER policy_version_no_truncate BEFORE TRUNCATE ON fyniq.policy_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER portal_link_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.portal_link FOR EACH ROW EXECUTE FUNCTION portal_link_guard()
+CREATE TRIGGER portal_link_no_truncate BEFORE TRUNCATE ON fyniq.portal_link FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER portal_link_token_guard BEFORE DELETE OR UPDATE ON fyniq.portal_link_token FOR EACH ROW EXECUTE FUNCTION portal_link_token_guard()
+CREATE TRIGGER portal_link_token_no_truncate BEFORE TRUNCATE ON fyniq.portal_link_token FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER private_endpoint_append_only BEFORE DELETE OR UPDATE ON fyniq.private_endpoint FOR EACH ROW EXECUTE FUNCTION private_endpoint_append_only()
 CREATE TRIGGER project_billing_follows_invoice AFTER UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((new.type = 'invoice'::text) AND (old.status IS DISTINCT FROM new.status) AND (new.status = ANY (ARRAY['posted'::text, 'reversed'::text])))) EXECUTE FUNCTION project_billing_follows_invoice()
 CREATE TRIGGER project_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project FOR EACH ROW EXECUTE FUNCTION project_guard()
@@ -9455,6 +9496,7 @@ person_projection | tenant_isolation | * | (organisation_id = current_org()) | (
 policy_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_draft | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+portal_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_billed_item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_member | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9718,6 +9760,8 @@ person_projection | enabled | forced
 policy_acknowledgement | enabled | forced
 policy_draft | enabled | forced
 policy_version | enabled | forced
+portal_link | enabled | forced
+portal_link_token | disabled | not forced
 practice_organisation | disabled | not forced
 private_endpoint | disabled | not forced
 project | enabled | forced
@@ -10096,6 +10140,9 @@ person_projection_guard() → trigger | security invoker | v | search_path=pg_ca
 platform_heartbeats() → TABLE(name text, last_beat timestamp with time zone, detail text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c82582dd84a7a5a8e815aad623e9d8d7
 platform_outbox() → TABLE(pending bigint, dead bigint, oldest_pending timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02c3afdff78c9f7db854d1d98424b830
 policy_library_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0442aa22bfdc40bc5031d622db019681
+portal_link_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 81698cd796e371f685b22afce9a9767c
+portal_link_route(p_hash text) → TABLE(organisation_id uuid, link_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7b556b67237554010d64f299c8e30816
+portal_link_token_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3b184ecc8346504ec789d07b1f4020b1
 private_endpoint_address_ok(p_address cidr) → boolean | security invoker | i | search_path=pg_catalog, fyniq, pg_temp | 87d398986e40ebaa5d612f9346df33d1
 private_endpoint_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 495b7d8c5db1f4005355e12e03026057
 private_endpoints() → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | da8a815f6c91cfdc5f5453fba7d6e3f8

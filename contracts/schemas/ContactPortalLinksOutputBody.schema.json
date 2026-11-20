@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "links": {
+      "description": "The customer's portal links, newest first.",
+      "items": {
+        "$ref": "PortalLinkOut.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "links"
+  ],
+  "title": "ContactPortalLinksOutputBody",
+  "type": "object"
+}

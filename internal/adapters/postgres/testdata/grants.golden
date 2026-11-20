@@ -509,6 +509,10 @@ fyniq_api       INSERT    policy_draft (body, key, revision, saved_at, saved_by,
 fyniq_api       SELECT    policy_draft
 fyniq_api       INSERT    policy_version (body, from_draft, key, published_at, published_by, sha256, title, version)
 fyniq_api       SELECT    policy_version
+fyniq_api       INSERT    portal_link (contact_id, created_at, created_by, expires_at, label, token_hash)
+fyniq_api       SELECT    portal_link
+fyniq_api       UPDATE    portal_link (first_opened_at, revoked_at, revoked_by)
+fyniq_api       EXECUTE   portal_link_route()
 fyniq_api       EXECUTE   private_endpoints()
 fyniq_api       EXECUTE   private_endpoints_for()
 fyniq_api       INSERT    project (billing_method, budget_amount, budget_minutes, currency, customer_id, ends_on, id, minor_units, starts_on, status)
@@ -995,6 +999,7 @@ fyniq_readonly  SELECT    person_projection
 fyniq_readonly  SELECT    policy_acknowledgement
 fyniq_readonly  SELECT    policy_draft
 fyniq_readonly  SELECT    policy_version
+fyniq_readonly  SELECT    portal_link
 fyniq_readonly  SELECT    project
 fyniq_readonly  SELECT    project_billed_item
 fyniq_readonly  SELECT    project_member
@@ -1351,6 +1356,7 @@ fyniq_worker    SELECT    person_projection
 fyniq_worker    SELECT    policy_acknowledgement
 fyniq_worker    SELECT    policy_draft
 fyniq_worker    SELECT    policy_version
+fyniq_worker    SELECT    portal_link
 fyniq_worker    EXECUTE   private_endpoints_for()
 fyniq_worker    SELECT    project
 fyniq_worker    SELECT    project_billed_item

@@ -313,6 +313,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/contacts/{contact_id}/document-templates` (listContactDocumentTemplates): List a contact's templates
 - `PUT /v1/contacts/{contact_id}/document-templates/{kind}/{document_type}` (setContactDocumentTemplate): Choose a contact's template
 - `PUT /v1/contacts/{contact_id}/member` (linkContactMember): Link a director, shareholder or investor to the member who signs in as them
+- `GET /v1/contacts/{contact_id}/portal-links` (getContactPortalLinks): Read a customer's portal links
+- `POST /v1/contacts/{contact_id}/portal-links` (createPortalLink): Make a customer's portal link
 - `GET /v1/contacts/{contact_id}/statement` (getCustomerStatement): Work out a customer's statement
 - `GET /v1/contacts/{contact_id}/summary` (getContactSummary): Get a contact's balances and activity
 - `GET /v1/contacts/{contact_id}/withholding-decisions` (listWithholdingDecisions): List a supplier's withholding decisions
@@ -897,6 +899,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/personal-access-tokens/{personal_access_token_id}/revoke` (revokePersonalAccessToken): Revoke a member's personal access token
 - `GET /v1/planning/summary` (getPlanningSummary): Get the planning summary for Home
 - `GET /v1/platform/version` (getPlatformVersion): Get the platform version
+- `POST /v1/portal-links/{link_id}/revoke` (revokePortalLink): Revoke a customer's portal link
 - `GET /v1/pre-incorporation-costs` (listPreIncorporationCosts): List costs paid before the books start
 - `POST /v1/pre-incorporation-costs` (recordPreIncorporationCost): Record a cost paid before the books start
 - `GET /v1/pre-incorporation-costs/{cost_id}` (getPreIncorporationCost): Get a cost paid before the books start
@@ -928,6 +931,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/public/document/accept` (acceptQuoteByLink): Accept a quote through its link
 - `POST /v1/public/document/decline` (declineQuoteByLink): Decline a quote through its link
 - `GET /v1/public/document/pdf` (getPublicDocumentPDF): Get the PDF of a quote or invoice through its link
+- `GET /v1/public/portal` (getPortal): Open a customer's portal through its link
+- `GET /v1/public/portal/invoices/{invoice_id}/pdf` (getPortalInvoicePDF): Get the PDF of one of the customer's invoices through the portal
+- `GET /v1/public/portal/statement` (getPortalStatement): Get the customer's statement of account through the portal
 - `GET /v1/purchase-orders` (listPurchaseOrders): List the purchase orders
 - `POST /v1/purchase-orders` (createPurchaseOrder): Raise a purchase order
 - `GET /v1/purchase-orders/{purchase_order_id}` (getPurchaseOrder): Get a purchase order
