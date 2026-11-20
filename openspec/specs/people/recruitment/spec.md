@@ -132,3 +132,8 @@ Source: PRD-002 §12 · Priority M · Phase P2
 #### Scenario: Accepted
 - **WHEN** a candidate accepts an offer
 - **THEN** a person record and an onboarding plan are created with the start date
+
+#### Scenario: A pass role waits (rev 0.72)
+- **GIVEN** a role that needs a pass, advertised from Mon 25 Feb, with no exemption
+- **WHEN** a recruiter moves a candidate to the offer stage before Mon 11 Mar
+- **THEN** it is refused until the advert's 14 days have run, and the hire records the day the pass application was made, once

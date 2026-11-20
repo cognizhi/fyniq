@@ -3,14 +3,14 @@ key: nemura.hiring
 title: Ask to hire, get a requisition approved and publish a job post
 mode: expert
 roles: [recruiter, hr_officer, hr_admin, owner]
-requirements: [NM-REC-01, NM-REC-02, NM-REC-03, NM-REC-04, NM-REC-05]
+requirements: [NM-REC-01, NM-REC-02, NM-REC-03, NM-REC-04, NM-REC-05, NM-REC-06]
 ---
 
 # Ask to hire, get a requisition approved and publish a job post
 
 ## What it is
 
-A **requisition** asks to hire for a role: the role, the team, whether it is new or replaces someone, the salary range in Singapore dollars, the start date aimed for, and whether an Employment Pass or S Pass is expected. The Owner approves it. The Recruiter then writes the **job post**, which is checked for wording the Tripartite Guidelines on Fair Employment Practices ask employers to avoid, and records the dates the Fair Consideration Framework asks for. Candidates, the board and interview kits are here; offers come in a later release.
+A **requisition** asks to hire for a role: the role, the team, whether it is new or replaces someone, the salary range in Singapore dollars, the start date aimed for, and whether an Employment Pass or S Pass is expected. The Owner approves it. The Recruiter then writes the **job post**, which is checked for wording the Tripartite Guidelines on Fair Employment Practices ask employers to avoid, and records the dates the Fair Consideration Framework asks for. Candidates, the board, interview kits and the hire are here; the offer letter from a template comes in a later release.
 
 ## Before you start
 
@@ -36,6 +36,7 @@ Once a requisition is approved, **Candidates** on its card lists everyone who ap
 - **Notes** are the hiring team's opinions of a candidate. Only the hiring team reads them, and they are not released on an access request.
 - **Interview kit.** Write the questions and the scorecard's criteria, one on each line, under **Interview kit**. They are checked against the Tripartite Guidelines like a job post: a question that names age, nationality, sex, marital status, pregnancy, caregiving, race, religion, language, disability or mental health is saved only with the genuine occupational requirement recorded.
 - **Interviewers** read only the candidates assigned to them and score them from 1 to 5 against the kit; they never read the team's notes or each other's scores.
+- **Hire a candidate** whose offer is accepted: at the **Offer** stage the HR administrator or the Owner enters the first day and the kind of employment and selects **Hire**. This makes the person record (with the role and team of the requisition), starts an onboarding plan from the standard template, fills the requisition and marks the candidate hired. A role that needs an Employment Pass or S Pass is held back until the advert's 14 days have run or an exemption is recorded, from the move to **Offer** onwards; an advert closed more than 3 months ago does not count. Then record the day the pass application was made under **Record the day**, once.
 - **How long the data is kept.** A candidate who is not progressing is listed for deletion six months after the decision unless they consented to be kept; a person reviews the list under the retention report, and only then are the candidate, their notes and scores deleted, with a proof that holds no content. A withdrawn consent restarts the six months.
 
 ## The careers page

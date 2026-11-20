@@ -29,6 +29,7 @@ Nemura's migrations are in `db/nemura/migrations` (continue from the highest num
 - [x] 4.3 Pipeline, interview kits, consent and retention (N.1 #11). `// req: NM-REC-04, NM-REC-05`
   (Built, 21 Nov 2026, PRD-002 rev 0.71: migration 000069 (`candidate`, `candidate_move`, `candidate_note`, `candidate_interviewer`, `interview_kit`, `interview_score`; the restrictive scope policies; `candidates_for_retention`, `purge_candidates`, `careers_application_target`), `pipeline.go` in the adapter and the API, `POST /v1/careers/{slug}/applications` (public), the candidate operations under `/v1/requisitions/{id}/…` and `/v1/candidates/{id}/…`, the Candidates and Interview kit sections of Hiring, the nightly `RunCandidateRetention` in the worker; `TestACandidateMovesAlongTheBoard…`, `TestACandidateNotProgressingIsDeletedSixMonthsLater…`, `TestAnApplicationOnTheCareersPage…`, `TestTheBoardAllowsOnlyItsMoves…`. **Left:** a file CV; the interviewers' own page and the page for assigning them (the operations exist); a candidate's own look at their data; the line manager's view of their own roles; Checks N.1 #11's ⚠ line; what becomes of a hired candidate's record after the hire (4.4).)
 - [ ] 4.4 Offer to hire: the person record, the onboarding plan, the pass application date. `// req: NM-REC-06`
+  (Built in part, 21 Nov 2026, PRD-002 rev 0.72: migration 000070 (`hire`), `HireCandidate` and `PassApplication`, `POST /v1/candidates/{id}/hire` and `…/pass-application`, the offer's block at the move to offer and at the hire, Hire and Record the day on the Candidates section; `TestACandidateIsHiredOnceIntoAPersonAndAPlan…`, `TestHiringOperationsFollowAppendixBsHiringRow`, `TestACandidateMovesAlongTheBoard…`. **Left:** the offer letter from a template (NM-LTR-01); the plan made at hire is the standard or a chosen template, but the KETs and Fyniq-invitation tasks are still closed by hand; what becomes of the hired candidate's record.)
 - [ ] 4.5 The assistant's `people.draft_job_post` and `people.draft_interview_kit`, and the fairness red-team cases. `// req: NM-AI-05`
 
 ## 4.0 Owner decisions applied (rev 0.69)
@@ -52,6 +53,6 @@ Nemura's migrations are in `db/nemura/migrations` (continue from the highest num
 | NM-LTR-05 | 1 | planned |
 | NM-SEC-06 | 2 | planned |
 | NM-ONB-01 | 3 | built |
-| NM-REC-01…06, NM-AI-05 | 4 | 4.1 and 4.3 built, 4.2 in part |
+| NM-REC-01…06, NM-AI-05 | 4 | 4.1 and 4.3 built, 4.2 and 4.4 in part |
 | NM-PRF-01…05 | 5 | 5.1 in part |
 | NM-EXT-04, NM-EXT-05 | 6 | planned |

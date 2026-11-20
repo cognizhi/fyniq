@@ -4,7 +4,7 @@ type: task
 title: Ask to hire, get a requisition approved and publish a job post
 summary: Requisitions the Owner approves, fair-wording checks, advert dates, the careers page, candidates on a board and interview kits
 sources:
-  - docs/user-guide/nemura/hiring.md sha256:0ddc367835df30a8767bd1a5b19df4fc993ba707b4b469fcd37e85f80db4973b
+  - docs/user-guide/nemura/hiring.md sha256:ea99e340b2d803683d3e4495eaa0f63910e4d2025e99f860a076ac4b902ec03b
 data_class: general
 taint: trusted
 status: published
@@ -40,6 +40,7 @@ aliases:
 - Once a requisition is approved its card lists candidates on a board: applied, screening, interview, offer, not progressing. Anyone can apply on the careers page; the Recruiter, HR administrator or Owner can add one. Applying is taken as consent to assessing the application; keeping a candidate for future roles needs a separate consent, which can be withdrawn. (src: docs/user-guide/nemura/hiring.md#candidates-and-interviews)
 - Every move is kept with who made it; not progressing needs a reason; a candidate is hired by the offer, not a move. Notes are the hiring team's and are not released on an access request. (src: docs/user-guide/nemura/hiring.md#candidates-and-interviews)
 - The interview kit's questions are checked for fair wording like a post, and a flagged question stays only with the genuine requirement recorded. Interviewers read only the candidates assigned to them and score them 1 to 5; they never read the team's notes. (src: docs/user-guide/nemura/hiring.md#candidates-and-interviews)
+- The HR administrator or the Owner hires a candidate at the offer stage with a start date and the kind of employment: a person record, an onboarding plan from the standard template and a filled requisition result; a pass role waits for the advert days or an exemption from the move to offer onwards; the pass application day is recorded once. (src: docs/user-guide/nemura/hiring.md#candidates-and-interviews)
 - A candidate not progressing is listed for deletion six months after the decision unless they consented to be kept; a person reviews the report, then the candidate, notes and scores are deleted with a proof; a withdrawn consent restarts the six months. (src: docs/user-guide/nemura/hiring.md#candidates-and-interviews)
 
 ## The careers page
