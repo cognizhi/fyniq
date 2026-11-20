@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry_id": {
+      "description": "The journal entry it posted.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "mapping_version": {
+      "description": "The version of the account mapping it was calculated against.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "outcome": {
+      "description": "posted: the version posted a journal entry; unchanged: it changed nothing and only the version was recorded.",
+      "enum": [
+        "posted",
+        "unchanged"
+      ],
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    },
+    "posted": {
+      "description": "What the run has posted so far, by account: the signed total after this version, in the base currency.",
+      "items": {
+        "$ref": "PayrollRunPostLine.schema.json"
+      },
+      "type": "array"
+    },
+    "received_at": {
+      "description": "When Fyniq received it.",
+      "examples": [
+        "2026-10-30T09:00:00+08:00"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "run_id": {
+      "description": "Nemura's pay run.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "version": {
+      "description": "The run's version.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "wage_month": {
+      "description": "The month the wages are for.",
+      "examples": [
+        "2026-10"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "version",
+    "wage_month",
+    "outcome",
+    "mapping_version",
+    "received_at",
+    "posted"
+  ],
+  "title": "PayrollRunReceived",
+  "type": "object"
+}

@@ -356,6 +356,9 @@ var matrixPeopleLink = map[string]func(e *env, tok string) (response, func() boo
 	"receivePeopleAvailabilityEvent": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/people-link/availability-events", tok, map[string]any{}), nil
 	},
+	"listPayrollRuns": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/payroll-runs?month=2026-10", tok, nil), nil
+	},
 	"listPeopleAvailability": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/people-link/availability", tok, nil), nil
 	},

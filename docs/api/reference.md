@@ -954,6 +954,28 @@ Sets the next version of the mapping pay runs post by (FR-EMP-02's minimum): eac
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/payroll-runs`
+
+**List the pay runs received from Nemura for a month** (`listPayrollRuns`)
+
+The versions of pay runs Fyniq received for a wage month and what became of each (FR-PPL-09, FR-PPL-11): posted or unchanged, the entry it posted, the mapping it was calculated against and its totals by account (never by person), a page at a time; and the runs it refused with the code and its plain words, which stay listed until a version posts (check C.1 #19). Read-only; no side effects. Needs the right to view pay runs.
+
+- **Permission:** View on Pay runs, employee data
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `month` (query): The wage month, YYYY-MM; left out, the month of the business date.
+- **Responses:**
+  - `200` OK [`PayrollRunsPage`](../../contracts/schemas/PayrollRunsPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/people-link`
 
 **Show the link to the people platform and where each feature lives** (`getPeopleLink`)
