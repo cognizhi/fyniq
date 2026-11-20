@@ -1159,6 +1159,42 @@
       "label": "Attach",
       "tooltip": "Attach the vendor's letter, or a screenshot of their confirmation through a channel you already knew. It is kept as bank details."
     },
+    "settings.people": {
+      "label": "People and HR",
+      "tooltip": "Where people records, payroll, leave and letters live (Nemura, an external system, or none), the link's state and how the month's statutory payroll outputs are met."
+    },
+    "people.arrange": {
+      "label": "Record the arrangement",
+      "tooltip": "Records, as evidence, how one item is met from this month. A pay run is not approved for payment while an item has none."
+    },
+    "payroll.salary-payments": {
+      "label": "Salary payments",
+      "tooltip": "The salary lines Nemura sends for each pay run Fyniq has posted: prepared, approved by another person, then released in parts."
+    },
+    "payroll.salary-payment": {
+      "label": "Salary batch",
+      "tooltip": "One salary batch: what stops it, its lines for those who may see them, its approval, its releases and what became of each payment."
+    },
+    "salary.prepare": {
+      "label": "Prepare the batch",
+      "tooltip": "Choose the bank account it is paid from, the payment date and the method. A change asks for its approval again."
+    },
+    "salary.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Asks another person to approve this batch. They sign for the total and the lines, not a name; neither the pay run's preparer nor its approver in Nemura may approve it."
+    },
+    "salary.release": {
+      "label": "Release",
+      "tooltip": "Writes the payment file for the lines that are free to go, once you confirm it's you. A person held for tax clearance or with new bank details waits while the others are paid."
+    },
+    "salary.record": {
+      "label": "Record the outcome",
+      "tooltip": "Says what became of one payment, with a file of evidence. A payment is paid only when the bank feed shows its debit or you record it here."
+    },
+    "salary.cancel": {
+      "label": "Cancel the batch",
+      "tooltip": "Cancels a batch with nothing released. It pays nothing."
+    },
     "purchases.payment-batches": {
       "label": "Payment batches",
       "tooltip": "Pay approved bills and claims together from one bank account: prepared, approved by another person, then released."

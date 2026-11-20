@@ -1,0 +1,34 @@
+---
+key: settings.people
+title: People and HR: where payroll lives and how its outputs are met
+mode: expert
+roles: [owner, administrator, payroll_administrator, controller, accountant, auditor]
+requirements: [FR-PPL-01, FR-PPL-08, FR-PAY-15, FR-PPL-05]
+status: draft            # written with p1-payroll-link; reviewed with the People and HR screen
+---
+
+# People and HR: where payroll lives and how its outputs are met
+
+## What it is
+
+**Settings › People and HR** says where people records, payroll, leave and letters live: in Nemura, in an external system, or nowhere (payroll is posted by manual journal). It shows the link's state and
+what Fyniq received from Nemura, and records how each month's statutory payroll outputs are met.
+
+## Where each feature lives
+
+- Linking Nemura, changing where a feature lives and unlinking need the Owner and a second approver; they are asked for through the API today.
+- While payroll lives in Nemura, a provider's payroll journal or a file import is not taken: the pay run posts through the link, so it is never posted from two sources.
+
+## How the month's payroll outputs are met
+
+- Before a pay run that pays a person can be approved for payment, five things are recorded as evidence: itemised payslips, key employment terms, CPF, SDL and SHG submission and payment, and where they apply
+  the Auto-Inclusion Scheme and IR21.
+- Each is met by a named payroll provider, a documented manual process, Nemura (payslips and key employment terms only, while the link is active), or not applicable with the reason (the Auto-Inclusion Scheme and IR21 only).
+- Every method but Nemura's needs a file of evidence. An arrangement holds from the month you choose until a later one replaces it; it is never changed.
+- While one is missing, the salary batch cannot be asked for approval and says which.
+
+## A provider's payroll journal
+
+- A provider's journal, or a file import, by account and department, becomes a **draft journal** under **Accounting › Journals**; a Controller or Accountant approves it, because the provider's own approval cannot be checked.
+- It is taken once for each provider, pay period and version; a later version drafts only the difference from the version before, once the earlier journal is posted.
+- A file may not name a person: pay is kept by account and department.

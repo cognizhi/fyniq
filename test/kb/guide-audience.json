@@ -795,6 +795,19 @@
     "status": "draft"
   },
   {
+    "file": "payroll-salary-payments.md",
+    "key": "payroll.salary-payments",
+    "roles": [
+      "payroll_administrator",
+      "payment_releaser",
+      "owner",
+      "controller",
+      "accountant",
+      "auditor"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "periods-and-close.md",
     "key": "accounting.periods",
     "roles": [
@@ -955,6 +968,19 @@
       "all"
     ],
     "status": "published"
+  },
+  {
+    "file": "settings-people.md",
+    "key": "settings.people",
+    "roles": [
+      "owner",
+      "administrator",
+      "payroll_administrator",
+      "controller",
+      "accountant",
+      "auditor"
+    ],
+    "status": "draft"
   },
   {
     "file": "setup-first-run.md",

@@ -811,3 +811,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | payroll-approval.md -> nemura.payroll-approval (link to the Fyniq link page)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/fyniq-link.md -> nemura.fyniq-link (the Finance | People switch, p1-nemura-fyniq-link 4.3)
+
+## [2026-11-20] compile | payroll.salary-payments: the salary batch (p1-payroll-link task 8.1)
+
+## [2026-11-20] compile | settings.people: People and HR, the go-live gate and a provider's journal (p1-payroll-link task 8.1)
