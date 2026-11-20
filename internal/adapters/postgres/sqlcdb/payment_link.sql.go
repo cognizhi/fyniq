@@ -73,6 +73,38 @@ func (q *Queries) ClosePaymentLink(ctx context.Context, arg ClosePaymentLinkPara
 	return i, err
 }
 
+const createPaymentLinkByPlatform = `-- name: CreatePaymentLinkByPlatform :one
+SELECT fyniq.create_payment_link_by_platform($1::uuid, $2::uuid, $3::text, $4::text, $5::text,
+  $6::text, $7::numeric, $8::timestamptz)::uuid AS id
+`
+
+type CreatePaymentLinkByPlatformParams struct {
+	InvoiceID         uuid.UUID
+	ConnectorID       uuid.UUID
+	ProviderRequestID string
+	Url               string
+	Reference         string
+	Currency          string
+	Amount            string
+	ExpiresAt         *time.Time
+}
+
+func (q *Queries) CreatePaymentLinkByPlatform(ctx context.Context, arg CreatePaymentLinkByPlatformParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createPaymentLinkByPlatform,
+		arg.InvoiceID,
+		arg.ConnectorID,
+		arg.ProviderRequestID,
+		arg.Url,
+		arg.Reference,
+		arg.Currency,
+		arg.Amount,
+		arg.ExpiresAt,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getPaymentLink = `-- name: GetPaymentLink :one
 SELECT id, connector_id, invoice_id, provider_request_id, url, reference, currency, amount, status, closed_reason, expires_at, version, created_by, created_at, closed_at
   FROM fyniq.payment_link WHERE id = $1

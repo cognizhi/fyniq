@@ -28,6 +28,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
+	"github.com/cognizhi/fyniq/internal/paymentlinkjob"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/psp"
 	"github.com/cognizhi/fyniq/internal/pspevents"
@@ -91,7 +92,8 @@ func main() {
 			kinds[email.FetchKind] = fetcher.Work()
 			kinds[bankingest.Kind] = kit.BankReports(deps.Clock).Work() // FR-BNK-17: an accepted bank report, imported
 		}
-		kinds[bankfeed.Kind] = kit.BankFeeds(deps.Clock).Work() // FR-BNK-15: an early sync a bank's verified webhook asked for
+		kinds[paymentlinkjob.Kind] = paymentlinkjob.Maker{Store: kit.Store, Runtime: kit.Runtime(deps.Clock), Clock: deps.Clock}.Work() // FR-AR-13: a payment link asked for when an invoice was issued
+		kinds[bankfeed.Kind] = kit.BankFeeds(deps.Clock).Work()                                                                         // FR-BNK-15: an early sync a bank's verified webhook asked for
 		events := kit.PSPEvents(deps.Clock)
 		kinds[pspevents.Kind] = events.Work()
 		kinds[psp.Kind] = kit.PSPRunner(deps.Clock).Work()       // FR-PSP-06: a provider's sweep, after its events                       // FR-PSP-01: a provider's event worked: its object fetched and posted

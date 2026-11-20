@@ -19,7 +19,7 @@
     {
       "kind": "payment-link",
       "trigger": "system-rule",
-      "trigger_rule": "A person with a right on Invoices asks for a payment link on an issued invoice (FR-AR-13). Never the AI.",
+      "trigger_rule": "A person with a right on Invoices asks for a payment link on an issued invoice, or, when the organisation has switched on automatic payment links, the platform asks for one when an invoice is issued (FR-AR-13). Never the AI.",
       "on_pause": "hold",
       "on_disable": "hold",
       "in_flight": "finish"
