@@ -8917,6 +8917,14 @@ components:
           examples:
             - hr
           type: string
+        closes:
+          description: "The flow that closes this task by itself: it is not marked done by hand, and it is skipped when it does not apply."
+          enum:
+            - kets
+            - fyniq_invitation
+          examples:
+            - kets
+          type: string
         decided_at:
           description: When.
           examples:
@@ -9108,6 +9116,14 @@ components:
             - joiner
           examples:
             - it
+          type: string
+        closes:
+          description: "The flow that closes the task by itself: the KETs letter being issued, or the person being invited to Fyniq. Such a task is not marked done by hand; the people team skips it when it does not apply."
+          enum:
+            - kets
+            - fyniq_invitation
+          examples:
+            - kets
           type: string
         detail:
           description: How, or what good looks like.

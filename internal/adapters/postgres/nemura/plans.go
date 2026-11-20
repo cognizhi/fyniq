@@ -39,7 +39,7 @@ func planError(err error) error {
 func toTasks(in []api.PlanTemplateTask) []onboarding.Task {
 	out := make([]onboarding.Task, len(in))
 	for i, t := range in {
-		out[i] = onboarding.Task{Title: strings.TrimSpace(t.Title), Detail: strings.TrimSpace(t.Detail), Assignee: t.Assignee, Offset: t.DueOffsetDays}
+		out[i] = onboarding.Task{Title: strings.TrimSpace(t.Title), Detail: strings.TrimSpace(t.Detail), Assignee: t.Assignee, Offset: t.DueOffsetDays, Closes: t.Closes}
 	}
 	return out
 }
@@ -58,7 +58,7 @@ func MakeOnboardingTemplate(ctx context.Context, tx pgx.Tx, org uuid.UUID, at ti
 		return uuid.Nil, planError(err)
 	}
 	for i, t := range tasks {
-		if _, err := tx.Exec(ctx, `INSERT INTO nemura.onboarding_template_task (template_id, position, title, detail, assignee, due_offset_days) VALUES ($1, $2, $3, $4, $5, $6)`, id, i+1, t.Title, t.Detail, t.Assignee, t.Offset); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO nemura.onboarding_template_task (template_id, position, title, detail, assignee, due_offset_days, closes) VALUES ($1, $2, $3, $4, $5, $6, $7)`, id, i+1, t.Title, t.Detail, t.Assignee, t.Offset, orNil(t.Closes)); err != nil {
 			return uuid.Nil, planError(err)
 		}
 	}
@@ -82,13 +82,13 @@ func OnboardingTemplates(ctx context.Context, tx pgx.Tx) ([]api.PlanTemplate, er
 	}
 	rows.Close()
 	for i := range out {
-		ts, err := tx.Query(ctx, `SELECT title, detail, assignee, due_offset_days FROM nemura.onboarding_template_task WHERE template_id = $1 ORDER BY position`, out[i].ID)
+		ts, err := tx.Query(ctx, `SELECT title, detail, assignee, due_offset_days, coalesce(closes, '') FROM nemura.onboarding_template_task WHERE template_id = $1 ORDER BY position`, out[i].ID)
 		if err != nil {
 			return nil, err
 		}
 		for ts.Next() {
 			var t api.PlanTemplateTask
-			if err := ts.Scan(&t.Title, &t.Detail, &t.Assignee, &t.DueOffsetDays); err != nil {
+			if err := ts.Scan(&t.Title, &t.Detail, &t.Assignee, &t.DueOffsetDays, &t.Closes); err != nil {
 				ts.Close()
 				return nil, err
 			}
@@ -143,14 +143,14 @@ func StartOnboardingPlan(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.
 		if archived {
 			return uuid.Nil, &onboarding.Refusal{Code: onboarding.CodeInvalid, Message: "That template is archived: choose a live one or make a new template."}
 		}
-		ts, err := tx.Query(ctx, `SELECT title, detail, assignee, due_offset_days FROM nemura.onboarding_template_task WHERE template_id = $1 ORDER BY position`, *template)
+		ts, err := tx.Query(ctx, `SELECT title, detail, assignee, due_offset_days, coalesce(closes, '') FROM nemura.onboarding_template_task WHERE template_id = $1 ORDER BY position`, *template)
 		if err != nil {
 			return uuid.Nil, err
 		}
 		tasks = nil
 		for ts.Next() {
 			var t onboarding.Task
-			if err := ts.Scan(&t.Title, &t.Detail, &t.Assignee, &t.Offset); err != nil {
+			if err := ts.Scan(&t.Title, &t.Detail, &t.Assignee, &t.Offset, &t.Closes); err != nil {
 				ts.Close()
 				return uuid.Nil, err
 			}
@@ -163,21 +163,21 @@ func StartOnboardingPlan(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.
 		return uuid.Nil, planError(err)
 	}
 	for i, t := range tasks {
-		if _, err := tx.Exec(ctx, `INSERT INTO nemura.onboarding_task (plan_id, person_id, position, title, detail, assignee, due_on) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-			id, person, i+1, t.Title, t.Detail, t.Assignee, day(onboarding.DueOn(start, t.Offset))); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO nemura.onboarding_task (plan_id, person_id, position, title, detail, assignee, due_on, closes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+			id, person, i+1, t.Title, t.Detail, t.Assignee, day(onboarding.DueOn(start, t.Offset)), orNil(t.Closes)); err != nil {
 			return uuid.Nil, planError(err)
 		}
 	}
 	return id, Audit(ctx, tx, org, at, user(by), "nemura.onboarding_plan.started", audit.Object{Type: "onboarding_plan", ID: id}, map[string]audit.Change{"person_id": {nil, person.String()}, "template": {nil, name}, "tasks": {nil, len(tasks)}}, "")
 }
 
-const taskColumns = `t.id, t.plan_id, t.person_id, p.legal_name, t.title, t.detail, t.assignee, t.due_on, t.state, coalesce(m.display_name, ''), t.decided_at, coalesce(t.note, '')`
+const taskColumns = `t.id, t.plan_id, t.person_id, p.legal_name, t.title, t.detail, t.assignee, t.due_on, t.state, coalesce(m.display_name, ''), t.decided_at, coalesce(t.note, ''), coalesce(t.closes, '')`
 
 func scanTask(row pgx.Row, today time.Time) (api.PlanTask, error) {
 	var t api.PlanTask
 	var due time.Time
 	var decided *time.Time
-	if err := row.Scan(&t.ID, &t.PlanID, &t.PersonID, &t.Person, &t.Title, &t.Detail, &t.Assignee, &due, &t.State, &t.DecidedBy, &decided, &t.Note); err != nil {
+	if err := row.Scan(&t.ID, &t.PlanID, &t.PersonID, &t.Person, &t.Title, &t.Detail, &t.Assignee, &due, &t.State, &t.DecidedBy, &decided, &t.Note, &t.Closes); err != nil {
 		return t, err
 	}
 	t.DueOn, t.Overdue = day(due), onboarding.Overdue(t.State, due, today)
@@ -309,11 +309,11 @@ func DecideOnboardingTask(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time
 		return &onboarding.Refusal{Code: onboarding.CodeInvalid, Message: "The note is at most 300 characters."}
 	}
 	team, it := whoIs(held)
-	var assignee, current string
+	var assignee, current, closes string
 	var joiner, manager bool
-	err := tx.QueryRow(ctx, `SELECT t.assignee, t.state, coalesce(p.member_id = $2, false),
+	err := tx.QueryRow(ctx, `SELECT t.assignee, t.state, coalesce(t.closes, ''), coalesce(p.member_id = $2, false),
   EXISTS (SELECT 1 FROM nemura.reporting_line r WHERE r.report_id = p.member_id AND r.manager_id = $2 AND (r.effective_to IS NULL OR r.effective_to > $3::date))
-FROM nemura.onboarding_task t JOIN nemura.person p ON p.organisation_id = t.organisation_id AND p.id = t.person_id WHERE t.id = $1 FOR UPDATE OF t`, id, by, day(today)).Scan(&assignee, &current, &joiner, &manager)
+FROM nemura.onboarding_task t JOIN nemura.person p ON p.organisation_id = t.organisation_id AND p.id = t.person_id WHERE t.id = $1 FOR UPDATE OF t`, id, by, day(today)).Scan(&assignee, &current, &closes, &joiner, &manager)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return notYours
 	}
@@ -328,6 +328,9 @@ FROM nemura.onboarding_task t JOIN nemura.person p ON p.organisation_id = t.orga
 	}
 	if current != onboarding.TaskOpen {
 		return &onboarding.Refusal{Code: onboarding.CodeConflict, Message: "That task is done or skipped already: it is decided once."}
+	}
+	if closes != "" && state == onboarding.TaskDone {
+		return &onboarding.Refusal{Code: onboarding.CodeConflict, Message: "That task closes by itself when " + closesFlow[closes] + ": do that and it is done. If it does not apply, skip it."}
 	}
 	if _, err := tx.Exec(ctx, `UPDATE nemura.onboarding_task SET state = $2, decided_by = $3, decided_at = $4, note = $5 WHERE id = $1`, id, state, by, at, orNil(strings.TrimSpace(note))); err != nil {
 		return planError(err)
@@ -431,4 +434,36 @@ func (p PlanService) Decide(ctx context.Context, s api.Session, held []authz.Rol
 	return p.in(ctx, s, func(ctx context.Context, tx pgx.Tx, at time.Time) error {
 		return DecideOnboardingTask(ctx, tx, s.Organisation, at, s.Member, held, task, state, note, dateOf(at))
 	})
+}
+
+// closesFlow says, in words, what closes a task by itself.
+var closesFlow = map[string]string{onboarding.ClosesKETs: "the person's key employment terms letter is issued", onboarding.ClosesInvitation: "the person is invited to Fyniq"}
+
+// CloseOnboardingTasksByFlow marks done the open tasks of a person's plan that close by the flow that has just happened, by the member who ran it, in the flow's own transaction, one audit event each. It
+// closes nothing for a person with no plan or no such task, and never a task already decided (NM-ONB-01, rev 0.75).
+func CloseOnboardingTasksByFlow(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, person uuid.UUID, flow string) (int, error) {
+	rows, err := tx.Query(ctx, `UPDATE nemura.onboarding_task SET state = 'done', decided_by = $3, decided_at = $4, note = $5 WHERE person_id = $1 AND closes = $2 AND state = 'open' RETURNING id`,
+		person, flow, by, at, "Closed by itself when "+closesFlow[flow]+".")
+	if err != nil {
+		return 0, planError(err)
+	}
+	var ids []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		ids = append(ids, id)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	for _, id := range ids {
+		if err := Audit(ctx, tx, org, at, user(by), "nemura.onboarding_task.decided", audit.Object{Type: "onboarding_task", ID: id}, map[string]audit.Change{"state": {"open", onboarding.TaskDone}, "closed_by": {nil, flow}}, ""); err != nil {
+			return 0, err
+		}
+	}
+	return len(ids), nil
 }

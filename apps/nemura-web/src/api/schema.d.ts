@@ -10328,6 +10328,12 @@ export interface components {
              */
             assignee: "hr" | "manager" | "it" | "joiner";
             /**
+             * @description The flow that closes this task by itself: it is not marked done by hand, and it is skipped when it does not apply.
+             * @example kets
+             * @enum {string}
+             */
+            closes?: "kets" | "fyniq_invitation";
+            /**
              * Format: date-time
              * @description When.
              * @example 2026-12-02T10:00:00Z
@@ -10458,6 +10464,12 @@ export interface components {
              * @enum {string}
              */
             assignee: "hr" | "manager" | "it" | "joiner";
+            /**
+             * @description The flow that closes the task by itself: the KETs letter being issued, or the person being invited to Fyniq. Such a task is not marked done by hand; the people team skips it when it does not apply.
+             * @example kets
+             * @enum {string}
+             */
+            closes?: "kets" | "fyniq_invitation";
             /**
              * @description How, or what good looks like.
              * @example Order, set up and label what the role needs.

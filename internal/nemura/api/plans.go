@@ -22,6 +22,7 @@ type PlanTemplateTask struct {
 	Detail        string `json:"detail,omitempty" maxLength:"1000" doc:"How, or what good looks like." example:"Order, set up and label what the role needs."`
 	Assignee      string `json:"assignee" enum:"hr,manager,it,joiner" doc:"Who it is for: the HR team, the joiner's line manager, IT (an Administrator, HR administrator or the Owner) or the joiner." example:"it"`
 	DueOffsetDays int    `json:"due_offset_days" minimum:"-60" maximum:"365" doc:"Days from the start date it is due: negative before it." example:"-3"`
+	Closes        string `json:"closes,omitempty" enum:"kets,fyniq_invitation" doc:"The flow that closes the task by itself: the KETs letter being issued, or the person being invited to Fyniq. Such a task is not marked done by hand; the people team skips it when it does not apply." example:"kets"`
 }
 
 // PlanTemplate is a template of onboarding tasks.
@@ -47,6 +48,7 @@ type PlanTask struct {
 	DecidedBy string `json:"decided_by,omitempty" doc:"Who marked it done or skipped." example:"Sarah Koh"`
 	DecidedAt string `json:"decided_at,omitempty" format:"date-time" doc:"When." example:"2026-12-02T10:00:00Z"`
 	Note      string `json:"note,omitempty" doc:"The note left when it was decided." example:"Collected on the first day."`
+	Closes    string `json:"closes,omitempty" enum:"kets,fyniq_invitation" doc:"The flow that closes this task by itself: it is not marked done by hand, and it is skipped when it does not apply." example:"kets"`
 }
 
 // Plan is a person's onboarding plan.

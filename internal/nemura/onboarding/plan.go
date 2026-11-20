@@ -1,6 +1,7 @@
 package onboarding
 
 import (
+	"slices"
 	"strings"
 	"time"
 )
@@ -38,21 +39,32 @@ type Task struct {
 	Title    string
 	Detail   string
 	Assignee string
-	Offset   int // days from the start date; negative before it
+	Offset   int    // days from the start date; negative before it
+	Closes   string // the flow that closes the task by itself, or empty: ClosesKETs or ClosesInvitation (rev 0.75)
 }
+
+// The flows that close a task by themselves (PRD-002 NM-ONB-01, rev 0.75): issuing the person's key employment terms, and inviting the person to Fyniq. A task that closes by its flow is not marked done by
+// hand (it can be skipped when it does not apply), so a plan never says done for what did not happen.
+const (
+	ClosesKETs       = "kets"
+	ClosesInvitation = "fyniq_invitation"
+)
+
+// ClosesFlows are the flows a task may close by.
+var ClosesFlows = []string{ClosesKETs, ClosesInvitation}
 
 // Standard is the company's starting template, from the tasks NM-ONB-01 names: key employment terms within 14 days of starting (the Employment Act's rule, PRD-002 Appendix A), bank and CPF details
 // before the first pay run, pass collection, equipment, accounts and introductions. The offsets are a starting point a company changes by making its own template [owner to confirm].
 func Standard() []Task {
 	return []Task{
-		{"Send the offer documents and a welcome note", "Confirm the start date, the first-day details and who the joiner meets.", ForHR, -7},
-		{"Prepare the laptop and equipment", "Order, set up and label what the role needs.", ForIT, -3},
-		{"Create the accounts", "Email, chat and the tools the role needs, each with its owner.", ForIT, -2},
-		{"Collect the pass, if the joiner needs one", "Employment Pass or S Pass: note the date it is collected and keep the card's expiry.", ForHR, 0},
-		{"Introductions and the first week", "Introduce the joiner to the team, and agree the first week's plan.", ForManager, 1},
-		{"Add your bank account and CPF details", "Add them under My details before the first pay run, so the first pay is right.", ForJoiner, 5},
-		{"Issue the key employment terms (KETs)", "Within 14 days of the start date for employees the Employment Act covers.", ForHR, 14},
-		{"First check-in", "A conversation about how the first weeks went and what is missing.", ForManager, 30},
+		{"Send the offer documents and a welcome note", "Confirm the start date, the first-day details and who the joiner meets.", ForHR, -7, ""},
+		{"Prepare the laptop and equipment", "Order, set up and label what the role needs.", ForIT, -3, ""},
+		{"Create the accounts", "Email, chat and the tools the role needs, each with its owner.", ForIT, -2, ""},
+		{"Collect the pass, if the joiner needs one", "Employment Pass or S Pass: note the date it is collected and keep the card's expiry.", ForHR, 0, ""},
+		{"Introductions and the first week", "Introduce the joiner to the team, and agree the first week's plan.", ForManager, 1, ""},
+		{"Add your bank account and CPF details", "Add them under My details before the first pay run, so the first pay is right.", ForJoiner, 5, ""},
+		{"Issue the key employment terms (KETs)", "Within 14 days of the start date for employees the Employment Act covers. This task closes by itself when the KETs letter is issued.", ForHR, 14, ClosesKETs},
+		{"First check-in", "A conversation about how the first weeks went and what is missing.", ForManager, 30, ""},
 	}
 }
 
@@ -86,6 +98,9 @@ func CheckTask(t Task) error {
 	}
 	if !known {
 		return invalid("Choose who it is for: hr, manager, it or joiner.")
+	}
+	if t.Closes != "" && !slices.Contains(ClosesFlows, t.Closes) {
+		return invalid("A task closes by the KETs letter or the invitation to Fyniq: choose one, or leave it empty.")
 	}
 	if t.Offset < MinOffset || t.Offset > MaxOffset {
 		return invalid("The due date is %d days before to %d days after the start date.", -MinOffset, MaxOffset)
