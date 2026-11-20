@@ -81,6 +81,10 @@ Source: PRD-002 §12 · Priority M · Phase P2
 - **WHEN** a post names a flagged criterion and a genuine occupational requirement of 10 or more characters is recorded
 - **THEN** it is published with the requirement kept in its record
 
+#### Scenario: Interview questions (rev 0.71)
+- **WHEN** an interview kit has a question that names a flagged criterion
+- **THEN** the kit is saved only with the genuine occupational requirement recorded, and the findings are shown either way
+
 ### Requirement: NM-REC-04 Pipeline
 Candidates SHALL move through stages on a board, with profiles, interview kits, scorecards and a recorded decision and reason, every move audited.
 
@@ -89,6 +93,14 @@ Source: PRD-002 §12 · Priority M · Phase P2
 #### Scenario: Decision
 - **WHEN** a candidate is moved to "not progressing"
 - **THEN** a reason is recorded and the move is audited
+
+#### Scenario: The board's moves (rev 0.71)
+- **WHEN** a candidate at applied is moved to offer, or any candidate is moved to hired by a move
+- **THEN** it is refused: the board moves step by step and a candidate is hired by the offer
+
+#### Scenario: An interviewer's view (rev 0.71)
+- **WHEN** an interviewer reads a candidate assigned to them, and one who is not
+- **THEN** the first is shown without the hiring team's notes and can score a criterion of the kit from 1 to 5, and the second is told there is no such candidate
 
 ### Requirement: NM-REC-05 Candidate consent and retention
 Candidates SHALL consent to the use of their data per role and, separately, for future roles, and unsuccessful candidates' data SHALL be deleted after the retention period unless they consented to keep it.
@@ -103,6 +115,10 @@ Source: PRD-002 §12 · Priority M · Phase P2
 - **WHEN** a candidate applies
 - **THEN** their data is used to assess the application on deemed consent (PDPC Selected Topics guidelines §6.2, revised 23 May 2024)
 - **AND** keeping them for future roles needs separate consent, which they can withdraw
+
+#### Scenario: Reviewed deletion (rev 0.71)
+- **WHEN** a candidate not progressing without the consent to be kept passes six months, and a person has reviewed the report
+- **THEN** the candidate, their notes and scores are deleted with a proof, while one who consented to be kept is not due, and a withdrawn consent restarts the six months
 
 #### Scenario: Opinions
 - **WHEN** a candidate asks for their data
