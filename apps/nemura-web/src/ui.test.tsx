@@ -40,6 +40,8 @@ import { AssistantSettings } from "./pages/AssistantSettings";
 import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
+import { OnboardingPlans } from "./components/OnboardingPlans";
+import { MyOnboarding } from "./components/MyOnboarding";
 import { Delegations } from "./components/Delegations";
 import { AskQuestion } from "./pages/AskQuestion";
 import { PeopleRequests } from "./pages/PeopleRequests";
@@ -320,9 +322,9 @@ describe("the people pages", () => {
 // req: NM-FEAT-01, NM-FEAT-03
 describe("the feature switches", () => {
   const list = { features: [
-    { id: "leave", name: "Leave", phase: "P1", state: "on", needs: [] },
-    { id: "payroll", name: "Payroll", phase: "P1", state: "off", needs: ["leave"] },
-    { id: "hiring", name: "Hiring", phase: "P2", state: "off", needs: [] },
+    { id: "leave", name: "Leave", phase: "P1", built: true, state: "on", needs: [] },
+    { id: "payroll", name: "Payroll", phase: "P1", built: true, state: "off", needs: ["leave"] },
+    { id: "hiring", name: "Hiring", phase: "P2", built: false, state: "off", needs: [] },
   ] };
 
   it("lists each feature with its state and what it needs, and says which are later", async () => {
@@ -1877,5 +1879,50 @@ describe("raising and handling a concern", () => {
     cleanup();
     render(<Grievances roles={["employee"]} />);
     expect(await screen.findByText("Only an HR administrator or the Owner handles grievances.")).toBeTruthy();
+  });
+});
+
+// req: NM-ONB-01, QA-UI-05
+describe("onboarding plans", () => {
+  const task = (id: string, assignee: string, state: string, overdue = false) => ({ id, plan_id: "p1", person_id: "pp", person: "Jon Joiner", title: `Task ${id}`, assignee, due_on: "2026-12-05", state, overdue });
+  const plan = { id: "p1", person_id: "pp", person: "Jon Joiner", template: "Standard", start_date: "2026-12-01", done: 1, total: 2, tasks: [task("t1", "it", "done"), task("t2", "hr", "open", true)] };
+
+  it("shows the people team the plans with each task's assignee and due date, marks a task done or skipped, makes a plan and a template, and is accessible", async () => {
+    answer("GET /v1/onboarding/plans", { status: 200, body: { plans: [plan] } });
+    answer("GET /v1/onboarding/templates", { status: 200, body: { templates: [{ id: "tp1", name: "Office joiner", archived: false, tasks: [{ title: "a", assignee: "hr", due_offset_days: 0 }] }] } });
+    answer("POST /v1/onboarding/plan-tasks/t2/decision", { status: 204, body: undefined });
+    answer("POST /v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/onboarding-plan", { status: 201, body: plan });
+    answer("POST /v1/onboarding/templates", { status: 201, body: { id: "tp2", name: "Sales", archived: false, tasks: [] } });
+    const { container } = render(<OnboardingPlans people={[{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", name: "Ben Lim" } as never]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    expect(await screen.findByText(/Jon Joiner, starts 2026-12-01: 1 of 2 done/)).toBeTruthy();
+    expect(screen.getByText("Overdue")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Skip: Task t2" }));
+    expect(await screen.findByText("Saved.")).toBeTruthy();
+    expect(bodies.get("POST /v1/onboarding/plan-tasks/t2/decision")).toEqual({ state: "skipped" });
+    fireEvent.click(screen.getByRole("button", { name: "Start the plan" }));
+    expect(await screen.findByText("The plan is made, with each task due from the start date.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Sales" } });
+    fireEvent.click(screen.getByRole("button", { name: "Make the template" }));
+    expect(await screen.findByText("The template is made.")).toBeTruthy();
+    expect(bodies.get("POST /v1/onboarding/templates")).toEqual({ name: "Sales" });
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("tells the people team when Onboarding is off, and shows a person only the tasks that are theirs", async () => {
+    answer("GET /v1/onboarding/plans", { status: 409, body: { code: "NM_FEATURE_OFF", detail: "Onboarding is switched off." } });
+    answer("GET /v1/onboarding/templates", { status: 409, body: { code: "NM_FEATURE_OFF", detail: "Onboarding is switched off." } });
+    render(<OnboardingPlans people={[]} />);
+    expect(await screen.findByText(/Onboarding is switched off for this company/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Start the plan" })).toBeNull();
+    cleanup();
+    answer("GET /v1/me/onboarding", { status: 200, body: { tasks: [task("t3", "joiner", "open")] } });
+    answer("POST /v1/onboarding/plan-tasks/t3/decision", { status: 204, body: undefined });
+    const { container } = render(<MyOnboarding />);
+    const { fireEvent } = await import("@testing-library/react");
+    expect(await screen.findByText(/Task t3: Jon Joiner, due 2026-12-05/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Done: Task t3" }));
+    await waitFor(() => expect(bodies.get("POST /v1/onboarding/plan-tasks/t3/decision")).toEqual({ state: "done" }));
+    expect(await violations(container)).toEqual([]);
   });
 });

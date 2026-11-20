@@ -971,3 +971,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/nemura/grievances.md -> nemura.grievances (new: the confidential grievance channel)
 
 ## [2026-11-20] compile | nemura.grievances: waiting to be taken and the five-year retention
+
+## [2026-11-20] compile | nemura.onboarding: onboarding plans (NM-ONB-01)

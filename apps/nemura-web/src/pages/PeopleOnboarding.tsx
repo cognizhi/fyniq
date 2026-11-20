@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
+import { OnboardingPlans } from "../components/OnboardingPlans";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
 import { Shell, admin, team } from "./Shell";
@@ -75,6 +76,7 @@ export function PeopleOnboarding({ roles }: { roles: readonly string[] }) {
             </ul>
           </section>
         )}
+        {hrRight && <OnboardingPlans people={people} />}
         {hrRight && (
           <section className="fy-stack fy-stack--2" aria-labelledby="leave-h">
             <h2 className="fy-h2" id="leave-h">{t("onb.leaving")}</h2>

@@ -79,7 +79,7 @@ function Row({ f, canSet, saved }: { f: Feature; canSet: boolean; saved: () => u
     <tr>
       <th scope="row">
         {label(f.id, f.name)}
-        {f.phase !== "P1" && <span className="fy-small fy-muted"> {t("features.later", { phase: f.phase })}</span>}
+        {!f.built && <span className="fy-small fy-muted"> {t("features.later", { phase: f.phase })}</span>}
       </th>
       <td>
         <select className="fy-input" id={id} aria-label={`${label(f.id, f.name)}: ${t("features.state")}`} value={st} disabled={!canSet} onChange={(e) => setSt(e.target.value as Feature["state"])}>

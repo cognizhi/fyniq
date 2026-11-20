@@ -53,3 +53,13 @@ var SubscriptionSchema []byte
 //
 //go:embed project-revenue.schema.json
 var ProjectRevenueSchema []byte
+
+// AllocationSchema is allocation.schema.json: one case of a shared cost split over the targets of an allocation rule, with what the key cannot place left unallocated (FR-DIM-03, ALLOC-PRORATA).
+//
+//go:embed allocation.schema.json
+var AllocationSchema []byte
+
+// ShareServiceSchema is share-service.schema.json: one case of the expense of shares issued for services, a grant's tranches spread over their service months (FR-EQ-13, ALLOC-EVEN, RND-LINE).
+//
+//go:embed share-service.schema.json
+var ShareServiceSchema []byte

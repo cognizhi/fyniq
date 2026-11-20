@@ -549,7 +549,7 @@
       }
     },
     "badDebtRelief": {
-      "description": "The claim of GST bad debt relief for a write-off (bad_debt_relief@1, rev 0.608, FR-AR-11): it names only the write-off and the day; each side works out the GST, RND-BDR of the invoice's output tax in the part written off, and posts Dr the GST control account, Cr the account the write-off took the debt to.",
+      "description": "The claim of GST bad debt relief for a write-off (bad_debt_relief@1, rev 0.609, FR-AR-11): it names only the write-off and the day; each side works out the GST, RND-BDR of the invoice's output tax in the part written off, and posts Dr the GST control account, Cr the account the write-off took the debt to.",
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "id", "version", "date", "write_off"],

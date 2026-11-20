@@ -311,7 +311,7 @@ def write_off(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
 
 @dataclass
 class WrittenOff:
-    """A posted write-off: its invoice, the amount and the account the debt went to, and whether its GST relief is claimed (rev 0.608)."""
+    """A posted write-off: its invoice, the amount and the account the debt went to, and whether its GST relief is claimed (rev 0.609)."""
 
     item: OpenItem
     amount: Decimal  # in the invoice's currency
@@ -320,7 +320,7 @@ class WrittenOff:
 
 
 def bad_debt_relief(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
-    """``bad_debt_relief@1`` (§10.2 "GST bad debt relief", FR-AR-11, rev 0.608): the output tax in the part of an invoice's debt that a
+    """``bad_debt_relief@1`` (§10.2 "GST bad debt relief", FR-AR-11, rev 0.609): the output tax in the part of an invoice's debt that a
     write-off took comes back out of the GST control account, against the account the write-off took the debt to, both in the
     base currency: Dr 2200, Cr that account, for ``RND-BDR`` of the invoice's output tax. A write-off is claimed once; an invoice
     some credit note credits is not claimed here (its output tax was adjusted by the note); nothing is claimed that is not left."""

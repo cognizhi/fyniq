@@ -472,6 +472,10 @@ Source: PRD-001 §8.22 · Priority C · Phase P2
 - **WHEN** a grant of shares for services is recorded with its grant-date fair value and vesting
 - **THEN** the expense is recognised over the service period
 
+#### Scenario: Whole service months and one rounding (rev 0.608)
+- **WHEN** a grant's tranche vests
+- **THEN** its total is its shares times the fair value rounded once, spread over the whole calendar months from the service start's month to its vest day's month by ALLOC-EVEN, and a month's expense is the tranches' parts
+
 #### Scenario: Employment income and no tax deduction
 - **WHEN** the year's payroll returns are prepared
 - **THEN** the grant provides employment-income data for IR8A [verify valuation]

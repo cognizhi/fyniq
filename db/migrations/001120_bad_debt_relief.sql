@@ -1,4 +1,4 @@
--- A claim of GST bad debt relief (PRD-001 FR-AR-11, rev 0.608; p2-tax-filings task 3.2): a document of its own, `bad_debt_relief`, made and posted at once by the claim's
+-- A claim of GST bad debt relief (PRD-001 FR-AR-11, rev 0.609; p2-tax-filings task 3.2): a document of its own, `bad_debt_relief`, made and posted at once by the claim's
 -- person, naming one posted bad-debt write-off, the GST it claims (RND-BDR) and the F5 period it goes in, with the inputs the rule read, so the entry replays (ENG-06). It posts
 -- Dr the GST control account, Cr the account the write-off took the debt to (the rule bad_debt_relief@1), is never edited, and is undone by a reversal. Evidence (the debtor's
 -- insolvency, the steps taken to recover the debt) attaches to it as to any document (FR-DOC-05). The widened check is added NOT VALID and validated by 001121.

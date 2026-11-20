@@ -42,7 +42,7 @@ var Categories = []Category{
 		Purpose:    "To run employment: who works here, in what role and under whom, and to meet the employer's record-keeping duties (Employment Act)",
 		Capability: "People records (not restricted)",
 		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "MOM: employment records of a former employee are kept for 1 year after they leave"},
-		Columns:    []string{"person.legal_name", "person.preferred_name", "person.work_email", "person.phone", "person.leaving_reason", "join_task.note"},
+		Columns:    []string{"person.legal_name", "person.preferred_name", "person.work_email", "person.phone", "person.leaving_reason", "join_task.note", "onboarding_task.note"},
 	},
 	{
 		Key: "legal-classification", What: "A person's legal classification: contract of service or for service, Employment Act cover and Part IV class, residency and the date residence began, and date of birth",
@@ -149,6 +149,8 @@ var Categories = []Category{
 
 // NotPersonal are columns whose names look personal and are not, with why. A column here needs a reason a reviewer can read.
 var NotPersonal = map[string]string{
+	"onboarding_template.name":         "what a company calls an onboarding template, such as Office joiner, not a person",
+	"onboarding_plan.template_name":    "the name of the template a plan was made from, copied when the plan was made",
 	"erasure_order.reason":             "why an Owner or an HR administrator asked for an erasure (the retention periods have run): the person is named by ID, and the reason names no one",
 	"bank_account_change.bank_version": "the number of a confirmed change in a person's run of changes, which a restore can raise: a count, no account",
 	"idempotency_key.body":             "the stored answer of a write that cannot carry pay or restricted data, kept 24 hours; an answer that may is never stored",
