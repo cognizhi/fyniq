@@ -94,7 +94,7 @@ var fyCodes = map[string]string{
 	"FYT02": storage.CodeInvalid, // a write-off with a live claim of relief reversed (001120)
 	"FYW01": storage.CodeInvalid, // a webhook endpoint changed beyond its rules, or a webhook record deleted (001151)
 	"FYW02": storage.CodeInvalid, // a webhook delivery changed beyond its rules (001151)
-	"FYT01": storage.CodeInvalid, // a task made by an integration changed beyond its rules, or deleted (001152)
+	"FYK01": storage.CodeInvalid, // a task made by an integration changed beyond its rules, or deleted (001152)
 	"FYW03": storage.CodeInvalid, // a recorded webhook attempt changed or deleted (001151)
 	"FY186": storage.CodeVersion,
 	"FY187": storage.CodeVersion,
