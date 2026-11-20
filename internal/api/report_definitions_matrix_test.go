@@ -256,7 +256,78 @@ func matrixSentUpdate(e *env) string {
 }
 
 // matrixBoardPacks are the board pack's and the investor update's rows of the authorisation matrix (FR-RPT-06, FR-EQ-23).
+// matrixBoardMember makes the matrix's one member a Board viewer too, once, so that a grant has someone to name.
+func matrixBoardMember(e *env) (member, user string) {
+	matrixApprover(e)
+	l := e.call(http.MethodGet, "/v1/members", e.as(authz.Administrator), nil)
+	m := l.Body["items"].([]any)[0].(map[string]any)
+	if !contains(l.Raw, `"board_viewer"`) {
+		if r := e.call(http.MethodPost, "/v1/members/"+m["id"].(string)+"/roles", e.as(authz.Administrator), map[string]any{"role": "board_viewer"}); r.Status != 201 {
+			e.t.Fatalf("making the matrix member a Board viewer: %d %s", r.Status, r.Raw)
+		}
+	}
+	return m["id"].(string), m["user_id"].(string)
+}
+
+// matrixLiveGrant is a live grant of the matrix's member, made by the Owner when there is none.
+func matrixLiveGrant(e *env) string {
+	_, user := matrixBoardMember(e)
+	owner := asMatrixMember(e, e.as(authz.Owner))
+	for _, x := range e.call(http.MethodGet, "/v1/cap-table-grants", owner, nil).Body["items"].([]any) {
+		if g := x.(map[string]any); g["live"] == true {
+			return g["id"].(string)
+		}
+	}
+	r := e.call(http.MethodPost, "/v1/cap-table-grants", owner, map[string]any{"user_id": user, "reason": "The matrix's grant"})
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("a grant = %d: %s", r.Status, r.Raw)
+	}
+	return r.str("id")
+}
+
+// matrixNoGrant ends the matrix member's live grant, if there is one.
+func matrixNoGrant(e *env) {
+	matrixBoardMember(e)
+	owner := asMatrixMember(e, e.as(authz.Owner))
+	for _, x := range e.call(http.MethodGet, "/v1/cap-table-grants", owner, nil).Body["items"].([]any) {
+		if g := x.(map[string]any); g["live"] == true {
+			e.call(http.MethodPost, "/v1/cap-table-grants/"+g["id"].(string)+"/revoke", owner, map[string]any{"reason": "The matrix resets"})
+		}
+	}
+}
+
 var matrixBoardPacks = map[string]func(e *env, tok string) (response, func() bool){
+	"listCapTableGrants": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/cap-table-grants", asMatrixMember(e, tok), nil), nil
+	},
+	"grantCapTableAccess": func(e *env, tok string) (response, func() bool) {
+		matrixNoGrant(e)
+		_, user := matrixBoardMember(e)
+		r := e.call(http.MethodPost, "/v1/cap-table-grants", asMatrixMember(e, tok), map[string]any{"user_id": user, "reason": "A matrix grant"})
+		return r, func() bool {
+			for _, x := range e.call(http.MethodGet, "/v1/cap-table-grants", asMatrixMember(e, e.as(authz.Owner)), nil).Body["items"].([]any) {
+				if x.(map[string]any)["live"] == true {
+					return false
+				}
+			}
+			return true
+		}
+	},
+	"revokeCapTableAccess": func(e *env, tok string) (response, func() bool) {
+		id := matrixLiveGrant(e)
+		r := e.call(http.MethodPost, "/v1/cap-table-grants/"+id+"/revoke", asMatrixMember(e, tok), map[string]any{"reason": "A matrix revocation"})
+		return r, func() bool {
+			for _, x := range e.call(http.MethodGet, "/v1/cap-table-grants", asMatrixMember(e, e.as(authz.Owner)), nil).Body["items"].([]any) {
+				if x.(map[string]any)["id"] == id && x.(map[string]any)["live"] == false {
+					return false
+				}
+			}
+			return true
+		}
+	},
+	"getGrantedCapTable": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/cap-table/granted", asMatrixMember(e, tok), nil), nil
+	},
 	"getDeferralRollForward": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/deferral-roll-forward?from=2026-10&to=2026-10", asMatrixMember(e, tok), nil), nil
 	},

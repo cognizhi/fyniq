@@ -853,6 +853,15 @@ break_glass_use | used_at | timestamp with time zone | not null |
 break_glass_use | currency | text | not null | 
 break_glass_use | minor_units | smallint | not null | 
 break_glass_use | total | numeric(20,4) | not null | 
+cap_table_grant | organisation_id | uuid | not null | current_org()
+cap_table_grant | id | uuid | not null | uuidv7()
+cap_table_grant | user_id | uuid | not null | 
+cap_table_grant | reason | text | not null | 
+cap_table_grant | granted_by | text | not null | 
+cap_table_grant | granted_at | timestamp with time zone | not null | 
+cap_table_grant | revoked_by | text | null | 
+cap_table_grant | revoked_at | timestamp with time zone | null | 
+cap_table_grant | revoke_reason | text | null | 
 capture_address | organisation_id | uuid | not null | current_org()
 capture_address | id | uuid | not null | uuidv7()
 capture_address | local_part | text | not null | 
@@ -4616,6 +4625,18 @@ break_glass_use | break_glass_use_used_at_not_null | NOT NULL used_at
 break_glass_use | break_glass_use_used_by_not_null | NOT NULL used_by
 break_glass_use | break_glass_use_version_fkey | FOREIGN KEY (organisation_id, batch_id, batch_version) REFERENCES document_version(organisation_id, document_id, version)
 break_glass_use | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+cap_table_grant | cap_table_grant_by_form | CHECK (((granted_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((revoked_by IS NULL) OR (revoked_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+cap_table_grant | cap_table_grant_granted_at_not_null | NOT NULL granted_at
+cap_table_grant | cap_table_grant_granted_by_not_null | NOT NULL granted_by
+cap_table_grant | cap_table_grant_id_not_null | NOT NULL id
+cap_table_grant | cap_table_grant_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+cap_table_grant | cap_table_grant_organisation_id_not_null | NOT NULL organisation_id
+cap_table_grant | cap_table_grant_pkey | PRIMARY KEY (organisation_id, id)
+cap_table_grant | cap_table_grant_reason | CHECK (((length(btrim(reason)) >= 3) AND (length(btrim(reason)) <= 500)))
+cap_table_grant | cap_table_grant_reason_not_null | NOT NULL reason
+cap_table_grant | cap_table_grant_revoked_form | CHECK ((((revoked_at IS NULL) = (revoked_by IS NULL)) AND ((revoked_at IS NULL) = (revoke_reason IS NULL)) AND ((revoke_reason IS NULL) OR ((length(btrim(revoke_reason)) >= 3) AND (length(btrim(revoke_reason)) <= 500)))))
+cap_table_grant | cap_table_grant_user_id_not_null | NOT NULL user_id
+cap_table_grant | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 capture_address | capture_address_bank_organisation | CHECK (((kind <> 'bank'::text) OR (user_id IS NULL)))
 capture_address | capture_address_by_format | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (retired_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
 capture_address | capture_address_created_at_not_null | NOT NULL created_at
@@ -8829,6 +8850,8 @@ CREATE UNIQUE INDEX brand_version_pkey ON fyniq.brand_version USING btree (organ
 CREATE UNIQUE INDEX break_glass_pkey ON fyniq.break_glass USING btree (organisation_id, id)
 CREATE UNIQUE INDEX break_glass_use_batch_once ON fyniq.break_glass_use USING btree (organisation_id, batch_id)
 CREATE UNIQUE INDEX break_glass_use_pkey ON fyniq.break_glass_use USING btree (organisation_id, id)
+CREATE UNIQUE INDEX cap_table_grant_one_live ON fyniq.cap_table_grant USING btree (organisation_id, user_id) WHERE (revoked_at IS NULL)
+CREATE UNIQUE INDEX cap_table_grant_pkey ON fyniq.cap_table_grant USING btree (organisation_id, id)
 CREATE UNIQUE INDEX capture_address_live_owner ON fyniq.capture_address USING btree (organisation_id, kind, COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE (retired_at IS NULL)
 CREATE UNIQUE INDEX capture_address_pkey ON fyniq.capture_address USING btree (organisation_id, id)
 CREATE UNIQUE INDEX capture_name_pkey ON fyniq.capture_name USING btree (local_part)
@@ -9396,6 +9419,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_tra
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.board_pack DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('board_pack', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.brand_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('brand_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.break_glass DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('break_glass', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.cap_table_grant DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('cap_table_grant', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.check_owner DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_owner', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_category DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('claim_category', 'id')
@@ -9591,6 +9615,8 @@ CREATE TRIGGER break_glass_use_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.
 CREATE TRIGGER break_glass_use_no_truncate BEFORE TRUNCATE ON fyniq.break_glass_use FOR EACH STATEMENT EXECUTE FUNCTION break_glass_use_guard()
 CREATE TRIGGER budget_executor_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION budget_executor_guard()
 CREATE TRIGGER budget_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION budget_guard()
+CREATE TRIGGER cap_table_grant_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.cap_table_grant FOR EACH ROW EXECUTE FUNCTION cap_table_grant_guard()
+CREATE TRIGGER cap_table_grant_no_truncate BEFORE TRUNCATE ON fyniq.cap_table_grant FOR EACH STATEMENT EXECUTE FUNCTION cap_table_grant_guard()
 CREATE TRIGGER capture_address_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.capture_address FOR EACH ROW EXECUTE FUNCTION capture_address_guard()
 CREATE TRIGGER capture_address_no_truncate BEFORE TRUNCATE ON fyniq.capture_address FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER capture_sender_guard BEFORE DELETE OR UPDATE ON fyniq.capture_sender FOR EACH ROW EXECUTE FUNCTION capture_sender_guard()
@@ -10078,6 +10104,7 @@ board_pack | tenant_isolation | * | (organisation_id = current_org()) | (organis
 brand_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 break_glass | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 break_glass_use | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+cap_table_grant | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_address | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_sender | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 check_owner | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10343,6 +10370,7 @@ board_pack | enabled | forced
 brand_version | enabled | forced
 break_glass | enabled | forced
 break_glass_use | enabled | forced
+cap_table_grant | enabled | forced
 capture_address | enabled | forced
 capture_name | disabled | not forced
 capture_sender | enabled | forced
@@ -10666,6 +10694,7 @@ break_glass_logged() → trigger | security invoker | v | search_path=pg_catalog
 break_glass_use_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e1ad9c7c29fcd99d1d82045f444fa13b
 budget_executor_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8c30aeccd2a06832c8203b73ec7af1c6
 budget_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ed823e88db3e445f3fd462de6561bfd5
+cap_table_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8cd3d29774dbcb03eb6fbc187d121a0b
 capture_address_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 542a3470e64d74a54703cab8f90e82c9
 capture_route(p_local text) → TABLE(organisation_id uuid, address_id uuid, user_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 172d93473f532f3e8728708678490889
 capture_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d3ca1a62ec41cff9d93981758a2f74c

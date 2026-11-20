@@ -185,8 +185,12 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/budgets:copy` (copyBudget): Copy a budget with growth
 - `POST /v1/budgets:import` (importBudget): Import a budget from XLSX
 - `GET /v1/cap-table` (getCapTable): Get the cap table
+- `GET /v1/cap-table-grants` (listCapTableGrants): List the grants of the full cap table
+- `POST /v1/cap-table-grants` (grantCapTableAccess): Open the full cap table to a viewer
+- `POST /v1/cap-table-grants/{id}/revoke` (revokeCapTableAccess): End a viewer's access to the full cap table
 - `GET /v1/cap-table/acra-reconciliation` (getAcraReconciliation): Get the register against ACRA's
 - `GET /v1/cap-table/export` (exportCapTable): Export the cap table
+- `GET /v1/cap-table/granted` (getGrantedCapTable): Get the whole cap table, as a viewer an Owner granted it to
 - `GET /v1/cap-table/statutory-tests` (getStatutoryTests): Get the cap table's statutory tests
 - `GET /v1/captures` (listCaptures): List the document inbox
 - `POST /v1/captures` (captureDocument): Capture a bill or a receipt

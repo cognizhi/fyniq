@@ -226,6 +226,8 @@ type UnitOfWork interface {
 	BoardPacks() BoardPacks
 	// KPIAlerts are the spend anomaly alerts the worker raises (FR-KPI-06, rev 0.540).
 	KPIAlerts() KPIAlerts
+	// CapTableGrants are an Owner's grants of the full cap table to a Board or investor viewer (FR-EQ-24).
+	CapTableGrants() CapTableGrants
 	// DashboardLayouts are the dashboards a role or a person arranged (FR-VIZ-09, FR-KPI-05, rev 0.540).
 	DashboardLayouts() DashboardLayouts
 	// InvestorUpdates are the updates built from a published pack, and who read them (FR-EQ-23, rev 0.540).

@@ -39,6 +39,15 @@ export function BoardPortal() {
       return r.data;
     },
   });
+  const whole = useQuery({
+    queryKey: ["cap-table", "granted"],
+    retry: false,
+    queryFn: async () => {
+      const r = await api.GET("/v1/cap-table/granted", { params: { query: {} } });
+      if (r.error) throw r.error;
+      return r.data;
+    },
+  });
   const [packId, setPackId] = useState("");
   const [updateId, setUpdateId] = useState(() => new URLSearchParams(window.location.search).get("update") ?? "");
   const pack = useQuery({
@@ -135,6 +144,17 @@ export function BoardPortal() {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+      <section className="fy-card fy-card--pad" aria-labelledby={`${id}-whole`}>
+        <h2 className="fy-h3" id={`${id}-whole`}>
+          The full cap table
+        </h2>
+        {whole.isError && <p className="fy-secondary">An Owner has not opened the full cap table to you. You can read your own holding above.</p>}
+        {whole.data && (
+          <p>
+            Open to you by an Owner: {whole.data.holders.length} holder(s), {whole.data.issued} shares issued, as at {whole.data.at}.
+          </p>
         )}
       </section>
     </div>

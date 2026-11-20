@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "granted_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-23T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The grant's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9a10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "live": {
+      "description": "True until an Owner revokes it.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "reason": {
+      "description": "Why the Owner granted it.",
+      "examples": [
+        "Lead investor's board seat"
+      ],
+      "type": "string"
+    },
+    "revoke_reason": {
+      "description": "Why it ended.",
+      "examples": [
+        "The seat ended"
+      ],
+      "type": "string"
+    },
+    "revoked_at": {
+      "description": "When it ended.",
+      "examples": [
+        "2026-12-01T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The viewer it was granted to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "reason",
+    "granted_at",
+    "live"
+  ],
+  "title": "CapTableGrant",
+  "type": "object"
+}
