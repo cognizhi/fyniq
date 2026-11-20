@@ -116,6 +116,8 @@ var PlatformSchedules = []Schedule{
 	// Daily at 09:00 Singapore time, each holder of a company card is told once of the card lines that have waited too long for a receipt
 	// (FR-AP-08, p2-bank-feeds-payments task 3.2).
 	{Job: "notify.card_receipts", Every: 24 * time.Hour, Offset: 1 * time.Hour, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
+	// Daily at 06:00 Singapore time, the previous month's journal of each project elected for revenue over time, as a draft only (FR-PRJ-11); nothing while Projects and time are switched off.
+	{Job: "projects.revenue_proposals", Every: 24 * time.Hour, Offset: 22 * time.Hour, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Every hour, notifications' held and digested email (FR-NTF-02, rev 0.108): the daily digest after 08:00 Singapore
 	// time, the weekly on Mondays, and immediate email held in quiet hours once they end.
 	{Job: "notify.digest", Every: time.Hour, Offset: 5 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},

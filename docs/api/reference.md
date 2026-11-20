@@ -3943,7 +3943,7 @@ The project's election (revenue as each milestone is invoiced, or over time) and
 
 **Elect a fixed-fee project's revenue over time, or back to milestones** (`setProjectRevenueElection`)
 
-The accountant's choice for a fixed-fee project in the base currency (FR-PRJ-11): over_time with the estimated total cost above nothing, or milestone, which is the default. Changing it needs If-Match with the election's ETag; the first election needs none. It posts nothing; the month's journal is proposed with proposeProjectRevenueJournal. Side effects: the election and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+The accountant's choice for a fixed-fee project (FR-PRJ-11): over_time with the estimated total cost above nothing, or milestone, which is the default. Changing it needs If-Match with the election's ETag; the first election needs none. It posts nothing; the month's journal is proposed with proposeProjectRevenueJournal. Side effects: the election and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
 
 - **Permission:** Post on Journals
 - **Parameters:**

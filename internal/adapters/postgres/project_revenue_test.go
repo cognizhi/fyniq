@@ -4,6 +4,7 @@ package postgres_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -128,6 +129,133 @@ func TestAnElectionChangesByVersionAndAMonthsRunNeverChanges(t *testing.T) {
 		}
 		if runs, err := u.ProjectRevenue().Runs(ctx, projectID); err != nil || len(runs) != 0 {
 			t.Errorf("another organisation sees %d runs: %v", len(runs), err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// The narrow function (FR-PRJ-11, rev 0.587) makes a month's draft journal and its run for the platform's job, and nothing else: only for a project elected for revenue over time, once a month,
+// and only a draft of the proposal's own shape (two or three lines, on active postable asset, liability or revenue accounts, each carrying the project alone, balanced, dated the month's last day);
+// it posts nothing, and the worker holds no right to create a document itself.
+// req: FR-PRJ-11
+// asvs: V4.2.1
+func TestTheNarrowFunctionMakesOnlyTheMonthsDraftOfAnElectedProject(t *testing.T) {
+	ctx := context.Background()
+	api, worker := store(t, "fyniq_api"), store(t, "fyniq_worker")
+	books := porttest.NewBooks(t, api, "Draft Pte Ltd")
+	other := porttest.NewBooks(t, api, "Another draft Pte Ltd")
+	at := time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)
+	var project, rival uuid.UUID
+	var liability storage.Account
+	if err := api.Do(ctx, books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		d, err := u.Dimensions().Create(ctx, storage.NewDimension{Kind: storage.DimensionProject, Name: "Project"})
+		if err != nil {
+			return err
+		}
+		for _, code := range []string{"DRAFT-1", "DRAFT-2"} {
+			v, err := u.Dimensions().CreateValue(ctx, storage.NewDimensionValue{DimensionID: d.ID, Code: code, Name: code})
+			if err != nil {
+				return err
+			}
+			if _, err := u.Projects().Create(ctx, storage.NewProject{ID: v.ID, Currency: "SGD", Status: storage.ProjectActive, BillingMethod: storage.BillingFixedFee}); err != nil {
+				return err
+			}
+			if project == uuid.Nil {
+				project = v.ID
+			} else {
+				rival = v.ID
+			}
+		}
+		if _, err := u.ProjectRevenue().Elect(ctx, project, 0, storage.RevenueOverTime, func() *storage.Decimal { d := storage.Decimal("600.00"); return &d }(), "0", "", at); err != nil {
+			return err
+		}
+		liability, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "2499", Name: "Contract liability", Type: storage.Liability})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	month := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	line := func(acct uuid.UUID, amount string, values ...uuid.UUID) map[string]any {
+		ids := []string{}
+		for _, v := range values {
+			ids = append(ids, v.String())
+		}
+		return map[string]any{"account_id": acct.String(), "amount": map[string]any{"amount": amount, "currency": "SGD"}, "dimension_value_ids": ids}
+	}
+	good := func(lines ...map[string]any) map[string]any {
+		return map[string]any{"date": "2026-10-31", "memo": "Revenue over time", "lines": lines}
+	}
+	call := func(org uuid.UUID, proj uuid.UUID, m time.Time, payload map[string]any) error {
+		b, _ := json.Marshal(payload)
+		c := conn(t, "fyniq_worker")
+		return asOrg(ctx, c, org, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, "SELECT fyniq.create_project_revenue_draft($1, $2, $3::jsonb, 100, 500)", proj, m, string(b))
+			return err
+		})
+	}
+	// Each of these is refused: an unbalanced draft, an expense account, no project on a line, another project's tag, four lines, a wrong date, a month that is not a first day, and a project
+	// that is not elected.
+	for name, c := range map[string]struct {
+		proj    uuid.UUID
+		month   time.Time
+		payload map[string]any
+	}{
+		"unbalanced":       {project, month, good(line(liability.ID, "-100.00", project), line(books.Sales.ID, "90.00", project))},
+		"an expense line":  {project, month, good(line(books.Rent.ID, "100.00", project), line(books.Sales.ID, "-100.00", project))},
+		"no project":       {project, month, good(line(liability.ID, "-100.00"), line(books.Bank.ID, "100.00"))},
+		"another project":  {project, month, good(line(liability.ID, "-100.00", rival), line(books.Bank.ID, "100.00", rival))},
+		"two tags":         {project, month, good(line(liability.ID, "-100.00", project, rival), line(books.Bank.ID, "100.00", project))},
+		"four lines":       {project, month, good(line(liability.ID, "-100.00", project), line(books.Bank.ID, "50.00", project), line(books.Bank.ID, "25.00", project), line(books.Bank.ID, "25.00", project))},
+		"one line":         {project, month, good(line(liability.ID, "0.00", project))},
+		"a wrong date":     {project, month, map[string]any{"date": "2026-10-15", "lines": good(line(liability.ID, "-100.00", project), line(books.Bank.ID, "100.00", project))["lines"]}},
+		"not a first day":  {project, month.AddDate(0, 0, 3), good(line(liability.ID, "-100.00", project), line(books.Bank.ID, "100.00", project))},
+		"not elected":      {rival, month, good(line(liability.ID, "-100.00", rival), line(books.Bank.ID, "100.00", rival))},
+		"a reversing date": {project, month, map[string]any{"date": "2026-10-31", "reverse_on": "2026-11-01", "lines": good(line(liability.ID, "-100.00", project), line(books.Bank.ID, "100.00", project))["lines"]}},
+	} {
+		if err := call(books.Org, c.proj, c.month, c.payload); err == nil {
+			t.Errorf("%s was made", name)
+		}
+	}
+	// Another organisation's project cannot be proposed from here, and the worker cannot create a document or a run itself.
+	if err := call(other.Org, project, month, good(line(liability.ID, "-100.00", project), line(books.Bank.ID, "100.00", project))); err == nil {
+		t.Error("another organisation's project was proposed")
+	}
+	for _, sql := range []string{"INSERT INTO fyniq.document (type) VALUES ('journal')", "INSERT INTO fyniq.project_revenue_run (project_id, month, journal_id, adjustment, earned, created_by, created_at) VALUES (gen_random_uuid(), '2026-10-01', gen_random_uuid(), 0, 0, 'user:x', now())"} {
+		c := conn(t, "fyniq_worker")
+		if err := asOrg(ctx, c, books.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, sql); return err }); err == nil {
+			t.Errorf("the worker ran %s", sql)
+		}
+	}
+	// The valid draft is made once, as a draft, with its run; a second call for the month is refused.
+	ok := good(line(liability.ID, "-100.00", project), line(books.Bank.ID, "100.00", project))
+	// A call that records no audit event is refused by the database, whatever its payload: the change must be audited in its own transaction (AUD-01).
+	if err := call(books.Org, project, month, ok); err == nil {
+		t.Error("a draft with no audit event was made")
+	}
+	payload, _ := json.Marshal(ok)
+	makeIt := func() error {
+		wctx := storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "scheduler", ID: "projects.revenue"}})
+		return worker.Do(wctx, books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.ProjectRevenue().DraftByFunction(ctx, project, month, payload, "100.00", "500.00")
+			return err
+		})
+	}
+	if err := makeIt(); err != nil {
+		t.Fatalf("the draft: %v", err)
+	}
+	if err := makeIt(); err == nil {
+		t.Error("a second draft for the month was made")
+	}
+	if err := api.Do(ctx, books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		runs, err := u.ProjectRevenue().Runs(ctx, project)
+		if err != nil || len(runs) != 1 {
+			t.Fatalf("the runs: %v, %v", runs, err)
+		}
+		doc, err := u.Documents().Get(ctx, runs[0].JournalID)
+		if err != nil || doc.Type != storage.DocumentJournal || doc.Status != storage.DocumentDraft {
+			t.Errorf("the document: %+v, %v", doc, err)
 		}
 		return nil
 	}); err != nil {

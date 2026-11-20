@@ -15999,7 +15999,7 @@ export interface paths {
         get?: never;
         /**
          * Elect a fixed-fee project's revenue over time, or back to milestones
-         * @description The accountant's choice for a fixed-fee project in the base currency (FR-PRJ-11): over_time with the estimated total cost above nothing, or milestone, which is the default. Changing it needs If-Match with the election's ETag; the first election needs none. It posts nothing; the month's journal is proposed with proposeProjectRevenueJournal. Side effects: the election and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description The accountant's choice for a fixed-fee project (FR-PRJ-11): over_time with the estimated total cost above nothing, or milestone, which is the default. Changing it needs If-Match with the election's ETag; the first election needs none. It posts nothing; the month's journal is proposed with proposeProjectRevenueJournal. Side effects: the election and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         put: operations["setProjectRevenueElection"];
         post?: never;
@@ -53973,6 +53973,8 @@ export interface components {
             contract_asset: components["schemas"]["Money"];
             /** @description The contract liability after the journal: invoiced and not yet earned. */
             contract_liability: components["schemas"]["Money"];
+            /** @description For a project in another currency: the rate the fee, the estimate and the costs left out were converted into the base currency at, with its date; the figures above are in the base currency. */
+            converted_at?: components["schemas"]["ProjectRevenueRate"];
             /** @description What progress is measured by: the project's costs posted to the end of the month (direct and payroll-tagged) less those left out as not showing progress. */
             cost_to_date: components["schemas"]["Money"];
             /** @description The part of them the accountant left out of progress, with the reason on the election. */
@@ -54004,6 +54006,29 @@ export interface components {
              * @example 50.0
              */
             progress: string;
+        };
+        ProjectRevenueRate: {
+            /**
+             * @description The project's currency.
+             * @example USD
+             */
+            currency: string;
+            /**
+             * @description Base currency per one unit.
+             * @example 1.3472
+             */
+            rate: string;
+            /**
+             * Format: date
+             * @description The date the rate is of.
+             * @example 2026-10-30
+             */
+            rate_date: string;
+            /**
+             * @description Where it came from.
+             * @example MAS daily feed of 2026-10-30
+             */
+            source: string;
         };
         ProjectRevenueRun: {
             /** @description The revenue it books; negative when invoiced ahead of progress. */

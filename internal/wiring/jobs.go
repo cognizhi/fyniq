@@ -37,6 +37,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/invoicenow"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/projectrevenue"
 	"github.com/cognizhi/fyniq/internal/domain/retention"
 	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
@@ -163,6 +164,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		reminders.DeadlinesJob: func(ctx context.Context) error {
 			_, err := reminders.DeadlinesDue(ctx, k.Store, k.dispatcher(clock))
+			return err
+		},
+		projectrevenue.MonthEndJob: func(ctx context.Context) error { // FR-PRJ-11: the previous month's draft journal of each project elected for revenue over time
+			_, err := projectrevenue.MonthEndAll(ctx, k.Store, clock)
 			return err
 		},
 		reminders.TimeJob: func(ctx context.Context) error { // FR-PRJ-05: each person's missing weekdays, on Friday
