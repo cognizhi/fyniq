@@ -2152,6 +2152,33 @@ describe("assigning an interviewer and a candidate's own link", () => {
   });
 });
 
+// req: NM-AI-05, QA-UI-05
+describe("the assistant's hiring drafts", () => {
+  it("asks for a job post draft and a kit draft and uses each as a starting point", async () => {
+    answer("GET /v1/requisitions", { status: 200, body: { requisitions: [{ id: "r9", title: "Analyst", department: "Finance", reason: "new", salary_min: "5000.00", salary_max: "6000.00", target_start: "2099-06-01", pass_needed: false, plan_status: "unknown", state: "approved", requested_by: "Hana HR", requested_at: "2026-11-01T10:00:00Z" }] } });
+    answer("GET /v1/careers-page", { status: 200, body: { slug: "", company: "", intro: "", enabled: false } });
+    answer("GET /v1/people", { status: 200, body: { people: [] } });
+    answer("GET /v1/requisitions/r9/candidates", { status: 200, body: { candidates: [] } });
+    answer("GET /v1/requisitions/r9/interview-kit", { status: 200, body: { exists: false, questions: [], criteria: [], findings: [] } });
+    answer("GET /v1/interviewers", { status: 200, body: { interviewers: [] } });
+    answer("POST /v1/assistant/drafts", { status: 201, body: { proposal_id: "p9" } });
+    answer("GET /v1/assistant/drafts", { status: 200, body: { drafts: [{ id: "d1", proposal_id: "p9", kind: "job_post", payload: { title: "Analyst", body: "We are looking for an Analyst." }, applied_at: "2026-11-20T10:00:00Z" }, { id: "d2", proposal_id: "p8", kind: "interview_kit", payload: { questions: "Tell us about a piece of work.", criteria: "Problem solving" }, applied_at: "2026-11-20T10:00:00Z" }] } });
+    const { container } = render(<Hiring roles={["owner"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(await screen.findByRole("button", { name: /Job post/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ask the assistant to draft the post" }));
+    expect(await screen.findByText(/The assistant's draft is made/)).toBeTruthy();
+    expect(bodies.get("POST /v1/assistant/drafts")).toEqual({ task_type: "people.draft_job_post", request_id: "r9" });
+    fireEvent.click(screen.getAllByRole("button", { name: "Use the assistant's draft" })[0]!);
+    expect(await screen.findByText(/The draft is in the form/)).toBeTruthy();
+    expect((screen.getByLabelText("Text") as HTMLTextAreaElement).value).toContain("We are looking for an Analyst.");
+    fireEvent.click(screen.getByRole("button", { name: "Ask the assistant to draft the kit" }));
+    const { waitFor } = await import("@testing-library/react");
+    await waitFor(() => expect(bodies.get("POST /v1/assistant/drafts")).toEqual({ task_type: "people.draft_interview_kit", request_id: "r9" }));
+    expect(await violations(container)).toEqual([]);
+  });
+});
+
 // req: NM-PRF-01, NM-PRF-02, QA-UI-05
 describe("a person's goals for the manager", () => {
   it("shows the goals and KPIs read only, and says there are none when the API does", async () => {

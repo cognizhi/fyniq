@@ -28786,6 +28786,131 @@ Marks one of the caller's notifications unread again (FR-NTF-01). Side effects: 
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `EML-08`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+## Groups
+
+Groups of entities (FR-ENT-04): organisations linked by the consent of both Owners, so a parent reads each entity's accounts' net monthly figures and nothing else, and either Owner ends the link. Never on the AI or MCP surface.
+
+### `GET /v1/group`
+
+**Read this organisation's place in a group** (`getEntityGroup`)
+
+As a parent, the entities it invited with their state; as an entity, its own consent to a group and what the group may read (FR-ENT-04). Only this organisation's own link rows: nothing of any other organisation. Read-only; no side effects.
+
+- **Permission:** View on Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)
+- **Responses:**
+  - `200` OK [`GroupView`](../../contracts/schemas/GroupView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/group/accept`
+
+**Accept an invitation into a group, as the entity's Owner** (`acceptGroupInvitation`)
+
+Accepts the one-time code another organisation's Owner gave, in this organisation (FR-ENT-04). Only an Owner of this organisation, stepped up in the last 5 minutes. After it the group's parent may read this organisation's accounts' net monthly figures (with the account's code, name and type, the ledger revision and the periods' state) and intercompany offers addressed to this organisation, and nothing else: no document, contact, employee, bank, evidence, comment, audit or AI data, and no write. Every read is in both audit trails; either Owner ends the link at any time. A code that is wrong, used, withdrawn or older than 24 hours is refused with one answer (STORAGE-GROUP-02). Refused (STORAGE-GROUP-01) for the installation's, a practice and a sandbox organisation, an organisation in a group already and an organisation that is the parent of one. Side effects: this organisation's consent row, the parent's row made active, and audit events in both. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`GroupAcceptInputBody`](../../contracts/schemas/GroupAcceptInputBody.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`GroupMembershipItem`](../../contracts/schemas/GroupMembershipItem.schema.json)
+  - `201` Created [`GroupMembershipItem`](../../contracts/schemas/GroupMembershipItem.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-GROUP-01` This is not yours to do in a group.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `STORAGE-GROUP-03` There is no live link to that organisation.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-GROUP-02` That invitation code is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-GROUP-01`, `STORAGE-GROUP-02`, `STORAGE-GROUP-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/group/end`
+
+**End a link of the group, as either Owner** (`endGroupLink`)
+
+Ends the link with the other organisation, as the parent or as the entity, with a reason (FR-ENT-04). Both rows end together, so the parent's next read of the entity is refused. Figures already frozen into the parent's consolidation runs stay there, marked as link ended. Only an Owner of this organisation, stepped up in the last 5 minutes. Refused (STORAGE-GROUP-03) when no live link with that organisation exists. Side effects: both rows and an audit event in each organisation. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`GroupEndInputBody`](../../contracts/schemas/GroupEndInputBody.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`GroupLinkEnded`](../../contracts/schemas/GroupLinkEnded.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-GROUP-01` This is not yours to do in a group.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `STORAGE-GROUP-03` There is no live link to that organisation.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-GROUP-02` That invitation code is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-GROUP-01`, `STORAGE-GROUP-02`, `STORAGE-GROUP-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/group/entities`
+
+**Invite an organisation to be an entity of this group** (`inviteGroupEntity`)
+
+Makes a one-time code, valid 24 hours, that the Owner of another organisation enters in that organisation to join this one's group (FR-ENT-04). Only an Owner of this organisation, stepped up in the last 5 minutes; refused (STORAGE-GROUP-01) for the installation's organisation, a practice or sandbox organisation, and an organisation that is itself an entity. The code is shown once, never in an email, and only its hash is kept. Joining lets this organisation read the entity's accounts' net monthly figures and intercompany offers addressed to it, and nothing else; either Owner ends it at any time. Side effects: the invitation row and its audit event. It takes no Idempotency-Key and no preview: its code makes it one-time (FR-INT-08).
+
+- **Permission:** Approve on Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)
+- **Request body:** [`GroupInviteInputBody`](../../contracts/schemas/GroupInviteInputBody.schema.json)
+- **Responses:**
+  - `201` Created [`GroupInvitation`](../../contracts/schemas/GroupInvitation.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-GROUP-01` This is not yours to do in a group.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `STORAGE-GROUP-03` There is no live link to that organisation.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-GROUP-02` That invitation code is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-GROUP-01`, `STORAGE-GROUP-02`, `STORAGE-GROUP-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/group/entities/{entity_id}/withdraw`
+
+**Withdraw an invitation nobody accepted** (`withdrawGroupInvitation`)
+
+Ends an invitation whose code was not used: the code stops working at once (FR-ENT-04). Only an Owner of this organisation, stepped up in the last 5 minutes, with a reason. An accepted link is ended with endGroupLink instead. Side effects: the ended row and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.625)
+- **Parameters:**
+  - `entity_id` (path, required): The invitation's ID (the id of the entity row).
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`GroupReason`](../../contracts/schemas/GroupReason.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`GroupEntityItem`](../../contracts/schemas/GroupEntityItem.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-GROUP-01` This is not yours to do in a group.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `STORAGE-GROUP-03` There is no live link to that organisation.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STORAGE-GROUP-02` That invitation code is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-GROUP-01`, `STORAGE-GROUP-02`, `STORAGE-GROUP-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Automation
 
 Workflow rules without code (FR-AUT-03): a fixed trigger, typed conditions and one fixed action, to tell members when a document of a kind is posted. A rule never posts, approves, pays or files anything, and never reaches the AI or MCP.

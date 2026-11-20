@@ -128,6 +128,8 @@ type UnitOfWork interface {
 	Preferences() Preferences
 	// SavedItems are each person's own favourites and saved views (FR-UX-12).
 	SavedItems() SavedItems
+	// EntityGroups is the link between this organisation and others in a group (FR-ENT-04).
+	EntityGroups() EntityGroups
 	// Practices opens a practice organisation from the organisation this unit of work is for, and says whether one is practice (FR-UX-36).
 	Practices() Practices
 	// Sandboxes make a sandbox organisation (the installation's unit of work) and say whether the unit of work's organisation is one (FR-INT-18).
@@ -1088,7 +1090,13 @@ const (
 	CodeClaim = "STORAGE-CLAIM-01"
 	// CodePractice: a practice organisation is opened only by an Owner of an organisation that keeps books, and a person holds one
 	// at a time (FR-UX-36; the owner's decision of 21 Nov 2026). CodePracticeHeld: they hold one already.
-	CodePractice     = "STORAGE-PRACTICE-01"
+	CodePractice = "STORAGE-PRACTICE-01"
+	// CodeGroup: the person is no Owner of the organisation, or the organisation may hold no group (the installation's, a practice, a sandbox) or is an entity already,
+	// or is a parent and so no entity (FR-ENT-04). CodeGroupCode: the invitation code is wrong, used, withdrawn or older than 24 hours (one answer for all, so a guess learns nothing).
+	// CodeGroupLink: no live link to that organisation, or the entity has not consented to what was asked.
+	CodeGroup        = "STORAGE-GROUP-01"
+	CodeGroupCode    = "STORAGE-GROUP-02"
+	CodeGroupLink    = "STORAGE-GROUP-03"
 	CodePracticeHeld = "STORAGE-PRACTICE-02"
 	// CodeSandbox: only a new organisation is made a sandbox one and the flag is never changed or removed; a sandbox organisation's name starts with
 	// "Sandbox: " (FR-INT-18).

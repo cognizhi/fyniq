@@ -54,7 +54,7 @@ function CandidateAccess({ candidate, name, onChange }: { candidate: string; nam
 
 // Pipeline is the candidates of one approved requisition (NM-REC-04, NM-REC-05): the board with each candidate's stage and consent, adding a candidate, moving one along the board with the reason of a decision,
 // a note, the person's consent to be kept for future roles, and the interview kit with its fair-wording check. A recruiter writes; the API and the database decide who reads what.
-export function Pipeline({ requisition, canWrite, canHire = false }: { requisition: string; canWrite: boolean; canHire?: boolean }) {
+export function Pipeline({ requisition, canWrite, canHire = false, canDraft = false }: { requisition: string; canWrite: boolean; canHire?: boolean; canDraft?: boolean }) {
   const [list, setList] = useState<Candidate[]>([]);
   const [kit, setKit] = useState<Kit | null>(null);
   const [note, setNote] = useState<Note>(null);
@@ -167,6 +167,12 @@ export function Pipeline({ requisition, canWrite, canHire = false }: { requisiti
       <form className="fy-stack fy-stack--2" aria-label={t("pipeline.kit")} onSubmit={async (e) => { e.preventDefault(); done((await api.PUT("/v1/requisitions/{id}/interview-kit", { ...id, body: { questions: lines(questions), criteria: lines(criteria), requirement_note: requirement || undefined } })).error, t("pipeline.kitSaved")); }}>
         <h4 className="fy-h3">{t("pipeline.kit")}</h4>
         <p className="fy-secondary">{t("pipeline.kitLead")}</p>
+        {canDraft && (
+          <span className="fy-row" style={{ gap: "var(--space-2)" }} title={helpText("draft.assistant").tooltip}>
+            <button className="fy-btn fy-btn--secondary fy-btn--sm" type="button" onClick={async () => done((await api.POST("/v1/assistant/drafts", { body: { task_type: "people.draft_interview_kit", request_id: requisition } })).error, t("draft.asked"))}>{t("draft.askKit")}</button>
+            <button className="fy-btn fy-btn--secondary fy-btn--sm" type="button" onClick={async () => { const got = await api.GET("/v1/assistant/drafts", { params: { query: { request_id: requisition } } }); const p = got.data?.drafts?.find((x) => x.kind === "interview_kit")?.payload as { questions?: string; criteria?: string } | undefined; if (p) { setQuestions(p.questions ?? ""); setCriteria(p.criteria ?? ""); setNote({ ok: true, text: t("draft.kitUsed") }); } else setNote({ ok: false, text: t("draft.failed") }); }}>{t("draft.use")}</button>
+          </span>
+        )}
         <label className="fy-field"><span>{t("pipeline.questions")}</span><textarea className="fy-input" readOnly={!canWrite} value={questions} onChange={(e) => setQuestions(e.target.value)} /></label>
         <label className="fy-field"><span>{t("pipeline.criteria")}</span><textarea className="fy-input" readOnly={!canWrite} value={criteria} onChange={(e) => setCriteria(e.target.value)} /></label>
         {kit && kit.findings.length > 0 && (

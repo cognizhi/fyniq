@@ -1850,6 +1850,54 @@ type FyniqFxRate struct {
 	WithdrawnReason *string
 }
 
+type FyniqGroupEntity struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Label          string
+	EntityOrg      *uuid.UUID
+	EntityName     *string
+	EntityCurrency *string
+	State          string
+	InvitedBy      uuid.UUID
+	InvitedAt      time.Time
+	LinkedBy       *uuid.UUID
+	LinkedAt       *time.Time
+	EndedBy        *uuid.UUID
+	EndedAt        *time.Time
+	EndedReason    *string
+	Version        int32
+}
+
+type FyniqGroupInvitation struct {
+	ID          uuid.UUID
+	Kind        string
+	CodeHash    []byte
+	ParentOrg   uuid.UUID
+	ParentRow   uuid.UUID
+	CreatedBy   uuid.UUID
+	CreatedAt   time.Time
+	ExpiresAt   time.Time
+	State       string
+	ConsumedOrg *uuid.UUID
+	ConsumedAt  *time.Time
+}
+
+type FyniqGroupMembership struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ParentOrg      uuid.UUID
+	ParentName     string
+	ParentRow      uuid.UUID
+	Scopes         []string
+	State          string
+	AcceptedBy     uuid.UUID
+	AcceptedAt     time.Time
+	EndedBy        *uuid.UUID
+	EndedAt        *time.Time
+	EndedReason    *string
+	Version        int32
+}
+
 type FyniqGstRegistration struct {
 	OrganisationID    uuid.UUID
 	ID                uuid.UUID

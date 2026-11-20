@@ -73,6 +73,7 @@ export const registry: Entry[] = [
   { kind: "action", id: "deletion-reports", mode: "expert", help: "reports.title", guide: "nemura.erasure#records-due-for-deletion" },
   { kind: "action", id: "interviewer-assign", mode: "expert", help: "pipeline.assign", guide: "nemura.hiring#interviewing-the-candidates-assigned-to-you" },
   { kind: "action", id: "candidate-access", mode: "expert", help: "pipeline.access", guide: "nemura.hiring#letting-a-candidate-see-their-own-data" },
+  { kind: "action", id: "assistant-hiring-draft", mode: "expert", help: "draft.assistant", guide: "nemura.hiring#drafts-from-the-assistant" },
   { kind: "action", id: "careers-settings", mode: "expert", help: "careers.settings", guide: "nemura.hiring#the-careers-page" },
   { kind: "action", id: "candidate-add", mode: "expert", help: "pipeline.add", guide: "nemura.hiring#candidates-and-interviews" },
   { kind: "action", id: "interview-kit", mode: "expert", help: "pipeline.kit", guide: "nemura.hiring#candidates-and-interviews" },

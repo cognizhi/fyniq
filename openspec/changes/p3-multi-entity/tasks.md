@@ -7,12 +7,16 @@ compiled into the knowledge base, and the oracle's half where it calculates. Loa
 - [ ] 1.1 PRD-001 records the decisions (FR-ENT-04 to 07, RND-TRANSLATE, two Appendix D rows); the specs are updated and stamped. `// req: FR-ENT-01`
 
 ## 2. The consolidation calculation
-- [ ] 2.1 `RND-TRANSLATE` and `internal/domain/consolidation`: translation, the reserve, eliminations, differences, with hand-worked cases. `// req: FR-ENT-02`, `// req: RND-TRANSLATE`
-- [ ] 2.2 The oracle's half (`oracle/src/oracle/consolidation.py`), its schema and hand cases, differential scenarios and `make differential`. `// req: QA-ENG-02`
+- [x] 2.1 `RND-TRANSLATE` and `internal/domain/consolidation`: translation, the reserve, eliminations, differences, with hand-worked cases. `// req: FR-ENT-02`, `// req: RND-TRANSLATE`
+  Built (rev 0.627): `rounding.Translate`, `internal/domain/consolidation`, `TestATranslatedLineRoundsOnceHalfAwayFromZero`, `TestAConsolidationThatCannotBeWorkedIsRefusedInPlainWords`. **Left:** the package is not in the mutation list (its tests are the differential's).
+- [x] 2.2 The oracle's half (`oracle/src/oracle/consolidation.py`), its schema and hand cases, differential scenarios and `make differential`. `// req: QA-ENG-02`
+  Built: `oracle/src/oracle/consolidation.py`, `consolidation.schema.json`, `consolidations/hand.json` (11 cases worked by hand) and `generated.json` (240), `TestTheConsolidationCasesConformAndTheEngineReproducesEach`, `oracle/tests/test_consolidation.py`.
 
 ## 3. Groups and the link
-- [ ] 3.1 Migration: invitation registry, `group_entity`, `group_membership`, acceptance and the two read functions, with grants and attack tests. `// req: FR-ENT-04`, `// req: SEC-02`
-- [ ] 3.2 Store, API (invite, accept, list, end), matrix rows, audit in both trails. `// req: FR-ENT-04`
+- [x] 3.1 Migration: invitation registry, `group_entity`, `group_membership`, acceptance and the two read functions, with grants and attack tests. `// req: FR-ENT-04`, `// req: SEC-02`
+  Built (rev 0.628): migration 001350, the grants listed for review. Tests: `TestAttackAGroupLinkNeedsBothOwnersAndReadsOnlyWhileItStands`, `TestAttackAGroupHasOneLevelAndAnOrganisationOneGroup`, `TestAttackAGroupLinkIsReachedOnlyThroughItsFunctions`.
+- [x] 3.2 Store, API (invite, accept, list, end), matrix rows, audit in both trails. `// req: FR-ENT-04`
+  Built: `EntityGroups` (port and adapter), `internal/api/entity_groups.go` (getEntityGroup, inviteGroupEntity, withdrawGroupInvitation, acceptGroupInvitation, endGroupLink), matrix rows `matrixEntityGroups`, `TestAnOwnerInvitesAnEntityItsOwnerAcceptsAndEitherEndsIt`.
 - [ ] 3.3 Screen `entity-setup`, help, guide and kb. `// req: QA-UI-05`
 
 ## 4. Consolidation

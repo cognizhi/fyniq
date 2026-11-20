@@ -93,8 +93,8 @@ type Asker interface {
 
 // AIDraftInput asks the assistant to draft something for a request.
 type AIDraftInput struct {
-	Task      string `json:"task_type" enum:"people.draft_letter,people.draft_fwa_reply" doc:"What to draft: a letter for a letter request, or a reply to a flexible-work request." example:"people.draft_letter"`
-	RequestID string `json:"request_id" format:"uuid" doc:"The request the draft is for: still open." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f90"`
+	Task      string `json:"task_type" enum:"people.draft_letter,people.draft_fwa_reply,people.draft_job_post,people.draft_interview_kit" doc:"What to draft: a letter for a letter request, a reply to a flexible-work request, or, for a requisition, a job post or an interview kit." example:"people.draft_letter"`
+	RequestID string `json:"request_id" format:"uuid" doc:"The request the draft is for, or the requisition for a job post or an interview kit: still open." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f90"`
 }
 
 // AIDraftResult is the proposal a draft request made.
@@ -106,7 +106,7 @@ type AIDraftResult struct {
 type AIDraft struct {
 	ID         string         `json:"id" format:"uuid" doc:"The draft." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1fa0"`
 	ProposalID string         `json:"proposal_id" format:"uuid" doc:"The proposal it came from." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80"`
-	Kind       string         `json:"kind" enum:"letter,flex_reply" doc:"A letter's fields or a reply's words." example:"letter"`
+	Kind       string         `json:"kind" enum:"letter,flex_reply,job_post,interview_kit" doc:"A letter's fields or a reply's words." example:"letter"`
 	Payload    map[string]any `json:"payload" doc:"The approved text, exactly as approved."`
 	AppliedAt  string         `json:"applied_at" format:"date-time" doc:"When it was attached." example:"2026-11-20T10:00:00Z"`
 }

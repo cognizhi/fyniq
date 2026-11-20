@@ -4207,7 +4207,7 @@ export interface components {
              * @example letter
              * @enum {string}
              */
-            kind: "letter" | "flex_reply";
+            kind: "letter" | "flex_reply" | "job_post" | "interview_kit";
             /** @description The approved text, exactly as approved. */
             payload: {
                 [key: string]: unknown;
@@ -4222,16 +4222,16 @@ export interface components {
         AIDraftInput: {
             /**
              * Format: uuid
-             * @description The request the draft is for: still open.
+             * @description The request the draft is for, or the requisition for a job post or an interview kit: still open.
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f90
              */
             request_id: string;
             /**
-             * @description What to draft: a letter for a letter request, or a reply to a flexible-work request.
+             * @description What to draft: a letter for a letter request, a reply to a flexible-work request, or, for a requisition, a job post or an interview kit.
              * @example people.draft_letter
              * @enum {string}
              */
-            task_type: "people.draft_letter" | "people.draft_fwa_reply";
+            task_type: "people.draft_letter" | "people.draft_fwa_reply" | "people.draft_job_post" | "people.draft_interview_kit";
         };
         AIDraftResult: {
             /**

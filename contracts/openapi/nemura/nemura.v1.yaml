@@ -79,6 +79,8 @@ components:
           enum:
             - letter
             - flex_reply
+            - job_post
+            - interview_kit
           examples:
             - letter
           type: string
@@ -103,16 +105,18 @@ components:
       additionalProperties: false
       properties:
         request_id:
-          description: "The request the draft is for: still open."
+          description: "The request the draft is for, or the requisition for a job post or an interview kit: still open."
           examples:
             - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f90
           format: uuid
           type: string
         task_type:
-          description: "What to draft: a letter for a letter request, or a reply to a flexible-work request."
+          description: "What to draft: a letter for a letter request, a reply to a flexible-work request, or, for a requisition, a job post or an interview kit."
           enum:
             - people.draft_letter
             - people.draft_fwa_reply
+            - people.draft_job_post
+            - people.draft_interview_kit
           examples:
             - people.draft_letter
           type: string

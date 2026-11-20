@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "organisation_id": {
+      "description": "The other organisation of the link: as the parent, the entity's; as the entity, the parent's.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why the link ends, in your words; it stays in both audit trails.",
+      "examples": [
+        "Sold the subsidiary"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "organisation_id",
+    "reason"
+  ],
+  "title": "GroupEndInputBody",
+  "type": "object"
+}

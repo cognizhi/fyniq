@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ended": {
+      "description": "Always true: both rows of the link are ended, so the parent's next read is refused.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "role": {
+      "description": "Which side ended it: the parent or the entity.",
+      "enum": [
+        "parent",
+        "entity"
+      ],
+      "examples": [
+        "entity"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "role",
+    "ended"
+  ],
+  "title": "GroupLinkEnded",
+  "type": "object"
+}

@@ -34,11 +34,11 @@ func TestTheNeverListNamesEverySentenceOfNMAI04(t *testing.T) {
 // The catalogue holds the two P1 drafts, each tier 1, off until an Owner turns it on, expiring in 72 hours, decided by HR; it passes its own check, and a task type the never-list names is refused as
 // the catalogue loads, with the sentence.
 // req: NM-AI-01, NM-AI-04
-func TestTheCatalogueHoldsTwoDraftsAndRefusesWhatTheNeverListNames(t *testing.T) {
+func TestTheCatalogueHoldsItsDraftsAndRefusesWhatTheNeverListNames(t *testing.T) {
 	if err := CheckCatalogue(Catalogue); err != nil {
 		t.Fatal(err)
 	}
-	if len(Catalogue) != 2 || Catalogue[0].ID != "people.draft_letter" || Catalogue[1].ID != "people.draft_fwa_reply" {
+	if len(Catalogue) != 4 || Catalogue[0].ID != "people.draft_letter" || Catalogue[1].ID != "people.draft_fwa_reply" || Catalogue[2].ID != "people.draft_job_post" || Catalogue[3].ID != "people.draft_interview_kit" {
 		t.Errorf("catalogue: %+v", Catalogue)
 	}
 	bad := append([]Task{}, Catalogue...)
@@ -82,5 +82,46 @@ func TestAPayloadIsCheckedAgainstItsStrictShape(t *testing.T) {
 	}
 	if !MayDecide(letter, []string{"employee", "hr_officer"}) || MayDecide(letter, []string{"employee", "line_manager", "payroll_admin"}) {
 		t.Error("who may decide a letter draft")
+	}
+}
+
+// The hiring drafts are written from the role and the team alone: a plain role is used, a title that names a criterion the guidelines ask employers not to use is replaced by a placeholder, the draft fits
+// its strict shape, passes the fair-wording check as written and carries no salary, no person and no candidate; asking for one of them on a requisition that is not one is refused (NM-AI-05, NM-REC-03).
+// req: NM-AI-05, NM-REC-03
+func TestTheHiringDraftsAreWrittenFromTheRoleAloneAndPassTheFairWordingCheck(t *testing.T) {
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"
+	post, why, err := Draft("people.draft_job_post", RequestFacts{Kind: "requisition", Title: "Data scientist", Department: "Engineering"})
+	if err != nil || !strings.Contains(post["title"].(string), "Data scientist") || !strings.Contains(post["body"].(string), "Engineering") || strings.Contains(why, "criterion") {
+		t.Fatalf("%+v %q %v", post, why, err)
+	}
+	task, _ := Lookup("people.draft_job_post")
+	if err := Check(task, map[string]any{"requisition_id": id, "title": post["title"], "body": post["body"], "rationale": why}); err != nil {
+		t.Errorf("the draft does not fit its shape: %v", err)
+	}
+	if found := FairFindings(post["title"].(string) + post["body"].(string)); len(found) != 0 {
+		t.Errorf("the draft names %v", found)
+	}
+	flagged, why, err := Draft("people.draft_job_post", RequestFacts{Kind: "requisition", Title: "Young digital native designer", Department: "Product"})
+	if err != nil || strings.Contains(strings.ToLower(flagged["title"].(string)+flagged["body"].(string)), "young") || !strings.Contains(why, "criterion") {
+		t.Errorf("a flagged title was repeated: %+v %q %v", flagged, why, err)
+	}
+	kit, _, err := Draft("people.draft_interview_kit", RequestFacts{Kind: "requisition", Title: "Analyst"})
+	if err != nil || len(strings.Split(kit["questions"].(string), "\n")) < 3 || len(strings.Split(kit["criteria"].(string), "\n")) > 10 {
+		t.Fatalf("%+v %v", kit, err)
+	}
+	ktask, _ := Lookup("people.draft_interview_kit")
+	if err := Check(ktask, map[string]any{"requisition_id": id, "questions": kit["questions"], "criteria": kit["criteria"]}); err != nil {
+		t.Errorf("the kit does not fit its shape: %v", err)
+	}
+	for _, task := range []string{"people.draft_job_post", "people.draft_interview_kit"} {
+		if _, _, err := Draft(task, RequestFacts{Kind: "letter"}); err == nil {
+			t.Errorf("%s drafted for something that is not a requisition", task)
+		}
+	}
+	// A task that screens, ranks or scores a candidate is still refused by name.
+	for _, id := range []string{"people.screen_candidates", "people.rank_candidates", "people.score_candidate", "people.draft_offer_letter"} {
+		if Refuse(id) == "" {
+			t.Errorf("%s is not refused", id)
+		}
 	}
 }
