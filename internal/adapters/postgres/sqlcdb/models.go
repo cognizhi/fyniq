@@ -659,6 +659,22 @@ type FyniqAppUser struct {
 	CreatedAt   time.Time
 }
 
+type FyniqApprovalDelegation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Delegator      uuid.UUID
+	Delegate       uuid.UUID
+	StartsOn       time.Time
+	EndsOn         time.Time
+	Reason         string
+	Status         string
+	EndedAt        *time.Time
+	EndedBy        *uuid.UUID
+	Version        int32
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+}
+
 type FyniqApprovalPolicy struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -669,6 +685,15 @@ type FyniqApprovalPolicy struct {
 	CreatedBy      uuid.UUID
 	CreatedAt      time.Time
 	Rules          []byte
+}
+
+type FyniqApprovalReminder struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RequestID      uuid.UUID
+	Kind           string
+	Number         int32
+	SentAt         time.Time
 }
 
 type FyniqApprovalRequest struct {
@@ -714,6 +739,7 @@ type FyniqApprovalSignature struct {
 	ClientData         []byte
 	AssertionSignature []byte
 	SelectionSha256    *string
+	OnBehalfOf         *uuid.UUID
 }
 
 type FyniqAuditBoundary struct {

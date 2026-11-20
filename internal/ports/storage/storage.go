@@ -119,6 +119,8 @@ type UnitOfWork interface {
 	Notifications() Notifications
 	// Webhooks are the organisation's outbound webhook endpoints, their deliveries and attempts (FR-INT-12).
 	Webhooks() Webhooks
+	ApprovalDelegations() ApprovalDelegations
+	ApprovalReminders() ApprovalReminders
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates
 	// Preferences are each person's own preferences: the mode, the view, the look, the shortcuts and the formats (FR-UX-23).

@@ -626,6 +626,8 @@ var codeFacts = map[string]struct {
 	approval.CodeRules:            {422, "The policy's rules cannot be applied"},
 	approval.CodeFixed:            {409, "This approval policy is fixed"},
 	approval.CodeAuthority:        {409, "An earlier approver no longer holds the right: nothing was changed"},
+	approval.CodeDelegation:       {422, "The delegation cannot be made that way"},
+	approval.CodeDelegationNotFor: {409, "That delegation cannot be ended by you, or has ended"},
 	approval.CodeNotYourStep:      {403, "The request's current step needs someone else"},
 	approval.CodeNotYours:         {403, "Only the person who asked for it withdraws it"},
 	approval.CodeReviewOwn:        {403, "Another person reviews what you did"},

@@ -53,14 +53,16 @@ type ApprovalDiff struct {
 
 // ApprovalSignature is a signed approval or rejection (FR-APR-03).
 type ApprovalSignature struct {
-	Signer     string    `json:"signer" format:"uuid" doc:"The user who signed." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
-	SignerName string    `json:"signer_name" doc:"Their name." example:"Wei Ling Tan"`
-	Decision   string    `json:"decision" enum:"approve,reject" doc:"What they decided." example:"approve"`
-	Method     string    `json:"method" enum:"session_step_up,passkey,totp" doc:"The second factor that proved it was them: session_step_up is the step-up of their session (at sign-in or with a passkey); passkey is a passkey that signed this request's envelope hash itself (FR-APR-03, rev 0.44)." example:"session_step_up"`
-	SignedAt   time.Time `json:"signed_at" doc:"When." example:"2026-10-20T09:30:00Z"`
-	Reason     string    `json:"reason,omitempty" doc:"A rejection's reason." example:"Not this month"`
-	Voided     bool      `json:"voided" doc:"true once the request was voided because its record changed." example:"false"`
-	PasskeyID  string    `json:"passkey_id,omitempty" format:"uuid" doc:"For a passkey signature: the passkey that signed the envelope's hash; its assertion is kept so it can be verified again (FR-APR-03)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40"`
+	Signer         string    `json:"signer" format:"uuid" doc:"The user who signed." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
+	SignerName     string    `json:"signer_name" doc:"Their name." example:"Wei Ling Tan"`
+	Decision       string    `json:"decision" enum:"approve,reject" doc:"What they decided." example:"approve"`
+	Method         string    `json:"method" enum:"session_step_up,passkey,totp" doc:"The second factor that proved it was them: session_step_up is the step-up of their session (at sign-in or with a passkey); passkey is a passkey that signed this request's envelope hash itself (FR-APR-03, rev 0.44)." example:"session_step_up"`
+	SignedAt       time.Time `json:"signed_at" doc:"When." example:"2026-10-20T09:30:00Z"`
+	Reason         string    `json:"reason,omitempty" doc:"A rejection's reason." example:"Not this month"`
+	Voided         bool      `json:"voided" doc:"true once the request was voided because its record changed." example:"false"`
+	PasskeyID      string    `json:"passkey_id,omitempty" format:"uuid" doc:"For a passkey signature: the passkey that signed the envelope's hash; its assertion is kept so it can be verified again (FR-APR-03)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40"`
+	OnBehalfOf     string    `json:"on_behalf_of,omitempty" format:"uuid" doc:"For a signature by a delegate: the delegator whose step it signed under a live delegation (FR-APR-06). The signer holds the approval right themselves and signed with their own step-up." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
+	OnBehalfOfName string    `json:"on_behalf_of_name,omitempty" doc:"The delegator's name." example:"Ah Kow Lim"`
 }
 
 // Approval is a change waiting for, or decided by, a second approver (FM-1): what it changes, the envelope signed
@@ -1291,7 +1293,9 @@ func mayDecide(p authn.Principal, r storage.ApprovalRequest, sigs []storage.Appr
 	if p.UserID == uuid.Nil || p.UserID == r.RequestedBy && !requestOf(r).SelfSign || !approver && !accountantReviewer(p) {
 		return false
 	}
-	if slices.ContainsFunc(sigs, func(s storage.ApprovalSignature) bool { return s.Signer == p.UserID }) {
+	if slices.ContainsFunc(sigs, func(s storage.ApprovalSignature) bool {
+		return s.Signer == p.UserID || s.VoidedAt == nil && s.OnBehalfOf != nil && *s.OnBehalfOf == p.UserID // a delegate signed for them (FR-APR-06)
+	}) {
 		return false
 	}
 	steps := domainSteps(r.PolicySteps)
@@ -1368,7 +1372,7 @@ func (a *API) approvalOf(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		Status: string(status), StatusReason: r.StatusReason, RequestedBy: r.RequestedBy.String(), RequestedByName: names[r.RequestedBy],
 		RequestedAt: r.RequestedAt.UTC(), ExpiresAt: r.ExpiresAt.UTC(), DecidedAt: r.DecidedAt, Policy: r.PolicyVersion, Envelope: r.Envelope,
 		EnvelopeHash: hex.EncodeToString(r.EnvelopeHash), Diff: s.Diff, PolicyRule: s.Rule, Signatures: []ApprovalSignature{}, Version: r.Version,
-		YouMayApprove: status == approval.Pending && mayDecide(p, r, sigs), Steps: []ApprovalProgress{},
+		YouMayApprove: status == approval.Pending && (mayDecide(p, r, sigs) || a.delegateMayDecide(ctx, u, p, r, sigs)), Steps: []ApprovalProgress{},
 		CurrentStep: approval.CurrentStep(domainSteps(r.PolicySteps), signaturesOf(sigs))}
 	if out.Diff == nil {
 		out.Diff = []ApprovalDiff{}
@@ -1387,6 +1391,9 @@ func (a *API) approvalOf(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 			Method: sg.MFAMethod, SignedAt: sg.SignedAt.UTC(), Reason: sg.Reason, Voided: sg.VoidedAt != nil}
 		if sg.Passkey != nil {
 			v.PasskeyID = sg.Passkey.PasskeyID.String()
+		}
+		if sg.OnBehalfOf != nil {
+			v.OnBehalfOf, v.OnBehalfOfName = sg.OnBehalfOf.String(), names[*sg.OnBehalfOf]
 		}
 		out.Signatures = append(out.Signatures, v)
 	}
@@ -1435,23 +1442,23 @@ func (a *API) end(ctx context.Context, b *blocked) error {
 // sign checks that the caller may sign the request now and returns it locked, with what it keeps and the step they
 // sign: they passed step-up, hold the approve right, did not ask for it or sign it already, are one its current step
 // names, and sent the hash of its envelope.
-func (a *API) sign(ctx context.Context, u storage.UnitOfWork, p authn.Principal, id uuid.UUID, ifMatch, hash string) (storage.ApprovalRequest, int, error) {
+func (a *API) sign(ctx context.Context, u storage.UnitOfWork, p authn.Principal, id uuid.UUID, ifMatch, hash string) (storage.ApprovalRequest, int, *uuid.UUID, error) {
 	r, err := u.Approvals().Lock(ctx, id)
 	if errors.Is(err, ports.ErrNotFound) || (err == nil && !maySee(p, r)) {
-		return r, 0, problem(CodeNotFound, "No approval request with that ID exists in this organisation.", "List the approvals to find their IDs")
+		return r, 0, nil, problem(CodeNotFound, "No approval request with that ID exists in this organisation.", "List the approvals to find their IDs")
 	}
 	if err != nil {
-		return r, 0, err
+		return r, 0, nil, err
 	}
 	approver := approverOf(p, r)
 	if !approver && !accountantReviewer(p) {
-		return r, 0, notApprover(r)
+		return r, 0, nil, notApprover(r)
 	}
 	// SOD-6 when approving: a transaction's approver whose roles conflict needs an override for the mode in force, as
 	// one who posts does (TEAM-04; PRD-001 rev 0.179).
 	if slices.Contains(authz.TransactionRows, approvalRow(r.ObjectType)) {
 		if err := checkConflicts(ctx, u, p, "Approving it"); err != nil {
-			return r, 0, err
+			return r, 0, nil, err
 		}
 	}
 	now := a.deps.Clock.Now()
@@ -1459,35 +1466,105 @@ func (a *API) sign(ctx context.Context, u storage.UnitOfWork, p authn.Principal,
 	if x := approval.CheckSigner(requestOf(r), p.UserID, now); x != nil {
 		pr := problem(x.Code, strings.ToUpper(x.Message[:1])+x.Message[1:]+".", x.Fix)
 		if x.Code == approval.CodeExpired {
-			return r, 0, &blocked{id: r.ID, version: r.Version, status: approval.Expired, problem: pr}
+			return r, 0, nil, &blocked{id: r.ID, version: r.Version, status: approval.Expired, problem: pr}
 		}
-		return r, 0, pr
+		return r, 0, nil, pr
 	}
 	if err := checkIfMatch(ifMatch, etag(r.Version)); err != nil {
-		return r, 0, err
+		return r, 0, nil, err
 	}
 	if hash != hex.EncodeToString(r.EnvelopeHash) {
-		return r, 0, problem(approval.CodeChanged, "The envelope you were shown is not the request's.",
+		return r, 0, nil, problem(approval.CodeChanged, "The envelope you were shown is not the request's.",
 			"Read the request again and decide what it holds now")
 	}
 	sigs, err := u.Approvals().Signatures(ctx, r.ID)
 	if err != nil {
-		return r, 0, err
+		return r, 0, nil, err
 	}
 	if slices.ContainsFunc(sigs, func(s storage.ApprovalSignature) bool { return s.Signer == p.UserID }) {
-		return r, 0, problem(approval.CodeNotYourStep, "You signed this request already, and a person signs a request once.",
+		return r, 0, nil, problem(approval.CodeNotYourStep, "You signed this request already, and a person signs a request once.",
+			"Ask another member the policy names to sign its next step")
+	}
+	if slices.ContainsFunc(sigs, func(s storage.ApprovalSignature) bool {
+		return s.VoidedAt == nil && s.OnBehalfOf != nil && *s.OnBehalfOf == p.UserID
+	}) {
+		return r, 0, nil, problem(approval.CodeNotYourStep, "Your delegate signed this request for you already, and a person counts once in a request (FR-APR-06).",
 			"Ask another member the policy names to sign its next step")
 	}
 	steps := domainSteps(r.PolicySteps)
 	step := approval.CurrentStep(steps, signaturesOf(sigs))
 	if !approver && (step == 0 || !approval.Reviews(steps[step-1])) { // the Accountant signs the review step only (FM-9)
-		return r, 0, notApprover(r)
+		return r, 0, nil, notApprover(r)
 	}
+	var onBehalf *uuid.UUID
 	if step == 0 || !approval.Eligible(steps[step-1], p.UserID, rolesOf(p.Roles)) {
-		return r, 0, problem(approval.CodeNotYourStep, fmt.Sprintf("Step %d of the request's policy needs %s.", step, describe(steps[max(step, 1)-1])),
-			"Ask a member that step names to sign it; the steps are signed in order")
+		// A delegate stands in for a delegator the step names, for the days of a live delegation (FR-APR-06): they hold the right themselves, and sign as themselves.
+		delegator, ok, err := a.standIn(ctx, u, p, r, sigs, steps, step)
+		if err != nil {
+			return r, 0, nil, err
+		}
+		if !ok {
+			return r, 0, nil, problem(approval.CodeNotYourStep, fmt.Sprintf("Step %d of the request's policy needs %s.", step, describe(steps[max(step, 1)-1])),
+				"Ask a member that step names to sign it; the steps are signed in order")
+		}
+		onBehalf = &delegator
 	}
-	return r, step, nil
+	return r, step, onBehalf, nil
+}
+
+// standIn finds the delegator whom p signs the request's step for under a live delegation, or false (FR-APR-06). The delegation lends no right: p must hold the approval right
+// themselves, which the caller checked, and the delegator must be an active member who could sign the step now, who is not the requester and whom nobody has signed for.
+func (a *API) standIn(ctx context.Context, u storage.UnitOfWork, p authn.Principal, r storage.ApprovalRequest, sigs []storage.ApprovalSignature, steps []approval.Step, step int) (uuid.UUID, bool, error) {
+	if step == 0 || p.UserID == uuid.Nil {
+		return uuid.Nil, false, nil
+	}
+	all, err := u.ApprovalDelegations().List(ctx)
+	if err != nil {
+		return uuid.Nil, false, err
+	}
+	var mine []approval.Delegation
+	for _, d := range all {
+		if d.Delegate == p.UserID && d.Delegator != r.RequestedBy {
+			mine = append(mine, domainDelegation(d))
+		}
+	}
+	if len(mine) == 0 {
+		return uuid.Nil, false, nil
+	}
+	now := a.deps.Clock.Now()
+	members, err := u.Members().List(ctx, now)
+	if err != nil {
+		return uuid.Nil, false, err
+	}
+	signed := func(who uuid.UUID) bool {
+		return slices.ContainsFunc(sigs, func(s storage.ApprovalSignature) bool {
+			return s.VoidedAt == nil && (s.Signer == who || s.OnBehalfOf != nil && *s.OnBehalfOf == who)
+		})
+	}
+	roles := func(who uuid.UUID) ([]string, bool) {
+		i := slices.IndexFunc(members, func(m storage.Member) bool { return m.UserID == who })
+		if i < 0 || members[i].Status != "active" {
+			return nil, false
+		}
+		return memberRoles(members[i]), true
+	}
+	delegator, ok := approval.StandIn(steps[step-1], p.UserID, mine, businessDay(now), signed, roles, func(rs []string) bool { return approvesRequest(rs, r) })
+	return delegator, ok, nil
+}
+
+// delegateMayDecide reports whether p may sign the request's current step now as a delegate (FR-APR-06).
+func (a *API) delegateMayDecide(ctx context.Context, u storage.UnitOfWork, p authn.Principal, r storage.ApprovalRequest, sigs []storage.ApprovalSignature) bool {
+	if p.UserID == uuid.Nil || p.UserID == r.RequestedBy && !requestOf(r).SelfSign || !approverOf(p, r) {
+		return false
+	}
+	if slices.ContainsFunc(sigs, func(s storage.ApprovalSignature) bool {
+		return s.VoidedAt == nil && (s.Signer == p.UserID || s.OnBehalfOf != nil && *s.OnBehalfOf == p.UserID)
+	}) {
+		return false
+	}
+	steps := domainSteps(r.PolicySteps)
+	_, ok, err := a.standIn(ctx, u, p, r, sigs, steps, approval.CurrentStep(steps, signaturesOf(sigs)))
+	return ok && err == nil
 }
 
 // notApprover is the refusal of a person who holds no right to sign r.
@@ -1520,6 +1597,12 @@ func (a *API) recheck(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		return err
 	}
 	steps := domainSteps(r.PolicySteps)
+	forDelegator := map[uuid.UUID]uuid.UUID{} // a delegate's signature, to the delegator it was for (FR-APR-06)
+	for _, sg := range sigs {
+		if sg.VoidedAt == nil && sg.OnBehalfOf != nil {
+			forDelegator[sg.Signer] = *sg.OnBehalfOf
+		}
+	}
 	for _, g := range signaturesOf(sigs) {
 		if !g.Approve || g.Signer == current {
 			continue
@@ -1527,7 +1610,14 @@ func (a *API) recheck(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		i := slices.IndexFunc(members, func(m storage.Member) bool { return m.UserID == g.Signer })
 		if i >= 0 {
 			roles := memberRoles(members[i])
-			if (approvesRequest(roles, r) || approval.Reviews(steps[g.Step-1]) && reviews(roles)) && approval.Eligible(steps[g.Step-1], g.Signer, roles) {
+			eligible := approval.Eligible(steps[g.Step-1], g.Signer, roles)
+			if delegator, ok := forDelegator[g.Signer]; ok && !eligible { // the delegator must still be one the step names, and still hold the right
+				if j := slices.IndexFunc(members, func(m storage.Member) bool { return m.UserID == delegator && m.Status == "active" }); j >= 0 {
+					dr := memberRoles(members[j])
+					eligible = approvesRequest(dr, r) && approval.Eligible(steps[g.Step-1], delegator, dr)
+				}
+			}
+			if (approvesRequest(roles, r) || approval.Reviews(steps[g.Step-1]) && reviews(roles)) && eligible {
 				continue
 			}
 		}
@@ -2498,7 +2588,7 @@ func registerApprovals(a *API) {
 				return nil, err
 			}
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (decided, error) {
-				r, step, err := a.sign(ctx, u, p, id, in.IfMatch, in.Body.EnvelopeHash)
+				r, step, onBehalf, err := a.sign(ctx, u, p, id, in.IfMatch, in.Body.EnvelopeHash)
 				if err != nil {
 					return decided{}, err
 				}
@@ -2534,7 +2624,7 @@ func registerApprovals(a *API) {
 				}
 				now := a.deps.Clock.Now()
 				signature := storage.NewApprovalSignature{RequestID: r.ID, Step: step, Signer: p.UserID, Decision: "approve",
-					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now}
+					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now, OnBehalfOf: onBehalf}
 				sel, err := a.proposalSelection(ctx, u, r, proposalItems(in.Body.Items))
 				if err != nil {
 					return decided{}, err
@@ -2616,7 +2706,7 @@ func registerApprovals(a *API) {
 					Fix: "Say why you reject it, so the requester knows what to change"}})
 			}
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (decided, error) {
-				r, step, err := a.sign(ctx, u, p, id, in.IfMatch, in.Body.EnvelopeHash)
+				r, step, onBehalf, err := a.sign(ctx, u, p, id, in.IfMatch, in.Body.EnvelopeHash)
 				if err != nil {
 					return decided{}, err
 				}
@@ -2625,7 +2715,7 @@ func registerApprovals(a *API) {
 				}
 				now := a.deps.Clock.Now()
 				signature := storage.NewApprovalSignature{RequestID: r.ID, Step: step, Signer: p.UserID, Decision: "reject",
-					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now, Reason: reason}
+					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now, Reason: reason, OnBehalfOf: onBehalf}
 				if err := a.withPasskey(ctx, u, p, name, r, in.Body.Passkey, &signature); err != nil {
 					return decided{}, err
 				}

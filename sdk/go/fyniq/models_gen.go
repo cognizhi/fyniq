@@ -312,14 +312,16 @@ type ApprovalProgress struct {
 
 // ApprovalSignature is a schema of the contract.
 type ApprovalSignature struct {
-	Decision   string  `json:"decision"`
-	Method     string  `json:"method"`
-	PasskeyID  *string `json:"passkey_id,omitempty"`
-	Reason     *string `json:"reason,omitempty"`
-	SignedAt   string  `json:"signed_at"`
-	Signer     string  `json:"signer"`
-	SignerName string  `json:"signer_name"`
-	Voided     bool    `json:"voided"`
+	Decision       string  `json:"decision"`
+	Method         string  `json:"method"`
+	OnBehalfOf     *string `json:"on_behalf_of,omitempty"`
+	OnBehalfOfName *string `json:"on_behalf_of_name,omitempty"`
+	PasskeyID      *string `json:"passkey_id,omitempty"`
+	Reason         *string `json:"reason,omitempty"`
+	SignedAt       string  `json:"signed_at"`
+	Signer         string  `json:"signer"`
+	SignerName     string  `json:"signer_name"`
+	Voided         bool    `json:"voided"`
 }
 
 // AssetDisposalPage is a schema of the contract.
