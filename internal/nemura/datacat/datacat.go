@@ -56,7 +56,7 @@ var Categories = []Category{
 		Purpose:    "To file with the authorities (CPF, IRAS, MOM) and to pay salary: NRIC only for statutory filings, never to sign in",
 		Capability: "NRIC or FIN",
 		Retention:  Rule{MinMonths: 60, After: "the end of the year it was last used for filing", Reason: "Statutory filings are kept 5 years; the identifier goes with them"},
-		Columns:    []string{"person_secret.nric_sealed", "person_secret.nric_masked", "person_secret.nric_fingerprint", "person_secret.bank_sealed", "person_secret.bank_masked", "person_secret.bank_fingerprint", "person_secret.ir8a_sealed"},
+		Columns:    []string{"person_secret.nric_sealed", "person_secret.nric_masked", "person_secret.nric_fingerprint", "person_secret.bank_sealed", "person_secret.bank_masked", "person_secret.bank_fingerprint", "person_secret.bank_code", "person_secret.bank_name", "bank_account_change.new_bank_code", "bank_account_change.new_bank_name", "person_secret.ir8a_sealed"},
 	},
 	{
 		Key: "dependants", What: "A dependant's date of birth for family leave: relationship, citizenship and the employee's declaration",
