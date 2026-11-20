@@ -989,7 +989,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/salary-batches` (listSalaryBatches): List salary batches
 - `GET /v1/salary-batches/{batch_id}` (getSalaryBatch): Get a salary batch
 - `POST /v1/salary-batches/{batch_id}/approval` (requestSalaryBatchApproval): Ask for approval of a salary batch
+- `POST /v1/salary-batches/{batch_id}/bank-match` (matchSalaryBankLine): Match the bank debit of a salary release and mark its lines paid
 - `POST /v1/salary-batches/{batch_id}/cancel` (cancelSalaryBatch): Cancel a salary batch
+- `POST /v1/salary-batches/{batch_id}/lines/{line_id}/state` (recordSalaryLineState): Record what became of a salary payment, with evidence
 - `POST /v1/salary-batches/{batch_id}/prepare` (prepareSalaryBatch): Prepare a salary batch
 - `POST /v1/salary-batches/{batch_id}/release` (releaseSalaryBatch): Release the free lines of a salary batch
 - `GET /v1/salary-batches/{batch_id}/releases/{release_id}/file` (getSalaryBatchFile): Download a salary release's payment file

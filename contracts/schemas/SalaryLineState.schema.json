@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "evidence_id": {
+      "description": "A document of the person paid or the organisation that shows it (a bank advice, a statement): required.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "on": {
+      "description": "The day it happened.",
+      "examples": [
+        "2026-11-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "state": {
+      "description": "What became of the payment. Paid, rejected, returned and unknown are recorded with evidence; an exported file or a release never makes a line paid.",
+      "enum": [
+        "sent",
+        "accepted",
+        "paid",
+        "rejected",
+        "returned",
+        "unknown"
+      ],
+      "examples": [
+        "rejected"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "state",
+    "evidence_id",
+    "on"
+  ],
+  "title": "SalaryLineState",
+  "type": "object"
+}

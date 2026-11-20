@@ -85,6 +85,17 @@ type SalaryRelease struct {
 	Writer, FileName, MediaType         string
 	Sealed, SHA256                      []byte
 	Total                               Decimal
+	StateEvents                         []uuid.UUID // the 'released' state each line was given, in the lines' order: set by Release
+}
+
+// SalaryStatus is one state of a salary payment line as Nemura is told of it (PRD-002 Appendix E, payroll.payments.status): the run, the person, the state, the instruction ID, the amount, the date and the
+// evidence's ID. It is read when the event is sent; the outbox keeps only the state event's ID.
+type SalaryStatus struct {
+	EventID, BatchID, LineRef, PersonID, RunID uuid.UUID
+	State, InstructionID                       string
+	Amount                                     Decimal
+	On                                         time.Time
+	EvidenceID                                 uuid.UUID
 }
 
 // SalaryReleaseLine is a line in a release, with the instruction ID the bank's instruction carries (FR-PPL-12).
@@ -121,7 +132,9 @@ type SalaryBatches interface {
 	// Events are the states of the batch's lines, oldest first.
 	Events(ctx context.Context, batch uuid.UUID) ([]SalaryLineEvent, error)
 	// AddEvent records a state of a line, audited as salary_batch.line_state (the state, its source and the IDs, never an amount).
-	AddEvent(ctx context.Context, e SalaryLineEvent) error
+	AddEvent(ctx context.Context, e SalaryLineEvent) (uuid.UUID, error)
+	// StatusOfEvent is what payroll.payments.status says of one state of a line, read from its sources when it is sent, so no amount is kept in the outbox (design D5). ports.ErrNotFound for none.
+	StatusOfEvent(ctx context.Context, event uuid.UUID) (SalaryStatus, error)
 	// StatesOfRunPerson are the latest state of each of a person's lines of a run, across its batches: an unknown outcome blocks a new instruction for the person in the run.
 	StatesOfRunPerson(ctx context.Context, run, person uuid.UUID) ([]string, error)
 	// Release writes a release and its lines and records each line as released with its instruction ID, audited as salary_batch.released (the file's name and hash, counts, never a name or account).

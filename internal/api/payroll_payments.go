@@ -169,6 +169,7 @@ func (a *API) receivePayrollPayments(ctx context.Context, in *payrollPaymentsInp
 		}
 		var current []storage.SalaryLine
 		released := map[uuid.UUID]bool{}
+		settled := map[uuid.UUID]bool{} // a payment that was rejected or returned is no longer owed in this batch: a new line pays the person again
 		if exists {
 			if batch.Status == storage.SalaryCancelled {
 				return payRefusal(peoplelink.CodePayRelease, "The salary batch of this run was cancelled.")
@@ -179,6 +180,13 @@ func (a *API) receivePayrollPayments(ctx context.Context, in *payrollPaymentsInp
 			}
 			if current, err = u.SalaryBatches().Lines(ctx, batch.ID); err != nil {
 				return err
+			}
+			events, err := u.SalaryBatches().Events(ctx, batch.ID)
+			if err != nil {
+				return err
+			}
+			for ref, e := range salarybatch.Latest(events) {
+				settled[ref] = e.State == storage.LineRejected || e.State == storage.LineReturned
 			}
 			rl, err := u.SalaryBatches().ReleaseLines(ctx, batch.ID)
 			if err != nil {
@@ -244,7 +252,10 @@ func (a *API) receivePayrollPayments(ctx context.Context, in *payrollPaymentsInp
 		}
 		// The lines, as they will stand, pay no more than the run's net pay on 2100.
 		total := money.Zero(salarybatch.SGD)
-		for _, x := range byRef {
+		for ref, x := range byRef {
+			if settled[ref] {
+				continue
+			}
 			v, err := salarybatch.Amount(x)
 			if err != nil {
 				return err
