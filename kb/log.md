@@ -917,3 +917,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | claims-approve-team.md -> kb (To approve for a department approver)
 
 ## [2026-11-20] compile | banking.accounts: intraday reports from a drop folder (FR-BNK-17)
+
+## [2026-11-20] compile | sales.invoices: files on a subscription contract (FR-AR-15)

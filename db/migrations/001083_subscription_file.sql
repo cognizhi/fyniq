@@ -1,4 +1,4 @@
--- A subscription contract's evidence (PRD-001 FR-AR-15, FR-DOC-05; rev 0.583): the signed order form, the customer's email or the amendment letter are files on a document of their own,
+-- A subscription contract's evidence (PRD-001 FR-AR-15, FR-DOC-05; rev 0.586): the signed order form, the customer's email or the amendment letter are files on a document of their own,
 -- `subscription_file`, one per contract, made with its first file and posted at once so every file is committed to the retention-locked store and is append-only (FR-DOC-13), as a
 -- money account's bank agreements are (000156). It posts nothing and is never reversed (FYP24). The widened check is added NOT VALID and validated by 001084.
 
