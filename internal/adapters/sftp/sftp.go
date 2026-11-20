@@ -69,24 +69,30 @@ func (d Drop) connect(ctx context.Context) (*pkgsftp.Client, func(), error) {
 	if dial == nil {
 		dial = (&net.Dialer{Timeout: d.timeout()}).DialContext
 	}
+	// The whole call, from the dial to the last read, is bounded by the timeout: when it ends the connection is closed under whatever is waiting.
+	ctx, cancel := context.WithTimeout(ctx, d.timeout())
 	raw, err := dial(ctx, "tcp", d.Addr)
 	if err != nil {
+		cancel()
 		return nil, nil, fmt.Errorf("the SFTP server cannot be reached: %w", err)
 	}
-	_ = raw.SetDeadline(time.Now().Add(d.timeout()))
+	stop := context.AfterFunc(ctx, func() { _ = raw.Close() })
 	conn, chans, reqs, err := ssh.NewClientConn(raw, d.Addr, cfg)
 	if err != nil {
+		stop()
+		cancel()
 		_ = raw.Close()
 		return nil, nil, fmt.Errorf("the SFTP server refused the connection: %w", err)
 	}
-	_ = raw.SetDeadline(time.Time{})
 	client, err := pkgsftp.NewClient(ssh.NewClient(conn, chans, reqs))
 	if err != nil {
+		stop()
+		cancel()
 		_ = conn.Close()
 		return nil, nil, fmt.Errorf("the SFTP session could not start: %w", err)
 	}
 	// The connection closes first so the session ends at once, whatever the server does with its side of the channel.
-	return client, func() { _ = conn.Close(); _ = client.Close() }, nil
+	return client, func() { stop(); cancel(); _ = conn.Close(); _ = client.Close() }, nil
 }
 
 // List implements ports.FileDrop: the folder's regular files that are not hidden, by name.
