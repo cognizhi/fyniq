@@ -3,7 +3,7 @@ key: compliance.data-protection
 title: Keep the data protection registers
 mode: expert
 roles: [owner, auditor, dpo]
-requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-04, CMP-PD-05, CMP-PD-06, CMP-PD-08, CMP-PD-09, CTL-DP-05, CTL-DP-06, CTL-DP-07, AUD-02]
+requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-04, CMP-PD-05, CMP-PD-06, CMP-PD-08, CMP-PD-09, CTL-DP-05, CTL-DP-06, CTL-DP-07, AUD-02, AUD-11]
 ---
 
 # Keep the data protection registers
@@ -11,7 +11,7 @@ requirements: [CMP-05, CMP-PD-02, CMP-PD-01, CMP-PD-04, CMP-PD-05, CMP-PD-06, CM
 ## What it is
 
 **Data protection** (from **Compliance**, Expert mode) holds the company's PDPA programme. The Compliance officer keeps
-it; the Owner and the Auditor read it; nobody else sees it.
+it; the Owner and the Auditor read it; nobody else sees it. The Owner also places and lifts legal holds, under **Holds**.
 
 ## The inventory
 
@@ -128,6 +128,31 @@ When a person's request is honoured or their purpose ends, the Compliance office
 from their answered request under **Requests**, giving the reason. Their emails and phone go and their address reads
 Anonymised; their name and every issued document stay, as the records need them. **Anonymised contacts** lists each
 one. A request alone does not shred the trail's values while their retention continues.
+
+## Legal holds
+
+A legal hold keeps records as they are while a dispute, claim, audit or inquiry needs them. Under **Holds**, the
+Compliance officer or an Owner selects **Place a hold** and chooses what to keep:
+- **A financial year**: every ledger entry dated in it, every audit event that occurred in it, and the evidence of
+  documents dated in it;
+- **A contact**: the contact, every document that names them, a ledger entry with a line for them, and those
+  documents' events and evidence;
+- **One record**: a source document (paste its ID from the address of its page), its events, the ledger entries posted
+  from it and its evidence files.
+
+Every hold needs a reason, and it is kept in the audit trail with who placed it. Those who read the holds are told when
+one is placed or lifted.
+
+While a hold stands, the purge after retention skips what it covers: it goes oldest first and stops at the first
+covered event or year, so a hold also keeps what is newer. The database refuses to delete a held audit event or ledger
+entry even if the purge is wrong. A held contact's keys, and every key of a held year, are not shredded, and the contact
+is not anonymised. Evidence files the hold covers stay in the store, and a nightly job sets a storage hold on them, files
+attached after the hold included. Nothing is purged until an organisation switches the purge on, and never within the 5
+years' minimum.
+
+**Lift** ends a hold, with a reason, after you confirm it is you. The purge may then reach what it covered, and the
+files the hold alone kept are freed the next night. A lifted hold never stands again: place a new one to hold again.
+Select **Show the holds that were lifted** to see who lifted each and why.
 
 ## The Data Protection Officer
 
