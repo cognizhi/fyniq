@@ -221,6 +221,61 @@ func (a *API) accessPoint() (ports.AccessPoint, error) {
 	return a.deps.AccessPoint, nil
 }
 
+// InvoiceNowInbound is a document received through InvoiceNow (FR-AP-05).
+type InvoiceNowInbound struct {
+	ID         string `json:"id" format:"uuid" doc:"The received document's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"`
+	MessageID  string `json:"message_id" doc:"The access point's ID of the message." example:"msg-1"`
+	Sender     string `json:"sender" doc:"The sender's Peppol participant ID." example:"0195:SGUEN202012345K"`
+	Number     string `json:"number,omitempty" doc:"The invoice number it states." example:"INV-2027-0007"`
+	ReceivedAt string `json:"received_at" format:"date-time" doc:"When it was received." example:"2027-02-03T09:00:00Z"`
+	Status     string `json:"status" enum:"received,drafted,refused" doc:"received: kept, no draft yet (see note); drafted: a draft bill was made; refused: it is not read, as note says." example:"drafted"`
+	BillID     string `json:"bill_id,omitempty" format:"uuid" doc:"The draft bill made from it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a09"`
+	Note       string `json:"note,omitempty" doc:"Why it waits or was refused." example:"no active supplier has that Peppol ID: add the supplier, then draft the bill"`
+}
+
+// InvoiceNowInboundPage is a page of received documents.
+type InvoiceNowInboundPage struct {
+	Items      []InvoiceNowInbound `json:"items"`
+	NextCursor string              `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjIwMjYifQ"`
+}
+
+type (
+	invoiceNowInboundListInput  struct{ PageQuery }
+	invoiceNowInboundListOutput struct{ Body InvoiceNowInboundPage }
+	invoiceNowPollInput         struct {
+		KeyHeader
+		PreferHeader
+	}
+	invoiceNowPollOutput struct {
+		Status   int
+		Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
+		Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+		Body     InvoiceNowInboundPage
+	}
+	InvoiceNowInboundPath struct {
+		InboundID string `path:"inbound_id" format:"uuid" doc:"The received document's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"`
+	}
+	invoiceNowDraftInput struct {
+		InvoiceNowInboundPath
+		KeyHeader
+		PreferHeader
+	}
+	invoiceNowDraftOutput struct {
+		Status   int
+		Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
+		Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+		Body     InvoiceNowInbound
+	}
+)
+
+func inboundOut(x storage.InvoiceInbound) InvoiceNowInbound {
+	out := InvoiceNowInbound{ID: x.ID.String(), MessageID: x.MessageID, Sender: x.Sender, Number: x.Number, ReceivedAt: x.ReceivedAt.UTC().Format(time.RFC3339), Status: x.Status, Note: x.Note}
+	if x.BillID != nil {
+		out.BillID = x.BillID.String()
+	}
+	return out
+}
+
 func registerInvoiceNow(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	writes := append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid}, locks...)
@@ -525,5 +580,88 @@ func registerInvoiceNow(a *API) {
 			return nil, err
 		}
 		return &invoiceNowContingencyOutput{Status: w.Status, Applied: applied(w), Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
+	})
+
+	register(a, authz.ListInvoiceNowInbound, huma.Operation{
+		OperationID: "listInvoiceNowInbound", Method: http.MethodGet, Path: "/v1/invoicenow/inbound", Tags: []string{"Purchases"},
+		Summary:     "List the invoices received through InvoiceNow",
+		Description: "The documents suppliers sent through InvoiceNow, newest first, a page at a time, each with its status and the draft bill made from it (FR-AP-05). Read-only; no side effects.",
+	}, append([]string{CodeCursor}, locks...), func(ctx context.Context, in *invoiceNowInboundListInput) (*invoiceNowInboundListOutput, error) {
+		p, _ := authn.From(ctx)
+		out := invoiceNowInboundListOutput{Body: InvoiceNowInboundPage{Items: []InvoiceNowInbound{}}}
+		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			all, err := u.InvoiceNow().InboundPage(ctx, nil, 500)
+			if err != nil {
+				return err
+			}
+			views := make([]InvoiceNowInbound, 0, len(all))
+			for _, x := range all {
+				views = append(views, inboundOut(x))
+			}
+			out.Body.Items, out.Body.NextCursor, err = pageOf(views, func(x InvoiceNowInbound) string { return x.ID }, in.PageQuery)
+			return err
+		})
+		return &out, err
+	})
+
+	register(a, authz.PollInvoiceNowInbound, huma.Operation{
+		OperationID: "pollInvoiceNowInbound", Method: http.MethodPost, Path: "/v1/invoicenow/inbound/poll", Tags: []string{"Purchases"},
+		DefaultStatus: http.StatusOK, Summary: "Receive the invoices suppliers sent through InvoiceNow",
+		Description: "Reads what the access point holds for the organisation since the last document kept, keeps each as received and makes a draft bill of each whose supplier is a contact (the Peppol ID or the UEN " +
+			"matches); a document that is not PINT-SG, or that the sender sent before under the same number, is refused with why, and one with no known supplier waits for it (FR-AP-05). A draft posts nothing. " +
+			"During an outage it answers 503 and keeps nothing. Side effects: the received documents, the draft bills, audit events. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
+	}, append(append([]string{}, writes...), InvoiceNowCodes...), func(ctx context.Context, in *invoiceNowPollInput) (*invoiceNowPollOutput, error) {
+		ap, err := a.accessPoint()
+		if err != nil {
+			return nil, err
+		}
+		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, "poll", http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (InvoiceNowInboundPage, error) {
+			got, err := invoicenow.Receive(ctx, u, ap, a.deps.Clock.Now())
+			if errors.Is(err, ports.ErrAccessPointUnavailable) {
+				return InvoiceNowInboundPage{}, problem(CodeUnavailable, "The InvoiceNow access point cannot be reached.", "Try again later: nothing was received or kept.")
+			}
+			if err != nil {
+				return InvoiceNowInboundPage{}, err
+			}
+			page := InvoiceNowInboundPage{Items: []InvoiceNowInbound{}}
+			for _, x := range got {
+				page.Items = append(page.Items, inboundOut(x))
+			}
+			return page, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &invoiceNowPollOutput{Status: w.Status, Applied: applied(w), Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
+	})
+
+	register(a, authz.DraftInvoiceNowInbound, huma.Operation{
+		OperationID: "draftInvoiceNowInbound", Method: http.MethodPost, Path: "/v1/invoicenow/inbound/{inbound_id}/draft", Tags: []string{"Purchases"},
+		Summary: "Make the draft bill of a received document",
+		Description: "Tries again to make the draft bill of a received document that waited, such as for its supplier to be added (FR-AP-05). One already drafted or refused answers 412. A draft posts nothing. " +
+			"Side effects: the draft bill, the document's status, audit events. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
+	}, append(append([]string{}, writes...), InvoiceNowCodes...), func(ctx context.Context, in *invoiceNowDraftInput) (*invoiceNowDraftOutput, error) {
+		id, err := parseID("inbound_id", in.InboundID)
+		if err != nil {
+			return nil, err
+		}
+		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, id, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (InvoiceNowInbound, error) {
+			x, err := u.InvoiceNow().Inbound(ctx, id)
+			if err != nil {
+				return InvoiceNowInbound{}, err
+			}
+			if x.Status != "received" {
+				return InvoiceNowInbound{}, &storage.Error{Code: storage.CodeVersion, Message: "the received document was drafted or refused already"}
+			}
+			x, err = invoicenow.DraftInbound(ctx, u, id)
+			if err != nil {
+				return InvoiceNowInbound{}, err
+			}
+			return inboundOut(x), nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &invoiceNowDraftOutput{Status: w.Status, Applied: applied(w), Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
 	})
 }

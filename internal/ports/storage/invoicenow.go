@@ -90,6 +90,29 @@ type NewInvoiceContingency struct {
 	At                   time.Time
 }
 
+// InvoiceInbound is a document received through InvoiceNow (FR-AP-05), as kept.
+type InvoiceInbound struct {
+	ID         uuid.UUID
+	MessageID  string
+	Cursor     string
+	Sender     string
+	Number     string
+	ReceivedAt time.Time
+	SHA256     []byte
+	Status     string // received, drafted or refused
+	BillID     *uuid.UUID
+	Note       string
+}
+
+// NewInvoiceInbound is a received document to keep.
+type NewInvoiceInbound struct {
+	MessageID, Cursor, Sender, Number string
+	Payload                           []byte
+	Status, Note                      string
+	BillID                            *uuid.UUID
+	At                                time.Time
+}
+
 // InvoiceNow is the submissions through InvoiceNow, their history, the exclusions and the contingencies. Every change is
 // audited in its transaction. Legal moves, the one live exclusion of a document and the approver who is not the requester
 // are the database's rules (CodeInvoiceNow).
@@ -113,6 +136,18 @@ type InvoiceNow interface {
 	// ApproveContingency approves it as the signed-in person; CodeInvoiceNow when they requested it.
 	ApproveContingency(ctx context.Context, id uuid.UUID, at time.Time) (InvoiceContingency, error)
 	Contingency(ctx context.Context, id uuid.UUID) (InvoiceContingency, error)
+	// KeepInbound keeps a received document as received; the same message twice is CodeDuplicate.
+	KeepInbound(ctx context.Context, n NewInvoiceInbound) (InvoiceInbound, error)
+	Inbound(ctx context.Context, id uuid.UUID) (InvoiceInbound, error)
+	InboundPayload(ctx context.Context, id uuid.UUID) ([]byte, error)
+	// InboundPage is a page of received documents, newest first; after is the cursor.
+	InboundPage(ctx context.Context, after *uuid.UUID, limit int) ([]InvoiceInbound, error)
+	// InboundCursor is where the access point is read from next: empty before anything was received.
+	InboundCursor(ctx context.Context) (string, error)
+	// InboundDuplicate is the first received document of the sender with the number that was not refused, if any.
+	InboundDuplicate(ctx context.Context, sender, number string) (*uuid.UUID, error)
+	// SettleInbound makes a received document drafted (with its bill) or refused (with why), once.
+	SettleInbound(ctx context.Context, id uuid.UUID, status string, bill *uuid.UUID, note string) (InvoiceInbound, error)
 	// Contingencies are the live ones that cover any day of from to to, newest first.
 	Contingencies(ctx context.Context, from, to time.Time) ([]InvoiceContingency, error)
 }

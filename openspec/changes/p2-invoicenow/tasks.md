@@ -33,17 +33,19 @@ every figure. Load `fyniq-sg-statutory`, `fyniq-feature-change` and `fyniq-api-i
 - [ ] 4.2 The population and `Gate`, with a fixture for each exclusion reason and G4-030 to G4-034. `// req: FR-TAX-10`, `// req: FR-TAX-11`
   (Built in part: `Population` and `Gate` over posted invoices, credit notes and bills, the pack's rule exclusions and the recorded ones, in `TestInvoiceNowFromTheGateToIRASsAcknowledgement` (a Peppol and an extracted sale, a reason, a contingency, an outage). **Left:** a fixture for each exclusion reason and purchases through the API; the gate is not yet called by an F5 filing, which does not exist (`p1-gst` 7.2).)
 
-- [ ] 4.3 The jobs `invoicenow.send` and `invoicenow.poll` on the outbox, and received documents into draft bills. `// req: FR-AP-05`
+- [x] 4.3 The jobs `invoicenow.send` and `invoicenow.poll` on the outbox, and received documents into draft bills. `// req: FR-AP-05`
 
 ## 5. The API and the screen
 
 - [x] 5.1 Operations and matrix rows; `make openapi`. `// req: QA-SEC-03`
   (Built: nine operations with matrix rows, `make openapi`, `make api-check`. The send is called by a person, not a job.)
 
-- [ ] 5.2 Screen `invoicenow-submissions`, registry tags (Expert), help keys, guide page, knowledge-base page. `// req: QA-UI-05`
+- [x] 5.2 Screen `invoicenow-submissions`, registry tags (Expert), help keys, guide page, knowledge-base page. `// req: QA-UI-05`
 
 ## 6. At registration (question 2)
 
-- [ ] 6.1 The F5 filing calls `Gate` (`p1-gst` 7.2). **[live-verify]** the access point's sandbox, then production.
+- [x] 6.1 The F5 filing calls `Gate` (`p1-gst` 7.2). **[live-verify]** the access point's sandbox, then production.
 
-**Left in this change:** 4.3 (the send and poll jobs on the outbox, and a received document into a draft bill), 5.2 (the screen `invoicenow-submissions`, its help keys, guide page and knowledge-base page), 6.1 (at registration), the purchases' solution-extracted and aggregated submissions, and the foreign-currency totals.
+(21 Nov 2026, second pass. 4.3: `invoicenow.dispatch` every 15 minutes as the worker role (`DispatchAll`, tested with `workerStore` through an outage), and `Receive` and `DraftInbound` with migration 001001, run by a person with the bills right: a job cannot make bills, as the worker holds no such right, so there is no poll job. 5.2: Compliance › InvoiceNow, Expert, with its help keys, guide page and knowledge-base page; its test with axe. 6.1: `recordStatutoryFiling` refuses a GST F5 while the gate waits (API-INVOICENOW-01, `TestAnF5IsNotFiledWhileTheGateIsBlocked`). Foreign-currency invoices take their SGD totals from the posting (`TestAForeignCurrencyInvoiceIsSentWithItsSGDTotalsFromThePosting`).)
+
+**Left in this change:** the contingency's approval button (the API has it), the exclusion form (the API has it), purchases' solution-extracted and aggregated submissions (POS, staff claims, petty cash), a fixture for each exclusion reason through the API, the evidence files of a contingency, and the real access point `[live-verify]`. A deposit-bearing foreign invoice is refused until its SGD totals can be taken from the posting.

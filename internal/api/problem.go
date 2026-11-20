@@ -165,6 +165,7 @@ const (
 	CodeIdempotencyOld    = "API-IDEMPOTENCY-03" // the key expired (422)
 	CodeFailure           = "API-FAILURE-01"     // something went wrong on our side
 	CodeUnavailable       = "API-UNAVAILABLE-01" // the service is not configured for this
+	CodeInvoiceNowGate    = "API-INVOICENOW-01"  // a GST F5 filing waits for InvoiceNow submissions (FR-TAX-11)
 	CodeSessionRequired   = "API-AUTHZ-04"       // the operation needs a person signed in, not an OAuth client or the AI
 	CodeSetupRefused      = "API-SETUP-01"       // the setup code is not valid, or setup is done
 	CodeStepUpRequired    = "API-AUTHZ-05"       // the operation needs step-up authentication in the last 5 minutes
@@ -203,6 +204,7 @@ var codeFacts = map[string]struct {
 	CodeIdempotencyOld:            {422, "The Idempotency-Key expired"},
 	CodeFailure:                   {500, "Something went wrong"},
 	CodeUnavailable:               {503, "Not available here"},
+	CodeInvoiceNowGate:            {409, "The GST return waits for InvoiceNow submissions"},
 	audit.CodeRange:               {422, "The range cannot be verified at once"},
 	CodeSessionRequired:           {403, "A person must be signed in"},
 	CodeSetupRefused:              {409, "Setup refused"},
@@ -923,16 +925,16 @@ var codeFacts = map[string]struct {
 	banking.CodeDecided:     {403, "You recorded the bank transactions this sign-off covers (SOD-5)"},
 
 	// A money account's payment file (FR-BNK-12, rev 0.157).
-	paymentfile.CodeProvider: {422, "The payment file is not one the account's bank takes"},
-	paymentfile.CodeNotBuilt: {422, "The payment file is not available yet"},
-	CodePSPNotProvider:       {422, "The money account is not a payment provider's"},
-	CodePSPPayout:            {422, "The account payouts land in cannot take them"},
-	CodePSPFee:               {422, "The account fees post to cannot take them"},
-	CodePSPDisputes:          {422, "The account a dispute waits in cannot hold it"},
-	CodePSPDisputeState:      {409, "The dispute cannot be written off now"},
-	CodePSPDisputeLimit:      {422, "The dispute is above the expense limit"},
-	CodePSPEventState:        {409, "The event is not waiting for a person"},
-	CodePSPCredit:            {422, "The credit cannot settle the dispute"},
+	paymentfile.CodeProvider:  {422, "The payment file is not one the account's bank takes"},
+	paymentfile.CodeNotBuilt:  {422, "The payment file is not available yet"},
+	CodePSPNotProvider:        {422, "The money account is not a payment provider's"},
+	CodePSPPayout:             {422, "The account payouts land in cannot take them"},
+	CodePSPFee:                {422, "The account fees post to cannot take them"},
+	CodePSPDisputes:           {422, "The account a dispute waits in cannot hold it"},
+	CodePSPDisputeState:       {409, "The dispute cannot be written off now"},
+	CodePSPDisputeLimit:       {422, "The dispute is above the expense limit"},
+	CodePSPEventState:         {409, "The event is not waiting for a person"},
+	CodePSPCredit:             {422, "The credit cannot settle the dispute"},
 	paymentlink.CodeNotIssued: {422, "A payment link is for an issued invoice with something open"},
 	paymentlink.CodeNoAccount: {422, "No provider account collects the invoice's currency"},
 	paymentlink.CodeLive:      {409, "The invoice has a payment link already"},
@@ -1302,6 +1304,7 @@ var storageFixes = map[string]string{
 	storage.CodeBudget:               "Send the budget as the API takes it: a name, original or revised, its year's first day, and at most 5,000 lines of an account, its dimension values and an amount for each month",
 	storage.CodeFeasibility:          "Send the study as the API takes it: a name, 1 to 10 years, a life of 1 to 50 years, its figures as decimal strings, rates at most 1, changes above -1, and a salvage no more than the investment",
 	storage.CodeForecast:             "Send the forecast as the API takes it: a name, a horizon of 12 to 60 months, its drivers as decimal strings, and its rows and scenarios within their limits",
+	CodeInvoiceNowGate:               "Send each document the gate lists to IRAS through InvoiceNow, or record why it is left out, or have a contingency approved for the outage",
 	storage.CodeInvoiceNow:           "Queue the document again after a failure, record one live exclusion for a document and ask someone else to approve a contingency you requested",
 	storage.CodeStatutoryFiling:      "Record the item the calendar gives once, as filed with its day and reference or as not required with the reason; withdraw a record before recording the item again",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",
