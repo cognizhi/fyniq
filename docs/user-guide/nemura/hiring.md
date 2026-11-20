@@ -47,6 +47,10 @@ If you hold the **Interviewer** role, **My interviews** lists the candidates the
 
 If a requisition names you as the **hiring manager**, **Roles I am hiring for** shows it with where it stands, its job post's dates and how many candidates are at each stage. It shows no salary and no candidate's name: the recruiter and the people team handle them.
 
+## Drafts from the assistant
+
+If the Owner turned them on under **Assistant**, the HR officer, the HR administrator and the Owner can ask the assistant for a starting point. Under **Job post** (and **Interview kit**), select **Ask the assistant to draft the post** (or **the kit**). The assistant writes from the role and the team alone: it never sees the salary, a person or a candidate, and it never screens, ranks or scores anyone. A person approves the draft under **Assistant**; then select **Use the assistant's draft** to put it in the form, add the duties and what the work asks for, and save it as your own. The fair-wording check runs on what you save. A title that names a criterion the guidelines ask employers not to use is not repeated: a placeholder stands in its place.
+
 ## Letting a candidate see their own data
 
 A candidate may ask to see the data you hold about them (an access request under the PDPA). Under the candidate, open **Make a link for the candidate to see their own data**, choose how many days it works (1 to 30; 14 by default) and select **Make the link**. The link is shown once: send it to the candidate yourself. With it, and no sign-in, they see what they gave, the role, where they stand and when their data is due for deletion, and they can withdraw their consent to be kept for future roles. They never see the team's notes or scores, which are opinions formed to evaluate a candidate and are not released on an access request. You can list the links made and **Revoke** one at once; every look is recorded without the data. A candidate who lost the link needs a new one.
@@ -70,6 +74,7 @@ Under **Careers page** the Recruiter, the HR administrator or the Owner chooses 
 - **The address is taken.** Another company uses it: choose a different one.
 - **You cannot see Hiring.** Only the Recruiter, the HR officer, the HR administrator and the Owner do. A line manager sees their own roles under **Roles I am hiring for**, and an interviewer their candidates under **My interviews**.
 - **A candidate's link says it is not valid.** It expired (after the days you chose), was revoked, or the token was copied wrongly: make a new one.
+- **The assistant's draft has a placeholder where the title was.** The requisition's title was not a plain role name or named a criterion the guidelines ask employers not to use: write the title yourself.
 - **No interviewer can be chosen.** Nobody holds the Interviewer role yet: give a member the role under Roles.
 
 ## Related
