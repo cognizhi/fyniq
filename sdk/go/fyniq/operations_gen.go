@@ -72,6 +72,7 @@ var Operations = map[string]Operation{
 	"getBillPayment":                       {ID: "getBillPayment", Method: "GET", Path: "/v1/bill-payments/{payment_id}", Summary: "Get a payment of bills", PathParams: []string{"payment_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.purchases", "fyniq.write.purchases"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getBillsTemplate":                     {ID: "getBillsTemplate", Method: "GET", Path: "/v1/imports/bills/template", Summary: "Get the template for bills and vendor credits, as drafts", PathParams: nil, Query: []string{"format"}, Body: false, Scopes: []string{"fyniq.read.purchases", "fyniq.write.purchases"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getBoardPack":                         {ID: "getBoardPack", Method: "GET", Path: "/v1/board-packs/{id}", Summary: "Get a board pack", PathParams: []string{"id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.reports"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
+	"getBoardPackKeeping":                  {ID: "getBoardPackKeeping", Method: "GET", Path: "/v1/board-packs/{id}/pdf/keeping", Summary: "See whether a board pack's PDF is kept as evidence", PathParams: []string{"id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.reports"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getBrand":                             {ID: "getBrand", Method: "GET", Path: "/v1/organisation/brand", Summary: "Read the logo and brand", PathParams: nil, Query: nil, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getBrandFile":                         {ID: "getBrandFile", Method: "GET", Path: "/v1/organisation/brand/files/{kind}", Summary: "Read a logo or icon file", PathParams: []string{"kind"}, Query: []string{"version"}, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getBudget":                            {ID: "getBudget", Method: "GET", Path: "/v1/budgets/{budget_id}", Summary: "Get a budget", PathParams: []string{"budget_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.planning"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
@@ -673,6 +674,11 @@ func (c *Client) GetBillsTemplate(ctx context.Context, opts ...CallOption) (*Res
 // GetBoardPack: Get a board pack (GET /v1/board-packs/{id}; scopes fyniq.read.reports).
 func (c *Client) GetBoardPack(ctx context.Context, idValue string, opts ...CallOption) (*Response, error) {
 	return c.Do(ctx, Operations["getBoardPack"], []string{idValue}, nil, opts)
+}
+
+// GetBoardPackKeeping: See whether a board pack's PDF is kept as evidence (GET /v1/board-packs/{id}/pdf/keeping; scopes fyniq.read.reports).
+func (c *Client) GetBoardPackKeeping(ctx context.Context, idValue string, opts ...CallOption) (*Response, error) {
+	return c.Do(ctx, Operations["getBoardPackKeeping"], []string{idValue}, nil, opts)
 }
 
 // GetBrand: Read the logo and brand (GET /v1/organisation/brand; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales).
