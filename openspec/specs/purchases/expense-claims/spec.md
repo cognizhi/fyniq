@@ -56,6 +56,16 @@ Source: PRD-001 §8.6 · Priority S · Phase P2
 - **WHEN** the reminder schedule runs
 - **THEN** the cardholder is reminded to provide the receipt
 
+#### Scenario: Receipt suggestion is never an attachment (rev 0.510)
+- **GIVEN** a card line and a captured receipt of the same amount near the date
+- **WHEN** the cardholder opens the line
+- **THEN** the receipt is suggested and attached only when the cardholder confirms it
+
+#### Scenario: One reminder a day (rev 0.510)
+- **GIVEN** two lines of a card older than the reminder days with no receipt
+- **WHEN** the daily job runs twice in a day
+- **THEN** the cardholder has one Inbox item listing both lines
+
 ### Requirement: FR-AP-14 My expense claims
 The system SHALL give every user a My claims page (`/me/claims`, "My claims" in the personal section of the navigation) showing the user's claims by status, with totals and what the company owes them, and letting them start, submit, fix and export claims.
 

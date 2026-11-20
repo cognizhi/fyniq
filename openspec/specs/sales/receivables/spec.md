@@ -523,6 +523,16 @@ Source: PRD-001 §8.5 · Priority S · Phase P2
 - **WHEN** the provider pays out the collected payments
 - **THEN** the payouts and fees are matched automatically
 
+#### Scenario: A payment link from the invoice (rev 0.510)
+- **GIVEN** an issued invoice with S$5,450.00 open and a HitPay connector enabled
+- **WHEN** a person with a right on Invoices asks for a payment link
+- **THEN** the link is for the open balance read on the server, whatever the client sends, with the invoice number as the reference
+- **AND** a second live link for the invoice, or a link on a draft, void or paid invoice, is refused
+
+#### Scenario: The link is not the AI's (rev 0.510)
+- **WHEN** an AI client or an MCP tool tries to create a payment link
+- **THEN** it has no such tool and the capability is never triggered by it
+
 ### Requirement: FR-AR-14 Customer portal
 The system SHALL offer a customer portal where a customer views and pays their invoices and downloads statements.
 

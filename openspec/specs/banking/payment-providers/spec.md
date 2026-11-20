@@ -96,6 +96,12 @@ Source: PRD-001 §8.5 · Priority M · Phase P2
 - **AND** the fee (0.65% + S$0.30 = S$35.73) posts Dr Payment fees · Cr HitPay clearing
 - **AND** when the payout of S$5,414.27 lands next day, bank sync matches it and the clearing account nets to zero
 
+#### Scenario: The automatic leg (rev 0.510)
+- **GIVEN** an invoice with a live payment link and S$5,450.00 open
+- **WHEN** the provider's completed event names the request and its charge line arrives for S$5,450.00
+- **THEN** the worker fetches the request by GET and auto-reconcile records the receipt once, Dr clearing · Cr AR
+- **AND** a replay, a second payment, a different amount or a void invoice posts nothing and parks with a warning
+
 ### Requirement: FR-PSP-03 Model B: the product bills at the provider
 In Model B, where Stripe Billing subscriptions or HitPay recurring billing are the system of record for self-serve customers, the system SHALL mirror customers, subscriptions and the provider's invoices read-only and book revenue gross with its service period.
 
