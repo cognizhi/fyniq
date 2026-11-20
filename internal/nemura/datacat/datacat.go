@@ -149,6 +149,13 @@ var Categories = []Category{
 
 // NotPersonal are columns whose names look personal and are not, with why. A column here needs a reason a reviewer can read.
 var NotPersonal = map[string]string{
+	"job_post.body":                    "the text of a job post, written to be published about a role, not about a person",
+	"job_post.requirement_note":        "why a criterion in a post is a genuine occupational requirement of the role",
+	"job_post.exemption_note":          "the evidence for an exemption from the advert, about the company's headcount or the role, never a candidate",
+	"requisition.reason":               "whether a role is new or a replacement: two words, the person replaced is named by ID",
+	"requisition.salary_min":           "the bottom of the range offered for a role, not any person's pay",
+	"requisition.salary_max":           "the top of the range offered for a role, not any person's pay",
+	"requisition.decision_reason":      "why the Owner approved or rejected a request to hire for a role",
 	"onboarding_template.name":         "what a company calls an onboarding template, such as Office joiner, not a person",
 	"onboarding_plan.template_name":    "the name of the template a plan was made from, copied when the plan was made",
 	"erasure_order.reason":             "why an Owner or an HR administrator asked for an erasure (the retention periods have run): the person is named by ID, and the reason names no one",

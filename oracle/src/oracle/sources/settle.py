@@ -57,6 +57,11 @@ class OpenItem:
     date: date | None = None  # an invoice's, for a credit note linked to it
     gross: Decimal | None = None  # an invoice's total before the deposits it deducts
     credited: Decimal = money.ZERO  # what the credit notes linked to an invoice credit (rev 0.155)
+    # An invoice's output GST in the base currency (the GST control line it posted, net of what the deposits it deducts bore), and what its
+    # GST bad debt relief claims were for and claimed (rev 0.609).
+    output: Decimal = money.ZERO
+    relief_written: Decimal = money.ZERO
+    relief_claimed: Decimal = money.ZERO
     # Each settlement's or write-off's (date, amount settled, carrying amount it cleared), in the order they posted, so
     # the month-end revaluation reads what is open on a day (FR-GL-04: "at what is open of it").
     allocations: list[tuple[date, Decimal, Decimal]] = field(default_factory=list)

@@ -162,6 +162,7 @@ type API struct {
 	invoices     journal.Invoices
 	receipts     journal.CustomerReceipts
 	writeOffs    journal.WriteOffs
+	reliefClaims journal.ReliefClaims
 	payments     journal.BillPayments
 	bank         journal.BankTransactions
 	applications journal.CreditApplications
@@ -313,7 +314,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store, Clock: d.Clock},
 		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
-		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
+		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store}, reliefClaims: journal.ReliefClaims{Store: d.Store},
 		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
 		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, claims: journal.Claims{Store: d.Store}, reimbursements: journal.ClaimReimbursements{Store: d.Store}, advances: journal.CashAdvances{Store: d.Store}, preCosts: journal.PreCosts{Store: d.Store}, assets: journal.FixedAssets{Store: d.Store, Clock: d.Clock}, disposals: journal.AssetDisposals{Store: d.Store, Clock: d.Clock}, closing: closing.Service{Store: d.Store, Clock: d.Clock, More: checks.ForClose}}
 	a.downloadKey = d.DownloadKey
@@ -472,6 +473,8 @@ func New(mux humago.Mux, d Deps) *API {
 	registerGSTMonitor(a)
 	registerInvoiceNow(a)
 	registerTaxFilings(a)
+	registerReliefClaims(a)
+	registerTaxPapers(a)
 	registerCalendar(a)
 	registerForecasts(a)
 	registerBudgets(a)

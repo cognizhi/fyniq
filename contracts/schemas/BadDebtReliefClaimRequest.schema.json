@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "The day it is claimed: within the pack's dates (twelve months from the supply, five years at most) and not after today.",
+      "examples": [
+        "2027-03-10"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "f5_period_end": {
+      "description": "The last day of the GST return period the claim goes in; on or after the claim's date.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "note": {
+      "description": "The steps taken to recover the debt, or the debtor's insolvency, in plain words; files attach to the claim as evidence.",
+      "examples": [
+        "Three reminders and a letter of demand"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "write_off_id": {
+      "description": "The posted bad-debt write-off to claim relief for; each is claimed once.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "write_off_id",
+    "date"
+  ],
+  "title": "BadDebtReliefClaimRequest",
+  "type": "object"
+}

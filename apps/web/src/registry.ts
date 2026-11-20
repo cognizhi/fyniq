@@ -589,6 +589,8 @@ export const actions = [
   { kind: "action", id: "invoicenow.gate", mode: "expert", help: "invoicenow.gate", guide: "compliance.invoicenow#the-filing-gate" },
   { kind: "action", id: "invoicenow.contingency", mode: "expert", help: "invoicenow.contingency", guide: "compliance.invoicenow#when-the-network-is-down" },
   { kind: "action", id: "invoicenow.receive", mode: "expert", help: "invoicenow.receive", guide: "compliance.invoicenow#invoices-from-suppliers" },
+  { kind: "action", id: "tax-paper.attach-evidence", mode: "expert", help: "tax-paper.attach-evidence", guide: "compliance.filing-packs#keep-and-record-the-paper" },
+  { kind: "action", id: "tax-paper.record", mode: "expert", help: "tax-paper.record", guide: "compliance.filing-packs#keep-and-record-the-paper" },
   { kind: "action", id: "compliance.pack-updates", mode: "expert", help: "compliance.pack-updates", guide: "compliance.filing-packs#statutory-updates" },
   { kind: "action", id: "gst.monitor", mode: "expert", help: "gst.monitor", guide: "compliance.gst#the-two-tests" },
   { kind: "action", id: "gst-monitor.last-year", mode: "expert", help: "gst-monitor.last-year", guide: "compliance.gst#the-two-tests" },

@@ -89,6 +89,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
+	"github.com/cognizhi/fyniq/internal/domain/reliefclaim"
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
 	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
@@ -96,6 +97,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/statement"
 	"github.com/cognizhi/fyniq/internal/domain/subscription"
 	"github.com/cognizhi/fyniq/internal/domain/succession"
+	"github.com/cognizhi/fyniq/internal/domain/taxfilings"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/domain/timesheet"
 	"github.com/cognizhi/fyniq/internal/domain/writeoff"
@@ -781,6 +783,23 @@ var codeFacts = map[string]struct {
 	writeoff.CodeNotPosted:        {409, "The write-off is not posted"},
 	writeoff.CodeVoidDate:         {422, "The void is dated before the write-off"},
 	writeoff.CodeTooLong:          {422, "The explanation is missing or too long"},
+	taxfilings.CodePaper:          {422, "The working paper does not fit"},
+	taxfilings.CodeNoEvidence:     {422, "The paper has adjustments and no evidence"},
+	taxfilings.CodeRecorded:       {409, "The paper is recorded, so it changes no more"},
+	reliefclaim.CodeNotClaim:      {404, "Not a claim of GST bad debt relief"},
+	reliefclaim.CodeBadClaim:      {422, "The saved claim cannot be read"},
+	reliefclaim.CodeWriteOff:      {422, "Not a posted bad-debt write-off"},
+	reliefclaim.CodeClaimed:       {409, "The write-off is claimed already"},
+	reliefclaim.CodeCredited:      {422, "A credit note credits the invoice"},
+	reliefclaim.CodeNoPack:        {422, "No pack holds the relief dates"},
+	reliefclaim.CodeNotYet:        {422, "The twelve months have not passed"},
+	reliefclaim.CodeExpired:       {422, "The time to claim is over"},
+	reliefclaim.CodeFuture:        {422, "The claim is dated after today"},
+	reliefclaim.CodePeriod:        {422, "The F5 period ends before the claim"},
+	reliefclaim.CodeNote:          {422, "The note is too long"},
+	reliefclaim.CodeNotPosted:     {409, "The claim is not posted"},
+	reliefclaim.CodeVoidDate:      {422, "The void is dated before the claim"},
+	ledger.CodeNoRelief:           {422, "No GST is left to claim"},
 	CodeWriteOffVoidApproval:      {409, "Voiding needs a second person"},
 	CodeOwnWriteOff:               {403, "Another person approves the write-off (SOD-9)"},
 	billpayment.CodeNotPayment:    {404, "Not a payment of bills"},
@@ -1538,6 +1557,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		ie  *invoice.Error
 		re  *receipt.Error
 		we  *writeoff.Error
+		rce *reliefclaim.Error
+		tpe *taxfilings.Error
 		bpe *billpayment.Error
 		cre *credits.Error
 		poe *purchaseorder.Error
@@ -1609,6 +1630,10 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(spe.Code, sentence(spe.Message), sentence(spe.Fix))
 	case errors.As(err, &we):
 		return problem(we.Code, sentence(we.Message), sentence(we.Fix))
+	case errors.As(err, &tpe):
+		return problem(tpe.Code, sentence(tpe.Message), sentence(tpe.Fix))
+	case errors.As(err, &rce):
+		return problem(rce.Code, sentence(rce.Message), sentence(rce.Fix))
 	case errors.As(err, &bpe):
 		return problem(bpe.Code, sentence(bpe.Message), sentence(bpe.Fix))
 	case errors.As(err, &cre):

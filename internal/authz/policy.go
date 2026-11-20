@@ -1493,15 +1493,27 @@ var (
 )
 
 var (
-	ListApprovalPolicies     = Policy{Operation: "listApprovalPolicies", Capability: ApprovalPolicies, Need: View}
-	GetApprovalPolicy        = Policy{Operation: "getApprovalPolicy", Capability: ApprovalPolicies, Need: View}
-	GetBadDebtRelief         = Policy{Operation: "getBadDebtRelief", Capability: GSTReturns, Need: View}
-	WorkTaxPaper             = Policy{Operation: "workTaxPaper", Capability: GSTReturns, Need: Create, Note: "A calculation the tax agent signs: it saves nothing and files nothing."}
-	ListStatutoryPackUpdates = Policy{Operation: "listStatutoryPackUpdates", Capability: StatutoryParameters, Need: View}
-	ListStatutoryPacks       = Policy{Operation: "listStatutoryPacks", Capability: StatutoryParameters, Need: View}
-	GetStatutoryPack         = Policy{Operation: "getStatutoryPack", Capability: StatutoryParameters, Need: View}
-	GetStatutoryValues       = Policy{Operation: "getStatutoryValues", Capability: StatutoryParameters, Need: View}
-	ActivateStatutoryPack    = Policy{Operation: "activateStatutoryPack", Capability: StatutoryParameters, Need: Create,
+	ListApprovalPolicies          = Policy{Operation: "listApprovalPolicies", Capability: ApprovalPolicies, Need: View}
+	GetApprovalPolicy             = Policy{Operation: "getApprovalPolicy", Capability: ApprovalPolicies, Need: View}
+	GetBadDebtRelief              = Policy{Operation: "getBadDebtRelief", Capability: GSTReturns, Need: View}
+	ListTaxWorkingPapers          = Policy{Operation: "listTaxWorkingPapers", Capability: GSTReturns, Need: View}
+	GetTaxWorkingPaper            = Policy{Operation: "getTaxWorkingPaper", Capability: GSTReturns, Need: View}
+	CreateTaxWorkingPaper         = Policy{Operation: "createTaxWorkingPaper", Capability: GSTReturns, Need: Create, Note: "Keeps the adjustments with their reasons: it posts and files nothing."}
+	ReplaceTaxWorkingPaper        = Policy{Operation: "replaceTaxWorkingPaper", Capability: GSTReturns, Need: Create}
+	RecordTaxWorkingPaper         = Policy{Operation: "recordTaxWorkingPaper", Capability: GSTReturns, Need: Create, Note: "The tax agent signs the working: it keeps the figures with the paper, posts nothing and files nothing."}
+	AddTaxWorkingPaperEvidence    = Policy{Operation: "addTaxWorkingPaperEvidence", Capability: GSTReturns, Need: Create}
+	ListTaxWorkingPaperEvidence   = Policy{Operation: "listTaxWorkingPaperEvidence", Capability: GSTReturns, Need: View}
+	GetTaxWorkingPaperEvidence    = Policy{Operation: "getTaxWorkingPaperEvidence", Capability: GSTReturns, Need: View}
+	RemoveTaxWorkingPaperEvidence = Policy{Operation: "removeTaxWorkingPaperEvidence", Capability: GSTReturns, Need: Create}
+	ClaimBadDebtRelief            = Policy{Operation: "claimBadDebtRelief", Capability: GSTReturns, Need: Create, Note: "Posts the GST relief of a bad-debt write-off at once (FR-AR-11): the claimer declares the conditions that are not dates. The posting is audited and undone only by a void."}
+	GetBadDebtReliefClaim         = Policy{Operation: "getBadDebtReliefClaim", Capability: GSTReturns, Need: View}
+	VoidBadDebtReliefClaim        = Policy{Operation: "voidBadDebtReliefClaim", Capability: GSTReturns, Need: Create, Note: "A reversing entry: posted history never changes (FR-GL-12)."}
+	WorkTaxPaper                  = Policy{Operation: "workTaxPaper", Capability: GSTReturns, Need: Create, Note: "A calculation the tax agent signs: it saves nothing and files nothing."}
+	ListStatutoryPackUpdates      = Policy{Operation: "listStatutoryPackUpdates", Capability: StatutoryParameters, Need: View}
+	ListStatutoryPacks            = Policy{Operation: "listStatutoryPacks", Capability: StatutoryParameters, Need: View}
+	GetStatutoryPack              = Policy{Operation: "getStatutoryPack", Capability: StatutoryParameters, Need: View}
+	GetStatutoryValues            = Policy{Operation: "getStatutoryValues", Capability: StatutoryParameters, Need: View}
+	ActivateStatutoryPack         = Policy{Operation: "activateStatutoryPack", Capability: StatutoryParameters, Need: Create,
 		Note: "Always waits for approval by a member who holds A on the row (the Owner or the Controller), never the proposer (ENG-32, SOD-10); " +
 			"needs a person signed in who passed step-up in the last 5 minutes."}
 	GetTeamMode    = Policy{Operation: "getTeamMode", Capability: UsersAndRoles, Need: View}
@@ -2347,7 +2359,7 @@ var Policies = index(ListWebhookEndpoints, GetWebhookEndpoint, CreateWebhookEndp
 	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListCapTableGrants, GetForecastAccuracy, ListAuditEngagements, OpenAuditEngagement, ConfirmAuditEngagement, CloseAuditEngagement, ListAuditRequests, AskAuditRequest, AnswerAuditRequest, CloseAuditRequest, DrawAuditSample, ListAuditSamples, GrantCapTableAccess, RevokeCapTableAccess, GetGrantedCapTable, ListBoardPacks, GetBoardPack, ExportBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack, RequestBoardPackKeeping, GetBoardPackKeeping, ListAllocationRules, GetAllocationRule, ListAllocationRuns, PreviewAllocation, CreateAllocationRule, ReplaceAllocationRule, ProposeAllocation,
 	ListKPIAlerts, GetDeferralRollForward, ListDashboardTiles, GetMyDashboard, GetRoleDashboard, SaveMyDashboard, SaveRoleDashboard, ListInvestorUpdates, GetInvestorUpdate, CreateInvestorUpdate, EditInvestorUpdate, SendInvestorUpdate, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
-	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetBadDebtRelief, WorkTaxPaper, ListStatutoryPackUpdates, GetInvoiceNowGate, ListInvoiceNowInbound, PollInvoiceNowInbound, DraftInvoiceNowInbound, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
+	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetBadDebtRelief, ListTaxWorkingPapers, GetTaxWorkingPaper, CreateTaxWorkingPaper, ReplaceTaxWorkingPaper, RecordTaxWorkingPaper, AddTaxWorkingPaperEvidence, ListTaxWorkingPaperEvidence, GetTaxWorkingPaperEvidence, RemoveTaxWorkingPaperEvidence, ClaimBadDebtRelief, GetBadDebtReliefClaim, VoidBadDebtReliefClaim, WorkTaxPaper, ListStatutoryPackUpdates, GetInvoiceNowGate, ListInvoiceNowInbound, PollInvoiceNowInbound, DraftInvoiceNowInbound, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
 	AddGSTForecastEvidence, ListGSTForecastEvidence, GetGSTForecastEvidence, RemoveGSTForecastEvidence, GetStatutoryCalendar,
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,

@@ -167,7 +167,7 @@ def _invoice_lines(r: Rules, doc: Source, books: dict[str, Any], *, credit: bool
             deposit.left_gst = money.EXACT.subtract(deposit.left_gst, gst_part)
 
     item = OpenItem("credit_note" if credit else "invoice", receivable, currency, rate, owed, owed_base,
-                    date=doc.date, gross=total)
+                    date=doc.date, gross=total, output=output)
     return Posting(lines, scheduled, facts=item, effects=[apply])
 
 
@@ -306,4 +306,42 @@ def write_off(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     def apply() -> None:
         item.settle(doc.date, amount, carrying)
 
-    return Posting(lines, effects=[apply])
+    return Posting(lines, facts=WrittenOff(item, amount, d["account"]), effects=[apply])
+
+
+@dataclass
+class WrittenOff:
+    """A posted write-off: its invoice, the amount and the account the debt went to, and whether its GST relief is claimed (rev 0.609)."""
+
+    item: OpenItem
+    amount: Decimal  # in the invoice's currency
+    account: str
+    claimed: bool = False
+
+
+def bad_debt_relief(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    """``bad_debt_relief@1`` (§10.2 "GST bad debt relief", FR-AR-11, rev 0.609): the output tax in the part of an invoice's debt that a
+    write-off took comes back out of the GST control account, against the account the write-off took the debt to, both in the
+    base currency: Dr 2200, Cr that account, for ``RND-BDR`` of the invoice's output tax. A write-off is claimed once; an invoice
+    some credit note credits is not claimed here (its output tax was adjusted by the note); nothing is claimed that is not left."""
+    d = doc.data
+    wo = books.get(d["write_off"])
+    if not isinstance(wo, WrittenOff):
+        raise Rejected("not-a-posted-write-off")
+    if wo.claimed:
+        raise Rejected("claimed-twice")
+    item = wo.item
+    if item.credited > 0:
+        raise Rejected("invoice-credited")
+    r.account(wo.account)
+    gst = r.system("gst")
+    share = money.rnd_bdr(item.output, item.total, item.relief_written, wo.amount, item.relief_claimed, r.base_minor)
+    if not share > 0:
+        raise Rejected("nothing-to-claim")
+
+    def apply() -> None:
+        wo.claimed = True
+        item.relief_written = money.EXACT.add(item.relief_written, wo.amount)
+        item.relief_claimed = money.EXACT.add(item.relief_claimed, share)
+
+    return Posting([r.base_line(gst, share), r.base_line(wo.account, money.negate(share))], effects=[apply])
