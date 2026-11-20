@@ -29618,6 +29618,11 @@ components:
             - SME working-capital loan
           maxLength: 200
           type: string
+        pre_money:
+          description: "For an Equity row: the pre-money valuation the round is planned at, which the funding plan divides by the shares fully diluted before the round to price it (FR-PLN-07)."
+          examples:
+            - "4000000.00"
+          type: string
         rate:
           description: A loan's yearly interest rate, as a fraction.
           examples:
@@ -30775,6 +30780,194 @@ components:
       required:
         - through
         - items
+      type: object
+    FundingPlan:
+      additionalProperties: false
+      properties:
+        cap_table_on:
+          description: "The day of the register's cap table the plan starts from: the organisation's today."
+          examples:
+            - "2026-11-21"
+          format: date
+          type: string
+        currency:
+          description: The base currency every amount is in.
+          examples:
+            - SGD
+          type: string
+        forecast_id:
+          description: The forecast.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01
+          format: uuid
+          type: string
+        notes:
+          description: What the plan does not model.
+          items:
+            examples:
+              - "A SAFE converts at the next priced round under its cap and discount, which a funding row does not hold: it is listed, not modelled [accountant to confirm]."
+            type: string
+          type: array
+        other:
+          description: "The funding rows that issue no shares in the plan: SAFEs, loans and grants."
+          items:
+            $ref: "#/components/schemas/FundingPlanOther"
+          type: array
+        rounds:
+          description: The planned equity rounds in the order of their days; each dilutes the holders as the one before left them.
+          items:
+            $ref: "#/components/schemas/FundingPlanRound"
+          type: array
+        shares_fully_diluted:
+          description: The shares fully diluted on that day.
+          examples:
+            - "1000000"
+          type: string
+      required:
+        - forecast_id
+        - currency
+        - cap_table_on
+        - shares_fully_diluted
+        - rounds
+        - other
+        - notes
+      type: object
+    FundingPlanHolder:
+      additionalProperties: false
+      properties:
+        after:
+          description: Their percentage fully diluted after the round.
+          examples:
+            - "56.00"
+          type: string
+        before:
+          description: Their percentage fully diluted before the round, to 2 decimals (RND-DISPLAY); empty when they held nothing.
+          examples:
+            - "70.00"
+          type: string
+        holder_id:
+          description: The holder; absent for the new investors the plan does not name.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+          format: uuid
+          type: string
+        holder_name:
+          description: Their name, or New investors.
+          examples:
+            - Lion Rock Ventures Pte. Ltd.
+          type: string
+        points_lost:
+          description: The percentage points the round took from them, exact, to 2 decimals; negative for a gain.
+          examples:
+            - "14.00"
+          type: string
+        shares_after:
+          description: Their shares fully diluted after the round.
+          examples:
+            - "700000"
+          type: string
+      required:
+        - holder_name
+        - before
+        - after
+        - points_lost
+        - shares_after
+      type: object
+    FundingPlanOther:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: The amount.
+        month:
+          description: The month its money arrives.
+          examples:
+            - 2027-02
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        row:
+          description: The funding row of the forecast it is.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        type:
+          description: Its kind.
+          enum:
+            - SAFE
+            - Loan
+            - Grant
+          examples:
+            - Loan
+          type: string
+        why:
+          description: Why the cap table does not change by it.
+          examples:
+            - A loan or a grant issues no shares
+          type: string
+      required:
+        - row
+        - type
+        - month
+        - amount
+        - why
+      type: object
+    FundingPlanRound:
+      additionalProperties: false
+      properties:
+        holders:
+          description: Each holder before and after, then the new investors; empty when the round was not modelled.
+          items:
+            $ref: "#/components/schemas/FundingPlanHolder"
+          type: array
+        modelled:
+          description: False when the round could not be modelled, which why says; the cap table passes through it unchanged.
+          examples:
+            - true
+          type: boolean
+        month:
+          description: The month its money arrives; its first day is the round's day.
+          examples:
+            - 2027-06
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        new_shares:
+          description: The shares the money buys, whole shares of the price (RND-SHARE).
+          examples:
+            - "250000"
+          type: string
+        planned:
+          $ref: "#/components/schemas/Money"
+          description: The money planned.
+        post_money:
+          $ref: "#/components/schemas/Money"
+          description: "The post-money valuation: the shares fully diluted after, at the price."
+        pre_money:
+          $ref: "#/components/schemas/Money"
+          description: The pre-money valuation planned.
+        price_per_share:
+          $ref: "#/components/schemas/Money"
+          description: "The price per share: the pre-money valuation divided by the shares fully diluted before, cut down to 4 decimals."
+        raised:
+          $ref: "#/components/schemas/Money"
+          description: "What those shares cost: at most the money planned, the rest buying no whole share."
+        row:
+          description: The funding row of the forecast it is.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        why:
+          description: Why it was not modelled.
+          examples:
+            - "No pre-money valuation is planned, so the round has no price to model: add one to the funding row"
+          type: string
+      required:
+        - row
+        - month
+        - planned
+        - modelled
+        - holders
       type: object
     GSTCode:
       additionalProperties: false
@@ -155941,6 +156134,112 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Budgets, forecasts
+        right: V
+  /v1/forecasts/{forecast_id}/funding-plan:
+    get:
+      description: "A sandbox (FR-PLN-07): each Equity funding row of the forecast that has a pre-money valuation, taken in the order of its days through the equity register's round model (FR-EQ-21) over the cap table fully diluted the day before, starting from the register's cap table of today: the pre-money valuation divided by the shares fully diluted before the round gives its price (cut down to 4 decimals), the money buys whole shares of it, and each holder's part before and after gives the dilution in percentage points. A round with no valuation, or one the model refuses, is listed with why; SAFEs, loans and grants are listed apart, as they issue no shares in the plan. The rows are the forecast's own, before any scenario's levers. It reads the whole cap table, so it needs the right to. Nothing is posted or saved. Read-only."
+      operationId: getForecastFundingPlan
+      parameters:
+        - description: The forecast.
+          in: path
+          name: forecast_id
+          required: true
+          schema:
+            description: The forecast.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FundingPlan"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Model a forecast's planned equity rounds on the cap table
+      tags:
+        - Planning
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Cap table, holders, investors, equity transactions (rev 0.3)
         right: V
   /v1/forecasts/{forecast_id}/record:
     post:

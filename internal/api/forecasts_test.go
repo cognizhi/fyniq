@@ -332,6 +332,9 @@ var matrixForecasts = map[string]func(e *env, tok string) (response, func() bool
 	"compareForecastScenarios": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/forecasts/"+matrixPlanForecast(e).forecast+"/comparison", tok, nil), nil
 	},
+	"getForecastFundingPlan": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/forecasts/"+matrixPlanForecast(e).forecast+"/funding-plan", tok, nil), nil
+	},
 	"runForecast": func(e *env, tok string) (response, func() bool) {
 		f := matrixPlanForecast(e)
 		was := matrixPlanForecastState(e, f)

@@ -182,6 +182,12 @@ Source: PRD-001 §8.14 · Priority S · Phase P2
 - **WHEN** a funding plan is set up in a forecast
 - **THEN** it starts from the current cap table of the equity register
 
+#### Scenario: Planned rounds dilute the holders (rev 0.602)
+- **GIVEN** a forecast whose funding rows include equity rounds with a pre-money valuation
+- **WHEN** the funding plan is read
+- **THEN** each round, in the order of its days, is priced by the equity register's round model over the cap table fully diluted the day before it, starting from today's, and shows each holder before and after with the points lost
+- **AND** a round with no valuation is listed with why, SAFEs, loans and grants are listed apart, and nothing is posted
+
 ### Requirement: FR-PLN-08 Forecasts are sandboxed
 Forecasts SHALL be sandboxed: they never post to the ledger.
 

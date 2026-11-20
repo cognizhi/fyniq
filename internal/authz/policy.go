@@ -1645,11 +1645,13 @@ var (
 // own holding (Appendix D, "own holding"); the whole table if granted, and an Employee's own grants, arrive with the
 // option pool (FR-EQ-19).
 var (
-	GetCapTable    = Policy{Operation: "getCapTable", Capability: CapTable, Need: View, Unqualified: true}
+	GetCapTable = Policy{Operation: "getCapTable", Capability: CapTable, Need: View, Unqualified: true}
 	// The exit waterfall sandbox (FR-EQ-29, rev 0.591) shows every holder's proceeds, so it is read under the whole cap table's unqualified V: a Board viewer's "own holding" is not it.
 	GetExitWaterfall = Policy{Operation: "getExitWaterfall", Capability: CapTable, Need: View, Unqualified: true}
-	ExportCapTable = Policy{Operation: "exportCapTable", Capability: CapTable, Need: View, Unqualified: true}
-	GetMyHolding   = Policy{Operation: "getMyHolding", Capability: CapTable, Need: View, Unqualified: true,
+	// The funding plan of a forecast (FR-PLN-07, rev 0.602) shows every holder's part before and after each planned round, so it is read under the whole cap table's unqualified V, not the forecast's.
+	GetForecastFundingPlan = Policy{Operation: "getForecastFundingPlan", Capability: CapTable, Need: View, Unqualified: true}
+	ExportCapTable         = Policy{Operation: "exportCapTable", Capability: CapTable, Need: View, Unqualified: true}
+	GetMyHolding           = Policy{Operation: "getMyHolding", Capability: CapTable, Need: View, Unqualified: true,
 		Qualified: []string{"own holding; all if granted"}}
 )
 
@@ -2158,10 +2160,10 @@ var (
 )
 
 var (
-	ListBoardPacks       = Policy{Operation: "listBoardPacks", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
-	GetBoardPack         = Policy{Operation: "getBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	ListBoardPacks = Policy{Operation: "listBoardPacks", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	GetBoardPack   = Policy{Operation: "getBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
 	// The PDF of a published pack (FR-RPT-06): read as the pack is, by whoever reads published packs; a draft has none.
-	ExportBoardPack = Policy{Operation: "exportBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	ExportBoardPack      = Policy{Operation: "exportBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
 	CreateBoardPackDraft = Policy{Operation: "createBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	EditBoardPackDraft   = Policy{Operation: "editBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	PublishBoardPack     = Policy{Operation: "publishBoardPack", Capability: ReportDefinitions, Need: Create}
