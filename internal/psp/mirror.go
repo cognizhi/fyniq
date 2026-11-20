@@ -3,6 +3,7 @@ package psp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -131,8 +132,85 @@ func MirrorObject(ctx context.Context, u storage.UnitOfWork, connector uuid.UUID
 		return "", err
 	case ports.ProviderInvoice:
 		return mirrorInvoice(ctx, u, connector, obj, now)
+	case ports.ProviderCreditNote:
+		return mirrorCreditNote(ctx, u, connector, obj, now)
 	}
 	return "", nil
+}
+
+// creditLinesOf are a provider credit note's lines as the invoice rules read them, each at its amount with quantity 1; the account and GST code are the function's.
+func creditLinesOf(cn *ports.CreditNoteData) json.RawMessage {
+	out := []draftLine{}
+	for _, l := range cn.Lines {
+		d := draftLine{Description: strings.TrimSpace(l.Description), Quantity: "1", UnitPrice: l.Amount}
+		if d.Description == "" {
+			d.Description = "Credit"
+		}
+		if len(d.Description) > 200 {
+			d.Description = d.Description[:200]
+		}
+		out = append(out, d)
+	}
+	b, _ := json.Marshal(out)
+	return b
+}
+
+func mirrorCreditNote(ctx context.Context, u storage.UnitOfWork, connector uuid.UUID, obj ports.ProviderObject, now time.Time) (string, error) {
+	cn := obj.CreditNote
+	if cn == nil || cn.InvoiceID == "" || obj.Currency == "" || (cn.Status != "issued" && cn.Status != "void") {
+		return "the credit note could not be read", nil
+	}
+	issued := dayPtr(&obj.Created)
+	reason := cn.Reason
+	if len(reason) > 500 {
+		reason = reason[:500]
+	}
+	saved, _, err := u.PSPMirror().SaveCreditNote(ctx, storage.NewPSPCreditNote{ConnectorID: connector, ProviderID: obj.ID, ProviderInvoiceID: cn.InvoiceID, Number: cn.Number, Status: cn.Status,
+		Currency: obj.Currency, Total: storage.Decimal(cn.Total), Reason: reason, IssuedOn: issued, Lines: creditLinesOf(cn), SeenAt: now})
+	if err != nil {
+		return "", err
+	}
+	switch {
+	case saved.State == storage.PSPInvoiceMirrored && saved.Status == "issued" && cn.Unsupported != "":
+		return "", u.PSPMirror().ParkCreditNote(ctx, saved.ID, "Not made into a credit note: it has "+cn.Unsupported+" (FR-PSP-07). A person decides it.")
+	case saved.State == storage.PSPInvoiceDrafted && saved.Status == "void":
+		return "", u.PSPMirror().ParkCreditNote(ctx, saved.ID, "The provider voided it after its draft was made: a person discards the draft (FR-PSP-07).")
+	}
+	return "", nil
+}
+
+// MakeCreditDrafts makes the draft AR credit note of each mirrored issued credit note of connector id that is ready: the AR invoice of the provider invoice it credits is issued
+// and its provider account books revenue in its currency. One that is not ready stays mirrored, and the next sweep tries again. It returns how many drafts were made.
+func MakeCreditDrafts(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) (int, error) {
+	notes, err := u.PSPMirror().CreditNotes(ctx, storage.PSPInvoiceMirrored)
+	if err != nil {
+		return 0, err
+	}
+	made := 0
+	for _, cn := range notes {
+		if cn.ConnectorID != id || cn.Status != "issued" || cn.IssuedOn == nil || string(cn.Lines) == "[]" {
+			continue
+		}
+		inv, err := u.PSPMirror().Invoice(ctx, id, cn.ProviderInvoiceID)
+		if errors.Is(err, ports.ErrNotFound) || (err == nil && inv.State != storage.PSPInvoicePosted) {
+			continue // its invoice is not issued here yet
+		}
+		if err != nil {
+			return made, err
+		}
+		ok, err := revenueFor(ctx, u, id, cn.Currency)
+		if err != nil {
+			return made, err
+		}
+		if !ok {
+			continue
+		}
+		if _, err := u.PSPMirror().MakeCreditDraft(ctx, id, cn.ProviderID); err != nil {
+			return made, fmt.Errorf("provider credit note %s: %w", cn.ProviderID, err)
+		}
+		made++
+	}
+	return made, nil
 }
 
 func mirrorInvoice(ctx context.Context, u storage.UnitOfWork, connector uuid.UUID, obj ports.ProviderObject, now time.Time) (string, error) {

@@ -202,6 +202,12 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **AND** there is one settlement on 4 May (Dr clearing · Cr 1100) and one fee posting
 - **AND** the second event type and the redeliveries post nothing
 
+#### Scenario: A provider's credit note is issued only at the provider's total (rev 0.601)
+- **GIVEN** a mirrored provider invoice issued here, and the provider's issued credit note of S$30.00 against it
+- **WHEN** the sweep or the event reads the credit note
+- **THEN** one draft AR credit note of the invoice's document is made by the narrow function, once, saved by psp:credit_notes, and the API issues it only when its total, GST included, is the provider's to the cent
+- **AND** a credit note with a discount, a different total, or an invoice that is not issued here is parked or waits with why, and the worker makes no document itself
+
 ### Requirement: FR-PSP-04 Refunds and disputes
 The system SHALL record a refund as a credit note (Model A) or by mirroring the provider's (Model B), and SHALL move a disputed amount and the dispute fee to a disputes clearing account until the dispute is won or lost.
 

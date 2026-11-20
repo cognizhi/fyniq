@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:7cecc60c218ad4cb429ca167b088d7e4e073384bb015aceb73d7a85747cd9a32
+  - docs/user-guide/invoices.md sha256:8ed1eaab6955e2ada9c63f4f25776dc2db0d715fd200e4c6da6f0b3d12e70d77
 data_class: general
 taint: trusted
 status: draft
@@ -156,7 +156,7 @@ aliases:
 
 - Name a revenue account on a Stripe provider account (Banking › Provider payouts) and Fyniq mirrors the provider's customers, subscriptions and invoices read-only on **Sales › Subscriptions** (Expert mode), with the provider's status, payment attempts and next retry beside the invoice Fyniq made.
 - An open or paid invoice becomes a draft invoice, dated the day the provider finalised it, to a contact made from the provider's customer, each line at the provider's amount spread over its service period's months. **Issue the drafts** (also done by Reconcile now) issues one only when its total, GST included, is the provider's to the cent; any other, or one with a discount or credit line, waits for a person with the reason shown.
-- The provider's charge for the invoice is received once by Reconcile now (a charge above S$500 waits for a person). Fyniq never retries or charges and its reminders skip these invoices. A provider-voided or uncollectible invoice you issued is voided or written off under Invoices. Credit notes and tiered prices are not built yet.
+- The provider's charge for the invoice is received once by Reconcile now (a charge above S$500 waits for a person). Fyniq never retries or charges and its reminders skip these invoices. A provider-voided or uncollectible invoice you issued is voided or written off under Invoices. The provider's credit notes against these invoices are mirrored too: once the invoice is issued each becomes a draft credit note of it at the provider's amounts, and Issue the drafts issues it only when its total, GST included, is the provider's to the cent (one with a discount or a different total waits with the reason shown); a credit note books no money, the refund comes from the bank feed [accountant to confirm the GST of a credit note]. Tiered prices are not built yet.
 
 (src: docs/user-guide/invoices.md#subscriptions-a-provider-bills)
 

@@ -96,3 +96,8 @@ route to any operation here (the never-list is unchanged: no tool is added).
   page stays payable until it expires, and a payment on it waits for a person `[live-verify]`.
 - Whether HitPay's charge carries the payment request's ID as `payment_request_id`, and that a charge's ID is the reference of its
   statement line, are `[live-verify]` against the sandbox; until then the exact match by number and contact (rev 0.305) stands.
+- **Credit notes (rev 0.601).** T24: `create_provider_credit_note_draft` makes one draft AR credit note per issued mirrored credit note, once (FYP34), reads only the mirror
+  rows, the invoice's document and the account's revenue account, only against an invoice already issued here in the credit note's currency, and cannot post; the worker holds
+  no state beyond mirrored or parked (FYP33); the API alone issues it, through the ordinary invoice rules and only at the provider's total (INVOICE-70), so a forged or wrong
+  credit note cannot move revenue by more than a person would then see parked. Tests: `TestAProviderCreditNoteIsMirroredByTheWorkerAndDraftedOnlyByTheNarrowFunction`,
+  `TestAProviderCreditNoteBecomesADraftOfItsInvoiceAndPostsOnlyAtTheProvidersTotal`, `TestEachRoleHoldsExactlyItsGrants`. Stripe's credit note field names `[live-verify]`.

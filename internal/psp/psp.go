@@ -333,13 +333,16 @@ func (h Handler) Handle(ctx context.Context, u storage.UnitOfWork, c storage.Ins
 		}
 	}
 	switch obj.Kind {
-	case ports.ProviderInvoice, ports.ProviderCustomer, ports.ProviderSubscription: // Model B's mirror (FR-PSP-03): no sweep of money lines is needed
+	case ports.ProviderInvoice, ports.ProviderCustomer, ports.ProviderSubscription, ports.ProviderCreditNote: // Model B's mirror (FR-PSP-03): no sweep of money lines is needed
 		park, err := MirrorObject(ctx, u, c.ID, obj, now)
 		if err != nil || park != "" {
 			return park, err
 		}
-		if obj.Kind == ports.ProviderInvoice {
+		switch obj.Kind {
+		case ports.ProviderInvoice:
 			_, err = MakeDrafts(ctx, u, c.ID)
+		case ports.ProviderCreditNote:
+			_, err = MakeCreditDrafts(ctx, u, c.ID)
 		}
 		return "", err
 	}
@@ -416,12 +419,21 @@ func (r Runner) sweepMirror(ctx context.Context, org, id uuid.UUID, pp ports.Pay
 			end = now
 		}
 		var objects []ports.ProviderObject
-		for _, k := range []ports.ProviderKind{ports.ProviderSubscription, ports.ProviderInvoice} {
+		for _, k := range []ports.ProviderKind{ports.ProviderSubscription, ports.ProviderInvoice, ports.ProviderCreditNote} {
 			page, err := pp.List(ctx, k, start, end, "")
 			if err != nil {
 				return n, fmt.Errorf("%ss of %s: %w", k, start.Format(time.DateOnly), err)
 			}
-			objects = append(objects, page.Objects...)
+			for _, o := range page.Objects {
+				if k == ports.ProviderCreditNote { // a list may leave a credit note's lines out: read each one whole by its ID
+					whole, err := pp.Object(ctx, k, o.ID)
+					if err != nil {
+						return n, fmt.Errorf("credit note %s: %w", o.ID, err)
+					}
+					o = whole
+				}
+				objects = append(objects, o)
+			}
 		}
 		if err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 			for _, o := range objects {
@@ -437,6 +449,11 @@ func (r Runner) sweepMirror(ctx context.Context, org, id uuid.UUID, pp ports.Pay
 	}
 	err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		made, err := MakeDrafts(ctx, u, id)
+		n += made
+		if err != nil {
+			return err
+		}
+		made, err = MakeCreditDrafts(ctx, u, id)
 		n += made
 		return err
 	})

@@ -50637,6 +50637,70 @@ export interface components {
              */
             revenue_account_id?: string;
         };
+        PaymentProviderCreditNote: {
+            /**
+             * Format: uuid
+             * @description The AR credit note made of it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31
+             */
+            document_id?: string;
+            /**
+             * Format: uuid
+             * @description The mirror's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5003
+             */
+            id: string;
+            /**
+             * @description The provider's credit note number.
+             * @example ACME-0001-CN-01
+             */
+            number?: string;
+            /**
+             * @description Why a parked credit note waits.
+             * @example Not made into a credit note: it has a discount (FR-PSP-07). A person decides it.
+             */
+            parked_reason?: string;
+            /**
+             * @description The provider's connector.
+             * @example stripe
+             */
+            provider: string;
+            /**
+             * @description The provider's ID.
+             * @example cn_1Q9
+             */
+            provider_credit_note_id: string;
+            /**
+             * @description The provider's invoice it credits.
+             * @example in_1Q9
+             */
+            provider_invoice_id: string;
+            /**
+             * @description The reason the provider gives.
+             * @example order_change
+             */
+            reason?: string;
+            /**
+             * Format: date-time
+             * @description When Fyniq last read it.
+             * @example 2026-11-20T09:30:00Z
+             */
+            seen_at: string;
+            /**
+             * @description mirrored: read, no AR credit note yet; drafted: its AR credit note made, not issued; posted: issued; parked: for a person.
+             * @example posted
+             * @enum {string}
+             */
+            state: "mirrored" | "drafted" | "posted" | "parked";
+            /**
+             * @description The provider's status of the credit note.
+             * @example issued
+             * @enum {string}
+             */
+            status: "issued" | "void";
+            /** @description The provider's total, tax included. */
+            total: components["schemas"]["Money"];
+        };
         PaymentProviderDispute: {
             /**
              * @description Whether every statement line of the dispute has posted; a draft is prepared only when they all have.
@@ -53145,6 +53209,18 @@ export interface components {
         PostedProviderInvoices: {
             /**
              * Format: int64
+             * @description Credit note drafts set aside for a person: the total differs, or the invoice rules refuse them.
+             * @example 0
+             */
+            credit_notes_parked: number;
+            /**
+             * Format: int64
+             * @description Credit note drafts issued: their total is the provider's to the cent.
+             * @example 1
+             */
+            credit_notes_posted: number;
+            /**
+             * Format: int64
              * @description Set aside for a person: the invoice rules' total differs from the provider's, or the invoice cannot be issued.
              * @example 0
              */
@@ -54659,6 +54735,8 @@ export interface components {
             next_cursor?: string;
         };
         PspInvoicesOutputBody: {
+            /** @description The provider's credit notes against those invoices, newest first, with the AR credit note made of each (FR-PSP-07). */
+            credit_notes: components["schemas"]["PaymentProviderCreditNote"][];
             /** @description The mirrored invoices, newest first, with the AR document made of each. */
             invoices: components["schemas"]["PaymentProviderInvoice"][];
             /** @description The mirrored subscriptions. */

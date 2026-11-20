@@ -80,6 +80,17 @@ paths:
           content:
             application/json:
               example: { id: in_1, object: invoice, total: 4900, currency: sgd, status: paid, created: 1795800000, customer: cus_1, subscription: sub_1 }
+  /v1/credit_notes/{id}:
+    get:
+      operationId: creditNoteRetrieve
+      security: [{ BearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200':
+          description: A credit note against an invoice (hand-made extract, retrieved 21 Nov 2026; field names `[live-verify]`).
+          content:
+            application/json:
+              example: { id: cn_1, object: credit_note, invoice: in_1, number: ACME-0001-CN-01, status: issued, reason: order_change, currency: sgd, total: 3270, created: 1795800000, total_taxes: [{ amount: 270 }], lines: { object: list, has_more: false, data: [{ id: cnli_1, description: Credit, amount: 3000, discount_amounts: [] }] } }
   /v1/payouts/{id}:
     get:
       operationId: payoutRetrieve

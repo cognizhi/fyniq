@@ -182,7 +182,11 @@ provider says (its status, the payment attempts so far, the next retry) beside w
   (S$500 by default) waits for a person.
 - Fyniq never retries a payment or charges anyone, and its payment reminders do not run on these invoices. If the provider voids an
   invoice you issued, or marks it uncollectible, the page says so: void or write it off under **Invoices**.
-- Not built yet: the provider's credit notes, and mixed-currency or tiered prices (they wait for a person).
+- The provider's **credit notes** against these invoices are mirrored too. Once the invoice they credit is issued, each becomes a **draft credit
+  note** of that invoice, with its lines at the provider's amounts, and **Issue the drafts** issues it only when its total, GST included, is
+  the provider's to the cent. One with a discount or a total that differs waits for a person with the reason shown. A credit note books no
+  money: the refund's own line comes from the bank feed, and a credit not refunded stays the customer's credit. [accountant to confirm the GST of a credit note]
+- Not built yet: mixed-currency or tiered prices (they wait for a person).
 
 ## A disputed invoice or a promise to pay
 

@@ -3466,6 +3466,26 @@ type FyniqPspChargeInvoice struct {
 	SeenAt            time.Time
 }
 
+type FyniqPspCreditNote struct {
+	OrganisationID       uuid.UUID
+	ID                   uuid.UUID
+	ConnectorID          uuid.UUID
+	ProviderCreditNoteID string
+	ProviderInvoiceID    string
+	Number               *string
+	Status               string
+	Currency             string
+	Total                string
+	Reason               *string
+	IssuedOn             pgtype.Date
+	DraftLines           []byte
+	State                string
+	ParkedReason         *string
+	DocumentID           *uuid.UUID
+	Version              int32
+	SeenAt               time.Time
+}
+
 type FyniqPspCustomer struct {
 	OrganisationID     uuid.UUID
 	ID                 uuid.UUID

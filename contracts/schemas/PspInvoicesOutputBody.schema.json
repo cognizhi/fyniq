@@ -2,6 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "credit_notes": {
+      "description": "The provider's credit notes against those invoices, newest first, with the AR credit note made of each (FR-PSP-07).",
+      "items": {
+        "$ref": "PaymentProviderCreditNote.schema.json"
+      },
+      "type": "array"
+    },
     "invoices": {
       "description": "The mirrored invoices, newest first, with the AR document made of each.",
       "items": {
@@ -19,7 +26,8 @@
   },
   "required": [
     "invoices",
-    "subscriptions"
+    "subscriptions",
+    "credit_notes"
   ],
   "title": "PspInvoicesOutputBody",
   "type": "object"
