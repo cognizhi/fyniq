@@ -21,6 +21,11 @@ err = fyniq.Paginate(ctx, func(ctx context.Context, cursor string) (*fyniq.Respo
 }, func(item json.RawMessage) error { return nil })
 ```
 
+The contract's schemas are typed in `models_gen.go` (a required field a value, an optional one a pointer, a number a `json.Number`): build a body from one, and read an answer with `var t fyniq.IntegrationTask; err = r.Decode(&t)`.
 Money is a decimal string in the JSON: decode it into a string or a decimal type, never `float64` (ENG-10). The token is yours (an integration client's or a personal access token's, FR-INT-02) and goes to the base URL only.
 There is a method only for an operation a client's scopes can reach; a person's operations (approvals, users, the audit trail, webhook endpoints) are in the web app.
 After a change to the API: `make openapi` regenerates it; `make api-check` fails while it is stale; `make sdk-test` runs its tests.
+
+## Publishing
+
+The module is `github.com/cognizhi/fyniq/sdk/go`: a release is published to the Go proxy by pushing the tag `sdk/go/vX.Y.Z` on the release commit (the proxy needs no account). The tag follows the API's release version `[owner to confirm]`.

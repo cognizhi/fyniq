@@ -273,17 +273,43 @@ type AutoReconciliationsOutputBody struct {
 
 // BadDebtRelief is a schema of the contract.
 type BadDebtRelief struct {
-	ClaimBy       string `json:"claim_by"`
-	EligibleFrom  string `json:"eligible_from"`
-	Gst           Money  `json:"gst"`
-	InvoiceID     string `json:"invoice_id"`
-	InvoiceNumber string `json:"invoice_number"`
-	Pack          string `json:"pack"`
-	Status        string `json:"status"`
-	SupplyDate    string `json:"supply_date"`
-	WriteOffID    string `json:"write_off_id"`
-	WrittenOff    Money  `json:"written_off"`
-	WrittenOffOn  string `json:"written_off_on"`
+	Claim         *BadDebtReliefClaimRef `json:"claim,omitempty"`
+	ClaimBy       string                 `json:"claim_by"`
+	EligibleFrom  string                 `json:"eligible_from"`
+	Gst           Money                  `json:"gst"`
+	InvoiceID     string                 `json:"invoice_id"`
+	InvoiceNumber string                 `json:"invoice_number"`
+	Pack          string                 `json:"pack"`
+	Status        string                 `json:"status"`
+	SupplyDate    string                 `json:"supply_date"`
+	WriteOffID    string                 `json:"write_off_id"`
+	WrittenOff    Money                  `json:"written_off"`
+	WrittenOffOn  string                 `json:"written_off_on"`
+}
+
+// BadDebtReliefClaim is a schema of the contract.
+type BadDebtReliefClaim struct {
+	ClaimBy      string  `json:"claim_by"`
+	Date         string  `json:"date"`
+	EligibleFrom string  `json:"eligible_from"`
+	F5PeriodEnd  *string `json:"f5_period_end,omitempty"`
+	Gst          Money   `json:"gst"`
+	ID           string  `json:"id"`
+	InvoiceID    string  `json:"invoice_id"`
+	Note         *string `json:"note,omitempty"`
+	Pack         string  `json:"pack"`
+	PostedBy     *Person `json:"posted_by,omitempty"`
+	Status       string  `json:"status"`
+	Version      int64   `json:"version"`
+	WriteOffID   string  `json:"write_off_id"`
+	WrittenOff   Money   `json:"written_off"`
+}
+
+// BadDebtReliefClaimRef is a schema of the contract.
+type BadDebtReliefClaimRef struct {
+	Date string `json:"date"`
+	Gst  Money  `json:"gst"`
+	ID   string `json:"id"`
 }
 
 // BadDebtReliefQueue is a schema of the contract.
@@ -5494,6 +5520,63 @@ type SupplierRefundDraft struct {
 type SupplierRefundPosting struct {
 	Entry  Entry          `json:"entry"`
 	Refund SupplierRefund `json:"refund"`
+}
+
+// TaxAdjustmentEntry is a schema of the contract.
+type TaxAdjustmentEntry struct {
+	Amount string `json:"amount"`
+	Kind   string `json:"kind"`
+	Reason string `json:"reason"`
+}
+
+// TaxPaperDraft is a schema of the contract.
+type TaxPaperDraft struct {
+	Adjustments       []TaxAdjustmentEntry `json:"adjustments"`
+	CashGrantEligible *bool                `json:"cash_grant_eligible,omitempty"`
+	FinancialYearEnd  string               `json:"financial_year_end"`
+	Scheme            string               `json:"scheme"`
+}
+
+// TaxPaperPage is a schema of the contract.
+type TaxPaperPage struct {
+	Items      []TaxPaperView `json:"items"`
+	NextCursor *string        `json:"next_cursor,omitempty"`
+}
+
+// TaxPaperView is a schema of the contract.
+type TaxPaperView struct {
+	Checks     []BillCheck      `json:"checks"`
+	Evidence   int64            `json:"evidence"`
+	Figures    *TaxWorkingPaper `json:"figures,omitempty"`
+	ID         string           `json:"id"`
+	Paper      TaxPaperDraft    `json:"paper"`
+	RecordedAt *string          `json:"recorded_at,omitempty"`
+	RecordedBy *Person          `json:"recorded_by,omitempty"`
+	Status     string           `json:"status"`
+	Version    int64            `json:"version"`
+}
+
+// TaxWorkingPaper is a schema of the contract.
+type TaxWorkingPaper struct {
+	Adjustments       string  `json:"adjustments"`
+	ChargeableIncome  string  `json:"chargeable_income"`
+	CitPack           string  `json:"cit_pack"`
+	Exempt            string  `json:"exempt"`
+	Form              string  `json:"form"`
+	FormsPack         string  `json:"forms_pack"`
+	From              string  `json:"from"`
+	LossForward       string  `json:"loss_forward"`
+	NormalChargeable  string  `json:"normal_chargeable"`
+	OptionalForm      *string `json:"optional_form,omitempty"`
+	ProfitBeforeTax   string  `json:"profit_before_tax"`
+	Rate              string  `json:"rate"`
+	Rebate            string  `json:"rebate"`
+	Revenue           string  `json:"revenue"`
+	TaxBeforeRebate   string  `json:"tax_before_rebate"`
+	TaxPayable        string  `json:"tax_payable"`
+	TaxPayableRounded string  `json:"tax_payable_rounded"`
+	To                string  `json:"to"`
+	Ya                int64   `json:"ya"`
 }
 
 // TemplateChoiceChange is a schema of the contract.

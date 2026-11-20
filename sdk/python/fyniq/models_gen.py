@@ -168,11 +168,25 @@ class AutoReconciliationsOutputBody(_AutoReconciliationsOutputBodyRequired, _Aut
     """AutoReconciliationsOutputBody is a schema of the contract."""
 
 _BadDebtReliefRequired = TypedDict("_BadDebtReliefRequired", {"claim_by": "str", "eligible_from": "str", "gst": "Money", "invoice_id": "str", "invoice_number": "str", "pack": "str", "status": "str", "supply_date": "str", "write_off_id": "str", "written_off": "Money", "written_off_on": "str"})
-_BadDebtReliefOptional = TypedDict("_BadDebtReliefOptional", {}, total=False)
+_BadDebtReliefOptional = TypedDict("_BadDebtReliefOptional", {"claim": "BadDebtReliefClaimRef"}, total=False)
 
 
 class BadDebtRelief(_BadDebtReliefRequired, _BadDebtReliefOptional):
     """BadDebtRelief is a schema of the contract."""
+
+_BadDebtReliefClaimRequired = TypedDict("_BadDebtReliefClaimRequired", {"claim_by": "str", "date": "str", "eligible_from": "str", "gst": "Money", "id": "str", "invoice_id": "str", "pack": "str", "status": "str", "version": "int", "write_off_id": "str", "written_off": "Money"})
+_BadDebtReliefClaimOptional = TypedDict("_BadDebtReliefClaimOptional", {"f5_period_end": "str", "note": "str", "posted_by": "Person"}, total=False)
+
+
+class BadDebtReliefClaim(_BadDebtReliefClaimRequired, _BadDebtReliefClaimOptional):
+    """BadDebtReliefClaim is a schema of the contract."""
+
+_BadDebtReliefClaimRefRequired = TypedDict("_BadDebtReliefClaimRefRequired", {"date": "str", "gst": "Money", "id": "str"})
+_BadDebtReliefClaimRefOptional = TypedDict("_BadDebtReliefClaimRefOptional", {}, total=False)
+
+
+class BadDebtReliefClaimRef(_BadDebtReliefClaimRefRequired, _BadDebtReliefClaimRefOptional):
+    """BadDebtReliefClaimRef is a schema of the contract."""
 
 _BadDebtReliefQueueRequired = TypedDict("_BadDebtReliefQueueRequired", {"items": "list[BadDebtRelief]", "today": "str"})
 _BadDebtReliefQueueOptional = TypedDict("_BadDebtReliefQueueOptional", {"next_cursor": "str"}, total=False)
@@ -3638,6 +3652,41 @@ _SupplierRefundPostingOptional = TypedDict("_SupplierRefundPostingOptional", {},
 
 class SupplierRefundPosting(_SupplierRefundPostingRequired, _SupplierRefundPostingOptional):
     """SupplierRefundPosting is a schema of the contract."""
+
+_TaxAdjustmentEntryRequired = TypedDict("_TaxAdjustmentEntryRequired", {"amount": "str", "kind": "str", "reason": "str"})
+_TaxAdjustmentEntryOptional = TypedDict("_TaxAdjustmentEntryOptional", {}, total=False)
+
+
+class TaxAdjustmentEntry(_TaxAdjustmentEntryRequired, _TaxAdjustmentEntryOptional):
+    """TaxAdjustmentEntry is a schema of the contract."""
+
+_TaxPaperDraftRequired = TypedDict("_TaxPaperDraftRequired", {"adjustments": "list[TaxAdjustmentEntry]", "financial_year_end": "str", "scheme": "str"})
+_TaxPaperDraftOptional = TypedDict("_TaxPaperDraftOptional", {"cash_grant_eligible": "bool"}, total=False)
+
+
+class TaxPaperDraft(_TaxPaperDraftRequired, _TaxPaperDraftOptional):
+    """TaxPaperDraft is a schema of the contract."""
+
+_TaxPaperPageRequired = TypedDict("_TaxPaperPageRequired", {"items": "list[TaxPaperView]"})
+_TaxPaperPageOptional = TypedDict("_TaxPaperPageOptional", {"next_cursor": "str"}, total=False)
+
+
+class TaxPaperPage(_TaxPaperPageRequired, _TaxPaperPageOptional):
+    """TaxPaperPage is a schema of the contract."""
+
+_TaxPaperViewRequired = TypedDict("_TaxPaperViewRequired", {"checks": "list[BillCheck]", "evidence": "int", "id": "str", "paper": "TaxPaperDraft", "status": "str", "version": "int"})
+_TaxPaperViewOptional = TypedDict("_TaxPaperViewOptional", {"figures": "TaxWorkingPaper", "recorded_at": "str", "recorded_by": "Person"}, total=False)
+
+
+class TaxPaperView(_TaxPaperViewRequired, _TaxPaperViewOptional):
+    """TaxPaperView is a schema of the contract."""
+
+_TaxWorkingPaperRequired = TypedDict("_TaxWorkingPaperRequired", {"adjustments": "str", "chargeable_income": "str", "cit_pack": "str", "exempt": "str", "form": "str", "forms_pack": "str", "from": "str", "loss_forward": "str", "normal_chargeable": "str", "profit_before_tax": "str", "rate": "str", "rebate": "str", "revenue": "str", "tax_before_rebate": "str", "tax_payable": "str", "tax_payable_rounded": "str", "to": "str", "ya": "int"})
+_TaxWorkingPaperOptional = TypedDict("_TaxWorkingPaperOptional", {"optional_form": "str"}, total=False)
+
+
+class TaxWorkingPaper(_TaxWorkingPaperRequired, _TaxWorkingPaperOptional):
+    """TaxWorkingPaper is a schema of the contract."""
 
 _TemplateChoiceChangeRequired = TypedDict("_TemplateChoiceChangeRequired", {})
 _TemplateChoiceChangeOptional = TypedDict("_TemplateChoiceChangeOptional", {"template_id": "str"}, total=False)
