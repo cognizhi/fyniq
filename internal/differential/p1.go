@@ -133,28 +133,29 @@ func applySettings(s Scenario, settings ledger.Settings) {
 
 // p1 posts a scenario's P1 documents and keeps what later documents and the scheduler read.
 type p1 struct {
-	s        Scenario
-	base     money.Currency
-	settings ledger.Settings
-	asOf     time.Time
-	codes    pack.Version // the sg-gst codes (Appendix B.6); the scenario's own settings give the rates
-	codeOf   map[uuid.UUID]string
-	personOf map[uuid.UUID]string
-	valueOf  valueNames
-	named    map[[2]uuid.UUID][]named // the posted lines naming a person, by person and account
-	held     map[string]*held         // the receivable's and payable's documents in other currencies, for the revaluation
-	pending  []scheduled
-	open     map[string]*openDocument // the posted documents settlements settle, by the scenario's ID
-	used     map[string]money.Money   // the settlement differences cleared each month (YYYY-MM), against its cap
-	issued   map[string]*issued       // the posted invoices credit notes credit, by the scenario's ID
-	deposits map[string]*deposit.Open // the posted customer deposits, as invoices and refunds use them
-	advances map[string]*advance      // the posted cash advances, as claims and refunds settle them
-	assets   map[string]*registered   // the assets in the register, by the scenario's ID
-	posted   []postedLine             // every line of the entries posted so far, for what an account merge moves
-	toCome   []toCome                 // what spreads release to accounts, as_of or not, for an account merge's rule 5
-	journals []reversing              // the manual journals that reverse by themselves, as posted
-	moves    []equity.Move            // the holding movements of the documents accepted so far (README, "Cap tables")
-	staged   []equity.Move            // the movements of the document being posted, until it is accepted
+	s          Scenario
+	base       money.Currency
+	settings   ledger.Settings
+	asOf       time.Time
+	codes      pack.Version // the sg-gst codes (Appendix B.6); the scenario's own settings give the rates
+	codeOf     map[uuid.UUID]string
+	personOf   map[uuid.UUID]string
+	valueOf    valueNames
+	named      map[[2]uuid.UUID][]named // the posted lines naming a person, by person and account
+	held       map[string]*held         // the receivable's and payable's documents in other currencies, for the revaluation
+	pending    []scheduled
+	open       map[string]*openDocument // the posted documents settlements settle, by the scenario's ID
+	used       map[string]money.Money   // the settlement differences cleared each month (YYYY-MM), against its cap
+	issued     map[string]*issued       // the posted invoices credit notes credit, by the scenario's ID
+	writtenOff map[string]*writtenOff   // the posted write-offs, as claims of GST bad debt relief read them (bad_debt_relief@1), by the scenario's ID
+	deposits   map[string]*deposit.Open // the posted customer deposits, as invoices and refunds use them
+	advances   map[string]*advance      // the posted cash advances, as claims and refunds settle them
+	assets     map[string]*registered   // the assets in the register, by the scenario's ID
+	posted     []postedLine             // every line of the entries posted so far, for what an account merge moves
+	toCome     []toCome                 // what spreads release to accounts, as_of or not, for an account merge's rule 5
+	journals   []reversing              // the manual journals that reverse by themselves, as posted
+	moves      []equity.Move            // the holding movements of the documents accepted so far (README, "Cap tables")
+	staged     []equity.Move            // the movements of the document being posted, until it is accepted
 	// The SAFEs recorded (in the order recorded), those converted, and the priced rounds the cash issues set, each kept
 	// by the document being posted until it is accepted (README, "SAFEs and their conversion").
 	safes           []recordedSAFE
@@ -191,7 +192,7 @@ type scheduled struct {
 
 func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, error) {
 	r := &p1{s: s, base: base, settings: settings, open: map[string]*openDocument{}, used: map[string]money.Money{},
-		issued: map[string]*issued{}, deposits: map[string]*deposit.Open{}, advances: map[string]*advance{},
+		issued: map[string]*issued{}, writtenOff: map[string]*writtenOff{}, deposits: map[string]*deposit.Open{}, advances: map[string]*advance{},
 		assets: map[string]*registered{}, converted: map[uuid.UUID]bool{}, rounds: map[string]round{}, codeOf: map[uuid.UUID]string{}, personOf: map[uuid.UUID]string{}, named: map[[2]uuid.UUID][]named{}, held: map[string]*held{}}
 	for id, a := range settings.Accounts {
 		r.codeOf[id] = a.Code
@@ -258,6 +259,8 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return r.disputeSettlement(d, date)
 	case "write_off":
 		return r.writeOff(d, date)
+	case "bad_debt_relief":
+		return r.badDebtRelief(d, date)
 	case "expense_claim":
 		return r.expenseClaim(d, date)
 	case "claim_reimbursement":
