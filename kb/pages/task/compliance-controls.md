@@ -2,9 +2,9 @@
 key: compliance.controls
 type: task
 title: See whether the controls hold
-summary: Every control with its status, owner, frameworks, checks and evidence; the notice when one fails; the incident, drill and security assessment registers
+summary: Every control's status, owner, checks and evidence; failure notices; the incident, drill and assessment registers; readiness by framework
 sources:
-  - docs/user-guide/compliance-controls.md sha256:54157ec618a004c4f7fc59946f181afe6be1506084ad3567602234705fc85c44
+  - docs/user-guide/compliance-controls.md sha256:74b36218e42a1d2291075685827f802e4a46bb54ee3842610c04ab17cedc0e54
 data_class: general
 taint: trusted
 status: published
@@ -122,3 +122,11 @@ aliases:
 - Entries are only ever added and audited; the Owner keeps the register, the Administrators, Controller, Auditor and DPO read it.
 
 (src: docs/user-guide/compliance-controls.md#security-assessments)
+
+## Readiness by framework
+
+- The **Readiness** tab shows, for each framework a control maps to, its stage on the way to a certificate, how many of its controls **pass**, fail, are overdue, are not assessed yet or do not apply, and how many have a check still to arrive; the controls that are not passing are listed in plain words, the failing ones first.
+- For ISO/IEC 27001:2022 Annex A it also lists the control numbers, of its 93, that no control maps to yet: gaps for the statement of applicability, whose wording waits for the certification body.
+- It is readiness, never a certificate: nothing on it says Fyniq is certified by any body; everyone with a right on the Compliance Center reads it.
+
+(src: docs/user-guide/compliance-controls.md#readiness-by-framework)

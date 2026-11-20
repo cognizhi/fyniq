@@ -3,7 +3,7 @@ key: compliance.controls
 title: See whether the controls hold
 mode: expert
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [CMP-01, FR-CTL-05, SEC-32, DR-06, CTL-RES-02, NFR-OBS-02, CTL-RES-05, SEC-25, CTL-CHG-12]
+requirements: [CMP-01, FR-CTL-05, SEC-32, DR-06, CTL-RES-02, NFR-OBS-02, CTL-RES-05, SEC-25, CTL-CHG-12, CMP-08]
 ---
 
 # See whether the controls hold
@@ -132,3 +132,16 @@ customer is onboarded: an independent test is needed before that.
 
 Entries are only ever added, each in the audit trail. The Owner keeps the register; the Administrators, the Controller, the
 Auditor and the DPO read it. The test itself is done by an outside firm, and the platform's staging is scanned each night.
+
+## Readiness by framework
+
+The **Readiness** tab shows, for each framework a control maps to, how far its controls hold: its stage on the way to a
+certificate, how many of its controls **pass**, fail, are overdue, are not assessed yet or do not apply to the
+organisation, and how many have a check still to arrive. Under each framework, the controls that are not passing are
+listed in plain words, the failing ones first.
+
+For ISO/IEC 27001:2022 Annex A the tab also lists the control numbers, of its 93, that no control maps to yet. They are
+gaps for the statement of applicability, whose wording waits for the certification body.
+
+This is readiness, never a certificate: nothing on it says Fyniq is certified by any body. Everyone with a right on the
+Compliance Center reads it.
