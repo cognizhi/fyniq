@@ -383,6 +383,53 @@ type BreachExercise struct {
 	RecordedAt time.Time
 }
 
+// CodeAssessment is the database's refusal to change or remove the register of security assessments, or a finding step out of
+// order (FY362).
+const CodeAssessment = "STORAGE-ASSESSMENT-01"
+
+// Assessment is a penetration test or other assessment of the platform (SEC-25, CTL-CHG-12; p2-security-certification design D4): who
+// tested, whether they are independent, the scope and dates, the report's SHA-256 and where it is kept, and its findings.
+type Assessment struct {
+	ID             uuid.UUID
+	Kind           string // penetration_test, vulnerability_assessment or other
+	Tester         string
+	Independent    bool
+	Scope          string
+	StartedOn      time.Time
+	EndedOn        time.Time
+	Summary        string
+	ReportSHA256   string // empty when the report's hash is not recorded
+	ReportLocation string
+	RecordedBy     string
+	RecordedAt     time.Time
+	Findings       []Finding
+}
+
+// Finding is a finding of an assessment, with the steps it has taken.
+type Finding struct {
+	ID           uuid.UUID
+	AssessmentID uuid.UUID
+	Ref          string
+	Title        string
+	Severity     string // critical, high, medium, low or info
+	FoundOn      time.Time
+	DueOn        *time.Time // none for an informational finding
+	RecordedBy   string
+	RecordedAt   time.Time
+	Steps        []FindingStep // in the order taken
+}
+
+// FindingStep is a step a finding took: fixed, then retested, or accepted by an Owner with a reason.
+type FindingStep struct {
+	ID         uuid.UUID
+	FindingID  uuid.UUID
+	Step       string // fixed, retested or accepted
+	OnDate     time.Time
+	Reason     string // an acceptance's reason
+	RecordedBy string
+	RecordedAt time.Time
+}
+
 // CodeRestoreDrill is the database's refusal to change or remove a recorded restore drill (FY323).
 const CodeRestoreDrill = "STORAGE-RESTORE-DRILL-01"
 
@@ -487,6 +534,17 @@ type Compliance interface {
 	RestoreDrills(ctx context.Context) ([]RestoreDrill, error)
 	// RecordRestoreDrill records a restore drill, audited as restore_drill.recorded.
 	RecordRestoreDrill(ctx context.Context, d RestoreDrill) (RestoreDrill, error)
+
+	// Assessments are the organisation's security assessments with their findings and steps, the latest ended first (SEC-25).
+	Assessments(ctx context.Context) ([]Assessment, error)
+	// RecordAssessment records an assessment with its findings, audited as security_assessment.recorded and
+	// security_finding.recorded.
+	RecordAssessment(ctx context.Context, a Assessment) (Assessment, error)
+	// AddFinding adds a finding to an assessment, audited as security_finding.recorded; ErrNotFound for no such assessment.
+	AddFinding(ctx context.Context, assessment uuid.UUID, f Finding) (Finding, error)
+	// StepFinding records the next step of a finding, audited as security_finding.stepped; ErrNotFound for no such finding,
+	// CodeAssessment when the step does not follow its last.
+	StepFinding(ctx context.Context, finding uuid.UUID, s FindingStep) (FindingStep, error)
 	// HeartbeatDrills are the organisation's heartbeat drills, oldest first (NFR-OBS-02).
 	HeartbeatDrills(ctx context.Context) ([]HeartbeatDrill, error)
 	// RecordHeartbeatDrill records a heartbeat drill, audited as tick_drill.recorded.

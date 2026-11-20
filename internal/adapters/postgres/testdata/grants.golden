@@ -690,6 +690,12 @@ fyniq_api       SELECT    salary_release_line
 fyniq_api       INSERT    sales_reminder (decided_by, document_id, outcome, reason, send_id, step)
 fyniq_api       SELECT    sales_reminder
 fyniq_api       USAGE     schema fyniq
+fyniq_api       INSERT    security_assessment (ended_on, independent, kind, recorded_at, recorded_by, report_location, report_sha256, scope, started_on, summary, tester)
+fyniq_api       SELECT    security_assessment
+fyniq_api       INSERT    security_finding (assessment_id, due_on, found_on, recorded_at, recorded_by, ref, severity, title)
+fyniq_api       SELECT    security_finding
+fyniq_api       INSERT    security_finding_step (finding_id, on_date, reason, recorded_at, recorded_by, step)
+fyniq_api       SELECT    security_finding_step
 fyniq_api       INSERT    security_incident (detected_at, opened_at, opened_by, severity, summary, title)
 fyniq_api       SELECT    security_incident
 fyniq_api       INSERT    security_incident_step (at, breach_id, by_actor, incident_id, note, step)
@@ -1173,6 +1179,9 @@ fyniq_readonly  SELECT    salary_release
 fyniq_readonly  SELECT    salary_release_line
 fyniq_readonly  SELECT    sales_reminder
 fyniq_readonly  USAGE     schema fyniq
+fyniq_readonly  SELECT    security_assessment
+fyniq_readonly  SELECT    security_finding
+fyniq_readonly  SELECT    security_finding_step
 fyniq_readonly  SELECT    security_incident
 fyniq_readonly  SELECT    security_incident_step
 fyniq_readonly  EXECUTE   share_class_of()
@@ -1615,6 +1624,9 @@ fyniq_worker    SELECT    salary_release_line
 fyniq_worker    SELECT    sales_reminder
 fyniq_worker    EXECUTE   scheduled_issue_allowed()
 fyniq_worker    USAGE     schema fyniq
+fyniq_worker    SELECT    security_assessment
+fyniq_worker    SELECT    security_finding
+fyniq_worker    SELECT    security_finding_step
 fyniq_worker    SELECT    security_incident
 fyniq_worker    SELECT    security_incident_step
 fyniq_worker    EXECUTE   share_class_of()

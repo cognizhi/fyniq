@@ -3188,6 +3188,37 @@ sandbox_organisation | organisation_id | uuid | not null |
 sandbox_organisation | created_by | uuid | not null | 
 sandbox_organisation | change_id | uuid | null | 
 sandbox_organisation | created_at | timestamp with time zone | not null | 
+security_assessment | organisation_id | uuid | not null | current_org()
+security_assessment | id | uuid | not null | uuidv7()
+security_assessment | kind | text | not null | 
+security_assessment | tester | text | not null | 
+security_assessment | independent | boolean | not null | 
+security_assessment | scope | text | not null | 
+security_assessment | started_on | date | not null | 
+security_assessment | ended_on | date | not null | 
+security_assessment | summary | text | not null | 
+security_assessment | report_sha256 | text | null | 
+security_assessment | report_location | text | null | 
+security_assessment | recorded_by | text | not null | 
+security_assessment | recorded_at | timestamp with time zone | not null | 
+security_finding | organisation_id | uuid | not null | current_org()
+security_finding | id | uuid | not null | uuidv7()
+security_finding | assessment_id | uuid | not null | 
+security_finding | ref | text | not null | 
+security_finding | title | text | not null | 
+security_finding | severity | text | not null | 
+security_finding | found_on | date | not null | 
+security_finding | due_on | date | null | 
+security_finding | recorded_by | text | not null | 
+security_finding | recorded_at | timestamp with time zone | not null | 
+security_finding_step | organisation_id | uuid | not null | current_org()
+security_finding_step | id | uuid | not null | uuidv7()
+security_finding_step | finding_id | uuid | not null | 
+security_finding_step | step | text | not null | 
+security_finding_step | on_date | date | not null | 
+security_finding_step | reason | text | null | 
+security_finding_step | recorded_by | text | not null | 
+security_finding_step | recorded_at | timestamp with time zone | not null | 
 security_incident | organisation_id | uuid | not null | current_org()
 security_incident | id | uuid | not null | uuidv7()
 security_incident | title | text | not null | 
@@ -8562,6 +8593,56 @@ sandbox_organisation | sandbox_organisation_org_fkey | FOREIGN KEY (organisation
 sandbox_organisation | sandbox_organisation_organisation_id_not_null | NOT NULL organisation_id
 sandbox_organisation | sandbox_organisation_pkey | PRIMARY KEY (organisation_id)
 sandbox_organisation | sandbox_organisation_user_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+security_assessment | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+security_assessment | security_assessment_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+security_assessment | security_assessment_dates | CHECK ((ended_on >= started_on))
+security_assessment | security_assessment_ended_on_not_null | NOT NULL ended_on
+security_assessment | security_assessment_id_not_null | NOT NULL id
+security_assessment | security_assessment_independent_not_null | NOT NULL independent
+security_assessment | security_assessment_kind_known | CHECK ((kind = ANY (ARRAY['penetration_test'::text, 'vulnerability_assessment'::text, 'other'::text])))
+security_assessment | security_assessment_kind_not_null | NOT NULL kind
+security_assessment | security_assessment_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+security_assessment | security_assessment_organisation_id_not_null | NOT NULL organisation_id
+security_assessment | security_assessment_pkey | PRIMARY KEY (organisation_id, id)
+security_assessment | security_assessment_recorded_at_not_null | NOT NULL recorded_at
+security_assessment | security_assessment_recorded_by_not_null | NOT NULL recorded_by
+security_assessment | security_assessment_report | CHECK (((report_sha256 IS NULL) OR (report_sha256 ~ '^[0-9a-f]{64}$'::text)))
+security_assessment | security_assessment_scope_not_null | NOT NULL scope
+security_assessment | security_assessment_started_on_not_null | NOT NULL started_on
+security_assessment | security_assessment_summary_not_null | NOT NULL summary
+security_assessment | security_assessment_tester_not_null | NOT NULL tester
+security_assessment | security_assessment_texts | CHECK ((((length(btrim(tester)) >= 1) AND (length(btrim(tester)) <= 300)) AND ((length(btrim(scope)) >= 1) AND (length(btrim(scope)) <= 2000)) AND ((length(btrim(summary)) >= 1) AND (length(btrim(summary)) <= 4000)) AND ((length(report_location) >= 1) AND (length(report_location) <= 500))))
+security_finding | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+security_finding | security_finding_assessment_fkey | FOREIGN KEY (organisation_id, assessment_id) REFERENCES security_assessment(organisation_id, id)
+security_finding | security_finding_assessment_id_not_null | NOT NULL assessment_id
+security_finding | security_finding_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+security_finding | security_finding_due | CHECK ((((severity = 'info'::text) AND (due_on IS NULL)) OR ((severity <> 'info'::text) AND (due_on IS NOT NULL) AND (due_on >= found_on))))
+security_finding | security_finding_found_on_not_null | NOT NULL found_on
+security_finding | security_finding_id_not_null | NOT NULL id
+security_finding | security_finding_organisation_id_not_null | NOT NULL organisation_id
+security_finding | security_finding_pkey | PRIMARY KEY (organisation_id, id)
+security_finding | security_finding_recorded_at_not_null | NOT NULL recorded_at
+security_finding | security_finding_recorded_by_not_null | NOT NULL recorded_by
+security_finding | security_finding_ref_not_null | NOT NULL ref
+security_finding | security_finding_ref_once | UNIQUE (organisation_id, assessment_id, ref)
+security_finding | security_finding_severity_known | CHECK ((severity = ANY (ARRAY['critical'::text, 'high'::text, 'medium'::text, 'low'::text, 'info'::text])))
+security_finding | security_finding_severity_not_null | NOT NULL severity
+security_finding | security_finding_texts | CHECK ((((length(btrim(ref)) >= 1) AND (length(btrim(ref)) <= 40)) AND ((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 300))))
+security_finding | security_finding_title_not_null | NOT NULL title
+security_finding_step | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+security_finding_step | security_finding_step_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+security_finding_step | security_finding_step_finding_fkey | FOREIGN KEY (organisation_id, finding_id) REFERENCES security_finding(organisation_id, id)
+security_finding_step | security_finding_step_finding_id_not_null | NOT NULL finding_id
+security_finding_step | security_finding_step_id_not_null | NOT NULL id
+security_finding_step | security_finding_step_known | CHECK ((step = ANY (ARRAY['fixed'::text, 'retested'::text, 'accepted'::text])))
+security_finding_step | security_finding_step_on_date_not_null | NOT NULL on_date
+security_finding_step | security_finding_step_once | UNIQUE (organisation_id, finding_id, step)
+security_finding_step | security_finding_step_organisation_id_not_null | NOT NULL organisation_id
+security_finding_step | security_finding_step_pkey | PRIMARY KEY (organisation_id, id)
+security_finding_step | security_finding_step_reason | CHECK ((((step = 'accepted'::text) AND ((length(btrim(reason)) >= 3) AND (length(btrim(reason)) <= 500))) OR ((step <> 'accepted'::text) AND (reason IS NULL))))
+security_finding_step | security_finding_step_recorded_at_not_null | NOT NULL recorded_at
+security_finding_step | security_finding_step_recorded_by_not_null | NOT NULL recorded_by
+security_finding_step | security_finding_step_step_not_null | NOT NULL step
 security_incident | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 security_incident | security_incident_detected | CHECK ((detected_at <= opened_at))
 security_incident | security_incident_detected_at_not_null | NOT NULL detected_at
@@ -9803,6 +9884,11 @@ CREATE UNIQUE INDEX salary_release_pkey ON fyniq.salary_release USING btree (org
 CREATE UNIQUE INDEX sales_reminder_once ON fyniq.sales_reminder USING btree (organisation_id, document_id, step)
 CREATE UNIQUE INDEX sales_reminder_pkey ON fyniq.sales_reminder USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sandbox_organisation_pkey ON fyniq.sandbox_organisation USING btree (organisation_id)
+CREATE UNIQUE INDEX security_assessment_pkey ON fyniq.security_assessment USING btree (organisation_id, id)
+CREATE UNIQUE INDEX security_finding_pkey ON fyniq.security_finding USING btree (organisation_id, id)
+CREATE UNIQUE INDEX security_finding_ref_once ON fyniq.security_finding USING btree (organisation_id, assessment_id, ref)
+CREATE UNIQUE INDEX security_finding_step_once ON fyniq.security_finding_step USING btree (organisation_id, finding_id, step)
+CREATE UNIQUE INDEX security_finding_step_pkey ON fyniq.security_finding_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX security_incident_pkey ON fyniq.security_incident USING btree (organisation_id, id)
 CREATE UNIQUE INDEX security_incident_step_pkey ON fyniq.security_incident_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX share_issue_entry_once ON fyniq.share_issue USING btree (organisation_id, entry_id)
@@ -9988,6 +10074,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.salary_batch_line 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.salary_line_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('salary_batch', 'batch_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.salary_release DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('salary_batch', 'batch_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sales_reminder DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sales_reminder', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_assessment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_assessment', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_finding DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_finding', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_finding_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_finding', 'finding_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_incident DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_incident', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_incident_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_incident', 'incident_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.share_issue DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('share_issue', 'id')
@@ -10659,6 +10748,12 @@ CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.evidence FOR EACH RO
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT OR UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
+CREATE TRIGGER security_assessment_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_assessment FOR EACH ROW EXECUTE FUNCTION security_register_guard()
+CREATE TRIGGER security_assessment_no_truncate BEFORE TRUNCATE ON fyniq.security_assessment FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER security_finding_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_finding FOR EACH ROW EXECUTE FUNCTION security_register_guard()
+CREATE TRIGGER security_finding_no_truncate BEFORE TRUNCATE ON fyniq.security_finding FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER security_finding_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_finding_step FOR EACH ROW EXECUTE FUNCTION security_register_guard()
+CREATE TRIGGER security_finding_step_no_truncate BEFORE TRUNCATE ON fyniq.security_finding_step FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER security_incident_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_incident FOR EACH ROW EXECUTE FUNCTION security_incident_guard()
 CREATE TRIGGER security_incident_no_truncate BEFORE TRUNCATE ON fyniq.security_incident FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER security_incident_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_incident_step FOR EACH ROW EXECUTE FUNCTION security_incident_guard()
@@ -10963,6 +11058,9 @@ salary_line_event | tenant_isolation | * | (organisation_id = current_org()) | (
 salary_release | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 salary_release_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sales_reminder | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+security_assessment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+security_finding | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+security_finding_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 security_incident | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 security_incident_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 share_issue | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -11271,6 +11369,9 @@ salary_release | enabled | forced
 salary_release_line | enabled | forced
 sales_reminder | enabled | forced
 sandbox_organisation | disabled | not forced
+security_assessment | enabled | forced
+security_finding | enabled | forced
+security_finding_step | enabled | forced
 security_incident | enabled | forced
 security_incident_step | enabled | forced
 share_issue | enabled | forced
@@ -11721,6 +11822,7 @@ scheduled_invoice_email_sent() → trigger | security invoker | v | search_path=
 scheduled_issue_allowed(p_document uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 574b7af4c2dbb0a7e81f6dedebde4a8b
 scheduled_issue_fence() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f5b36ed327ce553d134249eb0e82efde
 security_incident_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ba0df3a8877374fa18fe1af3436dee82
+security_register_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 21517a6a9d5bf60ad8f7c4d1350d19bd
 session_for(p_hash bytea, p_now timestamp with time zone, p_idle interval, OUT issuer text, OUT subject text, OUT provider text, OUT user_id uuid, OUT organisation_id uuid, OUT roles text[], OUT step_up_at timestamp with time zone, OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a437f2b962a69bcf1cb495d6c85ce607
 session_step_up(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 557b605544981a727167d857731ab8f9
 session_step_up_method(p_hash bytea) → text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 69b01e01a7b355f060b2e48248d0d248

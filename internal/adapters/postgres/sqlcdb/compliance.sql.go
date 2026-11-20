@@ -1378,6 +1378,108 @@ func (q *Queries) InsertRiskVersion(ctx context.Context, arg InsertRiskVersionPa
 	return i, err
 }
 
+const insertSecurityAssessment = `-- name: InsertSecurityAssessment :one
+INSERT INTO fyniq.security_assessment (kind, tester, independent, scope, started_on, ended_on, summary, report_sha256, report_location, recorded_by, recorded_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7,
+        $8, $9, $10, $11)
+RETURNING id
+`
+
+type InsertSecurityAssessmentParams struct {
+	Kind           string
+	Tester         string
+	Independent    bool
+	Scope          string
+	StartedOn      time.Time
+	EndedOn        time.Time
+	Summary        string
+	ReportSha256   *string
+	ReportLocation *string
+	RecordedBy     string
+	RecordedAt     time.Time
+}
+
+func (q *Queries) InsertSecurityAssessment(ctx context.Context, arg InsertSecurityAssessmentParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertSecurityAssessment,
+		arg.Kind,
+		arg.Tester,
+		arg.Independent,
+		arg.Scope,
+		arg.StartedOn,
+		arg.EndedOn,
+		arg.Summary,
+		arg.ReportSha256,
+		arg.ReportLocation,
+		arg.RecordedBy,
+		arg.RecordedAt,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const insertSecurityFinding = `-- name: InsertSecurityFinding :one
+INSERT INTO fyniq.security_finding (assessment_id, ref, title, severity, found_on, due_on, recorded_by, recorded_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id
+`
+
+type InsertSecurityFindingParams struct {
+	AssessmentID uuid.UUID
+	Ref          string
+	Title        string
+	Severity     string
+	FoundOn      time.Time
+	DueOn        pgtype.Date
+	RecordedBy   string
+	RecordedAt   time.Time
+}
+
+func (q *Queries) InsertSecurityFinding(ctx context.Context, arg InsertSecurityFindingParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertSecurityFinding,
+		arg.AssessmentID,
+		arg.Ref,
+		arg.Title,
+		arg.Severity,
+		arg.FoundOn,
+		arg.DueOn,
+		arg.RecordedBy,
+		arg.RecordedAt,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const insertSecurityFindingStep = `-- name: InsertSecurityFindingStep :one
+INSERT INTO fyniq.security_finding_step (finding_id, step, on_date, reason, recorded_by, recorded_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id
+`
+
+type InsertSecurityFindingStepParams struct {
+	FindingID  uuid.UUID
+	Step       string
+	OnDate     time.Time
+	Reason     *string
+	RecordedBy string
+	RecordedAt time.Time
+}
+
+func (q *Queries) InsertSecurityFindingStep(ctx context.Context, arg InsertSecurityFindingStepParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertSecurityFindingStep,
+		arg.FindingID,
+		arg.Step,
+		arg.OnDate,
+		arg.Reason,
+		arg.RecordedBy,
+		arg.RecordedAt,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const insertTransfer = `-- name: InsertTransfer :exec
 INSERT INTO fyniq.pd_transfer (transfer_id, version, flow, recipient, countries, data, purpose, basis, assessed_on, assessed_by, evidence,
   next_review_on, state, saved_by, saved_at)
@@ -2387,6 +2489,150 @@ func (q *Queries) ListRisks(ctx context.Context) ([]ListRisksRow, error) {
 	return items, nil
 }
 
+const listSecurityAssessments = `-- name: ListSecurityAssessments :many
+SELECT id, kind, tester, independent, scope, started_on, ended_on, summary, report_sha256, report_location, recorded_by, recorded_at
+FROM fyniq.security_assessment ORDER BY ended_on DESC, recorded_at DESC, id DESC
+`
+
+type ListSecurityAssessmentsRow struct {
+	ID             uuid.UUID
+	Kind           string
+	Tester         string
+	Independent    bool
+	Scope          string
+	StartedOn      time.Time
+	EndedOn        time.Time
+	Summary        string
+	ReportSha256   *string
+	ReportLocation *string
+	RecordedBy     string
+	RecordedAt     time.Time
+}
+
+// The organisation's security assessments, the latest ended first (SEC-25).
+func (q *Queries) ListSecurityAssessments(ctx context.Context) ([]ListSecurityAssessmentsRow, error) {
+	rows, err := q.db.Query(ctx, listSecurityAssessments)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListSecurityAssessmentsRow
+	for rows.Next() {
+		var i ListSecurityAssessmentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.Tester,
+			&i.Independent,
+			&i.Scope,
+			&i.StartedOn,
+			&i.EndedOn,
+			&i.Summary,
+			&i.ReportSha256,
+			&i.ReportLocation,
+			&i.RecordedBy,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSecurityFindingSteps = `-- name: ListSecurityFindingSteps :many
+SELECT id, finding_id, step, on_date, reason, recorded_by, recorded_at
+FROM fyniq.security_finding_step ORDER BY recorded_at, id
+`
+
+type ListSecurityFindingStepsRow struct {
+	ID         uuid.UUID
+	FindingID  uuid.UUID
+	Step       string
+	OnDate     time.Time
+	Reason     *string
+	RecordedBy string
+	RecordedAt time.Time
+}
+
+func (q *Queries) ListSecurityFindingSteps(ctx context.Context) ([]ListSecurityFindingStepsRow, error) {
+	rows, err := q.db.Query(ctx, listSecurityFindingSteps)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListSecurityFindingStepsRow
+	for rows.Next() {
+		var i ListSecurityFindingStepsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FindingID,
+			&i.Step,
+			&i.OnDate,
+			&i.Reason,
+			&i.RecordedBy,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSecurityFindings = `-- name: ListSecurityFindings :many
+SELECT id, assessment_id, ref, title, severity, found_on, due_on, recorded_by, recorded_at
+FROM fyniq.security_finding ORDER BY found_on, recorded_at, id
+`
+
+type ListSecurityFindingsRow struct {
+	ID           uuid.UUID
+	AssessmentID uuid.UUID
+	Ref          string
+	Title        string
+	Severity     string
+	FoundOn      time.Time
+	DueOn        pgtype.Date
+	RecordedBy   string
+	RecordedAt   time.Time
+}
+
+func (q *Queries) ListSecurityFindings(ctx context.Context) ([]ListSecurityFindingsRow, error) {
+	rows, err := q.db.Query(ctx, listSecurityFindings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListSecurityFindingsRow
+	for rows.Next() {
+		var i ListSecurityFindingsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AssessmentID,
+			&i.Ref,
+			&i.Title,
+			&i.Severity,
+			&i.FoundOn,
+			&i.DueOn,
+			&i.RecordedBy,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTransfers = `-- name: ListTransfers :many
 SELECT transfer_id, version, flow, recipient, countries, data, purpose, basis, assessed_on, assessed_by, evidence, next_review_on, state,
   saved_by, saved_at
@@ -2499,6 +2745,28 @@ func (q *Queries) NextRiskRef(ctx context.Context) (string, error) {
 	var ref string
 	err := row.Scan(&ref)
 	return ref, err
+}
+
+const securityAssessmentExists = `-- name: SecurityAssessmentExists :one
+SELECT EXISTS (SELECT 1 FROM fyniq.security_assessment WHERE id = $1)::boolean AS found
+`
+
+func (q *Queries) SecurityAssessmentExists(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, securityAssessmentExists, id)
+	var found bool
+	err := row.Scan(&found)
+	return found, err
+}
+
+const securityFindingExists = `-- name: SecurityFindingExists :one
+SELECT EXISTS (SELECT 1 FROM fyniq.security_finding WHERE id = $1)::boolean AS found
+`
+
+func (q *Queries) SecurityFindingExists(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, securityFindingExists, id)
+	var found bool
+	err := row.Scan(&found)
+	return found, err
 }
 
 const updateControlState = `-- name: UpdateControlState :one
