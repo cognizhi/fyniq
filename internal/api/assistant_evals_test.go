@@ -240,7 +240,11 @@ func newEvalHarness(t *testing.T, s evalsuite.Suite, company seed.Company) *eval
 		}
 		enableTaskTypes(e, strings.Join(s.TaskTypes, ","), 1)
 	}
-	h := &evalHarness{t: t, e: e, company: company, accounts: map[string]string{}, plants: map[string]string{}, person: f.as(f.ahkow), model: &recorder{}}
+	person := f.as(f.ahkow)
+	if s.Asker != "" { // a right a founder's Owner and Controller roles do not hold, such as an Accountant's journal
+		person = f.as(e.joinedIn(e.books.Org, "Eval "+s.Asker, s.Asker).String(), authz.Role(s.Asker))
+	}
+	h := &evalHarness{t: t, e: e, company: company, accounts: map[string]string{}, plants: map[string]string{}, person: person, model: &recorder{}}
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
 		list, err := u.Accounts().List(ctx)
 		for _, a := range list {
@@ -248,6 +252,19 @@ func newEvalHarness(t *testing.T, s evalsuite.Suite, company seed.Company) *eval
 		}
 		return err
 	})
+	if slices.Contains(s.TaskTypes, "plan.propose_budget") { // a budget needs the financial year the books keep
+		start, end := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
+		e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+			o, err := u.Organisation(ctx)
+			if err != nil {
+				return err
+			}
+			pr := o.Profile
+			pr.FYStartMonth, pr.BooksStart, pr.FirstYearEnd = 1, &start, &end
+			_, err = u.UpdateOrganisation(ctx, o.Version, pr)
+			return err
+		})
+	}
 	accountant := e.as(authz.Accountant)
 	for _, p := range s.Plant {
 		raw, err := evalsuite.Fill(p.Body, h.plants, h.account)

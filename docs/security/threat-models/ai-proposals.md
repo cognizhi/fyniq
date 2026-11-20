@@ -136,6 +136,16 @@ tests' own type checks the harness: a right proposal passes, and a turn that pro
   `TestAttackTheExecutorChangesSixDetailsOfACompanyContactAndNothingElse`; its evals are `ct-update-contact` (proposal) and
   `ct-update-contact-redteam`. Needs human review: migration 000960's grant. The MCP surface is not widened: no task type is named in
   `mcp-scopes.json` by this change.
+- **`recur.create_template` and `plan.propose_budget` (version 1, tier 2; 21 Nov 2026).** A recurring journal and a budget draft, each through the
+  function a person's create runs. The executor's grants are the narrowest those functions need: INSERT on exactly the API's insert columns of
+  `recurring_journal` and `recurring_journal_version` (migration 000961: no update, so it cannot pause, move or change a template, and cannot make
+  its drafts, which are the worker's) and EXECUTE on the two pure validators the budget's guard calls (000962), with a trigger that refuses the
+  executor any change of a budget document once drafted, so it never revises, approves or records one (approving a budget is on the never-list).
+  The journal's lines keep to ordinary accounts in the base currency (no bank, equity, sub-ledger, tax, payroll or director's account), balance, and
+  have a monthly equivalent within the limit; the payload has no mode, auto-post or recurring-invoice field. The recurring journal's undo is a person's
+  pause, under the API's role, while the template is at the version the execution left; a budget draft is not undoable by design. Needs human review:
+  migrations 000961 and 000962. Proved by `TestTheAIAddsARecurringJournalThatAPersonApprovesAndUndoes`, `TestTheAIDraftsABudgetThatAPersonApproves` and
+  `TestAttackTheExecutorAddsARecurringJournalAndDraftsABudgetAndNothingMore`; evals `recur-create-template` and `plan-propose-budget`.
 - **An injection that stays within the person's rights.** A turned model can propose only a type that is on, within
   its limits, as something the person may do. A person still reads Fyniq's summary and decides.
 - **Model Armor.** In a release, screening of the model's answers and of a proposal's words runs through Model

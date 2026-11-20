@@ -69,7 +69,7 @@ type Execution struct {
 type Commands map[string]Command
 
 // Release are the release's commands. Each task type's change adds its own with what it acts on.
-var Release = Commands{"CreateComplianceTask": CreateComplianceTask{}, "DraftReminder": DraftReminder{}, "DraftCorporateDocument": DraftCorporateDocument{}, "DraftInvoice": DraftInvoice{}, "DraftBill": DraftBill{}, "DraftClaim": DraftClaim{}, "UpdateContact": UpdateContact{}}
+var Release = Commands{"CreateComplianceTask": CreateComplianceTask{}, "DraftReminder": DraftReminder{}, "DraftCorporateDocument": DraftCorporateDocument{}, "DraftInvoice": DraftInvoice{}, "DraftBill": DraftBill{}, "DraftClaim": DraftClaim{}, "UpdateContact": UpdateContact{}, "CreateRecurring": CreateRecurring{}, "CreateBudgetVersion": CreateBudgetVersion{}}
 
 // Measure is what a payload holds, for the limits: its items (1 when it is not a batch) and each item's amount.
 type Measure struct {
@@ -197,4 +197,14 @@ func Subset(payload string, items []int) (subset, sha string, err error) {
 		return "", "", err
 	}
 	return Canonical(whole)
+}
+
+// decodeStrict reads a payload into v, refusing a field the task type does not name.
+func decodeStrict(payload json.RawMessage, v any) error {
+	d := json.NewDecoder(bytes.NewReader(payload))
+	d.DisallowUnknownFields()
+	if err := d.Decode(v); err != nil {
+		return refusal("the payload holds a field the task type does not name: "+err.Error(), "Send only the fields the task type's schema lists")
+	}
+	return nil
 }
