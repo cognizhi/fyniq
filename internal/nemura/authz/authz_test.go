@@ -101,6 +101,10 @@ func TestTheScenariosOfThePermissionMatrix(t *testing.T) {
 	if !strings.Contains(cellOf(Interviewer, "Hiring (P2)"), "assigned candidates only") || Can(LineManager, "Pay, pay history, pay runs", View) {
 		t.Error("interviewer or line manager")
 	}
+	// Hiring: the HR administrator and the Owner create requisitions and only the Owner approves (rev 0.68); every member reads company and team goals.
+	if !Can(HRAdmin, "Hiring (P2)", Create) || !Can(Owner, "Hiring (P2)", Create) || !Can(Owner, "Hiring (P2)", Approve) || Can(HRAdmin, "Hiring (P2)", Approve) || Can(HROfficer, "Hiring (P2)", Create) || !Can(Employee, "Performance (P2)", View) {
+		t.Error("hiring or goals rights")
+	}
 	// The Administrator manages roles but cannot grant payroll, signing or Owner rights; only the Owner approves role changes.
 	if !Can(Administrator, "Roles (NM-ROLE-05)", Create) || !strings.Contains(cellOf(Administrator, "Roles (NM-ROLE-05)"), "not payroll, signing or Owner rights") ||
 		Can(Administrator, "Roles (NM-ROLE-05)", Approve) || !Can(Owner, "Roles (NM-ROLE-05)", Approve) {

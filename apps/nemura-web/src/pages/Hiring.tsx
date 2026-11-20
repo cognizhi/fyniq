@@ -14,8 +14,8 @@ const exemptions = ["fewer_than_10_employees", "ep_salary_22500", "role_one_mont
 type Change = React.ChangeEvent<HTMLInputElement | HTMLSelectElement>;
 const blank = { title: "", department: "", reason: "new" as "new" | "replacement", replaces: "", min: "", max: "", start: "", pass: false };
 
-// Hiring is nm-hiring, first slice (NM-REC-01 to NM-REC-03): requisitions the Owner approves, a job post for each with the fair-wording check, and the Fair Consideration Framework's advert dates. The Recruiter asks
-// and writes; the HR officer, HR administrator and Owner read; the Owner approves. The candidate pipeline, interview kits and offers come later.
+// Hiring is nm-hiring, first slice (NM-REC-01 to NM-REC-03): requisitions the Owner approves, a job post for each with the fair-wording check, and the Fair Consideration Framework's advert dates. The Recruiter, the HR administrator and the Owner ask
+// and write (rev 0.68); the HR officer reads; the Owner approves, even a requisition they asked for. The candidate pipeline, interview kits and offers come later. The candidate pipeline, interview kits and offers come later.
 export function Hiring({ roles }: { roles: readonly string[] }) {
   const [list, setList] = useState<Requisition[]>([]);
   const [people, setPeople] = useState<Entry[]>([]);
@@ -30,8 +30,8 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
   const [kind, setKind] = useState<(typeof exemptions)[number]>("fewer_than_10_employees");
   const [exNote, setExNote] = useState("");
   const [found, setFound] = useState<Finding[]>([]);
-  const recruiter = roles.includes("recruiter");
   const owner = roles.includes("owner");
+  const recruiter = roles.includes("recruiter") || owner || roles.includes("hr_admin"); // who may ask and write: Appendix B (rev 0.68) gives it to the Recruiter, the HR administrator and the Owner
   const allowed = recruiter || owner || roles.some((r) => r === "hr_officer" || r === "hr_admin");
   const load = () => {
     if (!allowed) return;

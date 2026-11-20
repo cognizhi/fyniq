@@ -19,6 +19,10 @@ Source: PRD-002 §12 · Priority M · Phase P2
 - **WHEN** the Recruiter asks for a requisition and the Owner decides it
 - **THEN** it is decided once, what was asked for never changes, and only an approved requisition's post is published
 
+#### Scenario: Who may ask (rev 0.68)
+- **WHEN** the HR administrator or the Owner asks for a requisition, and an employee, a payroll administrator or the Administrator tries to
+- **THEN** the first two are accepted and the others are refused; only the Owner decides, and in founder mode the Owner may decide a requisition they asked for
+
 ### Requirement: NM-REC-02 Job posts
 Job posts SHALL be published on a careers page, MyCareersFuture postings SHALL be recorded with their date as evidence, and for a covered Employment Pass or S Pass hire the offer letter SHALL be blocked until 14 consecutive days of advertising have passed unless an exemption is recorded.
 
