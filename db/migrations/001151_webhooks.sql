@@ -72,7 +72,7 @@ CREATE TABLE fyniq.webhook_delivery (
   CONSTRAINT webhook_delivery_counts CHECK (attempts >= 0 AND replays >= 0),
   CONSTRAINT webhook_delivery_error_length CHECK (last_error IS NULL OR length(last_error) <= 200)
 );
-CREATE INDEX webhook_delivery_due ON fyniq.webhook_delivery (next_attempt_at) WHERE state = 'pending';
+CREATE INDEX webhook_delivery_due ON fyniq.webhook_delivery (organisation_id, next_attempt_at) WHERE state = 'pending';
 CREATE INDEX webhook_delivery_endpoint ON fyniq.webhook_delivery (organisation_id, endpoint_id, created_at DESC);
 
 -- Every attempt, insert-only: when, the answer's status (none when the connection failed), why it failed in a few words, and how long it took.

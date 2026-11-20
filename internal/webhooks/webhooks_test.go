@@ -136,7 +136,7 @@ func deliverer(guard *egress.Guard) Deliverer {
 }
 
 func jobTo(url string) job {
-	return job{delivery: storage.WebhookDelivery{MessageID: "msg_1", EventType: "fyniq.ledger.posted.v1", Payload: []byte(`{"organisation_id":"x"}`), CreatedAt: time.Now()}, // #nosec -- a test's own time
+	return job{delivery: storage.WebhookDelivery{MessageID: "msg_1", EventType: "fyniq.ledger.posted.v1", Payload: []byte(`{"organisation_id":"x"}`), CreatedAt: time.Date(2026, 11, 21, 9, 0, 0, 0, time.UTC)},
 		endpoint: storage.WebhookEndpoint{URL: url}, secrets: []string{"whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw"}}
 }
 
@@ -144,7 +144,7 @@ func jobTo(url string) job {
 // address must be https, and a refusal is a failure with its next try, never a send. Run against a guard that is not the local flavour's.
 // req: FR-INT-12
 // req: SEC-36
-// asvs: V12.6.1, V1.2.6
+// asvs: V1.2.6, V4.1.1
 func TestADeliveryNeverReachesAPrivateAddressOrFollowsARedirect(t *testing.T) {
 	hits := 0
 	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { hits++ }))
