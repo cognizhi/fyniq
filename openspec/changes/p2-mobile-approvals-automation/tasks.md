@@ -29,7 +29,9 @@
 
 ## 6. Purchases
 - [ ] 6.1 Supplier contracts and renewals, reminders and C.2 #52 (D7). `// req: FR-AP-21`
+  **Left, not started (paused for budget):** migration (a `supplier_contract` register with the supplier, owner, dates, renewal type, notice deadline, billing, amount and currency, minimum commitment and a capture as its evidence, versioned, never deleted, RLS, audit), a port and adapter, five operations on the Bills row, a daily job `contracts.remind` that tells the owner 30 and 7 days before the notice deadline once each (a log table like `approval_reminder`, new notification types), the screen, and check C.2 #52 in `internal/domain/closing` and `internal/domain/checks` (a supplier billed in each of the three months before the month, or a contract covering the month, with no bill dated in it; a warning) with a fixture that triggers it. The links from a contract to its POs, recurring bills and bills are left for a later slice. Model on `automation_rule` (001202) and `approvalremind`.
 - [ ] 6.2 Vendor statement reconciliation (D7). `// req: FR-AP-10`
+  **Left, not started (paused for budget):** statement lines entered or imported per supplier and period, matched to bills and payments by reference and amount (exact decimals), differences listed, nothing posted without a person; a read model and a screen, no new write path to the ledger.
 
 ## 7. Administration and experience
 - [x] 7.1 The usage view (D7). `// req: FR-ADM-05`
@@ -37,12 +39,18 @@
 - [x] 7.2 Pinned Basic mode (D7). `// req: FR-UX-28`
   (Built, rev REV, `[owner to confirm]`: one switch setting per pinnable role, `experience.pinned_basic.<role>` (every role but the Owner and the Administrator, so the people who set it never lose the switch); a person is pinned when every role they hold is pinned (the line manager is a relationship, not a role); the preferences and the session say `pinned_basic`, show Basic, and a save of Expert is refused (PRF-05); the web app draws no Basic | Expert switch, palette command or shortcut for them. Tests: `TestAnAdministratorPinsARoleToBasicAndOnlyThatRole`, `mode.test.ts`. **Left:** nothing.)
 - [ ] 7.3 Feature tours and What's new (D7). `// req: FR-UX-35`
+  **Left, not started (paused for budget):** design: an append-only `user_tip_state` table (user, kind `seen` with key and version, `whats_new` with the release, or `tips_off`), `GET`/`PUT /v1/help-state/tips` beside the tour's, a tips catalogue in `apps/web/src/tour/` of one to three steps per feature with a version bumped when a release changes the feature, a dismissible What's new card from `help/guide.ts`'s release notes shown once per release, and a Profile switch to turn tips off.
 
 ## 8. Templates
 - [ ] 8.1 Layout, column chooser, conditional blocks (D8). `// req: FR-TPL-01`, `// req: FR-TPL-02`
+  **Left, not started (paused for budget):** the typed layout JSON the render service already reads gains per-block order and settings, a column chooser and the five fixed conditional blocks (GST-registered, foreign currency, overdue, discount present, PayNow available); the editor drag-and-drop (with a keyboard alternative, WCAG 2.5.7) and live preview.
 - [ ] 8.2 Visual diff of two versions (D8). `// req: FR-TPL-04`
+  **Left, not started:** compare two published versions' content side by side with the list of changed settings (versions already carry the content and its SHA-256).
 - [ ] 8.3 Code mode in the render sandbox (D8). `// req: FR-TPL-06`
+  **Left, deliberately not built partly:** a half-sandboxed code mode must not ship. Design to build whole: Typst source edited by an expert, stored as a template version kind `code` (versioned, approved as `document_template.publish`), compiled only by the private `render` service in a fresh folder as Typst's root holding the source, the data as one JSON file and the logo; no network, no packages (the image ships the allowed ones), an empty environment, a time and memory limit, fonts the image ships, PDF/UA-1 output. Attack tests to write first: a `read`/`image`/`include` of a path outside the folder, of `/etc/passwd` and of a URL; a `@preview` package import; a `sys.inputs` or environment read; an infinite loop and a memory bomb; a source that tries to write; data fields outside the allow-list; a template that renders another organisation's data; the output staying PDF/UA-1. Needs `[live-verify]` on the real render image.
 
 ## 9. Governance and compliance
 - [ ] 9.1 The annual-return pack (D9). `// req: FR-CS-07`
+  **Left, not started:** needs the ACRA filing categories from the official ACRA pages (URL, retrieval date, quote), tagged `[accountant to confirm]`; assemble officers, members, share capital and the financial-statement figures from the corporate registers and the balance service; files nothing.
 - [ ] 9.2 Evidence export per framework and period (D9). `// req: CMP-04`
+  **Left, not started:** a job that packages a control framework's evidence for a period as a signed archive from the control registry (`compliance/controls/`) and the evidence store.
