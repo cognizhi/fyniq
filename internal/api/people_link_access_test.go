@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/apiclient"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/linksend"
+	"github.com/cognizhi/fyniq/internal/passkey/passkeytest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -455,5 +456,41 @@ func TestAnAnswerOfAnEndedLinkDecidesNothingForTheLinkThatFollowsInFyniq(t *test
 	}
 	if save(2, 1, false) {
 		t.Error("the same epoch and version again replaced it")
+	}
+}
+
+// A passkey enrolled or revoked through the API reaches a linked Nemura (design D16): the change belongs to the installation's trail, so the word to Nemura is queued in the person's organisation's own unit of work
+// after it, and says whether the person's identity now has a passkey (what a pay run's approval is signed with), by issuer and subject.
+// part of FR-PPL-02
+// asvs: V8.2.1, V13.2.1
+func TestEnrollingOrRevokingAPasskeyIsToldToALinkedNemura(t *testing.T) {
+	w := payrollWorld(t)
+	passkeyOf := func() (seen bool, passkey bool) {
+		for _, q := range w.queued(t) {
+			var p linksend.IdentityAccess
+			if q.Type == linksend.TypeIdentityAccess && json.Unmarshal(q.Payload, &p) == nil && p.Subject == w.preparer.Subject {
+				seen, passkey = true, p.Passkey // the last word about Mei Ling
+			}
+		}
+		return
+	}
+	if seen, _ := passkeyOf(); seen {
+		t.Fatal("nothing is queued about Mei Ling before she enrols a passkey")
+	}
+	authenticator := passkeytest.New(t, w.rpHost, w.origin)
+	r := w.desk.call(http.MethodPost, "/v1/session/passkeys/challenge", "same-origin", nil)
+	reg := w.desk.call(http.MethodPost, "/v1/session/passkeys", "same-origin", map[string]any{"challenge_id": r.str("challenge_id"), "name": "Desk key",
+		"credential": credential(t, authenticator.Create(passkeytest.Challenge(t, options(t, r))))})
+	if reg.Status != http.StatusCreated {
+		t.Fatalf("enrolling: %d %s", reg.Status, reg.Raw)
+	}
+	if seen, passkey := passkeyOf(); !seen || !passkey {
+		t.Errorf("enrolling a passkey told Nemura: seen %v, passkey %v", seen, passkey)
+	}
+	if del := w.desk.call(http.MethodDelete, "/v1/session/passkeys/"+reg.str("id"), "same-origin", nil); del.Status != http.StatusOK {
+		t.Fatalf("revoking: %d %s", del.Status, del.Raw)
+	}
+	if seen, passkey := passkeyOf(); !seen || passkey {
+		t.Errorf("revoking the passkey told Nemura: seen %v, passkey %v", seen, passkey)
 	}
 }
