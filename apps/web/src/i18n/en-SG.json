@@ -1863,6 +1863,10 @@
       "label": "Investor updates",
       "tooltip": "An update built from a published board pack, sent once to the members you choose. They are told by a notification that links to the signed-in update; it carries no figure."
     },
+    "equity.waterfall-round": {
+      "label": "Over a round that is not recorded",
+      "tooltip": "Read the waterfall as if a round scenario had happened: its new shares are a class of their own with the preference terms you ask for, which no register holds. A round that converts SAFEs or notes is refused by name."
+    },
     "equity.exit-waterfall": {
       "label": "Exit waterfall",
       "tooltip": "A sandbox: what an exit value would pay each share class and holder under the liquidation preferences the register records, next to a plain split by shares. It posts and saves nothing."

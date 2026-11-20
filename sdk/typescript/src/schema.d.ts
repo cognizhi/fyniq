@@ -38118,6 +38118,8 @@ export interface components {
              * @example 2027-03-12
              */
             on: string;
+            /** @description Set when the waterfall is read over a round scenario that is not recorded (rev 0.604): the round and the terms its new class was modelled with. */
+            round?: components["schemas"]["WaterfallRound"];
         };
         ExpenseClaim: {
             /**
@@ -63988,6 +63990,45 @@ export interface components {
             shares: string;
             /** @description What they receive. */
             total: components["schemas"]["Money"];
+        };
+        WaterfallRound: {
+            /**
+             * @description The multiple of the money invested the new class's preference pays first: asked for, not recorded.
+             * @example 1
+             */
+            multiple: string;
+            /**
+             * @description Its name.
+             * @example Series A, S$4m at S$12m pre-money
+             */
+            name: string;
+            /**
+             * Format: date
+             * @description The day the round would take effect.
+             * @example 2027-06-01
+             */
+            on: string;
+            /**
+             * @description Whether the new class then shares the rest as converted.
+             * @example false
+             */
+            participating: boolean;
+            /** @description The price per share the round would be at. */
+            price_per_share: components["schemas"]["Money"];
+            /** @description What its shares would cost. */
+            raised: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The round scenario.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8e01
+             */
+            scenario_id: string;
+            /**
+             * Format: int64
+             * @description The new class's seniority: 1 is paid first.
+             * @example 1
+             */
+            seniority: number;
         };
         WithdrawFXRateRequest: {
             /**
@@ -128418,8 +128459,16 @@ export interface operations {
             query: {
                 /** @description What the shareholders receive, in the base currency, as a plain decimal. */
                 exit_value: string;
-                /** @description The day of the register to read; left out, the organisation's today. */
+                /** @description The day of the register to read; left out, the organisation's today, or with a round scenario the day before the round. */
                 on?: string;
+                /** @description A round scenario (draft or approved) to read the waterfall over as if its round had happened: its new shares are a class of their own with the terms below. A round that converts SAFEs or notes is refused by name. */
+                scenario_id?: string;
+                /** @description With a scenario: the multiple of the money invested the new class's preference pays first; 1 by default. The terms of a round that is not recorded are asked for, never assumed. */
+                round_multiple?: string;
+                /** @description With a scenario: whether the new class shares the rest as converted after its preference, with no cap; false by default. */
+                round_participating?: boolean;
+                /** @description With a scenario: the new class's seniority, 1 being paid first, ahead of any class recorded at 1 it shares pari passu with; 1 by default. */
+                round_seniority?: number;
             };
             header?: never;
             path?: never;
@@ -128451,6 +128500,15 @@ export interface operations {
             };
             /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

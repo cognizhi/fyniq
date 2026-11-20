@@ -4,6 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cockroachdb/apd/v3"
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/internal/domain/money"
 )
 
@@ -132,5 +135,50 @@ func TestAnUnconfirmedStructureIsRefused(t *testing.T) {
 	}
 	if _, err = ModelWaterfall(sg(t, "100"), []WaterfallClass{{ID: "ord", Name: "Ordinary"}}); err == nil {
 		t.Error("a class with no shares")
+	}
+}
+
+// A round that is not recorded is a class of its own in the waterfall, with the terms asked for (FR-EQ-29, p2-reporting-planning task 8.1), worked by hand. A founder holds 8,000,000
+// ordinary shares; a modelled round issues 2,000,000 shares to an investor for S$2,000,000. As a senior 1x non-participating class: an exit of 3,000,000 pays the investor its
+// 2,000,000 first and the founder 1,000,000; an exit of 20,000,000 makes converting better (2,000,000 / 10,000,000 of it is 4,000,000 against 2,000,000), so the investor takes
+// 4,000,000 and the founder 16,000,000. As a 1x participating class, 10,000,000 pays 2,000,000 first and 20% of the other 8,000,000, 1,600,000: 3,600,000 and 6,400,000. A round
+// that converts a SAFE is refused by name.
+// req: FR-EQ-29
+func TestAnUnrecordedRoundIsAClassWithTheTermsAskedFor(t *testing.T) {
+	reg := RegisterWaterfall{Classes: []WaterfallClass{{ID: "ord", Name: "Ordinary", Holders: holders(t, "f", int64(8000000), "0.00")}}}
+	shares, _, _ := apd.NewFromString("2000000")
+	round := RoundOutcome{Issues: []RoundIssue{{HolderID: uuid.MustParse("00000000-0000-0000-0000-0000000000aa"), Shares: *shares, Amount: sg(t, "2000000.00")}}}
+	paid := func(terms RoundTerms, exit string) map[string]string {
+		t.Helper()
+		with, err := WithRound(reg, "round", "Series Seed (modelled)", round, terms)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r, err := ModelWaterfall(sg(t, exit), with.Classes)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return totals(r)
+	}
+	senior := RoundTerms{Multiple: "1", Seniority: 1}
+	if got := paid(senior, "3000000"); got["round"] != "2000000.00" || got["ord"] != "1000000.00" {
+		t.Errorf("a small exit: %v", got)
+	}
+	if got := paid(senior, "20000000"); got["round"] != "4000000.00" || got["ord"] != "16000000.00" {
+		t.Errorf("a large exit converts: %v", got)
+	}
+	if got := paid(RoundTerms{Multiple: "1", Participating: true, Seniority: 1}, "10000000"); got["round"] != "3600000.00" || got["ord"] != "6400000.00" {
+		t.Errorf("participating: %v", got)
+	}
+	if reg.HasPreference || len(reg.Classes) != 1 {
+		t.Errorf("the register's waterfall is not changed: %+v", reg)
+	}
+	with, _ := WithRound(reg, "round", "Series Seed (modelled)", round, senior)
+	if !with.HasPreference || len(with.Notes) != 1 || !strings.Contains(with.Notes[0], "is not recorded") {
+		t.Errorf("the class and its note: %+v", with)
+	}
+	round.Conversions = []Conversion{{}}
+	if _, err := WithRound(reg, "round", "x", round, senior); err == nil || !strings.Contains(err.Error(), CodeWaterfall) {
+		t.Errorf("a round that converts a SAFE: %v", err)
 	}
 }

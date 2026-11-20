@@ -34,6 +34,23 @@ describe("the exit waterfall page", () => {
     await noViolations(document.body);
   });
 
+  it("reads the waterfall over a round scenario with the terms asked for, and says the round is not recorded (rev 0.604)", async () => {
+    answer({
+      "GET /v1/round-scenarios": { status: 200, body: { items: [{ id: "sc-1", name: "Series A", status: "draft" }] } },
+      "GET /v1/exit-waterfall": { status: 200, body: { ...body, round: { scenario_id: "sc-1", name: "Series A", on: "2026-10-15", price_per_share: sgd("4.00"), raised: sgd("4000000.00"), multiple: "1",
+        participating: false, seniority: 1 }, notes: ["New round, Series A (not recorded) is not recorded: its class is modelled with the terms asked for"] } },
+    });
+    renderPage(ExitWaterfall, { path: "/equity/exit", session: owner, mode: "expert" });
+    fireEvent.change(await screen.findByLabelText("Round scenario"), { target: { value: "sc-1" } });
+    fireEvent.change(await screen.findByLabelText("Its preference multiple"), { target: { value: "1.5" } });
+    fireEvent.click(screen.getByLabelText("It then shares the rest as converted"));
+    expect(await screen.findByText(/Over the round of Series A, not recorded/)).toBeTruthy();
+    await screen.findByRole("table", { name: "Under the preferences" });
+    expect(seen.some((s) => s.path === "/v1/exit-waterfall" && s.query.includes("scenario_id=sc-1") && s.query.includes("round_multiple=1.5") && s.query.includes("round_participating=true") &&
+      s.query.includes("round_seniority=1"))).toBe(true);
+    await noViolations(document.body);
+  });
+
   it("says there is nothing to model while no class has a preference, and names a refused structure", async () => {
     answer({ "GET /v1/exit-waterfall": { status: 200, body: { ...body, available: false, message: "No share class records a liquidation preference.", classes: [], as_converted: [] } } });
     renderPage(ExitWaterfall, { path: "/equity/exit", session: owner, mode: "expert" });

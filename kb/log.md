@@ -953,3 +953,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/fixed-assets.md → accounting.fixed-assets (section 19A(2), the balancing allowance and charge on a sale, sg-capital-allowances@2026.2, FR-FA-04)
 
 ## [2026-11-20] compile | nemura-erasure: new payslips sealed under a per-person key
+
+## [2026-11-20] compile | docs/user-guide/exit-waterfall.md → equity.exit-waterfall (the waterfall over a round scenario that is not recorded, FR-EQ-29)

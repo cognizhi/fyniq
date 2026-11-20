@@ -4,7 +4,7 @@ type: task
 title: Model an exit
 summary: A sandbox for what an exit value would pay each share class and holder under the recorded preferences, next to a plain split, and what it refuses
 sources:
-  - docs/user-guide/exit-waterfall.md sha256:0a60d67beda7c5ce730a35256cd9ac8f5ef7f8d68a790892ec1ede7f10f8949b
+  - docs/user-guide/exit-waterfall.md sha256:24e027bcf0d16d183d83f6a1d27fb598a2ecb5ce7b8d494f9eee24ccd2791d1c
 data_class: general
 taint: trusted
 status: draft
@@ -44,6 +44,14 @@ aliases:
 - The money invested in a class is what its share issues paid up to the day, shared among its holders by shares; a holder who bought shares from another holder has the class's average price, which the accountant confirms.
 
 (src: docs/user-guide/exit-waterfall.md#what-it-models)
+
+## Over a round that is not recorded
+
+- Under **Over a round that is not recorded**, a round scenario from [[equity.register]] can be chosen and the waterfall is read as if the round had happened: its new shares are a class of their own, each investor's money being what its shares cost, next to every class as the register has it the day before the round.
+- The terms of that class are asked for, never assumed, because no register holds them: the multiple its preference pays first, whether it then shares the rest as converted, and its seniority, 1 being paid first; the page says they are the ones asked for.
+- A round that converts SAFEs or notes is refused, naming why; the scenario is only read.
+
+(src: docs/user-guide/exit-waterfall.md#over-a-round-that-is-not-recorded)
 
 ## What it refuses
 

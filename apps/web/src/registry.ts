@@ -507,6 +507,7 @@ export const actions = [
   { kind: "action", id: "schedules.roll-forward", mode: "expert", help: "schedules.roll-forward", guide: "accounting.schedules#the-roll-forward" },
   { kind: "action", id: "schedules.customer-activity", mode: "expert", help: "schedules.customer-activity", guide: "accounting.schedules#the-roll-forward" },
   { kind: "action", id: "planning.funding-plan", mode: "expert", help: "planning.funding-plan", guide: "planning.forecast#the-funding-plan" },
+  { kind: "action", id: "equity.waterfall-round", mode: "expert", help: "equity.waterfall-round", guide: "equity.exit-waterfall#over-a-round-that-is-not-recorded" },
   { kind: "action", id: "fixed-assets.movement", mode: "expert", help: "fixed-assets.movement", guide: "accounting.fixed-assets#the-movement-schedule" },
   { kind: "action", id: "fixed-assets.capital-allowances", mode: "expert", help: "fixed-assets.capital-allowances", guide: "accounting.fixed-assets#the-capital-allowance-schedule" },
   { kind: "action", id: "fixed-assets.tax-election", mode: "expert", help: "fixed-assets.tax-election", guide: "accounting.fixed-assets#the-capital-allowance-schedule" },

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "multiple": {
+      "description": "The multiple of the money invested the new class's preference pays first: asked for, not recorded.",
+      "examples": [
+        "1"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Series A, S$4m at S$12m pre-money"
+      ],
+      "type": "string"
+    },
+    "on": {
+      "description": "The day the round would take effect.",
+      "examples": [
+        "2027-06-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "participating": {
+      "description": "Whether the new class then shares the rest as converted.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "price_per_share": {
+      "$ref": "Money.schema.json",
+      "description": "The price per share the round would be at."
+    },
+    "raised": {
+      "$ref": "Money.schema.json",
+      "description": "What its shares would cost."
+    },
+    "scenario_id": {
+      "description": "The round scenario.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "seniority": {
+      "description": "The new class's seniority: 1 is paid first.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "scenario_id",
+    "name",
+    "on",
+    "price_per_share",
+    "raised",
+    "multiple",
+    "participating",
+    "seniority"
+  ],
+  "title": "WaterfallRound",
+  "type": "object"
+}
