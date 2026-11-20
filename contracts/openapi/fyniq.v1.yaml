@@ -64491,6 +64491,9 @@ components:
         redirect_uris:
           description: "The exact https (or loopback) addresses it signs people in on: no wildcard, query or fragment."
           items:
+            description: An exact https or loopback redirect URI.
+            examples:
+              - https://acme.example/oauth/callback
             type: string
           maxItems: 5
           minItems: 1
