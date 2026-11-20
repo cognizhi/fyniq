@@ -85,7 +85,7 @@
   invoice, bill, transaction, journal, pay run and asset pages in it, with their Ledger impact and Attachments tabs and the right panel's checks and AI
   suggestions (each page's existing cards move into the tabs); the organisation switcher, the Finance | People switch, the Approver's My department and
   the Auditor's workspace.)
-  (20 Nov 2026, PRD-001 rev 0.385, the record page frame on the bill, invoice and journal pages: header with the state chips and the status message, Details (the figures, checks and form),
+  (20 Nov 2026, PRD-001 rev 0.421, the record page frame on the bill, invoice and journal pages: header with the state chips and the status message, Details (the figures, checks and form),
   Ledger impact, Attachments and Activity (comments) as tabs; the contact page was the first. **Left:** the bank transaction, pay run and asset pages, and the right panel's checks and AI suggestions.)
 - [ ] 2.2 The command palette, global search in PostgreSQL under row-level security, and Inbox triage whose approve shortcut opens the confirmation. Tests `// req: FR-UX-01`, `// req: FR-UX-02` and `// req: FR-UX-03`
   (20 Oct 2026, in part: the Inbox lists the approval requests and the weekly review; a request opens on its own page,
@@ -142,7 +142,7 @@
   Guide `keyboard-shortcuts.md` (Work in a grid), compiled into `shell.shortcuts`. Tests `EntryGrid.test.tsx` (including 100,000 rows and axe), `entryGridModel.test.ts`,
   `arithmetic.test.ts`, `table.test.ts`, and the Storybook story in four themes. **Left:** using it in the journal lines, bank categorisation, budgets, opening balances and
   imports screens (each replaces its own table), the ≥ 50 fps Playwright trace of NFR-PERF-UI-02 (it needs a screen that hosts the grid), and statement tables on TanStack Table.)
-  (20 Nov 2026, PRD-001 rev 0.385: the grid is in use in the journal editor's **Enter lines in a grid** (`PasteLines.tsx`, Expert mode; the ready rows join the journal, which still checks
+  (20 Nov 2026, PRD-001 rev 0.421: the grid is in use in the journal editor's **Enter lines in a grid** (`PasteLines.tsx`, Expert mode; the ready rows join the journal, which still checks
   them); a cell change is announced in the status region, nothing needs dragging (fill down is Ctrl+D or a button: WCAG 2.5.7) and the header sits outside the scrolling body so
   it never hides the focused cell (2.4.11). Tests `PasteLines.test.tsx`, `EntryGrid.test.tsx`. **Left:** bill and invoice lines, bank categorisation, budgets, opening balances and imports,
   each replacing its own table; the 50 fps trace is `[live-verify]`: a headless trace on a laptop proves nothing about the budget's devices, so it waits for the dev cloud's device lab.)

@@ -30,7 +30,7 @@ Source: PRD-001 §8.21 · Priority M · Phase P1
 - **THEN** they reach the lines and records whose department values are all among theirs, and nothing else, and are told of a request only when it is theirs
 - **AND** an invitation that gives the Approver role carries the scope, which the redeemed role holds from the first minute
 
-#### Scenario: An invitation's email never holds the code (rev 0.385)
+#### Scenario: An invitation's email never holds the code (rev 0.421)
 - **WHEN** an invitation is made with an email address
 - **THEN** one message goes to it, at once in the bootstrap and once approved otherwise, naming the organisation and saying to ask for the code
 - **AND** the code is in no email and the address is not kept

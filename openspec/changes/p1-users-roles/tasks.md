@@ -91,7 +91,7 @@
   the second Owner signs them with the invitation; the redeemed role holds them from the first minute;
   `TestAnInvitationNarrowsTheApproverRoleItGives`, `TestAttackAnInvitationsDepartmentScopeNeedsTheApproverRole`), and the invite dialog offers
   the departments. **Left:** invitation emails (`p1-templates-email`); this task stays open for them alone.)
-  (20 Nov 2026, PRD-001 rev 0.385: an invitation can carry an email address, to which one message goes, at once in the bootstrap and otherwise once the
+  (20 Nov 2026, PRD-001 rev 0.421: an invitation can carry an email address, to which one message goes, at once in the bootstrap and otherwise once the
   invitation is approved; it names the organisation and says to ask the inviter for the code, which is never in an email, and the address is not kept
   (migrations 000709, 000710; `TestAnInvitationEmailNeverCarriesTheCode`). Decided [owner to confirm]: the code stays given in person or on a call.
   Built: invitation emails. **Left:** nothing in this task.)

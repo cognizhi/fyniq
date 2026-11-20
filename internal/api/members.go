@@ -96,7 +96,7 @@ type NewMemberInvitation struct {
 	Roles              []RoleName `json:"roles" minItems:"1" maxItems:"16" doc:"The roles they will hold (PRD-001 §6.2)."`
 	RolesExpireAt      *time.Time `json:"roles_expire_at,omitempty" doc:"For an external user, such as an auditor: when their roles end. Never on the Owner role." example:"2027-03-31T00:00:00Z"`
 	DepartmentValueIDs []string   `json:"department_value_ids,omitempty" maxItems:"20" doc:"For an invitation that gives the Approver role: the department values to narrow it to (FR-ADM-01, rev 0.253), fixed from the first minute. Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another set of roles is refused."`
-	Email              string     `json:"email,omitempty" format:"email" maxLength:"254" doc:"Where to tell the person they were invited (FR-ADM-01, rev 0.385): an email that names the organisation and says to ask for the one-time code, which is never in the email. It is not kept: it is used to send that one message." example:"weiling@example.sg"`
+	Email              string     `json:"email,omitempty" format:"email" maxLength:"254" doc:"Where to tell the person they were invited (FR-ADM-01, rev 0.421): an email that names the organisation and says to ask for the one-time code, which is never in the email. It is not kept: it is used to send that one message." example:"weiling@example.sg"`
 }
 
 // TransformSchema implements huma.SchemaTransformer: an example for each department value (NFR-API-01).

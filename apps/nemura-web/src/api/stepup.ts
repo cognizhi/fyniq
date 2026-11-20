@@ -28,3 +28,19 @@ export async function confirmWithPasskey(): Promise<string | undefined> {
   const done = await api.POST("/v1/session/step-up/confirm", { body: { credential } });
   return done.error ? ((done.error as { detail?: string }).detail ?? "") : undefined;
 }
+
+// Signing a pay run's approval envelope (NM-INT-06): the browser asks the approver's authenticator to sign the envelope's digest as the challenge, with the passkey they enrolled in Fyniq (one relying party serves
+// both apps), and the answer goes back in the three parts Fyniq verifies. It resolves to an error's text when something fails, and to the three parts when the person signed.
+export interface EnvelopeProof {
+  authenticator_data: string;
+  client_data: string;
+  signature: string;
+}
+
+export async function signApprovalEnvelope(challenge: string, rpId: string): Promise<EnvelopeProof | string> {
+  const publicKey: PublicKeyCredentialRequestOptions = { challenge: b64(challenge), rpId, userVerification: "required", timeout: 120000, allowCredentials: [] };
+  const got = (await navigator.credentials.get({ publicKey })) as PublicKeyCredential | null;
+  if (!got) return "";
+  const r = got.response as AuthenticatorAssertionResponse;
+  return { authenticator_data: b64url(r.authenticatorData), client_data: b64url(r.clientDataJSON), signature: b64url(r.signature) };
+}

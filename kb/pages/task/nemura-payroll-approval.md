@@ -2,9 +2,9 @@
 key: nemura.payroll-approval
 type: task
 title: Read and approve a pay run in Nemura
-summary: Who approves a pay run and why not its preparer, what the approver reads (digest, flags, overrides, what changed since last month) and what approving does
+summary: Who approves a pay run and why not its preparer, what the approver reads and signs (with proof for Fyniq when linked) and what approving does
 sources:
-  - docs/user-guide/nemura/payroll-approval.md sha256:d8c27119fca88c59d087baa4b28c5ffc9c19af62dd6a1c92fa4e97669eac1fa3
+  - docs/user-guide/nemura/payroll-approval.md sha256:e10a5933f490058b2d4e97ec29febee04e5ea7e98df2777c198af4dd33b0be7b
 data_class: personal
 taint: trusted
 status: published
@@ -35,6 +35,11 @@ aliases:
 
 (src: docs/user-guide/nemura/payroll-approval.md#steps)
 
+## When Nemura is linked to Fyniq
+
+- A run is then approved with proof and the plain approval is closed. The approver reads the figures Fyniq will post (the gross pay of each of Fyniq's departments, the month's CPF, SDL and self-help group funds, the deductions by kind, the claims paid with the salary and Fyniq's account mapping version), confirms with a passkey and then signs the figures' digest with the passkey they enrolled in Fyniq. Fyniq checks that signature before it posts anything, so every approver signs in to Fyniq once and adds a passkey in its security settings; that gives no Fyniq role. The page says in plain words what is missing: a person with no department, a department Fyniq does not have, no mapping yet, or someone who has not signed in once.
+- Under **What Fyniq did with it** the run shows whether it was sent and Fyniq's answer: the posting's reference, or the code and words of its refusal, with which the run waits. A refusal Fyniq's side can put right (no passkey there, a closed period) is followed by **Send it to Fyniq again**, the same approval as a new message; a refusal of the figures or the proof needs a new calculation and a new approval. (src: docs/user-guide/nemura/payroll-approval.md#when-nemura-is-linked-to-fyniq)
+
 ## What happens next
 
 - The approval is written once with what the passkey confirmed; a correction of an approved month is a new version with a reason, and once approved it supersedes the one before.
@@ -42,4 +47,4 @@ aliases:
 
 ## When it looks wrong
 
-- Nobody approves their own run: ask another approver. A digest that is not this version's means the next version was calculated while you read: open the run again. A version with failing checks is resolved and recalculated first. See [[nemura.payroll-records]]. (src: docs/user-guide/nemura/payroll-approval.md#common-problems)
+- Fyniq says the approver has no passkey enrolled there (PPL-19): sign in to Fyniq once, add a passkey, then send the approval again. A passkey that did not sign the figures is the wrong one: use the passkey enrolled in Fyniq, from Nemura's own address. Nobody approves their own run: ask another approver. A digest that is not this version's means the next version was calculated while you read: open the run again. A version with failing checks is resolved and recalculated first. See [[nemura.payroll-records]]. (src: docs/user-guide/nemura/payroll-approval.md#common-problems)

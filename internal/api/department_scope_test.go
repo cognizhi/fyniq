@@ -167,7 +167,7 @@ func TestOnlyAnOwnerAndAnAdministratorSeeMembersEmails(t *testing.T) {
 }
 
 // An invitation made with an email address queues one message to it, in the founder bootstrap and once approved, that names the organisation and
-// says to ask for the code: the code is in no email, and the address is kept nowhere but in that message (FR-ADM-01, rev 0.385).
+// says to ask for the code: the code is in no email, and the address is kept nowhere but in that message (FR-ADM-01, rev 0.421).
 // req: FR-ADM-01
 // asvs: V8.2.1, V8.3.1
 func TestAnInvitationEmailNeverCarriesTheCode(t *testing.T) {

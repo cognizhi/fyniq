@@ -400,6 +400,20 @@ nemura_api | column nemura.link_object_version.object_id | INSERT
 nemura_api | column nemura.link_object_version.object_type | INSERT
 nemura_api | column nemura.link_object_version.version | INSERT
 nemura_api | column nemura.link_object_version.version | UPDATE
+nemura_api | column nemura.link_run_approval.approved_at | INSERT
+nemura_api | column nemura.link_run_approval.approver_issuer | INSERT
+nemura_api | column nemura.link_run_approval.approver_member_id | INSERT
+nemura_api | column nemura.link_run_approval.approver_subject | INSERT
+nemura_api | column nemura.link_run_approval.authenticator_data | INSERT
+nemura_api | column nemura.link_run_approval.client_data | INSERT
+nemura_api | column nemura.link_run_approval.envelope | INSERT
+nemura_api | column nemura.link_run_approval.envelope_sha256 | INSERT
+nemura_api | column nemura.link_run_approval.mapping_version | INSERT
+nemura_api | column nemura.link_run_approval.preparer_issuer | INSERT
+nemura_api | column nemura.link_run_approval.preparer_subject | INSERT
+nemura_api | column nemura.link_run_approval.run_id | INSERT
+nemura_api | column nemura.link_run_approval.signature | INSERT
+nemura_api | column nemura.link_run_approval.version | INSERT
 nemura_api | column nemura.link_run_posting.code | INSERT
 nemura_api | column nemura.link_run_posting.message | INSERT
 nemura_api | column nemura.link_run_posting.posting_ref | INSERT
@@ -834,6 +848,7 @@ nemura_api | function nemura.is_manager_of | EXECUTE
 nemura_api | function nemura.link_client_route | EXECUTE
 nemura_api | function nemura.link_identity | EXECUTE
 nemura_api | function nemura.lock_leave_head | EXECUTE
+nemura_api | function nemura.member_identity | EXECUTE
 nemura_api | function nemura.members_for_identity | EXECUTE
 nemura_api | function nemura.person_has_leave | EXECUTE
 nemura_api | function nemura.replace_member_identities | EXECUTE
@@ -883,6 +898,7 @@ nemura_api | table nemura.link_event | SELECT
 nemura_api | table nemura.link_inbox | SELECT
 nemura_api | table nemura.link_mapping | SELECT
 nemura_api | table nemura.link_object_version | SELECT
+nemura_api | table nemura.link_run_approval | SELECT
 nemura_api | table nemura.link_run_posting | SELECT
 nemura_api | table nemura.member | SELECT
 nemura_api | table nemura.offboarding | SELECT
@@ -1035,6 +1051,7 @@ nemura_readonly | table nemura.link_event | SELECT
 nemura_readonly | table nemura.link_inbox | SELECT
 nemura_readonly | table nemura.link_mapping | SELECT
 nemura_readonly | table nemura.link_object_version | SELECT
+nemura_readonly | table nemura.link_run_approval | SELECT
 nemura_readonly | table nemura.link_run_posting | SELECT
 nemura_readonly | table nemura.member | SELECT
 nemura_readonly | table nemura.offboarding | SELECT
@@ -1191,6 +1208,7 @@ nemura_worker | table nemura.link_event | SELECT
 nemura_worker | table nemura.link_inbox | SELECT
 nemura_worker | table nemura.link_mapping | SELECT
 nemura_worker | table nemura.link_object_version | SELECT
+nemura_worker | table nemura.link_run_approval | SELECT
 nemura_worker | table nemura.link_run_posting | SELECT
 nemura_worker | table nemura.member | SELECT
 nemura_worker | table nemura.offboarding | SELECT

@@ -117,6 +117,8 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	if provider != nil {
 		d.SignIn = signInInfo{provider: provider, store: store}
 	}
+	// A pay run is approved with the approver's passkey over the approval envelope, answered at Nemura's own origin for the relying party the two apps share (NM-INT-06).
+	d.RunLink = nemura.RunLinkService{Store: store, Clock: deps.Clock, Origin: origin, RPID: relyingPartyID(origin, getenv("NEMURA_RP_ID"))}
 	d.LinkAdmin = nemura.LinkAdminService{LinkService: nemura.LinkService{Store: store, OAuth: oauth, Clock: deps.Clock}} // an Owner proposes and another approves; approving needs the OAuth server
 	// The link's inbox takes Fyniq's client's bearer token, checked with Nemura's own OAuth server; without one there is no inbox (the link needs the server for its client anyway).
 	if server, ok := oauth.(ports.OAuthServer); ok {
@@ -147,6 +149,18 @@ type passkeys struct {
 	store *nemura.Store
 	rp    *passkey.RelyingParty
 	clock ports.Clock
+}
+
+// relyingPartyID is the relying party's ID: the one configured, else the origin's host.
+func relyingPartyID(origin, configured string) string {
+	if configured != "" {
+		return configured
+	}
+	u, err := url.Parse(origin)
+	if err != nil {
+		return ""
+	}
+	return u.Hostname()
 }
 
 func newPasskeys(store *nemura.Store, origin, rpID string, clock ports.Clock) (api.Passkeys, error) {

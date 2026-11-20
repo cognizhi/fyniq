@@ -470,7 +470,7 @@ Source: PRD-001 §7.2 · Priority M · Phase P1
 - **THEN** the grid shows what it read, flags the cells that do not fit their column and says how many rows it adds
 - **AND** it sets them only when the user applies the paste, and leaves the grid as it was when they cancel
 
-#### Scenario: Changes are announced and nothing needs dragging (rev 0.385)
+#### Scenario: Changes are announced and nothing needs dragging (rev 0.421)
 - **WHEN** a cell changes or a paste is applied
 - **THEN** a polite status says what changed
 - **AND** fill down, copy and paste have keys and buttons, so no dragging is needed
