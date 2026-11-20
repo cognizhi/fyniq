@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/cognizhi/fyniq/internal/linksend"
 	"net/http"
 	"net/mail"
 	"reflect"
@@ -56,8 +57,8 @@ type Member struct {
 	// rev 0.373
 	LastSignInAt *time.Time `json:"last_sign_in_at,omitempty" doc:"When they last signed in to Fyniq; absent when they never have (SEC-06)." example:"2026-11-20T09:00:00Z"`
 	// rev 0.381
-	Email string `json:"email,omitempty" doc:"Their verified sign-in email, shown to an Owner and an Administrator only (rev 0.381); absent for anyone else, and for a member who has none yet." example:"weiling@example.sg"`
-	Passkeys     int        `json:"passkeys" doc:"How many live passkeys they hold: none means they confirm it's you only by signing in again (SEC-01)." example:"1"`
+	Email    string `json:"email,omitempty" doc:"Their verified sign-in email, shown to an Owner and an Administrator only (rev 0.381); absent for anyone else, and for a member who has none yet." example:"weiling@example.sg"`
+	Passkeys int    `json:"passkeys" doc:"How many live passkeys they hold: none means they confirm it's you only by signing in again (SEC-01)." example:"1"`
 }
 
 // MemberPage is a page of members, in the order they joined.
@@ -416,6 +417,9 @@ func (a *API) removeMemberNow(ctx context.Context, u storage.UnitOfWork, id uuid
 		return Member{}, err
 	}
 	if err := a.endTokens(ctx, u, m, "removed from the organisation"); err != nil {
+		return Member{}, err
+	}
+	if err := a.signOutOfNemura(ctx, u, m.UserID, "removed"); err != nil {
 		return Member{}, err
 	}
 	out := memberOf(m)
@@ -944,4 +948,23 @@ func (a *API) mailInvitation(ctx context.Context, u storage.UnitOfWork, to, name
 		"never by email. Then sign in to Fyniq and choose \"Join with an invitation\".\n\nThe invitation works until %s.\n", name, o.Name, expires.UTC().Format("2 Jan 2006"))
 	_, err = email.Queue(ctx, *a.deps.Outbox, u, o.ID, email.PurposeInvitation, addr.Address, "You were invited to "+o.Name+" on Fyniq", text)
 	return err
+}
+
+// signOutOfNemura tells a linked Nemura that a person was removed from this organisation, by the identities the shared sign-in knows them by, so their Nemura sessions end too (FR-PPL-18); nothing is queued
+// with no link that has keys, and no email travels.
+func (a *API) signOutOfNemura(ctx context.Context, u storage.UnitOfWork, user uuid.UUID, reason string) error {
+	sessions, ok := a.deps.Installation.(storage.Sessions)
+	if !ok {
+		return nil
+	}
+	ids, err := sessions.Identities(ctx, user)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		if _, err := linksend.Queue(ctx, u, linksend.TypeSessionRevoked, "identity", user.String(), 1, linksend.SessionRevoked{Issuer: id.Issuer, Subject: id.Subject, Reason: reason}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

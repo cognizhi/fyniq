@@ -99,6 +99,10 @@
       ],
       "format": "uuid",
       "type": "string"
+    },
+    "workspace": {
+      "$ref": "Workspace.schema.json",
+      "description": "Present when you may cross to Nemura: the Finance | People switch shows (FR-PPL-02). Absent when the apps are not linked or your roles are personal only (an employee who only claims has no switch: Nemura's Claims tile opens the personal workspace)."
     }
   },
   "required": [

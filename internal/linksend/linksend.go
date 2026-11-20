@@ -38,13 +38,15 @@ const (
 	// TypeDepartmentChanged tells Nemura the version of the payroll account mapping and the departments in it, which a pay run is calculated against (PRD-002 Appendix E, NM-INT-01: departments come from
 	// Fyniq). Its object is the mapping and its object version is the mapping's version.
 	TypeDepartmentChanged = "people.department.changed"
+	// TypeSessionRevoked tells Nemura a person was signed out of, or removed from, Fyniq, by the identity the shared sign-in knows them by, so Nemura ends their sessions too (NM-INT-12, FR-PPL-18).
+	TypeSessionRevoked = "identity.session.revoked"
 )
 
 // Scope of Nemura's own OAuth server that the link's client holds: it reaches Nemura's event inbox and nothing else.
 const Scope = "link.events.write"
 
 // path is where each event type goes on Nemura's API.
-var path = map[string]string{TypeRunPosted: "/v1/link/events", TypePaymentsStatus: "/v1/link/events", TypeDepartmentChanged: "/v1/link/events"}
+var path = map[string]string{TypeRunPosted: "/v1/link/events", TypePaymentsStatus: "/v1/link/events", TypeDepartmentChanged: "/v1/link/events", TypeSessionRevoked: "/v1/link/events"}
 
 // Queued is what the outbox row keeps of an event. Only an event whose payload carries no pay or bank figure may keep it here (payroll.run.posted: a run's ID, its version, the posting's reference or
 // the refusal's stable code and plain message): a type with figures is built from its source when it is sent, never kept in a row (design D5).
@@ -82,10 +84,17 @@ type DepartmentChanged struct {
 	Departments    []Department `json:"departments"`
 }
 
+// SessionRevoked is the payload of identity.session.revoked.
+type SessionRevoked struct {
+	Issuer  string `json:"issuer"`
+	Subject string `json:"subject"`
+	Reason  string `json:"reason"` // signed_out or removed
+}
+
 // Queue queues an event about an object for Nemura in the unit of work that changed the object, when the organisation's link is active and has keys, and returns its event ID; otherwise it does
 // nothing and returns "". The sequence is the link's next number, taken under the row's lock, so events leave in the order they were committed. The row's business key is "link:" and the event ID.
 func Queue(ctx context.Context, u storage.UnitOfWork, typ, objectType, objectID string, version int, payload any) (string, error) {
-	if typ != TypeRunPosted && typ != TypeDepartmentChanged {
+	if typ != TypeRunPosted && typ != TypeDepartmentChanged && typ != TypeSessionRevoked {
 		return "", fmt.Errorf("Fyniq does not queue %s with a payload: build it from its source when it is sent", typ)
 	}
 	l, err := u.PeopleLinks().Live(ctx)

@@ -247,10 +247,13 @@ func LinkHealth(ctx context.Context, tx pgx.Tx, now time.Time) (LinkHealthRow, b
 		return h, false, err
 	}
 	h.State, h.Epoch, h.LastSequenceQueued = l.State, l.Epoch, l.Sequence
-	if err := tx.QueryRow(ctx, `SELECT
- count(*) FILTER (WHERE state = 'queued'), count(*) FILTER (WHERE state = 'failed'), count(*) FILTER (WHERE state = 'sent'), count(*) FILTER (WHERE state = 'refused'),
- min(queued_at) FILTER (WHERE state IN ('queued', 'failed')), max(settled_at) FILTER (WHERE state = 'sent'), coalesce(max(sequence) FILTER (WHERE state = 'sent'), 0)
-FROM nemura.link_event WHERE link_id = $1`, l.ID).Scan(&h.Queued, &h.Failed, &h.Sent, &h.Refused, &h.OldestWaiting, &h.LastSent, &h.LastSequenceSent); err != nil {
+	// What is wrong is each object's newest event: a repair or a retry queues a new event for the object and leaves the old one as it was, and the old one is no longer what is waiting.
+	if err := tx.QueryRow(ctx, `WITH newest AS (SELECT DISTINCT ON (type, object_type, object_id) state, queued_at FROM nemura.link_event WHERE link_id = $1 ORDER BY type, object_type, object_id, sequence DESC)
+SELECT count(*) FILTER (WHERE state = 'queued'), count(*) FILTER (WHERE state = 'failed'), count(*) FILTER (WHERE state = 'refused'), min(queued_at) FILTER (WHERE state IN ('queued', 'failed')) FROM newest`, l.ID).
+		Scan(&h.Queued, &h.Failed, &h.Refused, &h.OldestWaiting); err != nil {
+		return h, true, err
+	}
+	if err := tx.QueryRow(ctx, `SELECT count(*), max(settled_at), coalesce(max(sequence), 0) FROM nemura.link_event WHERE link_id = $1 AND state = 'sent'`, l.ID).Scan(&h.Sent, &h.LastSent, &h.LastSequenceSent); err != nil {
 		return h, true, err
 	}
 	if err := tx.QueryRow(ctx, `SELECT coalesce(max(sequence), 0) FROM nemura.link_inbox WHERE link_id = $1`, l.ID).Scan(&h.LastFyniqSequence); err != nil {
@@ -261,8 +264,9 @@ FROM nemura.link_event WHERE link_id = $1`, l.ID).Scan(&h.Queued, &h.Failed, &h.
 		h.FailingSince = h.OldestWaiting
 		h.SyncFailingOver24Hour = now.Sub(*h.OldestWaiting) >= 24*time.Hour
 	}
-	rows, err := tx.Query(ctx, `SELECT event_id, sequence, type, object_type, object_id, object_version, state, coalesce(code, ''), attempts, queued_at FROM nemura.link_event
-WHERE link_id = $1 AND state IN ('failed', 'refused') ORDER BY sequence DESC LIMIT 50`, l.ID)
+	rows, err := tx.Query(ctx, `SELECT event_id, sequence, type, object_type, object_id, object_version, state, coalesce(code, ''), attempts, queued_at FROM
+ (SELECT DISTINCT ON (type, object_type, object_id) * FROM nemura.link_event WHERE link_id = $1 ORDER BY type, object_type, object_id, sequence DESC) newest
+WHERE state IN ('failed', 'refused') ORDER BY sequence DESC LIMIT 50`, l.ID)
 	if err != nil {
 		return h, true, err
 	}

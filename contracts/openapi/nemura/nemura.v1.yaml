@@ -8010,6 +8010,9 @@ components:
           type:
             - array
             - "null"
+        workspace:
+          $ref: "#/components/schemas/Workspace"
+          description: "Present when the person may cross to Fyniq: the Finance | People switch shows. Absent when the apps are not linked, the person's roles are not ones that reach the books, or this deployment does not name Fyniq's address."
       required:
         - organisation_id
         - member_id
@@ -8620,6 +8623,18 @@ components:
         - effective_from
         - weekdays
         - hours_per_week
+      type: object
+    Workspace:
+      additionalProperties: false
+      properties:
+        finance_url:
+          description: "Where Fyniq's web app is: the switch opens it, and Fyniq's own sign-in and rights decide what the person sees."
+          examples:
+            - https://app.example.test/?switch=1
+          format: uri
+          type: string
+      required:
+        - finance_url
       type: object
     YTDInput:
       additionalProperties: false

@@ -17,6 +17,7 @@ import { AskAssistant } from "./pages/AskAssistant";
 import { AssistantSettings } from "./pages/AssistantSettings";
 import { MyPay, Payslip } from "./pages/MyPay";
 import { FyniqLink } from "./pages/FyniqLink";
+import { rememberPage, switchedIn } from "./workspace";
 import { PayRunApproval } from "./pages/PayRunApproval";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleRequests } from "./pages/PeopleRequests";
@@ -60,8 +61,11 @@ export function App() {
   const signedOut = state.status === "none";
   const landing = state.status === "in" ? state.session.landing : "/sign-in";
   useEffect(() => {
+    if (route?.signedIn && state.status === "in") rememberPage(path); // the switch brings a person back to the page they left here
+  }, [path, route, state.status]);
+  useEffect(() => {
     if (state.status === "loading") return;
-    if (path === "/") navigate(landing, true);
+    if (path === "/") navigate((state.status === "in" && switchedIn(window.location.search)) || landing, true);
     else if (route?.signedIn && signedOut) navigate("/sign-in", true);
     else if ((route?.id === "sign-in" || route?.id === "join") && state.status === "in") navigate(landing, true);
   }, [path, route, state.status, landing, signedOut]);

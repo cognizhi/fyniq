@@ -18,6 +18,9 @@ import { TourHost, TourOffer } from "../tour/TourHost";
 import { useBadges, type Badge } from "./badges";
 import { bottomBar, navFor } from "./navigation";
 import { StatusRegion } from "./status";
+import { WorkspaceSwitch } from "./WorkspaceSwitch";
+import { go, safeReturn } from "../route";
+import { rememberPage, switchedIn } from "../workspace";
 
 const CommandPalette = lazy(() => import("./CommandPalette"));
 const AssistantPanel = lazy(() => import("../components/ai/AssistantPanel"));
@@ -129,7 +132,7 @@ export function AppFrame(props: Parameters<typeof Frame>[0]) {
 }
 
 function Frame({ session, title, mode, operations, bell, banners, logo, children }: {
-  session: Pick<Session, "roles" | "features"> & { user_id?: string; super_admin?: boolean };
+  session: Pick<Session, "roles" | "features" | "workspace"> & { user_id?: string; super_admin?: boolean };
   title: string;
   mode: Mode;
   operations?: ReactNode;
@@ -153,6 +156,12 @@ function Frame({ session, title, mode, operations, bell, banners, logo, children
     setSheetOpen(o);
   };
   const navigate = useNavigate();
+  // Crossing from Nemura through the switch opens "/?switch=1": the person goes back to the page they left here; every page they visit is remembered for the next time (FR-PPL-02).
+  useEffect(() => {
+    const back = switchedIn(window.location.search, path);
+    if (back) go(safeReturn(back));
+    else rememberPage(path);
+  }, [path]);
   const keys = useShortcutSettings(session.user_id ?? "");
   const opener = useRef<HTMLButtonElement>(null);
   const visible = navFor(nav, session, mode);
@@ -270,6 +279,7 @@ function Frame({ session, title, mode, operations, bell, banners, logo, children
           <span className="fy-kbd">Ctrl K</span>
         </button>
         <div className="fy-top__actions">
+          <WorkspaceSwitch session={session} />
           <ModeSwitch mode={mode} />
           <Button ref={opener} variant="ghost" size="sm" onClick={() => (assistant ? closeAssistant() : setAssistant(true))} aria-expanded={assistant}
             aria-label={ai.label} title={ai.tooltip} aria-keyshortcuts="Control+J Meta+J" data-tour="assistant">

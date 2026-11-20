@@ -4228,6 +4228,19 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.revoke_sessions_of_identity(p_issuer text, p_subject text, p_at timestamp with time zone)
+ RETURNS SETOF uuid
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  UPDATE nemura.session s SET revoked_at = p_at
+   WHERE s.organisation_id = nemura.require_org() AND s.revoked_at IS NULL AND s.expires_at > p_at
+     AND s.member_id IN (SELECT d.member_id FROM nemura.identity_directory d
+                          WHERE d.organisation_id = nemura.require_org() AND d.issuer = p_issuer AND d.subject = p_subject)
+  RETURNING s.id
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.role_assignment_check()
  RETURNS trigger
  LANGUAGE plpgsql

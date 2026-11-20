@@ -809,3 +809,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/nemura/fyniq-link.md -> nemura.fyniq-link (link page, health, repair and restore; p1-nemura-fyniq-link 5.1-5.3)
 
 ## [2026-11-20] compile | payroll-approval.md -> nemura.payroll-approval (link to the Fyniq link page)
+
+## [2026-11-20] compile | docs/user-guide/nemura/fyniq-link.md -> nemura.fyniq-link (the Finance | People switch, p1-nemura-fyniq-link 4.3)

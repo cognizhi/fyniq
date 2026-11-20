@@ -1,9 +1,12 @@
 import { LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { helpText, t } from "../i18n";
+import { useSession } from "../session";
 
 // Shell is the frame of a signed-in page: the brand, the way to the people and home, sign-out as a form post (no script holds the session), and the main area.
 export function Shell({ children, directory, features, roles }: { children: ReactNode; directory?: boolean; features?: boolean; roles?: readonly string[] }) {
+  const state = useSession();
+  const finance = state.status === "in" ? state.session.workspace?.finance_url : undefined;
   return (
     <div className="nm-shell">
       <header className="nm-shell__bar">
@@ -35,6 +38,12 @@ export function Shell({ children, directory, features, roles }: { children: Reac
             {linkAdmin(roles ?? []) && <a href="/settings/fyniq">{t("nav.fyniq")}</a>}
           </nav>
         </span>
+        {finance && (
+          <nav className="nm-workspace" aria-label={t("workspace.label")} title={helpText("workspace.switch").tooltip}>
+            <a href={finance}>{t("workspace.finance")}</a>
+            <a href="/?switch=1" aria-current="page">{t("workspace.people")}</a>
+          </nav>
+        )}
         <form method="post" action="/api/auth/signout">
           <button className="fy-btn fy-btn--secondary" type="submit" title={helpText("nav.signOut").tooltip}>
             <LogOut size={16} aria-hidden="true" />

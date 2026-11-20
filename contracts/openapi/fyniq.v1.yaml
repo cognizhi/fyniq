@@ -52200,6 +52200,9 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
           format: uuid
           type: string
+        workspace:
+          $ref: "#/components/schemas/Workspace"
+          description: "Present when you may cross to Nemura: the Finance | People switch shows (FR-PPL-02). Absent when the apps are not linked or your roles are personal only (an employee who only claims has no switch: Nemura's Claims tile opens the personal workspace)."
       required:
         - roles
         - super_admin
@@ -57921,6 +57924,18 @@ components:
           type: string
       required:
         - items
+      type: object
+    Workspace:
+      additionalProperties: false
+      properties:
+        people_url:
+          description: "Where Nemura's web app is, as the link was approved with it: the switch opens it, and Nemura's own sign-in and rights decide what you see."
+          examples:
+            - https://people.example.test/?switch=1
+          format: uri
+          type: string
+      required:
+        - people_url
       type: object
     WriteOff:
       additionalProperties: false

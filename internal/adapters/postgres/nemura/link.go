@@ -232,6 +232,50 @@ func applyDepartments(ctx context.Context, tx pgx.Tx, now time.Time, event uuid.
 	return "applied", nil
 }
 
+// sessionRevokedEvent is identity.session.revoked: Fyniq signed a person out, or removed them, and says who by the identity the shared sign-in knows them by (never an email) and why.
+type sessionRevokedEvent struct {
+	Issuer  string `json:"issuer"`
+	Subject string `json:"subject"`
+	Reason  string `json:"reason"` // signed_out or removed
+}
+
+// applySessionRevoked ends the sessions of the members of this organisation with that identity (NM-INT-12): a person signed out of, or removed from, Fyniq is signed out of Nemura as well. It names a person by
+// identity only, and ends nothing of any other person or organisation; no sessions to end is not an error (they may have none). The audit event holds the reason and how many, never the identity.
+func applySessionRevoked(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Time, ev sessionRevokedEvent) error {
+	if ev.Issuer == "" || ev.Subject == "" || len(ev.Issuer) > 500 || len(ev.Subject) > 500 || (ev.Reason != "signed_out" && ev.Reason != "removed") {
+		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "A session revocation names a person by issuer and subject, and why: signed_out or removed."}
+	}
+	rows, err := tx.Query(ctx, `SELECT nemura.revoke_sessions_of_identity($1, $2, $3)`, ev.Issuer, ev.Subject, now)
+	if err != nil {
+		return err
+	}
+	var ended []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return err
+		}
+		ended = append(ended, id)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, id := range ended { // every session change has its audit event: the session and why, never who
+		if err := Audit(ctx, tx, org, now, audit.Actor{Type: "service", ID: "link"}, "nemura.session.ended", audit.Object{Type: "session", ID: id}, nil, "signed out of Fyniq ("+ev.Reason+")"); err != nil {
+			return err
+		}
+	}
+	n := len(ended)
+	l, err := LiveLink(ctx, tx)
+	if err != nil {
+		return err
+	}
+	return Audit(ctx, tx, org, now, audit.Actor{Type: "service", ID: "link"}, "nemura.session.revoked_by_fyniq", audit.Object{Type: "fyniq_link", ID: l.ID},
+		map[string]audit.Change{"reason": {nil, ev.Reason}, "sessions_ended": {nil, n}}, "")
+}
+
 type runPostedEvent struct {
 	RunID      uuid.UUID `json:"run_id"`
 	Version    int       `json:"version"`
@@ -246,6 +290,7 @@ const (
 	TypePayrollRunPosted     = "payroll.run.posted"
 	TypePayrollPaymentStatus = "payroll.payments.status"
 	TypeDepartmentChanged    = "people.department.changed"
+	TypeSessionRevoked       = "identity.session.revoked"
 )
 
 // ReceiveLinkEvent verifies and applies one event Fyniq sent (NM-INT-10): the envelope against the link as Nemura holds it (organisations, epoch, a 5-minute window, Fyniq's signature,
@@ -321,6 +366,11 @@ func ReceiveLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Ti
 					applyErr = &payroll.Refusal{Code: payroll.CodeInvalid, Message: "The posting answer has a status other than posted or refused, or lacks its reference or its code."}
 				}
 			}
+		}
+	case TypeSessionRevoked:
+		var ev sessionRevokedEvent
+		if applyErr = strict(&ev); applyErr == nil {
+			applyErr = applySessionRevoked(ctx, sp, org, now, ev)
 		}
 	case TypeReplayRequested:
 		var ev replayRequest

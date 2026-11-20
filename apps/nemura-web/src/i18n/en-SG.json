@@ -896,6 +896,9 @@
     "approval.done": "Approved. The inputs it used are marked used by this run.",
     "approval.approved": "This version is approved.",
     "nav.fyniq": "Fyniq link",
+    "workspace.label": "Workspace",
+    "workspace.finance": "Finance",
+    "workspace.people": "People",
     "link.title": "Link to Fyniq",
     "link.failed": "We could not do that. Check your connection and try again.",
     "link.denied": "Only an Owner or an Administrator sees the link to Fyniq.",
@@ -1232,6 +1235,10 @@
     "payroll.page": {
       "label": "Payroll",
       "tooltip": "Pay groups, each person's pay record, the year to date and one-off items. Pay is seen and changed by the Payroll administrator and the Owner alone, and no audit event holds an amount."
+    },
+    "workspace.switch": {
+      "label": "Finance | People switch",
+      "tooltip": "Crosses to Fyniq with the same account. It never changes what you may do: each app keeps its own roles and its own last page."
     },
     "link.page": {
       "label": "Link to Fyniq",

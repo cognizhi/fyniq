@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "people_url": {
+      "description": "Where Nemura's web app is, as the link was approved with it: the switch opens it, and Nemura's own sign-in and rights decide what you see.",
+      "examples": [
+        "https://people.example.test/?switch=1"
+      ],
+      "format": "uri",
+      "type": "string"
+    }
+  },
+  "required": [
+    "people_url"
+  ],
+  "title": "Workspace",
+  "type": "object"
+}

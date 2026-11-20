@@ -4,7 +4,7 @@ type: task
 title: Link Nemura to Fyniq and keep the link healthy
 summary: How an Owner and a second approver link Nemura to Fyniq, what is sent each way, how to read the link's health and repair a gap, and what to do after a restore
 sources:
-  - docs/user-guide/nemura/fyniq-link.md sha256:dbd54c13d6631f94610f224efd9e7a171636f5a53cf6ae5076d64850f1ea6ae9
+  - docs/user-guide/nemura/fyniq-link.md sha256:ff3cdfeba2b4dd3319803cf06e270654aa4d72a0ddea60580f3ea39d5015cf71
 data_class: personal
 taint: trusted
 status: published
@@ -41,6 +41,10 @@ aliases:
 ## After a restore
 
 - After a restore of Nemura's database the link is held and nothing is sent or paid. The page lists each pay run approved with proof whose answer the restored database lacks; check each in Fyniq and choose that Fyniq posted it (with its reference) or did not (the approval is then sent again). When the last is decided the link resumes and the current state is sent again. (src: docs/user-guide/nemura/fyniq-link.md#after-a-restore-of-nemuras-database)
+
+## The Finance and People switch
+
+- While linked, a person who may cross sees **Finance | People** in the header: it opens the other app with the same account and each app keeps its own last page. It never changes what you may do: each app has its own roles, a role in one grants nothing in the other, and an employee who only claims sees no switch. Nemura shows it to Owners, Administrators and Payroll administrators. Signing out of Fyniq, or being removed from it, signs the person out of Nemura as well; signing out of Nemura does not yet sign you out of Fyniq. (src: docs/user-guide/nemura/fyniq-link.md#the-finance-and-people-switch)
 
 ## When it looks wrong
 
