@@ -263789,7 +263789,7 @@ paths:
         - STORAGE-VERSION-01
       x-fyniq-permission:
         capability: "Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)"
-        note: "Needs a person signed in to Fyniq with the right on Organisation integrations (Owner, Administrator), who also finishes the tasks integrations made: no API client, token, agent or AI finishes a task this way, and no scope reaches it (FR-INT-24)."
+        note: "Needs a person signed in to Fyniq with the right on Organisation integrations (Administrator; the Owner too, as for every integration), who also finishes the tasks integrations made: no API client, token, agent or AI finishes a task this way, and no scope reaches it (FR-INT-24)."
         right: C
   /v1/tax/bad-debt-relief:
     get:

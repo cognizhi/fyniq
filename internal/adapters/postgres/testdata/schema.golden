@@ -6538,7 +6538,6 @@ mcp_seen | mcp_seen_user_id_not_null | NOT NULL user_id
 mcp_seen | mcp_seen_value_not_null | NOT NULL value
 mcp_third_party_app | mcp_third_party_app_client | CHECK ((client_id ~ '^mcp-[0-9a-f]{20}$'::text))
 mcp_third_party_app | mcp_third_party_app_client_id_not_null | NOT NULL client_id
-mcp_third_party_app | mcp_third_party_app_client_once | UNIQUE (client_id)
 mcp_third_party_app | mcp_third_party_app_id_not_null | NOT NULL id
 mcp_third_party_app | mcp_third_party_app_inventory_entry_not_null | NOT NULL inventory_entry
 mcp_third_party_app | mcp_third_party_app_name_not_null | NOT NULL name
@@ -9596,7 +9595,7 @@ CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (o
 CREATE UNIQUE INDEX mcp_call_pkey ON fyniq.mcp_call USING btree (organisation_id, id)
 CREATE UNIQUE INDEX mcp_client_pkey ON fyniq.mcp_client USING btree (client_id)
 CREATE UNIQUE INDEX mcp_seen_pkey ON fyniq.mcp_seen USING btree (organisation_id, user_id, kind, value)
-CREATE UNIQUE INDEX mcp_third_party_app_client_once ON fyniq.mcp_third_party_app USING btree (client_id)
+CREATE UNIQUE INDEX mcp_third_party_app_client_once ON fyniq.mcp_third_party_app USING btree (organisation_id, client_id)
 CREATE UNIQUE INDEX mcp_third_party_app_pkey ON fyniq.mcp_third_party_app USING btree (organisation_id, id)
 CREATE UNIQUE INDEX mcp_user_optin_pkey ON fyniq.mcp_user_optin USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_invitation_code_key ON fyniq.member_invitation USING btree (organisation_id, code_hash)

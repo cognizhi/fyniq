@@ -28707,7 +28707,7 @@ Updates the title, detail, due date or link of a task the calling client made, o
 
 A person who holds the right on tasks made by integrations (an Owner or an Administrator) marks one done or cancelled, for good, over the version they read (If-Match; FR-INT-24). Only the status changes. The person must be signed in to Fyniq: no API client, token, agent or AI closes a task this way, and a compliance task is not found here. Side effects: the change and its audit event naming the person. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
 
-- **Permission:** Create on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6). Needs a person signed in to Fyniq with the right on Organisation integrations (Owner, Administrator), who also finishes the tasks integrations made: no API client, token, agent or AI finishes a task this way, and no scope reaches it (FR-INT-24).
+- **Permission:** Create on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6). Needs a person signed in to Fyniq with the right on Organisation integrations (Administrator; the Owner too, as for every integration), who also finishes the tasks integrations made: no API client, token, agent or AI finishes a task this way, and no scope reaches it (FR-INT-24).
 - **Parameters:**
   - `task_id` (path, required): The task's ID.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
