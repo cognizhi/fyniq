@@ -71,6 +71,17 @@ func TestTheTaxWorkingPaperIsWorkedFromTheLedger(t *testing.T) {
 	e.problemIs(e.call(http.MethodPost, "/v1/tax/working-paper", e.as(authz.Auditor), map[string]any{"financial_year_end": "2026-11-30", "scheme": "pte"}), "workTaxPaper", 403, CodeForbidden)
 }
 
+// A year with no revenue and no expense line is a nil working paper, not a failure: the authorisation matrix asks it of an organisation whose books are empty (FR-TAX-06).
+// req: FR-TAX-06
+func TestAYearWithNoLinesIsANilWorkingPaper(t *testing.T) {
+	e := newEnv(t)
+	e.invoiceNowReady()
+	r := e.call(http.MethodPost, "/v1/tax/working-paper", e.as(authz.Accountant), map[string]any{"financial_year_end": "2026-11-30", "scheme": "pte"})
+	if r.Status != 200 || r.str("revenue") != "0.00" || r.str("tax_payable_rounded") != "0.00" || r.str("form") != "C-S (Lite)" {
+		t.Fatalf("an empty year: %d %s", r.Status, r.Raw)
+	}
+}
+
 // With no pack activated the organisation has no update to accept, and the answer says so.
 // req: ENG-33
 func TestNoPackUpdateIsOfferedWhileNothingIsActivated(t *testing.T) {

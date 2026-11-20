@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"slices"
 	"strings"
@@ -352,7 +351,7 @@ func (a *API) taxPaper(ctx context.Context, u storage.UnitOfWork, end time.Time,
 				return b.Totals[0].String(), nil
 			}
 		}
-		return "", fmt.Errorf("the profit and loss has no %s", key)
+		return "0.00", nil // a year with no such line has none of it
 	}
 	pbt, err := measure(financials.KeyProfitBeforeTax)
 	if err != nil {
@@ -383,7 +382,11 @@ func (a *API) taxPaper(ctx context.Context, u storage.UnitOfWork, end time.Time,
 		}
 		return out, invalid(fields)
 	}
-	form, optional, err := pack.FilingForm(formsV, revenue)
+	forForm := revenue
+	if strings.HasPrefix(strings.TrimSpace(revenue), "-") {
+		forForm = "0.00" // a year whose net revenue is negative (credits above sales) is below every limit
+	}
+	form, optional, err := pack.FilingForm(formsV, forForm)
 	if err != nil {
 		return out, err
 	}
