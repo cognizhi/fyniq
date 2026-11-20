@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, CalendarClock, ChartBarDecreasing, ChartColumn, ChevronRight, Gauge, HandCoins, Landmark, LayoutList, ReceiptText, Scale, ScrollText, Search, Target, Truck, Wallet, type LucideIcon } from "lucide-react";
+import { BookOpen, CalendarClock, ChartBarDecreasing, ChartColumn, ChevronRight, FileSearch, Gauge, HandCoins, Landmark, LayoutList, ReceiptText, Scale, ScrollText, Search, Target, Truck, Wallet, type LucideIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -34,6 +34,7 @@ const more: { name: string; line: string; icon: LucideIcon; to: string; params?:
   { name: "Schedules", line: "Costs and income spread over months, and what each has recognised.", icon: CalendarClock, to: "/accounting/schedules", expert: true },
   { name: "Dashboard", line: "Arrange the KPI tiles you watch, and save your own dashboard.", icon: Gauge, to: "/dashboards" },
   { name: "Board pack", line: "The month's board pack: its figures, your commentary, and Publish.", icon: Landmark, to: "/reports/board-pack", expert: true },
+  { name: "Auditor engagement", line: "The auditor's requests and samples, and the Owner's opening and confirming of the engagement.", icon: FileSearch, to: "/auditor/engagement", expert: true },
   { name: "Report builder", line: "Choose rows, columns and calculated rows, then save, share and schedule the report.", icon: LayoutList, to: "/reports/builder", expert: true },
   { name: "Budget vs Actual", line: "Each account's actual against the year's budget, and whether the gap is favourable.", icon: Target, to: "/reports/budget-vs-actual", expert: true },
 ];

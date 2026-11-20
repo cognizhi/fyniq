@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "auditor_user_id": {
+      "description": "The member, holding the Auditor role, who asks and draws samples.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "closed_at": {
+      "description": "When it was closed.",
+      "examples": [
+        "2027-03-31T04:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "closes_on": {
+      "description": "The last day they may be added; at most 366 days after it opens.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "confirmed_at": {
+      "description": "When it was confirmed.",
+      "examples": [
+        "2026-12-01T04:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "firm": {
+      "description": "The auditing firm.",
+      "examples": [
+        "Example \u0026 Co LLP"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The engagement's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "What it is called.",
+      "examples": [
+        "FY2026 statutory audit"
+      ],
+      "type": "string"
+    },
+    "opened_at": {
+      "description": "When an Owner opened it.",
+      "examples": [
+        "2026-12-01T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "opens_on": {
+      "description": "The first day requests and samples may be added.",
+      "examples": [
+        "2027-01-04"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "period_from": {
+      "description": "The first day of the period under audit.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "period_to": {
+      "description": "The last day of the period under audit.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "status": {
+      "description": "pending until a second Owner confirms it; active while requests and samples may be added; closed.",
+      "enum": [
+        "pending",
+        "active",
+        "closed"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "auditor_user_id",
+    "period_from",
+    "period_to",
+    "opens_on",
+    "closes_on",
+    "status",
+    "opened_at"
+  ],
+  "title": "AuditEngagement",
+  "type": "object"
+}

@@ -4407,13 +4407,14 @@
     "FR-RPT-10",
     "AUD-07",
     "FR-CTL-03",
-    "FR-ADM-01"
+    "FR-ADM-01",
+    "FR-UX-42"
    ],
    "purpose": "Give an external auditor time-boxed, read-only access to everything in scope in one place.",
    "content": [
     "Access banner: scope and expiry date",
     "Shortcuts: trial balance as at any revision, GL, journal population with user and timestamp, change logs, access lists, audit trail, evidence",
-    "Requests list (queries to management, answers)",
+    "Requests list (queries to management, answers) and the sample list (FR-UX-42, rev 0.574): the engagement opened by an Owner and confirmed by a second, the auditor's requests, answers with evidence and samples drawn by a seed, built as Reports › Auditor engagement (/auditor/engagement)",
     "P2: auditor evidence pack with chain verification results"
    ],
    "states": [

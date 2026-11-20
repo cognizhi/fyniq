@@ -68,6 +68,7 @@ func Read(ctx context.Context, u storage.UnitOfWork, base money.Currency, all []
 		entered[x.Month.Format("2006-01")] = x
 	}
 	zero := money.Zero(base)
+	var countErr error
 	month := func(i int) Month {
 		p := all[i]
 		key := p.StartsOn.Format("2006-01")
@@ -161,9 +162,25 @@ func Read(ctx context.Context, u storage.UnitOfWork, base money.Currency, all []
 		if x, ok := entered[key]; ok {
 			c := &Counts{Headcount: x.Counts.Headcount, EnteredBy: x.EnteredBy, EnteredAt: x.EnteredAt}
 			if x.Counts.Paying != nil && x.Counts.New != nil && x.Counts.Lost != nil {
-				c.Paying, c.New, c.Lost, c.HasCustomers = *x.Counts.Paying, *x.Counts.New, *x.Counts.Lost, true
+				c.Paying, c.New, c.Lost, c.HasCustomers, c.CountsFrom = *x.Counts.Paying, *x.Counts.New, *x.Counts.Lost, true, CountsEntered
 			}
 			m.Counts = c
+		}
+		// A counter that answers for the month gives way to nothing: the system's counts are ahead of a person's entry (FR-KPI-04), the headcount stays as entered.
+		for _, ctr := range Counters {
+			n, ok, err := ctr.Count(ctx, u, p.StartsOn)
+			if err != nil {
+				countErr = err
+				break
+			}
+			if !ok {
+				continue
+			}
+			if m.Counts == nil {
+				m.Counts = &Counts{}
+			}
+			m.Counts.Paying, m.Counts.New, m.Counts.Lost, m.Counts.HasCustomers, m.Counts.CountsFrom = n.Paying, n.New, n.Lost, true, n.Source
+			break
 		}
 		return m
 	}
@@ -190,6 +207,9 @@ func Read(ctx context.Context, u storage.UnitOfWork, base money.Currency, all []
 	if last > 0 {
 		b := month(last - 1)
 		before = &b
+	}
+	if countErr != nil {
+		return nil, nil, countErr
 	}
 	return months, before, nil
 }

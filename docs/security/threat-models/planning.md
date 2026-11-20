@@ -65,3 +65,12 @@ None of it posts (FR-PLN-08). Trust boundaries:
   tax lag and its 60/40 collections; the study's single tax rate and first-year break-even.
 - **No AI proposals yet.** The proposal of a budget version (`plan.propose_budget`) waits for the AI catalogue. Its own
   threat model comes with it.
+
+## Addendum: the kept weekly projections and the forecast accuracy (FR-PLN-04, rev 0.575)
+
+- A snapshot holds the projection as it was, so a figure read from it is the figure kept, never recalculated; it holds the same movements the signed-in reader of the cash projection may read (the rows' rights are the Budgets row's, unqualified).
+- Only the worker inserts a snapshot (column-limited grant), once a week per organisation; the database refuses any update, delete or truncate even from the schema's owner (`TestACashSnapshotIsKeptOncePerWeekByTheWorkerAndNeverChanged`), so a bad week cannot be rewritten to look better.
+- The figures are decimal strings in one document and the accuracy is worked out with exact decimals; the three causes add to the difference exactly (`TestTheCausesAddToTheDifferenceExactly`).
+- Row-level security on the table; another organisation sees none.
+- Not measured: the job's time on an organisation with a very large number of open documents.
+

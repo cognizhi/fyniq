@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "answer": {
+      "description": "The answer.",
+      "examples": [
+        "Attached"
+      ],
+      "type": "string"
+    },
+    "answered_at": {
+      "description": "When it was answered.",
+      "examples": [
+        "2027-01-10T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "assignee_user_id": {
+      "description": "The member who answers it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "closed_at": {
+      "description": "When the auditor accepted it.",
+      "examples": [
+        "2027-01-12T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "detail": {
+      "description": "More about it.",
+      "examples": [
+        "The statement of the main account"
+      ],
+      "type": "string"
+    },
+    "due_on": {
+      "description": "When the auditor wants it.",
+      "examples": [
+        "2027-01-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "engagement_id": {
+      "description": "Its engagement.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "evidence_ids": {
+      "description": "The evidence files attached to the answer.",
+      "items": {
+        "description": "An evidence file's ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b12"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "id": {
+      "description": "The request's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number within the engagement.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "requested_at": {
+      "description": "When it was asked.",
+      "examples": [
+        "2027-01-05T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "status": {
+      "description": "open until answered; answered until the auditor accepts it; closed.",
+      "enum": [
+        "open",
+        "answered",
+        "closed"
+      ],
+      "examples": [
+        "open"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What is asked for.",
+      "examples": [
+        "Bank confirmation at 31 December"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "engagement_id",
+    "number",
+    "title",
+    "assignee_user_id",
+    "status",
+    "requested_at",
+    "evidence_ids"
+  ],
+  "title": "AuditRequestBody",
+  "type": "object"
+}

@@ -341,6 +341,9 @@ var matrixCashProjection = map[string]func(e *env, tok string) (response, func()
 	"getCashProjection": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/cash-projection?days=30", tok, nil), nil
 	},
+	"getForecastAccuracy": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/forecast-accuracy", tok, nil), nil
+	},
 	"whatIfCashProjection": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/cash-projection:what-if", tok, map[string]any{"days": 30, "moves": []any{}}), nil
 	},

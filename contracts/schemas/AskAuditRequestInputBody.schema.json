@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "assignee_user_id": {
+      "description": "The member who answers it: an Owner, Controller or Accountant.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "detail": {
+      "description": "More about it.",
+      "examples": [
+        "The statement of the main account"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "due_on": {
+      "description": "When it is wanted.",
+      "examples": [
+        "2027-01-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "title": {
+      "description": "What is asked for.",
+      "examples": [
+        "Bank confirmation at 31 December"
+      ],
+      "maxLength": 200,
+      "minLength": 2,
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "assignee_user_id"
+  ],
+  "title": "AskAuditRequestInputBody",
+  "type": "object"
+}

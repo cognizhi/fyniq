@@ -777,6 +777,57 @@ type FyniqAuditRequestDetail struct {
 	Region         string
 }
 
+type FyniqAuditorEngagement struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Name           string
+	Firm           string
+	AuditorUserID  uuid.UUID
+	PeriodFrom     time.Time
+	PeriodTo       time.Time
+	OpensOn        time.Time
+	ClosesOn       time.Time
+	Status         string
+	OpenedBy       string
+	OpenedAt       time.Time
+	ConfirmedBy    *string
+	ConfirmedAt    *time.Time
+	ClosedBy       *string
+	ClosedAt       *time.Time
+}
+
+type FyniqAuditorRequest struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	EngagementID   uuid.UUID
+	Number         int32
+	Title          string
+	Detail         string
+	DueOn          pgtype.Date
+	AssigneeUserID uuid.UUID
+	Status         string
+	RequestedBy    string
+	RequestedAt    time.Time
+	Answer         *string
+	EvidenceIds    []uuid.UUID
+	AnsweredBy     *string
+	AnsweredAt     *time.Time
+	ClosedBy       *string
+	ClosedAt       *time.Time
+}
+
+type FyniqAuditorSample struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	EngagementID   uuid.UUID
+	Rule           []byte
+	Seed           string
+	Population     int32
+	Items          []byte
+	DrawnBy        string
+	DrawnAt        time.Time
+}
+
 type FyniqAuthzRefusal struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -1105,6 +1156,17 @@ type FyniqCaptureSender struct {
 	DecidedBy      string
 	DecidedAt      time.Time
 	Kind           string
+}
+
+type FyniqCashSnapshot struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	WeekOf         time.Time
+	TakenOn        time.Time
+	Currency       string
+	LedgerRevision int64
+	Projection     []byte
+	TakenAt        time.Time
 }
 
 type FyniqCheckOwner struct {

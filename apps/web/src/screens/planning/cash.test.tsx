@@ -101,3 +101,20 @@ describe("Cash ahead", () => {
     await vi.waitFor(() => expect(screen.queryByText(/What-if:/)).toBeNull());
   });
 });
+
+// req: FR-PLN-04
+describe("the forecast accuracy", () => {
+  it("shows each kept projection against the cash that came, the causes beside the difference", async () => {
+    answer({
+      "GET /v1/cash-projection": { status: 200, body: projection },
+      "GET /v1/forecast-accuracy": {
+        status: 200,
+        body: { note: "How it is worked out.", items: [{ snapshot_id: "s1", taken_on: "2026-09-07", weeks: 4, window_end: "2026-10-04", projected: m("3500.00"), actual: m("1000.00"), difference: m("-2500.00"), receipts_later: m("-2500.00"), timing: m("0.00"), unplanned: m("0.00") }] },
+      },
+    });
+    renderPage(CashAhead, { path: "/planning/cash", session: accountant, mode: "expert" });
+    expect(await screen.findByText("How the forecast did")).toBeTruthy();
+    expect(screen.getAllByText(/2,500\.00/).length).toBe(2);
+    await noViolations(document.body);
+  });
+});

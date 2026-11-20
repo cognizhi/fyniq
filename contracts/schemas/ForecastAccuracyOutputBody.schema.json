@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The kept projections whose window has ended, newest first, at most 52 weeks back.",
+      "items": {
+        "$ref": "ForecastAccuracyRow.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last.",
+      "examples": [
+        "eyJhZnRlciI6IjEifQ"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "How the causes are worked out.",
+      "examples": [
+        "A kept projection is compared with the cash at the end of its fourth and thirteenth week."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items",
+    "note"
+  ],
+  "title": "ForecastAccuracyOutputBody",
+  "type": "object"
+}

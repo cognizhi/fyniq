@@ -536,8 +536,16 @@ var codeFacts = map[string]struct {
 	CodeReportScheduler:           {403, "Not a role that schedules reports"},
 	CodeReportRecipient:           {422, "A recipient may not read reports"},
 	storage.CodeDashboardLayout:   {409, "A dashboard layout changes only as its next version"},
+	storage.CodeCashSnapshot:      {409, "A cash snapshot is never changed or deleted"},
+	storage.CodeCashSnapshotWeek:  {409, "The week has its snapshot already"},
+	storage.CodeAuditEngagement:   {409, "An engagement, request or sample changes only in its course, and only while the engagement is active"},
 	storage.CodeCapTableGrant:     {409, "A cap table grant changes only by being revoked"},
 	storage.CodeCapTableGrantLive: {409, "That person holds a grant already"},
+	CodeAuditWindow:               {409, "The engagement is not active, or today is outside its dates"},
+	CodeAuditAuditor:              {403, "Only the engagement's own auditor does that"},
+	CodeAuditAnswer:               {403, "Only the person the request names, or an Owner, answers it"},
+	CodeAuditConfirm:              {403, "A second Owner confirms an engagement in Team mode"},
+	CodeAuditOpen:                 {422, "That member does not hold the right role for the engagement"},
 	CodeCapGrantOwner:             {403, "Only an Owner grants the full cap table"},
 	CodeCapGrantNone:              {403, "No grant of the full cap table"},
 	storage.CodeKPIAlert:          {409, "A raised alert is never changed"},
@@ -1278,6 +1286,7 @@ var codeFacts = map[string]struct {
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
 var storageFixes = map[string]string{
+	storage.CodeAuditEngagement:   "Open a new engagement, or ask an Owner to confirm the pending one",
 	storage.CodeCapTableGrant:     "A grant ends once; grant it again to open the cap table again",
 	storage.CodeCapTableGrantLive: "Revoke that person's grant first",
 	storage.CodeDashboardLayout:   "Read the layout again and save the change as its next version",

@@ -232,6 +232,10 @@ type UnitOfWork interface {
 	KPIAlerts() KPIAlerts
 	// CapTableGrants are an Owner's grants of the full cap table to a Board or investor viewer (FR-EQ-24).
 	CapTableGrants() CapTableGrants
+	// AuditEngagements are the auditor's engagements, requests and samples (FR-UX-42).
+	AuditEngagements() AuditEngagements
+	// CashSnapshots are the weekly cash projections the forecast accuracy compares with what came (FR-PLN-04).
+	CashSnapshots() CashSnapshots
 	// DashboardLayouts are the dashboards a role or a person arranged (FR-VIZ-09, FR-KPI-05, rev 0.540).
 	DashboardLayouts() DashboardLayouts
 	// InvestorUpdates are the updates built from a published pack, and who read them (FR-EQ-23, rev 0.540).

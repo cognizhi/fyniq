@@ -78,6 +78,8 @@ const (
 	ConnectedApps       Capability = "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
 	OwnMCPConnection    Capability = "Own MCP connection (opt in, consent, revoke) (rev 0.2)"
 	ReportDefinitions   Capability = "Report definitions and schedules: save, share and schedule a report (rev 0.560)"
+	AuditEngagements    Capability = "Auditor engagement: open, confirm and close (rev 0.574)"
+	AuditRequests       Capability = "Auditor requests and samples: ask, answer, draw (rev 0.574)"
 )
 
 // WholeRow are the qualifiers that limit what a role does on a row, not which of its records it sees: an approval or
@@ -86,7 +88,7 @@ const (
 var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, ProjectCostRates, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection, ReportDefinitions}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, ProjectCostRates, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection, ReportDefinitions, AuditEngagements, AuditRequests}
 
 // The capabilities outside Appendix D.
 const (
@@ -299,6 +301,14 @@ var Grants = map[Capability]map[string]Cell{
 	// (rev 0.560) Saving a report, and scheduling one, are a person's own writes, never the AI's: it reads reports (Reports, dashboards).
 	ReportDefinitions: {
 		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	// (rev 0.574) The Auditor's engagement (FR-UX-42, the owner's decision of 23 Nov 2026): an Owner opens it and a second Owner confirms (the same Owner in Founder
+	// mode); the engagement is time-boxed. The Auditor's one C is on the requests row, to ask and to draw samples, and nowhere else; the Controller and the Accountant answer.
+	AuditEngagements: {
+		"Owner": {"CA", "+ second approver (opens; confirms)"}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	AuditRequests: {
+		"Owner": {"VC", "answer"}, "Admin": {"V", ""}, "Controller": {"VC", "answer"}, "Accountant": {"VC", "answer"}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"VC", "ask, sample"}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
 	},
 }
 
@@ -1186,11 +1196,11 @@ var (
 	ListPaymentProviderInvoices = Policy{Operation: "getPaymentProviderInvoices", Capability: BankTransactions, Need: View}
 	PostPaymentProviderInvoices = Policy{Operation: "postPaymentProviderInvoices", Capability: Invoices, Need: Post}
 	// Subscription contracts and their dated amendments (FR-AR-15): records, not postings, entered by those who may post invoices, read by those who see them.
-	CreateSubscriptionContract = Policy{Operation: "createSubscriptionContract", Capability: Invoices, Need: Post}
-	ListSubscriptionContracts  = Policy{Operation: "listSubscriptionContracts", Capability: Invoices, Need: View}
-	GetSubscriptionContract    = Policy{Operation: "getSubscriptionContract", Capability: Invoices, Need: View}
-	AmendSubscriptionContract  = Policy{Operation: "amendSubscriptionContract", Capability: Invoices, Need: Post}
-	GetContractedMRR           = Policy{Operation: "getContractedMRR", Capability: Invoices, Need: View}
+	CreateSubscriptionContract  = Policy{Operation: "createSubscriptionContract", Capability: Invoices, Need: Post}
+	ListSubscriptionContracts   = Policy{Operation: "listSubscriptionContracts", Capability: Invoices, Need: View}
+	GetSubscriptionContract     = Policy{Operation: "getSubscriptionContract", Capability: Invoices, Need: View}
+	AmendSubscriptionContract   = Policy{Operation: "amendSubscriptionContract", Capability: Invoices, Need: Post}
+	GetContractedMRR            = Policy{Operation: "getContractedMRR", Capability: Invoices, Need: View}
 	CreateInvoiceDispute        = Policy{Operation: "createInvoiceDispute", Capability: Invoices, Need: Post}
 	GetInvoiceDisputes          = Policy{Operation: "getInvoiceDisputes", Capability: Invoices, Need: View}
 	ResolveInvoiceDispute       = Policy{Operation: "resolveInvoiceDispute", Capability: Invoices, Need: Post}
@@ -1866,7 +1876,8 @@ var (
 	GetBudgetVsActual  = Policy{Operation: "getBudgetVsActual", Capability: Budgets, Need: View, Unqualified: true, Qualified: []string{"dept"}, Note: "A department's budget holder (C dept) reads their department's budget and actuals only."}
 	GetPlanningSummary = Policy{Operation: "getPlanningSummary", Capability: Budgets, Need: View, Unqualified: true}
 	// The short-term cash flow and its what-ifs (FR-PLN-09; p1-planning design D10): read by V on the row, unqualified.
-	GetCashProjection = Policy{Operation: "getCashProjection", Capability: Budgets, Need: View, Unqualified: true}
+	GetForecastAccuracy = Policy{Operation: "getForecastAccuracy", Capability: Budgets, Need: View, Unqualified: true} // FR-PLN-04, with the cash projection it compares
+	GetCashProjection   = Policy{Operation: "getCashProjection", Capability: Budgets, Need: View, Unqualified: true}
 	// Verify integrity of the audit trail for a range of days (AUD-03).
 	GetAuditVerification = Policy{Operation: "getAuditVerification", Capability: AuditTrail, Need: View}
 	// The audit trail explorer and its export (FR-CTL-03, AUD-07).
@@ -2118,10 +2129,22 @@ var (
 // The Owner's grant of the full cap table to a Board or investor viewer (FR-EQ-24; owner's decision of 23 Nov 2026): a grant is made and ended by an
 // Owner only (the handlers decide), and a viewer reads the whole table through getGrantedCapTable while a grant stands.
 var (
-	ListCapTableGrants   = Policy{Operation: "listCapTableGrants", Capability: CapTable, Need: View, Unqualified: true}
-	GrantCapTableAccess  = Policy{Operation: "grantCapTableAccess", Capability: CapTable, Need: Approve}
-	RevokeCapTableAccess = Policy{Operation: "revokeCapTableAccess", Capability: CapTable, Need: Approve}
-	GetGrantedCapTable   = Policy{Operation: "getGrantedCapTable", Capability: CapTable, Need: View, Unqualified: true, Qualified: []string{"own holding; all if granted"},
+	// The Auditor's engagement (FR-UX-42; rev 0.574). An Owner opens it and a second Owner confirms it (the same Owner in Founder mode); the Auditor asks and draws samples (the one C the
+	// role holds), the Owner, Controller and Accountant answer, and the Auditor closes an answered request.
+	ListAuditEngagements   = Policy{Operation: "listAuditEngagements", Capability: AuditEngagements, Need: View}
+	OpenAuditEngagement    = Policy{Operation: "openAuditEngagement", Capability: AuditEngagements, Need: Create}
+	ConfirmAuditEngagement = Policy{Operation: "confirmAuditEngagement", Capability: AuditEngagements, Need: Approve}
+	CloseAuditEngagement   = Policy{Operation: "closeAuditEngagement", Capability: AuditEngagements, Need: Create}
+	ListAuditRequests      = Policy{Operation: "listAuditRequests", Capability: AuditRequests, Need: View}
+	AskAuditRequest        = Policy{Operation: "askAuditRequest", Capability: AuditRequests, Need: Create, Unqualified: true, Qualified: []string{"ask, sample"}}
+	AnswerAuditRequest     = Policy{Operation: "answerAuditRequest", Capability: AuditRequests, Need: Create, Unqualified: true, Qualified: []string{"answer"}}
+	CloseAuditRequest      = Policy{Operation: "closeAuditRequest", Capability: AuditRequests, Need: Create, Unqualified: true, Qualified: []string{"ask, sample"}}
+	DrawAuditSample        = Policy{Operation: "drawAuditSample", Capability: AuditRequests, Need: Create, Unqualified: true, Qualified: []string{"ask, sample"}}
+	ListAuditSamples       = Policy{Operation: "listAuditSamples", Capability: AuditRequests, Need: View}
+	ListCapTableGrants     = Policy{Operation: "listCapTableGrants", Capability: CapTable, Need: View, Unqualified: true}
+	GrantCapTableAccess    = Policy{Operation: "grantCapTableAccess", Capability: CapTable, Need: Approve}
+	RevokeCapTableAccess   = Policy{Operation: "revokeCapTableAccess", Capability: CapTable, Need: Approve}
+	GetGrantedCapTable     = Policy{Operation: "getGrantedCapTable", Capability: CapTable, Need: View, Unqualified: true, Qualified: []string{"own holding; all if granted"},
 		Note: "A viewer whose cell reads 'all if granted' reads it only while an Owner's grant stands (CAPGRANT-02)."}
 )
 
@@ -2287,7 +2310,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	AddInvestorRightsEvidence, ListInvestorRightsEvidence, GetInvestorRightsEvidence, RemoveInvestorRightsEvidence, CreateControllerEntry,
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
 	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListReportDefinitions, GetReportDefinition, RunReportDefinition, RunReportDraft, CreateReportDefinition, ReplaceReportDefinition,
-	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListCapTableGrants, GrantCapTableAccess, RevokeCapTableAccess, GetGrantedCapTable, ListBoardPacks, GetBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack,
+	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListCapTableGrants, GetForecastAccuracy, ListAuditEngagements, OpenAuditEngagement, ConfirmAuditEngagement, CloseAuditEngagement, ListAuditRequests, AskAuditRequest, AnswerAuditRequest, CloseAuditRequest, DrawAuditSample, ListAuditSamples, GrantCapTableAccess, RevokeCapTableAccess, GetGrantedCapTable, ListBoardPacks, GetBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack,
 	ListKPIAlerts, GetDeferralRollForward, ListDashboardTiles, GetMyDashboard, GetRoleDashboard, SaveMyDashboard, SaveRoleDashboard, ListInvestorUpdates, GetInvestorUpdate, CreateInvestorUpdate, EditInvestorUpdate, SendInvestorUpdate, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
 	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetBadDebtRelief, WorkTaxPaper, ListStatutoryPackUpdates, GetInvoiceNowGate, ListInvoiceNowInbound, PollInvoiceNowInbound, DraftInvoiceNowInbound, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,

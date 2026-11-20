@@ -23,7 +23,6 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
-	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -462,7 +461,7 @@ func TestIntradayReportsInADropFolderAreSignalsNotLines(t *testing.T) {
 	if err := os.WriteFile(old, []byte(report(acct, "BROLD")), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	longAgo := time.Now().AddDate(0, 0, -30)
+	longAgo := e.clock.Now().AddDate(0, 0, -30)
 	if err := os.Chtimes(old, longAgo, longAgo); err != nil {
 		t.Fatal(err)
 	}
@@ -475,7 +474,7 @@ func TestIntradayReportsInADropFolderAreSignalsNotLines(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(worker.Close)
-	s := bankfeed.Syncer{Store: worker, Runtime: e.api.deps.Connectors.Runtime, Clock: clock.NewFrozen(time.Now())}
+	s := bankfeed.Syncer{Store: worker, Runtime: e.api.deps.Connectors.Runtime, Clock: e.clock}
 	signals := func() []storage.BankSignal {
 		var out []storage.BankSignal
 		e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {

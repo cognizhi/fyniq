@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "description": "The account's code.",
+      "examples": [
+        "6120"
+      ],
+      "type": "string"
+    },
+    "account_name": {
+      "description": "The account's name.",
+      "examples": [
+        "Software"
+      ],
+      "type": "string"
+    },
+    "base_amount": {
+      "description": "The line in the base currency, a decimal string.",
+      "examples": [
+        "-1500.00"
+      ],
+      "type": "string"
+    },
+    "entry_id": {
+      "description": "The journal entry.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b13"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "line_no": {
+      "description": "The line within it.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "memo": {
+      "description": "The entry's memo.",
+      "examples": [
+        "Hosting"
+      ],
+      "type": "string"
+    },
+    "posting_date": {
+      "description": "The posting date.",
+      "examples": [
+        "2026-06-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "source_id": {
+      "description": "That document's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b14"
+      ],
+      "type": "string"
+    },
+    "source_type": {
+      "description": "The kind of document it posted from, which opens read-only.",
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "entry_id",
+    "line_no",
+    "posting_date",
+    "account",
+    "account_name",
+    "base_amount",
+    "source_type"
+  ],
+  "title": "AuditSampleLine",
+  "type": "object"
+}

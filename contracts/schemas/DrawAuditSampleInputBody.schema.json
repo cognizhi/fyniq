@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "rule": {
+      "$ref": "AuditSampleRule.schema.json",
+      "description": "The rule: a period inside the engagement's, an account, a smallest line and a count."
+    },
+    "seed": {
+      "description": "A seed to re-draw an earlier sample; left out, Fyniq makes one and keeps it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b16"
+      ],
+      "maxLength": 64,
+      "type": "string"
+    }
+  },
+  "required": [
+    "rule"
+  ],
+  "title": "DrawAuditSampleInputBody",
+  "type": "object"
+}

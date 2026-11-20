@@ -167,3 +167,77 @@ func TestKPIsThroughTheAPI(t *testing.T) {
 		t.Errorf("a month the books have no period for: %d %s", r.Status, r.Raw)
 	}
 }
+
+// FR-KPI-04: the customer counts come from the recurring invoices that were active at a month's end ahead of a person's entry, and each KPI that uses them says which
+// source answered. A customer with two invoices counts once; a paused invoice counts for no month; a customer whose invoice ended is lost in the month after, and one whose
+// began in the month is new. Worked by hand: October pays customers 1 and 3 (1 is new), November pays 1 and 2 (2 is new, 3 is lost), so November's churn is 1 lost of the
+// 2 at its start (paying 2 - new 1 + lost 1), 50.0%.
+// req: FR-KPI-04
+// req: FR-KPI-02
+func TestCustomerCountsComeFromTheRecurringInvoicesAheadOfAnEntry(t *testing.T) {
+	e := newEnv(t)
+	kpiBooks(e)
+	accountant := e.as(authz.Accountant)
+	customer := func(name string) string {
+		r := e.call(http.MethodPost, "/v1/contacts", accountant, map[string]any{"legal_name": name, "customer": true, "currency": "SGD"})
+		if r.Status != http.StatusCreated {
+			t.Fatalf("createContact = %d: %s", r.Status, r.Raw)
+		}
+		return r.str("id")
+	}
+	recurring := func(name, who string, schedule map[string]any) string {
+		rec := e.recurringInvoice(name, "100.00", schedule)
+		rec["customer_id"] = who
+		r := e.call(http.MethodPost, "/v1/recurring-invoices", accountant, rec)
+		if r.Status != http.StatusCreated {
+			t.Fatalf("createRecurringInvoice %s = %d: %s", name, r.Status, r.Raw)
+		}
+		return r.str("id")
+	}
+	one, two, three, four := customer("One Pte Ltd"), customer("Two Pte Ltd"), customer("Three Pte Ltd"), customer("Four Pte Ltd")
+	churn := func(month string) (value, from string) {
+		r := e.call(http.MethodGet, "/v1/kpis?month="+month, accountant, nil)
+		if r.Status != http.StatusOK {
+			t.Fatalf("getKpis %s = %d: %s", month, r.Status, r.Raw)
+		}
+		for _, x := range r.Body["kpis"].([]any) {
+			if k := x.(map[string]any); k["key"] == "churn" {
+				m := k["month"].(map[string]any)
+				value, _ = m["value"].(string)
+				from, _ = m["counts_from"].(string)
+				if value == "" {
+					value, _ = m["undefined"].(string)
+				}
+			}
+		}
+		return value, from
+	}
+	// No recurring invoice: the counter says nothing, and with no entry the KPI has no value.
+	if v, from := churn("2026-11"); from != "" || !strings.Contains(v, "no subscription data") {
+		t.Fatalf("with no source: %q from %q", v, from)
+	}
+	recurring("One", one, monthly(1, "2026-10-01"))
+	recurring("One again", one, monthly(15, "2026-10-15"))
+	recurring("Two", two, monthly(5, "2026-11-05"))
+	ended := monthly(1, "2026-09-01")
+	ended["ends_on"] = "2026-10-31"
+	recurring("Three", three, ended)
+	paused := recurring("Four", four, monthly(1, "2026-09-01"))
+	if r := e.call(http.MethodPost, "/v1/recurring-invoices/"+paused+"/pause", accountant, nil, "If-Match", e.call(http.MethodGet, "/v1/recurring-invoices/"+paused, accountant, nil).Header.Get("ETag")); r.Status != http.StatusOK && r.Status != http.StatusCreated {
+		t.Fatalf("pausing: %d %s", r.Status, r.Raw)
+	}
+	if v, from := churn("2026-11"); v != "50.0" || from != "recurring invoice templates" {
+		t.Errorf("November's churn = %q from %q, want 50.0 from the templates", v, from)
+	}
+	if v, from := churn("2026-10"); v != "0.0" || from != "recurring invoice templates" {
+		t.Errorf("October's churn = %q from %q, want 0.0 from the templates", v, from)
+	}
+	// An entered count is behind the system's: the source stays the templates.
+	set := e.call(http.MethodPut, "/v1/kpi-inputs/2026-11", accountant, map[string]any{"paying_customers": 9, "new_customers": 9, "lost_customers": 0, "headcount": 4}, "If-Match", `"0"`)
+	if set.Status != http.StatusOK {
+		t.Fatalf("entering counts = %d: %s", set.Status, set.Raw)
+	}
+	if v, from := churn("2026-11"); v != "50.0" || from != "recurring invoice templates" {
+		t.Errorf("with an entry: churn = %q from %q", v, from)
+	}
+}

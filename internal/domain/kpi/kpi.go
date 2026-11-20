@@ -122,7 +122,9 @@ type Counts struct {
 	Headcount         *int64 // nil: not entered
 	EnteredBy         string
 	EnteredAt         time.Time
-	HasCustomers      bool // the customer counts were entered, not only the headcount
+	HasCustomers      bool // the customer counts were given (entered or counted), not only the headcount
+	// CountsFrom is where the customer counts came from: CountsEntered, or the counter that answered (FR-KPI-04).
+	CountsFrom string
 }
 
 // Month is one month's exact figures, in the base currency, signed as the statements show them: revenue and profit
@@ -151,6 +153,8 @@ type Value struct {
 	Words     string
 	Undefined string
 	Entered   bool // it used the month's entered counts
+	// CountsFrom says where the customer counts it used came from (CountsEntered, CountsRecurring); "" when it used none (FR-KPI-04).
+	CountsFrom string
 }
 
 // work is wide enough that the products of a ratio's figures are exact; only the one division a KPI makes is cut.
@@ -478,6 +482,9 @@ func Compute(months []Month, before *Month, base money.Currency) []Value {
 			}
 		}
 		v.Entered = m.Counts != nil && v.Undefined == "" && strings.Contains(d.Source, Entered)
+		if v.Entered && v.Key != "headcount" && v.Key != "revenue_per_employee" && m.Counts.HasCustomers {
+			v.CountsFrom = m.Counts.CountsFrom
+		}
 		out = append(out, v)
 	}
 	return out

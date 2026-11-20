@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "answer": {
+      "description": "The answer.",
+      "examples": [
+        "Attached"
+      ],
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "evidence_ids": {
+      "description": "Evidence files already added in the organisation, as getEvidence gives their IDs.",
+      "items": {
+        "description": "An evidence file's ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b12"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 20,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "answer"
+  ],
+  "title": "AnswerAuditRequestInputBody",
+  "type": "object"
+}

@@ -4,7 +4,7 @@ type: task
 title: Cash ahead, the short-term cash flow
 summary: The bank balance day by day for 30 to 180 days or 13 weeks, its lowest point, the buffer line, what is not included yet, and what-ifs
 sources:
-  - docs/user-guide/cash-flow.md sha256:3644d26b6c6b0da69ad80c2ae46b64c94c400d744986e4660f5c84991c096023
+  - docs/user-guide/cash-flow.md sha256:0d228550a01a1aabd01b89262f3617f98c9cff388ce8119ccaa07698674b9b2e
 data_class: general
 taint: trusted
 status: draft
@@ -55,6 +55,12 @@ aliases:
 - Pay runs and CPF, GST returns and corporate income tax join with their own modules; until then they are listed under **Not included yet**, and the real lowest point may be lower than shown. A money account in a currency with no rate for today is listed there too, and so is a recurring invoice or bill whose content cannot be worked out today, with why.
 
 (src: docs/user-guide/cash-flow.md#what-is-not-included-yet) (src: docs/user-guide/cash-flow.md#common-problems)
+
+## How the forecast did
+
+- Each week Fyniq keeps the 13-week projection. Four and thirteen weeks later, How the forecast did at the foot of the page sets each against the money accounts' balance that day and splits the difference into receipts later, timing and unplanned, which add to it exactly. A kept projection is never recalculated.
+
+(src: docs/user-guide/cash-flow.md#how-the-forecast-did)
 
 ## What-ifs, and nothing posts
 
