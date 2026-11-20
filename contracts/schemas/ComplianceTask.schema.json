@@ -99,15 +99,15 @@
     },
     "source": {
       "description": "What raised it: a run's finding, an approved proposal, or the platform itself (a statutory pack update waiting).",
-      "enum": [
-        "agent_run",
-        "ai_proposal",
-        "system"
-      ],
       "examples": [
         "agent_run"
       ],
-      "type": "string"
+      "type": "string",
+      "x-extensible-enum": [
+        "agent_run",
+        "ai_proposal",
+        "system"
+      ]
     },
     "status": {
       "description": "open; done or dismissed by a person; cleared when its finding cleared.",
