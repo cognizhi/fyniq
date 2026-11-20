@@ -121,13 +121,14 @@ func paymentsReadyAt(ctx context.Context, tx pgx.Tx, c ports.Cipher, org uuid.UU
 		if err != nil || version < 1 {
 			return ev, false, err
 		}
-		var change uuid.UUID
-		var fp []byte
-		var changeCode *string
-		if err := tx.QueryRow(ctx, `SELECT id, new_fingerprint, new_bank_code FROM nemura.bank_account_change WHERE person_id = $1 AND state = 'confirmed' ORDER BY confirmed_at, id OFFSET $2 LIMIT 1`, l.Person, version-1).
-			Scan(&change, &fp, &changeCode); err != nil {
+		chg, ok, err := bankChangeAt(ctx, tx, l.Person, version)
+		if err != nil {
 			return ev, false, err
 		}
+		if !ok {
+			continue // the version names no confirmed change here: no line rather than a line for an account Nemura cannot show was approved
+		}
+		change, fp, changeCode := chg.ID, chg.Fingerprint, chg.Code
 		if changeCode == nil || *changeCode != *code { // what is on record is what the confirmed change approved, or no line
 			continue
 		}

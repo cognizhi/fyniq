@@ -248,6 +248,7 @@ type LinkHealthRow struct {
 	Undelivered           []UndeliveredEvent
 	OpenRestore           *RestoreRow
 	SyncFailingOver24Hour bool
+	BankReconfirm         []BankReconfirmRow // people whose bank details wait to be re-confirmed after a restore (NM-INT-13)
 }
 
 // UndeliveredEvent is an event that failed or was refused, by identity: never its payload.
@@ -310,11 +311,14 @@ WHERE state IN ('failed', 'refused') ORDER BY sequence DESC LIMIT 50`, l.ID)
 		return h, true, err
 	}
 	rows.Close()
-	h.OpenRestore, err = OpenRestore(ctx, tx)
+	if h.OpenRestore, err = OpenRestore(ctx, tx); err != nil {
+		return h, true, err
+	}
+	h.BankReconfirm, err = OpenBankReconfirms(ctx, tx)
 	return h, true, err
 }
 
-// LinkFindings is N.1 #7 (NM-INT-04): a link that has not synced for 24 hours while events wait is ⚠, and a restore not reconciled is ✖ (nothing is sent or paid until it is).
+// LinkFindings is N.1 #7 (NM-INT-04): a link that has not synced for 24 hours while events wait is ⚠, a restore not reconciled is ✖ (nothing is sent or paid until it is), and so is each person whose bank details wait to be re-confirmed after a restore (NM-INT-13).
 func LinkFindings(ctx context.Context, tx pgx.Tx, now time.Time) ([]checks.Finding, error) {
 	h, ok, err := LinkHealth(ctx, tx, now)
 	if err != nil || !ok {
@@ -326,6 +330,9 @@ func LinkFindings(ctx context.Context, tx pgx.Tx, now time.Time) ([]checks.Findi
 	}
 	if h.OpenRestore != nil {
 		out = append(out, checks.Finding{Check: 7, Area: "Link", Status: checks.Fail, Subject: "restore", Message: "Nemura was restored and the link to Fyniq is held: decide each run it lists against Fyniq's own record, then the link resumes."})
+	}
+	for _, r := range h.BankReconfirm {
+		out = append(out, checks.Finding{Check: 7, Area: "Link", Status: checks.Fail, Subject: r.Person.String(), Message: "After a restore, Fyniq holds bank details for this person that Nemura does not have: no payment is made to them until their bank account is changed and confirmed again, then it is paid."})
 	}
 	return out, nil
 }

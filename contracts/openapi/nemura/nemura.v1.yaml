@@ -749,6 +749,39 @@ components:
         - account_masked
         - state
       type: object
+    BankReconfirmView:
+      additionalProperties: false
+      properties:
+        found_at:
+          description: When Fyniq's answer showed it.
+          examples:
+            - "2026-11-25T09:00:00Z"
+          format: date-time
+          type: string
+        held_version:
+          description: The bank-detail version Fyniq holds.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        nemura_version:
+          description: Nemura's own version when this was found.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+      required:
+        - person_id
+        - held_version
+        - nemura_version
+        - found_at
+      type: object
     CalendarEntry:
       additionalProperties: false
       properties:
@@ -4084,6 +4117,11 @@ components:
     LinkHealthView:
       additionalProperties: false
       properties:
+        bank_reconfirm:
+          description: "People whose bank details wait to be re-confirmed after a restore: Fyniq holds a bank-detail version this database lost. No payment is made to them until their bank account is changed and confirmed again (the ordinary change). By identity: never the account."
+          items:
+            $ref: "#/components/schemas/BankReconfirmView"
+          type: array
         epoch:
           description: The link's epoch.
           examples:
@@ -4187,6 +4225,7 @@ components:
         - last_sequence_sent
         - last_fyniq_sequence
         - undelivered
+        - bank_reconfirm
       type: object
     LinkHoldAnswer:
       additionalProperties: false
