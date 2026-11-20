@@ -32318,9 +32318,8 @@ export interface components {
             /**
              * @description What raised it: a run's finding, an approved proposal, or the platform itself (a statutory pack update waiting).
              * @example agent_run
-             * @enum {string}
              */
-            source: "agent_run" | "ai_proposal" | "system";
+            source: string;
             /**
              * @description open; done or dismissed by a person; cleared when its finding cleared.
              * @example open
