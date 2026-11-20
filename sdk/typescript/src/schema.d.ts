@@ -44954,11 +44954,11 @@ export interface components {
              */
             mapping_id?: string;
             /**
-             * @description file and email: the format its statements come in.
+             * @description file and email: the format its statements come in; mt942 is the bank's intraday report, whose lines become pending signals, never statement lines (FR-BNK-16).
              * @example csv
              * @enum {string}
              */
-            report_format?: "csv" | "xlsx" | "ofx" | "camt053" | "mt940" | "mt940_sap";
+            report_format?: "csv" | "xlsx" | "ofx" | "camt053" | "mt940" | "mt940_sap" | "mt942";
             /** @description email: the bank's registered addresses, the only senders accepted for it. */
             senders: string[];
             /**
@@ -44993,11 +44993,11 @@ export interface components {
              */
             mapping_id?: string;
             /**
-             * @description file and email: the statements' format.
+             * @description file and email: the statements' format; mt942 is the bank's intraday report, whose lines become pending signals (FR-BNK-16).
              * @example csv
              * @enum {string}
              */
-            report_format?: "csv" | "xlsx" | "ofx" | "camt053" | "mt940" | "mt940_sap";
+            report_format?: "csv" | "xlsx" | "ofx" | "camt053" | "mt940" | "mt940_sap" | "mt942";
             /** @description email: the bank's registered addresses (DMARC must pass for each, FR-INT-22). */
             senders?: string[] | null;
         };

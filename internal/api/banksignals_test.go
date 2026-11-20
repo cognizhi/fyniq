@@ -7,12 +7,14 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/adapters/local"
+	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankingest"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
@@ -307,4 +309,52 @@ func TestAnIncomingFundsAlertSpeedsUpMatching(t *testing.T) {
 	e.problemIs(dismiss(orphan["id"]), "dismissBankSignal", 409, storage.CodeBanking)
 	e.problemIs(e.call(http.MethodPost, "/v1/bank-signals/"+uuid.NewString()+"/dismiss", bk, map[string]any{"reason": "None"}),
 		"dismissBankSignal", 404, CodeNotFound)
+}
+
+// FR-BNK-16, FR-BNK-17 (rev 0.522): an MT942 intraday report makes a pending signal of each credit, with the payer and the bank's reference, and no
+// statement line; the same report sent again makes no second signal; a debit makes none; a report in another currency than the account's is refused.
+// req: FR-BNK-16
+// req: FR-BNK-17
+func TestAnIntradayReportMakesSignalsAndNoStatementLines(t *testing.T) {
+	e := newEnv(t)
+	m := e.newMoneyAccount()                                                    // SGD
+	worker, werr := postgres.Open(context.Background(), db.URL("fyniq_worker")) // the bank-ingest worker records signals
+	if werr != nil {
+		t.Fatal(werr)
+	}
+	t.Cleanup(worker.Close)
+	report, err := os.ReadFile("../bankfile/testdata/intraday.mt942")
+	if err != nil {
+		t.Fatal(err)
+	}
+	run := func(data []byte) error {
+		ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &bankingest.Actor, Reason: "The bank's emailed report (FR-BNK-17)"})
+		return worker.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			return bankingest.Intraday(ctx, u, m, nil, e.clock.Now(), data)
+		})
+	}
+	if err := run(report); err != nil {
+		t.Fatal(err)
+	}
+	if err := run(report); err != nil {
+		t.Fatal(err)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		signals, err := u.BankMatching().Signals(ctx)
+		if err != nil || len(signals) != 1 || signals[0].Reference != "BR25101501" || string(signals[0].Amount) != "5450.0000" || !strings.Contains(signals[0].Payer, "ACME ROBOTICS") {
+			t.Errorf("the signals: %+v, %v", signals, err)
+		}
+		lines, err := u.Banking().Lines(ctx, storage.BankLineFilter{MoneyAccountID: &m.ID})
+		if err != nil || len(lines) != 0 {
+			t.Errorf("an intraday report made %d statement lines: %v", len(lines), err)
+		}
+		return nil
+	})
+	usd := strings.Replace(strings.Replace(string(report), ":34F:SGD0,", ":34F:USD0,", 1), "BR25101501", "BR25101599", 1)
+	if err := run([]byte(usd)); err == nil {
+		t.Error("an intraday report in another currency than the account's was recorded")
+	}
+	if err := run([]byte("not MT942")); err == nil {
+		t.Error("a file that is not MT942 was read")
+	}
 }

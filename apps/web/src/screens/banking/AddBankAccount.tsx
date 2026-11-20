@@ -26,6 +26,7 @@ const formats: [Format, string][] = [
   ["csv", "CSV"],
   ["xlsx", "Excel (XLSX)"],
   ["mt940", "MT940"],
+  ["mt942", "MT942 (intraday: signals only)"],
   ["camt053", "camt.053"],
   ["ofx", "OFX"],
 ];
