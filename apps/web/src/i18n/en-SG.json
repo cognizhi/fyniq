@@ -1995,6 +1995,14 @@
       "label": "Voided",
       "tooltip": "Assets voided as registered by mistake: their depreciation reversed, their lines free to register again."
     },
+    "schedules.roll-forward": {
+      "label": "Roll-forward",
+      "tooltip": "For a run of months: what the schedules held, what was added, released and reversed, and what they hold at the end, by customer and by supplier, tied to the ledger."
+    },
+    "schedules.customer-activity": {
+      "label": "What each customer was billed, collected and recognised",
+      "tooltip": "Per customer over the run: what its invoices and credit notes billed, what its receipts collected, and the revenue recognised from it, next to its deferred revenue. What it owes must move by billed less collected, plus its other documents."
+    },
     "fixed-assets.movement": {
       "label": "Movements",
       "tooltip": "For a run of months: each asset's cost and accumulated depreciation at the start, what was added, charged and taken off by disposals, and at the end, tied to the ledger."

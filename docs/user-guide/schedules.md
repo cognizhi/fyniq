@@ -3,7 +3,7 @@ key: accounting.schedules
 title: See what is spread over months
 mode: expert
 roles: [owner, administrator, controller, accountant, bookkeeper, auditor, tax_agent]
-requirements: [FR-GL-03, ENG-05, INV-07]
+requirements: [FR-GL-03, FR-RPT-13, ENG-05, INV-07]
 status: draft            # written with the schedules (P1); reviewed with the accountant's sign-off of the close
 ---
 
@@ -59,6 +59,26 @@ The two tiles at the top tie each account to its schedules, as the month's close
   until it is resolved: report it, and never adjust it by journal.
 
 See [Close a month](periods-and-close.md#close-a-month).
+
+## The roll-forward
+
+The **Roll-forward** tab shows how the two accounts moved over a run of months (choose the first and last month, as YYYY-MM). For each customer's
+**2400 Deferred revenue** and each supplier's **1210 Prepayments** it shows what the schedules held before the run (**Opening**), what documents
+dated inside the run **Added**, what was **Released** to the profit and loss, what was **Reversed** (a reversed release, a credit note, an edit or a
+cancellation, which can move the balance either way) and what they hold at the end (**Closing**). Closing is always Opening plus Added less Released
+plus Reversed, and the total ties to the account in the ledger. A difference is named, and the close refuses it.
+
+Below the deferred revenue, each customer shows side by side, in the base currency:
+
+- **Billed**: what its invoices and credit notes dated inside the run put on what it owes you, GST included; a credit note counts as negative.
+- **Collected**: what its receipts dated inside the run took off what it owes.
+- **Recognised**: the revenue released from its schedules inside the run, plus what its invoices credited straight to revenue (a credit note takes
+  its amount off).
+- **Still deferred**: what its schedules hold at the end.
+
+The check beside each customer compares what it owes at the end of the run with the day before. Billed less collected must explain the change, along
+with its other documents (a refund, a credit applied, a write-off or a deposit). When something is left that no document explains, such as an edit
+of an earlier document or a currency remeasurement, the check shows the amount instead of hiding it: ask the Accountant to look at that customer.
 
 ## Spread a line
 

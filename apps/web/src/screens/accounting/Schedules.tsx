@@ -9,7 +9,9 @@ import { ReviewBanner } from "../../components/ReviewBanner";
 import { formatAmount } from "../../format/amount";
 import { date, month, timeZone } from "../../format/date";
 import { isZero } from "../../format/decimal";
+import { helpText } from "../../i18n";
 import { Icon, problemOf } from "../../ui";
+import { RollForward } from "./RollForward";
 
 type Report = components["schemas"]["Schedules"];
 type Schedule = components["schemas"]["Schedule"];
@@ -197,12 +199,13 @@ function Peek({ s, holding }: { s: Schedule; holding?: Holding }) {
 
 // Schedules is Accounting › Schedules (docs/design/screens Schedules; FR-GL-03, INV-07): every cost and income spread
 // over months as at a day, what each has recognised and what remains, each month posted, waiting or still ahead, and
-// 1210 Prepayments and 2400 Deferred revenue tied to them as the close checks them. The roll-forward is P2 (FR-RPT-13).
+// 1210 Prepayments and 2400 Deferred revenue tied to them as the close checks them. Its Roll-forward tab (FR-RPT-13) runs a span of months.
 export function Schedules() {
   const id = useId();
   const [asAt, setAsAt] = useState(today);
   const [finished, setFinished] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const [tab, setTab] = useState<"schedules" | "roll-forward">("schedules");
   const report = useQuery({
     queryKey: ["schedules", asAt, finished],
     enabled: Boolean(asAt),
@@ -228,6 +231,17 @@ export function Schedules() {
         </div>
       </div>
       <ReviewBanner screen="schedules" />
+      <div className="fy-tabs" role="tablist" aria-label="Schedule views">
+        <button type="button" role="tab" aria-selected={tab === "schedules"} onClick={() => setTab("schedules")}>
+          Schedules
+        </button>
+        <button type="button" role="tab" aria-selected={tab === "roll-forward"} onClick={() => setTab("roll-forward")} title={helpText("schedules.roll-forward").tooltip}>
+          {helpText("schedules.roll-forward").label}
+        </button>
+      </div>
+      {tab === "roll-forward" && <RollForward />}
+      {tab === "schedules" && (
+        <>
       <div className="fy-card fy-card--pad fy-form fy-form--2">
         <div className="fy-field">
           <label className="fy-label" htmlFor={`${id}-as-at`}>
@@ -323,6 +337,8 @@ export function Schedules() {
           </div>
           <Peek s={chosen} holding={holdingOf(chosen.kind)} />
         </div>
+      )}
+        </>
       )}
     </div>
   );

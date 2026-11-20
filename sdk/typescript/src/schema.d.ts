@@ -57908,6 +57908,8 @@ export interface components {
              * @example SGD
              */
             currency: string;
+            /** @description Each customer with something billed, collected, recognised or moved in the run, side by side with its deferred revenue (rev 0.594). */
+            customers: components["schemas"]["RollForwardCustomer"][];
             /**
              * Format: date
              * @description The run's first day.
@@ -57922,6 +57924,42 @@ export interface components {
              * @example 2026-10-31
              */
             to: string;
+        };
+        RollForwardCustomer: {
+            /** @description What their invoices and credit notes dated inside the run moved on the receivables account, GST included, credit notes negative. */
+            billed: components["schemas"]["Money"];
+            /** @description What their receipts dated inside the run took off the receivables account. */
+            collected: components["schemas"]["Money"];
+            /** @description What their deferral schedules hold at the end of the run. */
+            deferred_closing: components["schemas"]["Money"];
+            /** @description The part of recognised credited straight to revenue by their invoices and credit notes. */
+            direct: components["schemas"]["Money"];
+            /**
+             * @description True when nothing is unexplained.
+             * @example true
+             */
+            explained: boolean;
+            /** @description The receivable's movement less billed plus collected: refunds, credits applied, write-offs, deposits and anything else. */
+            other_movement: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The customer.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a10
+             */
+            party_id: string;
+            /**
+             * @description Their name.
+             * @example Acme Pte Ltd
+             */
+            party_name: string;
+            /** @description The movement of what they owe, from the receivables sub-ledger at the end of the run less the day before. */
+            receivable_movement: components["schemas"]["Money"];
+            /** @description The revenue recognised from them inside the run: released from their deferral schedules plus what their invoices credited straight to revenue. */
+            recognised: components["schemas"]["Money"];
+            /** @description The part of recognised released from their deferral schedules (the Released column). */
+            released: components["schemas"]["Money"];
+            /** @description What is left of the other movement when their other documents' effect is taken off: zero when billed less collected plus those documents explains the movement. */
+            unexplained: components["schemas"]["Money"];
         };
         RollForwardHolding: {
             /**

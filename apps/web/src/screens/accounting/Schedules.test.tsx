@@ -122,3 +122,35 @@ describe("the schedules page", () => {
     await noViolations(document.body);
   });
 });
+
+// req: FR-RPT-13
+describe("the roll-forward tab on Schedules", () => {
+  it("shows the schedules' movement and what each customer was billed, collected and recognised, with its check", async () => {
+    const m = (amount: string) => ({ amount, currency: "SGD" });
+    const row = (name: string, o: string, a: string, r: string, c: string) => ({ party_id: "c1", party_name: name, opening: m(o), added: m(a), released: m(r), reversed: m("0.00"), closing: m(c) });
+    answer({
+      "GET /v1/reports/schedules": { status: 200, body: report },
+      "GET /v1/reports/deferral-roll-forward": {
+        status: 200,
+        body: {
+          currency: "SGD", from: "2026-10-01", to: "2026-10-31",
+          holdings: [{ kind: "deferred_revenue", account_code: "2400", account_name: "Deferred revenue", rows: [row("Acme Analytics Pte Ltd", "0.00", "1200.00", "800.00", "400.00")], total: row("Total", "0.00", "1200.00", "800.00", "400.00"), ledger_balance: m("400.00"), direct: m("0.00"), unexplained: m("0.00"), ties: true }],
+          customers: [
+            { party_id: "c1", party_name: "Acme Analytics Pte Ltd", billed: m("1100.00"), collected: m("400.00"), recognised: m("700.00"), released: m("800.00"), direct: m("-100.00"), deferred_closing: m("400.00"), receivable_movement: m("700.00"), other_movement: m("0.00"), unexplained: m("0.00"), explained: true },
+            { party_id: "c2", party_name: "Beta Pte Ltd", billed: m("50.00"), collected: m("0.00"), recognised: m("50.00"), released: m("0.00"), direct: m("50.00"), deferred_closing: m("0.00"), receivable_movement: m("80.00"), other_movement: m("30.00"), unexplained: m("30.00"), explained: false },
+          ],
+        },
+      },
+    });
+    renderPage(Schedules, { path: "/accounting/schedules", session: accountant, mode: "expert" });
+    fireEvent.click(await screen.findByRole("tab", { name: "Roll-forward" }));
+    const deferred = await screen.findByRole("table", { name: "Deferred revenue by customer" });
+    expect(within(deferred).getAllByText("1,200.00").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Ties to 2400 in the ledger/)).toBeTruthy();
+    const customers = screen.getByRole("table", { name: "Customers billed, collected and recognised" });
+    expect(within(customers).getByText("Billed less collected explains it")).toBeTruthy();
+    expect(within(customers).getByText(/30\.00 not explained by documents/)).toBeTruthy();
+    expect(seen.some((s) => s.path === "/v1/reports/deferral-roll-forward" && /from=\d{4}-\d{2}/.test(s.query))).toBe(true);
+    await noViolations(document.body);
+  });
+});

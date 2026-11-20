@@ -9,6 +9,13 @@
       ],
       "type": "string"
     },
+    "customers": {
+      "description": "Each customer with something billed, collected, recognised or moved in the run, side by side with its deferred revenue (rev 0.594).",
+      "items": {
+        "$ref": "RollForwardCustomer.schema.json"
+      },
+      "type": "array"
+    },
     "from": {
       "description": "The run's first day.",
       "examples": [
@@ -37,7 +44,8 @@
     "currency",
     "from",
     "to",
-    "holdings"
+    "holdings",
+    "customers"
   ],
   "title": "RollForward",
   "type": "object"

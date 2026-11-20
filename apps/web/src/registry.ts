@@ -504,6 +504,8 @@ export const actions = [
   { kind: "action", id: "fixed-assets.void", mode: "expert", help: "fixed-assets.void", guide: "accounting.fixed-assets#void-a-disposal" },
   { kind: "action", id: "fixed-assets.void-asset", mode: "expert", help: "fixed-assets.void-asset", guide: "accounting.fixed-assets#void-an-asset-registered-by-mistake" },
   { kind: "action", id: "fixed-assets.voided", mode: "expert", help: "fixed-assets.voided", guide: "accounting.fixed-assets#void-an-asset-registered-by-mistake" },
+  { kind: "action", id: "schedules.roll-forward", mode: "expert", help: "schedules.roll-forward", guide: "accounting.schedules#the-roll-forward" },
+  { kind: "action", id: "schedules.customer-activity", mode: "expert", help: "schedules.customer-activity", guide: "accounting.schedules#the-roll-forward" },
   { kind: "action", id: "fixed-assets.movement", mode: "expert", help: "fixed-assets.movement", guide: "accounting.fixed-assets#the-movement-schedule" },
   { kind: "action", id: "fixed-assets.capital-allowances", mode: "expert", help: "fixed-assets.capital-allowances", guide: "accounting.fixed-assets#the-capital-allowance-schedule" },
   { kind: "action", id: "fixed-assets.tax-election", mode: "expert", help: "fixed-assets.tax-election", guide: "accounting.fixed-assets#the-capital-allowance-schedule" },

@@ -937,3 +937,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura-fyniq-link: bank details to confirm again after a restore (NM-INT-13)
 
 ## [2026-11-20] compile | docs/user-guide/board-pack.md → reports.board-pack (the PDF of a published pack, FR-RPT-06)
+
+## [2026-11-20] compile | docs/user-guide/schedules.md → accounting.schedules (the roll-forward tab, billed, collected and recognised per customer, FR-RPT-13)
