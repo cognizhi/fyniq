@@ -53106,6 +53106,13 @@ export interface components {
         ProjectRevenueElection: {
             /** @description The estimated total cost of the project, in its currency; set for over_time. */
             estimated_cost?: components["schemas"]["Money"];
+            /** @description The running total of the project's posted costs left out of its progress because they do not show it (SFRS(I) 15 B19), with its reason; absent when none. */
+            excluded_cost?: components["schemas"]["Money"];
+            /**
+             * @description Why they are left out.
+             * @example Rework of a drawing the customer had already approved
+             */
+            excluded_reason?: string;
             /**
              * @description milestone: revenue is recognised as each milestone is invoiced (the default); over_time: by cost-to-cost progress, through a monthly journal proposed for approval.
              * @example over_time
@@ -53126,8 +53133,12 @@ export interface components {
             contract_asset: components["schemas"]["Money"];
             /** @description The contract liability after the journal: invoiced and not yet earned. */
             contract_liability: components["schemas"]["Money"];
-            /** @description The project's costs posted to the end of the month (direct and payroll-tagged), the input of cost-to-cost progress. */
+            /** @description What progress is measured by: the project's costs posted to the end of the month (direct and payroll-tagged) less those left out as not showing progress. */
             cost_to_date: components["schemas"]["Money"];
+            /** @description The part of them the accountant left out of progress, with the reason on the election. */
+            costs_left_out: components["schemas"]["Money"];
+            /** @description The project's costs posted to the end of the month, before any are left out. */
+            costs_posted: components["schemas"]["Money"];
             /** @description The revenue earned to date: RND-RECOGNISE of the fee by progress. */
             earned: components["schemas"]["Money"];
             /** @description The estimated total cost. */
@@ -58093,6 +58104,16 @@ export interface components {
              * @example 6000.00
              */
             estimated_cost?: string;
+            /**
+             * @description The running total of the project's posted costs to leave out of its progress because they do not show it (waste, rework, a cost out of proportion to the work: SFRS(I) 15 B19); over_time only, with excluded_reason; left out for none.
+             * @example 250.00
+             */
+            excluded_cost?: string;
+            /**
+             * @description Why those costs do not show progress; needed with excluded_cost above nothing.
+             * @example Rework of a drawing the customer had already approved
+             */
+            excluded_reason?: string;
             /**
              * @description How the project recognises its revenue.
              * @example over_time

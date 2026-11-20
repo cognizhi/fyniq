@@ -43,7 +43,8 @@ type Report struct {
 	Election                 storage.ProjectRevenueElection
 	Month                    time.Time
 	Fee, Estimate            money.Money
-	CostToDate               money.Money
+	CostToDate               money.Money // what progress is measured by: the costs posted less those left out
+	CostPosted, Excluded     money.Money // the project's posted costs, and the part of them the accountant left out of progress
 	Billed, Held             money.Money
 	Position                 Position
 	Asset, Liability, Income storage.Account // the accounts the journal posts to
@@ -152,7 +153,16 @@ func Of(ctx context.Context, u storage.UnitOfWork, project uuid.UUID, month, tod
 	if !ok {
 		l = projectreport.Ledger{Revenue: money.Zero(base), DirectCosts: money.Zero(base), PayrollTagged: money.Zero(base)}
 	}
-	if r.CostToDate, err = l.DirectCosts.Add(l.PayrollTagged); err != nil {
+	if r.CostPosted, err = l.DirectCosts.Add(l.PayrollTagged); err != nil {
+		return r, err
+	}
+	if r.Excluded, err = money.ParseStored(string(r.Election.ExcludedCost), base); err != nil {
+		return r, err
+	}
+	if c, _ := r.Excluded.Cmp(r.CostPosted); c > 0 {
+		return r, &Error{CodeEstimate, "The costs left out of progress, " + r.Excluded.String() + ", are more than the " + r.CostPosted.String() + " posted to the project.", "Lower what is left out when you elect the project again"}
+	}
+	if r.CostToDate, err = r.CostPosted.Sub(r.Excluded); err != nil {
 		return r, err
 	}
 	r.Held = l.Revenue

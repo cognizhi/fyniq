@@ -3324,6 +3324,8 @@ type FyniqProjectRevenueElection struct {
 	Version        int32
 	SetBy          string
 	SetAt          time.Time
+	ExcludedCost   string
+	ExcludedReason *string
 }
 
 type FyniqProjectRevenueRun struct {

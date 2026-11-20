@@ -13,17 +13,19 @@ import (
 )
 
 const getProjectRevenueElection = `-- name: GetProjectRevenueElection :one
-SELECT project_id, method, COALESCE(estimated_cost::text, '')::text AS estimated_cost, version, set_by, set_at
+SELECT project_id, method, COALESCE(estimated_cost::text, '')::text AS estimated_cost, excluded_cost::text AS excluded_cost, COALESCE(excluded_reason, '')::text AS excluded_reason, version, set_by, set_at
 FROM fyniq.project_revenue_election WHERE project_id = $1
 `
 
 type GetProjectRevenueElectionRow struct {
-	ProjectID     uuid.UUID
-	Method        string
-	EstimatedCost string
-	Version       int32
-	SetBy         string
-	SetAt         time.Time
+	ProjectID      uuid.UUID
+	Method         string
+	EstimatedCost  string
+	ExcludedCost   string
+	ExcludedReason string
+	Version        int32
+	SetBy          string
+	SetAt          time.Time
 }
 
 func (q *Queries) GetProjectRevenueElection(ctx context.Context, projectID uuid.UUID) (GetProjectRevenueElectionRow, error) {
@@ -33,6 +35,8 @@ func (q *Queries) GetProjectRevenueElection(ctx context.Context, projectID uuid.
 		&i.ProjectID,
 		&i.Method,
 		&i.EstimatedCost,
+		&i.ExcludedCost,
+		&i.ExcludedReason,
 		&i.Version,
 		&i.SetBy,
 		&i.SetAt,
@@ -41,26 +45,30 @@ func (q *Queries) GetProjectRevenueElection(ctx context.Context, projectID uuid.
 }
 
 const insertProjectRevenueElection = `-- name: InsertProjectRevenueElection :one
-INSERT INTO fyniq.project_revenue_election (project_id, method, estimated_cost, set_by, set_at)
-VALUES ($1, $2, $3::numeric, $4, $5)
-RETURNING project_id, method, COALESCE(estimated_cost::text, '')::text AS estimated_cost, version, set_by, set_at
+INSERT INTO fyniq.project_revenue_election (project_id, method, estimated_cost, excluded_cost, excluded_reason, set_by, set_at)
+VALUES ($1, $2, $3::numeric, $4::numeric, $5, $6, $7)
+RETURNING project_id, method, COALESCE(estimated_cost::text, '')::text AS estimated_cost, excluded_cost::text AS excluded_cost, COALESCE(excluded_reason, '')::text AS excluded_reason, version, set_by, set_at
 `
 
 type InsertProjectRevenueElectionParams struct {
-	ProjectID     uuid.UUID
-	Method        string
-	EstimatedCost *string
-	SetBy         string
-	SetAt         time.Time
+	ProjectID      uuid.UUID
+	Method         string
+	EstimatedCost  *string
+	ExcludedCost   string
+	ExcludedReason *string
+	SetBy          string
+	SetAt          time.Time
 }
 
 type InsertProjectRevenueElectionRow struct {
-	ProjectID     uuid.UUID
-	Method        string
-	EstimatedCost string
-	Version       int32
-	SetBy         string
-	SetAt         time.Time
+	ProjectID      uuid.UUID
+	Method         string
+	EstimatedCost  string
+	ExcludedCost   string
+	ExcludedReason string
+	Version        int32
+	SetBy          string
+	SetAt          time.Time
 }
 
 func (q *Queries) InsertProjectRevenueElection(ctx context.Context, arg InsertProjectRevenueElectionParams) (InsertProjectRevenueElectionRow, error) {
@@ -68,6 +76,8 @@ func (q *Queries) InsertProjectRevenueElection(ctx context.Context, arg InsertPr
 		arg.ProjectID,
 		arg.Method,
 		arg.EstimatedCost,
+		arg.ExcludedCost,
+		arg.ExcludedReason,
 		arg.SetBy,
 		arg.SetAt,
 	)
@@ -76,6 +86,8 @@ func (q *Queries) InsertProjectRevenueElection(ctx context.Context, arg InsertPr
 		&i.ProjectID,
 		&i.Method,
 		&i.EstimatedCost,
+		&i.ExcludedCost,
+		&i.ExcludedReason,
 		&i.Version,
 		&i.SetBy,
 		&i.SetAt,
@@ -135,17 +147,19 @@ func (q *Queries) InsertProjectRevenueRun(ctx context.Context, arg InsertProject
 }
 
 const listProjectRevenueElections = `-- name: ListProjectRevenueElections :many
-SELECT project_id, method, COALESCE(estimated_cost::text, '')::text AS estimated_cost, version, set_by, set_at
+SELECT project_id, method, COALESCE(estimated_cost::text, '')::text AS estimated_cost, excluded_cost::text AS excluded_cost, COALESCE(excluded_reason, '')::text AS excluded_reason, version, set_by, set_at
 FROM fyniq.project_revenue_election ORDER BY project_id
 `
 
 type ListProjectRevenueElectionsRow struct {
-	ProjectID     uuid.UUID
-	Method        string
-	EstimatedCost string
-	Version       int32
-	SetBy         string
-	SetAt         time.Time
+	ProjectID      uuid.UUID
+	Method         string
+	EstimatedCost  string
+	ExcludedCost   string
+	ExcludedReason string
+	Version        int32
+	SetBy          string
+	SetAt          time.Time
 }
 
 func (q *Queries) ListProjectRevenueElections(ctx context.Context) ([]ListProjectRevenueElectionsRow, error) {
@@ -161,6 +175,8 @@ func (q *Queries) ListProjectRevenueElections(ctx context.Context) ([]ListProjec
 			&i.ProjectID,
 			&i.Method,
 			&i.EstimatedCost,
+			&i.ExcludedCost,
+			&i.ExcludedReason,
 			&i.Version,
 			&i.SetBy,
 			&i.SetAt,
@@ -222,33 +238,39 @@ func (q *Queries) ProjectRevenueRunsOf(ctx context.Context, projectID uuid.UUID)
 
 const updateProjectRevenueElection = `-- name: UpdateProjectRevenueElection :one
 UPDATE fyniq.project_revenue_election
-SET method = $1, estimated_cost = $2::numeric, set_by = $3, set_at = $4, version = version + 1
-WHERE project_id = $5 AND version = $6
-RETURNING project_id, method, COALESCE(estimated_cost::text, '')::text AS estimated_cost, version, set_by, set_at
+SET method = $1, estimated_cost = $2::numeric, excluded_cost = $3::numeric, excluded_reason = $4, set_by = $5, set_at = $6, version = version + 1
+WHERE project_id = $7 AND version = $8
+RETURNING project_id, method, COALESCE(estimated_cost::text, '')::text AS estimated_cost, excluded_cost::text AS excluded_cost, COALESCE(excluded_reason, '')::text AS excluded_reason, version, set_by, set_at
 `
 
 type UpdateProjectRevenueElectionParams struct {
-	Method        string
-	EstimatedCost *string
-	SetBy         string
-	SetAt         time.Time
-	ProjectID     uuid.UUID
-	Version       int32
+	Method         string
+	EstimatedCost  *string
+	ExcludedCost   string
+	ExcludedReason *string
+	SetBy          string
+	SetAt          time.Time
+	ProjectID      uuid.UUID
+	Version        int32
 }
 
 type UpdateProjectRevenueElectionRow struct {
-	ProjectID     uuid.UUID
-	Method        string
-	EstimatedCost string
-	Version       int32
-	SetBy         string
-	SetAt         time.Time
+	ProjectID      uuid.UUID
+	Method         string
+	EstimatedCost  string
+	ExcludedCost   string
+	ExcludedReason string
+	Version        int32
+	SetBy          string
+	SetAt          time.Time
 }
 
 func (q *Queries) UpdateProjectRevenueElection(ctx context.Context, arg UpdateProjectRevenueElectionParams) (UpdateProjectRevenueElectionRow, error) {
 	row := q.db.QueryRow(ctx, updateProjectRevenueElection,
 		arg.Method,
 		arg.EstimatedCost,
+		arg.ExcludedCost,
+		arg.ExcludedReason,
 		arg.SetBy,
 		arg.SetAt,
 		arg.ProjectID,
@@ -259,6 +281,8 @@ func (q *Queries) UpdateProjectRevenueElection(ctx context.Context, arg UpdatePr
 		&i.ProjectID,
 		&i.Method,
 		&i.EstimatedCost,
+		&i.ExcludedCost,
+		&i.ExcludedReason,
 		&i.Version,
 		&i.SetBy,
 		&i.SetAt,

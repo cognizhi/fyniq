@@ -564,9 +564,9 @@ fyniq_api       UPDATE    project_member (is_active, is_manager)
 fyniq_api       INSERT    project_milestone (amount, due_on, kind, name, project_id)
 fyniq_api       SELECT    project_milestone
 fyniq_api       UPDATE    project_milestone (accepted_on, changed_at, version)
-fyniq_api       INSERT    project_revenue_election (estimated_cost, method, project_id, set_at, set_by)
+fyniq_api       INSERT    project_revenue_election (estimated_cost, excluded_cost, excluded_reason, method, project_id, set_at, set_by)
 fyniq_api       SELECT    project_revenue_election
-fyniq_api       UPDATE    project_revenue_election (estimated_cost, method, set_at, set_by, version)
+fyniq_api       UPDATE    project_revenue_election (estimated_cost, excluded_cost, excluded_reason, method, set_at, set_by, version)
 fyniq_api       INSERT    project_revenue_run (adjustment, created_at, created_by, earned, journal_id, month, project_id)
 fyniq_api       SELECT    project_revenue_run
 fyniq_api       INSERT    project_task (billable, name, project_id)

@@ -50,9 +50,13 @@ func TestAnElectionChangesByVersionAndAMonthsRunNeverChanges(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	elect := func(version int, method string, e *storage.Decimal) (el storage.ProjectRevenueElection, err error) {
+	elect := func(version int, method string, e *storage.Decimal, extra ...string) (el storage.ProjectRevenueElection, err error) {
+		excluded, why := storage.Decimal("0"), ""
+		if len(extra) == 2 {
+			excluded, why = storage.Decimal(extra[0]), extra[1]
+		}
 		err = api.Do(ctx, books.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
-			el, err = u.ProjectRevenue().Elect(ctx, projectID, version, method, e, at)
+			el, err = u.ProjectRevenue().Elect(ctx, projectID, version, method, e, excluded, why, at)
 			return err
 		})
 		return el, err
@@ -76,7 +80,17 @@ func TestAnElectionChangesByVersionAndAMonthsRunNeverChanges(t *testing.T) {
 	if _, err := elect(5, storage.RevenueMilestone, nil); err == nil {
 		t.Error("an election at a stale version was recorded")
 	}
-	if el, err = elect(1, storage.RevenueMilestone, nil); err != nil || el.Version != 2 || el.EstimatedCost != nil {
+	// Costs left out of progress need their reason, and no reason goes without costs.
+	if _, err := elect(1, storage.RevenueOverTime, est("600.00"), "50.00", ""); err == nil {
+		t.Error("costs left out with no reason were recorded")
+	}
+	if _, err := elect(1, storage.RevenueOverTime, est("600.00"), "0", "a reason for nothing"); err == nil {
+		t.Error("a reason with no costs left out was recorded")
+	}
+	if el, err = elect(1, storage.RevenueOverTime, est("600.00"), "50.00", "Rework of an approved drawing"); err != nil || el.Version != 2 || el.ExcludedCost != "50.0000" || el.ExcludedReason == "" {
+		t.Fatalf("leaving costs out: %+v, %v", el, err)
+	}
+	if el, err = elect(2, storage.RevenueMilestone, nil); err != nil || el.Version != 3 || el.EstimatedCost != nil || el.ExcludedCost != "0.0000" {
 		t.Fatalf("changing it: %+v, %v", el, err)
 	}
 	record := func(m time.Time) (r storage.ProjectRevenueRun, err error) {

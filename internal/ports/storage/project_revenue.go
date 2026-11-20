@@ -18,6 +18,9 @@ type ProjectRevenueElection struct {
 	ProjectID     uuid.UUID
 	Method        string
 	EstimatedCost *Decimal // in the project's currency; set for over_time
+	// ExcludedCost is the running total of the project's posted costs left out of its progress, with why (the input method leaves out what does not show progress); zero and "" for none.
+	ExcludedCost   Decimal
+	ExcludedReason string
 	Version       int
 	SetBy         string
 	SetAt         time.Time
@@ -50,7 +53,7 @@ type ProjectRevenue interface {
 	// Election is a project's election; ports.ErrNotFound when none was made (it recognises as each milestone is invoiced).
 	Election(ctx context.Context, project uuid.UUID) (ProjectRevenueElection, error)
 	// Elect makes or changes the election; version is the one read (0 when none): CodeVersion when it moved on.
-	Elect(ctx context.Context, project uuid.UUID, version int, method string, estimated *Decimal, at time.Time) (ProjectRevenueElection, error)
+	Elect(ctx context.Context, project uuid.UUID, version int, method string, estimated *Decimal, excluded Decimal, reason string, at time.Time) (ProjectRevenueElection, error)
 	// Elections are every election, by project.
 	Elections(ctx context.Context) ([]ProjectRevenueElection, error)
 	// Runs are a project's runs, oldest month first.

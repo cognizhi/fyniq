@@ -903,3 +903,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | sales.invoices: the contracted MRR in the base currency (FR-AR-15)
 
 ## [2026-11-20] compile | sales.invoices, settings.organisation: the payment link in the invoice email (FR-AR-13)
+
+## [2026-11-20] compile | projects.billing: costs left out of a project's progress (FR-PRJ-11)

@@ -24,6 +24,8 @@ export function ProjectRevenue({ project }: { project: string }) {
   const { session } = useSignedIn();
   const may = (session.roles ?? []).some((r) => electors.includes(r));
   const [estimate, setEstimate] = useState("");
+  const [leftOut, setLeftOut] = useState("");
+  const [why, setWhy] = useState("");
   const [month, setMonth] = useState("");
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [busy, setBusy] = useState(false);
@@ -43,11 +45,13 @@ export function ProjectRevenue({ project }: { project: string }) {
     const version = q.data?.election.version ?? 0;
     const out = await api.PUT("/v1/projects/{project_id}/revenue-election", {
       params: { path: { project_id: project }, header: { "Idempotency-Key": newKey(), ...(version > 0 ? { "If-Match": `"${version}"` } : {}) } },
-      body: method === "over_time" ? { method, estimated_cost: estimate.trim() } : { method },
+      body: method === "over_time" ? { method, estimated_cost: estimate.trim(), excluded_cost: leftOut.trim() || undefined, excluded_reason: why.trim() || undefined } : { method },
     });
     setBusy(false);
     if (!out.data) return setProblem(problemOf(out.error));
     setEstimate("");
+    setLeftOut("");
+    setWhy("");
     await refresh();
   };
   const propose = async () => {
@@ -103,6 +107,20 @@ export function ProjectRevenue({ project }: { project: string }) {
               </label>
               <input className="fy-input fy-num" id={`${id}-est`} inputMode="decimal" value={estimate} onChange={(e) => setEstimate(e.target.value)} />
             </div>
+            <div className="fy-field">
+              <label className="fy-label" htmlFor={`${id}-out`}>
+                Costs to leave out of progress (if any)
+              </label>
+              <input className="fy-input fy-num" id={`${id}-out`} inputMode="decimal" value={leftOut} onChange={(e) => setLeftOut(e.target.value)} />
+            </div>
+            {leftOut.trim() !== "" && (
+              <div className="fy-field">
+                <label className="fy-label" htmlFor={`${id}-why`}>
+                  Why they do not show progress
+                </label>
+                <input className="fy-input" id={`${id}-why`} value={why} maxLength={500} onChange={(e) => setWhy(e.target.value)} />
+              </div>
+            )}
             <div className="fy-field self-end">
               <Button type="submit" variant="secondary" disabled={busy || !estimate.trim()}>
                 Elect revenue over time
@@ -144,6 +162,14 @@ export function ProjectRevenue({ project }: { project: string }) {
                 <dd className="fy-num">
                   {money(pos.cost_to_date)} of {money(pos.estimated_cost)}, {pos.progress}%{pos.overrun ? " (the estimate is reached: revisit it)" : ""}
                 </dd>
+                {Number(pos.costs_left_out.amount) > 0 && (
+                  <>
+                    <dt>Posted, and left out of progress</dt>
+                    <dd className="fy-num">
+                      {money(pos.costs_posted)}, of which {money(pos.costs_left_out)} left out{r.election.excluded_reason ? `: ${r.election.excluded_reason}` : ""}
+                    </dd>
+                  </>
+                )}
                 <dt>Revenue earned</dt>
                 <dd className="fy-num">{money(pos.earned)}</dd>
                 <dt>Invoiced to date</dt>

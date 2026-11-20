@@ -49227,6 +49227,14 @@ components:
         estimated_cost:
           $ref: "#/components/schemas/Money"
           description: The estimated total cost of the project, in its currency; set for over_time.
+        excluded_cost:
+          $ref: "#/components/schemas/Money"
+          description: The running total of the project's posted costs left out of its progress because they do not show it (SFRS(I) 15 B19), with its reason; absent when none.
+        excluded_reason:
+          description: Why they are left out.
+          examples:
+            - Rework of a drawing the customer had already approved
+          type: string
         method:
           description: "milestone: revenue is recognised as each milestone is invoiced (the default); over_time: by cost-to-cost progress, through a monthly journal proposed for approval."
           enum:
@@ -49259,7 +49267,13 @@ components:
           description: "The contract liability after the journal: invoiced and not yet earned."
         cost_to_date:
           $ref: "#/components/schemas/Money"
-          description: The project's costs posted to the end of the month (direct and payroll-tagged), the input of cost-to-cost progress.
+          description: "What progress is measured by: the project's costs posted to the end of the month (direct and payroll-tagged) less those left out as not showing progress."
+        costs_left_out:
+          $ref: "#/components/schemas/Money"
+          description: The part of them the accountant left out of progress, with the reason on the election.
+        costs_posted:
+          $ref: "#/components/schemas/Money"
+          description: The project's costs posted to the end of the month, before any are left out.
         earned:
           $ref: "#/components/schemas/Money"
           description: "The revenue earned to date: RND-RECOGNISE of the fee by progress."
@@ -49294,6 +49308,8 @@ components:
         - fee
         - estimated_cost
         - cost_to_date
+        - costs_posted
+        - costs_left_out
         - progress
         - overrun
         - earned
@@ -56579,6 +56595,18 @@ components:
           examples:
             - "6000.00"
           pattern: ^(0|[1-9][0-9]{0,15})(\.[0-9]{1,4})?$
+          type: string
+        excluded_cost:
+          description: "The running total of the project's posted costs to leave out of its progress because they do not show it (waste, rework, a cost out of proportion to the work: SFRS(I) 15 B19); over_time only, with excluded_reason; left out for none."
+          examples:
+            - "250.00"
+          pattern: ^(0|[1-9][0-9]{0,15})(\.[0-9]{1,4})?$
+          type: string
+        excluded_reason:
+          description: Why those costs do not show progress; needed with excluded_cost above nothing.
+          examples:
+            - Rework of a drawing the customer had already approved
+          maxLength: 500
           type: string
         method:
           description: How the project recognises its revenue.
