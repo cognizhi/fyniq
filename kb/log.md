@@ -823,3 +823,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | ai.proposals: contact change (ct.update_contact) and undo sections
 
 ## [2026-11-20] compile | ai.proposals: recurring journal and budget draft sections
+
+## [2026-11-20] compile | nemura.payroll-approval: the CPF EZPay file (p2-payroll-outputs)

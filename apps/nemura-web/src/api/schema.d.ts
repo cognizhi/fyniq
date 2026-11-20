@@ -1919,7 +1919,7 @@ export interface paths {
         put?: never;
         /**
          * Make a hand-off file for an approved version
-         * @description Makes the standalone journal file (the run's balanced entry, one line for each account) or the bank payment file (one row for each person owed money with a bank account on record) of an approved version, as generic CSV with a manifest of the run, the version, the totals and the SHA-256 of the exact bytes. The file is not kept, only its manifest is. A person is left out of a payment file, and listed with why, when nothing is owed (a tax-clearance hold), no bank account is on record, the payment is on its way or paid, or its outcome is unknown. A file is never proof of payment. The payment file holds bank account numbers, so it needs a passkey confirmation in the last five minutes. The Payroll administrator and the Owner. It is audited, never with an amount or an account.
+         * @description Makes the standalone journal file (the run's balanced entry, one line for each account), the CPF EZPay file (the CPF Board's own layout, effective 16 January 2025; it needs the payment type, serial number and advice code, and holds NRICs, so it needs a fresh passkey) or the bank payment file (one row for each person owed money with a bank account on record) of an approved version, as generic CSV with a manifest of the run, the version, the totals and the SHA-256 of the exact bytes. The file is not kept, only its manifest is. A person is left out of a payment file, and listed with why, when nothing is owed (a tax-clearance hold), no bank account is on record, the payment is on its way or paid, or its outcome is unknown. A file is never proof of payment. The payment file holds bank account numbers, so it needs a passkey confirmation in the last five minutes. The Payroll administrator and the Owner. It is audited, never with an amount or an account.
          */
         post: operations["exportPayRunFile"];
         delete?: never;
@@ -4144,17 +4144,22 @@ export interface components {
             /** @description The CSV, base64-encoded. It is not kept: only its manifest is. */
             content_base64: string;
             /**
+             * @description The CPF file's name, which the Board's EZPay expects: <CSN><month paid><advice code>.DTL.
+             * @example 202312345KPTE01JUN202601.DTL
+             */
+            file_name?: string;
+            /**
              * Format: uuid
              * @description The manifest's ID.
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f70
              */
             id: string;
             /**
-             * @description The journal file or the bank payment file.
+             * @description The journal file, the bank payment file or the CPF EZPay file.
              * @example payments
              * @enum {string}
              */
-            kind: "journal" | "payments";
+            kind: "journal" | "payments" | "cpf";
             /**
              * Format: int64
              * @description How many lines the file has.
@@ -4198,11 +4203,26 @@ export interface components {
         };
         ExportInput: {
             /**
-             * @description The journal file or the bank payment file.
+             * @description The advice code, 01 to 99: records with the same code print on the same record of payment; needed for the CPF file.
+             * @example 01
+             */
+            advice_code?: string;
+            /**
+             * @description The journal file, the bank payment file or the CPF EZPay file.
              * @example payments
              * @enum {string}
              */
-            kind: "journal" | "payments";
+            kind: "journal" | "payments" | "cpf";
+            /**
+             * @description The payment type of the employer's CPF Submission Number, as its CPF EZPay account holds it; needed for the CPF file.
+             * @example PTE
+             */
+            payment_type?: string;
+            /**
+             * @description The serial number of the CPF Submission Number, 01 to 99; needed for the CPF file.
+             * @example 01
+             */
+            serial?: string;
             /**
              * Format: int64
              * @description The approved version to make the file from.
