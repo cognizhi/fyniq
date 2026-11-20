@@ -837,7 +837,7 @@ func csvOf(rows ...string) string {
 // a credit, or debits and credits that differ is refused with every problem; and while payroll lives in Nemura (the link is live and its source for payroll is Nemura) no import is taken.
 // part of FR-PPL-05 (salary payment lines from an external system and a provider connector are open)
 // req: NM-EXT-03
-// asvs: V5.1.3, V8.2.1, V16.3.2
+// asvs: V2.2.1, V8.2.1, V16.3.2
 func TestAProvidersPayrollJournalIsOnlyEverADraftOncePerPeriodAndVersion(t *testing.T) {
 	w := newSalaryWorldWithoutGate(t)
 	e := w.e
