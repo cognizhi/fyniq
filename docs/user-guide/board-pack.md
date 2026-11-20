@@ -37,6 +37,10 @@ is not closed is published all the same, and the pack says so.
 A published pack never changes. To correct it, start the pack of the same month again: that is the next
 version, and it supersedes the first, which stays.
 
+## Keep the PDF as evidence
+
+**Keep the PDF as evidence** asks another person to approve keeping the published pack's PDF with the organisation's evidence. Only an Owner or a Controller asks, and another Owner or Controller who did not ask approves it: in Founder mode, the other founder (the person who asks never signs their own request). The request carries the file's SHA-256, so the approver signs for exactly that file, which is the same file as **Download the PDF**. Until it is approved the file waits and nothing is kept; if the request is refused or lapses, ask again. Approved, the file is committed to the locked evidence store and is **append-only**: it is never changed or deleted, and it is found under **Board packs** in Compliance › Evidence. A pack keeps one PDF; a correction is the next version of the pack, with its own.
+
 ## Who reads it
 
 A Board viewer reads the published packs on the **Board and investor portal** after signing in. They do not

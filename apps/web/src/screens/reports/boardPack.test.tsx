@@ -67,6 +67,24 @@ describe("the board pack and the portal", () => {
     HTMLAnchorElement.prototype.click = click;
   });
 
+  it("asks for another person's approval to keep a published pack's PDF as evidence, then shows it kept", async () => {
+    const path = "/v1/board-packs/22222222-2222-4222-8222-222222222222/pdf/keeping";
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/board-packs": { status: 200, body: { items: [published] } },
+      "GET /v1/board-packs/22222222-2222-4222-8222-222222222222": { status: 200, body: published },
+      ["GET " + path]: { status: 200, body: { pack_id: published.id, state: "not_kept" } },
+      ["POST " + path]: { status: 202, body: { id: "a1", object_type: "board_pack_pdf", operation: "board_pack_pdf.keep", status: "pending" } },
+    });
+    renderPage(BoardPack, { path: "/reports/board-pack", session: controller, mode: "expert" });
+    await screen.findByRole("option", { name: /2026-10, version 1/ });
+    fireEvent.change(screen.getByLabelText("Open a pack"), { target: { value: published.id } });
+    expect(await screen.findByText(/must approve keeping it/)).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: /Keep the PDF as evidence/ }));
+    await waitFor(() => expect(seen.some((s) => s.method === "POST" && s.path.endsWith("/pdf/keeping"))).toBe(true));
+    await noViolations(document.body);
+  });
+
   it("shows a Board viewer the published packs and updates sent to them, with the frozen figures and no draft", async () => {
     answer({
       "GET /v1/board-packs": { status: 200, body: { items: [{ ...published, figures: undefined }] } },

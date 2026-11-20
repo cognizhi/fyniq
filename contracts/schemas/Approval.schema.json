@@ -147,7 +147,8 @@
         "api_client",
         "kb_publication",
         "people_link",
-        "salary_batch"
+        "salary_batch",
+        "board_pack_pdf"
       ]
     },
     "operation": {
@@ -239,7 +240,8 @@
         "people_link.link",
         "people_link.unlink",
         "people_link.source",
-        "salary_batch.approve"
+        "salary_batch.approve",
+        "board_pack_pdf.keep"
       ]
     },
     "policy": {

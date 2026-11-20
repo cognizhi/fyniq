@@ -88,6 +88,7 @@ const operations: Record<Approval["operation"], string> = {
   "statements_approval.record": "Record the directors' approval of the financial statements",
   "corporate_document.record": "Record a signed corporate document in the minute book",
   "people_link.source": "Change where a People and HR feature lives",
+  "board_pack_pdf.keep": "Keep a published board pack's PDF as evidence",
 };
 
 export function operationLabel(op: string): string {
@@ -153,6 +154,7 @@ const objects: Record<string, string> = {
   ai_route: "AI agent's route",
   api_client: "Integration client",
   kb_publication: "Knowledge-base pages",
+  board_pack_pdf: "Board pack PDF",
   ai_proposal: "AI proposal",
   corporate_detail: "Corporate details",
   corporate_officer: "Officer",

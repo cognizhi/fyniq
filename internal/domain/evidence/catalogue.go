@@ -90,6 +90,8 @@ var Catalogue = []Rule{
 		Required: []Item{{Label: "Reason (text)"}}, Recommended: []Item{{Label: "Supporting document"}}},
 	{Key: "control_evidence", Area: AreaGovernance, Label: "Access review, control evidence (manual)", Level: LevelRequired,
 		Required: []Item{{Label: "Review record or screenshot"}}},
+	{Key: "board_pack", Area: AreaGovernance, Label: "Board pack kept as evidence (rev 0.607)", Level: LevelRequired, Built: true,
+		Required: []Item{{Label: "The published pack's PDF (generated)", Types: []string{"board pack PDF"}}}},
 }
 
 // RuleOf is the rule with key, if the table has it.

@@ -118,6 +118,58 @@ func boardPackReport(p BoardPack, author, version string) (render.Report, int, e
 	return r, rows, nil
 }
 
+// renderedPack is a published pack as the PDF the render service lays out for it.
+type renderedPack struct {
+	pack BoardPack
+	data []byte
+	sum  [32]byte
+	name string
+	rows int
+}
+
+// renderPublishedPack reads a published pack and lays its PDF out: the same bytes each time (the creation time is the pack's own publication time). A draft, and a pack that is not
+// there, are CodeNotFound.
+func (a *API) renderPublishedPack(ctx context.Context, p authn.Principal, packID string) (renderedPack, error) {
+	var f renderedPack
+	author := ""
+	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		id, err := parseID("id", packID)
+		if err != nil {
+			return err
+		}
+		b, err := u.BoardPacks().Get(ctx, id)
+		if errors.Is(err, ports.ErrNotFound) || err == nil && b.Status != storage.PackPublished {
+			return problem(CodeNotFound, "No published board pack with that ID is open to you.", "List the board packs")
+		}
+		if err != nil {
+			return err
+		}
+		f.pack = boardPackOf(b, true)
+		o, err := u.Organisation(ctx)
+		author = cmpOr(o.Profile.LegalName, o.Name)
+		return err
+	})
+	if err != nil {
+		return f, err
+	}
+	rep, rows, err := boardPackReport(f.pack, author, a.stamp())
+	if err != nil {
+		return f, err
+	}
+	// Written outside the transaction, so the register is not held while the render service lays the PDF out.
+	created := a.deps.Clock.Now()
+	if f.pack.PublishedAt != nil {
+		created = f.pack.PublishedAt.UTC()
+	}
+	if f.data, err = a.renderReport(ctx, rep, created); err != nil {
+		return f, err
+	}
+	f.sum = sha256.Sum256(f.data)
+	f.rows = rows
+	f.name = "board-pack-" + f.pack.Month + "-v" + strconv.Itoa(f.pack.Version) + ".pdf"
+	return f, nil
+}
+
 func registerBoardPackPDF(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	register(a, authz.ExportBoardPack, huma.Operation{
@@ -129,44 +181,12 @@ func registerBoardPackPDF(a *API) {
 			"REPORT-08. Side effects: an audit event of the export with the hash. Never cached.",
 	}, append([]string{CodeNotFound, CodeInvalid, CodeReportRender}, locks...), func(ctx context.Context, in *boardPackPDFInput) (*reportFileOutput, error) {
 		p, _ := authn.From(ctx)
-		var pack BoardPack
-		author := ""
-		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-			id, err := parseID("id", in.ID)
-			if err != nil {
-				return err
-			}
-			b, err := u.BoardPacks().Get(ctx, id)
-			if errors.Is(err, ports.ErrNotFound) || err == nil && b.Status != storage.PackPublished {
-				return problem(CodeNotFound, "No published board pack with that ID is open to you.", "List the board packs")
-			}
-			if err != nil {
-				return err
-			}
-			pack = boardPackOf(b, true)
-			o, err := u.Organisation(ctx)
-			author = cmpOr(o.Profile.LegalName, o.Name)
-			return err
-		})
+		f, err := a.renderPublishedPack(ctx, p, in.ID)
 		if err != nil {
 			return nil, err
 		}
-		rep, rows, err := boardPackReport(pack, author, a.stamp())
-		if err != nil {
-			return nil, err
-		}
-		// Written outside the transaction, so the register is not held while the render service lays the PDF out. The creation time is the pack's own publication time: the same bytes each time.
-		created := a.deps.Clock.Now()
-		if pack.PublishedAt != nil {
-			created = pack.PublishedAt.UTC()
-		}
-		data, err := a.renderReport(ctx, rep, created)
-		if err != nil {
-			return nil, err
-		}
-		sum := sha256.Sum256(data)
+		pack, data, sum, name, rows := f.pack, f.data, f.sum, f.name, f.rows
 		export := uuid.Must(uuid.NewV7())
-		name := "board-pack-" + pack.Month + "-v" + strconv.Itoa(pack.Version) + ".pdf"
 		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			return u.Audit().Record(ctx, storage.AuditRecord{Action: "report.exported", ObjectType: "report", ObjectID: export,
 				Changes: map[string][2]any{"export": {nil, map[string]any{"report": "board_pack", "pack": pack.ID, "month": pack.Month, "version": pack.Version, "format": "pdf",

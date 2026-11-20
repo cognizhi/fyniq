@@ -255,6 +255,10 @@ Source: PRD-001 §8.16
 - **WHEN** an access review or a manual control evidence item is completed
 - **THEN** a review record or screenshot is required
 
+#### Scenario: A board pack kept as evidence (rev 0.607)
+- **WHEN** a published board pack's PDF is kept as evidence
+- **THEN** the pack's PDF, generated, is required, and it is kept on another person's approval
+
 ### Requirement: FR-DOC-07 Evidence integrity
 For each evidence file the system SHALL write its SHA-256, uploader, time, source (upload, paste, email, API) and parent record to the audit trail in the same transaction (AUD-01).
 
