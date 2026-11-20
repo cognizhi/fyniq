@@ -18,7 +18,6 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
-	"github.com/cognizhi/fyniq/internal/paymentlinkjob"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -1398,9 +1397,6 @@ func registerInvoices(a *API) {
 			e, err := a.invoices.Post(ctx, p.Organisation, id)
 			if err == nil && self {
 				err = a.logInvoiceSelfApproval(ctx, u, p, id, total)
-			}
-			if err == nil && a.deps.Outbox != nil && !storage.IsPreview(ctx) { // FR-AR-13: with automatic payment links on, the link is asked for by a job, never while the invoice is issued
-				err = paymentlinkjob.Queue(ctx, *a.deps.Outbox, u, p.Organisation, id)
 			}
 			return e, err
 		})

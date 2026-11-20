@@ -29,7 +29,6 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
 	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
-	orgsettings "github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/statement"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/outbox"
@@ -170,6 +169,9 @@ func (s Sender) prepare(ctx context.Context, org, id uuid.UUID, what What, to st
 			customer = st.CustomerID
 		case Invoice:
 			if data, err = salesdoc.InvoiceData(ctx, u, doc, settings); err != nil {
+				return err
+			}
+			if err = data.WithPaymentLink(ctx, u, doc, s.Clock.Now()); err != nil { // FR-AR-13: the PDF says where to pay while the invoice has a live link
 				return err
 			}
 			d, err := invoice.Read(doc, settings.Base)
@@ -446,25 +448,7 @@ func (x Scheduled) RunAll(ctx context.Context, now time.Time) error {
 	return errors.Join(errs...)
 }
 
-// livePaymentLink is the URL of the invoice's live payment link at now, "" when it has none or the organisation does not put it in its emails: a link counts while it is
-// live and has not run out, and its URL is https (checked when it was stored).
+// livePaymentLink is the URL of the invoice's live payment link at now for the email, "" when it has none or the organisation does not put it in its emails (invoices.payment_link_in_email).
 func livePaymentLink(ctx context.Context, u storage.UnitOfWork, invoice uuid.UUID, now time.Time) (string, error) {
-	def, _ := orgsettings.Lookup("invoices.payment_link_in_email")
-	changes, err := u.Settings().Changes(ctx, def.Key)
-	if err != nil {
-		return "", err
-	}
-	if orgsettings.On(def, changes, now).Value != "true" {
-		return "", nil
-	}
-	links, err := u.PaymentLinks().OfInvoice(ctx, invoice)
-	if err != nil {
-		return "", err
-	}
-	for _, l := range links { // newest first
-		if l.Status == "live" && l.URL != "" && (l.ExpiresAt == nil || l.ExpiresAt.After(now)) {
-			return l.URL, nil
-		}
-	}
-	return "", nil
+	return salesdoc.LiveLink(ctx, u, invoice, "invoices.payment_link_in_email", now)
 }

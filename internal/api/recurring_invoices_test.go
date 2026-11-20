@@ -17,17 +17,23 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // makeInvoiceDrafts runs the scheduler's recurring invoices for e's organisation up to day, as the worker does.
 func (e *env) makeInvoiceDrafts(day time.Time) journal.RecurringRun {
+	return e.makeInvoiceDraftsAs(day, nil)
+}
+
+// makeInvoiceDraftsAs is makeInvoiceDrafts with the hook the worker's wiring gives the invoices the scheduler issues (journal.Invoices.AfterIssued).
+func (e *env) makeInvoiceDraftsAs(day time.Time, afterIssued func(ctx context.Context, u storage.UnitOfWork, org, invoice uuid.UUID) error) journal.RecurringRun {
 	e.t.Helper()
 	worker, err := postgres.Open(context.Background(), db.URL("fyniq_worker"))
 	if err != nil {
 		e.t.Fatal(err)
 	}
 	e.t.Cleanup(worker.Close)
-	run, err := journal.Invoices{Store: worker, AfterMaking: notify.RecurringMade(outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: e.clock})}.MakeDue(
+	run, err := journal.Invoices{Store: worker, AfterMaking: notify.RecurringMade(outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: e.clock}), AfterIssued: afterIssued}.MakeDue(
 		context.Background(), e.books.Org, day)
 	if err != nil {
 		e.t.Fatal(err)

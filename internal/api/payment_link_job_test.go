@@ -4,19 +4,24 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/connector"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/paymentlinkjob"
+	"github.com/cognizhi/fyniq/internal/pdftext"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -137,6 +142,30 @@ func TestIssuingAnInvoiceQueuesALinkJobThatTheWorkerRunsOutsideTheRequest(t *tes
 	if !found {
 		t.Error("the email does not carry the link")
 	}
+	// The invoice's PDF, as downloaded, says where to pay (FR-AR-13, rev 0.597); with the PDF setting off it does not; an invoice without a link has no such line.
+	pdfText := func(invoice string) string {
+		doc := e.call(http.MethodGet, "/v1/invoices/"+invoice+"/document", e.as(authz.Accountant), nil)
+		raw, err := base64.StdEncoding.DecodeString(doc.str("pdf"))
+		if doc.Status != 200 || err != nil {
+			t.Fatalf("the document: %d %s", doc.Status, doc.Raw)
+		}
+		text, err := pdftext.Text(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return strings.Join(strings.Fields(text), "")
+	}
+	compact := func(x string) string { return strings.Join(strings.Fields(x), "") }
+	if text := pdfText(id); !strings.Contains(text, compact("Pay online: "+link.str("url"))) {
+		t.Errorf("the PDF does not carry the link %s", link.str("url"))
+	}
+	const pdfKey = "/v1/organisation/settings/invoices.payment_link_in_pdf"
+	if r := e.call(http.MethodPatch, pdfKey, acc, map[string]any{"value": "false"}, "If-Match", e.call(http.MethodGet, pdfKey, acc, nil).Header.Get("ETag")); r.Status >= 300 {
+		t.Fatalf("switching the PDF link off: %d %s", r.Status, r.Raw)
+	}
+	if text := pdfText(id); strings.Contains(text, compact(link.str("url"))) {
+		t.Error("the PDF carries the link with the setting off")
+	}
 	// A provider that refuses for good leaves no link and no error.
 	f.refuse = true
 	other, _ := e.issuedInvoice("1", "70.00")
@@ -149,5 +178,58 @@ func TestIssuingAnInvoiceQueuesALinkJobThatTheWorkerRunsOutsideTheRequest(t *tes
 	}
 	if r := e.call(http.MethodGet, "/v1/invoices/"+other+"/payment-link", e.as(authz.Accountant), nil); r.Status != http.StatusNotFound {
 		t.Errorf("a link for the refused request: %d %s", r.Status, r.Raw)
+	}
+}
+
+// FR-AR-13 (rev 0.597): the link is asked for whichever way an invoice is issued: an invoice the scheduler issues from an approved recurring invoice and one a second person's approval issues each
+// queue the job when the setting is on, a billing provider's own invoice (already collected) queues none, and a preview posts nothing and queues nothing.
+// req: FR-AR-13
+// req: FR-AR-07
+// asvs: V2.3.1
+func TestEveryPathThatIssuesAnInvoiceQueuesItsLinkJob(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	weiling := f.as(f.weiling, authz.Accountant, authz.Controller)
+	ahkow := f.as(f.ahkow, authz.Accountant, authz.Controller)
+	const key = "/v1/organisation/settings/invoices.payment_link_on_issue"
+	acc := e.as(authz.Administrator)
+	if r := e.call(http.MethodPatch, key, acc, map[string]any{"value": "true"}, "If-Match", e.call(http.MethodGet, key, acc, nil).Header.Get("ETag")); r.Status >= 300 {
+		t.Fatalf("switching it on: %d %s", r.Status, r.Raw)
+	}
+	e.queuedLinkJobs() // start empty
+	// The scheduler issues the approved recurring invoice and the worker's hook queues one job.
+	body := e.recurringInvoice("Retainer", "800.00", monthly(1, "2026-10-01"))
+	body["mode"] = "issue_and_send"
+	c := e.call(http.MethodPost, "/v1/recurring-invoices", weiling, body)
+	asked := e.call(http.MethodPost, "/v1/recurring-invoices/"+c.str("id")+"/approval", weiling, nil, "If-Match", c.Header.Get("ETag"))
+	if a := f.decide(ahkow, asked.str("id"), "approve", hashOf(asked)); a.Status != 200 {
+		t.Fatalf("approving it: %d %s", a.Status, a.Raw)
+	}
+	hook := paymentlinkjob.OnIssue(outbox.Dispatcher{Store: e.store, Queue: e.queue, Clock: e.clock})
+	if run := e.makeInvoiceDraftsAs(time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC), hook); run.Issued != 1 {
+		t.Fatalf("the scheduler: %+v", run)
+	}
+	if jobs := e.queuedLinkJobs(); len(jobs) != 1 {
+		t.Fatalf("after the scheduler issued an invoice: %d link jobs", len(jobs))
+	}
+	// An invoice a person issues through the service, never through the API's own command, queues too (the approval path calls the same service); the provider's own invoice does not.
+	id, _ := e.createInvoice("1", "50.00")
+	svc := journal.Invoices{Store: e.store, AfterIssued: hook}
+	if _, err := svc.Post(context.Background(), e.books.Org, uuid.MustParse(id)); err != nil {
+		t.Fatal(err)
+	}
+	if jobs := e.queuedLinkJobs(); len(jobs) != 1 {
+		t.Fatalf("after the service issued an invoice: %d link jobs", len(jobs))
+	}
+	provided, _ := e.createInvoice("1", "60.00")
+	total, err := money.Parse("60.00", money.MustLookup("SGD"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.PostProvided(context.Background(), e.books.Org, uuid.MustParse(provided), total); err != nil {
+		t.Fatalf("the provider's invoice: %v", err)
+	}
+	if jobs := e.queuedLinkJobs(); len(jobs) != 0 {
+		t.Fatalf("a billing provider's own invoice queued %d link jobs", len(jobs))
 	}
 }

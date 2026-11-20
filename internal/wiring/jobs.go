@@ -50,6 +50,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/notify/reminders"
 	"github.com/cognizhi/fyniq/internal/outbox"
+	"github.com/cognizhi/fyniq/internal/paymentlinkjob"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/proposal"
@@ -262,7 +263,7 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		"invoices.recurring": func(ctx context.Context) error { // FR-AR-07: drafts, and the approved ones issued and sent
-			return salesmail.Scheduled{Invoices: journal.Invoices{Store: k.Store, AfterMaking: notify.RecurringMade(k.dispatcher(clock)), Clock: clock},
+			return salesmail.Scheduled{Invoices: journal.Invoices{Store: k.Store, AfterMaking: notify.RecurringMade(k.dispatcher(clock)), Clock: clock, AfterIssued: paymentlinkjob.OnIssue(k.dispatcher(clock))}, // FR-AR-13: a recurring invoice issued by the scheduler gets its link by the same job
 				Sender: k.SalesSender(clock)}.RunAll(ctx, clock.Now())
 		},
 		"bills.releases": func(ctx context.Context) error {

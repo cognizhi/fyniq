@@ -32,6 +32,9 @@ type Invoices struct {
 	Clock ports.Clock
 	// AfterMaking runs inside the unit of work that made a recurring invoice's draft (Made); nil does nothing.
 	AfterMaking Made
+	// AfterIssued runs inside the unit of work that issued an invoice, by whatever path issues one (a person, an approval, the scheduler of a recurring invoice; not a billing provider's own
+	// invoice, which is already collected), once it is numbered and posted (FR-AR-13: a payment link asked for outside the request); nil does nothing. A preview posts nothing, so it is not run.
+	AfterIssued func(ctx context.Context, uow storage.UnitOfWork, org, invoice uuid.UUID) error
 }
 
 // releaseNow posts a just-issued invoice's releases due by the organisation's today, after its unit of work commits.
@@ -291,7 +294,13 @@ func (s Invoices) post(ctx context.Context, org, id uuid.UUID, providerTotal *mo
 			return err
 		}
 		doc.Status = storage.DocumentPosted
-		return s.after(ctx, u, doc, out)
+		if err := s.after(ctx, u, doc, out); err != nil {
+			return err
+		}
+		if providerTotal == nil && s.AfterIssued != nil && !storage.IsPreview(ctx) {
+			return s.AfterIssued(ctx, u, org, id)
+		}
+		return nil
 	})
 	if err == nil {
 		s.releaseNow(ctx, org, id)

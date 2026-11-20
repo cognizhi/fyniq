@@ -110,8 +110,13 @@ what is open on the invoice, with the invoice's number as its reference, and sho
 link. It is the link already made for the invoice, so sending an email never asks the payment provider for anything: make the link first, then
 send the invoice, and a link made after a send goes with the next one (a reminder too). A cancelled, paid or expired link is left out. An
 Owner can switch this off with **Put an invoice's payment link in its email** under organisation settings. With **Make a payment link when an invoice is issued** switched on
-under organisation settings, issuing an invoice queues the link, made by a job, so the invoice has it a moment later. Printing the link on the invoice's PDF is
-not built yet.
+under organisation settings, any invoice that is issued queues the link, made by a job, so the invoice has it a moment later: one you issue, one another person's approval
+issues, and one a recurring invoice issues by itself on its day. An invoice mirrored from a billing provider's own is not given one, as the provider collects it already.
+
+**The link on the invoice's PDF.** The PDF of an invoice, whether emailed or downloaded from the invoice, ends its payment details with "Pay online:" and the link while the invoice has a live link. A template
+that places the link itself with `{{payment.link}}` is not told twice. It is the stored link too, so making the PDF never asks the payment provider; the PDF emailed is kept as it was
+sent, so a link made after a send is on the PDF of the next one only. An Owner can switch this off with **Put an invoice's payment link on its PDF** under organisation settings.
+Only an invoice carries it: a quote, a credit note or a statement does not.
 
 
 ## Recurring invoices

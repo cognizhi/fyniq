@@ -74,6 +74,9 @@ func registerInvoiceDocuments(a *API) {
 				if data, err = salesdoc.InvoiceData(ctx, u, doc, s); err != nil {
 					return err
 				}
+				if err = data.WithPaymentLink(ctx, u, doc, a.deps.Clock.Now()); err != nil { // FR-AR-13: the same PDF as the one emailed
+					return err
+				}
 				d, err := invoice.Read(doc, s.Base)
 				if err != nil {
 					return err

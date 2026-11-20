@@ -220,3 +220,37 @@ func TestAPaperIsCheckedBeforeItIsLaidOut(t *testing.T) {
 		}
 	}
 }
+
+// FR-AR-13 (rev 0.597): an invoice with a live payment link says where to pay online in its payment details, once, whatever the template's text; a template that places {{payment.link}} itself is not told twice; no
+// other document type and no invoice without a link changes.
+// req: FR-AR-13
+// req: FR-TPL-03
+func TestAnInvoiceWithALivePaymentLinkSaysWhereToPay(t *testing.T) {
+	c := doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice)
+	d := Sample(doctemplate.Invoice)
+	plain, err := Build(doctemplate.Invoice, c, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(find(plain, "payment_details").Body, "Pay online") {
+		t.Fatalf("no link, yet: %q", find(plain, "payment_details").Body)
+	}
+	d.PaymentLink = "https://pay.example.com/inv-0042"
+	with, _ := Build(doctemplate.Invoice, c, d)
+	if body := find(with, "payment_details").Body; !strings.HasSuffix(body, " Pay online: https://pay.example.com/inv-0042") || strings.Count(body, "https://pay.example.com/inv-0042") != 1 {
+		t.Errorf("the payment details: %q", body)
+	}
+	for i := range c.Blocks {
+		if c.Blocks[i].Kind == doctemplate.BlockPaymentDetails {
+			c.Blocks[i].Texts[doctemplate.TextBody] = "Pay at {{payment.link}}."
+		}
+	}
+	placed, _ := Build(doctemplate.Invoice, c, d)
+	if body := find(placed, "payment_details").Body; body != "Pay at https://pay.example.com/inv-0042." {
+		t.Errorf("a template that places the link: %q", body)
+	}
+	q, _ := Build(doctemplate.Quote, doctemplate.Default(doctemplate.KindDocument, doctemplate.Quote), d)
+	if strings.Contains(find(q, "payment_details").Body, "Pay online") {
+		t.Error("a quote carries an invoice's link")
+	}
+}
