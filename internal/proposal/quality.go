@@ -22,7 +22,7 @@ type QualityTaskType struct {
 	TaskType string  `json:"task_type" doc:"The task type." example:"ap.draft_bill"`
 	Count    int     `json:"count" doc:"How many of the month's proposals were of it." example:"12"`
 	Share    float64 `json:"share" doc:"Of the month's proposals, from 0 to 1." example:"0.4"`
-	// (rev 0.551, AI-33) What became of the approvals of this task type.
+	// (rev 0.563, AI-33) What became of the approvals of this task type.
 	Approved              int     `json:"approved" doc:"How many of its proposals were approved." example:"9"`
 	Edited                int     `json:"edited" doc:"How many of the approved ones were approved with an item changed or removed (an edit before approving)." example:"2"`
 	Reversed              int     `json:"reversed" doc:"How many of the approved ones were undone afterwards (AI-91)." example:"1"`
@@ -34,7 +34,7 @@ type QualityApprover struct {
 	User     uuid.UUID `json:"user" doc:"The person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	Approved int       `json:"approved" doc:"How many proposals they approved in the month." example:"14"`
 	Quick    int       `json:"quick" doc:"How many of them within ten seconds of first opening the review, with no item changed, or with no look at all." example:"3"`
-	Edited   int       `json:"edited" doc:"How many of them were approved with an item changed or removed (rev 0.551, AI-33)." example:"2"`
+	Edited   int       `json:"edited" doc:"How many of them were approved with an item changed or removed (rev 0.563, AI-33)." example:"2"`
 }
 
 // QualityApproverTaskType is what one person approved of one task type in the month: the breakdown AI-33 names, per task type and approver.
@@ -64,7 +64,7 @@ type Quality struct {
 	RejectedWithReasonShare float64           `json:"rejected_with_reason_share" doc:"The share of rejections that gave a reason, from 0 to 1." example:"0.75"`
 	PerApprover             []QualityApprover `json:"per_approver" nullable:"false" doc:"What each person approved, the most first."`
 	TaskTypes               []QualityTaskType `json:"task_types" nullable:"false" doc:"Each task type's share of the month's proposals, the most first."`
-	// (rev 0.551, AI-33) The edit-before-approve rate, the reversals after approval and the breakdown per task type and approver.
+	// (rev 0.563, AI-33) The edit-before-approve rate, the reversals after approval and the breakdown per task type and approver.
 	Edited          int                       `json:"edited" doc:"Approvals with an item changed or removed before approving (the edit-before-approve count)." example:"4"`
 	EditedShare     float64                   `json:"edited_share" doc:"The share of approvals that were edited before approving, from 0 to 1; 0 when nothing was approved." example:"0.18"`
 	Reversed        int                       `json:"reversed" doc:"Approved proposals a person undid afterwards (AI-91): reversals after approval." example:"1"`

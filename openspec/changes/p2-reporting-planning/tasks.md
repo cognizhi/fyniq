@@ -6,13 +6,13 @@ guide pages compiled into the knowledge base, and the oracle's half where it pos
 
 ## 1. Decisions and specs
 - [x] 1.1 PRD-001 rev 0.540 records the decisions; the specs are updated and stamped. `// req: FR-RPT-04`, `// req: FR-RPT-06`, `// req: FR-EQ-23`
-  (23 Nov 2026: rev 0.540, then 0.548 for the Appendix D row the builder needed.)
+  (23 Nov 2026: rev 0.540, then 0.560 for the Appendix D row the builder needed.)
 
 ## 2. Report builder and schedules
 - [x] 2.1 `reportdef` domain: validation, the formula evaluator and the run (D1), with hand-worked cases. `// req: FR-RPT-04`
   Built: `internal/domain/reportdef` (the grammar, `Validate` RDEF-01 to RDEF-08, `Compute`, `NextRun`) and `financials.AccountFigures`; calculated rows round once under RND-KPI (design D1 said RND-PERCENT: percent rows use RND-KPI at 1 decimal, the same rounding). Tests: `TestAReportIsWorkedOutFromTheFiguresByHand`, `TestACalculatedRowRoundsOnceHalfAwayFromZeroAndNeverDividesByZero`.
 - [x] 2.2 Store, API (definitions, run, share), matrix rows (D2). `// req: FR-RPT-04`, `// req: QA-SEC-03`
-  Built: migration 001100, `ReportDefinitions`, the seven operations and the Appendix D row `Report definitions and schedules` (rev 0.548: the Reports row is view-only and the AI holds V on it, so saving needed a row of its own). Tests: `TestAReportIsSavedRunAndChangedThroughTheAPI`, `TestOnlyReadersOfTheWholeLedgerUseTheBuilder`, the matrix rows (`FYNIQ_MATRIX_ONLY='ReportDefinition|ReportDraft|ReportSchedule'`), `TestAReportDefinitionAndItsScheduleKeepTheirRulesInTheDatabase`.
+  Built: migration 001100, `ReportDefinitions`, the seven operations and the Appendix D row `Report definitions and schedules` (rev 0.560: the Reports row is view-only and the AI holds V on it, so saving needed a row of its own). Tests: `TestAReportIsSavedRunAndChangedThroughTheAPI`, `TestOnlyReadersOfTheWholeLedgerUseTheBuilder`, the matrix rows (`FYNIQ_MATRIX_ONLY='ReportDefinition|ReportDraft|ReportSchedule'`), `TestAReportDefinitionAndItsScheduleKeepTheirRulesInTheDatabase`.
 - [x] 2.3 Schedules, the daily job and the send-time permission check (D3). Slack is a fake: **[live-verify]**. `// req: FR-RPT-07`
   Built: `report_schedule`, `report_schedule_run`, the hourly job `reports.send` (`internal/reportsend`) and the notification `reports.scheduled` (title with the report's name and month, no figure: stricter than D3's option, so no setting). **Left:** the Slack post (`[live-verify]`; a Slack run records every recipient as skipped with that reason). Test: `TestADueReportIsSentOnlyToThoseWhoStillMayReadIt`.
 - [x] 2.4 Screen `report-builder`, help, guide and kb. `// req: QA-UI-05`

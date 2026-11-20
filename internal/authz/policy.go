@@ -77,7 +77,7 @@ const (
 	PeopleAndHR         Capability = "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
 	ConnectedApps       Capability = "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
 	OwnMCPConnection    Capability = "Own MCP connection (opt in, consent, revoke) (rev 0.2)"
-	ReportDefinitions   Capability = "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
+	ReportDefinitions   Capability = "Report definitions and schedules: save, share and schedule a report (rev 0.560)"
 )
 
 // WholeRow are the qualifiers that limit what a role does on a row, not which of its records it sees: an approval or
@@ -296,7 +296,7 @@ var Grants = map[Capability]map[string]Cell{
 	OwnMCPConnection: {
 		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", ""}, "Releaser": {"C", ""}, "Approver": {"C", ""}, "Employee": {}, "Auditor": {}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"C", ""}, "AI": {},
 	},
-	// (rev 0.548) Saving a report, and scheduling one, are a person's own writes, never the AI's: it reads reports (Reports, dashboards).
+	// (rev 0.560) Saving a report, and scheduling one, are a person's own writes, never the AI's: it reads reports (Reports, dashboards).
 	ReportDefinitions: {
 		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
 	},

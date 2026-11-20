@@ -53263,7 +53263,7 @@ export interface components {
             approved: number;
             /**
              * Format: int64
-             * @description How many of them were approved with an item changed or removed (rev 0.551, AI-33).
+             * @description How many of them were approved with an item changed or removed (rev 0.563, AI-33).
              * @example 2
              */
             edited: number;

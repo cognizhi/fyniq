@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | Report builder (FR-RPT-04), scheduled reports (FR-RPT-07), board pack (FR-RPT-06), investor updates and the Board portal (FR-EQ-23, FR-EQ-24), configurable dashboards (FR-VIZ-09, FR-KPI-05), spend anomaly alerts (FR-KPI-06); `p2-reporting-planning` (PRD-001 rev 0.540 to 0.550) |
+| Feature and requirement IDs | Report builder (FR-RPT-04), scheduled reports (FR-RPT-07), board pack (FR-RPT-06), investor updates and the Board portal (FR-EQ-23, FR-EQ-24), configurable dashboards (FR-VIZ-09, FR-KPI-05), spend anomaly alerts (FR-KPI-06); `p2-reporting-planning` (PRD-001 rev 0.540 to 0.562) |
 | Author, reviewer, date | Claude Code for the owner, 23 Nov 2026; second review waived before production (AGENTS.md), held with `needs-human-review` if wanted |
 | Data and its class | Report definitions (confidential business data: they name accounts, not figures); a report's figures, a published board pack and the investor update (confidential business data: statements and KPIs); recipients (user IDs of members); alerts (confidential business data) |
 | Who acts | Members who read the whole ledger's reports (run and save reports); an Owner, Controller or Accountant (build a pack), an Owner or Controller (publish and send); an Owner or Administrator (a role's dashboard); a Board viewer or investor (reads published packs and updates sent to them); the worker (sends scheduled reports and raises alerts); the AI holds no write here |
