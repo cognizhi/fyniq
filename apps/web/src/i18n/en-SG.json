@@ -2911,6 +2911,14 @@
       "label": "Year-end tax working paper",
       "tooltip": "The tax-adjusted profit of a financial year for the tax agent, with the exemption, the rebate and the form the revenue calls for."
     },
+    "tax-paper.attach-evidence": {
+      "label": "Attach what supports the adjustments",
+      "tooltip": "Attach the invoices of the non-deductible expenses, the capital allowance schedule or the tax agent's note before you record the paper."
+    },
+    "tax-paper.record": {
+      "label": "Record the paper",
+      "tooltip": "The tax agent signs the working: the paper is kept with the figures it worked out, with its evidence, and changes no more."
+    },
     "compliance.pack-updates": {
       "label": "Statutory updates waiting",
       "tooltip": "A newer version of a statutory pack you have activated, with the rows it would add, remove or change; accepting it re-posts nothing."

@@ -1,4 +1,4 @@
--- Tasks made by integrations (PRD-001 FR-INT-24, rev 0.609; p2-api-third-parties task 2, design D5): what a ticketing system or another API client with the
+-- Tasks made by integrations (PRD-001 FR-INT-24, rev 0.610; p2-api-third-parties task 2, design D5): what a ticketing system or another API client with the
 -- scope fyniq.write.tasks asks a person to do. They are kept in a table of their own, not among the compliance tasks (AI-65): the statutory and agent tasks
 -- cannot be reached by a client by construction, and a client's role here is only the API's, limited by column. A client makes a task with a reference of its own
 -- (unique per client, so a retried create finds its task), updates only the tasks it made, and may finish one of them once: done or cancelled, for good. The

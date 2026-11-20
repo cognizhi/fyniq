@@ -26,17 +26,25 @@ import (
 
 // BadDebtRelief is a written-off debt with its GST relief dates (FR-AR-11).
 type BadDebtRelief struct {
-	WriteOffID    string `json:"write_off_id" format:"uuid" doc:"The write-off." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"`
-	InvoiceID     string `json:"invoice_id" format:"uuid" doc:"The invoice written off." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02"`
-	InvoiceNumber string `json:"invoice_number" doc:"Its number." example:"INV-2026-0007"`
-	SupplyDate    string `json:"supply_date" format:"date" doc:"The invoice's date: its tax point." example:"2026-01-15"`
-	WrittenOffOn  string `json:"written_off_on" format:"date" doc:"The day the write-off posted from." example:"2027-03-10"`
-	Written       Money  `json:"written_off" doc:"What was written off, in the invoice's currency."`
-	GST           Money  `json:"gst" doc:"The GST in the part written off, in the invoice's currency, in the invoice's proportion [accountant to confirm]."`
-	EligibleFrom  string `json:"eligible_from" format:"date" doc:"The first day a claim may be made." example:"2027-03-10"`
-	ClaimBy       string `json:"claim_by" format:"date" doc:"The last day to claim: five years from the supply, the day before the anniversary [accountant to confirm]." example:"2031-01-14"`
-	Status        string `json:"status" enum:"not_yet,eligible,expired" doc:"not_yet: the twelve months have not passed; eligible: a claim may be made; expired: it is out of time." example:"eligible"`
-	Pack          string `json:"pack" doc:"The sg-tax-filings version the dates come from." example:"sg-tax-filings@2026.1"`
+	WriteOffID    string                 `json:"write_off_id" format:"uuid" doc:"The write-off." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"`
+	InvoiceID     string                 `json:"invoice_id" format:"uuid" doc:"The invoice written off." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02"`
+	InvoiceNumber string                 `json:"invoice_number" doc:"Its number." example:"INV-2026-0007"`
+	SupplyDate    string                 `json:"supply_date" format:"date" doc:"The invoice's date: its tax point." example:"2026-01-15"`
+	WrittenOffOn  string                 `json:"written_off_on" format:"date" doc:"The day the write-off posted from." example:"2027-03-10"`
+	Written       Money                  `json:"written_off" doc:"What was written off, in the invoice's currency."`
+	GST           Money                  `json:"gst" doc:"The GST in the part written off, in the invoice's currency, in the invoice's proportion [accountant to confirm]."`
+	EligibleFrom  string                 `json:"eligible_from" format:"date" doc:"The first day a claim may be made." example:"2027-03-10"`
+	ClaimBy       string                 `json:"claim_by" format:"date" doc:"The last day to claim: five years from the supply, the day before the anniversary [accountant to confirm]." example:"2031-01-14"`
+	Status        string                 `json:"status" enum:"not_yet,eligible,expired" doc:"not_yet: the twelve months have not passed; eligible: a claim may be made; expired: it is out of time." example:"eligible"`
+	Pack          string                 `json:"pack" doc:"The sg-tax-filings version the dates come from." example:"sg-tax-filings@2026.1"`
+	Claim         *BadDebtReliefClaimRef `json:"claim,omitempty" doc:"The live claim of this write-off, when it is claimed (FR-AR-11)."`
+}
+
+// BadDebtReliefClaimRef is the claim a queue row has.
+type BadDebtReliefClaimRef struct {
+	ID   string `json:"id" format:"uuid" doc:"The claim." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8b01"`
+	Date string `json:"date" format:"date" doc:"The day it was claimed." example:"2027-03-10"`
+	GST  Money  `json:"gst" doc:"The GST it claimed, in the base currency."`
 }
 
 // BadDebtReliefQueue is the queue of debts that may carry GST bad debt relief.
@@ -135,7 +143,7 @@ func registerTaxFilings(a *API) {
 		Summary: "The GST bad debt relief queue",
 		Description: "The invoices written off as a bad debt that bore GST, each with the GST in the part written off, when a claim may be made and until when (FR-AR-11): " +
 			"from twelve months after the date of supply, or from the write-off when the debtor became insolvent sooner, and within five years of the supply, as the sg-tax-filings pack says. " +
-			"The claim goes in the GST return and is not yet recorded here. Read-only; no side effects.",
+			"A claim made with claimBadDebtRelief shows on its row. Read-only; no side effects.",
 	}, append([]string{CodeCursor}, locks...), func(ctx context.Context, in *badDebtReliefInput) (*badDebtReliefOutput, error) {
 		p, _ := authn.From(ctx)
 		out := badDebtReliefOutput{Body: BadDebtReliefQueue{Items: []BadDebtRelief{}}}
@@ -146,6 +154,10 @@ func registerTaxFilings(a *API) {
 			}
 			out.Body.Today = dateOf(today)
 			base, err := baseOf(ctx, u)
+			if err != nil {
+				return err
+			}
+			claims, err := claimsByWriteOff(ctx, u)
 			if err != nil {
 				return err
 			}
@@ -161,6 +173,11 @@ func registerTaxFilings(a *API) {
 						return err
 					}
 					if ok {
+						if c, claimed := claims[item.WriteOffID]; claimed {
+							if cl, err := reliefClaimOf(c); err == nil {
+								item.Claim = &BadDebtReliefClaimRef{ID: cl.ID, Date: cl.Date, GST: cl.GST}
+							}
+						}
 						out.Body.Items = append(out.Body.Items, item)
 					}
 				}

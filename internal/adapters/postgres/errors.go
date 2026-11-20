@@ -90,6 +90,8 @@ var fyCodes = map[string]string{
 	"FYP32": storage.CodeInvalid,
 	"FYP33": storage.CodeInvalid,
 	"FYP34": storage.CodeInvalid,
+	"FYT01": storage.CodeInvalid, // a claim of GST bad debt relief for a write-off that is not posted or is claimed already (001120)
+	"FYT02": storage.CodeInvalid, // a write-off with a live claim of relief reversed (001120)
 	"FYW01": storage.CodeInvalid, // a webhook endpoint changed beyond its rules, or a webhook record deleted (001151)
 	"FYW02": storage.CodeInvalid, // a webhook delivery changed beyond its rules (001151)
 	"FYT01": storage.CodeInvalid, // a task made by an integration changed beyond its rules, or deleted (001152)
