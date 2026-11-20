@@ -4,7 +4,7 @@ type: task
 title: Send events to another system with webhooks
 summary: Turning webhooks on, adding and verifying an endpoint, what a message carries, retries and dead letters, pausing, rolling the secret
 sources:
-  - docs/user-guide/webhooks.md sha256:6371c3e04170d3f9c12467bcaf33555d80501c06d74a5e5e36118ad0264b5e45
+  - docs/user-guide/webhooks.md sha256:b66d0d9708ea4cebe51c09a13b3b65480b58e2ccb77d45799f8e5dcb69958db6
 data_class: general
 taint: trusted
 status: draft

@@ -4,7 +4,7 @@ title: Send events to another system with webhooks
 mode: expert
 roles: [owner, admin]
 requirements: [FR-INT-12]
-status: draft            # written with the webhooks of p2-api-third-parties; the screen follows the API
+status: draft            # written with the webhooks screen (P2); reviewed when the integration screens are built
 ---
 
 # Send events to another system with webhooks

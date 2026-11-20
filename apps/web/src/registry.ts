@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Bot, BriefcaseBusiness, Building, CalendarClock, Clock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, ScrollText, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Bot, BriefcaseBusiness, Building, CalendarClock, Clock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, ScrollText, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, Webhook, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -248,6 +248,7 @@ export const routes = [
   { kind: "route", id: "settings-notifications", path: "/settings/notifications", mode: "basic", signedIn: true, help: "settings.notifications", guide: "settings.notifications" },
   { kind: "route", id: "settings-announcements", path: "/settings/announcements", mode: "expert", signedIn: true, help: "settings.announcements", guide: "settings.announcements" },
   { kind: "route", id: "settings-integrations", path: "/settings/integrations", mode: "expert", signedIn: true, help: "settings.integrations", guide: "settings.integrations" },
+  { kind: "route", id: "settings-webhooks", path: "/settings/integrations/webhooks", mode: "expert", signedIn: true, help: "settings.webhooks", guide: "settings.webhooks" },
   { kind: "route", id: "settings-brand", path: "/settings/brand", mode: "basic", signedIn: true, help: "settings.brand", guide: "settings.brand" },
   { kind: "route", id: "settings-console", path: "/settings/installation", mode: "expert", signedIn: true, help: "settings.console", guide: "settings.console" },
   { kind: "route", id: "settings-sign-in-providers", path: "/settings/sign-in-providers", mode: "expert", signedIn: true, help: "settings.sign-in-providers", guide: "settings.sign-in-providers" },
@@ -433,6 +434,10 @@ export const actions = [
   { kind: "action", id: "banner.dismiss", mode: "basic", help: "banner.dismiss", guide: "settings.notifications#banners" },
   { kind: "action", id: "announcement.publish", mode: "expert", help: "announcement.publish", guide: "settings.announcements#publish-an-announcement" },
   { kind: "action", id: "announcement.withdraw", mode: "expert", help: "announcement.withdraw", guide: "settings.announcements#end-an-announcement" },
+  { kind: "action", id: "webhooks.add", mode: "expert", help: "webhooks.add", guide: "settings.webhooks#add-an-endpoint" },
+  { kind: "action", id: "webhooks.verify", mode: "expert", help: "webhooks.verify", guide: "settings.webhooks#add-an-endpoint" },
+  { kind: "action", id: "webhooks.roll-secret", mode: "expert", help: "webhooks.roll-secret", guide: "settings.webhooks#change-an-endpoint" },
+  { kind: "action", id: "webhooks.dead-letters", mode: "expert", help: "webhooks.dead-letters", guide: "settings.webhooks#when-your-endpoint-fails" },
   { kind: "action", id: "connector.install", mode: "expert", help: "connector.install", guide: "settings.integrations#install-a-connector" },
   { kind: "action", id: "connector.health", mode: "expert", help: "connector.health", guide: "settings.integrations#health" },
   { kind: "action", id: "connector.data-classes", mode: "expert", help: "connector.data-classes", guide: "settings.integrations#what-a-connector-sends-out" },
@@ -886,6 +891,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.statutory-packs", route: "/settings/statutory-packs", icon: Scale, group: "organisation", roles: ["owner", "controller", "accountant", "tax_agent", "payroll_administrator", "auditor"], mode: "expert", help: "settings.statutory-packs", guide: "settings.statutory-packs" },
   { kind: "nav", id: "settings.expense-policy", route: "/settings/expense-policy", icon: Wallet, group: "organisation", roles: ["owner", "administrator", "controller", "approver", "accountant", "auditor"], mode: "expert", help: "settings.expense-policy", guide: "claims.approve-team#set-the-expense-policy" },
   { kind: "nav", id: "settings.templates", route: "/settings/templates", icon: LayoutTemplate, group: "organisation", roles: ["owner", "controller", "accountant", "ar_specialist", "ap_specialist", "auditor"], mode: "basic", help: "settings.templates", guide: "settings.templates" },
+  { kind: "nav", id: "settings.webhooks", route: "/settings/integrations/webhooks", icon: Webhook, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.webhooks", guide: "settings.webhooks" },
   { kind: "nav", id: "settings.integrations", route: "/settings/integrations", icon: Plug, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.integrations", guide: "settings.integrations" },
   { kind: "nav", id: "settings.announcements", route: "/settings/announcements", icon: Megaphone, group: "organisation", roles: ["owner", "administrator", "auditor"], mode: "expert", help: "settings.announcements", guide: "settings.announcements" },
   { kind: "nav", id: "settings.data", route: "/settings/data", icon: Database, group: "organisation", roles: ["owner", "administrator", "dpo"], mode: "expert", help: "settings.data", guide: "settings.data" },
