@@ -73,7 +73,7 @@ CREATE POLICY tenant_isolation ON fyniq.mcp_third_party_app USING (organisation_
 
 REVOKE ALL ON FUNCTION fyniq.mcp_third_party_app_guard() FROM PUBLIC;
 REVOKE ALL ON fyniq.mcp_third_party_app FROM PUBLIC;
-GRANT SELECT ON fyniq.mcp_third_party_app TO fyniq_api, fyniq_readonly;
+GRANT SELECT ON fyniq.mcp_third_party_app TO fyniq_api, fyniq_worker, fyniq_readonly; -- the worker reads it for the full tenant export (FR-MIG-04)
 GRANT INSERT (id, client_id, name, publisher, publisher_url, redirect_uris, purpose, processing_location, outside_singapore, inventory_entry, registered_by, registered_at)
   ON fyniq.mcp_third_party_app TO fyniq_api;
 GRANT UPDATE (removed_at, removed_by) ON fyniq.mcp_third_party_app TO fyniq_api;

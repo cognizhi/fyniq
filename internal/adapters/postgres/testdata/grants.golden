@@ -1431,6 +1431,7 @@ fyniq_worker    SELECT    mcp_call
 fyniq_worker    EXECUTE   mcp_clients_expire()
 fyniq_worker    EXECUTE   mcp_purge_calls()
 fyniq_worker    SELECT    mcp_seen
+fyniq_worker    SELECT    mcp_third_party_app
 fyniq_worker    SELECT    mcp_user_optin
 fyniq_worker    EXECUTE   member_activity()
 fyniq_worker    EXECUTE   member_emails()
