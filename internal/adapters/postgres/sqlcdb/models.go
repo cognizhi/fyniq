@@ -862,6 +862,22 @@ type FyniqAuthzRefusal struct {
 	Refused        int32
 }
 
+type FyniqAutomationRule struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Name           string
+	Trigger        string
+	DocumentType   *string
+	AmountAtLeast  *string
+	Action         string
+	Recipients     []uuid.UUID
+	State          string
+	Version        int32
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
 type FyniqBalance struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

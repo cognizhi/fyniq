@@ -292,6 +292,35 @@ func (r *Runtime) PaymentProvider(ctx context.Context, u storage.UnitOfWork, id 
 	return guardedPaymentProvider{PaymentProvider: pp, g: r.guard(c.ID, b.Manifest.Limits), clock: r.Clock}, c, nil
 }
 
+// ChatRule is the authority of a chat connector's one write: a notification event of a type the connection's routing rules send to a channel, fanned out by the platform
+// (FR-NTF-04). It is a system rule that completes no approval and moves no money: a person's request, an AI proposal and an approval are refused by checkTrigger, since the
+// manifest names the rule alone.
+var ChatRule = Authority{Trigger: TriggerSystem, Rule: "a notification event of a type the connection's routing rules send to a channel"}
+
+// Messaging is an organisation's enabled chat connector id under authority a, behind its rate limit and circuit breaker; ErrNotEnabled while it is paused, disabled or
+// uninstalled; ErrSandbox for a sandbox organisation. The adapter it returns posts one message and does nothing else (FR-NTF-04, FR-INT-27).
+func (r *Runtime) Messaging(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, a Authority) (ports.Messaging, storage.InstalledConnector, error) {
+	b, c, secrets, err := r.organisation(ctx, u, id)
+	if err != nil {
+		return nil, c, err
+	}
+	if c.State != storage.ConnectorEnabled || b.Messaging == nil {
+		return nil, c, fmt.Errorf("%w: %s is %s", ErrNotEnabled, c.Connector, c.State)
+	}
+	if err := checkTrigger(b.Manifest, Messaging, a); err != nil {
+		return nil, c, err
+	}
+	config, err := r.config(ctx, c, secrets, nil)
+	if err != nil {
+		return nil, c, err
+	}
+	m, err := b.Messaging(config)
+	if err != nil {
+		return nil, c, err
+	}
+	return guardedMessaging{Messaging: m, g: r.guard(c.ID, b.Manifest.Limits), clock: r.Clock}, c, nil
+}
+
 // LinkRequest is the authority of a payment-link connector's one write: a person with a right on Invoices asked for a payment link
 // on an issued invoice (FR-AR-13). It is a system rule, because it
 // moves no money and completes no approval: the customer pays the company, through the provider, and the AI never triggers it
@@ -802,5 +831,21 @@ func (p guardedPaymentLinks) CreatePaymentRequest(ctx context.Context, r ports.P
 	}
 	out, err := p.PaymentLinks.CreatePaymentRequest(ctx, r)
 	p.g.end(err != nil && !errors.Is(err, ports.ErrPaymentRequestRefused), p.clock.Now())
+	return out, err
+}
+
+type guardedMessaging struct {
+	ports.Messaging
+	g     *guard
+	clock ports.Clock
+}
+
+func (m guardedMessaging) Post(ctx context.Context, msg ports.ChatMessage) (ports.ChatReceipt, error) {
+	if err := m.g.begin(m.clock.Now()); err != nil {
+		return ports.ChatReceipt{}, err
+	}
+	out, err := m.Messaging.Post(ctx, msg)
+	var limited ports.ChatLimited
+	m.g.end(err != nil && !errors.Is(err, ports.ErrChatRefused) && !errors.As(err, &limited), m.clock.Now())
 	return out, err
 }

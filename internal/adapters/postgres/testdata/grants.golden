@@ -131,6 +131,9 @@ fyniq_api       SELECT    auditor_sample
 fyniq_api       INSERT    authz_refusal (user_id, window_start)
 fyniq_api       SELECT    authz_refusal
 fyniq_api       UPDATE    authz_refusal (refused)
+fyniq_api       INSERT    automation_rule (action, amount_at_least, created_at, created_by, document_type, name, recipients, trigger, updated_at)
+fyniq_api       SELECT    automation_rule
+fyniq_api       UPDATE    automation_rule (amount_at_least, document_type, name, recipients, state, updated_at, version)
 fyniq_api       SELECT    balance
 fyniq_api       EXECUTE   balance_differences()
 fyniq_api       EXECUTE   balance_lines_at()
@@ -964,6 +967,7 @@ fyniq_readonly  SELECT    auditor_engagement
 fyniq_readonly  SELECT    auditor_request
 fyniq_readonly  SELECT    auditor_sample
 fyniq_readonly  SELECT    authz_refusal
+fyniq_readonly  SELECT    automation_rule
 fyniq_readonly  SELECT    balance
 fyniq_readonly  EXECUTE   balance_differences()
 fyniq_readonly  EXECUTE   balance_lines_at()
@@ -1282,6 +1286,7 @@ fyniq_worker    SELECT    auditor_request
 fyniq_worker    SELECT    auditor_sample
 fyniq_worker    DELETE    authz_refusal
 fyniq_worker    SELECT    authz_refusal (id, organisation_id, window_start)
+fyniq_worker    SELECT    automation_rule
 fyniq_worker    SELECT    balance
 fyniq_worker    EXECUTE   balance_differences()
 fyniq_worker    EXECUTE   balance_lines_at()

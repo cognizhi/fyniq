@@ -65,6 +65,8 @@ type Binding struct {
 	// PaymentLinks builds the adapter that asks the provider for a payment request on an invoice (FR-AR-13): the connector's one write,
 	// on a port of its own so PaymentProvider stays read-only.
 	PaymentLinks func(Config) (ports.PaymentLinks, error)
+	// Messaging builds a chat connector's one write, posting a short text with a deep link to a channel (FR-NTF-04): its own port, so a chat connector can do nothing else.
+	Messaging func(Config) (ports.Messaging, error)
 	// Model builds a model provider's adapter for one AI connection (AI-71): its configuration and credential are the
 	// connection's, never an installed connector's (p1-ai-providers design D2).
 	Model func(Config) (ports.ModelProvider, error)
@@ -93,6 +95,9 @@ func (b Binding) kinds() []Kind {
 	}
 	if b.PaymentLinks != nil {
 		ks = append(ks, PaymentLink)
+	}
+	if b.Messaging != nil {
+		ks = append(ks, Messaging)
 	}
 	if b.Model != nil {
 		ks = append(ks, ModelProvider)

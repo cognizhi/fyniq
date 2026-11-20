@@ -25,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/bankingest"
 	"github.com/cognizhi/fyniq/internal/canary"
 	"github.com/cognizhi/fyniq/internal/cashsnapshotjob"
+	"github.com/cognizhi/fyniq/internal/chatroute"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
@@ -373,7 +374,11 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 
 // Fanout fans notification events out and sends their digests (FR-NTF-01, FR-NTF-02, FR-NTF-05).
 func (k *Kit) Fanout(clock ports.Clock) notify.Fanout {
-	return notify.Fanout{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Origin: k.Origin}
+	f := notify.Fanout{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Origin: k.Origin}
+	if k.Connectors != nil { // FR-NTF-04: the chat connectors' routing rules
+		f.Chat = chatroute.Queuer{Catalogue: k.Connectors, Dispatcher: f.Dispatcher, Origin: k.Origin}.Queue
+	}
+	return f
 }
 
 // AgentRuns runs the scheduled agents' queued runs (AI-64, AI-65; p1-scheduled-agents design D5), asking the model through

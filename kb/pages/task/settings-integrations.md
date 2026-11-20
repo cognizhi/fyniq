@@ -4,7 +4,7 @@ type: task
 title: Install, configure, test and run connectors, such as the email providers
 summary: Connectors and the catalogue: install, configure, secrets, test, enable, pause, upgrade, approve; email senders; Stripe and HitPay payment providers
 sources:
-  - docs/user-guide/integrations.md sha256:2e2a6e4563e1eabdae17a6f4797987976e9333086247992fe164c552d172e965
+  - docs/user-guide/integrations.md sha256:0d14f2b9ea920b799936a24b5b3c676f9e191909490c9bbf5573b190fd6ebd94
 data_class: general
 taint: trusted
 status: draft
@@ -168,6 +168,14 @@ aliases:
   and set aside for a person, and posts nothing.
 
 (src: docs/user-guide/integrations.md#payment-providers-stripe-and-hitpay)
+
+## Slack
+
+- An Administrator installs Slack under Settings › Integrations: a private Slack app with the scope chat:write, its bot token as the connector's secret, the app added to each channel named.
+- Routing rules in the connector's configuration send an event type to a channel, such as fyniq.approval.requested.v1 to #finance; a type with no rule is not sent, and security, personal-data and payee events never are.
+- A message is the type's label and a link, with no amount, name or title; approving never happens in Slack, the link opens Fyniq where step-up applies. A refused message is retried and then reported to the Owner and Administrators; a sandbox organisation never posts; Zoho Cliq is not available yet.
+
+(src: docs/user-guide/integrations.md#slack)
 
 ## Tasks from other systems
 

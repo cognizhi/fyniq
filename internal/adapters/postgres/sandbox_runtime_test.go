@@ -61,6 +61,10 @@ func TestAttackASandboxOrganisationGetsNoOutboundAdapter(t *testing.T) {
 			_, _, err := rt.PaymentLinks(ctx, u, id, connector.LinkRequest)
 			return err
 		},
+		"chat": func(u storage.UnitOfWork) error {
+			_, _, err := rt.Messaging(ctx, u, id, connector.ChatRule)
+			return err
+		},
 		"inbound email": func(u storage.UnitOfWork) error {
 			_, _, err := rt.InboundEmail(ctx, u, connector.OutboxEmail)
 			return err

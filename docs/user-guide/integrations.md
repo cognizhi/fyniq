@@ -3,7 +3,7 @@ key: settings.integrations
 title: Integrations and connectors
 mode: expert
 roles: [owner, admin, controller, auditor, dpo, super_admin]
-requirements: [FR-INT-20, FR-INT-21, FR-INT-24, FR-INT-25, FR-INT-26, FR-INT-27, SEC-36, FR-PSP-01, FR-PSP-04, FR-PSP-05, FR-PSP-06]
+requirements: [FR-INT-20, FR-INT-21, FR-INT-24, FR-NTF-04, FR-INT-25, FR-INT-26, FR-INT-27, SEC-36, FR-PSP-01, FR-PSP-04, FR-PSP-05, FR-PSP-06]
 status: draft
 ---
 
@@ -156,6 +156,13 @@ anything.
   in it should equal what the provider says it holds for you. A sweep that fell behind shows with the other bank syncs.
 - **Events Fyniq cannot read.** A webhook of a type Fyniq does not know is kept and set aside for a person. It posts
   nothing.
+
+## Slack
+
+- Install **Slack** under **Settings › Integrations** (an Administrator, with the connector's usual approval). It uses a private Slack app in your workspace with the scope `chat:write`; paste its **bot token** as the connector's secret and add the app to each channel you name.
+- In the connector's configuration, **Routing rules** send an event type to a channel: for example `fyniq.approval.requested.v1` to `#finance`. A type with no rule is not sent to Slack. Only operational and approval events can be sent; security, personal-data and payee events never are.
+- A message is the type's label and a link, such as "An approval waits for you: <link to your Inbox>". It carries **no amount, name or title**, and **approving never happens in Slack**: the link opens Fyniq, where you sign in and confirm with your passkey.
+- If Slack refuses a message (a channel the app is not in, a revoked token) it is tried again and then reported to the Owner and Administrators. A sandbox organisation never posts. Zoho Cliq is not available yet.
 
 ## Tasks from other systems
 

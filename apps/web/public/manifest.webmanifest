@@ -1,0 +1,22 @@
+{
+  "name": "Fyniq",
+  "short_name": "Fyniq",
+  "description": "Intelligence behind every number: approvals, receipts and the books of your company.",
+  "id": "/",
+  "start_url": "/inbox",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f9fb",
+  "theme_color": "#0f766e",
+  "lang": "en-SG",
+  "categories": ["finance", "business", "productivity"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "To approve", "short_name": "Approve", "url": "/inbox" },
+    { "name": "Capture a receipt", "short_name": "Receipt", "url": "/documents/inbox" }
+  ]
+}

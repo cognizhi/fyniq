@@ -2135,6 +2135,14 @@
       "label": "Connector",
       "tooltip": "One connector: its lifecycle, configuration and secrets, its test and health, an upgrade to consent to, and its history."
     },
+    "settings.workflow-rules": {
+      "label": "Workflow rules",
+      "tooltip": "Tell members when a document of a kind, above an amount, is posted. A rule only tells people: it never posts, approves, pays or files anything."
+    },
+    "workflow-rules.add": {
+      "label": "Add rule",
+      "tooltip": "Choose the kind of document, an amount if you want one, and the members to tell. Each must be allowed to see the document."
+    },
     "settings.webhooks": {
       "label": "Webhooks",
       "tooltip": "The addresses Fyniq sends signed event messages to, each verified before it is active, with their secrets and the events that never arrived."

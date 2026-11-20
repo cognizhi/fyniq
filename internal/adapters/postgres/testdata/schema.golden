@@ -683,6 +683,19 @@ authz_refusal | id | uuid | not null | uuidv7()
 authz_refusal | user_id | uuid | not null | 
 authz_refusal | window_start | timestamp with time zone | not null | 
 authz_refusal | refused | integer | not null | 1
+automation_rule | organisation_id | uuid | not null | current_org()
+automation_rule | id | uuid | not null | uuidv7()
+automation_rule | name | text | not null | 
+automation_rule | trigger | text | not null | 
+automation_rule | document_type | text | null | 
+automation_rule | amount_at_least | numeric(20,4) | null | 
+automation_rule | action | text | not null | 
+automation_rule | recipients | uuid[] | not null | 
+automation_rule | state | text | not null | 'active'::text
+automation_rule | version | integer | not null | 1
+automation_rule | created_by | uuid | not null | 
+automation_rule | created_at | timestamp with time zone | not null | 
+automation_rule | updated_at | timestamp with time zone | not null | 
 balance | organisation_id | uuid | not null | 
 balance | id | uuid | not null | uuidv7()
 balance | account_id | uuid | not null | 
@@ -4604,6 +4617,28 @@ authz_refusal | authz_refusal_refused_positive | CHECK ((refused > 0))
 authz_refusal | authz_refusal_user_id_not_null | NOT NULL user_id
 authz_refusal | authz_refusal_user_key | UNIQUE (organisation_id, user_id, window_start)
 authz_refusal | authz_refusal_window_start_not_null | NOT NULL window_start
+automation_rule | automation_rule_action_known | CHECK ((action = 'notify'::text))
+automation_rule | automation_rule_action_not_null | NOT NULL action
+automation_rule | automation_rule_amount | CHECK (((amount_at_least IS NULL) OR ((amount_at_least <> 'NaN'::numeric) AND (amount_at_least >= (0)::numeric))))
+automation_rule | automation_rule_created_at_not_null | NOT NULL created_at
+automation_rule | automation_rule_created_by_not_null | NOT NULL created_by
+automation_rule | automation_rule_creator_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+automation_rule | automation_rule_document_type | CHECK (((document_type IS NULL) OR (document_type ~ '^[a-z][a-z_]{1,40}$'::text)))
+automation_rule | automation_rule_id_not_null | NOT NULL id
+automation_rule | automation_rule_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))
+automation_rule | automation_rule_name_not_null | NOT NULL name
+automation_rule | automation_rule_organisation_id_not_null | NOT NULL organisation_id
+automation_rule | automation_rule_pkey | PRIMARY KEY (organisation_id, id)
+automation_rule | automation_rule_recipients | CHECK ((((cardinality(recipients) >= 1) AND (cardinality(recipients) <= 20)) AND (array_position(recipients, NULL::uuid) IS NULL)))
+automation_rule | automation_rule_recipients_not_null | NOT NULL recipients
+automation_rule | automation_rule_state_known | CHECK ((state = ANY (ARRAY['active'::text, 'paused'::text, 'archived'::text])))
+automation_rule | automation_rule_state_not_null | NOT NULL state
+automation_rule | automation_rule_trigger_known | CHECK ((trigger = 'document.posted'::text))
+automation_rule | automation_rule_trigger_not_null | NOT NULL trigger
+automation_rule | automation_rule_updated_at_not_null | NOT NULL updated_at
+automation_rule | automation_rule_version_not_null | NOT NULL version
+automation_rule | automation_rule_version_positive | CHECK ((version >= 1))
+automation_rule | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 balance | balance_account_fkey | FOREIGN KEY (organisation_id, account_id) REFERENCES account(organisation_id, id)
 balance | balance_account_id_not_null | NOT NULL account_id
 balance | balance_amount_not_null | NOT NULL amount
@@ -9210,6 +9245,7 @@ CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisati
 CREATE INDEX audit_event_record_idx ON fyniq.audit_event USING btree (organisation_id, object_type, object_id, seq)
 CREATE INDEX audit_request_detail_age_idx ON fyniq.audit_request_detail USING btree (organisation_id, occurred_at)
 CREATE INDEX authz_refusal_start_idx ON fyniq.authz_refusal USING btree (organisation_id, window_start)
+CREATE INDEX automation_rule_active ON fyniq.automation_rule USING btree (organisation_id, trigger) WHERE (state = 'active'::text)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
 CREATE INDEX bank_feed_connector ON fyniq.bank_feed USING btree (organisation_id, connector_id)
 CREATE INDEX bank_gap_open ON fyniq.bank_gap USING btree (organisation_id, money_account_id) WHERE (resolved_at IS NULL)
@@ -9482,6 +9518,7 @@ CREATE UNIQUE INDEX auditor_request_pkey ON fyniq.auditor_request USING btree (o
 CREATE UNIQUE INDEX auditor_sample_pkey ON fyniq.auditor_sample USING btree (organisation_id, id)
 CREATE UNIQUE INDEX authz_refusal_pkey ON fyniq.authz_refusal USING btree (organisation_id, id)
 CREATE UNIQUE INDEX authz_refusal_user_key ON fyniq.authz_refusal USING btree (organisation_id, user_id, window_start)
+CREATE UNIQUE INDEX automation_rule_pkey ON fyniq.automation_rule USING btree (organisation_id, id)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
 CREATE UNIQUE INDEX balance_set_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, dimension_set_id, currency) NULLS NOT DISTINCT
 CREATE UNIQUE INDEX bank_feed_id_key ON fyniq.bank_feed USING btree (organisation_id, id)
@@ -10114,6 +10151,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.auditor_engagement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('auditor_engagement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.auditor_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('auditor_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.auditor_sample DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('auditor_sample', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.automation_rule DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('automation_rule', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_feed DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_feed', 'money_account_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_gap DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_gap', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_match DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'line_id')
@@ -10311,6 +10349,8 @@ CREATE TRIGGER auditor_request_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.
 CREATE TRIGGER auditor_request_no_truncate BEFORE TRUNCATE ON fyniq.auditor_request FOR EACH STATEMENT EXECUTE FUNCTION auditor_child_guard()
 CREATE TRIGGER auditor_sample_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.auditor_sample FOR EACH ROW EXECUTE FUNCTION auditor_child_guard()
 CREATE TRIGGER auditor_sample_no_truncate BEFORE TRUNCATE ON fyniq.auditor_sample FOR EACH STATEMENT EXECUTE FUNCTION auditor_child_guard()
+CREATE TRIGGER automation_rule_guard BEFORE DELETE OR UPDATE ON fyniq.automation_rule FOR EACH ROW EXECUTE FUNCTION automation_rule_guard()
+CREATE TRIGGER automation_rule_no_truncate BEFORE TRUNCATE ON fyniq.automation_rule FOR EACH STATEMENT EXECUTE FUNCTION automation_rule_guard()
 CREATE TRIGGER bad_debt_relief_posts BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((new.type = 'bad_debt_relief'::text) AND (new.status = 'posted'::text) AND (old.status IS DISTINCT FROM 'posted'::text))) EXECUTE FUNCTION bad_debt_relief_posts()
 CREATE TRIGGER bank_agreement_guard BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN ((new.type = 'bank_agreement'::text)) EXECUTE FUNCTION bank_agreement_guard()
 CREATE TRIGGER bank_feed_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_feed FOR EACH ROW EXECUTE FUNCTION bank_feed_guard()
@@ -10850,6 +10890,7 @@ auditor_engagement | tenant_isolation | * | (organisation_id = current_org()) | 
 auditor_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 auditor_sample | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 authz_refusal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+automation_rule | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | department_scope | r | ((( SELECT dept_scope() AS dept_scope) IS NULL) OR (dimension_set_id IN ( SELECT ds.id FROM dimension_set ds WHERE (ds.value_ids && ( SELECT dept_scope() AS dept_scope))))) | <nil>
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_feed | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -11138,6 +11179,7 @@ auditor_engagement | enabled | forced
 auditor_request | enabled | forced
 auditor_sample | enabled | forced
 authz_refusal | enabled | forced
+automation_rule | enabled | forced
 balance | enabled | forced
 bank_feed | enabled | forced
 bank_gap | enabled | forced
@@ -11473,6 +11515,7 @@ audit_recovery_guard() → trigger | security definer | v | search_path=pg_catal
 audit_request_detail_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 67a6785cc368830387635f0fb5aa797c
 auditor_child_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 73936615d90033601ab9c8a92929f74f
 auditor_engagement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9a7254df65329a945d9e3efa3bc57cc8
+automation_rule_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c47d851f707f3811ce0a26fc29825147
 bad_debt_relief_posts() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4ebbe77c21888f787658ca63a058c5b4
 balance_differences() → TABLE(account_id uuid, period_id uuid, dimension_set_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | db220537924bcf527c3806307453ed67
 balance_lines_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c1c7750d26a82cb498c82056eec78082
