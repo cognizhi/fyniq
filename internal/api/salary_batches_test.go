@@ -1046,3 +1046,33 @@ func TestThePayrollChecksFindWhatTheyAreFor(t *testing.T) {
 		t.Fatalf("released to a person held by then: %+v", got)
 	}
 }
+
+// C.1 #20 "Pay lines to review": a salary batch with a person held for tax clearance waits for a decision, and the item counts lines and reasons, never a person or an amount (FR-PPL-17).
+// part of FR-PPL-12, FR-PPL-17
+// asvs: V8.2.1
+func TestPayLinesToReviewListsTheBatchesWithLinesThatWait(t *testing.T) {
+	w := newSalaryWorldWithoutGate(t)
+	e := w.e
+	if got := w.runCheck(t, "payroll.pay-lines-to-review"); got.Status != checks.OK {
+		t.Fatalf("no batch: %+v", got)
+	}
+	w.preparedBatchWithoutAsking(t)
+	if got := w.runCheck(t, "payroll.pay-lines-to-review"); got.Status != checks.OK {
+		t.Fatalf("a prepared batch whose people are free: %+v", got)
+	}
+	if err := e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		p, err := u.PeopleLinks().Person(ctx, w.ana)
+		if err != nil {
+			return err
+		}
+		from := e.clock.Now().Add(-time.Hour)
+		p.Held, p.HoldVersion, p.HoldID, p.HoldFrom = true, 1, uuid.New(), &from
+		return u.PeopleLinks().SavePerson(ctx, p)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	got := w.runCheck(t, "payroll.pay-lines-to-review")
+	if got.Status != checks.Warning || got.Count != 1 || !strings.Contains(got.Items[0].Detail, "1 held") || strings.Contains(got.Detail+got.Items[0].Detail+got.Items[0].Label, "Ana") || strings.Contains(got.Detail+got.Items[0].Detail, "9000") {
+		t.Fatalf("a held person's line: %+v", got)
+	}
+}

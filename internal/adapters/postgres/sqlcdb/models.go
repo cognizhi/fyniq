@@ -2855,6 +2855,16 @@ type FyniqPayrollRunReceipt struct {
 	CreatedXact     int64
 }
 
+type FyniqPayrollRunRefusal struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	LinkID         uuid.UUID
+	RunID          uuid.UUID
+	Version        int32
+	Code           string
+	RefusedAt      time.Time
+}
+
 type FyniqPdAnonymisation struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

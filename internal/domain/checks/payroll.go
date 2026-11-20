@@ -19,7 +19,7 @@ import (
 // The Appendix D row whose view opens payroll's items: pay runs and employee data (FR-PAY-13). The items name a month, a batch or an account, never a person or an amount (FR-PPL-17).
 const viewPayroll = "Pay runs, employee data"
 
-var onPayroll = []string{"salary_batch", "payroll_arrangement", "payroll_import", "payroll_run_receipt", "person_projection", "journal_entry"}
+var onPayroll = []string{"payroll_run_refusal", "salary_batch", "payroll_arrangement", "payroll_import", "payroll_run_receipt", "person_projection", "journal_entry"}
 
 // The checks of payroll that Fyniq can see for itself (p1-payroll-link task 7.2): off with the organisation's payroll switch.
 var payrollChecks = []Definition{
@@ -31,6 +31,14 @@ var payrollChecks = []Definition{
 		Explain: "A wage month whose pay run was posted from Nemura or a provider, and that also has other postings (a journal, a bank line) on the salary accounts the pay run posts to, may count the same " +
 			"salaries twice. Check each and move or reverse the one that repeats the pay run.",
 		Rules: "FR-PAY-07, FR-PPL-04", Owner: "accountant", View: viewPayroll, Module: "features.payroll", Triggers: onPayroll, Run: salariesCountedTwice},
+	{Key: "payroll.pay-lines-cannot-post", Ref: "C.1 #19", Area: "Payroll", Worst: Error, Title: "Every pay run sent from Nemura can post",
+		Explain: "A pay run Nemura sent with its proof that Fyniq refused (a locked period, an account the mapping lacks, a department Fyniq does not have, a proof that does not verify) waits in Nemura with the code and posts nothing. " +
+			"Each run whose newest refusal no posted version has followed is listed by run and code. Put right what the code says (the plain words are on the run in Nemura), then send it again or approve a new version.",
+		Rules: "FR-PPL-04, FR-PPL-09, NM-INT-03", Owner: "controller", View: viewPayroll, Module: "features.payroll", Triggers: onPayroll, Run: payLinesCannotPost},
+	{Key: "payroll.pay-lines-to-review", Ref: "C.1 #20", Area: "Payroll", Worst: Warning, Title: "Salary payment lines wait for a decision",
+		Explain: "A salary batch that is not cancelled with payment lines that wait: a person held for tax clearance, a person whose bank details changed since the line was approved, or a payment whose outcome is unknown. " +
+			"Each batch is listed with how many lines wait and why, never who or how much (FR-PPL-17). Release the free lines, wait for Nemura to lift a hold, approve the batch again or record what became of the payment.",
+		Rules: "FR-PPL-12, FR-PPL-13, FR-PPL-14", Owner: "controller", View: viewPayroll, Module: "features.payroll", Triggers: onPayroll, Run: payLinesToReview},
 	{Key: "payroll.cpf-due", Ref: "C.2 #14", Area: "Payroll", Worst: Due, Title: "CPF is paid by the 14th",
 		Explain: "The CPF contribution of each wage month is due on the 14th of the month after (CPF Board). Each month's, due within 14 days or past with no payment recorded on the statutory calendar, is listed. " +
 			"Pay it, then record it on the calendar with the CPF Board's acknowledgement. It is the CPF line of the calendar check C.2 #15, shown here for payroll.",
@@ -275,4 +283,80 @@ func cpfDue(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
 		status = Due
 	}
 	return Found(status, items, fmt.Sprintf("%d CPF payment(s) to make", len(items)), "Pay it, then record it on the statutory calendar with the CPF Board's acknowledgement"), nil
+}
+
+// C.1 #19: the pay runs Fyniq refused and nothing posted since, by run and code.
+func payLinesCannotPost(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	open, err := u.PayrollRuns().OpenRefusals(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	if len(open) == 0 {
+		return Fine("Every pay run sent from Nemura that Fyniq refused has posted since, or none was refused"), nil
+	}
+	var items []Item
+	for _, r := range open {
+		items = append(items, Item{Kind: "payroll_run", ID: r.RunID.String(), Label: fmt.Sprintf("Pay run %s, version %d", r.RunID.String()[:8], r.Version),
+			Detail: fmt.Sprintf("Refused with %s on %s: nothing has posted since", r.Code, r.RefusedAt.Format("2 Jan 2006")), Version: fmt.Sprint(r.Version)})
+	}
+	return Found(Error, items, fmt.Sprintf("%d pay run(s) cannot post", len(items)), "Put right what each code says, then send the run again from Nemura or approve a new version"), nil
+}
+
+// C.1 #20: the salary batches with payment lines that wait: a person held, bank details changed since the line was approved, or an unknown outcome. Counts and reasons, never a person or an amount.
+func payLinesToReview(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	batches, err := u.SalaryBatches().List(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	var items []Item
+	for _, b := range batches {
+		if b.Status == storage.SalaryCancelled {
+			continue
+		}
+		lines, err := u.SalaryBatches().Lines(ctx, b.ID)
+		if err != nil {
+			return Result{}, err
+		}
+		events, err := u.SalaryBatches().Events(ctx, b.ID)
+		if err != nil {
+			return Result{}, err
+		}
+		latest := map[uuid.UUID]string{}
+		for _, ev := range events {
+			latest[ev.LineRef] = ev.State
+		}
+		held, changed, unknown := 0, 0, 0
+		seen := map[uuid.UUID]bool{}
+		for _, l := range lines {
+			if seen[l.LineRef] {
+				continue
+			}
+			seen[l.LineRef] = true
+			switch latest[l.LineRef] {
+			case "paid", "rejected", "returned", "released", "sent", "accepted":
+				continue
+			case "unknown":
+				unknown++
+				continue
+			}
+			p, err := u.PeopleLinks().Person(ctx, l.PersonID)
+			if err != nil {
+				return Result{}, err
+			}
+			switch {
+			case p.Known() && p.Held:
+				held++
+			case p.Known() && p.BankVersion > l.BankDetailVersion:
+				changed++
+			}
+		}
+		if n := held + changed + unknown; n > 0 {
+			items = append(items, Item{Kind: "salary_batch", ID: b.ID.String(), Label: fmt.Sprintf("Salary batch SB%04d", b.Seq),
+				Detail: fmt.Sprintf("%d line(s) wait: %d held for tax clearance, %d with new bank details, %d with an unknown outcome", n, held, changed, unknown), Version: fmt.Sprint(n)})
+		}
+	}
+	if len(items) == 0 {
+		return Fine("No salary payment line waits for a decision"), nil
+	}
+	return Found(Warning, items, fmt.Sprintf("%d salary batch(es) have lines that wait", len(items)), "Release the free lines, wait for Nemura to lift a hold, approve the batch again, or record what became of the payment"), nil
 }

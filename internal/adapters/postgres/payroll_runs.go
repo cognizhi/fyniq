@@ -128,3 +128,29 @@ func (r payrollRuns) ReceiptMonths(ctx context.Context) ([]time.Time, error) {
 	months, err := r.u.q.PayrollReceiptMonths(ctx)
 	return months, mapError(err)
 }
+
+func (r payrollRuns) RecordRefusal(ctx context.Context, link, run uuid.UUID, version int, code string, at time.Time) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	id, err := r.u.q.InsertPayrollRunRefusal(ctx, sqlcdb.InsertPayrollRunRefusalParams{LinkID: link, RunID: run, Version: int32(version), Code: code, RefusedAt: at}) // #nosec G115 -- a version is small
+	if err != nil {
+		return mapError(err)
+	}
+	return r.u.event(ctx, "payroll_run_refusal.recorded", "payroll_run_refusal", id, nil, map[string][2]any{"run_id": {nil, run.String()}, "version": {nil, version}, "code": {nil, code}})
+}
+
+func (r payrollRuns) OpenRefusals(ctx context.Context) ([]storage.PayrollRunRefusal, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.OpenPayrollRunRefusals(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.PayrollRunRefusal, len(rows))
+	for i, x := range rows {
+		out[i] = storage.PayrollRunRefusal{RunID: x.RunID, Version: int(x.Version), Code: x.Code, RefusedAt: x.RefusedAt}
+	}
+	return out, nil
+}
