@@ -724,6 +724,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/letter-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify an issued letter
+         * @description PRD-002 NM-LTR-05. With no sign-in: the reference and the verification code printed on a letter. The answer is whether the company issued it and it stands or was withdrawn, its type, the day it was issued and the company, and nothing of the person or the words. A wrong code, an unknown reference and a letter not issued yet answer alike. At most 10 tries for a reference in an hour and 300 in all in a minute (NM_RATE_LIMITED); every look-up of a found letter is audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["verifyLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/letters": {
         parameters: {
             query?: never;
@@ -1394,6 +1414,26 @@ export interface paths {
          * @description Asks for a letter about the signed-in person: the published template of a type the company issues is filled from their record and the letterhead, and a fact the record does not hold is refused by name. The people team is told. It is audited.
          */
         post: operations["requestLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/letters/{id}/verification/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw the verification of your own letter
+         * @description The person the letter is about withdraws its verification: a recipient who looks it up is told it is withdrawn. It never withdraws the letter, which stays as issued. Audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["withdrawLetterVerification"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5688,6 +5728,54 @@ export interface components {
             fields: components["schemas"]["LetterField"][] | null;
             /** @description The catalogue with the company's settings. */
             types: components["schemas"]["LetterType"][] | null;
+        };
+        LetterVerificationView: {
+            /**
+             * @description The company that issued it.
+             * @example Acme Pte. Ltd.
+             */
+            company?: string;
+            /**
+             * @description False for a wrong code, an unknown reference and a letter not issued yet, all alike.
+             * @example true
+             */
+            found: boolean;
+            /**
+             * Format: date
+             * @description The day it was issued.
+             * @example 2026-11-20
+             */
+            issued_on?: string;
+            /**
+             * @description valid: the company issued this letter and it stands; withdrawn: the verification was withdrawn, so do not rely on the letter.
+             * @example valid
+             * @enum {string}
+             */
+            status?: "valid" | "withdrawn";
+            /**
+             * @description The kind of letter.
+             * @example employment_confirmation
+             */
+            type?: string;
+        };
+        LetterVerifyInputBody: {
+            /**
+             * @description The verification code printed on the letter.
+             * @example K7QX-2M4D-9WTB-HP3R
+             */
+            code: string;
+            /**
+             * @description The reference printed on the letter.
+             * @example EC-2026-0001
+             */
+            reference: string;
+        };
+        LetterWithdrawOutputBody: {
+            /**
+             * @description True once the letter's verification is withdrawn.
+             * @example true
+             */
+            withdrawn: boolean;
         };
         LinkApproveInputBody: {
             /** @description The public half of the key Fyniq's read-only client signs its token request with, as a JWK: Nemura registers it for the client that asks whether a person is held. Never the private key. */
@@ -12129,6 +12217,66 @@ export interface operations {
             };
         };
     };
+    verifyLetter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterVerifyInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterVerificationView"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listLetters: {
         parameters: {
             query?: {
@@ -14926,6 +15074,86 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    withdrawLetterVerification: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The issued letter. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterWithdrawOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

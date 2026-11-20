@@ -161,6 +161,8 @@ type Deps struct {
 	LinkOps LinkOps
 	// Erasure is the erasure of a former employee's personal data (NM-SEC-08); nil: the deployment has none.
 	Erasure ErasureOps
+	// LetterVerify is the public look-up of an issued letter and the employee's withdrawal of it (NM-LTR-05); nil: the deployment has none.
+	LetterVerify LetterVerify
 	// Idempotency stores the Idempotency-Keys of writes; nil turns the header off (a deployment with no database for it never runs).
 	Idempotency Idempotency
 	Assistant   AssistantAdmin
@@ -206,6 +208,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerRunLink()
 	a.registerLinkOps()
 	a.registerErasure()
+	a.registerLetterVerify()
 	a.registerLinkHold()
 	a.registerLinkSync()
 	a.registerAssistant()

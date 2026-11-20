@@ -891,6 +891,10 @@ nemura_api | function nemura.current_org | EXECUTE
 nemura_api | function nemura.current_person | EXECUTE
 nemura_api | function nemura.has_role | EXECUTE
 nemura_api | function nemura.is_manager_of | EXECUTE
+nemura_api | function nemura.letter_verification_issue | EXECUTE
+nemura_api | function nemura.letter_verification_lookup | EXECUTE
+nemura_api | function nemura.letter_verification_register | EXECUTE
+nemura_api | function nemura.letter_verification_withdraw | EXECUTE
 nemura_api | function nemura.link_client_route | EXECUTE
 nemura_api | function nemura.link_identity | EXECUTE
 nemura_api | function nemura.lock_leave_head | EXECUTE

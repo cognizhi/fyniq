@@ -44,6 +44,7 @@ letter_request | nemura_migrator | true | true
 letter_settings | nemura_migrator | true | true
 letter_template_version | nemura_migrator | true | true
 letter_type | nemura_migrator | true | true
+letter_verification | nemura_migrator | false | false
 link_client_route | nemura_migrator | false | false
 link_department | nemura_migrator | true | true
 link_event | nemura_migrator | true | true
@@ -557,6 +558,15 @@ letter_type | enabled | boolean | true |
 letter_type | due_days | integer | true | 
 letter_type | updated_by | uuid | true | 
 letter_type | updated_at | timestamp with time zone | true | 
+letter_verification | lookup_hash | bytea | true | 
+letter_verification | organisation_id | uuid | true | 
+letter_verification | request_id | uuid | true | 
+letter_verification | type_key | text | true | 
+letter_verification | letter_id | uuid | false | 
+letter_verification | issued_on | date | false | 
+letter_verification | company | text | false | 
+letter_verification | state | text | true | 'pending'::text
+letter_verification | state_at | timestamp with time zone | true | now()
 link_client_route | peer_client_id | text | true | 
 link_client_route | organisation_id | uuid | true | 
 link_client_route | link_id | uuid | true | 
@@ -1841,6 +1851,17 @@ letter_type | letter_type_type_key_not_null | NOT NULL type_key
 letter_type | letter_type_updated_at_not_null | NOT NULL updated_at
 letter_type | letter_type_updated_by_not_null | NOT NULL updated_by
 letter_type | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+letter_verification | letter_verification_hash | CHECK ((octet_length(lookup_hash) = 32))
+letter_verification | letter_verification_issued_whole | CHECK ((((state = 'pending'::text) = ((letter_id IS NULL) AND (issued_on IS NULL) AND (company IS NULL))) OR (state = 'withdrawn'::text)))
+letter_verification | letter_verification_lookup_hash_not_null | NOT NULL lookup_hash
+letter_verification | letter_verification_organisation_id_not_null | NOT NULL organisation_id
+letter_verification | letter_verification_pkey | PRIMARY KEY (lookup_hash)
+letter_verification | letter_verification_request_id_not_null | NOT NULL request_id
+letter_verification | letter_verification_request_key | UNIQUE (organisation_id, request_id)
+letter_verification | letter_verification_state | CHECK ((state = ANY (ARRAY['pending'::text, 'valid'::text, 'withdrawn'::text])))
+letter_verification | letter_verification_state_at_not_null | NOT NULL state_at
+letter_verification | letter_verification_state_not_null | NOT NULL state
+letter_verification | letter_verification_type_key_not_null | NOT NULL type_key
 link_client_route | link_client_route_link_id_not_null | NOT NULL link_id
 link_client_route | link_client_route_organisation_id_not_null | NOT NULL organisation_id
 link_client_route | link_client_route_peer_client_id_not_null | NOT NULL peer_client_id
@@ -2778,6 +2799,8 @@ CREATE UNIQUE INDEX letter_template_version_numbered ON nemura.letter_template_v
 CREATE UNIQUE INDEX letter_template_version_pkey ON nemura.letter_template_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX letter_type_once ON nemura.letter_type USING btree (organisation_id, type_key)
 CREATE UNIQUE INDEX letter_type_pkey ON nemura.letter_type USING btree (organisation_id, id)
+CREATE UNIQUE INDEX letter_verification_pkey ON nemura.letter_verification USING btree (lookup_hash)
+CREATE UNIQUE INDEX letter_verification_request_key ON nemura.letter_verification USING btree (organisation_id, request_id)
 CREATE UNIQUE INDEX link_client_route_pkey ON nemura.link_client_route USING btree (peer_client_id)
 CREATE UNIQUE INDEX link_department_pkey ON nemura.link_department USING btree (organisation_id, mapping_version, department_id)
 CREATE UNIQUE INDEX link_event_event_key ON nemura.link_event USING btree (organisation_id, event_id)
@@ -3812,6 +3835,62 @@ BEGIN
     RAISE EXCEPTION 'A published template version is immutable: change it with a new version' USING ERRCODE = 'NM160';
   END IF;
   RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.letter_verification_issue(p_org uuid, p_request uuid, p_letter uuid, p_on date, p_company text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF p_org IS DISTINCT FROM nemura.current_org() THEN
+    RAISE EXCEPTION 'A verification is issued for the caller''s own organisation only' USING ERRCODE = 'NM206';
+  END IF;
+  UPDATE nemura.letter_verification SET state = 'valid', letter_id = p_letter, issued_on = p_on, company = p_company, state_at = now()
+   WHERE organisation_id = p_org AND request_id = p_request AND state = 'pending';
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.letter_verification_lookup(p_lookup bytea)
+ RETURNS TABLE(organisation_id uuid, letter_id uuid, state text, type_key text, issued_on date, company text)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT v.organisation_id, v.letter_id, v.state, v.type_key, v.issued_on, v.company FROM nemura.letter_verification v WHERE v.lookup_hash = p_lookup AND v.state IN ('valid', 'withdrawn')
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.letter_verification_register(p_org uuid, p_request uuid, p_type text, p_lookup bytea)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF p_org IS DISTINCT FROM nemura.current_org() THEN
+    RAISE EXCEPTION 'A verification is registered for the caller''s own organisation only' USING ERRCODE = 'NM206';
+  END IF;
+  INSERT INTO nemura.letter_verification (lookup_hash, organisation_id, request_id, type_key) VALUES (p_lookup, p_org, p_request, p_type);
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.letter_verification_withdraw(p_org uuid, p_letter uuid)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  n integer;
+BEGIN
+  IF p_org IS DISTINCT FROM nemura.current_org() THEN
+    RAISE EXCEPTION 'A verification is withdrawn for the caller''s own organisation only' USING ERRCODE = 'NM206';
+  END IF;
+  UPDATE nemura.letter_verification SET state = 'withdrawn', state_at = now() WHERE organisation_id = p_org AND letter_id = p_letter AND state = 'valid';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n > 0;
 END
 $function$
 

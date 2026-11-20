@@ -125,6 +125,7 @@ var Catalogue = []Code{
 	{"NM_ERASURE_ALREADY", http.StatusConflict, "That erasure was decided or done already", "An erasure is asked for, decided and done once."},
 	{"NM_ERASURE_REGISTER", http.StatusConflict, "The register's entry does not verify", "Ask whoever runs the deployment: the register is checked before it is applied."},
 	{"NM_ERASURE_ACCESS_REQUEST", http.StatusConflict, "The person has an access request to answer", "Answer the person's request for their own data first (NM-SEC-07)."},
+	{"NM_RATE_LIMITED", http.StatusTooManyRequests, "Too many tries", "Wait a while and try again with the reference and the code exactly as printed on the letter."},
 	{CodeUnavailable, http.StatusServiceUnavailable, "Not available here", "This deployment has not set it up: ask whoever runs Nemura."},
 	{CodeRoleRequired, http.StatusForbidden, "Not allowed for your roles", "Ask the Owner to do it, or to change your roles."},
 	{CodeStepUp, http.StatusForbidden, "Confirm it is you", "Confirm with your passkey (POST /v1/session/step-up), then try again within five minutes."},
