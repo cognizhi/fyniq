@@ -23829,7 +23829,10 @@ components:
           type: string
         purpose:
           description: "Why it was sent: a test message, a sign-in alert, a notification, a digest of them, an invoice or a quote emailed to a customer (FR-AR-06), a reminder of one, a statement of account (FR-AR-08), a supplier's remittance advice (FR-BNK-12), or a reminder the company secretary assistant drafted and a person approved (sec.draft_reminder)."
-          enum:
+          examples:
+            - test
+          type: string
+          x-extensible-enum:
             - test
             - sign_in_alert
             - notification
@@ -23841,9 +23844,6 @@ components:
             - remittance
             - secretary_reminder
             - invitation
-          examples:
-            - test
-          type: string
         recipient:
           description: Who it goes to.
           examples:
