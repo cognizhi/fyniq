@@ -386,7 +386,7 @@ func registerOpening(a *API) {
 			"approver posts it, with the requester as the one who prepared it. Asking needs a person signed in who passed step-up, and " +
 			"If-Match with their ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.",
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
-		CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval, storage.CodePeriodClosed, journal.CodeNotPosted, journal.CodeNoBooksStart,
+		CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval, storage.CodePeriodClosed, storage.CodeSoftLocked, journal.CodeNotPosted, journal.CodeNoBooksStart,
 		journal.CodeBadDraft, ledger.CodeForeignOpening, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, money.CodeNotDecimal,
 		money.CodePrecision, money.CodeRange, money.CodeCurrency}, LedgerCodes...),
 		func(ctx context.Context, in *openingEditInput) (*journalRequestOutput, error) {
@@ -419,7 +419,7 @@ func registerOpening(a *API) {
 					return Approval{}, err
 				}
 				for _, x := range periods {
-					if day, _ := time.Parse(time.DateOnly, before.Date); !day.Before(x.StartsOn) && !day.After(x.EndsOn) && x.Status != storage.PeriodOpen {
+					if day, _ := time.Parse(time.DateOnly, before.Date); !day.Before(x.StartsOn) && !day.After(x.EndsOn) && x.Status == storage.PeriodClosed {
 						return Approval{}, problem(storage.CodePeriodClosed, fmt.Sprintf("The month the books start in, %s, is closed.", x.StartsOn.Format("January 2006")),
 							"Ask to reopen it first (FR-GL-08), then ask for the change; or correct the balances with a journal in an open month")
 					}

@@ -2558,6 +2558,14 @@ period_close_check | checked_at | timestamp with time zone | not null |
 period_close_check | ledger_revision | bigint | not null | 
 period_close_check | result | jsonb | not null | 
 period_close_check | clean | boolean | not null | 
+period_module_lock | organisation_id | uuid | not null | current_org()
+period_module_lock | id | uuid | not null | uuidv7()
+period_module_lock | period_id | uuid | not null | 
+period_module_lock | module | text | not null | 
+period_module_lock | locked | boolean | not null | 
+period_module_lock | version | integer | not null | 1
+period_module_lock | changed_by | uuid | not null | 
+period_module_lock | changed_at | timestamp with time zone | not null | 
 period_reopen | organisation_id | uuid | not null | current_org()
 period_reopen | id | uuid | not null | uuidv7()
 period_reopen | period_id | uuid | not null | 
@@ -3252,6 +3260,24 @@ sod_override | reason | text | not null |
 sod_override | request_id | uuid | not null | 
 sod_override | created_by | uuid | not null | 
 sod_override | created_at | timestamp with time zone | not null | 
+soft_lock_exception | organisation_id | uuid | not null | current_org()
+soft_lock_exception | id | uuid | not null | uuidv7()
+soft_lock_exception | pass_id | uuid | not null | 
+soft_lock_exception | period_id | uuid | not null | 
+soft_lock_exception | entry_id | uuid | not null | 
+soft_lock_exception | user_id | uuid | not null | 
+soft_lock_exception | scope | text | not null | 
+soft_lock_exception | source_type | text | not null | 
+soft_lock_exception | posting_date | date | not null | 
+soft_lock_exception | reason | text | not null | 
+soft_lock_exception | created_at | timestamp with time zone | not null | 
+soft_lock_pass | organisation_id | uuid | not null | current_org()
+soft_lock_pass | id | uuid | not null | uuidv7()
+soft_lock_pass | period_id | uuid | not null | 
+soft_lock_pass | user_id | uuid | not null | 
+soft_lock_pass | reason | text | not null | 
+soft_lock_pass | created_at | timestamp with time zone | not null | 
+soft_lock_pass | expires_at | timestamp with time zone | not null | 
 statement_mapping | organisation_id | uuid | not null | current_org()
 statement_mapping | id | uuid | not null | uuidv7()
 statement_mapping | name | text | not null | 
@@ -7570,6 +7596,21 @@ period_close_check | period_close_check_result_array | CHECK (((jsonb_typeof(res
 period_close_check | period_close_check_result_not_null | NOT NULL result
 period_close_check | period_close_check_revision | CHECK ((ledger_revision >= 0))
 period_close_check | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+period_module_lock | period_module_lock_changed_at_not_null | NOT NULL changed_at
+period_module_lock | period_module_lock_changed_by_not_null | NOT NULL changed_by
+period_module_lock | period_module_lock_id_not_null | NOT NULL id
+period_module_lock | period_module_lock_locked_not_null | NOT NULL locked
+period_module_lock | period_module_lock_module_known | CHECK ((module = ANY (ARRAY['ar'::text, 'ap'::text, 'banking'::text, 'payroll'::text])))
+period_module_lock | period_module_lock_module_not_null | NOT NULL module
+period_module_lock | period_module_lock_one | UNIQUE (organisation_id, period_id, module)
+period_module_lock | period_module_lock_organisation_id_not_null | NOT NULL organisation_id
+period_module_lock | period_module_lock_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
+period_module_lock | period_module_lock_period_id_not_null | NOT NULL period_id
+period_module_lock | period_module_lock_pkey | PRIMARY KEY (organisation_id, id)
+period_module_lock | period_module_lock_user_fkey | FOREIGN KEY (changed_by) REFERENCES app_user(user_id)
+period_module_lock | period_module_lock_version_not_null | NOT NULL version
+period_module_lock | period_module_lock_version_positive | CHECK ((version >= 1))
+period_module_lock | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 period_reopen | accountant_review_reopened | TRIGGER DEFERRABLE INITIALLY DEFERRED
 period_reopen | period_reopen_actor_format | CHECK ((reopened_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 period_reopen | period_reopen_after_hash | CHECK ((after_hash = sha256(convert_to(after_snapshot, 'UTF8'::name))))
@@ -8693,6 +8734,37 @@ sod_override | sod_override_team_mode_fkey | FOREIGN KEY (organisation_id, team_
 sod_override | sod_override_team_mode_version_not_null | NOT NULL team_mode_version
 sod_override | sod_override_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
 sod_override | sod_override_user_id_not_null | NOT NULL user_id
+soft_lock_exception | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+soft_lock_exception | soft_lock_exception_created_at_not_null | NOT NULL created_at
+soft_lock_exception | soft_lock_exception_entry_id_not_null | NOT NULL entry_id
+soft_lock_exception | soft_lock_exception_entry_once | UNIQUE (organisation_id, entry_id)
+soft_lock_exception | soft_lock_exception_id_not_null | NOT NULL id
+soft_lock_exception | soft_lock_exception_organisation_id_not_null | NOT NULL organisation_id
+soft_lock_exception | soft_lock_exception_pass_fkey | FOREIGN KEY (organisation_id, pass_id) REFERENCES soft_lock_pass(organisation_id, id)
+soft_lock_exception | soft_lock_exception_pass_id_not_null | NOT NULL pass_id
+soft_lock_exception | soft_lock_exception_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
+soft_lock_exception | soft_lock_exception_period_id_not_null | NOT NULL period_id
+soft_lock_exception | soft_lock_exception_pkey | PRIMARY KEY (organisation_id, id)
+soft_lock_exception | soft_lock_exception_posting_date_not_null | NOT NULL posting_date
+soft_lock_exception | soft_lock_exception_reason_not_null | NOT NULL reason
+soft_lock_exception | soft_lock_exception_scope_known | CHECK ((scope = ANY (ARRAY['period'::text, 'ar'::text, 'ap'::text, 'banking'::text, 'payroll'::text])))
+soft_lock_exception | soft_lock_exception_scope_not_null | NOT NULL scope
+soft_lock_exception | soft_lock_exception_source_type_not_null | NOT NULL source_type
+soft_lock_exception | soft_lock_exception_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+soft_lock_exception | soft_lock_exception_user_id_not_null | NOT NULL user_id
+soft_lock_pass | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+soft_lock_pass | soft_lock_pass_created_at_not_null | NOT NULL created_at
+soft_lock_pass | soft_lock_pass_expires_at_not_null | NOT NULL expires_at
+soft_lock_pass | soft_lock_pass_id_not_null | NOT NULL id
+soft_lock_pass | soft_lock_pass_organisation_id_not_null | NOT NULL organisation_id
+soft_lock_pass | soft_lock_pass_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
+soft_lock_pass | soft_lock_pass_period_id_not_null | NOT NULL period_id
+soft_lock_pass | soft_lock_pass_pkey | PRIMARY KEY (organisation_id, id)
+soft_lock_pass | soft_lock_pass_reason_length | CHECK (((length(btrim(reason)) >= 10) AND (length(btrim(reason)) <= 500)))
+soft_lock_pass | soft_lock_pass_reason_not_null | NOT NULL reason
+soft_lock_pass | soft_lock_pass_short | CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '08:00:00'::interval))))
+soft_lock_pass | soft_lock_pass_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+soft_lock_pass | soft_lock_pass_user_id_not_null | NOT NULL user_id
 statement_mapping | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 statement_mapping | statement_mapping_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (changed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
 statement_mapping | statement_mapping_changed_at_not_null | NOT NULL changed_at
@@ -9319,6 +9391,8 @@ CREATE INDEX security_incident_step_incident ON fyniq.security_incident_step USI
 CREATE INDEX share_issue_holder ON fyniq.share_issue USING btree (organisation_id, holder_id)
 CREATE INDEX share_issue_settlement ON fyniq.share_issue USING btree (organisation_id, settlement_id)
 CREATE INDEX sod_override_lookup ON fyniq.sod_override USING btree (organisation_id, team_mode_version, user_id, conflict)
+CREATE INDEX soft_lock_exception_recent ON fyniq.soft_lock_exception USING btree (organisation_id, created_at DESC, id)
+CREATE INDEX soft_lock_pass_live ON fyniq.soft_lock_pass USING btree (organisation_id, period_id, user_id, expires_at)
 CREATE INDEX subscription_contract_contact ON fyniq.subscription_contract USING btree (organisation_id, contact_id, starts_on)
 CREATE INDEX super_admin_grant_created_by_idx ON fyniq.super_admin_grant USING btree (created_by)
 CREATE INDEX super_admin_grant_used_by_idx ON fyniq.super_admin_grant USING btree (used_by)
@@ -9732,6 +9806,8 @@ CREATE UNIQUE INDEX people_link_secret_pkey ON fyniq.people_link_secret USING bt
 CREATE UNIQUE INDEX people_source_pkey ON fyniq.people_source USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_close_check_pkey ON fyniq.period_close_check USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_close_pkey ON fyniq.period_close USING btree (organisation_id, id)
+CREATE UNIQUE INDEX period_module_lock_one ON fyniq.period_module_lock USING btree (organisation_id, period_id, module)
+CREATE UNIQUE INDEX period_module_lock_pkey ON fyniq.period_module_lock USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_reopen_close_key ON fyniq.period_reopen USING btree (organisation_id, close_id)
 CREATE UNIQUE INDEX period_reopen_pkey ON fyniq.period_reopen USING btree (organisation_id, id)
@@ -9847,6 +9923,9 @@ CREATE UNIQUE INDEX share_issue_pkey ON fyniq.share_issue USING btree (organisat
 CREATE UNIQUE INDEX sign_in_method_pkey ON fyniq.sign_in_method USING btree (provider)
 CREATE UNIQUE INDEX sod_override_once ON fyniq.sod_override USING btree (organisation_id, request_id, user_id, conflict)
 CREATE UNIQUE INDEX sod_override_pkey ON fyniq.sod_override USING btree (organisation_id, id)
+CREATE UNIQUE INDEX soft_lock_exception_entry_once ON fyniq.soft_lock_exception USING btree (organisation_id, entry_id)
+CREATE UNIQUE INDEX soft_lock_exception_pkey ON fyniq.soft_lock_exception USING btree (organisation_id, id)
+CREATE UNIQUE INDEX soft_lock_pass_pkey ON fyniq.soft_lock_pass USING btree (organisation_id, id)
 CREATE UNIQUE INDEX statement_mapping_name_key ON fyniq.statement_mapping USING btree (organisation_id, name)
 CREATE UNIQUE INDEX statement_mapping_pkey ON fyniq.statement_mapping USING btree (organisation_id, id)
 CREATE UNIQUE INDEX statutory_pack_activation_pkey ON fyniq.statutory_pack_activation USING btree (organisation_id, id)
@@ -10029,6 +10108,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_incident 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_incident_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_incident', 'incident_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.share_issue DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('share_issue', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sod_override', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.soft_lock_exception DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('soft_lock_exception', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.soft_lock_pass DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('soft_lock_pass', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.statutory_pack_activation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statutory_pack_activation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.subscription_amendment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('subscription_amendment', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.team_mode DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('team_mode', 'id')
@@ -10123,6 +10204,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_l
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_link_access DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link_access', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period_module_lock DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_module_lock', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.person_projection DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('person_projection', 'person_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.portal_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('portal_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'id')
@@ -10707,6 +10789,12 @@ CREATE TRIGGER share_issue_class_guard BEFORE INSERT ON fyniq.share_issue FOR EA
 CREATE TRIGGER share_issue_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.share_issue FOR EACH ROW EXECUTE FUNCTION share_issue_guard()
 CREATE TRIGGER share_issue_no_truncate BEFORE TRUNCATE ON fyniq.share_issue FOR EACH STATEMENT EXECUTE FUNCTION share_issue_guard()
 CREATE TRIGGER sod_override_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sod_override FOR EACH ROW EXECUTE FUNCTION sod_override_guard()
+CREATE TRIGGER soft_lock_guard BEFORE DELETE OR UPDATE ON fyniq.period_module_lock FOR EACH ROW EXECUTE FUNCTION soft_lock_guard()
+CREATE TRIGGER soft_lock_guard BEFORE DELETE OR UPDATE ON fyniq.soft_lock_exception FOR EACH ROW EXECUTE FUNCTION soft_lock_guard()
+CREATE TRIGGER soft_lock_guard BEFORE DELETE OR UPDATE ON fyniq.soft_lock_pass FOR EACH ROW EXECUTE FUNCTION soft_lock_guard()
+CREATE TRIGGER soft_lock_no_truncate BEFORE TRUNCATE ON fyniq.period_module_lock FOR EACH STATEMENT EXECUTE FUNCTION soft_lock_guard()
+CREATE TRIGGER soft_lock_no_truncate BEFORE TRUNCATE ON fyniq.soft_lock_exception FOR EACH STATEMENT EXECUTE FUNCTION soft_lock_guard()
+CREATE TRIGGER soft_lock_no_truncate BEFORE TRUNCATE ON fyniq.soft_lock_pass FOR EACH STATEMENT EXECUTE FUNCTION soft_lock_guard()
 CREATE TRIGGER statement_guard BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN ((new.type = 'statement'::text)) EXECUTE FUNCTION statement_guard()
 CREATE TRIGGER statement_mapping_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.statement_mapping FOR EACH ROW EXECUTE FUNCTION statement_mapping_guard()
 CREATE TRIGGER statutory_filing_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION statutory_filing_guard()
@@ -10949,6 +11037,7 @@ people_source | tenant_isolation | * | (organisation_id = current_org()) | (orga
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+period_module_lock | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_reopen | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_variance_explanation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 person_cost_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -11008,6 +11097,8 @@ security_incident | tenant_isolation | * | (organisation_id = current_org()) | (
 security_incident_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 share_issue | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sod_override | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+soft_lock_exception | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+soft_lock_pass | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statement_mapping | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statutory_pack_activation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 subscription_amendment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -11253,6 +11344,7 @@ people_source | enabled | forced
 period | enabled | forced
 period_close | enabled | forced
 period_close_check | enabled | forced
+period_module_lock | enabled | forced
 period_reopen | enabled | forced
 period_variance_explanation | enabled | forced
 person_cost_rate | enabled | forced
@@ -11318,6 +11410,8 @@ security_incident_step | enabled | forced
 share_issue | enabled | forced
 sign_in_method | disabled | not forced
 sod_override | enabled | forced
+soft_lock_exception | enabled | forced
+soft_lock_pass | enabled | forced
 statement_mapping | enabled | forced
 statutory_pack_activation | enabled | forced
 statutory_pack_row | disabled | not forced
@@ -11785,6 +11879,7 @@ sign_in_essential() → SETOF text | security definer | s | search_path=pg_catal
 sign_in_methods() → SETOF sign_in_method | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 378f6cc806a963fc9375668b924d1828
 skip_job_slots(p_job text, p_slots timestamp with time zone[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8f2a4dc16b9baa48f2314e6e58698273
 sod_override_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e021a424a2fa6f356b652fb6b46c466d
+soft_lock_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27b8d7f14bc3fa428e7d78a721814701
 start_session(p_hash bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone, p_expires timestamp with time zone, p_step_up_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 74b70160438f9f79c162de86f4e58276
 start_session_from(p_hash bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone, p_expires timestamp with time zone, p_step_up_at timestamp with time zone, p_user_agent text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1cf88db937e5114212c27309fb2c56ba
 started_job_slot(p_job text, p_slot timestamp with time zone, p_execution text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7756c126ccf9097216eb5bc9be493cd7

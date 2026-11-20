@@ -186,7 +186,7 @@ func reverseReleases(ctx context.Context, u storage.UnitOfWork, doc storage.Docu
 		if err != nil {
 			return err
 		}
-		if _, err := u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if _, err := appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
 	}
@@ -269,7 +269,7 @@ func (s Releases) release(ctx context.Context, org, id uuid.UUID, day time.Time,
 			if err != nil {
 				return err
 			}
-			_, err = u.Ledger().Append(ctx, toStorage(e, nil))
+			_, err = appendEntry(ctx, u, toStorage(e, nil))
 			return err
 		})
 		var probs ledger.Problems
@@ -277,7 +277,7 @@ func (s Releases) release(ctx context.Context, org, id uuid.UUID, day time.Time,
 		case err == nil:
 			run.Released++
 		case errors.Is(err, errSettled):
-		case code == storage.CodePeriodClosed || code == storage.CodeNoPeriod || errors.As(err, &probs):
+		case code == storage.CodePeriodClosed || code == storage.CodeSoftLocked || code == storage.CodeNoPeriod || errors.As(err, &probs):
 			run.Waiting++
 			why := code
 			if why == "" {

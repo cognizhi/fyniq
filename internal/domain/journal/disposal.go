@@ -460,7 +460,7 @@ func (s AssetDisposals) Record(ctx context.Context, u storage.UnitOfWork, d Disp
 		if err != nil {
 			return RecordedDisposal{}, err
 		}
-		if _, err := u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if _, err := appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return RecordedDisposal{}, err
 		}
 	}
@@ -473,7 +473,7 @@ func (s AssetDisposals) Record(ctx context.Context, u storage.UnitOfWork, d Disp
 		return RecordedDisposal{}, err
 	}
 	out := RecordedDisposal{}
-	if out.Entry, err = u.Ledger().Append(ctx, toStorage(e, nil)); err != nil {
+	if out.Entry, err = appendEntry(ctx, u, toStorage(e, nil)); err != nil {
 		return RecordedDisposal{}, err
 	}
 	next := c.Next
@@ -567,7 +567,7 @@ func (s AssetDisposals) Void(ctx context.Context, u storage.UnitOfWork, id uuid.
 		return RecordedDisposal{}, err
 	}
 	out := RecordedDisposal{}
-	if out.Entry, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+	if out.Entry, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 		return RecordedDisposal{}, err
 	}
 	was, err := u.Documents().Version(ctx, doc.ID, x.AssetVersion)

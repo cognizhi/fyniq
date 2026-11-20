@@ -967,7 +967,12 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/periods/{period_id}/close-checks` (runCloseChecks): Run a period's close checks
 - `GET /v1/periods/{period_id}/fx-revaluation` (getFxRevaluation): Preview a period's FX revaluation
 - `POST /v1/periods/{period_id}/fx-revaluation` (postFxRevaluation): Revalue a period's foreign-currency balances
+- `POST /v1/periods/{period_id}/modules/{module}/lock` (lockPeriodModule): Lock one module of a period
+- `POST /v1/periods/{period_id}/modules/{module}/release` (releasePeriodModule): Release the lock of one module of a period
 - `POST /v1/periods/{period_id}/reopen` (requestPeriodReopen): Ask to reopen a closed period
+- `POST /v1/periods/{period_id}/soft-lock` (softLockPeriod): Soft-lock an open period
+- `POST /v1/periods/{period_id}/soft-lock-passes` (makeSoftLockPass): Make a pass to post into a locked period
+- `POST /v1/periods/{period_id}/unlock` (unlockPeriod): Release the soft lock of a period
 - `GET /v1/periods/{period_id}/variances` (listPeriodVariances): List a period's variances
 - `POST /v1/periods/{period_id}/variances/{account_id}/explanation` (explainVariance): Explain a variance
 - `GET /v1/periods/{period_id}/year-end` (getYearEnd): Get the year end of a period's financial year
@@ -1155,6 +1160,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/share-issues` (listShareIssues): List the register of share issues
 - `POST /v1/share-issues` (recordShareIssueBeforeBooks): Record shares issued before the books start
 - `GET /v1/sign-in-providers` (listSignInProviders): List the sign-in providers
+- `GET /v1/soft-lock-exceptions` (listSoftLockExceptions): List the postings made into locked periods
 - `GET /v1/statement-mappings` (listStatementMappings): List the saved column mappings
 - `POST /v1/statement-mappings` (createStatementMapping): Save a column mapping
 - `PUT /v1/statement-mappings/{mapping_id}` (replaceStatementMapping): Change a column mapping

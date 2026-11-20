@@ -22,13 +22,14 @@ var PeriodCodes = []string{period.CodeNoYear, period.CodeTooFar, period.CodeNotN
 
 // Period is an accounting period: a month, or part of one at the books start.
 type Period struct {
-	ID             string `json:"id" doc:"The period's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"`
-	StartsOn       string `json:"starts_on" format:"date" doc:"Its first day." example:"2026-10-01"`
-	EndsOn         string `json:"ends_on" format:"date" doc:"Its last day." example:"2026-10-31"`
-	Status         string `json:"status" enum:"open,soft_locked,closed" doc:"open takes postings; closed is the hard lock of INV-03, which the database enforces; soft_locked arrives with FR-GL-09 (P2)." example:"open"`
-	FinancialYear  int    `json:"financial_year,omitempty" doc:"Which financial year holds it, 1 for the first; left out when the books start is not set." example:"1"`
-	ClosedRevision *int64 `json:"closed_revision,omitempty" doc:"The ledger revision at the close (ENG-46), while it is closed." example:"412"`
-	Version        int    `json:"version" doc:"The period's version." example:"1"`
+	ID             string   `json:"id" doc:"The period's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"`
+	StartsOn       string   `json:"starts_on" format:"date" doc:"Its first day." example:"2026-10-01"`
+	EndsOn         string   `json:"ends_on" format:"date" doc:"Its last day." example:"2026-10-31"`
+	Status         string   `json:"status" enum:"open,soft_locked,closed" doc:"open takes postings; soft_locked takes postings only from an Accountant who holds a pass for the period (FR-GL-09, enforced by the domain); closed is the hard lock of INV-03, which the database enforces." example:"open"`
+	FinancialYear  int      `json:"financial_year,omitempty" doc:"Which financial year holds it, 1 for the first; left out when the books start is not set." example:"1"`
+	LockedModules  []string `json:"locked_modules,omitempty" doc:"The modules whose postings the period refuses apart from a pass (FR-GL-09): any of ar, ap, banking and payroll." example:"[\"ar\"]"`
+	ClosedRevision *int64   `json:"closed_revision,omitempty" doc:"The ledger revision at the close (ENG-46), while it is closed." example:"412"`
+	Version        int      `json:"version" doc:"The period's version." example:"1"`
 }
 
 // FinancialYear is a financial year and its periods.
@@ -142,8 +143,14 @@ func registerPeriods(a *API) {
 				return err
 			}
 			out.Body.NextCursor = next
+			locks, err := lockedModules(ctx, u)
+			if err != nil {
+				return err
+			}
 			for _, x := range page {
-				out.Body.Items = append(out.Body.Items, periodOf(x, cal))
+				pp := periodOf(x, cal)
+				pp.LockedModules = locks[x.ID]
+				out.Body.Items = append(out.Body.Items, pp)
 			}
 			if cal != nil {
 				today, err := orgToday(ctx, a, u)
@@ -176,7 +183,12 @@ func registerPeriods(a *API) {
 				return err
 			}
 			cal, err := calendar(ctx, u)
+			if err != nil {
+				return err
+			}
+			locks, err := lockedModules(ctx, u)
 			out.Body = periodOf(x, cal)
+			out.Body.LockedModules = locks[x.ID]
 			out.ETag = periodETag(out.Body)
 			return err
 		})

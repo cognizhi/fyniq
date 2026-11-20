@@ -244,6 +244,7 @@ OPERATIONS = {
     "listReportScheduleRuns": {"method": "GET", "path": "/v1/report-schedules/{id}/runs", "summary": "List a schedule's runs", "path_params": ["id"], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.reports"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listReportSchedules": {"method": "GET", "path": "/v1/report-schedules", "summary": "List a saved report's schedules", "path_params": [], "query": ["cursor", "definition_id", "page_size"], "body": False, "scopes": ["fyniq.read.reports"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listSalesReminders": {"method": "GET", "path": "/v1/sales-reminders", "summary": "List the reminders due to customers", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.sales", "fyniq.write.sales"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
+    "listSoftLockExceptions": {"method": "GET", "path": "/v1/soft-lock-exceptions", "summary": "List the postings made into locked periods", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listStatementMappings": {"method": "GET", "path": "/v1/statement-mappings", "summary": "List the saved column mappings", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listStatements": {"method": "GET", "path": "/v1/statements", "summary": "List the statements made", "path_params": [], "query": ["cursor", "customer_id", "page_size"], "body": False, "scopes": ["fyniq.read.sales", "fyniq.write.sales"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listStatutoryFilingEvidence": {"method": "GET", "path": "/v1/compliance/filings/{filing_id}/evidence", "summary": "List a filing record's files", "path_params": ["filing_id"], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.compliance"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
@@ -1329,6 +1330,10 @@ class OperationsMixin:
     def list_sales_reminders(self, **options):
         """List the reminders due to customers (GET /v1/sales-reminders; scopes fyniq.read.sales, fyniq.write.sales)."""
         return self.call("listSalesReminders", [], None, **options)
+
+    def list_soft_lock_exceptions(self, **options):
+        """List the postings made into locked periods (GET /v1/soft-lock-exceptions; scopes fyniq.read.accounting, fyniq.write.accounting)."""
+        return self.call("listSoftLockExceptions", [], None, **options)
 
     def list_statement_mappings(self, **options):
         """List the saved column mappings (GET /v1/statement-mappings; scopes fyniq.read.banking, fyniq.write.banking)."""

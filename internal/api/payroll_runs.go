@@ -173,7 +173,7 @@ func registerPayrollRuns(a *API) {
 	}), append([]string{CodeNoLink, CodeLinkClient, CodeLinkMinimum, peoplelink.CodeMalformed, peoplelink.CodeSignature, peoplelink.CodeDigest, peoplelink.CodeReplay,
 		peoplelink.CodeEpoch, peoplelink.CodeOrg, peoplelink.CodeRunEnvelope, peoplelink.CodeRunOrg, peoplelink.CodeRunSegregate, peoplelink.CodeRunRight,
 		peoplelink.CodeRunPasskey, peoplelink.CodeRunMapping, peoplelink.CodeRunUsed, peoplelink.CodeRunStale, peoplelink.CodeRunApprover,
-		storage.CodePayrollRun, storage.CodePeriodClosed, ledger.CodePayroll, ledger.CodeSystemRole, ledger.CodeUnknownAccount, ledger.CodeDimensionRequired,
+		storage.CodePayrollRun, storage.CodePeriodClosed, storage.CodeSoftLocked, ledger.CodePayroll, ledger.CodeSystemRole, ledger.CodeUnknownAccount, ledger.CodeDimensionRequired,
 		ledger.CodeDimensionValue, ledger.CodeNoDate, ledger.CodeTooLong}, locks...), func(ctx context.Context, in *payrollRunInput) (*payrollRunOutput, error) {
 		return a.submitPayrollRun(ctx, in)
 	})

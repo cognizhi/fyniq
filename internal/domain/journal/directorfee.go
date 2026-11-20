@@ -114,7 +114,7 @@ func (s DirectorFees) PostIn(ctx context.Context, u storage.UnitOfWork, id uuid.
 	if err != nil {
 		return doc, storage.Entry{}, err
 	}
-	stored, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+	stored, err := appendEntry(ctx, u, toStorage(entry, nil))
 	if err != nil {
 		return doc, storage.Entry{}, err
 	}

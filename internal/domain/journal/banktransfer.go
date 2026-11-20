@@ -129,7 +129,7 @@ func (s BankTransactions) RecordTransfer(ctx context.Context, org uuid.UUID, r T
 		if err != nil {
 			return err
 		}
-		stored, err := u.Ledger().Append(ctx, toStorage(e, nil))
+		stored, err := appendEntry(ctx, u, toStorage(e, nil))
 		if err != nil {
 			return err
 		}
@@ -235,7 +235,7 @@ func (s BankTransactions) UndoTransfer(ctx context.Context, org, transferID uuid
 		if err != nil {
 			return err
 		}
-		e, err := u.Ledger().Append(ctx, toStorage(reversal, &stored.ID))
+		e, err := appendEntry(ctx, u, toStorage(reversal, &stored.ID))
 		if err != nil {
 			return err
 		}

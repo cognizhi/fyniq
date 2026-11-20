@@ -108,7 +108,7 @@ func (s CustomerDeposits) Record(ctx context.Context, org uuid.UUID, d deposit.D
 		if len(c.Problems) > 0 {
 			return c.Problems
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(c.Entry, nil)); err != nil {
 			return err
 		}
 		if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted); err != nil {
@@ -171,7 +171,7 @@ func (s CustomerDeposits) Void(ctx context.Context, org, id uuid.UUID, date time
 		if err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
 		if err := u.Documents().SetStatus(ctx, id, storage.DocumentReversed); err != nil {

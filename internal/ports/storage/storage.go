@@ -122,6 +122,8 @@ type UnitOfWork interface {
 	ApprovalDelegations() ApprovalDelegations
 	ApprovalReminders() ApprovalReminders
 	AutomationRules() AutomationRules
+	// SoftLocks are the soft-locked periods and modules, a person's pass and the exceptions it made (FR-GL-09).
+	SoftLocks() SoftLocks
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates
 	// Preferences are each person's own preferences: the mode, the view, the look, the shortcuts and the formats (FR-UX-23).
@@ -1016,10 +1018,12 @@ type BalanceDifference struct {
 // The stable error codes of the storage port (ENG-23). The database's own codes (FYnnn) are mapped
 // to these by the adapter; db/README.md lists both.
 const (
-	CodeUnbalanced     = "STORAGE-INV-01" // the entry does not balance
-	CodeShareCapital   = "STORAGE-INV-13" // a manual journal line to a share-capital account
-	CodeImmutable      = "STORAGE-INV-02" // posted history cannot change
-	CodePeriodClosed   = "STORAGE-INV-03" // the posting date is in a closed period
+	CodeUnbalanced   = "STORAGE-INV-01" // the entry does not balance
+	CodeShareCapital = "STORAGE-INV-13" // a manual journal line to a share-capital account
+	CodeImmutable    = "STORAGE-INV-02" // posted history cannot change
+	CodePeriodClosed = "STORAGE-INV-03" // the posting date is in a closed period
+	// CodeSoftLocked: the posting date is in a soft-locked period, or its module is locked for the period, and the person holds no pass (FR-GL-09).
+	CodeSoftLocked     = "STORAGE-SOFTLOCK-01"
 	CodeAccountNotPost = "STORAGE-INV-04" // the account is missing, a group or inactive
 	CodeAmount         = "STORAGE-INV-05" // an amount, rate or currency is not valid
 	CodeNoTenant       = "STORAGE-INV-06" // no organisation, or a row of another organisation

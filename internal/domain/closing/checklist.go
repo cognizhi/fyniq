@@ -239,7 +239,7 @@ func MarkTask(ctx context.Context, u storage.UnitOfWork, periodID uuid.UUID, key
 	if err != nil {
 		return Item{}, err
 	}
-	if p.Status != storage.PeriodOpen {
+	if p.Status == storage.PeriodClosed { // a soft-locked period is still in its close (FR-GL-09)
 		return Item{}, &Error{CodeNotOpen, fmt.Sprintf("the period %s to %s is %s", p.StartsOn.Format(time.DateOnly), p.EndsOn.Format(time.DateOnly), p.Status),
 			"Mark checklist tasks while the period is open: ask to reopen it first"}
 	}

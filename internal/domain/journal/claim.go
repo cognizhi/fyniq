@@ -235,7 +235,7 @@ func (s Claims) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, err
 				return err
 			}
 		}
-		if out, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+		if out, err = appendEntry(ctx, u, toStorage(c.Entry, nil)); err != nil {
 			return err
 		}
 		if x := c.Prepared.Claim.Settles; x != nil && !x.IsZero() { // what it settles of the advance
@@ -444,7 +444,7 @@ func (s ClaimReimbursements) RecordIn(ctx context.Context, u storage.UnitOfWork,
 		return RecordedReimbursement{}, err
 	}
 	out := RecordedReimbursement{}
-	if out.Entry, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+	if out.Entry, err = appendEntry(ctx, u, toStorage(c.Entry, nil)); err != nil {
 		return RecordedReimbursement{}, err
 	}
 	for _, x := range c.Settlements {
@@ -524,7 +524,7 @@ func (s ClaimReimbursements) VoidIn(ctx context.Context, u storage.UnitOfWork, i
 		return RecordedReimbursement{}, err
 	}
 	out := RecordedReimbursement{}
-	if out.Entry, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+	if out.Entry, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 		return RecordedReimbursement{}, err
 	}
 	allocs, err := u.Allocations().OfSource(ctx, doc.ID)

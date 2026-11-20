@@ -165,7 +165,7 @@ func (s BankTransactions) categorise(ctx context.Context, u storage.UnitOfWork, 
 		return Categorised{}, err
 	}
 	out := Categorised{}
-	if out.Entry, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
+	if out.Entry, err = appendEntry(ctx, u, toStorage(entry, nil)); err != nil {
 		return Categorised{}, err
 	}
 	if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted); err != nil {
@@ -286,7 +286,7 @@ func (s BankTransactions) reverse(ctx context.Context, u storage.UnitOfWork, lin
 	if err := reverseReleases(ctx, u, doc, settings, func(e ledger.Entry) time.Time { return e.PostingDate }, reason); err != nil {
 		return err
 	}
-	e, err := u.Ledger().Append(ctx, toStorage(reversal, &stored.ID))
+	e, err := appendEntry(ctx, u, toStorage(reversal, &stored.ID))
 	if err != nil {
 		return err
 	}

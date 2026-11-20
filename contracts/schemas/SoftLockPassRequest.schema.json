@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "hours": {
+      "default": 4,
+      "description": "How long the pass lasts, from 1 to 8 hours.",
+      "examples": [
+        4
+      ],
+      "format": "int64",
+      "maximum": 8,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "reason": {
+      "description": "Why the Accountant must post into the locked period: kept with every posting made under the pass and shown on the exceptions report.",
+      "examples": [
+        "A late supplier bill dated 30 Oct that the auditor asked to see in October."
+      ],
+      "maxLength": 500,
+      "minLength": 10,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "SoftLockPassRequest",
+  "type": "object"
+}

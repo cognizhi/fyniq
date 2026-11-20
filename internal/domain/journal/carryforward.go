@@ -18,7 +18,7 @@ func CarryForward(ctx context.Context, u storage.UnitOfWork, entries []storage.N
 		if e.RuleVersion != RuleCarryForward {
 			return fmt.Errorf("journal: %s is not a carry-forward of the purge after retention", e.PostingIdentity)
 		}
-		if _, err := u.Ledger().Append(ctx, e); err != nil {
+		if _, err := appendEntry(ctx, u, e); err != nil {
 			return err
 		}
 	}

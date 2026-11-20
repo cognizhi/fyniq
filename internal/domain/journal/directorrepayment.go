@@ -88,7 +88,7 @@ func (s DirectorRepayments) RecordIn(ctx context.Context, u storage.UnitOfWork, 
 		return RecordedRepayment{}, err
 	}
 	out := RecordedRepayment{}
-	if out.Entry, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
+	if out.Entry, err = appendEntry(ctx, u, toStorage(entry, nil)); err != nil {
 		return RecordedRepayment{}, err
 	}
 	for _, x := range settled {
@@ -153,7 +153,7 @@ func (s DirectorRepayments) VoidIn(ctx context.Context, u storage.UnitOfWork, id
 		return RecordedRepayment{}, err
 	}
 	out := RecordedRepayment{}
-	if out.Entry, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+	if out.Entry, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 		return RecordedRepayment{}, err
 	}
 	allocs, err := u.Allocations().OfSource(ctx, doc.ID)

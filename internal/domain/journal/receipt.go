@@ -139,7 +139,7 @@ func (s CustomerReceipts) RecordIn(ctx context.Context, u storage.UnitOfWork, d 
 		if doc.Number, err = u.Sequences().Number(ctx, doc.ID, storage.DocumentCustomerReceipt); err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(c.Entry, nil)); err != nil {
 			return err
 		}
 		for _, x := range c.Settlements {
@@ -230,7 +230,7 @@ func (s CustomerReceipts) VoidIn(ctx context.Context, u storage.UnitOfWork, id u
 		if err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
 		allocs, err := u.Allocations().OfSource(ctx, doc.ID)

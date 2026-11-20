@@ -3268,6 +3268,17 @@ type FyniqPeriodCloseCheck struct {
 	Clean          bool
 }
 
+type FyniqPeriodModuleLock struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PeriodID       uuid.UUID
+	Module         string
+	Locked         bool
+	Version        int32
+	ChangedBy      uuid.UUID
+	ChangedAt      time.Time
+}
+
 type FyniqPeriodReopen struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID
@@ -4155,6 +4166,30 @@ type FyniqSodOverride struct {
 	RequestID       uuid.UUID
 	CreatedBy       uuid.UUID
 	CreatedAt       time.Time
+}
+
+type FyniqSoftLockException struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PassID         uuid.UUID
+	PeriodID       uuid.UUID
+	EntryID        uuid.UUID
+	UserID         uuid.UUID
+	Scope          string
+	SourceType     string
+	PostingDate    time.Time
+	Reason         string
+	CreatedAt      time.Time
+}
+
+type FyniqSoftLockPass struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PeriodID       uuid.UUID
+	UserID         uuid.UUID
+	Reason         string
+	CreatedAt      time.Time
+	ExpiresAt      time.Time
 }
 
 type FyniqStatementMapping struct {

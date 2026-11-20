@@ -255,7 +255,7 @@ func (s DirectorSettlements) ApproveIn(ctx context.Context, u storage.UnitOfWork
 		if err != nil {
 			return doc, nil, err
 		}
-		e, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+		e, err := appendEntry(ctx, u, toStorage(entry, nil))
 		if err != nil {
 			return doc, nil, err
 		}
@@ -280,7 +280,7 @@ func (s DirectorSettlements) ApproveIn(ctx context.Context, u storage.UnitOfWork
 		if err != nil {
 			return doc, nil, err
 		}
-		e, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+		e, err := appendEntry(ctx, u, toStorage(entry, nil))
 		if err != nil {
 			return doc, nil, err
 		}
@@ -392,7 +392,7 @@ func (s DirectorSettlements) EffectiveIn(ctx context.Context, u storage.UnitOfWo
 	if err != nil {
 		return storage.ShareIssue{}, storage.Entry{}, err
 	}
-	stored, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+	stored, err := appendEntry(ctx, u, toStorage(entry, nil))
 	if err != nil {
 		return storage.ShareIssue{}, storage.Entry{}, err
 	}

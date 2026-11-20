@@ -125,7 +125,7 @@ func (a *API) closeState(ctx context.Context, u storage.UnitOfWork, id uuid.UUID
 	}
 	out := PeriodCloseState{Period: periodOf(p, cal)}
 	var people []*Person
-	if p.Status == storage.PeriodOpen {
+	if p.Status != storage.PeriodClosed { // open or soft-locked (FR-GL-09)
 		c, err := u.Closes().LatestCheck(ctx, p.ID)
 		switch {
 		case errors.Is(err, ports.ErrNotFound):

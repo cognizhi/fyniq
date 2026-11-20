@@ -327,7 +327,7 @@ func Explain(ctx context.Context, u storage.UnitOfWork, periodID, accountID uuid
 	if err != nil {
 		return storage.VarianceExplanation{}, Variance{}, err
 	}
-	if p.Status != storage.PeriodOpen {
+	if p.Status == storage.PeriodClosed { // a soft-locked period is still in its close (FR-GL-09)
 		return storage.VarianceExplanation{}, Variance{}, &Error{CodeNotOpen, fmt.Sprintf("the period %s to %s is %s", p.StartsOn.Format(time.DateOnly),
 			p.EndsOn.Format(time.DateOnly), p.Status), "Explain variances while the period is open: ask to reopen it first"}
 	}

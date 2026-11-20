@@ -144,7 +144,7 @@ func (s EquityTransactions) EffectiveIn(ctx context.Context, u storage.UnitOfWor
 			if err != nil {
 				return out, err
 			}
-			stored, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+			stored, err := appendEntry(ctx, u, toStorage(entry, nil))
 			if err != nil {
 				return out, err
 			}
@@ -245,7 +245,7 @@ func (s EquityTransactions) issueCash(ctx context.Context, u storage.UnitOfWork,
 	if err != nil {
 		return err
 	}
-	stored, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+	stored, err := appendEntry(ctx, u, toStorage(entry, nil))
 	if err != nil {
 		return err
 	}
@@ -318,7 +318,7 @@ func (s EquityTransactions) convertInstrument(ctx context.Context, u storage.Uni
 	if err != nil {
 		return err
 	}
-	stored, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+	stored, err := appendEntry(ctx, u, toStorage(entry, nil))
 	if err != nil {
 		return err
 	}
@@ -400,7 +400,7 @@ func (s EquityTransactions) reverse(ctx context.Context, u storage.UnitOfWork, t
 		if err != nil {
 			return err
 		}
-		r, err := u.Ledger().Append(ctx, toStorage(reversal, &stored.ID))
+		r, err := appendEntry(ctx, u, toStorage(reversal, &stored.ID))
 		if err != nil {
 			return err
 		}

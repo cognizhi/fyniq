@@ -111,7 +111,7 @@ func (s Service) PostOpening(ctx context.Context, org uuid.UUID) (storage.Entry,
 		if err != nil {
 			return err
 		}
-		if out, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
+		if out, err = appendEntry(ctx, u, toStorage(entry, nil)); err != nil {
 			return err
 		}
 		if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted); err != nil {
@@ -212,10 +212,10 @@ func (s Service) EditOpening(ctx context.Context, org uuid.UUID, memo string, li
 		if err != nil {
 			return err
 		}
-		if out.Reversal, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out.Reversal, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(entry, nil)); err != nil {
 			return err
 		}
 		if err := s.after(ctx, u, edited, out.Reversal); err != nil {

@@ -228,7 +228,7 @@ func (s Service) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, er
 		if err != nil {
 			return err
 		}
-		if out, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
+		if out, err = appendEntry(ctx, u, toStorage(entry, nil)); err != nil {
 			return err
 		}
 		if err := u.Documents().SetStatus(ctx, id, storage.DocumentPosted); err != nil {
@@ -278,7 +278,7 @@ func (s Service) Reverse(ctx context.Context, org, id uuid.UUID, date time.Time,
 		if err != nil {
 			return err
 		}
-		if out, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
 		if err := u.Documents().SetStatus(ctx, id, storage.DocumentReversed); err != nil {
@@ -352,10 +352,10 @@ func (s Service) Edit(ctx context.Context, org, id uuid.UUID, d Draft, reason, p
 		if err != nil {
 			return err
 		}
-		if out.Reversal, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out.Reversal, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(entry, nil)); err != nil {
 			return err
 		}
 		edited.Number = doc.Number

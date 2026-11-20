@@ -71,7 +71,7 @@ func (s SupplierRefunds) Record(ctx context.Context, org uuid.UUID, d credits.Re
 		if doc.Number, err = u.Sequences().Number(ctx, doc.ID, storage.DocumentSupplierRefund); err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(entry, nil)); err != nil {
 			return err
 		}
 		if out.Allocation, err = u.Allocations().Add(ctx, storage.NewAllocation{SourceID: doc.ID, SourceVersion: doc.Version, DocumentID: d.CreditID,
@@ -133,7 +133,7 @@ func (s SupplierRefunds) Void(ctx context.Context, org, id uuid.UUID, date time.
 		if err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
 		allocs, err := u.Allocations().OfSource(ctx, doc.ID)

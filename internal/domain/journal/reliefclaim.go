@@ -75,7 +75,7 @@ func (s ReliefClaims) Claim(ctx context.Context, org uuid.UUID, r reliefclaim.Re
 		if entry, err = ledger.PostBadDebtRelief(p.Rule, mustSettings(ctx, u)); err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(entry, nil)); err != nil {
 			return err
 		}
 		if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted); err != nil {
@@ -149,7 +149,7 @@ func (s ReliefClaims) Void(ctx context.Context, org, id uuid.UUID, date time.Tim
 		if err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
 		if err := u.Documents().SetStatus(ctx, id, storage.DocumentReversed); err != nil {

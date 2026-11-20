@@ -61,7 +61,7 @@ func (s Service) ReverseDue(ctx context.Context, org uuid.UUID, day time.Time) (
 			run.Reversed++
 		case errors.As(err, &je) && je.Code == CodeNotPosted:
 			// Reversed or edited meanwhile: nothing is due any more.
-		case code == storage.CodePeriodClosed || code == storage.CodeNoPeriod:
+		case code == storage.CodePeriodClosed || code == storage.CodeSoftLocked || code == storage.CodeNoPeriod:
 			run.Waiting++
 			if err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 				return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionReversalWaiting, ObjectType: "document", ObjectID: id,

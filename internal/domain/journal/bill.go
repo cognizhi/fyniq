@@ -318,7 +318,7 @@ func (s Bills) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, erro
 		if doc.Number, err = u.Sequences().Number(ctx, id, doc.Type); err != nil {
 			return err
 		}
-		if out, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+		if out, err = appendEntry(ctx, u, toStorage(c.Entry, nil)); err != nil {
 			return err
 		}
 		if err := u.Documents().SetStatus(ctx, id, storage.DocumentPosted); err != nil {
@@ -397,7 +397,7 @@ func (s Bills) Void(ctx context.Context, org, id uuid.UUID, date time.Time, reas
 		if err != nil {
 			return err
 		}
-		if out, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
 		// Its spread's releases go back on the void's date, or on their own when later (FR-GL-03): 1210 and the line's
@@ -477,10 +477,10 @@ func (s Bills) Edit(ctx context.Context, org, id uuid.UUID, d bill.Draft, reason
 		if err != nil {
 			return err
 		}
-		if out.Reversal, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out.Reversal, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(c.Entry, nil)); err != nil {
 			return err
 		}
 		edited.Number = doc.Number
