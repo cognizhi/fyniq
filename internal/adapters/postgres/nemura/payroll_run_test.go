@@ -360,7 +360,7 @@ func TestPayslipsAreMadeOnceFromAnApprovedVersionAndReadOnlyByTheirOwner(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs, Renderer: letters.Local{}}
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs, Cipher: testCipher(t), Renderer: letters.Local{}}
 	bare := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc}
 	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
 	approver := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}
@@ -518,7 +518,7 @@ func TestAPaymentMovesThroughLegalStatesAndAnUnknownOutcomeBlocksANewPayment(t *
 		t.Fatal(err)
 	}
 	blobs, _ := local.NewDir(t.TempDir())
-	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs}
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs, Cipher: testCipher(t)}
 	rs := nemura.RestrictedService{Store: st, Blobs: blobs, Clock: clock.NewFrozen(now)}
 	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
 	approver := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}
@@ -728,7 +728,7 @@ func TestAFinalPayHasItsDeadlineItsItemsAndATaxClearanceHoldThatHoldsEverything(
 		t.Fatal(err)
 	}
 	blobs, _ := local.NewDir(t.TempDir())
-	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs}
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs, Cipher: testCipher(t)}
 	rs := nemura.RestrictedService{Store: st, Blobs: blobs, Clock: clock.NewFrozen(now)}
 	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
 	approver := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}
@@ -1087,7 +1087,7 @@ func TestAFirstYearResidentsElectionKindDecidesWhichRatesTheRunUses(t *testing.T
 		t.Fatal(err)
 	}
 	blobs, _ := local.NewDir(t.TempDir())
-	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs}
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs, Cipher: testCipher(t)}
 	rs := nemura.RestrictedService{Store: st, Blobs: blobs, Clock: clock.NewFrozen(now)}
 	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
 	birth, prStart := d("1990-05-20"), d("2026-01-01")

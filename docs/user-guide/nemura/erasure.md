@@ -22,7 +22,7 @@ It is refused, with the reason, when the person has not left, the periods have n
 
 ## What is erased, and what stays
 
-The person's names, work and personal email, phone, address, emergency contacts, NRIC or FIN, salary account and reason for leaving are emptied, their sign-in is switched off, their files (payslip and letter PDFs, documents) are deleted, and Fyniq is told to clear the name and email it held. Records the database keeps append-only (issued letters, payslip figures, pay run lines, leave and sick notes) stay, tied to the person's ID with no name; the people team decides how those are shredded. After a restore of Nemura's database, the signed record is applied again before it opens, so nothing erased comes back.
+The person's names, work and personal email, phone, address, emergency contacts, NRIC or FIN, salary account and reason for leaving are emptied, their sign-in is switched off, their files (payslip and letter PDFs, documents) are deleted, and Fyniq is told to clear the name and email it held. The itemised figures of payslips made from now on are sealed under a key of the person's own, and erasing destroys the key, so they can never be read again. Other records the database keeps append-only (issued letters, older payslip figures, pay run lines, leave and sick notes) stay, tied to the person's ID with no name; the people team decides how those are shredded. After a restore of Nemura's database, the signed record is applied again before it opens, so nothing erased comes back.
 
 ## Common problems
 
