@@ -273,6 +273,12 @@ Source: PRD-002 §9 · Priority M · Phase P2
 - **WHEN** IRAS answers with return code 30
 - **THEN** the field messages are shown by record and nothing is marked submitted
 
+#### Scenario: A year of more than 2,000 people is made in parts (rev 0.67)
+- **GIVEN** a year of three people and a part of at most two records
+- **WHEN** the IR8A file is made for part 1, then part 2
+- **THEN** part 1 holds the first two people with its own count and total, part 2 the third, each named for its part, and the parts together hold every person once
+- **AND** a part beyond the last is refused
+
 #### Scenario: The IR8A file of an income year (rev 0.56)
 - **GIVEN** an approved run paid in 2026 with S$4,500.00 of basic salary and S$900.00 of employee CPF, and a person with an NRIC and their sex and address on record
 - **WHEN** the IR8A file is made for the year

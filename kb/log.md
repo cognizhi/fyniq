@@ -983,3 +983,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | compliance.filing-packs: keep and record the tax working paper with its evidence (FR-TAX-06)
 
 ## [2026-11-20] compile | compliance.filing-packs: the platform's tasks for a pack update waiting and a correction (ENG-33)
+
+## [2026-11-20] compile | nemura payroll approval: the IR8A file of a year of more than 2,000 people is made in parts (NM-PAY-14)
+
+## [2026-11-20] compile | nemura payroll approval: the IR8A file of a year of more than 2,000 people is made in parts (NM-PAY-14)

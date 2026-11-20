@@ -396,6 +396,8 @@ type ExportFile struct {
 	Note          string          `json:"note" doc:"Always says the file is not proof of payment." example:"This file is not proof of payment."`
 	Reference     string          `json:"reference,omitempty" doc:"The payment reference in a payment file." example:"Salary 2026-06"`
 	Skipped       []ExportSkipped `json:"skipped" doc:"The people left out of a payment file, with why."`
+	Parts         int             `json:"parts,omitempty" doc:"The IR8A payload of a year of more than 2,000 people: how many parts the year has; this file is the one asked for with part (absent when the year is one payload)." example:"2"`
+	Part          int             `json:"part,omitempty" doc:"Which part this file is." example:"1"`
 	ContentBase64 string          `json:"content_base64" doc:"The CSV, base64-encoded. It is not kept: only its manifest is."`
 }
 
@@ -411,6 +413,7 @@ type ExportInput struct {
 	ContactNumber    string `json:"contact_number,omitempty" pattern:"^[0-9]{1,12}$" doc:"Their contact number, digits only; needed for the IR8A payload (A6)." example:"91234567"`
 	Email            string `json:"email,omitempty" maxLength:"320" doc:"Their email address; needed for the IR8A payload (A7)." example:"abc@email.com.sg"`
 	SubmissionType   string `json:"submission_type,omitempty" enum:"O,A,R" doc:"O for an original submission (the default), A for an amendment, R for a revision (A8)." example:"O"`
+	Part             int    `json:"part,omitempty" minimum:"1" doc:"For the IR8A payload of a year with more than 2,000 people: which payload of the year to make, from 1 (the default). IRAS takes at most 2,000 records in a submission (A11), so the year is sent in parts, each of its own people in order; the answer's parts says how many there are." example:"1"`
 	AdviceCode       string `json:"advice_code,omitempty" pattern:"^(0[1-9]|[1-9][0-9])$" doc:"The advice code, 01 to 99: records with the same code print on the same record of payment; needed for the CPF file." example:"01"`
 }
 
