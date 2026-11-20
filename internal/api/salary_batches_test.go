@@ -30,6 +30,7 @@ type salaryWorld struct {
 	run                         string
 	ana, ben, cai               uuid.UUID
 	bank                        uuid.UUID
+	money                       storage.MoneyAccount
 	payroll, approver, releaser string // sessions of the three members, stepped up now
 	payrollU, approverU, relU   uuid.UUID
 	holds                       *fakeHolds
@@ -72,7 +73,7 @@ func newSalaryWorld(t *testing.T) *salaryWorld {
 		if err := u.PeopleLinks().SaveAskKey(ctx, k); err != nil {
 			return err
 		}
-		_, err = u.Banking().CreateMoneyAccount(ctx, storage.NewMoneyAccount{AccountID: chart.ID, Kind: storage.MoneyBank, Name: chart.Name, Identifier: "072-10010", Currency: "SGD", At: now})
+		w.money, err = u.Banking().CreateMoneyAccount(ctx, storage.NewMoneyAccount{AccountID: chart.ID, Kind: storage.MoneyBank, Name: chart.Name, Identifier: "072-10010", Currency: "SGD", At: now})
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -512,5 +513,203 @@ var matrixSalaryBatches = map[string]func(e *env, tok string) (response, func() 
 	},
 	"receivePayrollPayments": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/people-link/payroll-payments", tok, map[string]any{}), nil
+	},
+}
+
+// statementLine imports a statement of one debit into the world's bank account and returns the line's ID.
+func (w *salaryWorld) statementLine(t *testing.T, amount string, day int) string {
+	t.Helper()
+	var id uuid.UUID
+	if err := w.e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		opening := storage.Decimal("0.00")
+		_, lines, err := u.Banking().Import(ctx, storage.NewBankStatement{MoneyAccountID: w.money.ID, Source: storage.MoneySourceFile, Format: storage.FormatCSV, ParserVersion: "csv@1",
+			PeriodFrom: time.Date(2026, 10, day, 0, 0, 0, 0, time.UTC), PeriodTo: time.Date(2026, 10, day, 0, 0, 0, 0, time.UTC), Currency: "SGD", Opening: &opening, At: w.e.clock.Now(),
+			Lines: []storage.NewBankLine{{Position: 1, BookingDate: time.Date(2026, 10, day, 0, 0, 0, 0, time.UTC), Amount: storage.Decimal("-" + amount), Description: "GIRO SALARY",
+				Fingerprint: strings.Repeat(hex.EncodeToString([]byte(amount)), 20)[:64]}}})
+		if err == nil {
+			id = lines[0].ID
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return id.String()
+}
+
+// evidence is a file of evidence on a document of the organisation, which a person names when they record what became of a payment.
+func (w *salaryWorld) evidence(t *testing.T) string {
+	t.Helper()
+	var id uuid.UUID
+	if err := w.e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: []byte(`{}`)})
+		if err != nil {
+			return err
+		}
+		ev, err := u.Evidence().Attach(ctx, storage.NewEvidence{DocumentID: doc.ID, EvidenceType: "bank advice", FileName: "advice.pdf", MediaType: "application/pdf", Size: 10, SHA256: strings.Repeat("d", 64),
+			OriginalSHA256: strings.Repeat("d", 64), Source: storage.SourceUpload, DataClass: storage.ClassPayroll, StagingKey: "staging/" + w.org.String() + "/" + uuid.NewString(), UploadedBy: "user:" + w.payrollU.String()})
+		id = ev.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return id.String()
+}
+
+// statuses are the payroll.payments.status events queued for Nemura, as the outbox holds them.
+func (w *salaryWorld) statuses(t *testing.T) []linksend.Queued {
+	var out []linksend.Queued
+	for _, q := range w.queued(t) {
+		if q.Type == linksend.TypePaymentsStatus {
+			out = append(out, q)
+		}
+	}
+	return out
+}
+
+// Paid means paid (FR-PPL-12; PRD-002 NM-PAY-10): a release makes a line released and nothing more, and each state goes back to Nemura as payroll.payments.status with no figure in the outbox row.
+// A person records what became of a payment with evidence, never the run's preparer or approver in Nemura (SB-06), and only a move a payment makes (paid goes back only to returned; an unknown
+// outcome is resolved only to paid, rejected or returned); an unknown outcome blocks Nemura's new line for the person in the run (PPL-28) and keeps the person's other lines waiting until resolved. The
+// bank feed pays a line too: the one debit of the release, matched to the lines it paid, exactly (Dr 2100, Cr the bank), and the lines are then paid from the bank feed on the bank line's date; a
+// debit of another amount, another account or a line already paid is refused. A rejected line is no longer owed in the batch, so Nemura's new line for the person fits under the run's net pay.
+// req: FR-PPL-12
+// asvs: V2.3.5, V8.2.1, V11.2.1
+func TestAPaymentIsPaidOnlyFromTheBankFeedOrAPersonsEvidenceAndEveryStateGoesBackToNemura(t *testing.T) {
+	w := newSalaryWorld(t)
+	e := w.e
+	id, _, asked, refs := w.preparedBatch(t)
+	if d := w.decideSalary(w.approver, asked); d.Status != http.StatusOK {
+		t.Fatalf("approving: %d %s", d.Status, d.Raw)
+	}
+	w.holds.answer[w.ana] = linksend.HoldAnswer{Status: "released"}
+	w.holds.answer[w.cai] = linksend.HoldAnswer{Status: "released"}
+	tag := e.call(http.MethodGet, "/v1/salary-batches/"+id, w.payroll, nil).Header.Get("ETag")
+	rel := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/release", w.releaser, nil, "If-Match", tag)
+	if rel.Status != http.StatusOK || rel.Body["released"] != float64(2) || rel.Body["paid"] != float64(0) || rel.str("state") != "released" {
+		t.Fatalf("the release: %d %s", rel.Status, rel.Raw)
+	}
+	// Nemura is told each line was released, by the state's ID alone: no name, account or amount waits in the outbox.
+	queued := w.statuses(t)
+	if len(queued) != 2 {
+		t.Fatalf("the statuses queued after the release: %d", len(queued))
+	}
+	for _, q := range queued {
+		if !strings.Contains(string(q.Payload), "state_event_id") || strings.Contains(string(q.Payload), "9000") || strings.Contains(string(q.Payload), "7000") || strings.Contains(string(q.Payload), "Ana") {
+			t.Errorf("a queued status holds more than the state's ID: %s", q.Payload)
+		}
+	}
+	evidence := w.evidence(t)
+	url := func(ref uuid.UUID) string { return "/v1/salary-batches/" + id + "/lines/" + ref.String() + "/state" }
+	body := func(state string) map[string]any {
+		return map[string]any{"state": state, "evidence_id": evidence, "on": "2026-10-15"}
+	}
+	mei, _ := e.store.UserForIdentity(context.Background(), w.preparer.Issuer, w.preparer.Subject)
+	// Not the run's own people, not without evidence, not a move a payment never makes, not a line that was not released.
+	e.problemIs(e.call(http.MethodPost, url(refs["ana"]), w.as(mei.String(), authz.PayrollAdmin), body("paid")), "recordSalaryLineState", 403, salarybatch.CodeSeparation)
+	e.problemIs(e.call(http.MethodPost, url(refs["ana"]), w.payroll, map[string]any{"state": "paid", "evidence_id": uuid.NewString(), "on": "2026-10-15"}), "recordSalaryLineState", 422, salarybatch.CodeState)
+	e.problemIs(e.call(http.MethodPost, url(refs["ana"]), w.payroll, body("released")), "recordSalaryLineState", 422, "API-INPUT-02")
+	e.problemIs(e.call(http.MethodPost, url(uuid.New()), w.payroll, body("paid")), "recordSalaryLineState", 404, salarybatch.CodeLine)
+
+	// Ana's payment: sent, then lost: unknown, which blocks a new line for her in this run and keeps her out of any other release.
+	if r := e.call(http.MethodPost, url(refs["ana"]), w.payroll, body("sent")); r.Status != 200 {
+		t.Fatalf("sent: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, url(refs["ana"]), w.payroll, body("unknown")); r.Status != 200 {
+		t.Fatalf("unknown: %d %s", r.Status, r.Raw)
+	}
+	w.version = 2
+	e.problemIs(w.payments(w.run, w.line(uuid.New(), w.ana, "Ana Lim", "9000.11", 1)), "receivePayrollPayments", 409, peoplelink.CodePayBlocked)
+	e.problemIs(e.call(http.MethodPost, url(refs["ana"]), w.payroll, body("scheduled")), "recordSalaryLineState", 422, "API-INPUT-02")
+	// Resolved as rejected: the line is no longer owed, so Nemura's new line for her fits under the net pay, and she is paid in a new line of the same batch.
+	if r := e.call(http.MethodPost, url(refs["ana"]), w.payroll, body("rejected")); r.Status != 200 {
+		t.Fatalf("rejected: %d %s", r.Status, r.Raw)
+	}
+	again := w.payments(w.run, w.line(uuid.New(), w.ana, "Ana Lim", "9000.11", 1))
+	if again.Status != 200 || again.str("outcome") != "revised" {
+		t.Fatalf("a new line for Ana after a rejection: %d %s", again.Status, again.Raw)
+	}
+
+	// Cai's debit: the bank feed pays her line, exactly.
+	debit := w.statementLine(t, "7000.33", 15)
+	for what, input := range map[string]map[string]any{
+		"another amount":  {"bank_line_id": w.statementLine(t, "7000.32", 14), "line_ids": []string{refs["cai"].String()}},
+		"a line not paid": {"bank_line_id": debit, "line_ids": []string{refs["ana"].String()}},
+	} {
+		if r := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.payroll, input); r.Status == 200 {
+			t.Errorf("%s was matched: %s", what, r.Raw)
+		}
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.as(mei.String(), authz.PayrollAdmin), map[string]any{"bank_line_id": debit, "line_ids": []string{refs["cai"].String()}}),
+		"matchSalaryBankLine", 403, salarybatch.CodeSeparation)
+	match := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.payroll, map[string]any{"bank_line_id": debit, "line_ids": []string{refs["cai"].String()}})
+	if match.Status != 200 || match.Body["paid"] != float64(1) {
+		t.Fatalf("matching the debit: %d %s", match.Status, match.Raw)
+	}
+	if again := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.payroll, map[string]any{"bank_line_id": debit, "line_ids": []string{refs["cai"].String()}}); again.Status == 200 {
+		t.Errorf("the debit matched twice: %s", again.Raw)
+	}
+	for _, l := range match.Body["lines"].([]any) {
+		if m := l.(map[string]any); m["person_name"] == "Cai Yu" && m["state"] != "paid" {
+			t.Errorf("Cai's line after the bank feed: %v", m)
+		}
+	}
+	// A paid payment only comes back as returned, with evidence.
+	e.problemIs(e.call(http.MethodPost, url(refs["cai"]), w.payroll, body("rejected")), "recordSalaryLineState", 422, salarybatch.CodeState)
+	if r := e.call(http.MethodPost, url(refs["cai"]), w.payroll, body("returned")); r.Status != 200 {
+		t.Fatalf("returned: %d %s", r.Status, r.Raw)
+	}
+	// Every state went to Nemura (released x2, sent, unknown, rejected, paid, returned), each by the state's ID.
+	sent := w.statuses(t)
+	if len(sent) != 7 {
+		t.Fatalf("statuses queued: %d, want 7", len(sent))
+	}
+	// What the worker sends is read from the sources when it is sent, in the shape Nemura reads strictly (its inbox refuses a field it does not list).
+	type nemuraStatus struct {
+		RunID       string `json:"run_id"`
+		PersonID    string `json:"person_id"`
+		State       string `json:"state"`
+		Instruction string `json:"instruction_id"`
+		Amount      string `json:"amount"`
+		PaidOn      string `json:"paid_on"`
+		EvidenceRef string `json:"evidence_ref"`
+	}
+	states := map[string]nemuraStatus{}
+	if err := e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, q := range sent {
+			raw, err := linksend.StatusPayload(ctx, u, q.Payload)
+			if err != nil {
+				return err
+			}
+			d := json.NewDecoder(strings.NewReader(string(raw)))
+			d.DisallowUnknownFields()
+			var s nemuraStatus
+			if err := d.Decode(&s); err != nil {
+				return err
+			}
+			if s.PersonID == w.cai.String() {
+				states[s.State] = s
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if p := states["paid"]; p.Amount != "7000.33" || p.PaidOn != "2026-10-15" || p.Instruction != "SB0001-R1-L02" || p.RunID != w.run || p.EvidenceRef != "" {
+		t.Errorf("the paid status Nemura is sent: %+v", p)
+	}
+	if r := states["returned"]; r.EvidenceRef != evidence || r.Amount != "7000.33" {
+		t.Errorf("the returned status Nemura is sent: %+v", r)
+	}
+	if hit := w.trailHas(t, "Ana Lim", "Cai Yu", "9000.11", "0123456789"); len(hit) > 0 { // the bank line and its posting are the bank's own record and hold the debit
+		t.Errorf("the audit trail holds %v", hit)
+	}
+}
+
+// matrixSalaryStates are the authorisation matrix's rows of what became of a salary payment: under C on the pay-run row by a person stepped up.
+var matrixSalaryStates = map[string]func(e *env, tok string) (response, func() bool){
+	"recordSalaryLineState": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/salary-batches/"+uuid.NewString()+"/lines/"+uuid.NewString()+"/state", steppedUp(e, tok), map[string]any{"state": "paid", "evidence_id": uuid.NewString(), "on": "2026-10-15"}), nil
+	},
+	"matchSalaryBankLine": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/salary-batches/"+uuid.NewString()+"/bank-match", steppedUp(e, tok), map[string]any{"bank_line_id": uuid.NewString(), "line_ids": []string{uuid.NewString()}}), nil
 	},
 }

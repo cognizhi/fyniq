@@ -93,7 +93,7 @@ func (r salaryBatches) AddLines(ctx context.Context, batch uuid.UUID, lines []st
 		return err
 	}
 	for _, l := range lines {
-		if err := r.event(ctx, storage.SalaryLineEvent{BatchID: batch, LineRef: l.LineRef, PersonID: l.PersonID, RunID: b.RunID, State: storage.LineScheduled, Source: storage.LineByArrival,
+		if _, err := r.event(ctx, storage.SalaryLineEvent{BatchID: batch, LineRef: l.LineRef, PersonID: l.PersonID, RunID: b.RunID, State: storage.LineScheduled, Source: storage.LineByArrival,
 			RecordedBy: "service:link", At: at}); err != nil {
 			return err
 		}
@@ -262,7 +262,7 @@ func (r salaryBatches) Events(ctx context.Context, batch uuid.UUID) ([]storage.S
 }
 
 // event writes a line's state; the callers audit it once for what they did (a batch of lines is one audit, not one per person).
-func (r salaryBatches) event(ctx context.Context, e storage.SalaryLineEvent) error {
+func (r salaryBatches) event(ctx context.Context, e storage.SalaryLineEvent) (uuid.UUID, error) {
 	p := sqlcdb.InsertSalaryLineEventParams{BatchID: e.BatchID, LineRef: e.LineRef, PersonID: e.PersonID, RunID: e.RunID, State: e.State, Source: e.Source,
 		RecordedBy: e.RecordedBy, At: e.At, BankLineID: someID(e.BankLineID), EvidenceID: someID(e.EvidenceID), OnDate: pgDate(e.OnDate)}
 	if e.InstructionID != "" {
@@ -272,18 +272,19 @@ func (r salaryBatches) event(ctx context.Context, e storage.SalaryLineEvent) err
 		a := string(*e.Amount)
 		p.Amount = &a
 	}
-	_, err := r.u.q.InsertSalaryLineEvent(ctx, p)
-	return mapError(err)
+	row, err := r.u.q.InsertSalaryLineEvent(ctx, p)
+	return row.ID, mapError(err)
 }
 
-func (r salaryBatches) AddEvent(ctx context.Context, e storage.SalaryLineEvent) error {
+func (r salaryBatches) AddEvent(ctx context.Context, e storage.SalaryLineEvent) (uuid.UUID, error) {
 	if err := r.u.check(); err != nil {
-		return err
+		return uuid.Nil, err
 	}
-	if err := r.event(ctx, e); err != nil {
-		return err
+	id, err := r.event(ctx, e)
+	if err != nil {
+		return uuid.Nil, err
 	}
-	return r.u.event(ctx, "salary_batch.line_state", "salary_batch", e.BatchID, nil, map[string][2]any{"line": {nil, e.LineRef.String()}, "state": {nil, e.State}, "source": {nil, e.Source}})
+	return id, r.u.event(ctx, "salary_batch.line_state", "salary_batch", e.BatchID, nil, map[string][2]any{"line": {nil, e.LineRef.String()}, "state": {nil, e.State}, "source": {nil, e.Source}})
 }
 
 func (r salaryBatches) StatesOfRunPerson(ctx context.Context, run, person uuid.UUID) ([]string, error) {
@@ -310,6 +311,7 @@ func (r salaryBatches) Release(ctx context.Context, x storage.SalaryRelease, lin
 	if err := r.u.check(); err != nil {
 		return storage.SalaryRelease{}, err
 	}
+	on := time.Date(at.Year(), at.Month(), at.Day(), 0, 0, 0, 0, time.UTC)
 	row, err := r.u.q.InsertSalaryRelease(ctx, sqlcdb.InsertSalaryReleaseParams{BatchID: x.BatchID, BatchVersion: small(x.BatchVersion), ApprovalID: x.ApprovalID, ReleasedBy: x.ReleasedBy,
 		ReleasedAt: x.ReleasedAt, Writer: x.Writer, FileName: x.FileName, MediaType: x.MediaType, FileSealed: x.Sealed, FileSha256: x.SHA256, Lines: small(len(lines)), Total: string(x.Total)})
 	if err != nil {
@@ -325,10 +327,12 @@ func (r salaryBatches) Release(ctx context.Context, x storage.SalaryRelease, lin
 		if err != nil {
 			return storage.SalaryRelease{}, mapError(err)
 		}
-		if err := r.event(ctx, storage.SalaryLineEvent{BatchID: out.BatchID, LineRef: l.LineRef, PersonID: line.PersonID, RunID: runOfBatch(ctx, r, out.BatchID), State: storage.LineReleased, Source: storage.LineByRelease,
-			InstructionID: l.InstructionID, RecordedBy: "user:" + out.ReleasedBy.String(), At: at}); err != nil {
+		id, err := r.event(ctx, storage.SalaryLineEvent{BatchID: out.BatchID, LineRef: l.LineRef, PersonID: line.PersonID, RunID: runOfBatch(ctx, r, out.BatchID), State: storage.LineReleased,
+			Source: storage.LineByRelease, InstructionID: l.InstructionID, OnDate: &on, RecordedBy: "user:" + out.ReleasedBy.String(), At: at})
+		if err != nil {
 			return storage.SalaryRelease{}, err
 		}
+		out.StateEvents = append(out.StateEvents, id)
 	}
 	v := out.BatchVersion
 	return out, r.u.event(ctx, "salary_batch.released", "salary_batch", out.BatchID, &v, map[string][2]any{"release": {nil, map[string]any{"id": out.ID.String(), "writer": out.Writer,
@@ -394,4 +398,34 @@ func (r salaryBatches) IsRunParty(ctx context.Context, batch, user uuid.UUID) (b
 	}
 	party, err := r.u.q.SalaryIsRunParty(ctx, sqlcdb.SalaryIsRunPartyParams{Who: user, BatchID: batch})
 	return party, mapError(err)
+}
+
+func (r salaryBatches) StatusOfEvent(ctx context.Context, event uuid.UUID) (storage.SalaryStatus, error) {
+	if err := r.u.check(); err != nil {
+		return storage.SalaryStatus{}, err
+	}
+	x, err := r.u.q.SalaryStatusOfEvent(ctx, event)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.SalaryStatus{}, ports.ErrNotFound
+	}
+	if err != nil {
+		return storage.SalaryStatus{}, mapError(err)
+	}
+	out := storage.SalaryStatus{EventID: x.ID, BatchID: x.BatchID, LineRef: x.LineRef, PersonID: x.PersonID, RunID: x.RunID, State: x.State, EvidenceID: idOf(x.EvidenceID), On: x.At}
+	switch {
+	case x.EventInstruction != nil:
+		out.InstructionID = *x.EventInstruction
+	case x.ReleaseInstruction != nil:
+		out.InstructionID = *x.ReleaseInstruction
+	}
+	switch {
+	case x.EventAmount != nil:
+		out.Amount = storage.Decimal(*x.EventAmount)
+	case x.LineAmount != nil:
+		out.Amount = storage.Decimal(*x.LineAmount)
+	}
+	if x.OnDate.Valid {
+		out.On = x.OnDate.Time
+	}
+	return out, nil
 }

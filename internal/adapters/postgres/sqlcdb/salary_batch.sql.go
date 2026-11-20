@@ -568,6 +568,17 @@ func (q *Queries) SalaryBatchLines(ctx context.Context, batchID uuid.UUID) ([]Fy
 	return items, nil
 }
 
+const salaryBatchOfLineEvent = `-- name: SalaryBatchOfLineEvent :one
+SELECT batch_id FROM fyniq.salary_line_event WHERE id = $1
+`
+
+func (q *Queries) SalaryBatchOfLineEvent(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, salaryBatchOfLineEvent, id)
+	var batch_id uuid.UUID
+	err := row.Scan(&batch_id)
+	return batch_id, err
+}
+
 const salaryBatchOfRun = `-- name: SalaryBatchOfRun :one
 SELECT organisation_id, id, seq, link_id, source_system, run_id, run_version, receipt_id, wage_month, pay_date, money_account_id, method, prepared_by, status, version, lines_version, cancel_reason, created_at, changed_at FROM fyniq.salary_batch WHERE source_system = $1 AND run_id = $2 AND run_version = $3 FOR UPDATE
 `
@@ -915,4 +926,51 @@ func (q *Queries) SalaryReleases(ctx context.Context, batchID uuid.UUID) ([]Fyni
 		return nil, err
 	}
 	return items, nil
+}
+
+const salaryStatusOfEvent = `-- name: SalaryStatusOfEvent :one
+SELECT e.id, e.batch_id, e.line_ref, e.person_id, e.run_id, e.state, e.on_date, e.evidence_id, e.at, e.amount AS event_amount,
+       rl.instruction_id AS release_instruction, l.amount AS line_amount, e.instruction_id AS event_instruction
+FROM fyniq.salary_line_event e
+LEFT JOIN fyniq.salary_release_line rl ON rl.organisation_id = e.organisation_id AND rl.batch_id = e.batch_id AND rl.line_ref = e.line_ref
+LEFT JOIN fyniq.salary_batch_line l ON l.organisation_id = rl.organisation_id AND l.id = rl.line_id
+WHERE e.id = $1
+`
+
+type SalaryStatusOfEventRow struct {
+	ID                 uuid.UUID
+	BatchID            uuid.UUID
+	LineRef            uuid.UUID
+	PersonID           uuid.UUID
+	RunID              uuid.UUID
+	State              string
+	OnDate             pgtype.Date
+	EvidenceID         *uuid.UUID
+	At                 time.Time
+	EventAmount        *string
+	ReleaseInstruction *string
+	LineAmount         *string
+	EventInstruction   *string
+}
+
+// What payroll.payments.status says of one state of a line, read from its source when it is sent: the run, the person, the instruction ID, the amount of the version that went in the release and the date.
+func (q *Queries) SalaryStatusOfEvent(ctx context.Context, id uuid.UUID) (SalaryStatusOfEventRow, error) {
+	row := q.db.QueryRow(ctx, salaryStatusOfEvent, id)
+	var i SalaryStatusOfEventRow
+	err := row.Scan(
+		&i.ID,
+		&i.BatchID,
+		&i.LineRef,
+		&i.PersonID,
+		&i.RunID,
+		&i.State,
+		&i.OnDate,
+		&i.EvidenceID,
+		&i.At,
+		&i.EventAmount,
+		&i.ReleaseInstruction,
+		&i.LineAmount,
+		&i.EventInstruction,
+	)
+	return i, err
 }

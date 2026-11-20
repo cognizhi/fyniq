@@ -95,3 +95,15 @@ SELECT * FROM fyniq.salary_release_line WHERE release_id = sqlc.arg(release_id) 
 -- name: SalaryIsRunParty :one
 -- Whether a Fyniq user is, by issuer and subject, the preparer or approver of the batch's pay run in Nemura (SOD-4).
 SELECT fyniq.salary_is_run_party(b.organisation_id, b.receipt_id, sqlc.arg(who)::uuid)::boolean AS party FROM fyniq.salary_batch b WHERE b.id = sqlc.arg(batch_id);
+
+-- name: SalaryStatusOfEvent :one
+-- What payroll.payments.status says of one state of a line, read from its source when it is sent: the run, the person, the instruction ID, the amount of the version that went in the release and the date.
+SELECT e.id, e.batch_id, e.line_ref, e.person_id, e.run_id, e.state, e.on_date, e.evidence_id, e.at, e.amount AS event_amount,
+       rl.instruction_id AS release_instruction, l.amount AS line_amount, e.instruction_id AS event_instruction
+FROM fyniq.salary_line_event e
+LEFT JOIN fyniq.salary_release_line rl ON rl.organisation_id = e.organisation_id AND rl.batch_id = e.batch_id AND rl.line_ref = e.line_ref
+LEFT JOIN fyniq.salary_batch_line l ON l.organisation_id = rl.organisation_id AND l.id = rl.line_id
+WHERE e.id = sqlc.arg(id);
+
+-- name: SalaryBatchOfLineEvent :one
+SELECT batch_id FROM fyniq.salary_line_event WHERE id = sqlc.arg(id);

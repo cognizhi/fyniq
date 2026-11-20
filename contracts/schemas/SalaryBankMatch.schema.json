@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bank_line_id": {
+      "description": "The statement line: a debit of the batch's own bank account, waiting in the Categorise queue.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "line_ids": {
+      "description": "The payment lines of this batch it paid: released and not yet paid, rejected or returned. Their amounts make the debit exactly.",
+      "examples": [
+        [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c11"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 500,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "bank_line_id",
+    "line_ids"
+  ],
+  "title": "SalaryBankMatch",
+  "type": "object"
+}

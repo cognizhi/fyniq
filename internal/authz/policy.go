@@ -636,7 +636,13 @@ var (
 	PrepareSalaryBatch         = Policy{Operation: "prepareSalaryBatch", Capability: PayRuns, Need: Create, Unqualified: true}
 	RequestSalaryBatchApproval = Policy{Operation: "requestSalaryBatchApproval", Capability: PayRuns, Need: Create, Unqualified: true}
 	CancelSalaryBatch          = Policy{Operation: "cancelSalaryBatch", Capability: PayRuns, Need: Create, Unqualified: true}
-	ReleaseSalaryBatch         = Policy{Operation: "releaseSalaryBatch", Capability: PayRuns, Need: Release, Unqualified: true, Qualified: []string{"salaries"},
+	// What became of a payment is recorded by the Payroll administrator, never by whoever prepared or approved the run in Nemura (SOD-4): with a person's evidence, or by matching the bank line that debited
+	// it (FR-PPL-12: paid comes only from the bank feed matching the debit, or a person recording the outcome with evidence).
+	RecordSalaryLineState = Policy{Operation: "recordSalaryLineState", Capability: PayRuns, Need: Create, Unqualified: true,
+		Note: "A person stepped up in the last 5 minutes, with evidence; never who prepared or approved the pay run in Nemura (SOD-4)."}
+	MatchSalaryBankLine = Policy{Operation: "matchSalaryBankLine", Capability: PayRuns, Need: Create, Unqualified: true,
+		Note: "A person stepped up in the last 5 minutes; never who prepared or approved the pay run in Nemura (SOD-4). Posts the bank line to 2100."}
+	ReleaseSalaryBatch = Policy{Operation: "releaseSalaryBatch", Capability: PayRuns, Need: Release, Unqualified: true, Qualified: []string{"salaries"},
 		Note: "A person stepped up in the last 5 minutes; never who prepared, asked for or approved the batch (SOD-2, FM-1), and in every team mode never who prepared or approved the pay run in Nemura (SOD-4). Break-glass reaches no salary."}
 	GetSalaryBatchFile = Policy{Operation: "getSalaryBatchFile", Capability: PayRuns, Need: Release, Unqualified: true, Qualified: []string{"salaries"},
 		Note: "A person stepped up in the last 5 minutes; each download is audited. The file holds names and accounts, so only the one who may release it gets it (FR-PPL-17; owner to confirm)."}
@@ -2045,7 +2051,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, RecordSalaryLineState, MatchSalaryBankLine, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,

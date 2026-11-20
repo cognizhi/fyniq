@@ -1122,6 +1122,32 @@ Asks for another person's approval of a prepared salary batch at the version rea
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `SB-01`, `SB-02`, `SB-04`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/salary-batches/{batch_id}/bank-match`
+
+**Match the bank debit of a salary release and mark its lines paid** (`matchSalaryBankLine`)
+
+Matches one statement line of the batch's own bank account, a debit waiting in the Categorise queue, to the released lines it paid, and marks them paid from the bank feed (FR-PPL-12). Its amount must be exactly the sum of the lines named (a bulk debit of a release, or one line's own debit), in SGD, and each line must be released and not yet paid, rejected or returned. The line is posted to 2100 Salaries payable (Dr 2100, Cr the bank account) as categorising it does, with no person on a line (FR-PAY-13), and each paid line goes back to Nemura as payroll.payments.status with the bank line's date. Not for whoever prepared or approved the run in Nemura (SOD-4). Needs a person who passed step-up. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Pay runs, employee data. A person stepped up in the last 5 minutes; never who prepared or approved the pay run in Nemura (SOD-4). Posts the bank line to 2100.
+- **Parameters:**
+  - `batch_id` (path, required): The salary batch's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`SalaryBankMatch`](../../contracts/schemas/SalaryBankMatch.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`SalaryBatch`](../../contracts/schemas/SalaryBatch.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `SB-06` The person prepared, asked for or approved the batch, or prepared or approved the pay run in Nemura; `TEAM-04` Your roles conflict for this action.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal; `SB-13` There is no such line in the salary batch.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-49` A line on 2700 needs its SAFE or note; `SB-02` The money account is not an open SGD bank account; `SB-12` The line cannot move to that state, or its source cannot give it; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `DIM-05`, `DIM-06`, `FX-01`, `JOURNAL-01`, `JOURNAL-04`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-49`, `SB-02`, `SB-06`, `SB-12`, `SB-13`, `STORAGE-DOC-02`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `STORAGE-SALARY-BATCH-01`, `TEAM-04`
+
 ### `POST /v1/salary-batches/{batch_id}/cancel`
 
 **Cancel a salary batch** (`cancelSalaryBatch`)
@@ -1148,6 +1174,31 @@ Cancels a salary batch with no line released, with a reason (FR-PAY-11): it pays
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `SB-04`, `SB-09`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SALARY-BATCH-01`
+
+### `POST /v1/salary-batches/{batch_id}/lines/{line_id}/state`
+
+**Record what became of a salary payment, with evidence** (`recordSalaryLineState`)
+
+Records a state of a released line (FR-PPL-12): sent, accepted, paid, rejected, returned or unknown, from a person, with a file of evidence (a bank advice or a statement) and the day it happened. The move must be one a payment makes (PRD-002 NM-PAY-10): paid goes back only to returned, an unknown outcome is resolved only to paid, rejected or returned, and a line not released has nothing to record. An exported file or a release never makes a line paid, and a bank feed's own match is matchSalaryBankLine. An unknown outcome blocks any new instruction for the person in the run, by file or by API, until it is resolved. Not for whoever prepared or approved the run in Nemura (SOD-4). Needs a person who passed step-up. Side effects: the state, its audit event (the state, its source and IDs, never an amount) and payroll.payments.status queued for Nemura in the same transaction. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Pay runs, employee data. A person stepped up in the last 5 minutes, with evidence; never who prepared or approved the pay run in Nemura (SOD-4).
+- **Parameters:**
+  - `batch_id` (path, required): The salary batch's ID.
+  - `line_id` (path, required): Nemura's ID of the payment line.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`SalaryLineState`](../../contracts/schemas/SalaryLineState.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`SalaryBatch`](../../contracts/schemas/SalaryBatch.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `SB-06` The person prepared, asked for or approved the batch, or prepared or approved the pay run in Nemura.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `SB-13` There is no such line in the salary batch.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-12` The line cannot move to that state, or its source cannot give it.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `SB-06`, `SB-12`, `SB-13`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SALARY-BATCH-01`
 
 ### `POST /v1/salary-batches/{batch_id}/prepare`
 

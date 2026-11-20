@@ -22,6 +22,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -88,6 +89,22 @@ func Queue(ctx context.Context, u storage.UnitOfWork, typ, objectType, objectID 
 	if typ != TypeRunPosted && typ != TypeDepartmentChanged {
 		return "", fmt.Errorf("Fyniq does not queue %s with a payload: build it from its source when it is sent", typ)
 	}
+	return queue(ctx, u, typ, objectType, objectID, version, payload)
+}
+
+// StatusRef is all the outbox keeps of a payroll.payments.status event: the ID of the line's state, from which the payload (the instruction ID, the amount, the date, the evidence's ID) is built when the
+// event is sent, so that no pay figure waits in an outbox row (design D5, FR-PPL-17).
+type StatusRef struct {
+	StateEventID string `json:"state_event_id"`
+}
+
+// QueueStatus queues the state of a salary payment line for Nemura in the unit of work that recorded it (FR-PPL-12): nothing is queued with no link that has keys. The row names the state's ID and the
+// line, never an amount.
+func QueueStatus(ctx context.Context, u storage.UnitOfWork, line uuid.UUID, version int, stateEvent uuid.UUID) (string, error) {
+	return queue(ctx, u, TypePaymentsStatus, "salary_line", line.String(), version, StatusRef{StateEventID: stateEvent.String()})
+}
+
+func queue(ctx context.Context, u storage.UnitOfWork, typ, objectType, objectID string, version int, payload any) (string, error) {
 	l, err := u.PeopleLinks().Live(ctx)
 	if errors.Is(err, ports.ErrNotFound) || (err == nil && l.State != storage.LinkActive) {
 		return "", nil
@@ -198,6 +215,11 @@ func (s *Sender) Work() outbox.Work {
 				return errors.New("the link's client key is not an EC key")
 			}
 			clientID = keys.NemuraClientID
+			if q.Type == TypePaymentsStatus { // built from its source now: the row held no figure (design D5)
+				if q.Payload, err = statusPayload(ctx, u, q.Payload); err != nil {
+					return err
+				}
+			}
 			now := s.Clock.Now().UTC().Format(time.RFC3339)
 			env, err = peoplelink.Sign(ed25519.PrivateKey(sec.LinkPrivate), peoplelink.Header{EventID: q.EventID, Type: q.Type, SchemaVersion: 1, SourceSystem: "fyniq",
 				SourceOrganisation: org.String(), TargetOrganisation: link.NemuraOrganisationID.String(), Epoch: link.Epoch, Sequence: q.Sequence, ObjectType: q.ObjectType, ObjectID: q.ObjectID,
@@ -241,4 +263,46 @@ func (s *Sender) Work() outbox.Work {
 				Changes: map[string][2]any{"event": {nil, map[string]any{"type": q.Type, "sequence": q.Sequence}}}})
 		})
 	}
+}
+
+// PaymentStatus is the payload of payroll.payments.status (PRD-002 Appendix E, NM-PAY-10): the run, the person, the state, the instruction ID, the amount as dollars and cents, the date and the
+// evidence's ID when a person recorded it.
+type PaymentStatus struct {
+	RunID       string `json:"run_id"`
+	PersonID    string `json:"person_id"`
+	State       string `json:"state"`
+	Instruction string `json:"instruction_id"`
+	Amount      string `json:"amount"`
+	PaidOn      string `json:"paid_on"`
+	EvidenceRef string `json:"evidence_ref"`
+}
+
+// StatusPayload is what the worker sends for a queued status row: read from its sources in a unit of work.
+func StatusPayload(ctx context.Context, u storage.UnitOfWork, row json.RawMessage) (json.RawMessage, error) {
+	return statusPayload(ctx, u, row)
+}
+
+// statusPayload reads the state a row names from its sources, in the worker's unit of work.
+func statusPayload(ctx context.Context, u storage.UnitOfWork, row json.RawMessage) (json.RawMessage, error) {
+	var ref StatusRef
+	if err := json.Unmarshal(row, &ref); err != nil {
+		return nil, errors.New("the status row names no state")
+	}
+	id, err := uuid.Parse(ref.StateEventID)
+	if err != nil {
+		return nil, errors.New("the status row names no state")
+	}
+	st, err := u.SalaryBatches().StatusOfEvent(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	amount, err := money.ParseStored(string(st.Amount), money.MustLookup("SGD"))
+	if err != nil {
+		return nil, err
+	}
+	out := PaymentStatus{RunID: st.RunID.String(), PersonID: st.PersonID.String(), State: st.State, Instruction: st.InstructionID, Amount: amount.String(), PaidOn: st.On.Format(time.DateOnly)}
+	if st.EvidenceID != uuid.Nil {
+		out.EvidenceRef = st.EvidenceID.String()
+	}
+	return json.Marshal(out)
 }

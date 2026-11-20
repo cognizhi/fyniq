@@ -27,6 +27,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/salarybatch"
 	"github.com/cognizhi/fyniq/internal/domain/team"
+	"github.com/cognizhi/fyniq/internal/linksend"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -178,12 +179,6 @@ type (
 		IfMatchHeader
 		PreferHeader
 		Body SalaryBatchCancel
-	}
-	salaryStateInput struct {
-		SalaryBatchLinePath
-		KeyHeader
-		PreferHeader
-		Body SalaryLineState
 	}
 	salaryFileOutput struct{ Body SalaryBatchFile }
 )
@@ -688,7 +683,13 @@ func (a *API) releaseSalaryBatch(ctx context.Context, u storage.UnitOfWork, p au
 			}
 		}
 	}
-	_ = rel
+	// Each line's released state goes back to Nemura in this transaction (FR-PPL-12): the row names the state, never an amount.
+	for i, l := range relLines {
+		n := 1 + len(releases) // the lines' event count is not needed to be exact: Nemura dedupes by the event's ID
+		if _, err := linksend.QueueStatus(ctx, u, l.LineRef, n, rel.StateEvents[i]); err != nil {
+			return SalaryBatch{}, err
+		}
+	}
 	b, err = u.SalaryBatches().Get(ctx, id, false)
 	if err != nil {
 		return SalaryBatch{}, err
