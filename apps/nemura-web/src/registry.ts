@@ -30,6 +30,7 @@ export type Entry = RouteFeature | ActionFeature;
 export const registry: Entry[] = [
   { kind: "route", id: "sign-in", path: "/sign-in", signedIn: false, screen: "nm-sign-in", mode: "basic", help: "signin.page", guide: "nemura.sign-in" },
   { kind: "route", id: "verify-letter", path: "/verify", signedIn: false, screen: "nm-verify-letter", mode: "basic", help: "verify.page", guide: "nemura.verify-letter" },
+  { kind: "route", id: "careers", path: "/careers/:slug", signedIn: false, screen: "nm-hiring", mode: "basic", help: "careers.page", guide: "nemura.hiring#the-careers-page" }, // the public face of the hiring screen (NM-REC-02)
   { kind: "route", id: "join", path: "/join", signedIn: false, screen: "nm-join", mode: "basic", help: "join.page", guide: "nemura.sign-in#joining-with-a-code" },
   { kind: "route", id: "my-home", path: "/me", signedIn: true, screen: "nm-my-home", mode: "basic", help: "home.me", guide: "nemura.home" },
   { kind: "route", id: "my-leave", path: "/me/leave", signedIn: true, screen: "nm-my-leave", mode: "basic", help: "leave.page", guide: "nemura.my-leave" },

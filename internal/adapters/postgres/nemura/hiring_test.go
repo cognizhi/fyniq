@@ -109,7 +109,7 @@ func TestARequisitionIsApprovedOnceAndItsPostIsCheckedPublishedOnceAndKeepsItsAd
 	// The advert: once, a day up to today; the offer waits 14 days from it. An exemption is recorded once and lifts the wait.
 	advert := func(day string) error {
 		return c.do(func(ctx context.Context, tx pgx.Tx) error {
-			return nemura.RecordJobAdvert(ctx, tx, c.org, now, c.hr, req, day, "MCF-2099-0042")
+			return nemura.RecordJobAdvert(ctx, tx, c.org, now, c.hr, req, api.AdvertInput{PostedOn: day, Reference: "MCF-2099-0042"})
 		})
 	}
 	if err := advert("2099-03-02"); hireCode(err) != hiring.CodeInvalid {

@@ -8,6 +8,7 @@ import { Directory } from "./pages/Directory";
 import { Home } from "./pages/Home";
 import { Join } from "./pages/Join";
 import { VerifyLetter } from "./pages/VerifyLetter";
+import { Careers } from "./pages/Careers";
 import { LeaverHome } from "./pages/LeaverHome";
 import { RequestLetter } from "./pages/RequestLetter";
 import { Letters } from "./pages/Letters";
@@ -81,6 +82,7 @@ export function App() {
   }, [path, route, state.status, landing, signedOut]);
 
   const body = (() => {
+    if (route?.id === "careers") return <Careers slug={matchRoute(path)?.params.slug ?? ""} />; // public: no sign-in (NM-REC-02)
     if (route?.id === "verify-letter") return <VerifyLetter />; // public: no sign-in, no session wait (NM-LTR-05)
     if (state.status === "loading") return <p role="status" className="fy-secondary">{t("session.loading")}</p>;
     if (path === "/join") return <Join kind={joinKind()} />;

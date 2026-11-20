@@ -168,6 +168,8 @@ type Deps struct {
 	Performance Performance
 	// Hiring is requisitions and job posts (NM-REC-01 to NM-REC-03); nil: the deployment has none.
 	Hiring Hiring
+	// Careers is the public careers page and its settings (NM-REC-02); nil: the deployment has none.
+	Careers Careers
 	// Plans is onboarding plans (NM-ONB-01); nil: the deployment has none.
 	Plans Plans
 	// Grievances is the confidential grievance channel (NM-SEC-06); nil: the deployment has none.
@@ -215,6 +217,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerOnboarding()
 	a.registerPlans()
 	a.registerHiring()
+	a.registerCareers()
 	a.registerPerformance()
 	a.registerPayroll()
 	a.registerLink()

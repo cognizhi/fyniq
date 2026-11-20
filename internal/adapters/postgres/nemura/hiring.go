@@ -79,17 +79,20 @@ VALUES ($1, $2, $3, $4, $5, $6::numeric, $7::numeric, $8, $9, $10, $11)`, id, st
 
 func loadPost(ctx context.Context, tx pgx.Tx, req uuid.UUID, passNeeded bool) (*api.JobPost, error) {
 	var p api.JobPost
-	var published, closed, advert *time.Time
+	var published, closed, advert, advertClosed *time.Time
 	var note, ref, ex, exNote *string
-	err := tx.QueryRow(ctx, `SELECT id, title, body, state, published_on, closed_on, requirement_note, advert_posted_on, advert_reference, exemption, exemption_note FROM nemura.job_post WHERE requisition_id = $1`, req).
-		Scan(&p.ID, &p.Title, &p.Body, &p.State, &published, &closed, &note, &advert, &ref, &ex, &exNote)
+	err := tx.QueryRow(ctx, `SELECT id, title, body, state, published_on, closed_on, requirement_note, advert_posted_on, advert_reference, exemption, exemption_note, advert_closed_on, advert_renewals FROM nemura.job_post WHERE requisition_id = $1`, req).
+		Scan(&p.ID, &p.Title, &p.Body, &p.State, &published, &closed, &note, &advert, &ref, &ex, &exNote, &advertClosed, &p.AdvertRenewals)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	p.PublishedOn, p.ClosedOn, p.AdvertPostedOn = dayOrEmpty(published), dayOrEmpty(closed), dayOrEmpty(advert)
+	p.PublishedOn, p.ClosedOn, p.AdvertPostedOn, p.AdvertClosedOn = dayOrEmpty(published), dayOrEmpty(closed), dayOrEmpty(advert), dayOrEmpty(advertClosed)
+	if advertClosed != nil {
+		p.AdvertUsableUntil = day(advertClosed.AddDate(0, hiring.AdvertStaleMonths, 0))
+	}
 	if note != nil {
 		p.RequirementNote = *note
 	}
@@ -283,10 +286,22 @@ func PublishJobPost(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time,
 }
 
 // RecordJobAdvert records, once, the day a person posted the advert on MyCareersFuture.
-func RecordJobAdvert(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, req uuid.UUID, postedOn, reference string) error {
+func RecordJobAdvert(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, req uuid.UUID, in api.AdvertInput) error {
+	postedOn, reference := in.PostedOn, in.Reference
 	d, err := time.Parse(time.DateOnly, postedOn)
 	if err != nil || d.After(dateOf(at)) {
 		return &hiring.Refusal{Code: hiring.CodeInvalid, Message: "The advert's date is a day up to today: write it as 2026-10-05."}
+	}
+	var closed *time.Time
+	if in.ClosedOn != "" {
+		c, err := time.Parse(time.DateOnly, in.ClosedOn)
+		if err != nil || c.Before(d) {
+			return &hiring.Refusal{Code: hiring.CodeInvalid, Message: "The day the advert came down is on or after the day it went up: write it as 2026-10-19."}
+		}
+		if !hiring.AdvertUsable(&c, dateOf(at)) {
+			return &hiring.Refusal{Code: hiring.CodeInvalid, Message: "That advert came down more than 3 months ago, so it cannot be used: post a new advert and record its day."}
+		}
+		closed = &c
 	}
 	if len([]rune(reference)) > 100 {
 		return &hiring.Refusal{Code: hiring.CodeInvalid, Message: "The reference is at most 100 characters."}
@@ -298,14 +313,54 @@ func RecordJobAdvert(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time
 	if err != nil {
 		return err
 	}
-	tag, err := tx.Exec(ctx, `UPDATE nemura.job_post SET advert_posted_on = $2, advert_reference = $3 WHERE id = $1 AND advert_posted_on IS NULL AND state <> 'closed'`, id, day(d), orNil(strings.TrimSpace(reference)))
+	tag, err := tx.Exec(ctx, `UPDATE nemura.job_post SET advert_posted_on = $2, advert_reference = $3, advert_closed_on = $4 WHERE id = $1 AND advert_posted_on IS NULL AND state <> 'closed'`, id, day(d), orNil(strings.TrimSpace(reference)), closed)
 	if err != nil {
 		return hiringError(err)
 	}
 	if tag.RowsAffected() == 0 {
 		return &hiring.Refusal{Code: hiring.CodeConflict, Message: "The advert's date is recorded already, or the post is closed: it is recorded once."}
 	}
-	return Audit(ctx, tx, org, at, user(by), "nemura.job_post.advert_recorded", audit.Object{Type: "job_post", ID: id}, map[string]audit.Change{"posted_on": {nil, day(d)}}, "")
+	return Audit(ctx, tx, org, at, user(by), "nemura.job_post.advert_recorded", audit.Object{Type: "job_post", ID: id}, map[string]audit.Change{"posted_on": {nil, day(d)}, "closed_on": {nil, in.ClosedOn}}, "")
+}
+
+// RenewJobAdvert records a new advert after a material change (NM-REC-02): the change of occupation, salary, number of vacancies or UEN needs a new advert, and its 14 days start again. The advert
+// it replaces is archived as evidence with what changed. Only a post that has an advert recorded can be renewed, only for a day after the one it replaces, and it is audited.
+func RenewJobAdvert(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, req uuid.UUID, in api.AdvertInput) error {
+	if err := hiring.CheckAdvertChange(in.Change, in.Note); err != nil {
+		return err
+	}
+	d, err := time.Parse(time.DateOnly, in.PostedOn)
+	if err != nil || d.After(dateOf(at)) {
+		return &hiring.Refusal{Code: hiring.CodeInvalid, Message: "The new advert's date is a day up to today: write it as 2026-10-05."}
+	}
+	if _, _, err := openRequisition(ctx, tx, req); err != nil {
+		return err
+	}
+	id, err := postID(ctx, tx, req)
+	if err != nil {
+		return err
+	}
+	var oldOn *time.Time
+	var oldRef *string
+	var oldClosed *time.Time
+	var state string
+	if err := tx.QueryRow(ctx, `SELECT state, advert_posted_on, advert_reference, advert_closed_on FROM nemura.job_post WHERE id = $1 FOR UPDATE`, id).Scan(&state, &oldOn, &oldRef, &oldClosed); err != nil {
+		return err
+	}
+	if state == "closed" || oldOn == nil {
+		return &hiring.Refusal{Code: hiring.CodeConflict, Message: "Only a post with an advert recorded, and not closed, has an advert to renew: record the advert's day first."}
+	}
+	if !d.After(*oldOn) {
+		return &hiring.Refusal{Code: hiring.CodeInvalid, Message: "The new advert went up after the one it replaces: check its day."}
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO nemura.job_advert (job_post_id, posted_on, reference, closed_on, change_kind, change_note, replaced_by, replaced_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		id, day(*oldOn), oldRef, oldClosed, in.Change, orNil(strings.TrimSpace(in.Note)), by, at); err != nil {
+		return hiringError(err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE nemura.job_post SET advert_posted_on = $2, advert_reference = $3, advert_closed_on = NULL, advert_renewals = advert_renewals + 1 WHERE id = $1`, id, day(d), orNil(strings.TrimSpace(in.Reference))); err != nil {
+		return hiringError(err)
+	}
+	return Audit(ctx, tx, org, at, user(by), "nemura.job_post.advert_renewed", audit.Object{Type: "job_post", ID: id}, map[string]audit.Change{"posted_on": {day(*oldOn), day(d)}, "change": {nil, in.Change}}, "")
 }
 
 func postID(ctx context.Context, tx pgx.Tx, req uuid.UUID) (uuid.UUID, error) {
@@ -423,9 +478,15 @@ func (h HiringService) Publish(ctx context.Context, s api.Session, id uuid.UUID,
 	})
 }
 
-func (h HiringService) RecordAdvert(ctx context.Context, s api.Session, id uuid.UUID, postedOn, reference string) (api.Requisition, error) {
+func (h HiringService) RecordAdvert(ctx context.Context, s api.Session, id uuid.UUID, in api.AdvertInput) (api.Requisition, error) {
 	return h.run(ctx, s, id, func(ctx context.Context, tx pgx.Tx, at time.Time) error {
-		return RecordJobAdvert(ctx, tx, s.Organisation, at, s.Member, id, postedOn, reference)
+		return RecordJobAdvert(ctx, tx, s.Organisation, at, s.Member, id, in)
+	})
+}
+
+func (h HiringService) RenewAdvert(ctx context.Context, s api.Session, id uuid.UUID, in api.AdvertInput) (api.Requisition, error) {
+	return h.run(ctx, s, id, func(ctx context.Context, tx pgx.Tx, at time.Time) error {
+		return RenewJobAdvert(ctx, tx, s.Organisation, at, s.Member, id, in)
 	})
 }
 

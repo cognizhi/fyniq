@@ -127,6 +127,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	d.LetterVerify = nemura.LetterVerifyService{Store: store, Clock: deps.Clock}                                          // the public look-up of an issued letter (NM-LTR-05)
 	d.Performance = nemura.PerformanceService{Store: store, Clock: deps.Clock}                                            // goals and KPIs (NM-PRF-01, NM-PRF-02)
 	d.Hiring = nemura.HiringService{Store: store, Clock: deps.Clock}                                                      // requisitions and job posts (NM-REC-01 to NM-REC-03)
+	d.Careers = nemura.CareersService{Store: store, Clock: deps.Clock}                                                    // the public careers page (NM-REC-02)
 	d.Plans = nemura.PlanService{Store: store, Clock: deps.Clock}                                                         // onboarding plans (NM-ONB-01)
 	d.Grievances = nemura.GrievanceService{Store: store, Clock: deps.Clock}                                               // the confidential grievance channel (NM-SEC-06)
 	d.Erasure = nemura.ErasureOpsService{Store: store, Clock: deps.Clock}                                                 // asking and approving an erasure; the worker erases (NM-SEC-08)
