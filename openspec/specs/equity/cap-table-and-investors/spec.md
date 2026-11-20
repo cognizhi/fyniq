@@ -422,6 +422,12 @@ Source: PRD-001 §8.23 · Priority C · Phase P2
 - **THEN** it reads each class's recorded rights in force, its holders' shares as converted and the money invested in it, which is the class's issues up to the day shared among its holders by shares
 - **AND** it is read under the whole cap table's unqualified view, so a Board viewer's own-holding view is not it, and a class with a cap on its participation or a cumulative dividend is refused by name, never approximated
 
+#### Scenario: Over a round that is not recorded (rev 0.604)
+- **GIVEN** a round scenario and the terms asked for of the class its shares would be (a multiple, whether it participates, its seniority)
+- **WHEN** the waterfall is read over it
+- **THEN** the scenario's new shares are a class of their own beside every class as the register has it the day before the round, and the page says the round is not recorded
+- **AND** a round that converts SAFEs or notes is refused by name, and nothing posts or is saved
+
 ### Requirement: FR-EQ-27 Basic and Expert
 The equity features SHALL be split between Basic and Expert modes (§7.8).
 
