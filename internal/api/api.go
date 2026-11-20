@@ -40,6 +40,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/passkey"
+	"github.com/cognizhi/fyniq/internal/paymentlinkjob"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/proposal"
@@ -322,6 +323,7 @@ func New(mux humago.Mux, d Deps) *API {
 	}
 	if d.Outbox != nil { // FR-BNK-12: a batch's supplier payment matched to its statement line sends its remittance advice
 		dispatcher := *d.Outbox
+		a.invoices.AfterIssued = paymentlinkjob.OnIssue(dispatcher) // FR-AR-13: whichever way an invoice is issued, a link is asked for by a job, never while it is issued
 		a.bank.AfterMatch = func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) error {
 			o, err := u.Organisation(ctx)
 			if err != nil {

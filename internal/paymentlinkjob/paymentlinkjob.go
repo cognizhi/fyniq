@@ -51,6 +51,13 @@ func Queue(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org, 
 	return err
 }
 
+// OnIssue is the hook of journal.Invoices.AfterIssued: whichever path issues an invoice, with the setting on, the link is queued (FR-AR-13).
+func OnIssue(d outbox.Dispatcher) func(ctx context.Context, u storage.UnitOfWork, org, invoice uuid.UUID) error {
+	return func(ctx context.Context, u storage.UnitOfWork, org, invoice uuid.UUID) error {
+		return Queue(ctx, d, u, org, invoice)
+	}
+}
+
 // Maker makes the links.
 type Maker struct {
 	Store   storage.Store

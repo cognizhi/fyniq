@@ -62,6 +62,8 @@ type Data struct {
 	GSTRegistered bool             `json:"gst_registered"`
 	Simplified    bool             `json:"simplified,omitempty"` // a simplified tax invoice: S$1,000 or less with GST
 	Logo          bool             `json:"logo,omitempty"`       // the organisation has a logo, sent beside the data
+	// PaymentLink is the invoice's live payment link (FR-AR-13): the payment details block says where to pay online when the template's own text does not already place it.
+	PaymentLink string `json:"payment_link,omitempty"`
 }
 
 // The IRAS particulars a block can carry (FR-AR-05, FR-TPL-03): what the render service finds in the compiled
@@ -300,6 +302,9 @@ func Build(documentType string, c doctemplate.Content, d Data) (Layout, error) {
 			b.totals(&blk)
 		case doctemplate.BlockPaymentDetails, doctemplate.BlockNotes:
 			blk.Label, blk.Body = t[doctemplate.TextLabel], strings.TrimSpace(b.text(t[doctemplate.TextBody]))
+			if x.Kind == doctemplate.BlockPaymentDetails && documentType == doctemplate.Invoice && d.PaymentLink != "" && !strings.Contains(blk.Body, d.PaymentLink) {
+				blk.Body = strings.TrimSpace(blk.Body + " Pay online: " + d.PaymentLink)
+			}
 		case doctemplate.BlockSignature:
 			blk.Label = t[doctemplate.TextLabel]
 		case doctemplate.BlockFooter:
