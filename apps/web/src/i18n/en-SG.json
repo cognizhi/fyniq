@@ -2307,6 +2307,26 @@
       "label": "Your document",
       "tooltip": "A quote or invoice sent to you, opened through its secure link: no sign-in needed."
     },
+    "contact.portal-link": {
+      "label": "Make a portal link",
+      "tooltip": "Make a private link where this customer sees what they owe, pays where a payment link exists, and downloads invoices and statements. It is shown once."
+    },
+    "contact.portal-revoke": {
+      "label": "Revoke",
+      "tooltip": "Stop this link working at once. Anyone who holds it then sees nothing."
+    },
+    "public.portal": {
+      "label": "Your account",
+      "tooltip": "What you owe this company: the invoices still due, each as a PDF, and your statement of account, opened through the private link it sent you. No sign-in needed."
+    },
+    "public.portal-pay": {
+      "label": "Pay now",
+      "tooltip": "Open the payment page of the company's payment provider for this invoice. The company records the payment when it arrives."
+    },
+    "public.portal-statement": {
+      "label": "Statement of account",
+      "tooltip": "Everything between you and this company over a period you choose: invoices, credit notes and payments, with what you owed before and what you owe after."
+    },
     "public.download": {
       "label": "Download the PDF",
       "tooltip": "Save the document as the sender issued it, to keep for your records."

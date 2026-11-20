@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "days": {
+      "description": "How many days the link works: 30 when left out, at most 90.",
+      "examples": [
+        30
+      ],
+      "format": "int64",
+      "maximum": 90,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "label": {
+      "description": "A note for the staff, such as who the link is sent to. Never shown to the customer.",
+      "examples": [
+        "Sent to ap@acme.example"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "title": "CreatePortalLinkInputBody",
+  "type": "object"
+}

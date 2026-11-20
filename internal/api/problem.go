@@ -76,6 +76,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
 	"github.com/cognizhi/fyniq/internal/domain/paymentfile"
 	"github.com/cognizhi/fyniq/internal/domain/paymentlink"
+	"github.com/cognizhi/fyniq/internal/domain/portal"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/planning"
 	"github.com/cognizhi/fyniq/internal/domain/project"
@@ -936,6 +937,7 @@ var codeFacts = map[string]struct {
 	paymentlink.CodeLive:      {409, "The invoice has a payment link already"},
 	CodeLinkConnector:         {422, "No payment-link connector is enabled"},
 	CodeLinkClosed:            {409, "The payment link is not live"},
+	portal.CodeLink:           {404, "This link does not open anything"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},

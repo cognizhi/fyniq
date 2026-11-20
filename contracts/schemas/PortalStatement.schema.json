@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "closing": {
+      "$ref": "Money.schema.json",
+      "description": "What the customer owes at the end of the last day."
+    },
+    "currency": {
+      "description": "The statement's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "customer": {
+      "description": "The customer.",
+      "examples": [
+        "Acme Trading Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "lines": {
+      "description": "The movements, oldest first.",
+      "items": {
+        "$ref": "PortalStatementLine.schema.json"
+      },
+      "type": "array"
+    },
+    "opening": {
+      "$ref": "Money.schema.json",
+      "description": "What the customer owed before the first day."
+    },
+    "overdue": {
+      "$ref": "Money.schema.json",
+      "description": "What of it is past due."
+    },
+    "to": {
+      "description": "The last day.",
+      "examples": [
+        "2026-11-20"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer",
+    "currency",
+    "from",
+    "to",
+    "opening",
+    "lines",
+    "closing",
+    "overdue"
+  ],
+  "title": "PortalStatement",
+  "type": "object"
+}

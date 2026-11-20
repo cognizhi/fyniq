@@ -562,6 +562,21 @@ Source: PRD-001 §8.5 · Priority C · Phase P2
 - **WHEN** a customer is in the portal
 - **THEN** they can download their statements
 
+#### Scenario: A customer sees only their own documents through a private link (rev 0.520)
+- **GIVEN** two customers of one organisation, each with an issued invoice and a portal link
+- **WHEN** the first customer opens their portal, an invoice PDF and a statement
+- **THEN** only their own invoices and statement lines appear
+- **AND** the other customer's invoice ID, a draft and one that does not exist answer the same PORTAL-01
+
+#### Scenario: A link that ended, was revoked or never existed (rev 0.520)
+- **WHEN** a link is unknown, malformed, expired or revoked
+- **THEN** one message answers, which says nothing about which links existed
+- **AND** the link's token is never in a log, an audit event or the staff's list of links
+
+#### Scenario: No other principal and no other route (rev 0.520)
+- **WHEN** a staff, integration or AI token is sent to the portal, or the portal's token to any other route
+- **THEN** the portal shows nothing and the other route answers 401
+
 ### Requirement: FR-AR-15 Subscription revenue schedules
 The system SHALL keep subscription revenue schedules (start, end, MRR) that feed deferred revenue and KPIs, and SHALL record contract changes (upgrade, downgrade, cancel).
 

@@ -26,6 +26,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "sign-in": lazyRouteComponent(() => import("./screens/SignIn"), "SignIn"),
   install: lazyRouteComponent(() => import("./screens/Install"), "Install"),
   "document-view": lazyRouteComponent(() => import("./screens/public/DocumentView"), "DocumentView"),
+  "customer-portal": lazyRouteComponent(() => import("./screens/public/CustomerPortal"), "CustomerPortal"),
   personal: lazyRouteComponent(() => import("./screens/claims/MyClaims"), "MyClaims"),
   "my-claims": lazyRouteComponent(() => import("./screens/claims/MyClaims"), "MyClaims"),
   "claim-new": lazyRouteComponent(() => import("./screens/claims/ClaimEditor"), "ClaimEditor"),

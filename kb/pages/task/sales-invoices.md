@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:f1f5ca615611b67f7d4f5d0ef86bac439a3c64a00520fc4952bd2cee4a234eb7
+  - docs/user-guide/invoices.md sha256:02ec1d98efd8d0aba356f42dc49d0f37421cbec52a9a28e2aa40d9b240453e63
 data_class: general
 taint: trusted
 status: draft
@@ -55,6 +55,8 @@ aliases:
   - likely paid
   - incoming-funds alert
   - payment link
+  - customer portal
+  - customer statement online
   - pay online
   - HitPay link
   - link mismatch
@@ -131,6 +133,13 @@ aliases:
 - The email's secure link opens the invoice or quote without signing in: the document as its PDF shows it, the amount due or total, and **Download the PDF**; on a sent quote still valid, the customer accepts with their name or declines, with a comment kept as a record ([[sales.quotes]]). It shows nothing else, works until it ends or is revoked, and the first opening marks the invoice **Viewed**.
 
 (src: docs/user-guide/invoices.md#what-the-customer-sees)
+
+## The customer portal
+
+- The customer's side opens through the private link their supplier sent (no sign-in): **Your account** lists the invoices still due with **Pay now** where a payment link exists, a **PDF** for each, and a **Statement of account** over a chosen period (30 days by default, never after today).
+- It shows only that customer's invoices, is never cached or indexed, and ends on its date or when the supplier withdraws it. Where there is no Pay button, pay as the invoice says; the supplier records it when it arrives.
+
+(src: docs/user-guide/invoices.md#the-customer-portal)
 
 ## Approval
 

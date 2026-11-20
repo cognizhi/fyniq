@@ -96,6 +96,8 @@ type env struct {
 	// emailing says readyToEmail ran; links are the online links tests share, by name.
 	emailing bool
 	links    map[string]string
+	// the customer portal matrix rows' link and invoice, made once (portal_test.go)
+	portalToken, portalInvoice string
 	// orgConnector is the matrix's organisation connector, once matrixOrgConnector made it.
 	orgConnector string
 	// spareMonths are the months the matrix's accountant's reviews close, from January 2020, so October and November stay
