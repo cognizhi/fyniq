@@ -1971,6 +1971,23 @@ type FyniqInstallationConnectorSecret struct {
 	DestroyedAt *time.Time
 }
 
+type FyniqIntegrationTask struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ClientID       string
+	ExternalRef    string
+	Title          string
+	Detail         string
+	DueOn          pgtype.Date
+	LinkUrl        *string
+	Status         string
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	ClosedAt       *time.Time
+	Version        int32
+}
+
 type FyniqInvestorUpdate struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

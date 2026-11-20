@@ -415,6 +415,8 @@ var codeFacts = map[string]struct {
 	CodeWebhookEvents:             {422, "Not an event type an endpoint can ask for"},
 	CodeWebhookVerify:             {422, "The endpoint did not echo the challenge"},
 	CodeWebhookState:              {409, "The endpoint cannot take that step"},
+	CodeIntegrationTaskClient:     {403, "Only an integration API client makes these tasks"},
+	CodeIntegrationTaskFinished:   {409, "The task is finished"},
 	CodeWebhookNotFound:           {404, "No such webhook endpoint or delivery"},
 	CodeProposalRevises:           {422, "Not a proposal this one may revise"},
 	semantic.CodeDimension:        {422, "The measure is not split so"},

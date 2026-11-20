@@ -20,6 +20,7 @@ import { MyPay, Payslip } from "./pages/MyPay";
 import { Erasures } from "./pages/Erasures";
 import { Concerns } from "./pages/Concerns";
 import { Grievances } from "./pages/Grievances";
+import { Hiring } from "./pages/Hiring";
 import { FyniqLink } from "./pages/FyniqLink";
 import { rememberPage, switchProvider, switchedIn } from "./workspace";
 import { PayRunApproval } from "./pages/PayRunApproval";
@@ -102,6 +103,7 @@ export function App() {
     if (state.status === "in" && route.id === "payslip") return <Payslip id={matched?.params.id ?? ""} roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "payrun-approval") return <PayRunApproval id={matched?.params.id ?? ""} roles={state.session.roles ?? []} member={state.session.member_id} />;
     if (state.status === "in" && route.id === "my-concerns") return <Concerns roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "hiring") return <Hiring roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "grievances") return <Grievances roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "erasures") return <Erasures roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "fyniq-link") return <FyniqLink roles={state.session.roles ?? []} />;

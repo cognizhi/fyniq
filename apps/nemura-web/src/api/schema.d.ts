@@ -360,6 +360,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/fair-wording-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check wording for criteria the guidelines name
+         * @description Lists the age, nationality, sex, marital-status, pregnancy, caregiving, race, religion, language, disability and mental-health criteria found in a job post or an interview question (NM-REC-03). It decides nothing and keeps nothing. The Recruiter, the HR officer, the HR administrator and the Owner.
+         */
+        post: operations["checkFairWording"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/features": {
         parameters: {
             query?: never;
@@ -3232,6 +3252,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/requisitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Requisitions
+         * @description PRD-002 NM-REC-01. The requests to hire, the newest first, each with its job post, the dates of its advert and the day an offer may be made. The Recruiter, the HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listRequisitions"];
+        put?: never;
+        /**
+         * Ask to hire for a role
+         * @description Asks for a requisition: the role, the team, whether it is new or replaces someone, the salary range in Singapore dollars (decimal strings), the start date aimed for and whether a pass is expected. Whether the role is in Fyniq's plan stays unknown until the link tells Nemura. The Recruiter. It is audited.
+         */
+        post: operations["requestRequisition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/requisitions/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or reject a requisition
+         * @description The Owner approves or rejects a requisition, once. Approval opens the role: a job post may then be published. The Owner. It is audited.
+         */
+        post: operations["decideRequisition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/requisitions/{id}/job-post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write or change a job post
+         * @description Writes the requisition's job post as a draft, or changes the draft; a published post never changes. The response lists the criteria the guidelines ask an employer not to use that the check found in the words (NM-REC-03): it decides nothing. The Recruiter. It is audited.
+         */
+        put: operations["writeJobPost"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/requisitions/{id}/job-post/advert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record the day the advert went up
+         * @description Records the day a person posted the advert on MyCareersFuture (there is no posting API), once. For a role that needs a pass the offer waits until 14 consecutive days have run (NM-REC-02). The Recruiter. It is audited.
+         */
+        post: operations["recordJobAdvert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/requisitions/{id}/job-post/closing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close a job post
+         * @description Closes a published post, once. The Recruiter. It is audited.
+         */
+        post: operations["closeJobPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/requisitions/{id}/job-post/exemption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record an exemption from the advert
+         * @description Records, once, an exemption from the Fair Consideration Framework's advert with its evidence, for a role that needs a pass. The offer is then not held back. The Recruiter. It is audited.
+         */
+        post: operations["recordJobExemption"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/requisitions/{id}/job-post/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a job post
+         * @description Publishes the draft of an approved requisition. When the check flags a criterion, the post is published only with the genuine occupational requirement recorded (requirement_note); otherwise it is refused with the criteria named (NM_HIRING_WORDING). The Recruiter. It is audited.
+         */
+        post: operations["publishJobPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/session": {
         parameters: {
             query?: never;
@@ -3805,6 +3969,19 @@ export interface components {
              * @enum {string}
              */
             pass_type: "employment_pass" | "s_pass" | "work_permit" | "dp_work_permit";
+        };
+        AdvertInputBody: {
+            /**
+             * Format: date
+             * @description The day the advert went up on MyCareersFuture.
+             * @example 2026-10-05
+             */
+            posted_on: string;
+            /**
+             * @description The advert's reference.
+             * @example MCF-2026-0042
+             */
+            reference?: string;
         };
         AiAskInputBody: {
             /**
@@ -4747,6 +4924,19 @@ export interface components {
         ErrorsOutputBody: {
             /** @description Every stable error code, in order. */
             codes: components["schemas"]["Code"][] | null;
+        };
+        ExemptionInputBody: {
+            /**
+             * @description The exemption.
+             * @example fewer_than_10_employees
+             * @enum {string}
+             */
+            kind: "fewer_than_10_employees" | "ep_salary_22500" | "role_one_month_or_less" | "transferee" | "s_pass_exempt";
+            /**
+             * @description The evidence.
+             * @example Headcount 7 on 5 Oct.
+             */
+            note: string;
         };
         ExportFile: {
             /** @description The CSV, base64-encoded. It is not kept: only its manifest is. */
@@ -5719,6 +5909,94 @@ export interface components {
              * @example SG
              */
             worksite: string;
+        };
+        JobPost: {
+            /**
+             * Format: date
+             * @description The day the advert went up on MyCareersFuture, posted by a person: the 14 days run from it.
+             * @example 2026-10-05
+             */
+            advert_posted_on?: string;
+            /**
+             * @description The advert's reference.
+             * @example MCF-2026-0042
+             */
+            advert_reference?: string;
+            /**
+             * @description The post's text.
+             * @example You will analyse data and build models.
+             */
+            body: string;
+            /**
+             * Format: date
+             * @description The day it was closed.
+             * @example 2026-11-05
+             */
+            closed_on?: string;
+            /**
+             * @description The recorded exemption from the advert.
+             * @example fewer_than_10_employees
+             * @enum {string}
+             */
+            exemption?: "fewer_than_10_employees" | "ep_salary_22500" | "role_one_month_or_less" | "transferee" | "s_pass_exempt";
+            /**
+             * @description The evidence for the exemption.
+             * @example Headcount 7 on 5 Oct.
+             */
+            exemption_note?: string;
+            /** @description The criteria found in the current words, for the author to read. */
+            findings: components["schemas"]["WordingFinding"][];
+            /**
+             * Format: uuid
+             * @description The post.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3b01
+             */
+            id: string;
+            /**
+             * @description A role that needs a pass has neither an advert date nor an exemption recorded, so no offer may be made yet.
+             * @example false
+             */
+            offer_blocked: boolean;
+            /**
+             * Format: date
+             * @description For a role that needs a pass, the first day an offer may be made: the advert's 14 consecutive days have run. Empty when no pass is needed, an exemption is recorded, or the advert is not yet recorded.
+             * @example 2026-10-19
+             */
+            offer_from?: string;
+            /**
+             * Format: date
+             * @description The day it was published.
+             * @example 2026-10-05
+             */
+            published_on?: string;
+            /**
+             * @description The genuine occupational requirement recorded for a flagged criterion that was kept.
+             * @example The role handles Mandarin-language contracts.
+             */
+            requirement_note?: string;
+            /**
+             * @description A draft, published or closed.
+             * @example draft
+             * @enum {string}
+             */
+            state: "draft" | "published" | "closed";
+            /**
+             * @description The post's title.
+             * @example Data scientist
+             */
+            title: string;
+        };
+        JobPostInputBody: {
+            /**
+             * @description The post's text.
+             * @example You will analyse data and build models.
+             */
+            body: string;
+            /**
+             * @description The post's title.
+             * @example Data scientist
+             */
+            title: string;
         };
         JoinDecisionInputBody: {
             /**
@@ -8642,6 +8920,13 @@ export interface components {
              */
             name: string;
         };
+        PublishInputBody: {
+            /**
+             * @description The genuine occupational requirement, needed to keep a criterion the check flagged.
+             * @example The role handles Mandarin-language contracts.
+             */
+            requirement_note?: string;
+        };
         QuestionInputBody: {
             /**
              * @description What you want to ask the people team.
@@ -8991,6 +9276,164 @@ export interface components {
         RequestsOutputBody: {
             /** @description The person's requests, newest first. */
             requests: components["schemas"]["RequestRow"][] | null;
+        };
+        Requisition: {
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-10-02T10:00:00Z
+             */
+            decided_at?: string;
+            /**
+             * @description The Owner who decided.
+             * @example Owen Owner
+             */
+            decided_by?: string;
+            /**
+             * @description Why.
+             * @example In the plan for Q1.
+             */
+            decision_reason?: string;
+            /**
+             * @description The team.
+             * @example Engineering
+             */
+            department: string;
+            /**
+             * Format: uuid
+             * @description The requisition.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+             */
+            id: string;
+            /** @description Its job post, once one is written. */
+            job_post?: components["schemas"]["JobPost"];
+            /**
+             * @description An Employment Pass or S Pass application is expected, so the Fair Consideration Framework may apply.
+             * @example false
+             */
+            pass_needed: boolean;
+            /**
+             * @description Whether the role is in Fyniq's plan; unknown until the link tells Nemura.
+             * @example unknown
+             * @enum {string}
+             */
+            plan_status: "unknown" | "in_plan" | "not_in_plan";
+            /**
+             * @description A new role or a replacement.
+             * @example replacement
+             * @enum {string}
+             */
+            reason: "new" | "replacement";
+            /**
+             * @description Their legal name.
+             * @example Chen Yu
+             */
+            replaces?: string;
+            /**
+             * Format: uuid
+             * @description The person a replacement replaces.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            replaces_person_id?: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-10-01T10:00:00Z
+             */
+            requested_at: string;
+            /**
+             * @description Who asked.
+             * @example Rita Recruiter
+             */
+            requested_by: string;
+            /**
+             * @description The top of the range in Singapore dollars, as a decimal string.
+             * @example 8200.00
+             */
+            salary_max: string;
+            /**
+             * @description The bottom of the range in Singapore dollars, as a decimal string.
+             * @example 6500.00
+             */
+            salary_min: string;
+            /**
+             * @description Where it is.
+             * @example requested
+             * @enum {string}
+             */
+            state: "requested" | "approved" | "rejected" | "filled" | "cancelled";
+            /**
+             * Format: date
+             * @description The start date aimed for.
+             * @example 2027-02-01
+             */
+            target_start: string;
+            /**
+             * @description The role.
+             * @example Data scientist
+             */
+            title: string;
+        };
+        RequisitionDecisionInputBody: {
+            /**
+             * @description Approve it; false rejects it.
+             * @example true
+             */
+            approve: boolean;
+            /**
+             * @description Why.
+             * @example In the plan for Q1.
+             */
+            reason?: string;
+        };
+        RequisitionInput: {
+            /**
+             * @description The team.
+             * @example Engineering
+             */
+            department: string;
+            /**
+             * @description An Employment Pass or S Pass application is expected.
+             * @example false
+             */
+            pass_needed?: boolean;
+            /**
+             * @description A new role or a replacement.
+             * @example replacement
+             * @enum {string}
+             */
+            reason: "new" | "replacement";
+            /**
+             * Format: uuid
+             * @description The person a replacement replaces.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            replaces_person_id?: string;
+            /**
+             * @description The top of the range in Singapore dollars, as a decimal string.
+             * @example 8200.00
+             */
+            salary_max: string;
+            /**
+             * @description The bottom of the range in Singapore dollars, as a decimal string.
+             * @example 6500.00
+             */
+            salary_min: string;
+            /**
+             * Format: date
+             * @description The start date aimed for.
+             * @example 2027-02-01
+             */
+            target_start: string;
+            /**
+             * @description The role.
+             * @example Data scientist
+             */
+            title: string;
+        };
+        RequisitionsOutputBody: {
+            /** @description The requisitions, the newest first, each with its job post. */
+            requisitions: components["schemas"]["Requisition"][];
         };
         Run: {
             /**
@@ -10273,6 +10716,30 @@ export interface components {
              * @example 2.00
              */
             days: string;
+        };
+        WordingFinding: {
+            /**
+             * @description The criterion the guidelines ask an employer not to use.
+             * @example age
+             * @enum {string}
+             */
+            category: "age" | "nationality" | "sex" | "marital_status" | "pregnancy" | "caregiving" | "race" | "religion" | "language" | "disability" | "mental_health";
+            /**
+             * @description What was found, as written.
+             * @example young
+             */
+            phrase: string;
+        };
+        WordingInputBody: {
+            /**
+             * @description A job post or an interview question.
+             * @example We want a young, energetic digital native.
+             */
+            text: string;
+        };
+        WordingOutputBody: {
+            /** @description The criteria found; empty when none. */
+            findings: components["schemas"]["WordingFinding"][];
         };
         WorkingPattern: {
             /**
@@ -11848,6 +12315,87 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    checkFairWording: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WordingInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WordingOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24135,6 +24683,732 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listRequisitions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestRequisition: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequisitionInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Requisition"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideRequisition: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The requisition. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequisitionDecisionInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Requisition"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    writeJobPost: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description The requisition. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobPostInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Requisition"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordJobAdvert: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The requisition. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdvertInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Requisition"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    closeJobPost: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The requisition. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Requisition"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordJobExemption: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The requisition. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExemptionInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Requisition"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    publishJobPost: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The requisition. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Requisition"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

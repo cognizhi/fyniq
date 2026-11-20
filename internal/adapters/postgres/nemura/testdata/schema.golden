@@ -33,6 +33,7 @@ idempotency_key | nemura_migrator | true | true
 identity_directory | nemura_migrator | false | false
 installation | nemura_migrator | false | false
 invitation | nemura_migrator | true | true
+job_post | nemura_migrator | true | true
 join_task | nemura_migrator | true | true
 leave_accrual | nemura_migrator | true | true
 leave_head | nemura_migrator | true | true
@@ -98,6 +99,7 @@ person_terms | nemura_migrator | true | true
 pr_election | nemura_migrator | true | true
 public_rate | nemura_migrator | false | false
 reporting_line | nemura_migrator | true | true
+requisition | nemura_migrator | true | true
 role_assignment | nemura_migrator | true | true
 session | nemura_migrator | true | true
 sick_notification | nemura_migrator | true | true
@@ -446,6 +448,21 @@ invitation | created_by | uuid | true |
 invitation | created_at | timestamp with time zone | true | now()
 invitation | expires_at | timestamp with time zone | true | 
 invitation | accepted_at | timestamp with time zone | false | 
+job_post | organisation_id | uuid | true | nemura.current_org()
+job_post | id | uuid | true | uuidv7()
+job_post | requisition_id | uuid | true | 
+job_post | title | text | true | 
+job_post | body | text | true | 
+job_post | state | text | true | 'draft'::text
+job_post | requirement_note | text | false | 
+job_post | published_on | date | false | 
+job_post | closed_on | date | false | 
+job_post | advert_posted_on | date | false | 
+job_post | advert_reference | text | false | 
+job_post | exemption | text | false | 
+job_post | exemption_note | text | false | 
+job_post | created_by | uuid | true | 
+job_post | created_at | timestamp with time zone | true | 
 join_task | organisation_id | uuid | true | nemura.current_org()
 join_task | id | uuid | true | uuidv7()
 join_task | person_id | uuid | true | 
@@ -1128,6 +1145,24 @@ reporting_line | manager_id | uuid | true |
 reporting_line | effective_from | date | true | 
 reporting_line | effective_to | date | false | 
 reporting_line | created_at | timestamp with time zone | true | now()
+requisition | organisation_id | uuid | true | nemura.current_org()
+requisition | id | uuid | true | uuidv7()
+requisition | title | text | true | 
+requisition | department | text | true | 
+requisition | reason | text | true | 
+requisition | replaces_person | uuid | false | 
+requisition | salary_min | numeric(20,4) | true | 
+requisition | salary_max | numeric(20,4) | true | 
+requisition | currency | text | true | 'SGD'::text
+requisition | target_start | date | true | 
+requisition | pass_needed | boolean | true | false
+requisition | plan_status | text | true | 'unknown'::text
+requisition | state | text | true | 'requested'::text
+requisition | requested_by | uuid | true | 
+requisition | requested_at | timestamp with time zone | true | 
+requisition | decided_by | uuid | false | 
+requisition | decided_at | timestamp with time zone | false | 
+requisition | decision_reason | text | false | 
 role_assignment | organisation_id | uuid | true | nemura.current_org()
 role_assignment | id | uuid | true | uuidv7()
 role_assignment | member_id | uuid | true | 
@@ -1735,6 +1770,27 @@ invitation | invitation_organisation_fkey | FOREIGN KEY (organisation_id) REFERE
 invitation | invitation_organisation_id_not_null | NOT NULL organisation_id
 invitation | invitation_pkey | PRIMARY KEY (organisation_id, id)
 invitation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+job_post | job_post_body_length | CHECK (((length(btrim(body)) >= 1) AND (length(btrim(body)) <= 8000)))
+job_post | job_post_body_not_null | NOT NULL body
+job_post | job_post_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+job_post | job_post_closed_whole | CHECK (((state = 'closed'::text) = (closed_on IS NOT NULL)))
+job_post | job_post_created_at_not_null | NOT NULL created_at
+job_post | job_post_created_by_not_null | NOT NULL created_by
+job_post | job_post_exemption_known | CHECK (((exemption IS NULL) OR (exemption = ANY (ARRAY['fewer_than_10_employees'::text, 'ep_salary_22500'::text, 'role_one_month_or_less'::text, 'transferee'::text, 's_pass_exempt'::text]))))
+job_post | job_post_exemption_whole | CHECK (((exemption IS NULL) = (exemption_note IS NULL)))
+job_post | job_post_id_not_null | NOT NULL id
+job_post | job_post_note_length | CHECK ((((requirement_note IS NULL) OR (length(requirement_note) <= 1000)) AND ((exemption_note IS NULL) OR (length(exemption_note) <= 500)) AND ((advert_reference IS NULL) OR (length(advert_reference) <= 100))))
+job_post | job_post_one_each | UNIQUE (organisation_id, requisition_id)
+job_post | job_post_organisation_id_not_null | NOT NULL organisation_id
+job_post | job_post_pkey | PRIMARY KEY (organisation_id, id)
+job_post | job_post_published_whole | CHECK (((state = 'draft'::text) = (published_on IS NULL)))
+job_post | job_post_requisition_fkey | FOREIGN KEY (organisation_id, requisition_id) REFERENCES nemura.requisition(organisation_id, id)
+job_post | job_post_requisition_id_not_null | NOT NULL requisition_id
+job_post | job_post_state_known | CHECK ((state = ANY (ARRAY['draft'::text, 'published'::text, 'closed'::text])))
+job_post | job_post_state_not_null | NOT NULL state
+job_post | job_post_title_length | CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 120)))
+job_post | job_post_title_not_null | NOT NULL title
+job_post | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 join_task | join_task_decided_by_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
 join_task | join_task_decided_whole | CHECK (((state = 'open'::text) = ((decided_at IS NULL) AND (decided_by IS NULL))))
 join_task | join_task_id_not_null | NOT NULL id
@@ -2763,6 +2819,35 @@ reporting_line | reporting_line_pkey | PRIMARY KEY (organisation_id, id)
 reporting_line | reporting_line_report_fkey | FOREIGN KEY (organisation_id, report_id) REFERENCES nemura.member(organisation_id, id)
 reporting_line | reporting_line_report_id_not_null | NOT NULL report_id
 reporting_line | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+requisition | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+requisition | requisition_currency_known | CHECK ((currency = 'SGD'::text))
+requisition | requisition_currency_not_null | NOT NULL currency
+requisition | requisition_decided_whole | CHECK ((((state = ANY (ARRAY['requested'::text, 'cancelled'::text])) = (decided_at IS NULL)) OR (state = 'cancelled'::text)))
+requisition | requisition_decider_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
+requisition | requisition_department_length | CHECK (((length(btrim(department)) >= 1) AND (length(btrim(department)) <= 120)))
+requisition | requisition_department_not_null | NOT NULL department
+requisition | requisition_id_not_null | NOT NULL id
+requisition | requisition_organisation_id_not_null | NOT NULL organisation_id
+requisition | requisition_pass_needed_not_null | NOT NULL pass_needed
+requisition | requisition_pkey | PRIMARY KEY (organisation_id, id)
+requisition | requisition_plan_known | CHECK ((plan_status = ANY (ARRAY['unknown'::text, 'in_plan'::text, 'not_in_plan'::text])))
+requisition | requisition_plan_status_not_null | NOT NULL plan_status
+requisition | requisition_reason_known | CHECK ((reason = ANY (ARRAY['new'::text, 'replacement'::text])))
+requisition | requisition_reason_not_null | NOT NULL reason
+requisition | requisition_reason_text | CHECK (((decision_reason IS NULL) OR (length(decision_reason) <= 500)))
+requisition | requisition_replacement_whole | CHECK (((reason = 'replacement'::text) = (replaces_person IS NOT NULL)))
+requisition | requisition_replaces_fkey | FOREIGN KEY (organisation_id, replaces_person) REFERENCES nemura.person(organisation_id, id)
+requisition | requisition_requested_at_not_null | NOT NULL requested_at
+requisition | requisition_requested_by_not_null | NOT NULL requested_by
+requisition | requisition_requester_fkey | FOREIGN KEY (organisation_id, requested_by) REFERENCES nemura.member(organisation_id, id)
+requisition | requisition_salary_max_not_null | NOT NULL salary_max
+requisition | requisition_salary_min_not_null | NOT NULL salary_min
+requisition | requisition_salary_range | CHECK (((salary_min >= (0)::numeric) AND (salary_max >= salary_min) AND (salary_max < (100000000)::numeric)))
+requisition | requisition_state_known | CHECK ((state = ANY (ARRAY['requested'::text, 'approved'::text, 'rejected'::text, 'filled'::text, 'cancelled'::text])))
+requisition | requisition_state_not_null | NOT NULL state
+requisition | requisition_target_start_not_null | NOT NULL target_start
+requisition | requisition_title_length | CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 120)))
+requisition | requisition_title_not_null | NOT NULL title
 role_assignment | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 role_assignment | role_assignment_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES nemura.approval_request(organisation_id, id)
 role_assignment | role_assignment_created_at_not_null | NOT NULL created_at
@@ -2962,6 +3047,8 @@ CREATE UNIQUE INDEX identity_directory_pkey ON nemura.identity_directory USING b
 CREATE UNIQUE INDEX installation_pkey ON nemura.installation USING btree (singleton)
 CREATE UNIQUE INDEX invitation_code_key ON nemura.invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX invitation_pkey ON nemura.invitation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX job_post_one_each ON nemura.job_post USING btree (organisation_id, requisition_id)
+CREATE UNIQUE INDEX job_post_pkey ON nemura.job_post USING btree (organisation_id, id)
 CREATE UNIQUE INDEX join_task_once ON nemura.join_task USING btree (organisation_id, person_id, kind)
 CREATE INDEX join_task_open_idx ON nemura.join_task USING btree (organisation_id, raised_at) WHERE (state = 'open'::text)
 CREATE UNIQUE INDEX join_task_pkey ON nemura.join_task USING btree (organisation_id, id)
@@ -3100,6 +3187,7 @@ CREATE INDEX public_rate_window ON nemura.public_rate USING btree (window_start)
 CREATE INDEX reporting_line_manager_idx ON nemura.reporting_line USING btree (organisation_id, manager_id, effective_from)
 CREATE UNIQUE INDEX reporting_line_once ON nemura.reporting_line USING btree (organisation_id, report_id, manager_id, effective_from)
 CREATE UNIQUE INDEX reporting_line_pkey ON nemura.reporting_line USING btree (organisation_id, id)
+CREATE UNIQUE INDEX requisition_pkey ON nemura.requisition USING btree (organisation_id, id)
 CREATE INDEX role_assignment_member_idx ON nemura.role_assignment USING btree (organisation_id, member_id, effective_from)
 CREATE UNIQUE INDEX role_assignment_once ON nemura.role_assignment USING btree (organisation_id, member_id, role, effective_from)
 CREATE UNIQUE INDEX role_assignment_pkey ON nemura.role_assignment USING btree (organisation_id, id)
@@ -3175,6 +3263,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.grievance_entry D
 CREATE TRIGGER hr_question_guard BEFORE DELETE OR UPDATE ON nemura.hr_question FOR EACH ROW EXECUTE FUNCTION nemura.hr_question_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.hr_question DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('hr_question', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('invitation', 'id')
+CREATE TRIGGER job_post_guard BEFORE DELETE OR UPDATE ON nemura.job_post FOR EACH ROW EXECUTE FUNCTION nemura.job_post_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.job_post DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('job_post', 'id')
 CREATE TRIGGER join_task_guard BEFORE DELETE OR UPDATE ON nemura.join_task FOR EACH ROW EXECUTE FUNCTION nemura.join_task_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.join_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('join_task', 'id')
 CREATE TRIGGER leave_accrual_guard BEFORE DELETE OR UPDATE ON nemura.leave_accrual FOR EACH ROW EXECUTE FUNCTION nemura.leave_accrual_guard()
@@ -3277,6 +3367,8 @@ CREATE TRIGGER pr_election_guard BEFORE DELETE OR UPDATE ON nemura.pr_election F
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pr_election DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pr_election', 'id')
 CREATE TRIGGER reporting_line_guard BEFORE DELETE OR UPDATE ON nemura.reporting_line FOR EACH ROW EXECUTE FUNCTION nemura.reporting_line_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.reporting_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('reporting_line', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.requisition DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('requisition', 'id')
+CREATE TRIGGER requisition_guard BEFORE DELETE OR UPDATE ON nemura.requisition FOR EACH ROW EXECUTE FUNCTION nemura.requisition_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('role_assignment', 'id')
 CREATE TRIGGER role_assignment_check BEFORE INSERT ON nemura.role_assignment FOR EACH ROW EXECUTE FUNCTION nemura.role_assignment_check()
 CREATE TRIGGER role_assignment_guard BEFORE DELETE OR UPDATE ON nemura.role_assignment FOR EACH ROW EXECUTE FUNCTION nemura.role_assignment_guard()
@@ -3339,6 +3431,7 @@ grievance_entry | owner_functions | (organisation_id = nemura.current_org()) | (
 hr_question | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 idempotency_key | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 invitation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+job_post | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 join_task | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_accrual | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_head | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3401,6 +3494,7 @@ person_secret | tenant_isolation | (organisation_id = nemura.current_org()) | (o
 person_terms | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pr_election | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 reporting_line | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+requisition | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 role_assignment | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 session | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 sick_notification | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -4041,6 +4135,34 @@ BEGIN
   INSERT INTO nemura.owner_recovery (id, member_id, code_hash, operators, created_at, expires_at)
   VALUES (p_id, p_member, p_hash, names, now(), expires);
   RETURN expires;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.job_post_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'A job post is never deleted: it is closed' USING ERRCODE = 'NM213';
+  END IF;
+  IF NEW.requisition_id IS DISTINCT FROM OLD.requisition_id OR NEW.created_by IS DISTINCT FROM OLD.created_by OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'A job post stays with its requisition' USING ERRCODE = 'NM213';
+  END IF;
+  IF OLD.state <> 'draft' AND (NEW.title, NEW.body, NEW.requirement_note, NEW.published_on) IS DISTINCT FROM (OLD.title, OLD.body, OLD.requirement_note, OLD.published_on) THEN
+    RAISE EXCEPTION 'A published job post never changes' USING ERRCODE = 'NM213';
+  END IF;
+  IF OLD.state = 'closed' THEN
+    RAISE EXCEPTION 'A closed job post is final' USING ERRCODE = 'NM213';
+  END IF;
+  IF (OLD.advert_posted_on IS NOT NULL AND NEW.advert_posted_on IS DISTINCT FROM OLD.advert_posted_on) OR (OLD.exemption IS NOT NULL AND NEW.exemption IS DISTINCT FROM OLD.exemption) THEN
+    RAISE EXCEPTION 'The advert date and an exemption are recorded once' USING ERRCODE = 'NM213';
+  END IF;
+  IF NEW.state IS DISTINCT FROM OLD.state AND NOT ((OLD.state = 'draft' AND NEW.state = 'published') OR (OLD.state = 'published' AND NEW.state = 'closed')) THEN
+    RAISE EXCEPTION 'A job post is a draft, then published, then closed' USING ERRCODE = 'NM213';
+  END IF;
+  RETURN NEW;
 END
 $function$
 
@@ -5088,6 +5210,26 @@ BEGIN
             HINT = 'Run the work through the unit of work, which sets app.org_id first (INV-06).';
   END IF;
   RETURN org;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.requisition_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR (NEW.title, NEW.department, NEW.reason, NEW.replaces_person, NEW.salary_min, NEW.salary_max, NEW.currency, NEW.target_start, NEW.pass_needed, NEW.requested_by, NEW.requested_at)
+       IS DISTINCT FROM (OLD.title, OLD.department, OLD.reason, OLD.replaces_person, OLD.salary_min, OLD.salary_max, OLD.currency, OLD.target_start, OLD.pass_needed, OLD.requested_by, OLD.requested_at) THEN
+    RAISE EXCEPTION 'A requisition is never deleted, and what was asked for never changes' USING ERRCODE = 'NM213';
+  END IF;
+  IF NEW.state IS DISTINCT FROM OLD.state AND NOT ((OLD.state = 'requested' AND NEW.state IN ('approved', 'rejected', 'cancelled')) OR (OLD.state = 'approved' AND NEW.state IN ('filled', 'cancelled'))) THEN
+    RAISE EXCEPTION 'A requisition moves forward only: requested, then approved or rejected, then filled or cancelled' USING ERRCODE = 'NM213';
+  END IF;
+  IF OLD.state IN ('rejected', 'filled', 'cancelled') THEN
+    RAISE EXCEPTION 'A requisition that is rejected, filled or cancelled is final' USING ERRCODE = 'NM213';
+  END IF;
+  RETURN NEW;
 END
 $function$
 

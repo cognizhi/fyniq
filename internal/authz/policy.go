@@ -80,6 +80,7 @@ const (
 	ReportDefinitions   Capability = "Report definitions and schedules: save, share and schedule a report (rev 0.560)"
 	AuditEngagements    Capability = "Auditor engagement: open, confirm and close (rev 0.574)"
 	AuditRequests       Capability = "Auditor requests and samples: ask, answer, draw (rev 0.574)"
+	IntegrationTasks    Capability = "Tasks made by integrations: an API client's own tasks, with the scope `fyniq.write.tasks` (rev 0.610)"
 )
 
 // WholeRow are the qualifiers that limit what a role does on a row, not which of its records it sees: an approval or
@@ -88,7 +89,7 @@ const (
 var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, ProjectCostRates, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection, ReportDefinitions, AuditEngagements, AuditRequests}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, ProjectCostRates, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection, ReportDefinitions, AuditEngagements, AuditRequests, IntegrationTasks}
 
 // The capabilities outside Appendix D.
 const (
@@ -308,6 +309,9 @@ var Grants = map[Capability]map[string]Cell{
 	AuditEngagements: {
 		"Owner": {"CA", "+ second approver (opens; confirms)"}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
 	},
+	IntegrationTasks: {
+		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
+	},
 	AuditRequests: {
 		"Owner": {"VC", "answer"}, "Admin": {"V", ""}, "Controller": {"VC", "answer"}, "Accountant": {"VC", "answer"}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"VC", "ask, sample"}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
 	},
@@ -381,6 +385,13 @@ var (
 	CreateDimensionValue  = Policy{Operation: "createDimensionValue", Capability: ChartOfAccounts, Need: Create}
 	ReplaceDimensionValue = Policy{Operation: "replaceDimensionValue", Capability: ChartOfAccounts, Need: Create}
 	// Webhook endpoints (FR-INT-12, rev 0.605): an organisation integration, an Administrator's to make and change, read by those who view integrations; never the AI.
+	// Tasks made by integrations (FR-INT-24, rev 0.610): an API client with fyniq.write.tasks makes tasks of its own and updates only those, never a
+	// compliance task (a statutory or agent task), never the AI; a person with a view reads them.
+	CreateIntegrationTask = Policy{Operation: "createIntegrationTask", Capability: IntegrationTasks, Need: Create}
+	UpdateIntegrationTask = Policy{Operation: "updateIntegrationTask", Capability: IntegrationTasks, Need: Create}
+	ListIntegrationTasks  = Policy{Operation: "listIntegrationTasks", Capability: IntegrationTasks, Need: View}
+	GetIntegrationTask    = Policy{Operation: "getIntegrationTask", Capability: IntegrationTasks, Need: View}
+
 	ListWebhookEndpoints          = Policy{Operation: "listWebhookEndpoints", Capability: Integrations, Need: View}
 	GetWebhookEndpoint            = Policy{Operation: "getWebhookEndpoint", Capability: Integrations, Need: View}
 	CreateWebhookEndpoint         = Policy{Operation: "createWebhookEndpoint", Capability: Integrations, Need: Create}
@@ -2241,7 +2252,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(ListWebhookEndpoints, GetWebhookEndpoint, CreateWebhookEndpoint, ChangeWebhookEndpoint, RollWebhookSecret, VerifyWebhookEndpoint, ListWebhookDeliveries, ReplayWebhookDelivery, UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, ListPayrollRuns, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, RecordSalaryLineState, MatchSalaryBankLine, GetPayrollArrangements, SetPayrollArrangement, ListPayrollImports, ImportPayrollJournal, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, GetPeopleLinkHealth, RepairPeopleLink, FinishPeopleUnlink, RequestPeopleLink, RequestPeopleUnlink, RequestPeopleSourceChange, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ReceivePeopleAvailabilityEvent, ListPeopleAvailability, ReceivePeopleSessionEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(CreateIntegrationTask, UpdateIntegrationTask, ListIntegrationTasks, GetIntegrationTask, ListWebhookEndpoints, GetWebhookEndpoint, CreateWebhookEndpoint, ChangeWebhookEndpoint, RollWebhookSecret, VerifyWebhookEndpoint, ListWebhookDeliveries, ReplayWebhookDelivery, UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, ListPayrollRuns, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, RecordSalaryLineState, MatchSalaryBankLine, GetPayrollArrangements, SetPayrollArrangement, ListPayrollImports, ImportPayrollJournal, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, GetPeopleLinkHealth, RepairPeopleLink, FinishPeopleUnlink, RequestPeopleLink, RequestPeopleUnlink, RequestPeopleSourceChange, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ReceivePeopleAvailabilityEvent, ListPeopleAvailability, ReceivePeopleSessionEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,

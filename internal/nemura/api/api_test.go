@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"github.com/cognizhi/fyniq/internal/nemura/hiring"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -146,10 +147,11 @@ func (f fakeFeatures) List(context.Context, Session) (features.Switches, error) 
 	if f.off {
 		return features.Switches{}, nil
 	}
-	if errors.As(f.err, &l) { // a refusal of the leave service is not the feature switches'
-		return features.Switches{"leave": {State: features.On}, "onboarding": {State: features.On}}, nil
+	var h *hiring.Refusal
+	if errors.As(f.err, &l) || errors.As(f.err, &h) { // a refusal of the leave or hiring service is not the feature switches'
+		return features.Switches{"leave": {State: features.On}, "onboarding": {State: features.On}, "hiring": {State: features.On}}, nil
 	}
-	return features.Switches{"leave": {State: features.On}, "onboarding": {State: features.On}}, f.err
+	return features.Switches{"leave": {State: features.On}, "onboarding": {State: features.On}, "hiring": {State: features.On}}, f.err
 }
 func (f fakeFeatures) Set(context.Context, Session, string, string, string, []features.Arrangement) error {
 	return f.err
@@ -615,7 +617,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Plans: fakePlans{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LetterVerify: fakeLetterVerify{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, Grievances: fakeGrievances{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Plans: fakePlans{err: requestsErr}, Hiring: fakeHiring{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LetterVerify: fakeLetterVerify{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, Grievances: fakeGrievances{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -789,6 +791,7 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		authErr, inboxErr  error            // what the link's authenticator and inbox answer
 		featuresOff        bool             // Leave is switched off
 		leaver             bool             // the person has left
+		hiringRecruiter    bool             // the person is a Recruiter
 		seed               func(m *memIdem) // keys already claimed
 		before             func()
 		header             map[string]string
@@ -850,6 +853,9 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		"NM_ERASURE_NOT_APPROVED":   {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeNotApproved, Message: "x."}},
 		"NM_ERASURE_ALREADY":        {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeAlready, Message: "x."}},
 		"NM_ERASURE_REGISTER":       {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeBadRegister, Message: "x."}},
+		hiring.CodeInvalid:          {method: "POST", path: "/v1/requisitions", body: `{"title":"Data scientist","department":"Engineering","reason":"new","salary_min":"6500.00","salary_max":"8200.00","target_start":"2027-02-01"}`, signedIn: true, hiringRecruiter: true, err: &hiring.Refusal{Code: hiring.CodeInvalid, Message: "x."}},
+		hiring.CodeConflict:         {method: "POST", path: "/v1/requisitions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01/job-post/closing", signedIn: true, hiringRecruiter: true, err: &hiring.Refusal{Code: hiring.CodeConflict, Message: "x."}},
+		hiring.CodeWording:          {method: "POST", path: "/v1/requisitions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01/job-post/publication", body: `{}`, signedIn: true, hiringRecruiter: true, err: &hiring.Refusal{Code: hiring.CodeWording, Message: "x."}},
 		"NM_GRIEVANCE_STATE":        {method: "POST", path: "/v1/grievances/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1/outcome", body: `{"finding":"substantiated","outcome":"The inquiry found that the remark was made."}`, signedIn: true, owner: true, err: &grievance.Refusal{Code: grievance.CodeState, Message: "x."}},
 		"NM_GRIEVANCE_NO_HANDLER":   {method: "POST", path: "/v1/grievances/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1/handover", body: `{"reason":"x"}`, signedIn: true, owner: true, err: &grievance.Refusal{Code: grievance.CodeNoHandler, Message: "x."}},
 		"NM_ERASURE_ACCESS_REQUEST": {method: "POST", path: "/v1/erasures", body: `{"person_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","reason":"x"}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeOpenAccessReq, Message: "x."}},
@@ -870,6 +876,9 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr = tr.err, tr.err, tr.err, tr.err, tr.err, tr.err, tr.err
 		if tr.owner {
 			testRoles = []authz.Role{authz.Owner}
+		}
+		if tr.hiringRecruiter {
+			testRoles = []authz.Role{authz.Recruiter}
 		}
 		testStepUp, featuresOff, testLeaver = tr.stepUp, tr.featuresOff, tr.leaver
 		linkAuthErr, linkErr = tr.authErr, tr.inboxErr
@@ -1413,6 +1422,33 @@ func (f fakeErasure) Decide(context.Context, Session, []authz.Role, uuid.UUID, b
 }
 func (f fakeErasure) List(context.Context, Session) ([]ErasureOrderView, error) {
 	return []ErasureOrderView{}, f.err
+}
+
+type fakeHiring struct{ err error }
+
+func (f fakeHiring) Requisitions(context.Context, Session) ([]Requisition, error) {
+	return []Requisition{}, f.err
+}
+func (f fakeHiring) Request(context.Context, Session, RequisitionInput) (Requisition, error) {
+	return Requisition{}, f.err
+}
+func (f fakeHiring) Decide(context.Context, Session, uuid.UUID, bool, string) (Requisition, error) {
+	return Requisition{}, f.err
+}
+func (f fakeHiring) WritePost(context.Context, Session, uuid.UUID, string, string) (Requisition, error) {
+	return Requisition{}, f.err
+}
+func (f fakeHiring) Publish(context.Context, Session, uuid.UUID, string) (Requisition, error) {
+	return Requisition{}, f.err
+}
+func (f fakeHiring) RecordAdvert(context.Context, Session, uuid.UUID, string, string) (Requisition, error) {
+	return Requisition{}, f.err
+}
+func (f fakeHiring) RecordExemption(context.Context, Session, uuid.UUID, string, string) (Requisition, error) {
+	return Requisition{}, f.err
+}
+func (f fakeHiring) ClosePost(context.Context, Session, uuid.UUID) (Requisition, error) {
+	return Requisition{}, f.err
 }
 
 type fakePlans struct{ err error }

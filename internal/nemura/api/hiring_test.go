@@ -1,0 +1,72 @@
+package api
+
+import (
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/cognizhi/fyniq/internal/nemura/authz"
+)
+
+// Appendix B's row Hiring decides who may do what: the Recruiter asks and writes, the HR officer, HR administrator and Owner read, the Owner alone approves; nobody else does anything, nobody without a session
+// does anything, and everything is refused with the reason while Hiring is switched off (NM-REC-01, NM-FEAT-01).
+// req: NM-REC-01, NM-REC-02, NM-REC-03, NM-FEAT-01
+// asvs: V8.2.1, V8.2.2, V8.3.1
+func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
+	const id = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01"
+	type op struct{ method, path, body string }
+	reads := []op{{"GET", "/v1/requisitions", ""}, {"POST", "/v1/fair-wording-check", `{"text":"We want a young digital native."}`}}
+	writes := []op{{"POST", "/v1/requisitions", `{"title":"Data scientist","department":"Engineering","reason":"new","salary_min":"6500.00","salary_max":"8200.00","target_start":"2027-02-01"}`},
+		{"PUT", "/v1/requisitions/" + id + "/job-post", `{"title":"Data scientist","body":"You will analyse data."}`}, {"POST", "/v1/requisitions/" + id + "/job-post/publication", `{}`},
+		{"POST", "/v1/requisitions/" + id + "/job-post/advert", `{"posted_on":"2026-10-05"}`}, {"POST", "/v1/requisitions/" + id + "/job-post/exemption", `{"kind":"transferee","note":"Intra-company."}`},
+		{"POST", "/v1/requisitions/" + id + "/job-post/closing", ``}}
+	approves := []op{{"POST", "/v1/requisitions/" + id + "/decision", `{"approve":true}`}}
+	call := func(o op, cookie string) int {
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(o.method, o.path, strings.NewReader(o.body))
+		req.Header.Set("Content-Type", "application/json")
+		if cookie != "" {
+			req.Header.Set("Cookie", cookie)
+		}
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	ok := func(c int) bool { return c == 200 || c == 201 || c == 204 }
+	defer func() { testRoles, featuresOff = []authz.Role{authz.HRAdmin}, false }()
+	for _, o := range append(append(reads, writes...), approves...) {
+		if code := call(o, ""); code != 401 {
+			t.Errorf("%s %s with no session: %d", o.method, o.path, code)
+		}
+	}
+	for name, tc := range map[string]struct {
+		role                   authz.Role
+		read, write, approving bool
+	}{
+		"a Recruiter":             {authz.Recruiter, true, true, false},
+		"an HR officer":           {authz.HROfficer, true, false, false},
+		"an HR administrator":     {authz.HRAdmin, true, false, false},
+		"the Owner":               {authz.Owner, true, false, true},
+		"an employee":             {authz.Employee, false, false, false},
+		"a line manager":          {authz.LineManager, false, false, false},
+		"an interviewer":          {authz.Interviewer, false, false, false},
+		"a payroll administrator": {authz.PayrollAdmin, false, false, false},
+		"an administrator":        {authz.Administrator, false, false, false},
+	} {
+		testRoles = []authz.Role{tc.role}
+		for kind, set := range map[string]struct {
+			ops  []op
+			want bool
+		}{"read": {reads, tc.read}, "write": {writes, tc.write}, "approve": {approves, tc.approving}} {
+			for _, o := range set.ops {
+				if got := ok(call(o, "nemura_session=good-token")); got != set.want {
+					t.Errorf("%s: %s %s %s: allowed %v, want %v", name, kind, o.method, o.path, got, set.want)
+				}
+			}
+		}
+	}
+	testRoles, featuresOff = []authz.Role{authz.Owner}, true
+	if code := call(reads[0], "nemura_session=good-token"); code != 409 {
+		t.Errorf("Hiring off: %d", code)
+	}
+}
