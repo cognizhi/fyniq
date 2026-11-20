@@ -15,6 +15,10 @@ Source: PRD-002 §12 · Priority M · Phase P2
 - **WHEN** a requisition is opened
 - **THEN** it shows whether the role is in the plan, and no other financial figure
 
+#### Scenario: Approved once by the Owner (rev 0.66)
+- **WHEN** the Recruiter asks for a requisition and the Owner decides it
+- **THEN** it is decided once, what was asked for never changes, and only an approved requisition's post is published
+
 ### Requirement: NM-REC-02 Job posts
 Job posts SHALL be published on a careers page, MyCareersFuture postings SHALL be recorded with their date as evidence, and for a covered Employment Pass or S Pass hire the offer letter SHALL be blocked until 14 consecutive days of advertising have passed unless an exemption is recorded.
 
@@ -24,6 +28,11 @@ Source: PRD-002 §12 · Priority M · Phase P2
 - **GIVEN** an Employment Pass or S Pass hire covered by the framework, posted on MyCareersFuture on Mon 5 Oct
 - **WHEN** a recruiter tries to issue an offer on Fri 16 Oct
 - **THEN** the offer letter is blocked until the 14 days have passed, unless an exemption is recorded
+
+#### Scenario: The earliest offer day (rev 0.66)
+- **GIVEN** a role that needs a pass, advertised from Mon 5 Oct
+- **WHEN** the post is read
+- **THEN** it shows Mon 19 Oct as the first day an offer may be made, and no offer day while neither the advert nor an exemption is recorded
 
 #### Scenario: Material change
 - **WHEN** the advert's salary changes
@@ -55,6 +64,10 @@ Source: PRD-002 §12 · Priority M · Phase P2
 #### Scenario: Flagged criterion
 - **WHEN** a job post asks for candidates "below 35"
 - **THEN** the wording is flagged with the rule, and the post cannot be published until it is changed or a genuine occupational requirement is recorded
+
+#### Scenario: A criterion kept on purpose (rev 0.66)
+- **WHEN** a post names a flagged criterion and a genuine occupational requirement of 10 or more characters is recorded
+- **THEN** it is published with the requirement kept in its record
 
 ### Requirement: NM-REC-04 Pipeline
 Candidates SHALL move through stages on a board, with profiles, interview kits, scorecards and a recorded decision and reason, every move audited.

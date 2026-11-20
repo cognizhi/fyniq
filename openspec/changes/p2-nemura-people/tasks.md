@@ -22,8 +22,10 @@ Nemura's migrations are in `db/nemura/migrations` (continue from the highest num
   (Built, 21 Nov 2026, PRD-002 rev 0.65: migration 000065, `internal/nemura/onboarding/plan.go`, `plans.go` in the adapter, the `/v1/onboarding/…` operations, the Plans section of Joiners and leavers and Your onboarding tasks on My home, the Onboarding feature switchable; `TestATemplateIsWholeAndItsTasksAreDueFromTheStartDate`, `TestAPlanIsMadeFromATemplate…`, `TestEachPersonReadsAndDecidesOnlyTheTasksThatAreTheirs`, `TestOnboardingPlanOperationsAre…`. **Left:** the KETs and Fyniq-invitation tasks are not closed by their own flows (marked by hand), and a plan is not yet made at hire (4.4).)
 
 ## 4. Hiring (NM-REC-01 to 06, NM-AI-05)
-- [ ] 4.1 Requisitions, approval, the plan flag when linked. `// req: NM-REC-01`
+- [x] 4.1 Requisitions, approval, the plan flag when linked. `// req: NM-REC-01`
+  (Built, 21 Nov 2026, PRD-002 rev 0.66: migration 000066, `internal/nemura/hiring`, `hiring.go` in the adapter, `/v1/requisitions…`, the page Hiring; `TestARequisitionIsWholeBeforeItIsAsked`, `TestARequisitionIsApprovedOnceAndItsPostIs…`. **Left:** the plan flag stays *unknown* until the link supplies it `[live-verify]`; the line manager's view of their own roles; a budget holder as approver.)
 - [ ] 4.2 Job posts, the careers page, fair-wording checks. `// req: NM-REC-02, NM-REC-03`
+  (Built in part, rev 0.66: the post's draft, publication and closing, the advert's date and the exemptions as once-only evidence, the earliest day for an offer, and the wording check of posts and of any text. **Left:** the public careers page (it needs a public key for an organisation, as letter verification has); the new advert after a material change; refusing an advert closed over 3 months ago; the block on the offer letter itself, with 4.4; the check of interview questions, with 4.3.)
 - [ ] 4.3 Pipeline, interview kits, consent and retention (N.1 #11). `// req: NM-REC-04, NM-REC-05`
 - [ ] 4.4 Offer to hire: the person record, the onboarding plan, the pass application date. `// req: NM-REC-06`
 - [ ] 4.5 The assistant's `people.draft_job_post` and `people.draft_interview_kit`, and the fairness red-team cases. `// req: NM-AI-05`
@@ -44,6 +46,6 @@ Nemura's migrations are in `db/nemura/migrations` (continue from the highest num
 | NM-LTR-05 | 1 | planned |
 | NM-SEC-06 | 2 | planned |
 | NM-ONB-01 | 3 | built |
-| NM-REC-01…06, NM-AI-05 | 4 | planned |
+| NM-REC-01…06, NM-AI-05 | 4 | 4.1 built, 4.2 in part |
 | NM-PRF-01…05 | 5 | planned |
 | NM-EXT-04, NM-EXT-05 | 6 | planned |
