@@ -18768,6 +18768,8 @@ components:
           examples:
             - - JPY
           items:
+            examples:
+              - JPY
             type: string
           type: array
         mrr:

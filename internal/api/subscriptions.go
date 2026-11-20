@@ -70,6 +70,12 @@ type ContractedMRRInBase struct {
 	Missing []string            `json:"missing" nullable:"false" doc:"Currencies with no rate for the day, left out of mrr: while there are any, mrr is not the whole." example:"[\"JPY\"]"`
 }
 
+// TransformSchema implements huma.SchemaTransformer: an example for each currency with no rate (NFR-API-01).
+func (ContractedMRRInBase) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"missing": "JPY"})
+	return s
+}
+
 // ContractedMRRRate is a rate a currency's total was converted at.
 type ContractedMRRRate struct {
 	Currency string `json:"currency" doc:"The currency converted." example:"USD"`
