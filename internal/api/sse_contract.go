@@ -47,3 +47,21 @@ func approvalEnumsAreExtensible(api huma.API) {
 		}
 	}
 }
+
+// messagePurposesAreExtensible declares what an email message is for as an extensible enum (x-extensible-enum): a purpose is added with
+// each kind of email the platform sends (an invitation's, a company secretary's reminder), and a widened response enum is a breaking
+// change of /v1 (FR-INT-06), so a client is told to handle a purpose it has not seen. The values are the same. The senders' four
+// purposes (notifications, invoices, reminders, security) are another, closed list and stay as they are.
+func messagePurposesAreExtensible(api huma.API) {
+	for _, s := range api.OpenAPI().Components.Schemas.Map() {
+		p := s.Properties["purpose"]
+		if p == nil || !slices.Contains(p.Enum, any("secretary_reminder")) {
+			continue
+		}
+		if p.Extensions == nil {
+			p.Extensions = map[string]any{}
+		}
+		p.Extensions["x-extensible-enum"] = p.Enum
+		p.Enum = nil
+	}
+}

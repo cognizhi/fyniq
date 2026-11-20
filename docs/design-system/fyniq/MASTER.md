@@ -10,7 +10,7 @@
 | Product | Fyniq: accounting, compliance, reporting and planning for Singapore start-ups |
 | Name and line | **Fyniq** (one word, capital F), with the line *Intelligence behind every number* (13 Oct 2026). The line belongs on the sign-in page, the first-run welcome and outward material, never in place of a label. It is a promise the UI keeps: every figure opens to its source and history (FR-UX-04), and AI content says where its numbers come from (AI-68). Until a logo exists the wordmark is the name in the UI font; the organisation's own logo (FR-ORG-09) sits beside it |
 | Users | Founders who are not accountants (Basic mode) and accountants, controllers and auditors (Expert mode) |
-| Stack | React 19 SPA, shadcn/ui on Base UI, Tailwind CSS 4, our own `EntryGrid` (entry grids; AG Grid's range selection, fill and clipboard are Enterprise features, rev 0.383), TanStack Table (statements), ECharts 6, Lucide icons |
+| Stack | React 19 SPA, shadcn/ui on Base UI, Tailwind CSS 4, our own `EntryGrid` (entry grids: in-house by decision, accepted by the owner on 21 Nov 2026; the earlier choice of AG Grid is superseded because AG Grid Community lacks range selection, fill and clipboard paste, which are Enterprise features; rev 0.383, rev 0.460), TanStack Table (statements), ECharts 6, Lucide icons |
 | Origin | uipro (`ui-ux-pro-max`) review of PRD-001 on 12 Oct 2026, reconciled with the PRD; findings REV-29…40 in `docs/prd/reviews/prd-001-review-2026-10-12.md`. Device classes and motion (§5.1, §9) added for PRD rev 0.10 after a second uipro pass (13 Oct 2026, below) |
 | Screens | Every screen is designed in Claude Design canvases built from `docs/design/screens/` at the five reference frames of §5.1, in light and dark. The canvases are the visual reference; the static prototype is superseded |
 | Dials | Variance 3 (minimal), Motion 3 (subtle), Density 8 (data-dense) |
@@ -153,7 +153,7 @@ Set by the header theme menu and the command palette; "System" follows `prefers-
 | AI badge | `sparkles` icon + "AI" label on `--ai-subtle` with `--ai-subtle-foreground`; on every AI message, proposal, suggestion and AI-drafted text until a human edits and saves it. |
 | Proposal card | `--ai-border` left rule (3 px) plus the AI badge; plain summary, item list, ledger impact table, diff, evidence links, risk tier; **Approve is not focused by default**; tier 2–3 shows "what could go wrong". |
 | Ledger impact table | Debit / Credit / Account (Expert) or a one-line plain summary (Basic); totals always balance visibly. |
-| Data grid (`EntryGrid`) | Sticky header and first column; range select; Ctrl+D fill-down (keyboard alternative to dragging); paste preview; inline status chips; virtualised; row height from the density token. |
+| Data grid (`EntryGrid`) | **In-house; AG Grid is not used** (owner accepted 21 Nov 2026, rev 0.460: AG Grid Community has no fill, range selection or paste; Enterprise was the earlier plan and is superseded). Sticky header and first column; range select; Ctrl+D fill-down (keyboard alternative to dragging); paste preview; inline status chips; virtualised; row height from the density token. Its keyboard and accessibility contract is in the next section. |
 | Statement table (TanStack) | Semantic `<table>` with `<th scope>`; `aria-sort` on sortable columns; printable; each figure is a drill-down button (FR-UX-04). |
 | Stat tile | Label, figure (`--fs-2xl`, tabular), change vs comparison with a sign and an arrow icon (never colour alone), "updated" time, drill-down. |
 | Command palette (cmdk) | ⌘K / Ctrl+K; recent items first; groups: Go to, Create, Reports, Actions, Ask AI (Tab); Expert-only results tagged in Basic mode. |
@@ -164,6 +164,29 @@ Set by the header theme menu and the command palette; "System" follows `prefers-
 | Info button and popover | Beside a visible label; see §12. |
 | Walkthrough (tour) | Scrim, spotlight and caption card; see §12. |
 | Review banner ("Needs additional verification", FR-UX-41, rev 0.22) | Warning banner (`triangle-alert` + heading) directly under the page header, on the pages the review register (`docs/prd/reviews/review-status.json`) lists for a pending area; one line per area: bold "<rules> await review by <reviewer>." then what to check. "What this means" opens the help page (`review.awaiting-verification`). A collapse button (`chevron-up`, `aria-expanded`) shrinks it to one line; it cannot be dismissed or switched off, and it shows in Basic and Expert. Never on sign-in, consent, recovery or self-service pages; never AI violet. `build.py` inserts it from the register, so fragments never hard-code it. Nemura follows the same rule (NM-UX-06). |
+
+**Entry grid contract (`EntryGrid`; rev 0.460).** What the grid meets, from `apps/web/src/components/EntryGrid.tsx` and proved by
+`EntryGrid.test.tsx`, `entryGridModel.test.ts` and the Storybook axe run in all four themes (QA-UI-02):
+
+- **Role and focus.** An ARIA `grid` with one tab stop (the active cell, roving `tabindex`); rows and columns carry `aria-rowindex`, `aria-colindex`,
+  `aria-rowcount` and `aria-colcount`, so a screen reader announces each cell's position; the grid's accessible name is the `label` prop. Tab and Shift+Tab move across the row and, at the last cell, leave the
+  grid, so the keyboard is never trapped (WCAG 2.1.2). The active cell has a 2 px outline in the primary token, never removed (WCAG 2.4.7).
+- **Moving.** Arrow keys move the active cell; with Shift they extend a rectangular selection; Home, End, Page Up and Page Down, and
+  Ctrl+Home and Ctrl+End, go further. A pointer press and drag selects a range too, but nothing needs a pointer (WCAG 2.1.1, 2.5.7).
+- **Editing.** Typing starts an edit, Enter or F2 edits what the cell holds, Enter commits and moves down, Escape cancels, Delete
+  clears the block, Ctrl+Enter sets the whole block to what was typed, Ctrl+D fills down (the keyboard alternative to dragging a
+  fill handle), Ctrl+Z and Ctrl+Y undo and redo up to 200 steps.
+- **Amounts.** Kept as decimal strings with the currency's scale; `=1250.50*3-80` is worked out exactly on scaled integers, and a
+  division only when exact (a rounded quotient needs a named rounding policy, which a cell cannot name). No floating point, ever.
+- **Paste and copy.** A paste from Excel or Google Sheets is read as a table and previewed, with the cells that do not fit flagged,
+  before anything changes; Apply or Enter sets them, Escape leaves the grid as it was. A copy puts plain decimals and an ASCII minus
+  on the clipboard (golden rule 11).
+- **Status.** Each row says, in words and an icon (never colour alone), whether it is ready or what is wrong, and the message names the
+  field and the fix (ENG-23); a cell with a problem is `aria-invalid` and described by its row's status, and an edit's problem is an
+  alert.
+- **Scale.** Only the rows in view are drawn (fixed row height from the density token), so thousands of rows stay responsive and the
+  heavy module loads on demand (NFR-PERF-UI-03). Read-only mode refuses every edit.
+- **Out of scope.** Statement tables are not this grid: they are semantic TanStack tables (`<th scope>`, `aria-sort`, printable).
 
 ## 8. Icons
 

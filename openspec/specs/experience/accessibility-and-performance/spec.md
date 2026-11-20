@@ -136,7 +136,7 @@ Source: PRD-001 §7.6 · Priority S · Phase P1
 - **THEN** the initial JavaScript is ≤ 250 KB compressed
 
 #### Scenario: Heavy modules on demand
-- **WHEN** a page needs AG Grid, ECharts or the PDF preview
+- **WHEN** a page needs the entry grid, ECharts or the PDF preview
 - **THEN** the module is loaded on demand, not in the initial bundle
 
 #### Scenario: Preload on intent

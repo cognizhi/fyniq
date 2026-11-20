@@ -50,6 +50,15 @@ Source: PRD-001 §8.4 · Priority S · Phase P2
 - **WHEN** a feed source is chosen
 - **THEN** a credential-sharing aggregator is never used
 
+#### Scenario: Host-to-host files without a bank API (rev 0.510)
+- **WHEN** a bank delivers MT940 daily and MT942 intraday files to a drop folder
+- **THEN** the MT940 file is imported as a statement with the continuity and duplicate checks
+- **AND** each MT942 line is only a pending signal, closed by the statement line, never a statement line itself
+
+#### Scenario: A bank whose API is not published (rev 0.510)
+- **WHEN** a bank publishes no official specification of its account API (DBS RAPID, UOB API Services)
+- **THEN** no adapter is written from unofficial descriptions and the task waits for the bank's own document
+
 ### Requirement: FR-BNK-04 Duplicate detection
 The system SHALL detect duplicate bank lines across imports and feeds, including a transfer already recorded from the other account (workbook behaviour), using date, amount, reference and a fingerprint.
 

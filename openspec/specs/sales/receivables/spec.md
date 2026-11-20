@@ -456,6 +456,12 @@ Source: PRD-001 §8.5 · Priority S · Phase P2
 - **WHEN** its GST bad-debt relief is tracked
 - **THEN** it shows whether the debt is written off, whether 12 months have passed since the date of the supply or the debtor is insolvent, and whether the claim is within 5 years of the supply
 
+#### Scenario: Relief is eligible from its dates (rev 0.480)
+- **GIVEN** a standard-rated invoice written off on 10 Mar 2027 whose supply date was 1 Jan 2026
+- **WHEN** the queue is read on 2 Jan 2027 and on 2 Jan 2031
+- **THEN** it is not yet eligible on 2 Jan 2027 and is eligible from 10 Mar 2027
+- **AND** it is past the five years from the supply from 1 Jan 2031, and the claim posts the GST in the written-off part to the GST input control and the bad-debt expense
+
 ### Requirement: FR-AR-17 Write-off of a receivable or payable residual
 The system SHALL write off a receivable or payable residual only by a reason-coded, approval-gated write-off with evidence, posted to the account the reason names.
 
@@ -506,6 +512,11 @@ Source: PRD-001 §8.5 · Priority M before GST registration; else S · Phase P2 
 - **WHEN** Cognizhi registers voluntarily for GST
 - **THEN** InvoiceNow is already live, because it is mandatory for new voluntary registrants since 1 Apr 2026, and all registrants are phased in 2028–2031 (§14.2)
 
+#### Scenario: The document is checked before it is queued (rev 0.480)
+- **WHEN** an invoice or credit note is queued for InvoiceNow
+- **THEN** Fyniq builds the PINT-SG document and checks it against the published GST rules before it is queued
+- **AND** a document the rules refuse is not queued and says which rule and field
+
 ### Requirement: FR-AR-13 Online payment
 The system SHALL offer online payment of invoices: a PayNow QR (SGQR) on invoices, and card and bank payment links through a licensed provider (e.g. Stripe).
 
@@ -522,6 +533,16 @@ Source: PRD-001 §8.5 · Priority S · Phase P2
 #### Scenario: Payouts and fees matched automatically
 - **WHEN** the provider pays out the collected payments
 - **THEN** the payouts and fees are matched automatically
+
+#### Scenario: A payment link from the invoice (rev 0.510)
+- **GIVEN** an issued invoice with S$5,450.00 open and a HitPay connector enabled
+- **WHEN** a person with a right on Invoices asks for a payment link
+- **THEN** the link is for the open balance read on the server, whatever the client sends, with the invoice number as the reference
+- **AND** a second live link for the invoice, or a link on a draft, void or paid invoice, is refused
+
+#### Scenario: The link is not the AI's (rev 0.510)
+- **WHEN** an AI client or an MCP tool tries to create a payment link
+- **THEN** it has no such tool and the capability is never triggered by it
 
 ### Requirement: FR-AR-14 Customer portal
 The system SHALL offer a customer portal where a customer views and pays their invoices and downloads statements.

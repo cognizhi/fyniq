@@ -589,6 +589,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerPersonalTokens(a)
 	a.registerInternal(mux)
 	approvalEnumsAreExtensible(a.API)
+	messagePurposesAreExtensible(a.API)
 	return a
 }
 

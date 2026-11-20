@@ -10,7 +10,7 @@ Overrides MASTER.md for the categorise queue (FR-BNK-06/07, FR-UX-05/07).
 - Progress: "12 of 40 done".
 
 ## Expert mode: the grid
-- AG Grid: date, description, amount, suggested category, contact, GST code, dimensions,
+- `EntryGrid` (in-house, MASTER §7): date, description, amount, suggested category, contact, GST code, dimensions,
   status chip; range selection, paste, Ctrl+D fill-down, bulk accept of the selection.
 - **Split view** for matching: the bank line on the left, candidate documents on the right,
   with amount difference and tolerance shown.
