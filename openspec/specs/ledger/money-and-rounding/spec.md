@@ -347,6 +347,10 @@ Source: PRD-001 §10.4
 - **WHEN** an amount is split by weights
 - **THEN** the parts are found by the largest-remainder method
 
+#### Scenario: A part a key cannot place is the last weight (rev 0.608)
+- **WHEN** an allocation key cannot place part of a cost
+- **THEN** that part is the last weight, so it is the last of equal remainders and stays unallocated
+
 #### Scenario: Ties broken by stable order
 - **GIVEN** two parts with equal remainders
 - **WHEN** the amount is split by weights
