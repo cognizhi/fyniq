@@ -1,12 +1,13 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Session } from "../../api/client";
-import { answer } from "../../test/api";
+import { answer, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { ownerSession } from "../../test/api";
 import { Subscriptions } from "./Subscriptions";
 
+const noContracts = { "GET /v1/subscription-contracts": { status: 200, body: { items: [] } }, "GET /v1/subscription-mrr": { status: 200, body: { as_at: "2026-10-15", totals: [] } } };
 const accountant = { ...ownerSession, roles: ["accountant"] } as Session;
 const auditor = { ...ownerSession, roles: ["auditor"] } as Session;
 const sgd = (amount: string) => ({ amount, currency: "SGD" });
@@ -31,6 +32,7 @@ const sub = { id: "s1", provider: "stripe", provider_subscription_id: "sub_1", c
 describe("the subscriptions a provider bills", () => {
   it("shows each subscription and invoice with the provider's collection state beside what Fyniq made, and axe finds nothing", async () => {
     answer({
+      ...noContracts,
       "GET /v1/payment-providers/invoices": {
         status: 200,
         body: {
@@ -51,6 +53,7 @@ describe("the subscriptions a provider bills", () => {
 
   it("raises a parked invoice and one the provider voided after it was issued, and offers to issue drafts only to those who may", async () => {
     answer({
+      ...noContracts,
       "GET /v1/payment-providers/invoices": {
         status: 200,
         body: {
@@ -72,12 +75,35 @@ describe("the subscriptions a provider bills", () => {
   });
 
   it("says so when no provider is billing, and shows a reader no button", async () => {
-    answer({ "GET /v1/payment-providers/invoices": { status: 200, body: { subscriptions: [], invoices: [invoice({ state: "drafted" })] } } });
+    answer({ ...noContracts, "GET /v1/payment-providers/invoices": { status: 200, body: { subscriptions: [], invoices: [invoice({ state: "drafted" })] } } });
     renderPage(Subscriptions, { path: "/sales/subscriptions", session: auditor });
     await waitFor(() => expect(screen.getByText("Draft made, waiting to be issued")).toBeTruthy());
     expect(screen.queryByRole("button", { name: "Issue the drafts" })).toBeNull();
-    answer({ "GET /v1/payment-providers/invoices": { status: 200, body: { subscriptions: [], invoices: [] } } });
+    answer({ ...noContracts, "GET /v1/payment-providers/invoices": { status: 200, body: { subscriptions: [], invoices: [] } } });
     renderPage(Subscriptions, { path: "/sales/subscriptions", session: accountant });
     expect(await screen.findByText("No provider is billing customers yet")).toBeTruthy();
+  });
+
+  // req: FR-AR-15
+  it("lists the company's subscription contracts with the contracted MRR, and records an amendment from a day with the contract's ETag", async () => {
+    const contract = { id: "k1", contact_id: "c1", name: "Growth plan", starts_on: "2026-01-15", initial_mrr: sgd("100.00"), status: "active", mrr: sgd("150.00"), version: 2 };
+    answer({
+      "GET /v1/payment-providers/invoices": { status: 200, body: { subscriptions: [], invoices: [] } },
+      "GET /v1/subscription-contracts": { status: 200, body: { items: [contract] } },
+      "GET /v1/subscription-mrr": { status: 200, body: { as_at: "2026-10-15", totals: [{ currency: "SGD", mrr: sgd("150.00"), active: 1 }] } },
+      "POST /v1/subscription-contracts/k1/amendments": { status: 201, body: { ...contract, version: 3 } },
+    });
+    const { container } = renderPage(Subscriptions, { path: "/sales/subscriptions", session: accountant });
+    expect(await screen.findByText(/Contracted MRR on/)).toBeTruthy();
+    expect(screen.getByText(/SGD 150.00 from 1 contract/)).toBeTruthy();
+    expect(screen.getByText("Active")).toBeTruthy();
+    await noViolations(container);
+    fireEvent.click(screen.getByRole("button", { name: "Amend: Growth plan" }));
+    fireEvent.change(screen.getByLabelText("From"), { target: { value: "2026-11-01" } });
+    fireEvent.change(screen.getByLabelText("New monthly value"), { target: { value: "200.00" } });
+    fireEvent.change(screen.getByLabelText("Why"), { target: { value: "Larger team" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save the change" }));
+    await waitFor(() => expect(seen.find((s) => s.path === "/v1/subscription-contracts/k1/amendments")?.body).toEqual({ kind: "upgrade", effective_on: "2026-11-01", mrr: "200.00", reason: "Larger team" }));
+    expect(seen.find((s) => s.path.endsWith("/amendments"))?.headers.get("If-Match")).toBe('"2"');
   });
 });

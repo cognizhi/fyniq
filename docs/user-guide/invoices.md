@@ -135,6 +135,20 @@ still valid, the customer accepts it with their name, or declines it, with a com
 the decision. The link shows nothing else, works until it ends or is revoked, and the first time it is
 opened the invoice shows **Viewed**.
 
+## Subscription contracts
+
+Under **Sales › Subscriptions** (Expert mode), **Your subscription contracts** records what each customer subscribes to: a name, the currency,
+the monthly value, the day it starts and, if agreed, the day it ends. An Accountant or an AR specialist records them.
+
+- **Amend** records an upgrade or downgrade (a new monthly value from a day), a cancellation (the first day with no subscription) or a
+  renewal (it starts again after it ended, and runs past its agreed end). Each is dated: the day is on or after the contract's start, after
+  its last amendment, and in a month that is still open. A closed month is never rewritten.
+- The page shows each contract's status and monthly value today, and the **contracted MRR**: the monthly value of the contracts in force,
+  by currency, not converted. It differs from the revenue booked in the ledger by mid-month starts, credits, unpaid or failed invoices and
+  exchange rates, so each is named wherever it is shown.
+- A contract and its amendments are records, not postings: issue the invoices and credit notes as you do, and the revenue follows your
+  revenue policy. Evidence for an amendment and the schedule's day-weighted revenue are not built yet.
+
 ## Subscriptions a provider bills
 
 If your customers subscribe and pay through a billing provider such as Stripe, name a **revenue account** on its provider account

@@ -460,6 +460,8 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"psp_invoice.total":            func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "total", v) },
 	"psp_invoice.amount_paid":      func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "paid", v) },
 	"invoice_dispute.amount":       func(t *testing.T, b porttest.Books, v string) error { return rawInvoiceDispute(t, b, v) },
+	"subscription_contract.mrr":    func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "contract", v) },
+	"subscription_amendment.mrr":   func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "amendment", v) },
 	"payment_link.amount":          func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLink(t, b, v) },
 	"payment_link_payment.amount":  func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLinkPayment(t, b, v) },
 	"kpi_alert.spend":              func(t *testing.T, b porttest.Books, v string) error { return rawKPIAlert(t, b, "spend", v) },
@@ -1607,6 +1609,23 @@ VALUES ($1, 'sub_1', 'cus_1', 'active', 'SGD', $2::numeric, 'month', 1, now())`,
 		}
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.psp_invoice (connector_id, provider_invoice_id, provider_customer_id, status, currency, total, amount_paid, seen_at)
 VALUES ($1, 'in_1', 'cus_1', 'open', 'SGD', $2::numeric, $3::numeric, now())`, uuid.New(), total, paid)
+		return err
+	})
+}
+
+func rawSubscription(t *testing.T, b porttest.Books, kind, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c := shortConn(t, "fyniq_api")
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		if kind == "contract" {
+			_, err := tx.Exec(ctx, `INSERT INTO fyniq.subscription_contract (contact_id, name, currency, starts_on, mrr, created_by, created_at)
+VALUES ($1, 'Plan', 'SGD', '2026-01-01', $2::numeric, 'user:x', now())`, uuid.New(), value)
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.subscription_amendment (contract_id, kind, effective_on, mrr, reason, created_by, created_at)
+VALUES ($1, 'upgrade', '2026-02-01', $2::numeric, 'x', 'user:x', now())`, uuid.New(), value)
 		return err
 	})
 }

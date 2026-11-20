@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:7ea06a4c4fedf3e655a1bea1da549fcda128cf0c6ebd952648142bb53be2bdcd
+  - docs/user-guide/invoices.md sha256:e40a942884e60bf5bc649ef65a2a8e724f4008879330cae46f09bdfbdc1a1706
 data_class: general
 taint: trusted
 status: draft
@@ -58,6 +58,8 @@ aliases:
   - customer portal
   - disputed invoice
   - Stripe subscription
+  - subscription contract
+  - contracted MRR
   - provider invoice
   - billing provider
   - promise to pay
@@ -139,6 +141,14 @@ aliases:
 - The email's secure link opens the invoice or quote without signing in: the document as its PDF shows it, the amount due or total, and **Download the PDF**; on a sent quote still valid, the customer accepts with their name or declines, with a comment kept as a record ([[sales.quotes]]). It shows nothing else, works until it ends or is revoked, and the first opening marks the invoice **Viewed**.
 
 (src: docs/user-guide/invoices.md#what-the-customer-sees)
+
+## Subscription contracts
+
+- Under **Sales › Subscriptions** (Expert mode), **Your subscription contracts** records a customer's subscription: a name, the currency, the monthly value, the start day and an optional agreed end (an Accountant or AR specialist).
+- **Amend** records an upgrade or downgrade (a new monthly value from a day), a cancellation or a renewal after it ended; each day is on or after the start, after the last amendment and in an open month (a closed month is never rewritten).
+- The page shows each contract's status and monthly value today and the contracted MRR by currency (the contracts in force, not converted), which is not the revenue booked in the ledger. Contracts and amendments are records, not postings.
+
+(src: docs/user-guide/invoices.md#subscription-contracts)
 
 ## Subscriptions a provider bills
 

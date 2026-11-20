@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact_id": {
+      "description": "The customer: an active contact marked as a customer.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "currency": {
+      "description": "The contract's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "ends_on": {
+      "description": "The agreed last day, if any.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "mrr": {
+      "description": "The monthly value at the start, a decimal string.",
+      "examples": [
+        "100.00"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,15})(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "name": {
+      "description": "What the customer subscribes to.",
+      "examples": [
+        "Fyniq Growth plan"
+      ],
+      "maxLength": 140,
+      "minLength": 1,
+      "type": "string"
+    },
+    "starts_on": {
+      "description": "The first day.",
+      "examples": [
+        "2026-01-15"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contact_id",
+    "name",
+    "currency",
+    "starts_on",
+    "mrr"
+  ],
+  "title": "CreateSubscriptionInputBody",
+  "type": "object"
+}

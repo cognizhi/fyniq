@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at": {
+      "description": "The day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "totals": {
+      "description": "The monthly value of the contracts active that day, by currency (contracted MRR, FR-KPI-02); nothing is converted.",
+      "items": {
+        "$ref": "ContractedMRR.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "as_at",
+    "totals"
+  ],
+  "title": "ContractedMRROutputBody",
+  "type": "object"
+}

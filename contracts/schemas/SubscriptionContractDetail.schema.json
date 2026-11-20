@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amendments": {
+      "description": "Its amendments, by effective day.",
+      "items": {
+        "$ref": "SubscriptionAmendment.schema.json"
+      },
+      "type": "array"
+    },
+    "contact_id": {
+      "description": "The customer.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ends_on": {
+      "description": "The agreed last day, when there is one; a renewal continues past it.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The contract's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "initial_mrr": {
+      "$ref": "Money.schema.json",
+      "description": "The monthly value at the start."
+    },
+    "mrr": {
+      "$ref": "Money.schema.json",
+      "description": "The monthly value in force today; zero unless active."
+    },
+    "name": {
+      "description": "What the customer subscribes to.",
+      "examples": [
+        "Fyniq Growth plan"
+      ],
+      "type": "string"
+    },
+    "schedule": {
+      "description": "Month by month from the month it starts through the month of the later of today and its last change (at most 120 months).",
+      "items": {
+        "$ref": "SubscriptionMonth.schema.json"
+      },
+      "type": "array"
+    },
+    "starts_on": {
+      "description": "The first day.",
+      "examples": [
+        "2026-01-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "status": {
+      "description": "What it is today.",
+      "enum": [
+        "not_started",
+        "active",
+        "ended"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The contract's version: it moves with each amendment, and makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "amendments",
+    "schedule",
+    "id",
+    "contact_id",
+    "name",
+    "starts_on",
+    "initial_mrr",
+    "status",
+    "mrr",
+    "version"
+  ],
+  "title": "SubscriptionContractDetail",
+  "type": "object"
+}
