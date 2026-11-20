@@ -4,14 +4,16 @@ id: CTL-CHG-12
 section: "F.4"
 control: "(rev 0.617) An independent penetration test within the last 12 months (before the first external customer is onboarded, SEC-25), with each Critical or High finding fixed and retested within its due date"
 mapping: "ISO 8.8, 8.29; SOC2 CC4.1, CC7.1; CT"
-automated_check: "The register of security assessments (Compliance › Security assessments), read by the verification `security-assessments`"
+automated_check: "The register of security assessments (Compliance › Controls › Security assessments), read as the review `security-assessments`"
 frequency: "Q, E (each assessment)"
 evidence: "Register; the report's SHA-256"
 owner: Owner
 checks:
   - frequency: Q
-    status: planned
-    arrives: "p2-security-certification"
+    status: running
+    how: "attestation security-assessments"
+    evidence: "the register of security assessments (Compliance › Security assessments): each assessment with its tester, scope, dates and the report's SHA-256, each finding with its severity, due day, fix and retest; due 12 months after the last independent assessment ended and overdue after it, and overdue while a Critical or High finding is past its due day; the installation's"
   - frequency: E
-    status: planned
-    arrives: "p2-security-certification"
+    status: running
+    how: "attestation security-assessments"
+    evidence: "each assessment, finding and step recorded is an audit event (security_assessment.recorded, security_finding.recorded, security_finding.stepped) and shows on Compliance › Reviews and attestations at once"

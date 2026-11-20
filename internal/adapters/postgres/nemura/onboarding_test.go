@@ -73,6 +73,15 @@ func TestAnInvitationTaskIsRaisedOncePerNewPersonWhenTheCompanyAsksForIt(t *test
 		t.Errorf("a second task for one person: %d", len(tasks))
 	}
 	tid := mustUUID(tasks[0].ID)
+	// Eve's plan has an invitation task that closes by this flow (NM-ONB-01, rev 0.75).
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		tpl, err := nemura.MakeOnboardingTemplate(ctx, tx, lt.c.org, now, lt.c.hr, "Invite flow", []onboarding.Task{{Title: "Invite to Fyniq", Assignee: onboarding.ForHR, Closes: onboarding.ClosesInvitation}})
+		if err != nil {
+			return err
+		}
+		_, err = nemura.StartOnboardingPlan(ctx, tx, lt.c.org, now, lt.c.hr, on, &tpl)
+		return err
+	})
 	if err := svc.DecideTask(ctx, hr, tid, "later", ""); onboardCode(err) != onboarding.CodeInvalid {
 		t.Errorf("an unknown state: %v", err)
 	}
@@ -87,6 +96,13 @@ func TestAnInvitationTaskIsRaisedOncePerNewPersonWhenTheCompanyAsksForIt(t *test
 	}
 	if tasks, _ := svc.Tasks(ctx, hr); tasks[0].State != "done" || tasks[0].Note != "Invited as an employee." {
 		t.Errorf("the decided task: %+v", tasks[0])
+	}
+	var planTask string
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `SELECT state FROM nemura.onboarding_task WHERE person_id = $1 AND closes = 'fyniq_invitation'`, on).Scan(&planTask)
+	})
+	if planTask != "done" {
+		t.Errorf("the plan's invitation task after the person was invited: %s", planTask)
 	}
 }
 

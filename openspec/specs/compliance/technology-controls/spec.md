@@ -660,7 +660,7 @@ Source: PRD-001 §F.4
 
 #### Scenario: Overdue, failing and not assessed
 - **WHEN** the register of security assessments is read
-- **THEN** the control is overdue 12 months after the last independent assessment ended, fails while a Critical or High finding is past its due date, and is not assessed while none is recorded
+- **THEN** the control is overdue 12 months after the last independent assessment ended and while a Critical or High finding is past its due date, and with none recorded it waits without failing
 
 #### Scenario: Framework mapping
 - **WHEN** the control is listed in the control registry

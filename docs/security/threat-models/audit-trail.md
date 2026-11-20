@@ -88,8 +88,11 @@ Trust boundaries:
   proves T2, T6 and T12.
 - **A real point-in-time restore** has not been run. The test simulates one, with an anchor published for events the
   database no longer holds.
-- **Records cannot be held yet.** Legal holds exist only on stored files, so no hold stops a purge. When records can be
-  held, both purges stop at the first one held.
+- **Holds (AUD-11, 001300).** A hold on a record, a contact or a financial year stops both purges at the first row it
+  covers, and the database refuses to delete a covered audit event, ledger entry or person key whatever the job does
+  (`TestAHoldKeepsTheTrailFromThePurgeAndTheDatabaseRefusesIt`, `TestAHoldKeepsTheLedgerYearFromThePurge`). What remains:
+  a hold on a draft that names nobody covers nothing; evidence files take the storage hold within a day of the change
+  and a file kept by a hold lifted in error is not recovered by the hold.
 - **Nobody holds A on "Audit trail".** The Owner acknowledges recoveries until Appendix D names a role (the design's
   open question).
 - **The erasure register covers the security details only.** Per-person cohort keys and the data inventory's reason for

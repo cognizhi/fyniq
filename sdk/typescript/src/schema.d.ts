@@ -4824,6 +4824,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the legal holds on records
+         * @description The holds the DPO and the Owners placed on a record, a contact or a financial year (AUD-11), the ones that stand by default, each with its subject, reason and who placed it; state=all adds the lifted ones with who lifted them and why. Read-only; no side effects.
+         */
+        get: operations["listRetentionHolds"];
+        put?: never;
+        /**
+         * Place a legal hold on a record, a contact or a financial year
+         * @description The DPO or an Owner places a hold (AUD-11), with a reason, on one source document, a contact or a financial year. While it stands the purge after retention skips what it covers, the database refuses to delete it, and the evidence files it covers keep a storage-level hold (a job sets it within a day). A subject with a hold already is refused. Side effects: the hold, the audit event retention_hold.placed, and a notice to those who read the holds. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["placeRetentionHold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/holds/{hold_id}/lift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lift a legal hold
+         * @description The DPO or an Owner, stepped up, lifts a hold (AUD-11), with a reason; a lifted hold never stands again, and a new one is placed to hold again. The purge after retention may then reach what it covered, and the evidence files it alone covered are freed within a day. Side effects: the audit event retention_hold.lifted and a notice to those who read the holds. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["liftRetentionHold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/incidents": {
         parameters: {
             query?: never;
@@ -5052,6 +5096,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the readiness of each framework
+         * @description For each framework of the registry (CMP-08), its stage, how many mapped controls pass, fail, are overdue, are not assessed or do not apply, how many have a check still to arrive, and the controls that are not passing in plain words; and for ISO/IEC 27001:2022 Annex A the control numbers no control maps to. Readiness, never a certificate. Read-only; no side effects.
+         */
+        get: operations["getReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/restore-drills": {
         parameters: {
             query?: never;
@@ -5218,6 +5282,70 @@ export interface paths {
         get: operations["getAgentRun"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/security-assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the security assessments
+         * @description The register of security assessments (SEC-25, CTL-CHG-12): each penetration test or other assessment of the platform with its tester, whether they are independent, the scope, dates, the report's SHA-256 and where it is kept, and each finding with its severity, due day, state, fix and retest; the day the last independent test ended and the next is due, and how many Critical or High findings are overdue. Read-only; no side effects.
+         */
+        get: operations["listSecurityAssessments"];
+        put?: never;
+        /**
+         * Record a security assessment
+         * @description Records a penetration test or other assessment (SEC-25), with its findings: each is due by its severity (7 days Critical, 30 High, 90 Medium, 180 Low, from the day found). The report itself stays outside Fyniq: record its SHA-256 and where it is kept. Side effects: the assessment and its findings, the audit events security_assessment.recorded and security_finding.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["createSecurityAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/security-assessments/{assessment_id}/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a finding to a security assessment
+         * @description Adds a finding the assessment's tester reported later, such as at a retest (SEC-25): it is due by its severity from the day found. Side effects: the finding, the audit event security_finding.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["addSecurityFinding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/security-findings/{finding_id}/steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record the next step of a finding
+         * @description Records that a finding was fixed, then retested; or that an Owner accepts it, with a reason, before it is retested (SEC-25). A step follows the finding's last, and is dated no earlier than the finding or the step before it. Side effects: the step, the audit event security_finding.stepped. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["stepSecurityFinding"];
         delete?: never;
         options?: never;
         head?: never;
@@ -25039,6 +25167,18 @@ export interface components {
              */
             reason: string;
         };
+        AnnexAReadiness: {
+            /** @description The numbers some control's mapping names. */
+            covered: string[];
+            /**
+             * Format: int64
+             * @description How many numbers Annex A has.
+             * @example 93
+             */
+            total: number;
+            /** @description The numbers no control maps to: gaps for the statement of applicability, whose wording waits for the certification body. */
+            uncovered: string[];
+        };
         Announcement: {
             /**
              * @description Whether a person may dismiss it; never a critical one.
@@ -40845,6 +40985,36 @@ export interface components {
             periods: components["schemas"]["Period"][];
             year: components["schemas"]["FinancialYear"];
         };
+        FindingStepView: {
+            /**
+             * Format: date
+             * @description The day it happened.
+             * @example 2026-11-12
+             */
+            on: string;
+            /**
+             * @description An acceptance's reason.
+             * @example The affected page is retired next month
+             */
+            reason?: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-12T02:00:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description Who recorded it, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            recorded_by: string;
+            /**
+             * @description fixed, then retested; or accepted by an Owner, with a reason.
+             * @example fixed
+             * @enum {string}
+             */
+            step: "fixed" | "retested" | "accepted";
+        };
         FixedAsset: {
             /**
              * Format: uuid
@@ -42180,6 +42350,67 @@ export interface components {
              * @example 2026-10-31
              */
             through: string;
+        };
+        FrameworkReadiness: {
+            /**
+             * Format: int64
+             * @description How many controls map to it.
+             * @example 34
+             */
+            controls: number;
+            /**
+             * Format: int64
+             * @description Those that fail.
+             * @example 1
+             */
+            fail: number;
+            /** @description The controls that are not passing, with the worst first. */
+            gaps: components["schemas"]["ReadinessGap"][];
+            /**
+             * @description The framework's key, as the controls dashboard's filter has it.
+             * @example csa-ct
+             */
+            key: string;
+            /**
+             * Format: int64
+             * @description Those that do not apply to this organisation.
+             * @example 4
+             */
+            not_applicable: number;
+            /**
+             * Format: int64
+             * @description Those not assessed yet: a required input is missing.
+             * @example 3
+             */
+            not_assessed: number;
+            /**
+             * Format: int64
+             * @description Those that are overdue.
+             * @example 2
+             */
+            overdue: number;
+            /**
+             * Format: int64
+             * @description Of them, those that pass.
+             * @example 20
+             */
+            pass: number;
+            /**
+             * Format: int64
+             * @description Those with a check that arrives with a later change.
+             * @example 5
+             */
+            planned: number;
+            /**
+             * @description Where it sits in PRD-001's roadmap of assurance (section 14.8).
+             * @example Stage 1, with the first employees
+             */
+            stage: string;
+            /**
+             * @description Its name.
+             * @example CSA Cyber Trust
+             */
+            title: string;
         };
         FundingPlan: {
             /**
@@ -47361,6 +47592,13 @@ export interface components {
              * @example 1
              */
             source_version: number;
+        };
+        LiftRetentionHoldInput: {
+            /**
+             * @description Why it is lifted.
+             * @example The dispute is settled
+             */
+            reason: string;
         };
         LikelyPaid: {
             /** @description What the alert says arrived. */
@@ -57744,6 +57982,40 @@ export interface components {
              */
             next_cursor?: string;
         };
+        Readiness: {
+            /** @description ISO/IEC 27001:2022 Annex A's control numbers, covered and not. */
+            annex_a: components["schemas"]["AnnexAReadiness"];
+            /** @description Every framework of the registry, in the order the dashboard lists them. */
+            frameworks: components["schemas"]["FrameworkReadiness"][];
+            /**
+             * @description What this is not.
+             * @example Readiness, not a certificate: nothing here says Fyniq is certified by any body.
+             */
+            notice: string;
+        };
+        ReadinessGap: {
+            /**
+             * @description What the control holds.
+             * @example Security Command Center high and critical findings fixed within SLA
+             */
+            control: string;
+            /**
+             * @description In plain words, why.
+             * @example The verification has not run for this organisation yet.
+             */
+            detail: string;
+            /**
+             * @description The control's ID.
+             * @example CTL-RES-04
+             */
+            id: string;
+            /**
+             * @description Why it is a gap: it fails, is overdue, or is not assessed yet.
+             * @example not_assessed
+             * @enum {string}
+             */
+            status: "fail" | "overdue" | "not_assessed";
+        };
         Reading: {
             currency: components["schemas"]["Text"];
             customer_named: components["schemas"]["Flag"];
@@ -59320,6 +59592,143 @@ export interface components {
              * @example 0
              */
             unpriced_entries: number;
+        };
+        RetentionHoldInput: {
+            /**
+             * Format: uuid
+             * @description For a contact.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12
+             */
+            contact_id?: string;
+            /**
+             * Format: uuid
+             * @description For a record: its source document.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11
+             */
+            document_id?: string;
+            /**
+             * Format: int64
+             * @description For a financial year: its number in the organisation's calendar, 1 for the first.
+             * @example 1
+             */
+            financial_year?: number;
+            /**
+             * @description What the hold names.
+             * @example record
+             * @enum {string}
+             */
+            kind: "record" | "contact" | "financial_year";
+            /**
+             * @description Why: the dispute, claim, audit or inquiry the records are held for.
+             * @example A dispute with the supplier is open
+             */
+            reason: string;
+        };
+        RetentionHoldList: {
+            /**
+             * Format: int64
+             * @description How many stand.
+             * @example 1
+             */
+            in_force: number;
+            /** @description The holds, the newest placed first. */
+            items: components["schemas"]["RetentionHoldView"][];
+        };
+        RetentionHoldView: {
+            /**
+             * Format: uuid
+             * @description A contact.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12
+             */
+            contact_id?: string;
+            /**
+             * @description The contact's legal name.
+             * @example Acme Pte Ltd
+             */
+            contact_name?: string;
+            /**
+             * Format: uuid
+             * @description A record's source document.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11
+             */
+            document_id?: string;
+            /**
+             * @description The document's number, once it has one.
+             * @example INV-0042
+             */
+            document_number?: string;
+            /**
+             * @description The document's type.
+             * @example invoice
+             */
+            document_type?: string;
+            /**
+             * Format: uuid
+             * @description The hold.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            hold_id: string;
+            /**
+             * @description true while it stands.
+             * @example true
+             */
+            in_force: boolean;
+            /**
+             * @description What it names.
+             * @example record
+             * @enum {string}
+             */
+            kind: "record" | "contact" | "financial_year";
+            /**
+             * @description Why it was lifted.
+             * @example The dispute is settled
+             */
+            lift_reason?: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-12-01T02:00:00Z
+             */
+            lifted_at?: string;
+            /**
+             * @description Who lifted it.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            lifted_by?: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-09T02:00:00Z
+             */
+            placed_at: string;
+            /**
+             * @description Who placed it, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            placed_by: string;
+            /**
+             * @description Why it was placed.
+             * @example A dispute with the supplier is open
+             */
+            reason: string;
+            /**
+             * Format: date
+             * @description The year's last day.
+             * @example 2026-12-31
+             */
+            year_ends_on?: string;
+            /**
+             * Format: int64
+             * @description A financial year's number in the organisation's calendar, 1 for the first.
+             * @example 1
+             */
+            year_number?: number;
+            /**
+             * Format: date
+             * @description The year's first day.
+             * @example 2026-01-01
+             */
+            year_starts_on?: string;
         };
         RetentionRow: {
             /**
@@ -61351,6 +61760,241 @@ export interface components {
             query: string;
             /** @description The records found: each kind's newest first, in the filters' order; only group's when it is given. */
             results: components["schemas"]["SearchResult"][];
+        };
+        SecurityAssessmentInput: {
+            /**
+             * Format: date
+             * @description The last day, not after today.
+             * @example 2026-11-02
+             */
+            ended_on: string;
+            /** @description Its findings. */
+            findings?: components["schemas"]["SecurityFindingInput"][] | null;
+            /**
+             * @description true when the testers are not the people who build and run Fyniq.
+             * @example true
+             */
+            independent: boolean;
+            /**
+             * @description What it was.
+             * @example penetration_test
+             * @enum {string}
+             */
+            kind: "penetration_test" | "vulnerability_assessment" | "other";
+            /**
+             * @description Where the report is kept.
+             * @example The security folder of the shared drive
+             */
+            report_location?: string;
+            /**
+             * @description The report's SHA-256, lower-case hex.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            report_sha256?: string;
+            /**
+             * @description What it covered.
+             * @example The web app, the API and the MCP server on staging
+             */
+            scope: string;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-10-19
+             */
+            started_on: string;
+            /**
+             * @description What it concluded.
+             * @example No critical finding; one high
+             */
+            summary: string;
+            /**
+             * @description The firm or person.
+             * @example Example Security Pte Ltd
+             */
+            tester: string;
+        };
+        SecurityAssessmentRegister: {
+            /** @description The assessments, the latest ended first. */
+            items: components["schemas"]["SecurityAssessmentView"][];
+            /**
+             * Format: date
+             * @description The day the last independent assessment ended.
+             * @example 2026-11-02
+             */
+            last_independent_on?: string;
+            /**
+             * Format: date
+             * @description The day the next independent test is due: 12 months after the last.
+             * @example 2027-11-02
+             */
+            next_due_on?: string;
+            /**
+             * Format: int64
+             * @description How many Critical or High findings are past their day.
+             * @example 0
+             */
+            overdue_findings: number;
+        };
+        SecurityAssessmentView: {
+            /**
+             * Format: uuid
+             * @description The assessment.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11
+             */
+            assessment_id: string;
+            /**
+             * Format: date
+             * @description The last day.
+             * @example 2026-11-02
+             */
+            ended_on: string;
+            /** @description Its findings. */
+            findings: components["schemas"]["SecurityFindingView"][];
+            /**
+             * @description true when the testers are not the people who build and run Fyniq.
+             * @example true
+             */
+            independent: boolean;
+            /**
+             * @description What it was.
+             * @example penetration_test
+             * @enum {string}
+             */
+            kind: "penetration_test" | "vulnerability_assessment" | "other";
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-03T02:00:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description Who recorded it, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            recorded_by: string;
+            /**
+             * @description Where the report is kept; it stays outside Fyniq.
+             * @example The security folder of the shared drive
+             */
+            report_location?: string;
+            /**
+             * @description The report's SHA-256, so it is shown to be the one received.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            report_sha256?: string;
+            /**
+             * @description What it covered.
+             * @example The web app, the API and the MCP server on staging
+             */
+            scope: string;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-10-19
+             */
+            started_on: string;
+            /**
+             * @description What it concluded.
+             * @example No critical finding; one high
+             */
+            summary: string;
+            /**
+             * @description The firm or person.
+             * @example Example Security Pte Ltd
+             */
+            tester: string;
+        };
+        SecurityFindingInput: {
+            /**
+             * Format: date
+             * @description The day it was found; the assessment's last day when left out.
+             * @example 2026-11-02
+             */
+            found_on?: string;
+            /**
+             * @description The tester's reference.
+             * @example PT-2026-07
+             */
+            ref: string;
+            /**
+             * @description How serious.
+             * @example high
+             * @enum {string}
+             */
+            severity: "critical" | "high" | "medium" | "low" | "info";
+            /**
+             * @description What it is.
+             * @example Reflected script in the search page
+             */
+            title: string;
+        };
+        SecurityFindingStepInput: {
+            /**
+             * Format: date
+             * @description The day it happened, not after today.
+             * @example 2026-11-12
+             */
+            on: string;
+            /**
+             * @description An acceptance's reason: why the risk is taken.
+             * @example The affected page is retired next month
+             */
+            reason?: string;
+            /**
+             * @description fixed, then retested; or accepted, before the retest, with a reason.
+             * @example fixed
+             * @enum {string}
+             */
+            step: "fixed" | "retested" | "accepted";
+        };
+        SecurityFindingView: {
+            /**
+             * Format: date
+             * @description The day it is due: 7 days for Critical, 30 High, 90 Medium, 180 Low from the day found; none for info.
+             * @example 2026-12-02
+             */
+            due_on?: string;
+            /**
+             * Format: uuid
+             * @description The finding.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            finding_id: string;
+            /**
+             * Format: date
+             * @description The day it was found.
+             * @example 2026-11-02
+             */
+            found_on: string;
+            /**
+             * @description true when a Critical or High finding is past its day: open after its due day, or fixed and not retested 30 days on.
+             * @example false
+             */
+            overdue: boolean;
+            /**
+             * @description The tester's reference.
+             * @example PT-2026-07
+             */
+            ref: string;
+            /**
+             * @description How serious.
+             * @example high
+             * @enum {string}
+             */
+            severity: "critical" | "high" | "medium" | "low" | "info";
+            /**
+             * @description Where it stands.
+             * @example open
+             * @enum {string}
+             */
+            state: "open" | "fixed" | "retested" | "accepted";
+            /** @description The steps it took, in order. */
+            steps: components["schemas"]["FindingStepView"][];
+            /**
+             * @description What it is.
+             * @example Reflected script in the search page
+             */
+            title: string;
         };
         SendInvestorUpdateInputBody: {
             /** @description Member user IDs: each an active member who may read the board pack, such as a Board viewer (BPACK-04). */
@@ -103714,6 +104358,387 @@ export interface operations {
             };
         };
     };
+    listRetentionHolds: {
+        parameters: {
+            query?: {
+                /** @description in_force, the default, lists the holds that stand; all adds the lifted ones. */
+                state?: "in_force" | "all";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetentionHoldList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    placeRetentionHold: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetentionHoldInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetentionHoldView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-HOLD-01` That hold is already in force, or was lifted already; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    liftRetentionHold: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The hold. */
+                hold_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiftRetentionHoldInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetentionHoldView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-HOLD-01` That hold is already in force, or was lifted already; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listIncidents: {
         parameters: {
             query?: never;
@@ -105390,6 +106415,99 @@ export interface operations {
             };
         };
     };
+    getReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Readiness"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listRestoreDrills: {
         parameters: {
             query?: never;
@@ -106666,6 +107784,519 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSecurityAssessments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityAssessmentRegister"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createSecurityAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecurityAssessmentInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityAssessmentView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-ASSESSMENT-01` The register of security assessments is only added to, and a finding's steps follow each other; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addSecurityFinding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The assessment. */
+                assessment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecurityFindingInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityFindingView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-ASSESSMENT-01` The register of security assessments is only added to, and a finding's steps follow each other; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    stepSecurityFinding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The finding. */
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecurityFindingStepInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindingStepView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-ASSESSMENT-01` The register of security assessments is only added to, and a finding's steps follow each other; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

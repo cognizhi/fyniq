@@ -298,3 +298,96 @@ func TestEachPersonReadsAndDecidesOnlyTheTasksThatAreTheirs(t *testing.T) {
 		}
 	}
 }
+
+// A task that closes by its flow is not marked done by hand, can be skipped when it does not apply, and is closed by the flow in its own transaction, once, by whoever ran the flow; a template names the flow
+// from a short list, and the plan copies it (NM-ONB-01, rev 0.75).
+// req: NM-ONB-01
+// asvs: V8.2.1, V8.3.1
+func TestATaskThatClosesByItsFlowIsClosedByItAndNeverMarkedDoneByHand(t *testing.T) {
+	p := newPlanTeam(t)
+	c := p.c
+	tasks := []onboarding.Task{
+		{Title: "Issue the KETs", Assignee: onboarding.ForHR, Offset: 14, Closes: onboarding.ClosesKETs},
+		{Title: "Invite them to Fyniq", Assignee: onboarding.ForHR, Offset: 1, Closes: onboarding.ClosesInvitation},
+		{Title: "Say hello", Assignee: onboarding.ForManager, Offset: 1},
+	}
+	if err := c.do(func(ctx context.Context, tx pgx.Tx) error {
+		_, err := nemura.MakeOnboardingTemplate(ctx, tx, c.org, p.now, c.hr, "Bad flow", []onboarding.Task{{Title: "x", Assignee: "hr", Closes: "payroll"}})
+		return err
+	}); planCode(err) != onboarding.CodeInvalid {
+		t.Errorf("a flow that does not exist: %v", err)
+	}
+	var tpl uuid.UUID
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
+		tpl, err = nemura.MakeOnboardingTemplate(ctx, tx, c.org, p.now, c.hr, "With flows", tasks)
+		return
+	})
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		_, err := nemura.StartOnboardingPlan(ctx, tx, c.org, p.now, c.hr, p.pJon, &tpl)
+		return err
+	})
+	var plans []api.Plan
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
+		plans, err = nemura.OnboardingPlans(ctx, tx, today)
+		return
+	})
+	byTitle := map[string]api.PlanTask{}
+	for _, task := range plans[0].Tasks {
+		byTitle[task.Title] = task
+	}
+	if byTitle["Issue the KETs"].Closes != "kets" || byTitle["Invite them to Fyniq"].Closes != "fyniq_invitation" || byTitle["Say hello"].Closes != "" {
+		t.Fatalf("the plan copies the flows: %+v", byTitle)
+	}
+	hr := []authz.Role{authz.HRAdmin}
+	decide := func(id, state string) error {
+		return c.do(func(ctx context.Context, tx pgx.Tx) error {
+			return nemura.DecideOnboardingTask(ctx, tx, c.org, p.now, c.hr, hr, mustUUID(id), state, "", today)
+		})
+	}
+	if err := decide(byTitle["Issue the KETs"].ID, "done"); planCode(err) != onboarding.CodeConflict {
+		t.Errorf("a KETs task marked done by hand: %v", err)
+	}
+	// The flow closes it, by whoever ran it, and only once.
+	var n int
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
+		n, err = nemura.CloseOnboardingTasksByFlow(ctx, tx, c.org, p.now, c.owner, p.pJon, onboarding.ClosesKETs)
+		return
+	})
+	if n != 1 {
+		t.Errorf("the KETs flow closed %d tasks", n)
+	}
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
+		n, err = nemura.CloseOnboardingTasksByFlow(ctx, tx, c.org, p.now, c.owner, p.pJon, onboarding.ClosesKETs)
+		return
+	})
+	if n != 0 {
+		t.Errorf("the flow closed a task a second time: %d", n)
+	}
+	// A task that does not apply is skipped by the people team.
+	if err := decide(byTitle["Invite them to Fyniq"].ID, "skipped"); err != nil {
+		t.Errorf("skipping an invitation task: %v", err)
+	}
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
+		plans, err = nemura.OnboardingPlans(ctx, tx, today)
+		return
+	})
+	for _, task := range plans[0].Tasks {
+		switch task.Title {
+		case "Issue the KETs":
+			if task.State != "done" || task.DecidedBy != "Owen Owner" || task.Note == "" {
+				t.Errorf("the KETs task after its flow: %+v", task)
+			}
+		case "Invite them to Fyniq":
+			if task.State != "skipped" {
+				t.Errorf("the invitation task after a skip: %+v", task)
+			}
+		}
+	}
+	// The flow's column never changes under a task, even straight to the database.
+	if err := c.do(func(ctx context.Context, tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `UPDATE nemura.onboarding_task SET closes = NULL WHERE title = 'Say hello'`)
+		return err
+	}); pgErr(err) != "NM212" && pgErr(err) != "42501" {
+		t.Errorf("a task's flow rewritten: %v", err)
+	}
+}

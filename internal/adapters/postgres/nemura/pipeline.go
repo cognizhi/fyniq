@@ -128,6 +128,7 @@ func oneCandidate(ctx context.Context, tx pgx.Tx, id uuid.UUID, detail bool) (ap
 			h.PlanID = plan.String()
 		}
 		c.Hire = &h
+		c.RetentionUntil = day(start.AddDate(0, hiring.CandidateRetentionMonths, 0)) // a hired candidate's record goes six months after the start date (migration 000071)
 	case !errors.Is(e, pgx.ErrNoRows):
 		return c, e
 	}

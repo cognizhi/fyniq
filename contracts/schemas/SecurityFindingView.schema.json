@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "due_on": {
+      "description": "The day it is due: 7 days for Critical, 30 High, 90 Medium, 180 Low from the day found; none for info.",
+      "examples": [
+        "2026-12-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "finding_id": {
+      "description": "The finding.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "found_on": {
+      "description": "The day it was found.",
+      "examples": [
+        "2026-11-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "overdue": {
+      "description": "true when a Critical or High finding is past its day: open after its due day, or fixed and not retested 30 days on.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "ref": {
+      "description": "The tester's reference.",
+      "examples": [
+        "PT-2026-07"
+      ],
+      "type": "string"
+    },
+    "severity": {
+      "description": "How serious.",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "info"
+      ],
+      "examples": [
+        "high"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "Where it stands.",
+      "enum": [
+        "open",
+        "fixed",
+        "retested",
+        "accepted"
+      ],
+      "examples": [
+        "open"
+      ],
+      "type": "string"
+    },
+    "steps": {
+      "description": "The steps it took, in order.",
+      "items": {
+        "$ref": "FindingStepView.schema.json"
+      },
+      "type": "array"
+    },
+    "title": {
+      "description": "What it is.",
+      "examples": [
+        "Reflected script in the search page"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "finding_id",
+    "ref",
+    "title",
+    "severity",
+    "found_on",
+    "state",
+    "overdue",
+    "steps"
+  ],
+  "title": "SecurityFindingView",
+  "type": "object"
+}

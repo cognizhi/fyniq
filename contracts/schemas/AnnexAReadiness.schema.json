@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "covered": {
+      "description": "The numbers some control's mapping names.",
+      "items": {
+        "description": "A control number of Annex A: 5.1 to 5.37, 6.1 to 6.8, 7.1 to 7.14 or 8.1 to 8.34.",
+        "examples": [
+          "5.15"
+        ],
+        "pattern": "^[5-8]\\.[0-9]{1,2}$",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "total": {
+      "description": "How many numbers Annex A has.",
+      "examples": [
+        93
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "uncovered": {
+      "description": "The numbers no control maps to: gaps for the statement of applicability, whose wording waits for the certification body.",
+      "items": {
+        "description": "A control number of Annex A: 5.1 to 5.37, 6.1 to 6.8, 7.1 to 7.14 or 8.1 to 8.34.",
+        "examples": [
+          "5.15"
+        ],
+        "pattern": "^[5-8]\\.[0-9]{1,2}$",
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "total",
+    "covered",
+    "uncovered"
+  ],
+  "title": "AnnexAReadiness",
+  "type": "object"
+}

@@ -65,8 +65,8 @@ approve, sign and send.
 |---|---|---|
 | `people.draft_letter` | An HR officer asks for a letter for a request | HR officer, then the normal issue steps |
 | `people.draft_fwa_reply` | A manager or HR officer asks for a reply to a flexible-work request | Line manager or HR officer |
-| `people.draft_job_post` (P2) | A recruiter asks for a post from a requisition | Recruiter |
-| `people.draft_interview_kit` (P2) | A recruiter asks for questions and a scorecard | Recruiter |
+| `people.draft_job_post` (P2) | The people team asks for a post from a requisition: written from the role and the team alone | HR officer, HR administrator or Owner |
+| `people.draft_interview_kit` (P2) | The people team asks for questions and a scorecard: the same questions for every candidate, about the work | HR officer, HR administrator or Owner |
 | `people.draft_review_summary` (P2) | A manager asks for a summary of goals, check-ins and feedback | Line manager; no rating proposed |
 
 Fill drafts from records only. Mark every assumption. Leave signatures blank.
@@ -91,6 +91,5 @@ Statutory changes belong in the country packs, not here.
 
 Nemura's own runtime (`internal/nemura/assistant`) runs four read tools, each as the asking person, and nothing else: `my_leave_balance`, `my_payday`, `rule_answer` (the pack in force, cited, with the note to confirm
 it with HR) and `slip_line_rule` (a payslip line as a rule, never a figure). A tool is absent while the feature it reads is switched off for the organisation or held by another system. A result that carries pay, an
-NRIC, a bank account or a figure of money is refused before the model sees it, and every figure of an answer must be one a tool returned in the same turn. Drafts are the two P1 task types, `people.draft_letter` and
-`people.draft_fwa_reply`: proposals that a named person approves, which the executor attaches beside the request; a reply draft states no decision and no reason. The suites are `evals/nemura-assistant/golden.json` and
+NRIC, a bank account or a figure of money is refused before the model sees it, and every figure of an answer must be one a tool returned in the same turn. Drafts are `people.draft_letter`, `people.draft_fwa_reply` and, from rev 0.76, `people.draft_job_post` and `people.draft_interview_kit` (written from a requisition's role and team alone, never its salary, a person or a candidate, and passing the fair-wording check as written): proposals that a named person approves, which the executor attaches beside the request; a reply draft states no decision and no reason. The suites are `evals/nemura-assistant/golden.json` and
 `redteam.json`; the model route is local mode's scripted model until a real one is evidenced in Singapore.

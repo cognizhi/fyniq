@@ -33,7 +33,7 @@ describe("Home's work by role", () => {
   it("gives the roles that land elsewhere their rows on the page they land on, and only theirs", () => {
     expect(rowsFor(["administrator"]).map((w) => w.id)).toEqual(["join-requests", "invitations-open", "role-changes", "integrations-failing"]);
     expect(rowsFor(["company_secretary"]).map((w) => w.id)).toEqual(["secretary-findings", "register-approvals"]);
-    expect(rowsFor(["dpo"]).map((w) => w.id)).toEqual(["data-requests", "breaches-open"]);
+    expect(rowsFor(["dpo"]).map((w) => w.id)).toEqual(["data-requests", "breaches-open", "holds-in-force"]);
     expect(rowsFor(["bookkeeper", "administrator"].filter((r) => landingRoles.settings.includes(r as never))).map((w) => w.id)).not.toContain("bank-lines");
   });
 
@@ -58,6 +58,7 @@ describe("Home's work by role", () => {
     answer({
       "GET /v1/compliance/personal-data-requests": { status: 200, body: { items: [{ id: "r1", status: "received" }, { id: "r2", status: "answered" }] } },
       "GET /v1/compliance/breaches": { status: 200, body: { items: [{ id: "b1", status: "assessed" }, { id: "b2", status: "closed" }] } },
+      "GET /v1/compliance/holds": { status: 200, body: { items: [{ hold_id: "h1", in_force: true }, { hold_id: "h2", in_force: true }], in_force: 2 } },
       "GET /v1/compliance/secretary": { status: 200, body: { state: "on", findings: [{ key: "f1", status: "due" }, { key: "f2", status: "ok" }, { key: "f3", status: "review" }] } },
       "GET /v1/approvals": { status: 200, body: { items: [{ id: "a1", object_type: "holder_record" }, { id: "a2", object_type: "membership" }] } },
       "GET /v1/compliance/calendar": { status: 200, body: { today: "2026-11-17", deadlines: [{ key: "AR", title: "Annual return", due_on: "2027-03-31", status: "open", area: "corporate" }] } },
@@ -66,6 +67,7 @@ describe("Home's work by role", () => {
     const card = await screen.findByRole("region", { name: "Your work" });
     expect(await within(card).findByRole("link", { name: /1 data request to answer/ })).toBeTruthy();
     expect(within(card).getByRole("link", { name: /1 breach still open/ }).getAttribute("href")).toBe("/compliance/data-protection");
+    expect(within(card).getByRole("link", { name: /2 legal holds in force/ }).getAttribute("href")).toBe("/compliance/data-protection"); // AUD-11
     expect(screen.queryByRole("list", { name: "Upcoming deadlines" })).toBeNull();
     await noViolations(document.body);
     unmount();

@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
+	"github.com/cognizhi/fyniq/internal/nemura/onboarding"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -557,6 +558,11 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12::jsonb, $13)`, 
 	}
 	if err := Audit(ctx, tx, org, at, user(by), "nemura.letter.issued", audit.Object{Type: "letter_issued", ID: id}, map[string]audit.Change{"reference": {nil, ref}, "sha256": {nil, hex.EncodeToString(sum)}, "authority": {nil, authority}}, ""); err != nil {
 		return uuid.Nil, err
+	}
+	if key == "kets" { // the person's onboarding task for the KETs closes by this flow (NM-ONB-01, rev 0.75)
+		if _, err := CloseOnboardingTasksByFlow(ctx, tx, org, at, by, person, onboarding.ClosesKETs); err != nil {
+			return uuid.Nil, err
+		}
 	}
 	if err := Audit(ctx, tx, org, at, user(by), "nemura.letter.request_issued", audit.Object{Type: "letter_request", ID: request}, map[string]audit.Change{"state": {"checked", "issued"}}, ""); err != nil {
 		return uuid.Nil, err

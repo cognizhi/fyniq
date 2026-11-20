@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "annex_a": {
+      "$ref": "AnnexAReadiness.schema.json",
+      "description": "ISO/IEC 27001:2022 Annex A's control numbers, covered and not."
+    },
+    "frameworks": {
+      "description": "Every framework of the registry, in the order the dashboard lists them.",
+      "items": {
+        "$ref": "FrameworkReadiness.schema.json"
+      },
+      "type": "array"
+    },
+    "notice": {
+      "description": "What this is not.",
+      "examples": [
+        "Readiness, not a certificate: nothing here says Fyniq is certified by any body."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "frameworks",
+    "annex_a",
+    "notice"
+  ],
+  "title": "Readiness",
+  "type": "object"
+}

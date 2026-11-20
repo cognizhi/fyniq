@@ -3146,18 +3146,24 @@
    "mode": "expert",
    "requirements": [
     "FR-RPT-12",
-    "FR-ENT-01",
     "FR-ENT-02",
+    "FR-ENT-05",
+    "FR-ENT-06",
+    "FR-GL-13",
     "FR-UX-18"
    ],
    "purpose": "Report across several legal entities with eliminations and currency translation.",
    "content": [
-    "Entity columns, eliminations column, consolidated total",
-    "Currency translation rates and differences",
-    "Intercompany balances that do not agree flagged"
+    "Entity columns, eliminations column, consolidated total (a frozen run, with its ledger revisions)",
+    "Translation rates (closing and average) and the translation reserve",
+    "Intercompany balances that do not agree flagged, with the larger side and the difference; nothing is plugged",
+    "Provisional banner while an entity's period is not closed; link ended banner",
+    "Intercompany transactions and offers"
    ],
    "states": [
     "intercompany mismatch",
+    "provisional",
+    "link ended",
     "single entity (not applicable)"
    ]
   },
@@ -3177,17 +3183,20 @@
    "mode": "expert",
    "requirements": [
     "FR-ENT-03",
+    "FR-ENT-07",
     "FR-UX-18"
    ],
    "purpose": "Let an accounting firm see all client organisations and what needs attention in each.",
    "content": [
-    "Client list: organisation, books health, close status, filings due (GST F5, Form C-S, ECI), open queries",
-    "Per-client access scope and expiry",
-    "Switch into a client organisation"
+    "Client list: organisation, oldest open period, last closed month, checks failing, approvals waiting, next statutory deadline (counts, no money)",
+    "Per-client access: the caller's role there and its expiry",
+    "Switch into a client organisation (audited in the client)",
+    "Firm mode and client invitations (the firm's Owner)"
    ],
    "states": [
     "no clients",
-    "access expired"
+    "access expired",
+    "count not allowed for the role"
    ]
   },
   {
@@ -3436,6 +3445,8 @@
     "(p1-security-hardening, SEC-32) Incidents tab: the incident register; each incident with its severity chip (icon and words), when it was seen, its latest step and note, linked breach; the DPO opens one (title, what is known, severity) and records the next step in the runbook's order (contained, assessed with the breach register's breach, notified, recovered, reviewed and closed); the other readers read it",
     "(p1-operations-dr, DR-06, CTL-RES-02) Restore drills tab: the restore drill register; each full drill with its day, scenario, what it restored from, the data lost and the time taken, what did not pass, and a Recovered or Not recovered chip (icon and words); the DPO records one (day, scenario, restored from, minutes lost and taken, DR-06's seven checks, findings); readers see it read-only",
     "(p1-operations-dr, NFR-OBS-02, CTL-RES-05) Heartbeat drills tab: the heartbeat drill register; each drill with its day, where and how long the tick was paused, when the first alert and the escalation came (or that they never did), and a Passed or Not passed chip (icon and words); the DPO records one (day, environment, minutes paused, minutes to each alert, findings); readers see it read-only",
+    "(p2-security-certification, SEC-25, CTL-CHG-12) Security assessments tab: the register of penetration tests and other assessments; each with its kind, tester, an independent or not independent note, scope, dates, the report's SHA-256 and where it is kept, and its findings with severity, due day, state (Open, Fixed to retest, Retested, Accepted) and an Overdue chip; the last independent test, the next due, the count of overdue findings; the Owner records an assessment, adds a finding and records a step (fixed, retested, accepted with a reason)",
+    "(p2-security-certification, CMP-08) Readiness tab: for each framework with a control, its stage, a chip of how many of its controls pass, the counts that fail, are overdue, are not assessed, do not apply or have a check to arrive, and the controls not passing in plain words, the failing first; ISO/IEC 27001 Annex A's numbers with no control; a line that it is readiness, not a certificate",
     "P2: evidence export per framework and period"
    ],
    "states": [
@@ -3510,11 +3521,12 @@
    ],
    "purpose": "Run the PDPA programme: data inventory, DPIAs, access requests, breach timers, transfers abroad and shredding at the end of retention.",
    "content": [
-    "Tabs as built (p1-pdpa-retention): Inventory, Impact assessments, Requests, Breaches, Transfers, Shredding, Data Protection Officer; the canvas shows Breaches",
+    "Tabs as built (p1-pdpa-retention): Inventory, Impact assessments, Requests, Breaches, Transfers, Shredding, Holds (p2-security-certification, AUD-11), Data Protection Officer; the canvas shows Breaches",
     "Breach register with timers: assessment within 30 days, PDPC notification within 3 calendar days after deciding it is notifiable; the Prescribed data chip; Next step",
     "Tabletop exercises of the breach runbook, twice a year",
     "Data inventory: what, why, where, who, how long, cross-border flows; DPIAs (payroll, AI assistant); access and correction requests with 30-day timers",
     "Transfers: Fyniq's flows abroad and the company's own, each assessed; Shredding: the runs waiting for approval, approved and done, and the anonymised contacts",
+    "Holds (AUD-11): the legal holds on a record, a contact or a financial year, each with its subject, reason, who placed it and when, a Held chip and Lift (reason, stepped up); Place a hold chooses a year, a contact or one record, with a reason; the lifted ones on request",
     "DPO contact, the text for the website and the published policies"
    ],
    "states": [
@@ -5771,11 +5783,11 @@
   {
    "id": "entity-setup",
    "file": "EntitySetup",
-   "title": "Add a legal entity",
+   "title": "Entities of the group",
    "canvas": "workflows",
    "module": "Settings",
-   "route": "/settings/entities/new",
-   "kind": "wizard",
+   "route": "/settings/entities",
+   "kind": "page",
    "phase": "P3",
    "roles": [
     "Owner",
@@ -5784,16 +5796,23 @@
    "mode": "expert",
    "requirements": [
     "FR-ENT-01",
-    "FR-ENT-02"
+    "FR-ENT-04",
+    "FR-ENT-05"
    ],
-   "purpose": "Add another legal entity to the organisation with its own base currency, account mapping, tax packs and periods.",
+   "purpose": "Link organisations in a group by the consent of both Owners: invite an entity, accept an invitation, see what the group may read, map accounts and end a link (an entity is an organisation, rev 0.625).",
    "content": [
-    "Wizard: entity name and UEN, country, base currency, chart of accounts mapping to the group, tax packs, financial periods",
-    "Intercompany settings",
-    "Review and create with dual approval"
+    "The group: parent, entities with their base currency, state (invited, linked, ended) and when",
+    "Invite an entity: a one-time code for the entity's Owner, valid 24 hours",
+    "Accept an invitation (in the entity's organisation): exactly what the group may read and may not, then step-up",
+    "Account mapping to the parent's chart with counterparty entity, suggested by equal code",
+    "End the link with a reason, from either side"
    ],
    "states": [
-    "draft"
+    "no group yet",
+    "invited",
+    "linked",
+    "ended",
+    "code expired"
    ]
   },
   {
@@ -7586,6 +7605,154 @@
     "active",
     "paused",
     "archived"
+   ]
+  },
+  {
+   "id": "nm-hiring-candidate",
+   "file": "NmHiringCandidate",
+   "title": "Candidate, interview kit and their own link",
+   "canvas": "nemura-setup",
+   "module": "Hiring and performance",
+   "route": "/people/hiring/:role/candidates/:id",
+   "kind": "detail",
+   "phase": "P2",
+   "roles": [
+    "Recruiter",
+    "HR officer",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "NM-REC-04",
+    "NM-REC-05",
+    "NM-REC-03"
+   ],
+   "purpose": "A candidate's board position, interviewers, scores, the role's interview kit with its fair-wording check, and the link that lets the candidate see their own data.",
+   "content": [
+    "Interviewers to assign",
+    "Scores",
+    "Interview kit with findings",
+    "Make a link for the candidate, shown once",
+    "Links made and revoke"
+   ],
+   "states": [
+    "no interviewer has the role",
+    "link made",
+    "link revoked",
+    "hired: record due six months after the start"
+   ]
+  },
+  {
+   "id": "nm-my-interviews",
+   "file": "NmMyInterviews",
+   "title": "My interviews",
+   "canvas": "nemura-me",
+   "module": "Hiring and performance",
+   "route": "/me/interviews",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "Interviewer"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-REC-04"
+   ],
+   "purpose": "An interviewer's own candidates: read the application and score the kit's criteria from 1 to 5.",
+   "content": [
+    "Candidates assigned to me",
+    "Criteria and what I scored",
+    "The CV they gave",
+    "Score form"
+   ],
+   "states": [
+    "no candidate assigned",
+    "no kit yet"
+   ]
+  },
+  {
+   "id": "nm-my-hiring-roles",
+   "file": "NmMyHiringRoles",
+   "title": "Roles I am hiring for",
+   "canvas": "nemura-me",
+   "module": "Hiring and performance",
+   "route": "/me/hiring-roles",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "Line manager"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-REC-01"
+   ],
+   "purpose": "The roles that name the line manager as hiring manager, with candidate counts by stage and no salary or name.",
+   "content": [
+    "Role, team, state",
+    "Start aimed for and the post's dates",
+    "Counts by stage"
+   ],
+   "states": [
+    "no role names me",
+    "waiting for the Owner"
+   ]
+  },
+  {
+   "id": "nm-my-application",
+   "file": "NmMyApplication",
+   "title": "Your application",
+   "canvas": "nemura-setup",
+   "module": "Public",
+   "route": "/my-application",
+   "kind": "form",
+   "phase": "P2",
+   "roles": [
+    "Candidate (public)"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-REC-05"
+   ],
+   "purpose": "A candidate's own look at their data through a link the hiring team made, with the withdrawal of their consent to be kept.",
+   "content": [
+    "Role and where it stands",
+    "What they gave",
+    "Withdraw consent",
+    "When their data is deleted"
+   ],
+   "states": [
+    "link not valid",
+    "consent withdrawn",
+    "hired"
+   ]
+  },
+  {
+   "id": "nm-careers",
+   "file": "NmCareers",
+   "title": "Careers",
+   "canvas": "nemura-setup",
+   "module": "Public",
+   "route": "/careers/:slug",
+   "kind": "detail",
+   "phase": "P2",
+   "roles": [
+    "Visitor (public)"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-REC-02",
+    "NM-REC-04",
+    "NM-REC-05"
+   ],
+   "purpose": "A company's careers page: published roles with no salary and no person, and the form to apply with the separate consent to be kept.",
+   "content": [
+    "Published posts",
+    "Apply with name, email and CV text",
+    "Consent to be kept, separately"
+   ],
+   "states": [
+    "no careers page at this address",
+    "no published post"
    ]
   },
   {

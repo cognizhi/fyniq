@@ -51,6 +51,9 @@ func TestTheNextYearToPurge(t *testing.T) {
 	if _, ok := NextYear(cal, 7, d("2020-05-20"), closed, []time.Time{d("2021-04-01")}, d("2030-01-01")); !ok {
 		t.Error("a hold on a record of the next year keeps this one")
 	}
+	if _, ok := NextYear(cal, 7, d("2020-01-01"), closed, []time.Time{d("2020-02-01")}, d("2030-01-01")); ok {
+		t.Error("a held line before the books start is in the first year, and keeps it")
+	}
 	if y, ok := NextYear(cal, 7, d("2020-01-01"), closed, nil, d("2030-01-01")); !ok || !y.Boundary.Equal(d("2021-04-01")) {
 		t.Errorf("a line before the books start: %+v %v", y, ok)
 	}

@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ended_on": {
+      "description": "The last day, not after today.",
+      "examples": [
+        "2026-11-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "findings": {
+      "description": "Its findings.",
+      "items": {
+        "$ref": "SecurityFindingInput.schema.json"
+      },
+      "maxItems": 200,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "independent": {
+      "description": "true when the testers are not the people who build and run Fyniq.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "kind": {
+      "description": "What it was.",
+      "enum": [
+        "penetration_test",
+        "vulnerability_assessment",
+        "other"
+      ],
+      "examples": [
+        "penetration_test"
+      ],
+      "type": "string"
+    },
+    "report_location": {
+      "description": "Where the report is kept.",
+      "examples": [
+        "The security folder of the shared drive"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "report_sha256": {
+      "description": "The report's SHA-256, lower-case hex.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "scope": {
+      "description": "What it covered.",
+      "examples": [
+        "The web app, the API and the MCP server on staging"
+      ],
+      "maxLength": 2000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "started_on": {
+      "description": "The first day.",
+      "examples": [
+        "2026-10-19"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "summary": {
+      "description": "What it concluded.",
+      "examples": [
+        "No critical finding; one high"
+      ],
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "tester": {
+      "description": "The firm or person.",
+      "examples": [
+        "Example Security Pte Ltd"
+      ],
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "tester",
+    "independent",
+    "scope",
+    "started_on",
+    "ended_on",
+    "summary"
+  ],
+  "title": "SecurityAssessmentInput",
+  "type": "object"
+}

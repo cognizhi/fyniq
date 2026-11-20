@@ -219,3 +219,42 @@ func KETs(people []KETDue, days int, on time.Time) []Finding {
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
 	return out
 }
+
+// DeletionWaiting is a report of records due for deletion that a person has not reviewed yet (NM-SEC-05): the type of record, how many are due and held, and the day the review is due by.
+type DeletionWaiting struct {
+	Record   string
+	Due      int
+	Held     int
+	Created  time.Time
+	ReviewBy time.Time
+}
+
+// CandidatesRecord is the record type of the candidates' report; its due records are N.1 #11's too (NM-REC-05).
+const CandidatesRecord = "candidates"
+
+// RetentionWaiting is N.1 #11 and #12 (NM-REC-05, NM-SEC-05): a report of candidates past their retention period is ⚠ for Hiring (#11); a report of any record type waiting for its review is ⚠ for Records
+// (#12) and ✖ once its review date has passed. Nothing is deleted before a person has reviewed the report, so the check says where to review it.
+func RetentionWaiting(reports []DeletionWaiting, on time.Time) []Finding {
+	var out []Finding
+	for _, r := range reports {
+		if r.Record == CandidatesRecord {
+			out = append(out, Finding{11, "Hiring", Warn, r.Record, fmt.Sprintf("%d candidates' data is past its retention period and no consent keeps it: review the report on Erasures, by %s, and the data is deleted.", r.Due, r.ReviewBy.Format(time.DateOnly))})
+		}
+		held := ""
+		if r.Held > 0 {
+			held = fmt.Sprintf(" (%d more are kept by a legal hold)", r.Held)
+		}
+		if on.After(r.ReviewBy) {
+			out = append(out, Finding{12, "Records", Fail, r.Record, fmt.Sprintf("The report of %d %s records past their retention date%s was due for review on %s and is not reviewed: review it on Erasures so the deletion can run.", r.Due, r.Record, held, r.ReviewBy.Format(time.DateOnly))})
+		} else {
+			out = append(out, Finding{12, "Records", Warn, r.Record, fmt.Sprintf("%d %s records are past their retention date%s and wait for the reviewed deletion: review the report on Erasures by %s.", r.Due, r.Record, held, r.ReviewBy.Format(time.DateOnly))})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Check != out[j].Check {
+			return out[i].Check < out[j].Check
+		}
+		return out[i].Subject < out[j].Subject
+	})
+	return out
+}

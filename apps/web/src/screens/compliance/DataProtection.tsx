@@ -14,6 +14,7 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { dataClassesLabel, processedIn } from "../settings/connectorWords";
 import { DPOContact } from "../settings/Organisation";
+import { HoldsTab } from "./Holds";
 
 type Inventory = components["schemas"]["DataInventory"];
 type Entry = components["schemas"]["InventoryEntryView"];
@@ -31,7 +32,7 @@ async function profile() {
   return data;
 }
 
-type Tab = "inventory" | "dpias" | "requests" | "breaches" | "transfers" | "shredding" | "dpo";
+type Tab = "inventory" | "dpias" | "requests" | "breaches" | "transfers" | "shredding" | "holds" | "dpo";
 type Run = components["schemas"]["ShreddingRunView"];
 
 async function shreddingRuns() {
@@ -138,6 +139,9 @@ export function DataProtection() {
         <button type="button" role="tab" aria-selected={tab === "shredding"} onClick={() => setTab("shredding")} title={helpText("data-protection.shredding").tooltip}>
           Shredding
         </button>
+        <button type="button" role="tab" aria-selected={tab === "holds"} onClick={() => setTab("holds")} title={helpText("data-protection.holds").tooltip}>
+          Holds
+        </button>
         <button type="button" role="tab" aria-selected={tab === "dpo"} onClick={() => setTab("dpo")} title={helpText("organisation.dpo").tooltip}>
           Data Protection Officer
         </button>
@@ -148,6 +152,7 @@ export function DataProtection() {
       {tab === "breaches" && <BreachesTab />}
       {tab === "transfers" && <TransfersTab />}
       {tab === "shredding" && <ShreddingTab />}
+      {tab === "holds" && <HoldsTab />}
       {tab === "dpo" && <DPOTab />}
     </div>
   );

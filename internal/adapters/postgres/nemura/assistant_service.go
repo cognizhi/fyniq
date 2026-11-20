@@ -121,7 +121,11 @@ func (a AssistantService) Draft(ctx context.Context, s api.Session, in api.AIDra
 	if err != nil {
 		return out, err
 	}
-	payload["request_id"] = req.String()
+	if in.Task == "people.draft_job_post" || in.Task == "people.draft_interview_kit" {
+		payload["requisition_id"] = req.String()
+	} else {
+		payload["request_id"] = req.String()
+	}
 	err = a.Runtime.InOrg(ctx, s.Organisation, func(ctx context.Context, tx pgx.Tx) error {
 		id, err := Propose(ctx, tx, s.Organisation, a.Clock.Now(), ProposalInput{Asker: s.Member, Task: in.Task, Payload: payload, Rationale: why, ModelID: route, PromptVersion: "people-assistant@1"})
 		out.ProposalID = id.String()

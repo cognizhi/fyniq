@@ -21,7 +21,7 @@ func (l *verifyLimit) hit(scope, key string, limit int) bool {
 	}
 	k := scope + "|" + strings.ToUpper(key)
 	l.hits[k]++
-	if scope != "letter-ref" && scope != "letter-file" && scope != "letter-token" {
+	if scope != "letter-ref" && scope != "letter-file" && scope != "letter-token" && scope != "candidate-token" {
 		return l.hits[k] <= 300
 	}
 	return l.hits[k] <= limit

@@ -23,7 +23,10 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 		{"POST", "/v1/candidates/" + id + "/interviewers", `{"member_id":"` + id + `"}`}, {"POST", "/v1/candidates/" + id + "/future-consent", `{"given":true}`}, {"POST", "/v1/candidates/" + id + "/pass-application", `{"on":"2027-01-15"}`},
 		{"PUT", "/v1/requisitions/" + id + "/interview-kit", `{"questions":["Why us?"],"criteria":["Skill"]}`},
 		{"POST", "/v1/requisitions/" + id + "/job-post/exemption", `{"kind":"transferee","note":"Intra-company."}`},
-		{"POST", "/v1/requisitions/" + id + "/job-post/closing", ``}}
+		{"POST", "/v1/requisitions/" + id + "/job-post/closing", ``},
+		{"GET", "/v1/interviewers", ""}, {"POST", "/v1/candidates/" + id + "/access-links", `{"days":14}`}, {"GET", "/v1/candidates/" + id + "/access-links", ""}, {"POST", "/v1/candidate-access-links/" + id + "/revocation", ``}}
+	mine := []op{{"GET", "/v1/me/hiring-roles", ""}}                                                                                                                   // a line manager (their own roles only) and the hiring team
+	interviews := []op{{"GET", "/v1/me/interviews", ""}}                                                                                                               // an interviewer alone
 	seen := []op{{"GET", "/v1/requisitions/" + id + "/candidates", ""}, {"GET", "/v1/candidates/" + id, ""}, {"GET", "/v1/requisitions/" + id + "/interview-kit", ""}} // the team and an interviewer
 	scores := []op{{"POST", "/v1/candidates/" + id + "/scores", `{"criterion":"Skill","score":4}`}}                                                                    // an interviewer alone
 	hires := []op{{"POST", "/v1/candidates/" + id + "/hire", `{"start_date":"2027-02-01","employment_type":"full_time"}`}}                                             // the HR administrator and the Owner alone
@@ -41,7 +44,7 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 	}
 	ok := func(c int) bool { return c == 200 || c == 201 || c == 204 }
 	defer func() { testRoles, featuresOff = []authz.Role{authz.HRAdmin}, false }()
-	for _, o := range append(append(append(append(append(reads, writes...), approves...), seen...), scores...), hires...) {
+	for _, o := range append(append(append(append(append(append(append(reads, writes...), approves...), seen...), scores...), hires...), mine...), interviews...) {
 		if code := call(o, ""); code != 401 {
 			t.Errorf("%s %s with no session: %d", o.method, o.path, code)
 		}
@@ -64,7 +67,7 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 		for kind, set := range map[string]struct {
 			ops  []op
 			want bool
-		}{"read": {reads, tc.read}, "write": {writes, tc.write}, "approve": {approves, tc.approving}, "seen": {seen, tc.read || tc.role == authz.Interviewer}, "score": {scores, tc.role == authz.Interviewer}, "hire": {hires, tc.role == authz.HRAdmin || tc.role == authz.Owner}} {
+		}{"read": {reads, tc.read}, "write": {writes, tc.write}, "approve": {approves, tc.approving}, "seen": {seen, tc.read || tc.role == authz.Interviewer}, "score": {scores, tc.role == authz.Interviewer}, "mine": {mine, tc.read || tc.role == authz.LineManager}, "interviews": {interviews, tc.role == authz.Interviewer}, "hire": {hires, tc.role == authz.HRAdmin || tc.role == authz.Owner}} {
 			for _, o := range set.ops {
 				if got := ok(call(o, "nemura_session=good-token")); got != set.want {
 					t.Errorf("%s: %s %s %s: allowed %v, want %v", name, kind, o.method, o.path, got, set.want)
@@ -127,4 +130,39 @@ func TestOnlyAnOwnerOrAnHRAdministratorSeesAndReviewsDeletionReports(t *testing.
 			}
 		}
 	}
+}
+
+// A candidate looks at their own data and withdraws the consent to be kept with no sign-in, only with a token in the body, counted against a limit shared by every instance; a signed-in member of the hiring
+// team makes and revokes the links, nobody else does (NM-REC-05, rev 0.74).
+// req: NM-REC-05
+// asvs: V4.2.1, V2.1.1, V13.2.1
+func TestACandidateReadsTheirOwnDataWithNoSessionAndIsRateLimited(t *testing.T) {
+	post := func(path, body string) (int, string) {
+		_, mux := testAPI(t)
+		req := httptest.NewRequest("POST", path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code, rec.Body.String()
+	}
+	verifyLimiter = verifyLimit{}
+	for _, path := range []string{"/v1/candidate-data", "/v1/candidate-data/consent-withdrawal"} {
+		if code, _ := post(path, `{"token":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d0001.xxxxxxxxxx"}`); code != 200 {
+			t.Errorf("POST %s with no sign-in: %d", path, code)
+		}
+		if code, _ := post(path, `{"token":"x"}`); code != 422 {
+			t.Errorf("POST %s with a token too short: %d", path, code)
+		}
+	}
+	// The same token is counted: past the hourly limit it is refused with the rate-limit code.
+	verifyLimiter = verifyLimit{}
+	last := 0
+	limited := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d0001." + strings.Repeat("y", 10)
+	for i := 0; i <= rateToken; i++ {
+		last, _ = post("/v1/candidate-data", `{"token":"`+limited+`"}`)
+	}
+	if last != 429 {
+		t.Errorf("past the limit: %d", last)
+	}
+	verifyLimiter = verifyLimit{}
 }

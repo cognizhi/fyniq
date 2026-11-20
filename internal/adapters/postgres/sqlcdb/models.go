@@ -3926,6 +3926,23 @@ type FyniqRestoreDrill struct {
 	RecordedAt      time.Time
 }
 
+type FyniqRetentionHold struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	DocumentID     *uuid.UUID
+	ContactID      *uuid.UUID
+	YearNumber     *int32
+	YearStartsOn   pgtype.Date
+	YearEndsOn     pgtype.Date
+	Reason         string
+	PlacedBy       string
+	PlacedAt       time.Time
+	LiftedBy       *string
+	LiftedAt       *time.Time
+	LiftReason     *string
+}
+
 type FyniqReviewLogEntry struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -4100,6 +4117,46 @@ type FyniqSandboxOrganisation struct {
 	CreatedBy      uuid.UUID
 	ChangeID       *uuid.UUID
 	CreatedAt      time.Time
+}
+
+type FyniqSecurityAssessment struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	Tester         string
+	Independent    bool
+	Scope          string
+	StartedOn      time.Time
+	EndedOn        time.Time
+	Summary        string
+	ReportSha256   *string
+	ReportLocation *string
+	RecordedBy     string
+	RecordedAt     time.Time
+}
+
+type FyniqSecurityFinding struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	AssessmentID   uuid.UUID
+	Ref            string
+	Title          string
+	Severity       string
+	FoundOn        time.Time
+	DueOn          pgtype.Date
+	RecordedBy     string
+	RecordedAt     time.Time
+}
+
+type FyniqSecurityFindingStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	FindingID      uuid.UUID
+	Step           string
+	OnDate         time.Time
+	Reason         *string
+	RecordedBy     string
+	RecordedAt     time.Time
 }
 
 type FyniqSecurityIncident struct {

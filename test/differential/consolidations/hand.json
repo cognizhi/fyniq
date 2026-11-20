@@ -1,0 +1,901 @@
+[
+ {
+  "entities": [
+   {
+    "currency": "SGD",
+    "id": "sg",
+    "lines": [
+     {
+      "account": "1000",
+      "amount": "1000.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "asset"
+     },
+     {
+      "account": "3010",
+      "amount": "-1000.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "equity"
+     }
+    ],
+    "minor_units": 2
+   }
+  ],
+  "from": "2026-07",
+  "group_currency": "SGD",
+  "group_minor_units": 2,
+  "name": "a single entity in the group currency is not translated",
+  "pairs": [],
+  "rates": [],
+  "to": "2026-07",
+  "want": {
+   "consolidated": [
+    "1000|balance|1000.00",
+    "3010|equity|-1000.00"
+   ],
+   "differences": [],
+   "eliminations": [],
+   "entities": [
+    {
+     "id": "sg",
+     "lines": [
+      "1000||balance|1000.00",
+      "3010||equity|-1000.00"
+     ],
+     "reserve": "0.00"
+    }
+   ],
+   "reserve": "0.00"
+  }
+ },
+ {
+  "entities": [
+   {
+    "currency": "MYR",
+    "id": "my",
+    "lines": [
+     {
+      "account": "1000",
+      "amount": "1000.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "asset"
+     },
+     {
+      "account": "3010",
+      "amount": "-800.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "equity"
+     },
+     {
+      "account": "4000",
+      "amount": "-500.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "revenue"
+     },
+     {
+      "account": "5000",
+      "amount": "300.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "expense"
+     }
+    ],
+    "minor_units": 2
+   }
+  ],
+  "from": "2026-07",
+  "group_currency": "SGD",
+  "group_minor_units": 2,
+  "name": "a foreign entity: balances at the closing rate, the result at the average, the reserve balances it",
+  "pairs": [],
+  "rates": [
+   {
+    "average": "0.2900",
+    "closing": "0.3000",
+    "currency": "MYR",
+    "month": "2026-07"
+   }
+  ],
+  "to": "2026-07",
+  "want": {
+   "consolidated": [
+    "1000|balance|300.00",
+    "3010|equity|-240.00",
+    "4000|result|-145.00",
+    "5000|result|87.00"
+   ],
+   "differences": [],
+   "eliminations": [],
+   "entities": [
+    {
+     "id": "my",
+     "lines": [
+      "1000||balance|300.00",
+      "3010||equity|-240.00",
+      "4000||result|-145.00",
+      "5000||result|87.00"
+     ],
+     "reserve": "-2.00"
+    }
+   ],
+   "reserve": "-2.00"
+  }
+ },
+ {
+  "entities": [
+   {
+    "currency": "MYR",
+    "id": "my",
+    "lines": [
+     {
+      "account": "3010",
+      "amount": "-1000.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "equity"
+     },
+     {
+      "account": "1000",
+      "amount": "1100.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "asset"
+     },
+     {
+      "account": "4000",
+      "amount": "-100.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "revenue"
+     },
+     {
+      "account": "1000",
+      "amount": "200.00",
+      "counterparty": "",
+      "month": "2026-08",
+      "type": "asset"
+     },
+     {
+      "account": "4000",
+      "amount": "-200.00",
+      "counterparty": "",
+      "month": "2026-08",
+      "type": "revenue"
+     },
+     {
+      "account": "1000",
+      "amount": "300.00",
+      "counterparty": "",
+      "month": "2026-09",
+      "type": "asset"
+     },
+     {
+      "account": "4000",
+      "amount": "-300.00",
+      "counterparty": "",
+      "month": "2026-09",
+      "type": "revenue"
+     }
+    ],
+    "minor_units": 2
+   }
+  ],
+  "from": "2026-08",
+  "group_currency": "SGD",
+  "group_minor_units": 2,
+  "name": "three months: equity at each month's closing rate, the result at each month's average, July brought forward",
+  "pairs": [],
+  "rates": [
+   {
+    "average": "0.2900",
+    "closing": "0.3000",
+    "currency": "MYR",
+    "month": "2026-07"
+   },
+   {
+    "average": "0.3050",
+    "closing": "0.3100",
+    "currency": "MYR",
+    "month": "2026-08"
+   },
+   {
+    "average": "0.3150",
+    "closing": "0.3200",
+    "currency": "MYR",
+    "month": "2026-09"
+   }
+  ],
+  "to": "2026-09",
+  "want": {
+   "consolidated": [
+    "1000|balance|512.00",
+    "3010|equity|-300.00",
+    "4000|brought_forward|-29.00",
+    "4000|result|-155.50"
+   ],
+   "differences": [],
+   "eliminations": [],
+   "entities": [
+    {
+     "id": "my",
+     "lines": [
+      "1000||balance|512.00",
+      "3010||equity|-300.00",
+      "4000||brought_forward|-29.00",
+      "4000||result|-155.50"
+     ],
+     "reserve": "-27.50"
+    }
+   ],
+   "reserve": "-27.50"
+  }
+ },
+ {
+  "entities": [
+   {
+    "currency": "SGD",
+    "id": "sg",
+    "lines": [
+     {
+      "account": "1350",
+      "amount": "300.00",
+      "counterparty": "my",
+      "month": "2026-09",
+      "type": "asset"
+     },
+     {
+      "account": "1000",
+      "amount": "-300.00",
+      "counterparty": "",
+      "month": "2026-09",
+      "type": "asset"
+     }
+    ],
+    "minor_units": 2
+   },
+   {
+    "currency": "MYR",
+    "id": "my",
+    "lines": [
+     {
+      "account": "1000",
+      "amount": "1000.00",
+      "counterparty": "",
+      "month": "2026-09",
+      "type": "asset"
+     },
+     {
+      "account": "2350",
+      "amount": "-1000.00",
+      "counterparty": "sg",
+      "month": "2026-09",
+      "type": "liability"
+     }
+    ],
+    "minor_units": 2
+   }
+  ],
+  "from": "2026-09",
+  "group_currency": "SGD",
+  "group_minor_units": 2,
+  "name": "intercompany due from and due to that agree are eliminated in full",
+  "pairs": [
+   {
+    "a": "1350",
+    "b": "2350"
+   }
+  ],
+  "rates": [
+   {
+    "average": "0.3000",
+    "closing": "0.3000",
+    "currency": "MYR",
+    "month": "2026-09"
+   }
+  ],
+  "to": "2026-09",
+  "want": {
+   "consolidated": [],
+   "differences": [],
+   "eliminations": [
+    "my|2350|sg|balance|300.00",
+    "sg|1350|my|balance|-300.00"
+   ],
+   "entities": [
+    {
+     "id": "sg",
+     "lines": [
+      "1000||balance|-300.00",
+      "1350|my|balance|300.00"
+     ],
+     "reserve": "0.00"
+    },
+    {
+     "id": "my",
+     "lines": [
+      "1000||balance|300.00",
+      "2350|sg|balance|-300.00"
+     ],
+     "reserve": "0.00"
+    }
+   ],
+   "reserve": "0.00"
+  }
+ },
+ {
+  "entities": [
+   {
+    "currency": "SGD",
+    "id": "sg",
+    "lines": [
+     {
+      "account": "1350",
+      "amount": "300.00",
+      "counterparty": "my",
+      "month": "2026-09",
+      "type": "asset"
+     },
+     {
+      "account": "1000",
+      "amount": "-300.00",
+      "counterparty": "",
+      "month": "2026-09",
+      "type": "asset"
+     }
+    ],
+    "minor_units": 2
+   },
+   {
+    "currency": "MYR",
+    "id": "my",
+    "lines": [
+     {
+      "account": "1000",
+      "amount": "1010.00",
+      "counterparty": "",
+      "month": "2026-09",
+      "type": "asset"
+     },
+     {
+      "account": "2350",
+      "amount": "-1010.00",
+      "counterparty": "sg",
+      "month": "2026-09",
+      "type": "liability"
+     }
+    ],
+    "minor_units": 2
+   }
+  ],
+  "from": "2026-09",
+  "group_currency": "SGD",
+  "group_minor_units": 2,
+  "name": "the payable is the larger side: the smaller is eliminated and the gap stays",
+  "pairs": [
+   {
+    "a": "1350",
+    "b": "2350"
+   }
+  ],
+  "rates": [
+   {
+    "average": "0.3000",
+    "closing": "0.3000",
+    "currency": "MYR",
+    "month": "2026-09"
+   }
+  ],
+  "to": "2026-09",
+  "want": {
+   "consolidated": [
+    "1000|balance|3.00",
+    "2350|balance|-3.00"
+   ],
+   "differences": [
+    "sg|my|1350|2350|300.00|-303.00|300.00|-3.00"
+   ],
+   "eliminations": [
+    "my|2350|sg|balance|300.00",
+    "sg|1350|my|balance|-300.00"
+   ],
+   "entities": [
+    {
+     "id": "sg",
+     "lines": [
+      "1000||balance|-300.00",
+      "1350|my|balance|300.00"
+     ],
+     "reserve": "0.00"
+    },
+    {
+     "id": "my",
+     "lines": [
+      "1000||balance|303.00",
+      "2350|sg|balance|-303.00"
+     ],
+     "reserve": "0.00"
+    }
+   ],
+   "reserve": "0.00"
+  }
+ },
+ {
+  "entities": [
+   {
+    "currency": "SGD",
+    "id": "sg",
+    "lines": [
+     {
+      "account": "1350",
+      "amount": "310.00",
+      "counterparty": "my",
+      "month": "2026-09",
+      "type": "asset"
+     },
+     {
+      "account": "1000",
+      "amount": "-310.00",
+      "counterparty": "",
+      "month": "2026-09",
+      "type": "asset"
+     }
+    ],
+    "minor_units": 2
+   },
+   {
+    "currency": "MYR",
+    "id": "my",
+    "lines": [
+     {
+      "account": "1000",
+      "amount": "1000.00",
+      "counterparty": "",
+      "month": "2026-09",
+      "type": "asset"
+     },
+     {
+      "account": "2350",
+      "amount": "-1000.00",
+      "counterparty": "sg",
+      "month": "2026-09",
+      "type": "liability"
+     }
+    ],
+    "minor_units": 2
+   }
+  ],
+  "from": "2026-09",
+  "group_currency": "SGD",
+  "group_minor_units": 2,
+  "name": "the receivable is the larger side: the gap is the other way",
+  "pairs": [
+   {
+    "a": "1350",
+    "b": "2350"
+   }
+  ],
+  "rates": [
+   {
+    "average": "0.3000",
+    "closing": "0.3000",
+    "currency": "MYR",
+    "month": "2026-09"
+   }
+  ],
+  "to": "2026-09",
+  "want": {
+   "consolidated": [
+    "1000|balance|-10.00",
+    "1350|balance|10.00"
+   ],
+   "differences": [
+    "sg|my|1350|2350|310.00|-300.00|300.00|10.00"
+   ],
+   "eliminations": [
+    "my|2350|sg|balance|300.00",
+    "sg|1350|my|balance|-300.00"
+   ],
+   "entities": [
+    {
+     "id": "sg",
+     "lines": [
+      "1000||balance|-310.00",
+      "1350|my|balance|310.00"
+     ],
+     "reserve": "0.00"
+    },
+    {
+     "id": "my",
+     "lines": [
+      "1000||balance|300.00",
+      "2350|sg|balance|-300.00"
+     ],
+     "reserve": "0.00"
+    }
+   ],
+   "reserve": "0.00"
+  }
+ },
+ {
+  "entities": [
+   {
+    "currency": "SGD",
+    "id": "sg",
+    "lines": [
+     {
+      "account": "1350",
+      "amount": "500.00",
+      "counterparty": "my",
+      "month": "2026-09",
+      "type": "asset"
+     },
+     {
+      "account": "4900",
+      "amount": "-500.00",
+      "counterparty": "my",
+      "month": "2026-09",
+      "type": "revenue"
+     }
+    ],
+    "minor_units": 2
+   },
+   {
+    "currency": "MYR",
+    "id": "my",
+    "lines": [
+     {
+      "account": "5900",
+      "amount": "1640.00",
+      "counterparty": "sg",
+      "month": "2026-09",
+      "type": "expense"
+     },
+     {
+      "account": "2350",
+      "amount": "-1640.00",
+      "counterparty": "sg",
+      "month": "2026-09",
+      "type": "liability"
+     }
+    ],
+    "minor_units": 2
+   }
+  ],
+  "from": "2026-09",
+  "group_currency": "SGD",
+  "group_minor_units": 2,
+  "name": "a recharge: intercompany revenue and expense are eliminated beside the balances, each gap listed",
+  "pairs": [
+   {
+    "a": "1350",
+    "b": "2350"
+   },
+   {
+    "a": "5900",
+    "b": "4900"
+   }
+  ],
+  "rates": [
+   {
+    "average": "0.3040",
+    "closing": "0.3050",
+    "currency": "MYR",
+    "month": "2026-09"
+   }
+  ],
+  "to": "2026-09",
+  "want": {
+   "consolidated": [
+    "2350|balance|-0.20",
+    "4900|result|-1.44"
+   ],
+   "differences": [
+    "my|sg|5900|4900|498.56|-500.00|498.56|-1.44",
+    "sg|my|1350|2350|500.00|-500.20|500.00|-0.20"
+   ],
+   "eliminations": [
+    "my|2350|sg|balance|500.00",
+    "my|5900|sg|result|-498.56",
+    "sg|1350|my|balance|-500.00",
+    "sg|4900|my|result|498.56"
+   ],
+   "entities": [
+    {
+     "id": "sg",
+     "lines": [
+      "1350|my|balance|500.00",
+      "4900|my|result|-500.00"
+     ],
+     "reserve": "0.00"
+    },
+    {
+     "id": "my",
+     "lines": [
+      "2350|sg|balance|-500.20",
+      "5900|sg|result|498.56"
+     ],
+     "reserve": "1.64"
+    }
+   ],
+   "reserve": "1.64"
+  }
+ },
+ {
+  "entities": [
+   {
+    "currency": "SGD",
+    "id": "sg",
+    "lines": [
+     {
+      "account": "1350",
+      "amount": "100.00",
+      "counterparty": "my",
+      "month": "2026-09",
+      "type": "asset"
+     },
+     {
+      "account": "1000",
+      "amount": "-100.00",
+      "counterparty": "",
+      "month": "2026-09",
+      "type": "asset"
+     }
+    ],
+    "minor_units": 2
+   },
+   {
+    "currency": "MYR",
+    "id": "my",
+    "lines": [],
+    "minor_units": 2
+   }
+  ],
+  "from": "2026-09",
+  "group_currency": "SGD",
+  "group_minor_units": 2,
+  "name": "the other side has no record: nothing is eliminated and the whole amount is a difference",
+  "pairs": [
+   {
+    "a": "1350",
+    "b": "2350"
+   }
+  ],
+  "rates": [],
+  "to": "2026-09",
+  "want": {
+   "consolidated": [
+    "1000|balance|-100.00",
+    "1350|balance|100.00"
+   ],
+   "differences": [
+    "sg|my|1350|2350|100.00|0.00|0.00|100.00"
+   ],
+   "eliminations": [],
+   "entities": [
+    {
+     "id": "sg",
+     "lines": [
+      "1000||balance|-100.00",
+      "1350|my|balance|100.00"
+     ],
+     "reserve": "0.00"
+    },
+    {
+     "id": "my",
+     "lines": [],
+     "reserve": "0.00"
+    }
+   ],
+   "reserve": "0.00"
+  }
+ },
+ {
+  "entities": [
+   {
+    "currency": "SGD",
+    "id": "sg",
+    "lines": [
+     {
+      "account": "1350",
+      "amount": "100.00",
+      "counterparty": "my",
+      "month": "2026-09",
+      "type": "asset"
+     },
+     {
+      "account": "1000",
+      "amount": "-100.00",
+      "counterparty": "",
+      "month": "2026-09",
+      "type": "asset"
+     }
+    ],
+    "minor_units": 2
+   },
+   {
+    "currency": "SGD",
+    "id": "my",
+    "lines": [
+     {
+      "account": "2350",
+      "amount": "40.00",
+      "counterparty": "sg",
+      "month": "2026-09",
+      "type": "liability"
+     },
+     {
+      "account": "1000",
+      "amount": "-40.00",
+      "counterparty": "",
+      "month": "2026-09",
+      "type": "asset"
+     }
+    ],
+    "minor_units": 2
+   }
+  ],
+  "from": "2026-09",
+  "group_currency": "SGD",
+  "group_minor_units": 2,
+  "name": "both sides on the debit: nothing is matched",
+  "pairs": [
+   {
+    "a": "1350",
+    "b": "2350"
+   }
+  ],
+  "rates": [],
+  "to": "2026-09",
+  "want": {
+   "consolidated": [
+    "1000|balance|-140.00",
+    "1350|balance|100.00",
+    "2350|balance|40.00"
+   ],
+   "differences": [
+    "sg|my|1350|2350|100.00|40.00|0.00|140.00"
+   ],
+   "eliminations": [],
+   "entities": [
+    {
+     "id": "sg",
+     "lines": [
+      "1000||balance|-100.00",
+      "1350|my|balance|100.00"
+     ],
+     "reserve": "0.00"
+    },
+    {
+     "id": "my",
+     "lines": [
+      "1000||balance|-40.00",
+      "2350|sg|balance|40.00"
+     ],
+     "reserve": "0.00"
+    }
+   ],
+   "reserve": "0.00"
+  }
+ },
+ {
+  "entities": [
+   {
+    "currency": "MYR",
+    "id": "my",
+    "lines": [
+     {
+      "account": "1000",
+      "amount": "1.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "asset"
+     },
+     {
+      "account": "4000",
+      "amount": "-1.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "revenue"
+     }
+    ],
+    "minor_units": 2
+   }
+  ],
+  "from": "2026-07",
+  "group_currency": "SGD",
+  "group_minor_units": 2,
+  "name": "half a unit rounds away from zero",
+  "pairs": [],
+  "rates": [
+   {
+    "average": "0.3150",
+    "closing": "0.3250",
+    "currency": "MYR",
+    "month": "2026-07"
+   }
+  ],
+  "to": "2026-07",
+  "want": {
+   "consolidated": [
+    "1000|balance|0.33",
+    "4000|result|-0.32"
+   ],
+   "differences": [],
+   "eliminations": [],
+   "entities": [
+    {
+     "id": "my",
+     "lines": [
+      "1000||balance|0.33",
+      "4000||result|-0.32"
+     ],
+     "reserve": "-0.01"
+    }
+   ],
+   "reserve": "-0.01"
+  }
+ },
+ {
+  "entities": [
+   {
+    "currency": "SGD",
+    "id": "sg",
+    "lines": [
+     {
+      "account": "1000",
+      "amount": "100.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "asset"
+     },
+     {
+      "account": "4000",
+      "amount": "-100.00",
+      "counterparty": "",
+      "month": "2026-07",
+      "type": "revenue"
+     }
+    ],
+    "minor_units": 2
+   }
+  ],
+  "from": "2026-07",
+  "group_currency": "JPY",
+  "group_minor_units": 0,
+  "name": "a group currency with no minor units",
+  "pairs": [],
+  "rates": [
+   {
+    "average": "109.2500",
+    "closing": "110.5000",
+    "currency": "SGD",
+    "month": "2026-07"
+   }
+  ],
+  "to": "2026-07",
+  "want": {
+   "consolidated": [
+    "1000|balance|11050",
+    "4000|result|-10925"
+   ],
+   "differences": [],
+   "eliminations": [],
+   "entities": [
+    {
+     "id": "sg",
+     "lines": [
+      "1000||balance|11050",
+      "4000||result|-10925"
+     ],
+     "reserve": "-125"
+    }
+   ],
+   "reserve": "-125"
+  }
+ }
+]

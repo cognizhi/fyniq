@@ -8,22 +8,35 @@ Before each slice load `fyniq-security-compliance` (and `fyniq-feature-change`, 
   Built: the rows, `compliance/controls/CTL-AUD-07.yaml` and `CTL-CHG-12.yaml` (checks planned until 2.1 and 4.2), the specs and `scripts/roadmap.py` (CMP-08).
 
 ## 2. Legal holds, the database and the purges (AUD-11)
-- [ ] 2.1 `retention_hold`, its guards, `hold_covers_event`, `hold_ledger_dates`, `hold_evidence`, the delete triggers on `audit_event` and `journal_entry`, the `ledger_boundary` guard (D1, D2). Attack tests as the purge's own role (`fyniq_worker`) and the API's. `// req: AUD-11`, `// req: SEC-03`
-- [ ] 2.2 `PurgeTrail` stops before the first covered event and `PurgeLedger` passes the held dates to `NextYear`; a purge of held rows is refused by the database. `// req: AUD-11`
-- [ ] 2.3 The storage reconcile `retention.holds`: files covered, files attached later, a lift that keeps a file another hold covers. `// req: AUD-11`
-- [ ] 2.4 Erasure and shredding refuse a held contact. `// req: AUD-11`, `// req: CMP-PD-05`
+- [x] 2.1 `retention_hold`, its guards, `hold_covers_event`, `hold_ledger_dates`, `hold_evidence`, the delete triggers on `audit_event` and `journal_entry`, the `ledger_boundary` guard (D1, D2). Attack tests as the purge's own role (`fyniq_worker`) and the API's. `// req: AUD-11`, `// req: SEC-03`
+  Built: migration 001300 (the table, its guard, five coverage functions, four delete or insert guards); `TestAHoldKeepsTheTrailFromThePurgeAndTheDatabaseRefusesIt`, `TestAHoldOnARecordOrAContactCoversItsEventsAndEntries`.
+- [x] 2.2 `PurgeTrail` stops before the first covered event and `PurgeLedger` passes the held dates to `NextYear`; a purge of held rows is refused by the database. `// req: AUD-11`
+  Built: `audit.PurgeTrail`, `retention.PurgeLedger` (`NextYear` takes the held dates); `TestAHoldKeepsTheLedgerYearFromThePurge`.
+- [x] 2.3 The storage reconcile `retention.holds`: files covered, files attached later, a lift that keeps a file another hold covers. `// req: AUD-11`
+  Built: `retention.SyncHolds` and the nightly job `retention.holds`; `TestTheStoredFilesOfAHeldRecordAreHeldAndFreedWithIt`. The cloud's reading of the lock is `[live-verify]`.
+- [x] 2.4 Anonymising and shredding leave a held contact and a held year alone. `// req: AUD-11`, `// req: CMP-PD-05`
+  Built: `person_key_hold_guard`, the shredding listing, the anonymise handler; `TestAHeldPersonsKeysAreNotShredded`.
 
 ## 3. Legal holds, API and screen
-- [ ] 3.1 `placeRetentionHold`, `liftRetentionHold`, `listRetentionHolds`; Appendix D row; matrix rows; audit; notice to the Owners and DPO. `// req: AUD-11`
-- [ ] 3.2 The Holds tab on Data protection, help keys, guide section, knowledge page, design fragment; the DPO's Home block; CTL-AUD-07; the threat model's "What remains" and the spec's "After go-live" scenario corrected. `// req: AUD-11`, `// req: QA-UI-08`
+- [x] 3.1 `placeRetentionHold`, `liftRetentionHold`, `listRetentionHolds`; Appendix D row; matrix rows; audit; notice to the Owners and DPO. `// req: AUD-11`
+  Built: `internal/api/retention_holds.go`, notice type `retention.hold`, step-up on the lift; `TestLegalHoldsAreRecordedListedAndLifted`, `matrixRetentionHolds`.
+- [x] 3.2 The Holds tab on Data protection, help keys, guide section, knowledge page, design fragment; the DPO's Home block; CTL-AUD-07; the threat model's "What remains" and the spec's "After go-live" scenario corrected. `// req: AUD-11`, `// req: QA-UI-08`
+  Built: `Holds.tsx`, help keys `data-protection.holds`, `.hold-place`, `.hold-lift`, the guide's "Legal holds" and its knowledge page, the design fragment's tab, the DPO's Home row `holds-in-force`, CTL-AUD-07 running, the threat model and the spec corrected.
 
 ## 4. Security assessments (SEC-25)
-- [ ] 4.1 `security_assessment` and `security_finding`, guards, API, matrix rows, audit. `// req: SEC-25`
-- [ ] 4.2 Verification `security-assessments` and control CTL-CHG-12 (its planned gate for `p3-saas-platform`). `// req: SEC-25`
-- [ ] 4.3 The Security assessments screen, help keys, guide page, knowledge page, design fragment. `// req: SEC-25`
+- [x] 4.1 `security_assessment` and `security_finding`, guards, API, matrix rows, audit. `// req: SEC-25`
+  Built: migration 001301 (three insert-only tables), `internal/api/compliance_assessments.go`; `TestAttackTheRegisterOfSecurityAssessmentsIsOnlyAddedTo`, `TestTheRegisterOfSecurityAssessments`, `matrixSecurityAssessments`.
+- [x] 4.2 The review `security-assessments` and control CTL-CHG-12 (its gate for the first external customer arrives with `p3-saas-platform`). `// req: SEC-25`
+  Built: `compliance.assessmentsReview`, `FindingDue`, the attestation `security-assessments`; `TestTheSecurityAssessmentsReview`, `TestAFindingIsDueBySeverity`. **Left:** the gate (a check that fails the control once an external customer is onboarded without an independent test) waits for `p3-saas-platform`.
+- [x] 4.3 The Security assessments tab of Compliance › Controls, help keys, guide page, knowledge page, design fragment. `// req: SEC-25`
+  Built: `SecurityAssessments.tsx`, help keys `compliance.security-assessments`, `.assessment-record`, `.finding-step`, the guide's "Security assessments" and its knowledge page, the design inventory; `SecurityAssessments.test.tsx`.
 - [ ] 4.4 `[live-verify]` The independent test by an outside firm; DAST against staging (CTL-CHG-07's nightly check).
+  Built: `docs/runbooks/penetration-test.md`, the steps from engaging the firm to the retest. **Left:** the test itself, and staging's nightly DAST (`dast-staging.yml` waits for `STAGING_ORIGIN`), need a firm and a cloud staging.
 
 ## 5. Readiness by framework (CMP-08)
-- [ ] 5.1 `GET /v1/compliance/readiness` from the registry and the dashboard, with Annex A's clause numbers; fixtures for CE, CT, ISO and SOC 2. `// req: CMP-08`
-- [ ] 5.2 The Readiness panel on Controls, help, guide, knowledge page, design fragment. `// req: CMP-08`
+- [x] 5.1 `GET /v1/compliance/readiness` from the registry and the dashboard, with Annex A's clause numbers; fixtures for CE, CT, ISO and SOC 2. `// req: CMP-08`
+  Built: `compliance.ISOClauses`, `AnnexA`, `FrameworkStages`, `internal/api/compliance_readiness.go`; `TestTheISOClausesAMappingNames`, `TestEveryISOClauseAControlNamesIsAnnexAs`, `TestReadinessByFramework`, `matrixReadiness`. The fixtures are the registry's own controls (the test sums them per framework).
+- [x] 5.2 The Readiness tab on Controls, help, guide, knowledge page, design fragment. `// req: CMP-08`
+  Built: `Readiness.tsx`, help key `compliance.readiness`, the guide's "Readiness by framework" and its knowledge page; `Readiness.test.tsx`.
 - [ ] 5.3 `[live-verify]` A certification body's reading of the gaps; the statement of applicability's wording.
+  **Left:** Annex A's titles and the statement of applicability's applicability and justification per number wait for the certification body (the titles are the standard's text, not an official public page); the evidence export per framework is CMP-04 (`p2-mobile-approvals-automation` 9.2).

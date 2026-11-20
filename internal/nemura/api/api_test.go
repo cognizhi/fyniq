@@ -1478,6 +1478,9 @@ func (f fakeHiring) RecordExemption(context.Context, Session, uuid.UUID, string,
 func (f fakeHiring) ClosePost(context.Context, Session, uuid.UUID) (Requisition, error) {
 	return Requisition{}, f.err
 }
+func (f fakeHiring) MyRoles(context.Context, Session) ([]HiringRole, error) {
+	return []HiringRole{}, f.err
+}
 
 type fakePipeline struct{ err error }
 
@@ -1519,6 +1522,25 @@ func (f fakePipeline) SaveKit(context.Context, Session, uuid.UUID, InterviewKit)
 }
 func (f fakePipeline) Apply(context.Context, string, uuid.UUID, CandidateInput) (bool, error) {
 	return true, f.err
+}
+func (f fakePipeline) MyInterviews(context.Context, Session) ([]MyInterview, error) {
+	return []MyInterview{}, f.err
+}
+func (f fakePipeline) Interviewers(context.Context, Session) ([]Interviewer, error) {
+	return []Interviewer{}, f.err
+}
+func (f fakePipeline) CreateAccess(context.Context, Session, uuid.UUID, int) (CandidateAccessCreated, error) {
+	return CandidateAccessCreated{}, f.err
+}
+func (f fakePipeline) AccessLinks(context.Context, Session, uuid.UUID) ([]CandidateAccessLink, error) {
+	return []CandidateAccessLink{}, f.err
+}
+func (f fakePipeline) RevokeAccess(context.Context, Session, uuid.UUID) error { return f.err }
+func (f fakePipeline) OwnData(context.Context, string) (CandidateOwnView, error) {
+	return CandidateOwnView{Found: true}, f.err
+}
+func (f fakePipeline) OwnWithdraw(context.Context, string) (CandidateOwnView, error) {
+	return CandidateOwnView{Found: true}, f.err
 }
 
 type fakeDeletionReports struct{ err error }

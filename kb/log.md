@@ -1000,6 +1000,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | nemura.hiring: new advert after a change, the 3-month rule and the careers page (NM-REC-02)
 
+## [2026-11-20] compile | compliance.data-protection: legal holds (AUD-11)
+
 ## [2026-11-20] compile | settings.sandbox: the sandbox organisation (FR-INT-18)
 
 ## [2026-11-20] compile | settings.connected-apps, settings.integrations: apps from other publishers and tasks from other systems
@@ -1014,8 +1016,18 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | nemura.goals: a person's goals for the manager and the people team, and the roll-up (NM-PRF-01)
 
+## [2026-11-20] compile | compliance.controls: security assessments register (SEC-25)
+
+## [2026-11-20] compile | compliance.controls: readiness by framework (CMP-08)
+
+## [2026-11-20] compile | nemura.hiring: interviewers, the line manager's roles, a candidate's own link and the retention of a hired candidate (rev 0.74)
+
 ## [2026-11-20] compile | docs/user-guide/mobile-app.md → app.mobile (new: the installable app, approving and capturing on a phone, the offline receipt queue; FR-UX-16, p2-mobile-approvals-automation); organisation-settings.md → settings.organisation (offline receipts)
 
 ## [2026-11-20] compile | settings.integrations: Slack routing
 
 ## [2026-11-20] compile | accounting.periods: soft-lock a month, the module locks, the pass and the exceptions report (FR-GL-09)
+
+## [2026-11-20] compile | nemura.onboarding: tasks that close by their own flow (rev 0.75)
+
+## [2026-11-20] compile | nemura.hiring: drafts from the assistant (rev 0.76)

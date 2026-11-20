@@ -42,7 +42,7 @@ const (
 
 // ReviewKinds are the reviews in the order the Compliance Center lists them: the keys of registry.Attestations.
 var ReviewKinds = []string{"review-log", "access-review", "accountant-review", "close-signoff", "break-glass-review",
-	"policy-acknowledgement", "risk-review", "data-inventory", "dpia", "pd-requests", "breach", "breach-tabletop", "transfers", "restore-drill", "heartbeat-drill"}
+	"policy-acknowledgement", "risk-review", "data-inventory", "dpia", "pd-requests", "breach", "breach-tabletop", "transfers", "restore-drill", "heartbeat-drill", "security-assessments"}
 
 // Review is one recurring review that people sign off, as it stands for an organisation (design D6): what waits for its
 // sign-off, what of that is overdue, and the last sign-off. Each is read from its source's own records under its
@@ -181,6 +181,10 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time, installat
 	if err != nil {
 		return nil, err
 	}
+	assessments, err := u.Compliance().Assessments(ctx)
+	if err != nil {
+		return nil, err
+	}
 	catalogue, err := registry.LoadInventory()
 	if err != nil {
 		return nil, err
@@ -221,6 +225,7 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time, installat
 		transfersReview(catalogue.Flows, transfers, today),
 		restoreDrillReview(members, drills, today, installation),
 		heartbeatDrillReview(members, beats, today, installation),
+		assessmentsReview(assessments, today, installation),
 	}
 	for i := range out {
 		out[i].Cadence = cadences[out[i].Kind]
@@ -231,7 +236,8 @@ func Reviews(ctx context.Context, u storage.UnitOfWork, now time.Time, installat
 var cadences = map[string]string{"review-log": "weekly", "access-review": "quarterly", "accountant-review": "quarterly",
 	"close-signoff": "monthly", "break-glass-review": "each use", "policy-acknowledgement": "each version", "risk-review": "by review date",
 	"data-inventory": "quarterly", "dpia": "each processing", "pd-requests": "each request",
-	"breach": "each breach", "breach-tabletop": "twice a year", "transfers": "by review date", "restore-drill": "quarterly", "heartbeat-drill": "quarterly"}
+	"breach": "each breach", "breach-tabletop": "twice a year", "transfers": "by review date", "restore-drill": "quarterly", "heartbeat-drill": "quarterly",
+	"security-assessments": "each year"}
 
 func titled(mode string) string { return strings.ToUpper(mode[:1]) + mode[1:] }
 

@@ -316,6 +316,11 @@ fyniq_api       INSERT    gst_registration (accounting_basis, deregistered_from,
 fyniq_api       SELECT    gst_registration
 fyniq_api       UPDATE    gst_registration (accounting_basis, deregistered_from, gst_number, quarter_start_month, recorded_at, registered_from, return_frequency, version)
 fyniq_api       SELECT    heartbeats
+fyniq_api       EXECUTE   hold_covers_entry()
+fyniq_api       EXECUTE   hold_covers_event()
+fyniq_api       EXECUTE   hold_covers_person_key()
+fyniq_api       EXECUTE   hold_evidence()
+fyniq_api       EXECUTE   hold_ledger_dates()
 fyniq_api       EXECUTE   hold_outbox()
 fyniq_api       INSERT    holding_movement (class_account_id, class_id, effective_on, holder_id, id, kind, recorded_at, recorded_by, reverses_id, share_issue_id, shares, transaction_id)
 fyniq_api       SELECT    holding_movement
@@ -663,6 +668,9 @@ fyniq_api       EXECUTE   request_installation_change()
 fyniq_api       EXECUTE   request_to_join()
 fyniq_api       INSERT    restore_drill (audit_chain, data_lost_minutes, documents, findings, held_on, keys, ledger, outbox, recorded_at, recorded_by, restored_from, scenario, sign_in, tick, took_minutes)
 fyniq_api       SELECT    restore_drill
+fyniq_api       INSERT    retention_hold (contact_id, document_id, kind, placed_at, placed_by, reason, year_ends_on, year_number, year_starts_on)
+fyniq_api       SELECT    retention_hold
+fyniq_api       UPDATE    retention_hold (lift_reason, lifted_at, lifted_by)
 fyniq_api       INSERT    review_log_entry (actor, approval_id, kind, logged_at, object_key, object_type, summary)
 fyniq_api       SELECT    review_log_entry
 fyniq_api       INSERT    review_log_review (entry_id, note, reviewed_at, reviewed_by)
@@ -693,6 +701,12 @@ fyniq_api       SELECT    salary_release_line
 fyniq_api       INSERT    sales_reminder (decided_by, document_id, outcome, reason, send_id, step)
 fyniq_api       SELECT    sales_reminder
 fyniq_api       USAGE     schema fyniq
+fyniq_api       INSERT    security_assessment (ended_on, independent, kind, recorded_at, recorded_by, report_location, report_sha256, scope, started_on, summary, tester)
+fyniq_api       SELECT    security_assessment
+fyniq_api       INSERT    security_finding (assessment_id, due_on, found_on, recorded_at, recorded_by, ref, severity, title)
+fyniq_api       SELECT    security_finding
+fyniq_api       INSERT    security_finding_step (finding_id, on_date, reason, recorded_at, recorded_by, step)
+fyniq_api       SELECT    security_finding_step
 fyniq_api       INSERT    security_incident (detected_at, opened_at, opened_by, severity, summary, title)
 fyniq_api       SELECT    security_incident
 fyniq_api       INSERT    security_incident_step (at, breach_id, by_actor, incident_id, note, step)
@@ -1163,6 +1177,7 @@ fyniq_readonly  SELECT    report_export
 fyniq_readonly  SELECT    report_schedule
 fyniq_readonly  SELECT    report_schedule_run
 fyniq_readonly  SELECT    restore_drill
+fyniq_readonly  SELECT    retention_hold
 fyniq_readonly  SELECT    review_log_entry
 fyniq_readonly  SELECT    review_log_review
 fyniq_readonly  SELECT    risk
@@ -1177,6 +1192,9 @@ fyniq_readonly  SELECT    salary_release
 fyniq_readonly  SELECT    salary_release_line
 fyniq_readonly  SELECT    sales_reminder
 fyniq_readonly  USAGE     schema fyniq
+fyniq_readonly  SELECT    security_assessment
+fyniq_readonly  SELECT    security_finding
+fyniq_readonly  SELECT    security_finding_step
 fyniq_readonly  SELECT    security_incident
 fyniq_readonly  SELECT    security_incident_step
 fyniq_readonly  EXECUTE   share_class_of()
@@ -1399,6 +1417,11 @@ fyniq_worker    SELECT    fx_feed_rates
 fyniq_worker    SELECT    fx_rate
 fyniq_worker    SELECT    gst_registration
 fyniq_worker    SELECT    heartbeats
+fyniq_worker    EXECUTE   hold_covers_entry()
+fyniq_worker    EXECUTE   hold_covers_event()
+fyniq_worker    EXECUTE   hold_covers_person_key()
+fyniq_worker    EXECUTE   hold_evidence()
+fyniq_worker    EXECUTE   hold_ledger_dates()
 fyniq_worker    EXECUTE   hold_outbox()
 fyniq_worker    SELECT    holding_movement
 fyniq_worker    DELETE    idempotency_key
@@ -1603,6 +1626,7 @@ fyniq_worker    UPDATE    report_schedule (last_run_on, next_run_on, updated_at,
 fyniq_worker    INSERT    report_schedule_run (ledger_revision, period_label, ran_at, ran_on, schedule_id, sent, skipped)
 fyniq_worker    SELECT    report_schedule_run
 fyniq_worker    SELECT    restore_drill
+fyniq_worker    SELECT    retention_hold
 fyniq_worker    INSERT    review_log_entry (actor, approval_id, kind, logged_at, object_key, object_type, summary)
 fyniq_worker    SELECT    review_log_entry
 fyniq_worker    SELECT    review_log_review
@@ -1620,6 +1644,9 @@ fyniq_worker    SELECT    salary_release_line
 fyniq_worker    SELECT    sales_reminder
 fyniq_worker    EXECUTE   scheduled_issue_allowed()
 fyniq_worker    USAGE     schema fyniq
+fyniq_worker    SELECT    security_assessment
+fyniq_worker    SELECT    security_finding
+fyniq_worker    SELECT    security_finding_step
 fyniq_worker    SELECT    security_incident
 fyniq_worker    SELECT    security_incident_step
 fyniq_worker    EXECUTE   share_class_of()

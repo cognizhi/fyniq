@@ -394,7 +394,7 @@ Source: PRD-001 §8.8 · Priority S · Phase P2
 - **WHEN** the exceptions report is run
 - **THEN** it lists postings dated near or before a lock date
 
-#### Scenario: A pass is the accountant's alone, with a reason (rev REV)
+#### Scenario: A pass is the accountant's alone, with a reason (rev 0.628)
 - **GIVEN** a soft-locked period, or a locked module of an open one
 - **WHEN** a person with the Accountant role, signed in and stepped up, makes a pass with a reason of at least 10 characters for 1 to 8 hours
 - **THEN** their own postings dated in the period are accepted while the pass lasts, each kept on the exceptions report with the reason
@@ -520,6 +520,11 @@ Source: PRD-001 §8.8 · Priority C · Phase P3
 - **GIVEN** intercompany journals
 - **WHEN** eliminations are run
 - **THEN** the intercompany amounts are eliminated
+
+#### Scenario: Both halves (rev 0.625)
+- **WHEN** an entity posts a journal on its intercompany accounts and records it as an intercompany transaction with its counterparty
+- **THEN** the counterparty sees the offer, with no free text, and posts its mirror as a draft in its own books through the journal command and its approvals
+- **AND** a difference between the two sides shows at consolidation and is never plugged
 
 ### Requirement: FR-GL-14 Flux analysis
 The close SHALL include **flux analysis**: month-on-month and budget variances per account above a threshold need a short explanation before the close is signed off.

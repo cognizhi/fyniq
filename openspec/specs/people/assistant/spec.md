@@ -121,6 +121,11 @@ Source: PRD-002 §D · Phase P2
 - **WHEN** the proposed post contains a prohibited criterion
 - **THEN** the proposal shows the flag, and the recruiter must change it before approving
 
+#### Scenario: Written from the role alone (rev 0.76)
+- **GIVEN** a requisition whose title names a criterion the guidelines ask employers not to use, such as an age
+- **WHEN** the assistant drafts its job post
+- **THEN** the draft holds a placeholder where the title was, no salary and no person, and passes the fair-wording check as written
+
 ### Requirement: people.draft_interview_kit Draft an interview kit
 The catalogue SHALL include `people.draft_interview_kit` in P2: interview questions and a scorecard for a role, approved by a recruiter.
 
@@ -129,6 +134,10 @@ Source: PRD-002 §D · Phase P2
 #### Scenario: Kit
 - **WHEN** a recruiter asks for an interview kit
 - **THEN** the proposal holds questions and a scorecard tied to the role's requirements, for the recruiter to approve
+
+#### Scenario: The executor reads no salary (rev 0.76)
+- **WHEN** a person approves a draft and the executor attaches it beside the requisition
+- **THEN** the executor learned only the requisition's state, wrote nothing of the requisition, its post or its kit, and refuses a draft for a requisition that has been rejected
 
 ### Requirement: people.draft_review_summary Draft a review summary
 The catalogue SHALL include `people.draft_review_summary` in P2: a summary of a person's goals, check-ins and feedback for their manager, approved by the line manager.
