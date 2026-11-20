@@ -29,7 +29,9 @@ export function MyOnboarding() {
           <li key={x.id} className="fy-row" style={{ gap: "var(--space-2)", flexWrap: "wrap" }}>
             <span>{t("myonb.task", { title: x.title, name: x.person, due: x.due_on })}</span>
             {x.state === "open" && x.overdue && <span className="fy-chip">{t("plans.overdue")}</span>}
-            {x.state === "open" ? <button className="fy-btn fy-btn--secondary fy-btn--sm" type="button" onClick={() => mark(x.id)}>{t("plans.markDone", { title: x.title })}</button> : <span className="fy-chip">{t(`plans.state.${x.state}`)}</span>}
+            {x.state === "open" && x.closes && <span className="fy-secondary">{t(x.closes === "kets" ? "plans.closesKets" : "plans.closesFyniq_invitation")}</span>}
+            {x.state === "open" && !x.closes && <button className="fy-btn fy-btn--secondary fy-btn--sm" type="button" onClick={() => mark(x.id)}>{t("plans.markDone", { title: x.title })}</button>}
+            {x.state !== "open" && <span className="fy-chip">{t(`plans.state.${x.state}`)}</span>}
           </li>
         ))}
       </ul>

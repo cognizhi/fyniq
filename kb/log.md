@@ -1025,3 +1025,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/mobile-app.md → app.mobile (new: the installable app, approving and capturing on a phone, the offline receipt queue; FR-UX-16, p2-mobile-approvals-automation); organisation-settings.md → settings.organisation (offline receipts)
 
 ## [2026-11-20] compile | settings.integrations: Slack routing
+
+## [2026-11-20] compile | nemura.onboarding: tasks that close by their own flow (rev 0.75)

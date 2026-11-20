@@ -1613,7 +1613,9 @@
     "myapp.linkUntil": "This link works until {when}.",
     "pipeline.revokeButton": "Revoke",
     "pipeline.assignLabel": "Assign an interviewer to {candidate}",
-    "pipeline.accessDone": "The link is made."
+    "pipeline.accessDone": "The link is made.",
+    "plans.closesKets": "Closes by itself when the KETs letter is issued.",
+    "plans.closesFyniq_invitation": "Closes by itself when the person is invited to Fyniq."
   },
   "help": {
     "signin.page": {

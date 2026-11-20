@@ -34,7 +34,8 @@ checklist, and the annual leave they are left with on their last day.
 1. Switch Onboarding on under **Settings, Features** (it needs Letters).
 2. Under **Onboarding plans**, select **Make the template** to copy the standard one under a name of your own, such as Office joiner. A template is never edited: make a new one and archive the old, and plans already made keep their tasks.
 3. Choose the person and the template and select **Start the plan**. Each task is due from the person's start date; a person has one plan.
-4. Each person sees the tasks that are theirs on **My home** under **Your onboarding tasks**: the joiner their own, a line manager those of their reports, IT (the Administrator, the HR administrator or the Owner) IT's, and the people team HR's. Select **Done** when it is done. A task is decided once; only the people team may skip one that does not apply, and they may mark any task done.
+4. Each person sees the tasks that are theirs on **My home** under **Your onboarding tasks**: the joiner their own, a line manager those of their reports, IT (the Administrator, the HR administrator or the Owner) IT's, and the people team HR's. Select **Done** when it is done. A task is decided once; only the people team may skip one that does not apply, and they may mark any task done, except a task that closes by itself.
+5. Two tasks close by themselves, in the same step as the work: **Issue the key employment terms (KETs)** closes when the person's KETs letter is issued (whoever signs it), and a task that names the invitation closes when the person is marked as invited to Fyniq. They show **Closes by itself** instead of a Done button, so the plan never says done for what did not happen; skip one if it does not apply.
 
 The standard template's due days are a starting point [owner to confirm]; the 14 days for the key employment terms is the Employment Act's rule.
 

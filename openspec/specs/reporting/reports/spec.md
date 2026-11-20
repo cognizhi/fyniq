@@ -282,6 +282,10 @@ Source: PRD-001 §8.12 · Priority C · Phase P3
 - **WHEN** a consolidated report is produced for several entities
 - **THEN** the consolidated figures apply eliminations between the entities and currency translation
 
+#### Scenario: A frozen run (rev 0.625)
+- **WHEN** a consolidated report is read
+- **THEN** it is a frozen consolidation run of the parent organisation, read by holders of the whole-ledger Reports right only, and never by the AI read tools or MCP
+
 ### Requirement: FR-RPT-13 Deferral roll-forward
 The system SHALL show a roll-forward of deferred revenue by customer and contract and of prepayments by supplier, tying to 2400 and 1210 (INV-07).
 

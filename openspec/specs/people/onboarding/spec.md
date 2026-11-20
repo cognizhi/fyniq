@@ -23,6 +23,11 @@ Source: PRD-002 §14 · Priority M · Phase P2
 - **WHEN** the joiner, the line manager, IT or the people team reads the tasks
 - **THEN** each sees only the tasks that are theirs, decides each once, and only the people team skips one
 
+#### Scenario: A task closes by its own flow (rev 0.75)
+- **GIVEN** a plan whose KETs task names the KETs letter as its flow
+- **WHEN** the person's KETs letter is issued by whoever signs it
+- **THEN** the task is marked done in the same transaction, once, with an audit event, and a person cannot mark it done by hand but may skip it when it does not apply
+
 ### Requirement: NM-ONB-02 Accounts
 Every joiner who may claim expenses SHALL be invited to Fyniq with the Employee role only, by a person with the right to invite, from a task raised when the person is added (until onboarding plans exist) or listed when the link starts; Nemura SHALL never grant Fyniq roles itself.
 
