@@ -108,4 +108,24 @@ describe("the subscriptions a provider bills", () => {
     await waitFor(() => expect(seen.find((s) => s.path === "/v1/subscription-contracts/k1/amendments")?.body).toEqual({ kind: "upgrade", effective_on: "2026-11-01", mrr: "200.00", reason: "Larger team" }));
     expect(seen.find((s) => s.path.endsWith("/amendments"))?.headers.get("If-Match")).toBe('"2"');
   });
+
+  // req: FR-AR-15
+  it("lists a contract's files and attaches one with the contract's ETag", async () => {
+    const contract = { id: "k1", contact_id: "c1", name: "Growth plan", starts_on: "2026-01-15", initial_mrr: sgd("100.00"), status: "active", mrr: sgd("100.00"), version: 3 };
+    answer({
+      "GET /v1/payment-providers/invoices": { status: 200, body: { subscriptions: [], invoices: [] } },
+      "GET /v1/subscription-contracts": { status: 200, body: { items: [contract] } },
+      "GET /v1/subscription-mrr": { status: 200, body: { as_at: "2026-10-15", totals: [] } },
+      "GET /v1/subscription-contracts/k1/evidence": { status: 200, body: { items: [{ id: "e1", file_name: "order.pdf", evidence_type: "order form", note: "Signed 14 Jan" }] } },
+      "POST /v1/subscription-contracts/k1/evidence": { status: 201, body: { id: "e2", file_name: "letter.pdf", evidence_type: "amendment letter" } },
+    });
+    const { container } = renderPage(Subscriptions, { path: "/sales/subscriptions", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "Files: Growth plan" }));
+    expect(await screen.findByText("order.pdf")).toBeTruthy();
+    await noViolations(container);
+    fireEvent.change(screen.getByLabelText("File"), { target: { files: [new File(["%PDF-1.7"], "letter.pdf", { type: "application/pdf" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Attach the file" }));
+    await waitFor(() => expect(seen.some((s) => s.path === "/v1/subscription-contracts/k1/evidence" && s.method === "POST")).toBe(true));
+    expect(seen.find((s) => s.method === "POST" && s.path.endsWith("/evidence"))?.headers.get("If-Match")).toBe('"3"');
+  });
 });

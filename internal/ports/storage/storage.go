@@ -701,6 +701,8 @@ const (
 	// DocumentBankAgreement holds a money account's bank agreements as evidence: posted when made, it posts nothing and is
 	// never reversed (FR-DOC-05, p1-bank-import-reconcile design D13).
 	DocumentBankAgreement DocumentType = "bank_agreement"
+	// DocumentSubscriptionFile holds a subscription contract's files as evidence (FR-AR-15, FR-DOC-05): one per contract, posted when made, it posts nothing and is never reversed (FYP24).
+	DocumentSubscriptionFile DocumentType = "subscription_file"
 	// DocumentExpenseClaim is a member's claim for what they spent for the company (FR-AP-07, FR-AP-17;
 	// p1-expense-claims): its receipt and mileage lines, posted by expense_claim@1 once another person approves it.
 	DocumentExpenseClaim DocumentType = "expense_claim"
