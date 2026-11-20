@@ -732,6 +732,8 @@ fyniq_executor  SELECT    document_version
 fyniq_executor  INSERT    email_message (purpose, recipient, subject)
 fyniq_executor  SELECT    email_message
 fyniq_executor  SELECT    evidence
+fyniq_executor  EXECUTE   forecast_decimal()
+fyniq_executor  EXECUTE   forecast_keys()
 fyniq_executor  SELECT    fx_feed_rates
 fyniq_executor  SELECT    fx_rate
 fyniq_executor  SELECT    gst_registration
@@ -774,7 +776,9 @@ fyniq_executor  SELECT    recurring_bill
 fyniq_executor  SELECT    recurring_bill_version
 fyniq_executor  SELECT    recurring_invoice
 fyniq_executor  SELECT    recurring_invoice_version
+fyniq_executor  INSERT    recurring_journal (day_of_month, ends_on, every_months, name, next_on, starts_on, status)
 fyniq_executor  SELECT    recurring_journal
+fyniq_executor  INSERT    recurring_journal_version (content, edited_by, recurring_journal_id, version)
 fyniq_executor  SELECT    recurring_journal_version
 fyniq_executor  SELECT    review_log_entry
 fyniq_executor  SELECT    review_log_review

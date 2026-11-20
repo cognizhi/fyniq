@@ -8808,6 +8808,7 @@ CREATE TRIGGER break_glass_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.brea
 CREATE TRIGGER break_glass_no_truncate BEFORE TRUNCATE ON fyniq.break_glass FOR EACH STATEMENT EXECUTE FUNCTION break_glass_guard()
 CREATE TRIGGER break_glass_use_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.break_glass_use FOR EACH ROW EXECUTE FUNCTION break_glass_use_guard()
 CREATE TRIGGER break_glass_use_no_truncate BEFORE TRUNCATE ON fyniq.break_glass_use FOR EACH STATEMENT EXECUTE FUNCTION break_glass_use_guard()
+CREATE TRIGGER budget_executor_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION budget_executor_guard()
 CREATE TRIGGER budget_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION budget_guard()
 CREATE TRIGGER capture_address_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.capture_address FOR EACH ROW EXECUTE FUNCTION capture_address_guard()
 CREATE TRIGGER capture_address_no_truncate BEFORE TRUNCATE ON fyniq.capture_address FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -9787,6 +9788,7 @@ brand_version_guard() → trigger | security invoker | v | search_path=pg_catalo
 break_glass_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 962a60f5cbf377604e7f27ec16e6b71d
 break_glass_logged() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f70eaef3b0d084ec8e9d0c8a089609f8
 break_glass_use_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e1ad9c7c29fcd99d1d82045f444fa13b
+budget_executor_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8c30aeccd2a06832c8203b73ec7af1c6
 budget_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ed823e88db3e445f3fd462de6561bfd5
 capture_address_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 542a3470e64d74a54703cab8f90e82c9
 capture_route(p_local text) → TABLE(organisation_id uuid, address_id uuid, user_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 172d93473f532f3e8728708678490889
