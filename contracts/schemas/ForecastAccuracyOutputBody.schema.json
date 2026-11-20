@@ -9,6 +9,13 @@
       },
       "type": "array"
     },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last.",
+      "examples": [
+        "eyJhZnRlciI6IjEifQ"
+      ],
+      "type": "string"
+    },
     "note": {
       "description": "How the causes are worked out.",
       "examples": [

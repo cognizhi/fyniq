@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -38,13 +39,15 @@ type ForecastAccuracyRow struct {
 }
 
 type forecastAccuracyInput struct {
+	PageQuery
 	Weeks int `query:"weeks" enum:"4,13" doc:"Compare at 4 or 13 weeks; both when left out." example:"4"`
 }
 
 type forecastAccuracyOutput struct {
 	Body struct {
-		Items []ForecastAccuracyRow `json:"items" nullable:"false" doc:"The kept projections whose window has ended, newest first, at most 52 weeks back."`
-		Note  string                `json:"note" doc:"How the causes are worked out." example:"A kept projection is compared with the cash at the end of its fourth and thirteenth week."`
+		Items      []ForecastAccuracyRow `json:"items" nullable:"false" doc:"The kept projections whose window has ended, newest first, at most 52 weeks back."`
+		NextCursor string                `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last." example:"eyJhZnRlciI6IjEifQ"`
+		Note       string                `json:"note" doc:"How the causes are worked out." example:"A kept projection is compared with the cash at the end of its fourth and thirteenth week."`
 	}
 }
 
@@ -57,7 +60,7 @@ func registerForecastAccuracy(a *API) {
 		Summary: "Compare the kept cash projections with the cash that came",
 		Description: "Each week the worker keeps the 13-week short-term projection (FR-PLN-09). This compares each with the money accounts' balance 4 and 13 weeks later, once that week has ended, and splits the difference by cause: " +
 			"receipts later than expected, timing and unplanned (FR-PLN-04). Read-only; no side effects. A projection is never recalculated: it is the one that was kept.",
-	}, append([]string{CodeInvalid}, locks...), func(ctx context.Context, in *forecastAccuracyInput) (*forecastAccuracyOutput, error) {
+	}, append([]string{CodeInvalid, CodeCursor}, locks...), func(ctx context.Context, in *forecastAccuracyInput) (*forecastAccuracyOutput, error) {
 		p, _ := authn.From(ctx)
 		out := &forecastAccuracyOutput{}
 		out.Body.Items, out.Body.Note = []ForecastAccuracyRow{}, accuracyNote
@@ -160,6 +163,11 @@ func registerForecastAccuracy(a *API) {
 			}
 			return x.Weeks - y.Weeks
 		})
+		page, next, err := pageOf(out.Body.Items, func(r ForecastAccuracyRow) string { return r.SnapshotID + ":" + strconv.Itoa(r.Weeks) }, in.PageQuery)
+		if err != nil {
+			return nil, err
+		}
+		out.Body.Items, out.Body.NextCursor = page, next
 		return out, nil
 	})
 }

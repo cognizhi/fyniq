@@ -39113,6 +39113,11 @@ export interface components {
             /** @description The kept projections whose window has ended, newest first, at most 52 weeks back. */
             items: components["schemas"]["ForecastAccuracyRow"][];
             /**
+             * @description Send it as cursor for the next page; absent on the last.
+             * @example eyJhZnRlciI6IjEifQ
+             */
+            next_cursor?: string;
+            /**
              * @description How the causes are worked out.
              * @example A kept projection is compared with the cash at the end of its fourth and thirteenth week.
              */
@@ -130762,6 +130767,10 @@ export interface operations {
     getForecastAccuracy: {
         parameters: {
             query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
                 /** @description Compare at 4 or 13 weeks; both when left out. */
                 weeks?: 4 | 13;
             };
@@ -130811,7 +130820,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
