@@ -43,11 +43,13 @@ func TestALateOlderPersonVersionDoesNotSetTheManagerBack(t *testing.T) {
 	}
 }
 
-func TestATombstoneKeepsThePersonAndMarksTheRemoval(t *testing.T) {
+// part of NM-INT-13 (privacy deletions after a restore)
+// part of FR-PPL-19 (the privacy deletions after a restore)
+func TestATombstoneKeepsThePersonAndMarksTheRemovalButClearsTheNameAndEmail(t *testing.T) {
 	cur, _, _ := ApplyPerson(Person{}, upsert(oldMgr), 1, someDay)
 	cur = Existing(cur)
 	gone, ignored, err := ApplyPerson(cur, PersonUpserted{PersonID: weiJie, Deleted: true}, 2, someDay)
-	if err != nil || ignored || !gone.Removed || gone.DisplayName != "Wei Jie Ong" || gone.Version != 2 {
+	if err != nil || ignored || !gone.Removed || gone.DisplayName != "" || gone.WorkEmail != "" || gone.Version != 2 {
 		t.Fatalf("%+v %v %v", gone, ignored, err)
 	}
 	back, _, err := ApplyPerson(Existing(gone), upsert(oldMgr), 3, someDay)

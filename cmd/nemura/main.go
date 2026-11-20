@@ -152,16 +152,20 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 	if apiURL != "" && tokenURL != "" {
 		sender.HTTP = linkHTTP(egress.HostOf(apiURL), egress.HostOf(tokenURL))
 	}
+	kinds := map[string]outbox.Work{alert.KindNotify: alert.Work(alert.LogNotifier{}, deps.Clock), "people.notice": logNotice, nemura.KindLeaveAccrual: store.LeaveAccrualWork(deps.Clock),
+		nemura.KindLinkSend: sender.Work()}
+	if register, signer := erasureWiring(getenv); register != nil && signer != nil { // without the register nothing is erased: the kind has no worker and the API says it is unavailable
+		kinds[nemura.KindErasure] = (&nemura.ErasureRunner{Store: store, Blobs: register, Signer: signer, Clock: deps.Clock}).Work()
+	}
 	s.Handle("POST /tasks", &outbox.Handler{Class: outbox.ClassWorker, Store: store, Tokens: tokens, Clock: deps.Clock,
-		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{alert.KindNotify: alert.Work(alert.LogNotifier{}, deps.Clock), "people.notice": logNotice, nemura.KindLeaveAccrual: store.LeaveAccrualWork(deps.Clock),
-			nemura.KindLinkSend: sender.Work()}})
+		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: kinds})
 	s.Handle("POST /tick", outbox.Tick{Dispatcher: disp, Tokens: tokens, Class: outbox.ClassWorker})
 	return nil
 }
 
 // migrate is the migrate role: `up` applies every pending migration, `status` lists them.
 func migrate(ctx context.Context, getenv func(string) string, args []string, clock ports.Clock) error {
-	const usage = "usage: NEMURA_ROLE=migrate nemura up | nemura status | nemura setup-code | nemura owner-recovery <organisation id> <member id> \"<name>, <name>\" | nemura link-restore <organisation id> \"<name>, <name>\""
+	const usage = "usage: NEMURA_ROLE=migrate nemura up | nemura status | nemura setup-code | nemura owner-recovery <organisation id> <member id> \"<name>, <name>\" | nemura link-restore <organisation id> \"<name>, <name>\" | nemura erasure-reapply <organisation id>"
 	if len(args) == 0 {
 		return errors.New(usage)
 	}
@@ -170,6 +174,9 @@ func migrate(ctx context.Context, getenv func(string) string, args []string, clo
 	}
 	if args[0] == "link-restore" {
 		return linkRestore(ctx, getenv, args[1:], clock)
+	}
+	if args[0] == "erasure-reapply" {
+		return erasureReapply(ctx, getenv, args[1:], clock)
 	}
 	if len(args) != 1 || (args[0] != "up" && args[0] != "status" && args[0] != "setup-code") {
 		return errors.New(usage)

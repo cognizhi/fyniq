@@ -125,6 +125,7 @@ func ApplyPerson(cur Person, ev PersonUpserted, v int, at time.Time) (next Perso
 	next.ID, next.Version, next.UpdatedAt = ev.PersonID, v, at
 	if ev.Deleted {
 		next.Removed = true
+		next.DisplayName, next.WorkEmail = "", "" // a tombstone of an erased person clears what Fyniq held of them (PRD-002 NM-SEC-08; FR-PPL-19)
 		return next, false, nil
 	}
 	started, err := parseDate(ev.StartedOn)

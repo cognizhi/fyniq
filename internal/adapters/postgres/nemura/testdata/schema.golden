@@ -18,6 +18,7 @@ deletion_proof | nemura_migrator | true | true
 deletion_report | nemura_migrator | true | true
 details_change | nemura_migrator | true | true
 emergency_contact | nemura_migrator | true | true
+erasure_order | nemura_migrator | true | true
 feature_state | nemura_migrator | true | true
 flex_request | nemura_migrator | true | true
 fyniq_link | nemura_migrator | true | true
@@ -281,6 +282,18 @@ emergency_contact | contact_name | text | true |
 emergency_contact | relationship | text | true | 
 emergency_contact | contact_phone | text | true | 
 emergency_contact | updated_at | timestamp with time zone | true | 
+erasure_order | organisation_id | uuid | true | nemura.current_org()
+erasure_order | id | uuid | true | uuidv7()
+erasure_order | person_id | uuid | true | 
+erasure_order | reason | text | true | 
+erasure_order | eligible_on | date | true | 
+erasure_order | requested_by | uuid | true | 
+erasure_order | requested_at | timestamp with time zone | true | 
+erasure_order | approved_by | uuid | false | 
+erasure_order | approved_at | timestamp with time zone | false | 
+erasure_order | state | text | true | 'requested'::text
+erasure_order | executed_at | timestamp with time zone | false | 
+erasure_order | register_sha256 | bytea | false | 
 feature_state | organisation_id | uuid | true | nemura.current_org()
 feature_state | id | uuid | true | uuidv7()
 feature_state | feature | text | true | 
@@ -901,6 +914,7 @@ person | probation_end | date | false |
 person | leaving_date | date | false | 
 person | leaving_reason | text | false | 
 person | created_at | timestamp with time zone | true | now()
+person | erased_at | timestamp with time zone | false | 
 person_classification | organisation_id | uuid | true | nemura.current_org()
 person_classification | id | uuid | true | uuidv7()
 person_classification | person_id | uuid | true | 
@@ -1392,6 +1406,25 @@ emergency_contact | emergency_contact_position_range | CHECK ((("position" >= 1)
 emergency_contact | emergency_contact_relationship_not_null | NOT NULL relationship
 emergency_contact | emergency_contact_updated_at_not_null | NOT NULL updated_at
 emergency_contact | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+erasure_order | erasure_order_approved_fkey | FOREIGN KEY (organisation_id, approved_by) REFERENCES nemura.member(organisation_id, id)
+erasure_order | erasure_order_approved_whole | CHECK ((((state = ANY (ARRAY['approved'::text, 'executed'::text])) = ((approved_by IS NOT NULL) AND (approved_at IS NOT NULL))) OR (state = 'refused'::text)))
+erasure_order | erasure_order_eligible_on_not_null | NOT NULL eligible_on
+erasure_order | erasure_order_executed_whole | CHECK (((state = 'executed'::text) = ((executed_at IS NOT NULL) AND (register_sha256 IS NOT NULL))))
+erasure_order | erasure_order_id_not_null | NOT NULL id
+erasure_order | erasure_order_organisation_id_not_null | NOT NULL organisation_id
+erasure_order | erasure_order_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+erasure_order | erasure_order_person_id_not_null | NOT NULL person_id
+erasure_order | erasure_order_pkey | PRIMARY KEY (organisation_id, id)
+erasure_order | erasure_order_reason_length | CHECK (((length(btrim(reason)) >= 1) AND (length(btrim(reason)) <= 500)))
+erasure_order | erasure_order_reason_not_null | NOT NULL reason
+erasure_order | erasure_order_requested_at_not_null | NOT NULL requested_at
+erasure_order | erasure_order_requested_by_not_null | NOT NULL requested_by
+erasure_order | erasure_order_requested_fkey | FOREIGN KEY (organisation_id, requested_by) REFERENCES nemura.member(organisation_id, id)
+erasure_order | erasure_order_second_person | CHECK (((approved_by IS NULL) OR (approved_by <> requested_by)))
+erasure_order | erasure_order_sha | CHECK (((register_sha256 IS NULL) OR (octet_length(register_sha256) = 32)))
+erasure_order | erasure_order_state_known | CHECK ((state = ANY (ARRAY['requested'::text, 'approved'::text, 'executed'::text, 'refused'::text])))
+erasure_order | erasure_order_state_not_null | NOT NULL state
+erasure_order | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 feature_state | feature_state_changed_at_not_null | NOT NULL changed_at
 feature_state | feature_state_changed_by_fkey | FOREIGN KEY (organisation_id, changed_by) REFERENCES nemura.member(organisation_id, id)
 feature_state | feature_state_changed_by_not_null | NOT NULL changed_by
@@ -2673,6 +2706,9 @@ CREATE INDEX details_change_person_idx ON nemura.details_change USING btree (org
 CREATE UNIQUE INDEX details_change_pkey ON nemura.details_change USING btree (organisation_id, id)
 CREATE UNIQUE INDEX emergency_contact_pkey ON nemura.emergency_contact USING btree (organisation_id, id)
 CREATE UNIQUE INDEX emergency_contact_position ON nemura.emergency_contact USING btree (organisation_id, person_id, "position")
+CREATE UNIQUE INDEX erasure_order_one_executed ON nemura.erasure_order USING btree (organisation_id, person_id) WHERE (state = 'executed'::text)
+CREATE UNIQUE INDEX erasure_order_one_live ON nemura.erasure_order USING btree (organisation_id, person_id) WHERE (state = ANY (ARRAY['requested'::text, 'approved'::text]))
+CREATE UNIQUE INDEX erasure_order_pkey ON nemura.erasure_order USING btree (organisation_id, id)
 CREATE UNIQUE INDEX feature_state_feature_key ON nemura.feature_state USING btree (organisation_id, feature)
 CREATE UNIQUE INDEX feature_state_pkey ON nemura.feature_state USING btree (organisation_id, id)
 CREATE INDEX flex_request_person_idx ON nemura.flex_request USING btree (organisation_id, person_id, requested_at)
@@ -2873,6 +2909,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.deletio
 CREATE TRIGGER details_change_guard BEFORE DELETE OR UPDATE ON nemura.details_change FOR EACH ROW EXECUTE FUNCTION nemura.details_change_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.details_change DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('details_change', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.emergency_contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('emergency_contact', 'person_id')
+CREATE TRIGGER erasure_order_guard BEFORE DELETE OR UPDATE ON nemura.erasure_order FOR EACH ROW EXECUTE FUNCTION nemura.erasure_order_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.erasure_order DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('erasure_order', 'id')
 CREATE TRIGGER feature_state_guard BEFORE DELETE OR UPDATE ON nemura.feature_state FOR EACH ROW EXECUTE FUNCTION nemura.feature_state_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.feature_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('feature_state', 'id')
 CREATE TRIGGER flex_request_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.flex_request FOR EACH ROW EXECUTE FUNCTION nemura.flex_request_guard()
@@ -3019,6 +3057,7 @@ deletion_proof | tenant_isolation | (organisation_id = nemura.current_org()) | (
 deletion_report | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 details_change | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 emergency_contact | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+erasure_order | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 feature_state | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 flex_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 fyniq_link | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3377,6 +3416,49 @@ BEGIN
   END IF;
   IF NEW.state IN ('approved', 'refused') AND EXISTS (SELECT 1 FROM nemura.person p WHERE p.organisation_id = NEW.organisation_id AND p.id = NEW.person_id AND p.member_id = NEW.decided_by) THEN
     RAISE EXCEPTION 'Nobody decides a change to their own details: another member of the people team does' USING ERRCODE = 'NM166';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.erase_person(p_order uuid, p_on date, p_register bytea)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  o nemura.erasure_order;
+  p nemura.person;
+BEGIN
+  SELECT * INTO o FROM nemura.erasure_order WHERE id = p_order FOR UPDATE;
+  IF NOT FOUND OR o.state <> 'approved' THEN
+    RAISE EXCEPTION 'An erasure runs only from an approved order' USING ERRCODE = 'NM201';
+  END IF;
+  SELECT * INTO p FROM nemura.person WHERE id = o.person_id;
+  IF p.leaving_date IS NULL OR p.leaving_date > p_on OR p_on < o.eligible_on THEN
+    RAISE EXCEPTION 'The person has not left, or the retention periods have not run' USING ERRCODE = 'NM202';
+  END IF;
+  IF EXISTS (SELECT 1 FROM nemura.legal_hold h WHERE h.released_on IS NULL AND h.placed_on <= p_on
+               AND (h.subject_id = o.person_id OR (h.subject_id IS NULL AND h.record_type IN ('people-records', 'pay-records')))) THEN
+    RAISE EXCEPTION 'A legal hold keeps this person''s records' USING ERRCODE = 'NM203';
+  END IF;
+  PERFORM nemura.scrub_person(o.person_id, p_on::timestamptz);
+  UPDATE nemura.erasure_order SET state = 'executed', executed_at = p_on::timestamptz, register_sha256 = p_register WHERE id = p_order;
+  RETURN o.person_id;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.erasure_order_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.reason IS DISTINCT FROM OLD.reason OR NEW.eligible_on IS DISTINCT FROM OLD.eligible_on
+     OR NEW.requested_by IS DISTINCT FROM OLD.requested_by OR NEW.requested_at IS DISTINCT FROM OLD.requested_at
+     OR NOT ((OLD.state = 'requested' AND NEW.state IN ('approved', 'refused')) OR (OLD.state = 'approved' AND NEW.state = 'executed')) THEN
+    RAISE EXCEPTION 'An erasure order moves forward only: requested, approved or refused, then executed; it is never deleted or rewritten' USING ERRCODE = 'NM200';
   END IF;
   RETURN NEW;
 END
@@ -4288,6 +4370,35 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.reapply_erasure(p_person uuid, p_on date)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  p nemura.person;
+BEGIN
+  SELECT * INTO p FROM nemura.person WHERE id = p_person;
+  IF NOT FOUND THEN
+    RETURN false; -- the restored database does not have the person: nothing to scrub
+  END IF;
+  IF p.leaving_date IS NULL OR p_on < (p.leaving_date + interval '12 months')::date THEN
+    RAISE EXCEPTION 'A register entry cannot erase a person who has not left a year ago' USING ERRCODE = 'NM204';
+  END IF;
+  -- true only when something of the person had come back: a second run finds nothing and reports false
+  IF p.erased_at IS NULL OR p.legal_name <> 'Former employee' OR p.preferred_name IS NOT NULL OR p.work_email IS NOT NULL OR p.phone IS NOT NULL OR p.leaving_reason IS NOT NULL
+     OR EXISTS (SELECT 1 FROM nemura.person_contact c WHERE c.person_id = p_person AND (c.personal_email IS NOT NULL OR c.address IS NOT NULL OR c.postal_code IS NOT NULL))
+     OR EXISTS (SELECT 1 FROM nemura.emergency_contact e WHERE e.person_id = p_person)
+     OR EXISTS (SELECT 1 FROM nemura.person_secret x WHERE x.person_id = p_person AND (x.nric_sealed IS NOT NULL OR x.bank_sealed IS NOT NULL OR x.ir8a_sealed IS NOT NULL OR x.bank_code IS NOT NULL OR x.bank_name IS NOT NULL))
+     OR EXISTS (SELECT 1 FROM nemura.member m WHERE m.id = p.member_id AND m.display_name <> 'Former employee') THEN
+    PERFORM nemura.scrub_person(p_person, p_on::timestamptz);
+    RETURN true;
+  END IF;
+  RETURN false;
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.replace_member_identities(p_member uuid, p_issuer text, p_subject text, p_tenant text)
  RETURNS integer
  LANGUAGE plpgsql
@@ -4426,6 +4537,27 @@ BEGIN
     RAISE EXCEPTION 'A role assignment is history: it can only be ended, once' USING ERRCODE = 'NM081';
   END IF;
   RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.scrub_person(p_person uuid, p_on timestamp with time zone)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  m uuid;
+BEGIN
+  UPDATE nemura.person SET legal_name = 'Former employee', preferred_name = NULL, work_email = NULL, phone = NULL, leaving_reason = NULL, erased_at = p_on
+   WHERE id = p_person RETURNING member_id INTO m;
+  UPDATE nemura.person_contact SET personal_email = NULL, address = NULL, postal_code = NULL, updated_at = p_on WHERE person_id = p_person;
+  DELETE FROM nemura.emergency_contact WHERE person_id = p_person;
+  UPDATE nemura.person_secret SET nric_sealed = NULL, nric_masked = NULL, nric_fingerprint = NULL, bank_sealed = NULL, bank_masked = NULL, bank_fingerprint = NULL,
+         bank_code = NULL, bank_name = NULL, ir8a_sealed = NULL, updated_at = p_on WHERE person_id = p_person;
+  IF m IS NOT NULL THEN
+    UPDATE nemura.member SET display_name = 'Former employee', deactivated_at = coalesce(deactivated_at, p_on) WHERE id = m;
+  END IF;
 END
 $function$
 
