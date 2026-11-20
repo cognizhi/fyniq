@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it bills each interval, before tax, from its flat-priced items."
+    },
+    "cancel_at_period_end": {
+      "description": "Whether it ends at the end of the period.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "canceled_on": {
+      "description": "The day it was cancelled.",
+      "examples": [
+        "2026-11-10"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "current_period_end": {
+      "description": "The end of the period it is in.",
+      "examples": [
+        "2026-12-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "customer": {
+      "description": "The customer's name, as the provider has it; its ID when it has none.",
+      "examples": [
+        "Lumen Health Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The mirror's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5002"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "interval": {
+      "description": "How often, such as every month or every 3 months.",
+      "examples": [
+        "every month"
+      ],
+      "type": "string"
+    },
+    "provider": {
+      "description": "The provider's connector.",
+      "examples": [
+        "stripe"
+      ],
+      "type": "string"
+    },
+    "provider_subscription_id": {
+      "description": "The provider's ID.",
+      "examples": [
+        "sub_1"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "The provider's status: active, past_due, unpaid, canceled, paused, trialing…",
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "provider",
+    "provider_subscription_id",
+    "customer",
+    "status",
+    "amount",
+    "interval",
+    "cancel_at_period_end"
+  ],
+  "title": "PaymentProviderSubscription",
+  "type": "object"
+}

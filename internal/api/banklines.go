@@ -618,6 +618,8 @@ func registerBankLines(a *API) {
 				out.Applied = previewApplied
 			} else if run, err = banking.AutoReconcile(ctx, a.bank, p.Organisation, ids, now); err != nil {
 				return nil, err
+			} else if _, err := a.postProviderInvoices(ctx, p.Organisation); err != nil {
+				logFailure(ctx, fmt.Errorf("posting the provider's invoices: %w", err)) // the drafts wait; the reconciliation stands
 			}
 			out.Body = AutoReconciled{Reconciled: len(run.Reconciled), Left: map[string]int{}}
 			for _, l := range run.Left {

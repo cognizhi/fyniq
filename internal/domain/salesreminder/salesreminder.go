@@ -142,6 +142,11 @@ func Due(ctx context.Context, u storage.UnitOfWork, base money.Currency, today t
 	if err != nil {
 		return nil, err
 	}
+	// An invoice a billing provider bills is the provider's to chase: its own retries and emails run, Fyniq's reminders do not (FR-PSP-03).
+	billed, err := u.PSPMirror().Documents(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var out []Reminder
 	for _, acc := range accounts {
 		if string(acc.Role) != ledger.RoleAccountsReceivable {
@@ -161,7 +166,7 @@ func Due(ctx context.Context, u storage.UnitOfWork, base money.Currency, today t
 				days = schedules[*c.CustomerGroupID]
 			}
 			for _, it := range cu.Items {
-				if it.Kind != receivables.KindInvoice || it.Open.Sign() <= 0 || it.DueDate.IsZero() || paused[it.DocumentID] {
+				if it.Kind != receivables.KindInvoice || it.Open.Sign() <= 0 || it.DueDate.IsZero() || paused[it.DocumentID] || billed[it.DocumentID] {
 					continue
 				}
 				step, ok := Step(days, it.DueDate, today)

@@ -33,6 +33,14 @@
       ],
       "format": "uuid",
       "type": "string"
+    },
+    "revenue_account_id": {
+      "description": "The revenue chart account a Model B provider's invoices book to, such as 4010 Subscription revenue; left out, a mirrored invoice waits for a person (FR-PSP-03).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b15"
+      ],
+      "format": "uuid",
+      "type": "string"
     }
   },
   "required": [

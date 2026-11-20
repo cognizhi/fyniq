@@ -79,6 +79,57 @@ type ProviderObject struct {
 	AvailableOn              time.Time
 	Links                    map[ProviderKind][]string
 	Raw                      []byte
+	// Typed data of the objects Model B mirrors (FR-PSP-03): an invoice, a customer or a subscription, read as the adapter understood it. Nil for any
+	// other kind. Amounts are exact decimal strings, never floats.
+	Invoice      *InvoiceData
+	Customer     *CustomerData
+	Subscription *SubscriptionData
+}
+
+// InvoiceData is a billing provider's invoice as Fyniq mirrors it (FR-PSP-03, FR-PSP-07): its totals, its lines with their service periods, and its
+// collection state. Unsupported says why it cannot be made into an AR document by the invoice rules (a discount, a credit line, more lines than one page,
+// lines and tax that do not add up to the total): empty when it can.
+type InvoiceData struct {
+	CustomerID     string
+	CustomerName   string // as the invoice carries them: the provider's customer at finalisation
+	CustomerEmail  string
+	SubscriptionID string
+	Number         string
+	Status         string // draft, open, paid, uncollectible or void
+	HostedURL      string
+	Total          string
+	AmountPaid     string
+	AttemptCount   int
+	NextAttempt    *time.Time
+	Finalized      *time.Time
+	Due            *time.Time
+	Lines          []InvoiceLine
+	Unsupported    string
+}
+
+// InvoiceLine is a line of a provider's invoice: its amount before tax and the service period it covers.
+type InvoiceLine struct {
+	ID          string
+	Description string
+	Amount      string
+	PeriodStart time.Time
+	PeriodEnd   time.Time
+}
+
+// CustomerData is a provider's customer.
+type CustomerData struct{ Name, Email string }
+
+// SubscriptionData is a provider's subscription: what it bills each interval before tax, and its standing.
+type SubscriptionData struct {
+	CustomerID        string
+	Status            string
+	Amount            string
+	IntervalUnit      string // day, week, month or year
+	IntervalCount     int
+	PeriodStart       *time.Time
+	PeriodEnd         *time.Time
+	CancelAtPeriodEnd bool
+	CanceledAt        *time.Time
 }
 
 // ProviderPage is a page of objects: Cursor continues after the last, and More says another page waits.

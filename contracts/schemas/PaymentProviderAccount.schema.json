@@ -108,6 +108,21 @@
       "$ref": "Money.schema.json",
       "description": "What the provider said it holds for the organisation and has not paid out, at the last sweep."
     },
+    "revenue_account_id": {
+      "description": "The revenue chart account a Model B provider's invoices book to (FR-PSP-03); none: they wait for a person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b15"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "revenue_account_name": {
+      "description": "Its code and name.",
+      "examples": [
+        "4010 Subscription revenue"
+      ],
+      "type": "string"
+    },
     "sweep_error": {
       "description": "Why the last sweep could not close a gap (C.2 #43).",
       "examples": [

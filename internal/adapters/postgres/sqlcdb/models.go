@@ -3246,6 +3246,7 @@ type FyniqPspAccount struct {
 	CreatedAt            time.Time
 	Version              int32
 	DisputeLossAccountID *uuid.UUID
+	RevenueAccountID     *uuid.UUID
 }
 
 type FyniqPspBalance struct {
@@ -3255,6 +3256,17 @@ type FyniqPspBalance struct {
 	Currency       string
 	Amount         string
 	TakenAt        time.Time
+}
+
+type FyniqPspCustomer struct {
+	OrganisationID     uuid.UUID
+	ID                 uuid.UUID
+	ConnectorID        uuid.UUID
+	ProviderCustomerID string
+	Name               *string
+	Email              *string
+	ContactID          *uuid.UUID
+	SeenAt             time.Time
 }
 
 type FyniqPspDisputeCredit struct {
@@ -3304,6 +3316,32 @@ type FyniqPspEvent struct {
 	LastError      *string
 }
 
+type FyniqPspInvoice struct {
+	OrganisationID         uuid.UUID
+	ID                     uuid.UUID
+	ConnectorID            uuid.UUID
+	ProviderInvoiceID      string
+	ProviderCustomerID     string
+	ProviderSubscriptionID *string
+	Number                 *string
+	Status                 string
+	Currency               string
+	Total                  string
+	AmountPaid             string
+	AttemptCount           int32
+	NextAttemptOn          pgtype.Date
+	Outcome                *string
+	HostedUrl              *string
+	FinalizedOn            pgtype.Date
+	DueOn                  pgtype.Date
+	DraftLines             []byte
+	State                  string
+	ParkedReason           *string
+	DocumentID             *uuid.UUID
+	Version                int32
+	SeenAt                 time.Time
+}
+
 type FyniqPspPayout struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -3316,6 +3354,24 @@ type FyniqPspPayout struct {
 	Automatic      bool
 	ProviderAt     time.Time
 	SeenAt         time.Time
+}
+
+type FyniqPspSubscription struct {
+	OrganisationID         uuid.UUID
+	ID                     uuid.UUID
+	ConnectorID            uuid.UUID
+	ProviderSubscriptionID string
+	ProviderCustomerID     string
+	Status                 string
+	Currency               string
+	Amount                 string
+	IntervalUnit           string
+	IntervalCount          int32
+	PeriodStart            pgtype.Date
+	PeriodEnd              pgtype.Date
+	CancelAtPeriodEnd      bool
+	CanceledOn             pgtype.Date
+	SeenAt                 time.Time
 }
 
 type FyniqPspTxn struct {

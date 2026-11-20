@@ -40,6 +40,7 @@ type fakeLedgerProvider struct {
 	balance  string
 	status   map[string]string
 	failList error
+	mirror   []ports.ProviderObject // Model B: the invoices and subscriptions it lists
 }
 
 func bt(id, category, gross, fee, net string, day int, source ports.ProviderKind, src string) ports.ProviderObject {
@@ -92,6 +93,14 @@ func (f *fakeLedgerProvider) List(_ context.Context, kind ports.ProviderKind, fr
 		return ports.ProviderPage{}, f.failList
 	}
 	var page ports.ProviderPage
+	if kind == ports.ProviderInvoice || kind == ports.ProviderSubscription {
+		for _, o := range f.mirror {
+			if o.Kind == kind && !o.Created.Before(from) && o.Created.Before(to) {
+				page.Objects = append(page.Objects, o)
+			}
+		}
+		return page, nil
+	}
 	for _, t := range f.txns {
 		if t.Created.Before(from) || !t.Created.Before(to) {
 			continue
