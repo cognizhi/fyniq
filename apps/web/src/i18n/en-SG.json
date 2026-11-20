@@ -2135,6 +2135,10 @@
       "label": "Connector",
       "tooltip": "One connector: its lifecycle, configuration and secrets, its test and health, an upgrade to consent to, and its history."
     },
+    "settings.usage": {
+      "label": "Usage and cost",
+      "tooltip": "What this organisation used of AI, storage and exports in the last months, and what it holds now."
+    },
     "settings.workflow-rules": {
       "label": "Workflow rules",
       "tooltip": "Tell members when a document of a kind, above an amount, is posted. A rule only tells people: it never posts, approves, pays or files anything."

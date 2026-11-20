@@ -199,6 +199,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "settings-integrations": lazyRouteComponent(() => import("./screens/settings/Integrations"), "Integrations"),
   "settings-webhooks": lazyRouteComponent(() => import("./screens/settings/Webhooks"), "Webhooks"),
   "settings-workflow-rules": lazyRouteComponent(() => import("./screens/settings/WorkflowRules"), "WorkflowRules"),
+  "settings-usage": lazyRouteComponent(() => import("./screens/settings/Usage"), "Usage"),
   "settings-brand": lazyRouteComponent(() => import("./screens/settings/Brand"), "BrandPage"),
   "settings-console": lazyRouteComponent(() => import("./screens/settings/AdminConsole"), "AdminConsole"),
   "settings-sign-in-providers": lazyRouteComponent(() => import("./screens/settings/SignInProviders"), "SignInProviders"),

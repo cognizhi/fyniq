@@ -122,6 +122,8 @@ type UnitOfWork interface {
 	ApprovalDelegations() ApprovalDelegations
 	ApprovalReminders() ApprovalReminders
 	AutomationRules() AutomationRules
+	// Usage is the organisation's use of AI, storage and exports, read-only (FR-ADM-05).
+	Usage() Usage
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates
 	// Preferences are each person's own preferences: the mode, the view, the look, the shortcuts and the formats (FR-UX-23).

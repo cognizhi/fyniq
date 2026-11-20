@@ -7754,6 +7754,36 @@
     "no careers page at this address",
     "no published post"
    ]
+  },
+  {
+   "id": "usage",
+   "file": "Usage",
+   "title": "Usage and cost",
+   "canvas": "workflows",
+   "module": "Settings",
+   "route": "/settings/usage",
+   "kind": "page",
+   "phase": "P2",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "DPO"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-ADM-05"
+   ],
+   "purpose": "See what the organisation used of AI, storage and exports in the last months, and what it holds now, without leaving Settings.",
+   "content": [
+    "Held in storage now: evidence files, captured documents and report exports, each with its count and size, and the total",
+    "By month, the latest first: AI calls, input and output tokens, the AI's cost in each currency its prices used, report exports and evidence added with their sizes",
+    "Note: the cost is what the AI's prices say, not an invoice"
+   ],
+   "states": [
+    "loading",
+    "empty months (zeros)",
+    "a refusal"
+   ]
   }
  ]
 }

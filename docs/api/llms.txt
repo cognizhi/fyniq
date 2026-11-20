@@ -1228,6 +1228,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/timesheet/{week_start}` (getTimesheet): Read the caller's own week of time
 - `PUT /v1/timesheet/{week_start}` (saveTimesheet): Save the caller's week of time
 - `POST /v1/timesheet/{week_start}/submit` (submitTimesheet): Submit the caller's week for approval
+- `GET /v1/usage` (getUsage): The organisation's usage and cost
 - `POST /v1/webhook-deliveries/{delivery_id}/replay` (replayWebhookDelivery): Replay a dead webhook delivery
 - `GET /v1/webhook-endpoints` (listWebhookEndpoints): List the organisation's webhook endpoints
 - `POST /v1/webhook-endpoints` (createWebhookEndpoint): Add a webhook endpoint

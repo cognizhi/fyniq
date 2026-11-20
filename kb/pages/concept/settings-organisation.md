@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, InvoiceNow, cash buffer, numbering, features, AI, terms, banking, claims, thresholds, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:9e7076a0b97ee4c61bc7798aa450988e3f9eca6ad7e8ab995cecfa92ca23a774
+  - docs/user-guide/organisation-settings.md sha256:469d5b77ff34f5dda43c3301fbc07ef77296387b7d519d4cb4daf31c402f1def
 data_class: general
 taint: trusted
 status: draft
@@ -216,6 +216,15 @@ The calendar itself: [[compliance.calendar]].
 - The pin only changes what is shown, never what a person may do; safety information is shown in both modes.
 
 (src: docs/user-guide/organisation-settings.md#pin-a-role-to-basic-mode)
+
+## Usage and cost
+
+- **Settings → Usage and cost** (an Owner, an Administrator or the compliance officer) shows what the organisation used of AI, storage and exports; it only reads, and changes no setting or limit.
+- **Held in storage now**: the evidence files, the captured documents and the report exports, each with how many there are and their size, and the total.
+- **By month**, the latest first, for the last six calendar months (UTC): the AI calls with their input and output tokens and what they cost, the report exports made ready, and the evidence files added; a month with no use shows zeros.
+- The AI's cost is what the AI's prices say, exactly, in the currency of each price (two currencies in one month both show); it measures use and is not an invoice. The AI's monthly budgets are in [[settings.ai]].
+
+(src: docs/user-guide/organisation-settings.md#usage-and-cost)
 
 ## AI routes
 

@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-TAX-10, FR-AR-12, FR-UX-27, FR-UX-28, CMP-PD-01, FM-8, FR-INT-02, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32, AI-35, AI-43, AI-90]
+requirements: [FR-TAX-10, FR-AR-12, FR-UX-27, FR-UX-28, FR-ADM-05, CMP-PD-01, FM-8, FR-INT-02, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32, AI-35, AI-43, AI-90]
 status: draft
 ---
 
@@ -225,6 +225,22 @@ totals is shown in both modes, so Basic never hides what a person needs to decid
 A person who also holds a role that is not pinned keeps the switch: pinning the Employee role does not take Expert
 away from an Employee who is also an Accountant. The Owner and the Administrator cannot be pinned, so the people who
 set this never lose the switch themselves. The pin only changes what is shown, never what a person may do.
+
+## Usage and cost
+
+**Settings → Usage and cost** shows, for an Owner, an Administrator or the compliance officer (DPO), what the
+organisation used of AI, storage and exports. It only reads: nothing here changes a setting or a limit.
+
+- **Held in storage now**: the evidence files, the captured documents and the report exports, each with how many
+  there are and their size, and the total.
+- **By month**, the latest first, for the last six calendar months (UTC): the AI calls with their input and output
+  tokens and what they cost, the report exports made ready, and the evidence files added. A month with no use is
+  listed with zeros.
+
+The AI's cost is what the AI's prices say, exactly, in the currency of each price: when prices in two currencies
+were used in a month, both show. It is a measure of use, not an invoice from the AI's provider. The AI's monthly budgets
+and what happens when one is spent are in [the AI settings](ai-settings.md); this page is where to look first
+when a month cost more than expected.
 
 ## AI routes
 

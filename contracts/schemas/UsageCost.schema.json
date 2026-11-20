@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "The exact amount, as a decimal string.",
+      "examples": [
+        "12.34500000"
+      ],
+      "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+      "type": "string"
+    },
+    "currency": {
+      "description": "The currency of the price the calls used.",
+      "examples": [
+        "USD"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "amount"
+  ],
+  "title": "UsageCost",
+  "type": "object"
+}

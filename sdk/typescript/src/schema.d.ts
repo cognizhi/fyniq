@@ -20113,6 +20113,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The organisation's usage and cost
+         * @description What the organisation used of AI, storage and exports (FR-ADM-05): for each of the last months (1 to 24, default 6), the model calls with their tokens and their exact cost in each currency a price used, the report exports made ready and the evidence files uploaded, and what is held in storage now. The months are calendar months in UTC. Read-only; no side effects. For the Owner, the Administrator and the DPO; never the AI.
+         */
+        get: operations["getUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/webhook-deliveries/{delivery_id}/replay": {
         parameters: {
             query?: never;
@@ -66521,6 +66541,83 @@ export interface components {
              * @example eyJhZnRlciI6IjIwMjYtMTAtMTR8MDE5MnwxIn0
              */
             next_cursor?: string;
+        };
+        Usage: {
+            /** @description Every month from the first asked for to the current one, oldest first, with zeros where nothing was used. */
+            months: components["schemas"]["UsageMonth"][];
+            /** @description What is held in storage now. */
+            stored: components["schemas"]["UsageStored"];
+        };
+        UsageCost: {
+            /**
+             * @description The exact amount, as a decimal string.
+             * @example 12.34500000
+             */
+            amount: string;
+            /**
+             * @description The currency of the price the calls used.
+             * @example USD
+             */
+            currency: string;
+        };
+        UsageFiles: {
+            /**
+             * Format: int64
+             * @description Their size in bytes.
+             * @example 1048576
+             */
+            bytes: number;
+            /**
+             * Format: int64
+             * @description How many.
+             * @example 42
+             */
+            files: number;
+        };
+        UsageMonth: {
+            /**
+             * Format: int64
+             * @description Attempts of a model call that started in the month, served or not.
+             * @example 120
+             */
+            ai_calls: number;
+            /** @description What the calls cost, exactly, in each currency their prices used; empty when none was priced. */
+            ai_cost: components["schemas"]["UsageCost"][];
+            /** @description Files uploaded as evidence in the month. */
+            evidence: components["schemas"]["UsageFiles"];
+            /** @description Report exports made ready in the month, and their size. */
+            exports: components["schemas"]["UsageFiles"];
+            /**
+             * Format: int64
+             * @description Input tokens of those calls.
+             * @example 350000
+             */
+            input_tokens: number;
+            /**
+             * @description The calendar month (UTC), as YYYY-MM.
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * Format: int64
+             * @description Output tokens of those calls.
+             * @example 41000
+             */
+            output_tokens: number;
+        };
+        UsageStored: {
+            /** @description Captured documents, such as receipts and emailed bills. */
+            captures: components["schemas"]["UsageFiles"];
+            /** @description Evidence files. */
+            evidence: components["schemas"]["UsageFiles"];
+            /** @description Report exports that are ready. */
+            exports: components["schemas"]["UsageFiles"];
+            /**
+             * Format: int64
+             * @description All of them together, in bytes.
+             * @example 5242880
+             */
+            total_bytes: number;
         };
         Variance: {
             /**
@@ -220584,6 +220681,102 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getUsage: {
+        parameters: {
+            query?: {
+                /** @description How many months to show, ending with the current one. */
+                months?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Usage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

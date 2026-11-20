@@ -32,7 +32,8 @@
 - [ ] 6.2 Vendor statement reconciliation (D7). `// req: FR-AP-10`
 
 ## 7. Administration and experience
-- [ ] 7.1 The usage view (D7). `// req: FR-ADM-05`
+- [x] 7.1 The usage view (D7). `// req: FR-ADM-05`
+  (Built, rev REV: `GET /v1/usage` on the *Tenant export* row (the Owner, the Administrator and the DPO; View; never the AI), read-only from what the platform already keeps (no migration, no new grant): the AI calls by the month they started in with their tokens and exact cost per currency, the report exports made ready and the evidence files uploaded, and what is held in storage now (evidence, captured documents, exports); the screen *Usage and cost* at `/settings/usage`, the guide and knowledge page and the design fragment. Tests: `TestTheUsageViewShowsEveryMonthAndOnlyToTheOnesWhoMaySeeIt`, the matrix row, `Usage.test.tsx`. **Left:** the base-currency total of the AI's cost (per-currency sums are exact; converting needs the day's rates), a per-person breakdown, and the compute and bandwidth figures, which the platform does not meter yet.)
 - [x] 7.2 Pinned Basic mode (D7). `// req: FR-UX-28`
   (Built, rev REV, `[owner to confirm]`: one switch setting per pinnable role, `experience.pinned_basic.<role>` (every role but the Owner and the Administrator, so the people who set it never lose the switch); a person is pinned when every role they hold is pinned (the line manager is a relationship, not a role); the preferences and the session say `pinned_basic`, show Basic, and a save of Expert is refused (PRF-05); the web app draws no Basic | Expert switch, palette command or shortcut for them. Tests: `TestAnAdministratorPinsARoleToBasicAndOnlyThatRole`, `mode.test.ts`. **Left:** nothing.)
 - [ ] 7.3 Feature tours and What's new (D7). `// req: FR-UX-35`

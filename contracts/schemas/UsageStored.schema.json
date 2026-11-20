@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "captures": {
+      "$ref": "UsageFiles.schema.json",
+      "description": "Captured documents, such as receipts and emailed bills."
+    },
+    "evidence": {
+      "$ref": "UsageFiles.schema.json",
+      "description": "Evidence files."
+    },
+    "exports": {
+      "$ref": "UsageFiles.schema.json",
+      "description": "Report exports that are ready."
+    },
+    "total_bytes": {
+      "description": "All of them together, in bytes.",
+      "examples": [
+        5242880
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "evidence",
+    "captures",
+    "exports",
+    "total_bytes"
+  ],
+  "title": "UsageStored",
+  "type": "object"
+}

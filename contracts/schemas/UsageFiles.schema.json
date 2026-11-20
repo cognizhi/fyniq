@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bytes": {
+      "description": "Their size in bytes.",
+      "examples": [
+        1048576
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "files": {
+      "description": "How many.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "files",
+    "bytes"
+  ],
+  "title": "UsageFiles",
+  "type": "object"
+}

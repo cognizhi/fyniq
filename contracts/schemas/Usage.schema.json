@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "months": {
+      "description": "Every month from the first asked for to the current one, oldest first, with zeros where nothing was used.",
+      "items": {
+        "$ref": "UsageMonth.schema.json"
+      },
+      "type": "array"
+    },
+    "stored": {
+      "$ref": "UsageStored.schema.json",
+      "description": "What is held in storage now."
+    }
+  },
+  "required": [
+    "months",
+    "stored"
+  ],
+  "title": "Usage",
+  "type": "object"
+}
