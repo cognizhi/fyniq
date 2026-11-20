@@ -54,6 +54,12 @@ func TestEveryMethodWritesOffTheWholeCostExactly(t *testing.T) {
 	if _, err := pack.CapitalAllowanceSeries(v, pack.MethodS19A1, 0, 1000, 2022); err == nil {
 		t.Errorf("an asset of the basis period of YA 2022 is not classified by this version")
 	}
+	if _, err := pack.CapitalAllowanceSeries(version(t, "sg-capital-allowances/2026.1"), pack.MethodS19A2, 0, 1000, 2027); err == nil {
+		t.Errorf("2026.1 was written before section 19A(2) and does not hold it")
+	}
+	if pack.HoldsBalancing(version(t, "sg-capital-allowances/2026.1")) || !pack.HoldsBalancing(v) {
+		t.Errorf("only 2026.2 works the balancing allowance and charge")
+	}
 	if _, err := pack.CapitalAllowanceSeries(v, "s19a3", 0, 1000, 2027); err == nil {
 		t.Errorf("a method the pack does not hold")
 	}

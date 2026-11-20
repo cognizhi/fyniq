@@ -242,6 +242,11 @@ what is shown, never what a person may do.
   details, users, roles and team mode, approval policies, the AI's own settings, statutory parameters, reopening a
   period, voiding or deleting, filing with an authority, exporting the company's data, and the audit trail.
 
+## Webhooks and events
+
+- **Webhooks and events**: off unless changed. Turning it on needs a second approver; turning it off takes effect at once and stops every delivery. While it is on, an Administrator can add endpoints that
+  receive the event types they ask for, as IDs and times only, signed and retried for three days. See [Send events to another system with webhooks](webhooks.md).
+
 ## AI apps through MCP
 
 - Some AI apps, such as Claude Code or Claude Desktop, can work with your books on a person's behalf over the Model

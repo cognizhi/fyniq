@@ -17,6 +17,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/contracts/events"
 	"github.com/cognizhi/fyniq/internal/authz"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
@@ -24,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/webhooks"
 )
 
 // The categories of notification types, as preferences group them.
@@ -417,9 +419,23 @@ func (f Fanout) Work() outbox.Work {
 					return err
 				}
 			}
+			// Webhooks (FR-INT-12): in the same transaction, so no delivery exists for an event that did not commit. The data is the IDs and times of the event's schema, never its title.
+			if data, err := json.Marshal(webhookData{OrganisationID: org, OccurredAt: ev.OccurredAt.UTC(), RecordID: ev.RecordID, RecordType: ev.RecordType}); err != nil {
+				return err
+			} else if _, err := webhooks.QueueFor(ctx, u, events.Type(ev.Type, 1), ev.ID, data, now); err != nil {
+				return err
+			}
 			return u.Notifications().FannedOut(ctx, ev.ID, now)
 		})
 	}
+}
+
+// webhookData is the data of an event delivered to a webhook endpoint: the fields of its schema in contracts/events/, and nothing else.
+type webhookData struct {
+	OrganisationID uuid.UUID  `json:"organisation_id"`
+	OccurredAt     time.Time  `json:"occurred_at"`
+	RecordID       *uuid.UUID `json:"record_id"`
+	RecordType     string     `json:"record_type,omitempty"`
 }
 
 // text is the plain-text body of an email carrying ns, each by its title with details, else by its type's label.

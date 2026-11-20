@@ -37,7 +37,7 @@ Nothing due before 7 Nov 2026, the day the calendar's rules were read, is in the
   owed, one task for every month, quarter or financial year it covers, due the days after the period's
   end that the agreement allows. The task closes by itself when the update (or, for the board pack,
   the published pack) reaches the holder's member, and shows what was delivered and on which day. A
-  holder no member signs in as cannot be sent an update through Fyniq, which the task says. Quarterly
+  holder no member signs in as cannot be sent an update through Fyniq: one item for them shows **Not assessed**, never overdue, until a member is linked in Contacts. Like every item, none due before the day the calendar's rules start is in it. Quarterly
   and annual accounts are delivered by the quarterly update of the period's last month.
 
 What the calendar holds follows Settings › Organisation: **Pays staff**, **Annual general meeting**

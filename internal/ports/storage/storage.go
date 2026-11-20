@@ -117,6 +117,8 @@ type UnitOfWork interface {
 	// ProjectRevenue are the elections of revenue over time for fixed-fee projects and each month's proposed journal (FR-PRJ-11).
 	ProjectRevenue() ProjectRevenue
 	Notifications() Notifications
+	// Webhooks are the organisation's outbound webhook endpoints, their deliveries and attempts (FR-INT-12).
+	Webhooks() Webhooks
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates
 	// Preferences are each person's own preferences: the mode, the view, the look, the shortcuts and the formats (FR-UX-23).

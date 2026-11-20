@@ -55,23 +55,15 @@ func TestAnInvestorsInformationRightsBecomeCalendarTasksClosedByDelivery(t *test
 		for _, line := range calendarItems(t, e.call(http.MethodGet, "/v1/compliance/calendar", e.as(authz.Auditor), nil)) {
 			if strings.HasPrefix(line, "investor_information:") {
 				parts := strings.Fields(line)
-				out[strings.TrimPrefix(parts[0], "investor_information:"+holder+":")] = parts[1] + " " + parts[2]
+				out[strings.TrimPrefix(parts[0], "investor_information:"+holder+":")] = strings.Join(parts[1:], " ")
 			}
 		}
 		return out
 	}
-	got := tasks()
-	for key, want := range map[string]string{
-		"quarterly_accounts:2026-09-30": "2026-11-14 overdue",
-		"quarterly_accounts:2026-12-31": "2027-02-14 open",
-		"board_pack:2026-10-31":         "2026-11-20 due_soon",
-		"board_pack:2026-09-30":         "2026-10-20 overdue",
-	} {
-		if got[key] != want {
-			t.Errorf("%s = %q, want %q (all: %v)", key, got[key], want, got)
-		}
+	// While no member signs in as the holder an update cannot reach them: one item says so, not assessed and never overdue.
+	if got := tasks(); len(got) != 1 || got["-"] != "not_assessed" {
+		t.Fatalf("before a member is linked: %v", got)
 	}
-
 	// A member signs in as the holder, the September pack is published and its quarterly update sent to them: both tasks close with their evidence (a closed task due before the window is left out).
 	c := e.call(http.MethodGet, "/v1/contacts/"+holder, e.as(authz.Accountant), nil)
 	req := e.call(http.MethodPut, "/v1/contacts/"+holder+"/member", kow, map[string]any{"member_user_id": f.ahkow}, "If-Match", c.Header.Get("ETag"))
@@ -100,8 +92,19 @@ func TestAnInvestorsInformationRightsBecomeCalendarTasksClosedByDelivery(t *test
 	if s := e.call(http.MethodPost, "/v1/investor-updates/"+made.str("id")+"/send", controller, map[string]any{"recipients": []string{f.ahkow}}, "If-Match", `"1"`); s.Status != http.StatusOK {
 		t.Fatalf("sending = %d: %s", s.Status, s.Raw)
 	}
-	got = tasks()
-	if got["quarterly_accounts:2026-09-30"] != "2026-11-14 filed" || got["board_pack:2026-09-30"] != "" || got["board_pack:2026-08-31"] != "2026-09-20 overdue" ||
+	got := tasks()
+	for key, want := range map[string]string{"quarterly_accounts:2026-12-31": "2027-02-14 open", "board_pack:2026-10-31": "2026-11-20 due_soon"} {
+		if got[key] != want {
+			t.Errorf("%s = %q, want %q (all: %v)", key, got[key], want, got)
+		}
+	}
+	// Nothing due before the day the calendar's rules start (7 Nov 2026) is in it: not the quarters of the spring, nor the months to August, and an unclosed September pack is not either.
+	for _, early := range []string{"quarterly_accounts:2026-03-31", "quarterly_accounts:2026-06-30", "board_pack:2026-01-31", "board_pack:2026-08-31"} {
+		if _, ok := got[early]; ok {
+			t.Errorf("%s is in the calendar though it fell due before the rules start: %v", early, got)
+		}
+	}
+	if got["quarterly_accounts:2026-09-30"] != "2026-11-14 filed" || got["board_pack:2026-09-30"] != "" ||
 		got["quarterly_accounts:2026-12-31"] != "2027-02-14 open" {
 		t.Errorf("after the delivery: %v", got)
 	}

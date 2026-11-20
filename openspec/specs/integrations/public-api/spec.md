@@ -248,6 +248,18 @@ Source: PRD-001 §8.18.1 · Priority S · Phase P2
 - **WHEN** a webhook endpoint is registered
 - **THEN** it is verified before it is activated
 
+#### Scenario: An endpoint is verified, then receives only what it asked for (rev 0.605)
+- **GIVEN** an Owner has switched "Webhooks and events" on with a second approver
+- **WHEN** a stepped-up Administrator adds an endpoint for fyniq.ledger.posted.v1 and it echoes the challenge of Fyniq's signed verification event
+- **THEN** it is active, and each such event reaches it once as a CloudEvents message of IDs and times, never a title, name or amount, with a webhook-id that stays the same on every try
+- **AND** a security, personal-data or payee event, an address that is private or not https, and a token or integration client making the endpoint are each refused
+
+#### Scenario: A failing endpoint is retried, then dead, then replayed (rev 0.605)
+- **GIVEN** an active endpoint that answers 503
+- **WHEN** a delivery fails
+- **THEN** it is signed afresh and tried after 5 seconds, 5 minutes, 30 minutes, 2 hours, 5 hours, 10 hours and every 12 hours for three days, then listed dead
+- **AND** a person replays it with the same webhook-id, ten failures in a row pause the endpoint, and a 410 disables it
+
 ### Requirement: FR-INT-13 Machine-readable contracts
 The API SHALL be described for both developers and models, with OpenAPI descriptions and examples, JSON Schema for every resource, a published API reference, `llms.txt` and an "agent guide".
 
@@ -332,6 +344,11 @@ Source: PRD-001 §8.18.1 · Priority S · Phase P1 (TS) / P2 (Go, Python)
 #### Scenario: Clients for integrators
 - **WHEN** clients are published for integrators
 - **THEN** Go and Python clients are generated from the OpenAPI document
+
+#### Scenario: The Go and Python clients carry the conventions and only what a client can reach (rev 0.606)
+- **WHEN** an integrator calls the API through the Go or Python SDK
+- **THEN** a write gets an Idempotency-Key made once and kept across its retries, a 429 is retried after a short Retry-After, a refusal is a typed error with its stable code and fix, and a preview sends Prefer: return=preview
+- **AND** the SDK has a method only for an operation a client's scopes can reach, generated from the contract so that a stale SDK fails the API check
 
 ### Requirement: FR-INT-18 Sandbox
 Each organisation SHALL be able to create a sandbox copy of the sample company (FR-UX-10) for integration testing.

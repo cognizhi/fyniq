@@ -297,7 +297,7 @@ func (s Invoices) post(ctx context.Context, org, id uuid.UUID, providerTotal *mo
 		if err := s.after(ctx, u, doc, out); err != nil {
 			return err
 		}
-		if providerTotal == nil && s.AfterIssued != nil && !storage.IsPreview(ctx) {
+		if providerTotal == nil && doc.Type == storage.DocumentInvoice && s.AfterIssued != nil && !storage.IsPreview(ctx) { // a credit note has no payment link
 			return s.AfterIssued(ctx, u, org, id)
 		}
 		return nil

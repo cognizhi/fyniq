@@ -354,3 +354,21 @@ func TestASaleGivesItsBalancingAllowanceOrChargeInItsYearAndNoAllowance(t *testi
 		t.Errorf("a part disposal is listed apart: %s", reasons(s))
 	}
 }
+
+// A version written before section 19A(2) and the balancing allowance (sg-capital-allowances@2026.1) does not work them: a computer elected under 19A(2) is listed apart as not in the
+// pack, and a sold asset is listed apart as disposed, whatever the code could do, so what a pack version says it does not work is never worked (fyniq-sg-statutory).
+// req: FR-FA-04
+func TestAnOlderPackVersionDoesNotWorkWhatItDoesNotHold(t *testing.T) {
+	old, err := pack.Load(packs.FS, "sg-capital-allowances/2026.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	computer := item(t, "FA-C", "2000.00", day(2026, 6, 1), &asset.TaxElection{Method: asset.TaxS19A2})
+	sold := item(t, "FA-S", "3000.00", day(2026, 6, 1), &asset.TaxElection{Method: asset.TaxS19A1})
+	p, _ := money.Parse("200.00", sgd)
+	sold.Disposed, sold.Disposal = true, &Disposal{On: day(2027, 9, 1), Proceeds: p}
+	s, err := Work(old, calendar, sgd, 2027, []Asset{computer, sold})
+	if err != nil || len(s.Rows) != 0 || reasons(s) != "FA-C:not_in_pack FA-S:disposed" {
+		t.Errorf("2026.1: %v, rows %s, apart %s", err, figures(s), reasons(s))
+	}
+}

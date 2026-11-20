@@ -274,7 +274,9 @@ func (a *API) itemOut(ctx context.Context, u storage.UnitOfWork, it deadlines.It
 	if !it.Due.IsZero() {
 		out.DueOn = it.Due.Format(time.DateOnly)
 	}
-	if d := it.Delivery; d != nil {
+	// The update's or the pack's title and ID are shown only to those who read every investor update, not to every reader of the calendar.
+	if who, _ := authn.From(ctx); it.Delivery != nil && authz.Decide(authz.ListInvestorUpdates, who.Roles, who.Class == authn.ClassAgent).Allowed {
+		d := it.Delivery
 		out.Delivery = &StatutoryDelivery{Kind: d.Kind, ID: d.ID.String(), Title: d.Title, SentOn: d.SentOn.Format(time.DateOnly)}
 	}
 	if it.Filing != nil {

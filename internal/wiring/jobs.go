@@ -61,6 +61,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/reportexport"
 	"github.com/cognizhi/fyniq/internal/reportsend"
 	"github.com/cognizhi/fyniq/internal/salesmail"
+	"github.com/cognizhi/fyniq/internal/webhooks"
 )
 
 // PlatformJobs are the functions behind the platform's schedules (outbox.PlatformSchedules), run by
@@ -110,6 +111,12 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		"idempotency.purge": func(ctx context.Context) error {
 			_, err := PurgeIdempotencyKeys(ctx, k.Store, clock.Now())
 			return err
+		},
+		webhooks.Job: func(ctx context.Context) error { // FR-INT-12: what is due, signed afresh at each attempt, through the guard for third parties
+			if k.Fields == nil || k.Egress == nil {
+				return nil // no field key or no guard: no secret to open and nowhere safe to send
+			}
+			return webhooks.Deliverer{Store: k.Store, Cipher: k.Fields, Egress: k.Egress, Clock: clock, Source: k.Origin}.RunAll(ctx)
 		},
 		"ratelimit.purge": func(ctx context.Context) error {
 			_, err := PurgeRateLimitWindows(ctx, k.Store, clock.Now())

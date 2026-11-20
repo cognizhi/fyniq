@@ -222,7 +222,7 @@ func Read(ctx context.Context, u storage.UnitOfWork, from, to, today time.Time) 
 	}
 	registers = append(registers, lodgements...)
 	// The investors' information rights (FR-EQ-28): a task for each period, closed by the update or pack that is delivered.
-	information, err := investorItems(ctx, u, today, to)
+	information, err := investorItems(ctx, u, today, v.EffectiveFrom, to)
 	if err != nil {
 		return out, err
 	}

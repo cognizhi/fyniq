@@ -52,7 +52,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: qa-mcp kb-compile script-tests trace trace-gate release-policy storybook help setup setup-code people-setup-code people-owner-recovery people-erasure-reapply super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
+.PHONY: qa-mcp kb-compile script-tests trace trace-gate release-policy storybook help setup setup-code people-setup-code people-owner-recovery people-erasure-reapply super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check sdk-test scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -138,8 +138,13 @@ test: ## Run every merge gate offline (Docker needed for the database suites): m
 	@$(MISE) pnpm -r typecheck
 	@$(MISE) pnpm -r --if-present test
 	@$(MAKE) --no-print-directory api-check
+	@$(MAKE) --no-print-directory sdk-test
 	@$(MAKE) --no-print-directory oracle-test
 	@$(MAKE) --no-print-directory check
+
+sdk-test: ## The Go and Python SDKs' own tests against a fake API (FR-INT-17): the standard library only, no network
+	@cd sdk/go && $(MISE) go vet ./... && $(MISE) go test ./...
+	@cd sdk/python && python3 -m unittest discover -s tests
 
 db-lint: ## Lint Fyniq's and Nemura's migrations (squawk) and check the adapter's generated queries match them (sqlc)
 	@$(MISE) squawk db/migrations/*.sql db/nemura/migrations/*.sql
@@ -168,6 +173,7 @@ openapi: ## Regenerate Nemura's API contract contracts/openapi/nemura/nemura.v1.
 	@$(MISE) go test ./internal/nemura/api -run 'TestTheContractIsTheCode' -count=1 -args -update && echo "✔ contracts/openapi/nemura/nemura.v1.yaml regenerated"
 	@$(MISE) pnpm --filter @fyniq/sdk -s gen >/dev/null && echo "✔ sdk/typescript/src/schema.d.ts regenerated"
 	@$(MISE) pnpm --filter @fyniq/nemura-web -s gen:api >/dev/null && echo "✔ apps/nemura-web/src/api/schema.d.ts regenerated"
+	@$(MISE) go run ./cmd/sdkgen
 
 api-check: ## The API contract: Spectral lint (NFR-API-01) and the SDK's generated types (the web app's too) are current (FR-INT-17); oasdiff runs in the Go tests (QA-API-02)
 	@$(MISE) pnpm exec spectral lint contracts/openapi/fyniq.v1.yaml --ruleset contracts/openapi/spectral.yaml --fail-severity warn --quiet \
@@ -176,6 +182,7 @@ api-check: ## The API contract: Spectral lint (NFR-API-01) and the SDK's generat
 	  && echo "✔ Nemura's API contract passes Spectral"
 	@$(MISE) pnpm --filter @fyniq/sdk -s check:api >/dev/null || { echo "✖ sdk/typescript/src/schema.d.ts is stale: run pnpm --filter @fyniq/sdk gen"; exit 1; }
 	@echo "✔ the SDK's types (the web app's too) match the contract"
+	@$(MISE) go run ./cmd/sdkgen -check && echo "✔ the Go and Python SDKs match the contract"
 	@$(MISE) pnpm --filter @fyniq/nemura-web -s check:api >/dev/null || { echo "✖ apps/nemura-web/src/api/schema.d.ts is stale: run make openapi"; exit 1; }
 	@echo "✔ Nemura's web app's types match its contract"
 

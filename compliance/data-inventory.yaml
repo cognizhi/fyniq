@@ -34,7 +34,7 @@ classes:
     protection: "Mostly business contact information; an individual's values in the audit trail are shreddable (§11.8)"
     transfers: "Emails go through the deployment's email provider: the flow email"
     columns: [contact.legal_name, contact.address, contact.billing_email, contact.remittance_email, contact.phone, document_send.recipient,
-      email_message.recipient, email_event.recipient, email_suppression.address]
+      email_message.recipient, email_event.recipient, email_suppression.address, psp_customer.email]
   - key: email-in
     what: "The email addresses that send documents to the organisation's capture address"
     why: "To accept bills and receipts only from known senders"

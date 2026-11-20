@@ -67,6 +67,7 @@ function emptyStates(root: string): { file: string; line: number; block: string 
 // The empty states with no first action of their own, and why: what fills them comes from elsewhere, or the control
 // that fills them is right above.
 const noAction: Record<string, string> = {
+  "screens/equity/ExitWaterfall.tsx": "a class with a liquidation preference is recorded under Equity, as the page says",
   "screens/accounting/Schedules.tsx": "spreads come from a bill's, an invoice's or a bank line's lines",
   "screens/accounting/GeneralLedger.tsx": "the account picker is right above",
   "screens/settings/Templates.tsx": "the starter styles to begin from are right above",

@@ -39,6 +39,7 @@ func init() {
 type CARules struct {
 	InitialPercent, AnnualPercent int   // section 19: of the cost, in whole percents
 	S19A1Years                    int   // section 19A(1): the years the cost is written off over
+	S19A2Years                    int   // section 19A(2): the years a computer's cost is written off over; 0 in a version that does not hold the method (2026.1)
 	LowValueMax, LowValueCap      int64 // section 19A(10A): the dearest low-value asset and the most claimed in the year, in cents
 }
 
@@ -105,6 +106,13 @@ func CapitalAllowanceRules(v Version, ya int) (CARules, error) {
 			return CARules{}, fmt.Errorf("%s: %s of %q is not a whole number", v.ID, x.rule, s)
 		}
 		*x.into = n
+	}
+	if s, ok := caRule(v, "s19a2_years", ya); ok { // optional: a version written before section 19A(2) holds none
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return CARules{}, fmt.Errorf("%s: s19a2_years of %q is not a whole number", v.ID, s)
+		}
+		r.S19A2Years = n
 	}
 	for _, x := range []struct {
 		rule string
@@ -194,11 +202,19 @@ func CapitalAllowanceSeries(v Version, method string, years int, cost int64, ya 
 		return out, nil
 	case MethodS19A1:
 		return spreadEven(cost, rules.S19A1Years), nil
-	case MethodS19A10A, MethodS19A2:
+	case MethodS19A2:
+		if rules.S19A2Years != 1 {
+			return nil, fmt.Errorf("this version does not hold section 19A(2)")
+		}
+		return []int64{cost}, nil
+	case MethodS19A10A:
 		return []int64{cost}, nil
 	}
 	return nil, fmt.Errorf("the method %q is not section 19, 19A(1), 19A(2) or 19A(10A)", method)
 }
+
+// HoldsBalancing says whether the version works the balancing allowance and charge of a sale: the ones with the table of its pinned cases (2026.2 on).
+func HoldsBalancing(v Version) bool { return len(v.Pinned["balancing"].Rows) > 0 }
 
 // Balancing is the balancing allowance or charge of a sale (IRAS, "Calculating BA/ BC"): sale proceeds less the tax written down value, all in cents. Proceeds below the written down
 // value give a balancing allowance of the difference; proceeds above it a balancing charge of the difference, restricted to the allowances allowed before, which is the cost less
@@ -263,7 +279,7 @@ func checkCapitalAllowances(dir string, v Version) Problems {
 		}
 		spans[key] = append(spans[key], span{f, t})
 	}
-	known := []string{"s19_initial_percent", "s19_annual_percent", "s19a1_years", "s19a10a_max_cost", "s19a10a_cap"}
+	known := []string{"s19_initial_percent", "s19_annual_percent", "s19a1_years", "s19a2_years", "s19a10a_max_cost", "s19a10a_cap"}
 	for i, r := range v.Tables["rules"].Rows {
 		at := fmt.Sprintf("rules.csv row %d", i+2)
 		if !slices.Contains(known, r[0]) {

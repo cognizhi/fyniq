@@ -4,7 +4,7 @@ type: concept
 title: The statutory calendar and what it holds
 summary: Every filing and payment deadline from the company's years, GST periods and settings; reminders, Checks and the registers' deadlines
 sources:
-  - docs/user-guide/statutory-calendar.md sha256:60fbe0b1e73dfce8632712b8f3ee253f330868a67c9946bbe49804b1ce7b6fbe
+  - docs/user-guide/statutory-calendar.md sha256:d14144bf358995450ff80786ea612800c717cdbaa02f1b3113470c5f4d26c037
 data_class: general
 taint: trusted
 status: draft
@@ -47,7 +47,7 @@ aliases:
 - **Annual return**: within seven months after the year's end, or eight with an overseas branch register. **AGM**: within six months, or the financial statements sent within five months so no AGM is held.
 - **Applying to register for GST**, while the monitor finds a test met ([[compliance.gst]]).
 - **The registers' own deadlines** (a controller to enter or lodge, share lodgements) open their record, where they are done.
-- **Investors' information rights**: for each holder whose recorded rights list what they are owed, one task for every month, quarter or financial year it covers, due the days after the period's end that the agreement allows; the task closes by itself when the update (or the published board pack) reaches the holder's member and shows what was delivered and when. A holder no member signs in as cannot be sent an update through Fyniq, which the task says; quarterly and annual accounts are delivered by the quarterly update of the period's last month ([[equity.register]]).
+- **Investors' information rights**: for each holder whose recorded rights list what they are owed, one task for every month, quarter or financial year it covers, due the days after the period's end that the agreement allows; the task closes by itself when the update (or the published board pack) reaches the holder's member and shows what was delivered and when. A holder no member signs in as cannot be sent an update through Fyniq: one item for them shows Not assessed, never overdue, until a member is linked in Contacts; quarterly and annual accounts are delivered by the quarterly update of the period's last month ([[equity.register]]).
 - The settings **Pays staff**, **Annual general meeting** and **Keeps a branch register outside Singapore** decide what it holds ([[settings.organisation]]); a missing input shows **Not assessed**.
 
 (src: docs/user-guide/statutory-calendar.md#what-it-holds)
