@@ -28696,11 +28696,11 @@ export interface components {
              */
             purchased_on: string;
             /**
-             * @description Why it is listed apart: no_election, the company has not elected a method; before_pack, acquired in a basis period before YA 2023; disposed, a disposal of part of the asset stands, or of one whose proceeds are not known, and its balancing allowance or charge is the tax agent's; over_cap, elected under section 19A(10A) but over S$5,000 or past the year's S$30,000; bad_life, a working life the prescribed life does not allow; not_sgd, the base currency is not Singapore dollars.
+             * @description Why it is listed apart: no_election, the company has not elected a method; before_pack, acquired in a basis period before YA 2023; disposed, a disposal of part of the asset stands, or of one whose proceeds are not known, and its balancing allowance or charge is the tax agent's; over_cap, elected under section 19A(10A) but over S$5,000 or past the year's S$30,000; bad_life, a working life the prescribed life does not allow; not_sgd, the base currency is not Singapore dollars; not_in_pack, the method elected is not one the pack version in force works.
              * @example no_election
              * @enum {string}
              */
-            reason: "no_election" | "before_pack" | "disposed" | "over_cap" | "bad_life" | "not_sgd";
+            reason: "no_election" | "before_pack" | "disposed" | "over_cap" | "bad_life" | "not_sgd" | "not_in_pack";
         };
         CapitalAllowanceRow: {
             /** @description The year's allowance: initial + annual. */
