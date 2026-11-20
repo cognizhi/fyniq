@@ -323,6 +323,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/compliance/secretary/runs` (listAgentRuns): List the assistant's runs
 - `POST /v1/compliance/secretary/runs` (runCompanySecretary): Run the assistant now
 - `GET /v1/compliance/secretary/runs/{run_id}` (getAgentRun): Get a run's report
+- `GET /v1/compliance/security-assessments` (listSecurityAssessments): List the security assessments
+- `POST /v1/compliance/security-assessments` (createSecurityAssessment): Record a security assessment
+- `POST /v1/compliance/security-assessments/{assessment_id}/findings` (addSecurityFinding): Add a finding to a security assessment
+- `POST /v1/compliance/security-findings/{finding_id}/steps` (stepSecurityFinding): Record the next step of a finding
 - `GET /v1/compliance/shredding-runs` (listShreddingRuns): List the shredding runs
 - `POST /v1/compliance/shredding-runs/{run_id}/approval` (approveShreddingRun): Approve a shredding run
 - `GET /v1/compliance/tasks` (listComplianceTasks): List the compliance tasks

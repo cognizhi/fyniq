@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "assessment_id": {
+      "description": "The assessment.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ended_on": {
+      "description": "The last day.",
+      "examples": [
+        "2026-11-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "findings": {
+      "description": "Its findings.",
+      "items": {
+        "$ref": "SecurityFindingView.schema.json"
+      },
+      "type": "array"
+    },
+    "independent": {
+      "description": "true when the testers are not the people who build and run Fyniq.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "kind": {
+      "description": "What it was.",
+      "enum": [
+        "penetration_test",
+        "vulnerability_assessment",
+        "other"
+      ],
+      "examples": [
+        "penetration_test"
+      ],
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-03T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "description": "Who recorded it, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "report_location": {
+      "description": "Where the report is kept; it stays outside Fyniq.",
+      "examples": [
+        "The security folder of the shared drive"
+      ],
+      "type": "string"
+    },
+    "report_sha256": {
+      "description": "The report's SHA-256, so it is shown to be the one received.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "scope": {
+      "description": "What it covered.",
+      "examples": [
+        "The web app, the API and the MCP server on staging"
+      ],
+      "type": "string"
+    },
+    "started_on": {
+      "description": "The first day.",
+      "examples": [
+        "2026-10-19"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "summary": {
+      "description": "What it concluded.",
+      "examples": [
+        "No critical finding; one high"
+      ],
+      "type": "string"
+    },
+    "tester": {
+      "description": "The firm or person.",
+      "examples": [
+        "Example Security Pte Ltd"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "assessment_id",
+    "kind",
+    "tester",
+    "independent",
+    "scope",
+    "started_on",
+    "ended_on",
+    "summary",
+    "recorded_by",
+    "recorded_at",
+    "findings"
+  ],
+  "title": "SecurityAssessmentView",
+  "type": "object"
+}
