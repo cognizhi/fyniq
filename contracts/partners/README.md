@@ -10,6 +10,7 @@ sandbox, which staging uses.
 | `wise.yaml` | Wise: an extract of its published Platform API (2026Q4), the two read-only operations the `wise` connector calls, retrieved 26 Oct 2026 | `partner-wise` on port 4011 | `p1-bank-import-reconcile` |
 | `airwallex.yaml` | Airwallex: written from its API reference pages, retrieved 26 Oct 2026 (Airwallex publishes no OpenAPI document), the three operations the `airwallex` connector calls | `partner-airwallex` on port 4012 | `p1-bank-import-reconcile` |
 | `stripe.yaml` | Stripe: a hand-made extract of the read operations the `stripe` connector calls, from the API reference (retrieved 19 Nov 2026) at API version 2025-09-30.clover | `partner-stripe` on port 4013 | `p1-payment-providers` |
+| `slack.yaml` | Slack: `chat.postMessage`, the one operation the `slack` connector calls, from docs.slack.dev (retrieved 21 Nov 2026) | `partner-slack` on port 4015 | `p2-api-third-parties` |
 | `hitpay.yaml` | HitPay: a hand-made extract of the read operations the `hitpay` connector calls, from its reference pages (retrieved 19 Nov 2026) | `partner-hitpay` on port 4014 | `p1-payment-providers` |
 
 Each connector that calls a partner adds, in the same change:
