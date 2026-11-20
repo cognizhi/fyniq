@@ -3419,6 +3419,49 @@ webauthn_credential | name | text | not null |
 webauthn_credential | created_at | timestamp with time zone | not null | 
 webauthn_credential | last_used_at | timestamp with time zone | null | 
 webauthn_credential | revoked_at | timestamp with time zone | null | 
+webhook_attempt | organisation_id | uuid | not null | current_org()
+webhook_attempt | id | uuid | not null | uuidv7()
+webhook_attempt | delivery_id | uuid | not null | 
+webhook_attempt | number | integer | not null | 
+webhook_attempt | at | timestamp with time zone | not null | 
+webhook_attempt | status | integer | null | 
+webhook_attempt | error | text | null | 
+webhook_attempt | duration_ms | integer | not null | 
+webhook_delivery | organisation_id | uuid | not null | current_org()
+webhook_delivery | id | uuid | not null | uuidv7()
+webhook_delivery | endpoint_id | uuid | not null | 
+webhook_delivery | event_id | uuid | not null | 
+webhook_delivery | event_type | text | not null | 
+webhook_delivery | message_id | text | not null | 
+webhook_delivery | payload | jsonb | not null | 
+webhook_delivery | state | text | not null | 'pending'::text
+webhook_delivery | attempts | integer | not null | 0
+webhook_delivery | replays | integer | not null | 0
+webhook_delivery | next_attempt_at | timestamp with time zone | not null | 
+webhook_delivery | first_attempt_at | timestamp with time zone | null | 
+webhook_delivery | last_attempt_at | timestamp with time zone | null | 
+webhook_delivery | last_status | integer | null | 
+webhook_delivery | last_error | text | null | 
+webhook_delivery | delivered_at | timestamp with time zone | null | 
+webhook_delivery | created_at | timestamp with time zone | not null | 
+webhook_endpoint | organisation_id | uuid | not null | current_org()
+webhook_endpoint | id | uuid | not null | uuidv7()
+webhook_endpoint | url | text | not null | 
+webhook_endpoint | label | text | not null | 
+webhook_endpoint | event_types | text[] | not null | 
+webhook_endpoint | state | text | not null | 'pending'::text
+webhook_endpoint | secret_sealed | bytea | not null | 
+webhook_endpoint | secret_hint | text | not null | 
+webhook_endpoint | previous_secret_sealed | bytea | null | 
+webhook_endpoint | previous_secret_until | timestamp with time zone | null | 
+webhook_endpoint | challenge_hash | text | null | 
+webhook_endpoint | verified_at | timestamp with time zone | null | 
+webhook_endpoint | failure_run | integer | not null | 0
+webhook_endpoint | paused_reason | text | null | 
+webhook_endpoint | version | integer | not null | 1
+webhook_endpoint | created_by | text | not null | 
+webhook_endpoint | created_at | timestamp with time zone | not null | 
+webhook_endpoint | updated_at | timestamp with time zone | not null | 
 withholding_decision | organisation_id | uuid | not null | current_org()
 withholding_decision | id | uuid | not null | uuidv7()
 withholding_decision | supplier_id | uuid | not null | 
@@ -8826,6 +8869,64 @@ webauthn_credential | webauthn_credential_transports_not_null | NOT NULL transpo
 webauthn_credential | webauthn_credential_used_after_created | CHECK ((last_used_at >= created_at))
 webauthn_credential | webauthn_credential_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
 webauthn_credential | webauthn_credential_user_id_not_null | NOT NULL user_id
+webhook_attempt | webhook_attempt_at_not_null | NOT NULL at
+webhook_attempt | webhook_attempt_delivery_fkey | FOREIGN KEY (organisation_id, delivery_id) REFERENCES webhook_delivery(organisation_id, id)
+webhook_attempt | webhook_attempt_delivery_id_not_null | NOT NULL delivery_id
+webhook_attempt | webhook_attempt_duration | CHECK ((duration_ms >= 0))
+webhook_attempt | webhook_attempt_duration_ms_not_null | NOT NULL duration_ms
+webhook_attempt | webhook_attempt_error_length | CHECK (((error IS NULL) OR (length(error) <= 200)))
+webhook_attempt | webhook_attempt_id_not_null | NOT NULL id
+webhook_attempt | webhook_attempt_number_not_null | NOT NULL number
+webhook_attempt | webhook_attempt_organisation_id_not_null | NOT NULL organisation_id
+webhook_attempt | webhook_attempt_pkey | PRIMARY KEY (organisation_id, id)
+webhook_delivery | webhook_delivery_attempts_not_null | NOT NULL attempts
+webhook_delivery | webhook_delivery_counts | CHECK (((attempts >= 0) AND (replays >= 0)))
+webhook_delivery | webhook_delivery_created_at_not_null | NOT NULL created_at
+webhook_delivery | webhook_delivery_delivered_form | CHECK (((state = 'delivered'::text) = (delivered_at IS NOT NULL)))
+webhook_delivery | webhook_delivery_endpoint_fkey | FOREIGN KEY (organisation_id, endpoint_id) REFERENCES webhook_endpoint(organisation_id, id)
+webhook_delivery | webhook_delivery_endpoint_id_not_null | NOT NULL endpoint_id
+webhook_delivery | webhook_delivery_error_length | CHECK (((last_error IS NULL) OR (length(last_error) <= 200)))
+webhook_delivery | webhook_delivery_event_id_not_null | NOT NULL event_id
+webhook_delivery | webhook_delivery_event_type_not_null | NOT NULL event_type
+webhook_delivery | webhook_delivery_id_not_null | NOT NULL id
+webhook_delivery | webhook_delivery_message_id_not_null | NOT NULL message_id
+webhook_delivery | webhook_delivery_message_once | UNIQUE (organisation_id, message_id)
+webhook_delivery | webhook_delivery_next_attempt_at_not_null | NOT NULL next_attempt_at
+webhook_delivery | webhook_delivery_once | UNIQUE (organisation_id, endpoint_id, event_id)
+webhook_delivery | webhook_delivery_organisation_id_not_null | NOT NULL organisation_id
+webhook_delivery | webhook_delivery_payload_not_null | NOT NULL payload
+webhook_delivery | webhook_delivery_payload_object | CHECK (((jsonb_typeof(payload) = 'object'::text) AND (octet_length((payload)::text) <= 8192)))
+webhook_delivery | webhook_delivery_pkey | PRIMARY KEY (organisation_id, id)
+webhook_delivery | webhook_delivery_replays_not_null | NOT NULL replays
+webhook_delivery | webhook_delivery_state_known | CHECK ((state = ANY (ARRAY['pending'::text, 'delivered'::text, 'dead'::text])))
+webhook_delivery | webhook_delivery_state_not_null | NOT NULL state
+webhook_delivery | webhook_delivery_type_form | CHECK ((event_type ~ '^fyniq\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*\.v[1-9][0-9]*$'::text))
+webhook_endpoint | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+webhook_endpoint | webhook_endpoint_active_verified | CHECK (((state <> ALL (ARRAY['active'::text, 'paused'::text])) OR (verified_at IS NOT NULL)))
+webhook_endpoint | webhook_endpoint_by_form | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+webhook_endpoint | webhook_endpoint_created_at_not_null | NOT NULL created_at
+webhook_endpoint | webhook_endpoint_created_by_not_null | NOT NULL created_by
+webhook_endpoint | webhook_endpoint_event_types_not_null | NOT NULL event_types
+webhook_endpoint | webhook_endpoint_events | CHECK ((((cardinality(event_types) >= 1) AND (cardinality(event_types) <= 50)) AND (array_position(event_types, NULL::text) IS NULL)))
+webhook_endpoint | webhook_endpoint_failure_run_not_null | NOT NULL failure_run
+webhook_endpoint | webhook_endpoint_failures | CHECK ((failure_run >= 0))
+webhook_endpoint | webhook_endpoint_hint | CHECK ((length(secret_hint) = 4))
+webhook_endpoint | webhook_endpoint_id_not_null | NOT NULL id
+webhook_endpoint | webhook_endpoint_label_length | CHECK (((length(label) >= 1) AND (length(label) <= 100)))
+webhook_endpoint | webhook_endpoint_label_not_null | NOT NULL label
+webhook_endpoint | webhook_endpoint_organisation_id_not_null | NOT NULL organisation_id
+webhook_endpoint | webhook_endpoint_paused_reason | CHECK (((paused_reason IS NULL) OR ((length(paused_reason) >= 1) AND (length(paused_reason) <= 500))))
+webhook_endpoint | webhook_endpoint_pkey | PRIMARY KEY (organisation_id, id)
+webhook_endpoint | webhook_endpoint_roll_form | CHECK (((previous_secret_sealed IS NULL) = (previous_secret_until IS NULL)))
+webhook_endpoint | webhook_endpoint_secret_hint_not_null | NOT NULL secret_hint
+webhook_endpoint | webhook_endpoint_secret_sealed_not_null | NOT NULL secret_sealed
+webhook_endpoint | webhook_endpoint_state_known | CHECK ((state = ANY (ARRAY['pending'::text, 'active'::text, 'paused'::text, 'disabled'::text])))
+webhook_endpoint | webhook_endpoint_state_not_null | NOT NULL state
+webhook_endpoint | webhook_endpoint_updated_at_not_null | NOT NULL updated_at
+webhook_endpoint | webhook_endpoint_url_form | CHECK (((url ~ '^https?://[^[:space:]]+$'::text) AND (length(url) <= 2048)))
+webhook_endpoint | webhook_endpoint_url_not_null | NOT NULL url
+webhook_endpoint | webhook_endpoint_version_not_null | NOT NULL version
+webhook_endpoint | webhook_endpoint_version_positive | CHECK ((version >= 1))
 withholding_decision | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 withholding_decision | withholding_decision_bill_fkey | FOREIGN KEY (organisation_id, bill_id) REFERENCES document(organisation_id, id)
 withholding_decision | withholding_decision_id_not_null | NOT NULL id
@@ -9054,6 +9155,10 @@ CREATE INDEX user_saved_item_latest ON fyniq.user_saved_item USING btree (organi
 CREATE INDEX user_session_user_idx ON fyniq.user_session USING btree (user_id) WHERE (ended_at IS NULL)
 CREATE INDEX webauthn_challenge_session_idx ON fyniq.webauthn_challenge USING btree (session_hash)
 CREATE INDEX webauthn_credential_user_idx ON fyniq.webauthn_credential USING btree (user_id) WHERE (revoked_at IS NULL)
+CREATE INDEX webhook_attempt_delivery ON fyniq.webhook_attempt USING btree (organisation_id, delivery_id, number)
+CREATE INDEX webhook_delivery_due ON fyniq.webhook_delivery USING btree (organisation_id, next_attempt_at) WHERE (state = 'pending'::text)
+CREATE INDEX webhook_delivery_endpoint ON fyniq.webhook_delivery USING btree (organisation_id, endpoint_id, created_at DESC)
+CREATE INDEX webhook_endpoint_state ON fyniq.webhook_endpoint USING btree (organisation_id, state)
 CREATE INDEX withholding_decision_supplier ON fyniq.withholding_decision USING btree (organisation_id, supplier_id, nature, recorded_at)
 CREATE UNIQUE INDEX access_review_attestation_pkey ON fyniq.access_review_attestation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX access_review_attestation_quarter_key ON fyniq.access_review_attestation USING btree (organisation_id, quarter)
@@ -9587,6 +9692,11 @@ CREATE UNIQUE INDEX webauthn_challenge_once ON fyniq.webauthn_challenge USING bt
 CREATE UNIQUE INDEX webauthn_challenge_pkey ON fyniq.webauthn_challenge USING btree (id)
 CREATE UNIQUE INDEX webauthn_credential_once ON fyniq.webauthn_credential USING btree (credential_id)
 CREATE UNIQUE INDEX webauthn_credential_pkey ON fyniq.webauthn_credential USING btree (id)
+CREATE UNIQUE INDEX webhook_attempt_pkey ON fyniq.webhook_attempt USING btree (organisation_id, id)
+CREATE UNIQUE INDEX webhook_delivery_message_once ON fyniq.webhook_delivery USING btree (organisation_id, message_id)
+CREATE UNIQUE INDEX webhook_delivery_once ON fyniq.webhook_delivery USING btree (organisation_id, endpoint_id, event_id)
+CREATE UNIQUE INDEX webhook_delivery_pkey ON fyniq.webhook_delivery USING btree (organisation_id, id)
+CREATE UNIQUE INDEX webhook_endpoint_pkey ON fyniq.webhook_endpoint USING btree (organisation_id, id)
 CREATE UNIQUE INDEX withholding_decision_pkey ON fyniq.withholding_decision USING btree (organisation_id, id)
 
 ## triggers
@@ -9742,6 +9852,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyni
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.inbound_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.psp_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_event', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF url, label, event_types, state, secret_sealed, secret_hint, previous_secret_sealed, previous_secret_until, challenge_hash, verified_at, paused_reason, version ON fyniq.webhook_endpoint DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('webhook_endpoint', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accountant_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accountant_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accountant_review_query DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accountant_review', 'review_id')
@@ -10416,6 +10527,12 @@ CREATE TRIGGER user_saved_item_guard BEFORE DELETE OR UPDATE ON fyniq.user_saved
 CREATE TRIGGER user_saved_item_no_truncate BEFORE TRUNCATE ON fyniq.user_saved_item FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER webauthn_challenge_guard BEFORE DELETE OR UPDATE ON fyniq.webauthn_challenge FOR EACH ROW EXECUTE FUNCTION webauthn_challenge_guard()
 CREATE TRIGGER webauthn_credential_guard BEFORE DELETE OR UPDATE ON fyniq.webauthn_credential FOR EACH ROW EXECUTE FUNCTION webauthn_credential_guard()
+CREATE TRIGGER webhook_attempt_guard BEFORE DELETE OR UPDATE ON fyniq.webhook_attempt FOR EACH ROW EXECUTE FUNCTION webhook_attempt_guard()
+CREATE TRIGGER webhook_attempt_no_truncate BEFORE TRUNCATE ON fyniq.webhook_attempt FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER webhook_delivery_no_truncate BEFORE TRUNCATE ON fyniq.webhook_delivery FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER webhook_endpoint_no_truncate BEFORE TRUNCATE ON fyniq.webhook_endpoint FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER webhook_guard BEFORE DELETE OR UPDATE ON fyniq.webhook_delivery FOR EACH ROW EXECUTE FUNCTION webhook_guard()
+CREATE TRIGGER webhook_guard BEFORE DELETE OR UPDATE ON fyniq.webhook_endpoint FOR EACH ROW EXECUTE FUNCTION webhook_guard()
 CREATE TRIGGER withholding_decision_immutable BEFORE DELETE OR UPDATE ON fyniq.withholding_decision FOR EACH ROW EXECUTE FUNCTION withholding_decision_immutable()
 
 ## policies
@@ -10689,6 +10806,9 @@ user_help_state | tenant_isolation | * | (organisation_id = current_org()) | (or
 user_membership | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 user_preference | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 user_saved_item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+webhook_attempt | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+webhook_delivery | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+webhook_endpoint | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 withholding_decision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 
 ## row-level security
@@ -11000,6 +11120,9 @@ user_saved_item | enabled | forced
 user_session | disabled | not forced
 webauthn_challenge | disabled | not forced
 webauthn_credential | disabled | not forced
+webhook_attempt | enabled | forced
+webhook_delivery | enabled | forced
+webhook_endpoint | enabled | forced
 withholding_decision | enabled | forced
 
 ## functions
@@ -11475,6 +11598,8 @@ webauthn_credential_guard() → trigger | security invoker | v | search_path=pg_
 webauthn_credential_register(p_challenge uuid, p_session bytea, p_credential_id bytea, p_public_key bytea, p_sign_count bigint, p_aaguid bytea, p_transports text[], p_backup_eligible boolean, p_backup_state boolean, p_name text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 39bda4fc155535c79e2260a4c795eb56
 webauthn_credential_revoke(p_user uuid, p_credential uuid, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | db067f4b644964dd08eab59fb859a341
 webauthn_credentials(p_user uuid, p_all boolean) → SETOF webauthn_credential | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1b6421434f028a41ac3647af4f1fd4f1
+webhook_attempt_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8996010f5dadd9cd5c9a25c56c2cae2c
+webhook_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9f8909a9a50e43e3ac6c780584b2caf
 withdraw_installation_announcement(p_by uuid, p_id uuid, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | caf961eaa1cce1a0fac2670193fc940f
 withholding_decision_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1b6bc116037949c933d0c5d75c0da1f0
 

@@ -90,6 +90,9 @@ var fyCodes = map[string]string{
 	"FYP32": storage.CodeInvalid,
 	"FYP33": storage.CodeInvalid,
 	"FYP34": storage.CodeInvalid,
+	"FYW01": storage.CodeInvalid, // a webhook endpoint changed beyond its rules, or a webhook record deleted (001151)
+	"FYW02": storage.CodeInvalid, // a webhook delivery changed beyond its rules (001151)
+	"FYW03": storage.CodeInvalid, // a recorded webhook attempt changed or deleted (001151)
 	"FY186": storage.CodeVersion,
 	"FY187": storage.CodeVersion,
 	"FY188": storage.CodeVersion,

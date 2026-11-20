@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "event_types": {
+      "description": "The event types to receive, by name from the AsyncAPI catalogue (contracts/events); no wildcard. Security, personal-data and payee events are never sent.",
+      "items": {
+        "description": "An event type, fyniq.\u003cobject\u003e.\u003cevent\u003e.v\u003cN\u003e, from the deliverable list of the AsyncAPI catalogue.",
+        "examples": [
+          "fyniq.ledger.posted.v1"
+        ],
+        "pattern": "^fyniq\\.[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*\\.v[1-9][0-9]*$",
+        "type": "string"
+      },
+      "maxItems": 50,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "label": {
+      "description": "Its name.",
+      "examples": [
+        "Accounting sync"
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "url": {
+      "description": "An https address on a public host; Fyniq never sends to a private, loopback or link-local address, never follows a redirect, and refuses an address with credentials in it.",
+      "examples": [
+        "https://hooks.example.com/fyniq"
+      ],
+      "maxLength": 2048,
+      "minLength": 8,
+      "type": "string"
+    }
+  },
+  "required": [
+    "url",
+    "label",
+    "event_types"
+  ],
+  "title": "WebhookEndpointCreate",
+  "type": "object"
+}

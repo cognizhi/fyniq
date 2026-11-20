@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "examples": [
+        "2026-11-21T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "event_types": {
+      "description": "The event types it receives, each one asked for by name.",
+      "items": {
+        "description": "An event type, fyniq.\u003cobject\u003e.\u003cevent\u003e.v\u003cN\u003e, from the deliverable list of the AsyncAPI catalogue.",
+        "examples": [
+          "fyniq.ledger.posted.v1"
+        ],
+        "pattern": "^fyniq\\.[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*\\.v[1-9][0-9]*$",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "failure_run": {
+      "description": "Deliveries failed in a row; ten pause the endpoint.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5101"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "label": {
+      "description": "Its name, for the people who run it.",
+      "examples": [
+        "Accounting sync"
+      ],
+      "type": "string"
+    },
+    "paused_reason": {
+      "description": "Why it is paused or disabled.",
+      "examples": [
+        "Ten deliveries failed in a row"
+      ],
+      "type": "string"
+    },
+    "secret": {
+      "description": "The signing secret (whsec_ and base64): verify each delivery's webhook-signature with it. Shown once, here and when it is rolled; Fyniq keeps it sealed and cannot show it again.",
+      "examples": [
+        "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw"
+      ],
+      "type": "string"
+    },
+    "secret_hint": {
+      "description": "The last four characters of its signing secret, to tell two apart.",
+      "examples": [
+        "k3Xo"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "pending: not yet verified; active: events are sent; paused: by a person, or after ten deliveries failed in a row; disabled: by a person or because the endpoint answered 410 Gone.",
+      "enum": [
+        "pending",
+        "active",
+        "paused",
+        "disabled"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    },
+    "url": {
+      "description": "Where events are sent: an https address on a public host.",
+      "examples": [
+        "https://hooks.example.com/fyniq"
+      ],
+      "type": "string"
+    },
+    "verified_at": {
+      "description": "When it echoed Fyniq's challenge.",
+      "examples": [
+        "2026-11-21T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "version": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "secret",
+    "id",
+    "url",
+    "label",
+    "event_types",
+    "state",
+    "secret_hint",
+    "failure_run",
+    "version",
+    "created_at"
+  ],
+  "title": "WebhookEndpointCreated",
+  "type": "object"
+}

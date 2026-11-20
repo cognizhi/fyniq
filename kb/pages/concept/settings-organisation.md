@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, InvoiceNow, cash buffer, numbering, features, AI, terms, banking, claims, thresholds, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:a43947080011c1b341c0327963f6d580dee3e61936a4cb080c8634cab4ffc2f8
+  - docs/user-guide/organisation-settings.md sha256:d1bef2b4603479aef774ba786605f4478f0e371f7fe60ba6c154091851bc1d95
 data_class: general
 taint: trusted
 status: draft
@@ -171,6 +171,7 @@ The calendar itself: [[compliance.calendar]].
 - Recommended: **Multi-currency** on; **Payroll**, **Projects and time** and **Portals for customers and investors** off.
 - The **AI assistant** is off until an Owner turns it on with a second approver; switching it off takes effect at once ([[settings.ai]]).
 - **AI apps through MCP** is off until an Owner turns it on with a second approver; switching it off takes effect at once.
+- **Webhooks and events** is off until an Owner turns it on with a second approver; switching it off takes effect at once and stops every delivery. See [[settings.webhooks]].
 
 (src: docs/user-guide/organisation-settings.md#features)
 

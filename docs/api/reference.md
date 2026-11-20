@@ -1760,6 +1760,205 @@ Revokes any member's personal access token at once (FR-INT-02, SEC-07): never he
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CLIENT-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-API-CLIENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/webhook-deliveries/{delivery_id}/replay`
+
+**Replay a dead webhook delivery** (`replayWebhookDelivery`)
+
+Puts a dead delivery back for another try at once (FR-INT-12), with the same webhook-id, so a receiver that already has it deduplicates. Only a dead delivery is replayed; a pending or delivered one needs nothing. Needs a person signed in to Fyniq. Side effects: the delivery goes back to pending and an audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
+- **Parameters:**
+  - `delivery_id` (path, required): The delivery's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`WebhookDelivery`](../../contracts/schemas/WebhookDelivery.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `WEBHOOK-01` Webhooks and events are off for this organisation.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `WEBHOOK-06` No such webhook endpoint or delivery.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `WEBHOOK-02` Not an address Fyniq may send to; `WEBHOOK-03` Not an event type an endpoint can ask for; `WEBHOOK-04` The endpoint did not echo the challenge.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
+
+### `GET /v1/webhook-endpoints`
+
+**List the organisation's webhook endpoints** (`listWebhookEndpoints`)
+
+The endpoints events are sent to (FR-INT-12), oldest first, a page at a time (FR-INT-10): each one's address, the event types it asked for, its state and the last four characters of its secret. Never a secret. Read-only; no side effects.
+
+- **Permission:** View on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`WebhookEndpointPage`](../../contracts/schemas/WebhookEndpointPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/webhook-endpoints`
+
+**Add a webhook endpoint** (`createWebhookEndpoint`)
+
+Adds an endpoint events are sent to (FR-INT-12): an https address on a public host and the event types it asks for by name (no wildcard; security, personal-data and payee events are never sent). It is pending, and its signing secret is in this answer once: Fyniq keeps it sealed and cannot show it again (roll it to get a new one). Verify it (verifyWebhookEndpoint) and it becomes active. Every event is a CloudEvents 1.0 message whose data is IDs and times, signed as Standard Webhooks with a webhook-id that stays the same on every attempt. Refused (WEBHOOK-01) while the organisation's "Webhooks and events" setting is off, as it is until an Owner turns it on with a second approver (golden rule 6). Needs a person signed in to Fyniq with step-up: no token, integration or AI makes an endpoint. Side effects: the endpoint and its audit event (never the secret). It takes no Idempotency-Key and no preview, because the answer carries a secret. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
+- **Request body:** [`WebhookEndpointCreate`](../../contracts/schemas/WebhookEndpointCreate.schema.json)
+- **Responses:**
+  - `201` Created [`WebhookEndpointCreated`](../../contracts/schemas/WebhookEndpointCreated.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `WEBHOOK-01` Webhooks and events are off for this organisation.
+  - `404` Not Found: `WEBHOOK-06` No such webhook endpoint or delivery.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `WEBHOOK-02` Not an address Fyniq may send to; `WEBHOOK-03` Not an event type an endpoint can ask for; `WEBHOOK-04` The endpoint did not echo the challenge.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
+
+### `GET /v1/webhook-endpoints/{endpoint_id}`
+
+**Read a webhook endpoint** (`getWebhookEndpoint`)
+
+One endpoint (FR-INT-12) with its ETag, for If-Match on a change. Never its secret. Read-only; no side effects.
+
+- **Permission:** View on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
+- **Parameters:**
+  - `endpoint_id` (path, required): The endpoint's ID.
+- **Responses:**
+  - `200` OK [`WebhookEndpoint`](../../contracts/schemas/WebhookEndpoint.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `WEBHOOK-06` No such webhook endpoint or delivery.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `WEBHOOK-06`
+
+### `PATCH /v1/webhook-endpoints/{endpoint_id}`
+
+**Change a webhook endpoint** (`changeWebhookEndpoint`)
+
+Changes an endpoint's name, address, event types or state over the version you read (If-Match; FR-INT-12). A new address makes it pending again until it echoes a challenge. paused and disabled stop deliveries at once; active resumes a paused endpoint that was verified; pending re-verifies a disabled one. Needs a person signed in to Fyniq with step-up. Side effects: the change and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
+- **Parameters:**
+  - `endpoint_id` (path, required): The endpoint's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`WebhookEndpointChange`](../../contracts/schemas/WebhookEndpointChange.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`WebhookEndpoint`](../../contracts/schemas/WebhookEndpoint.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `WEBHOOK-01` Webhooks and events are off for this organisation.
+  - `404` Not Found: `WEBHOOK-06` No such webhook endpoint or delivery.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `WEBHOOK-02` Not an address Fyniq may send to; `WEBHOOK-03` Not an event type an endpoint can ask for; `WEBHOOK-04` The endpoint did not echo the challenge.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
+
+### `GET /v1/webhook-endpoints/{endpoint_id}/deliveries`
+
+**List an endpoint's deliveries** (`listWebhookDeliveries`)
+
+The deliveries to one endpoint (FR-INT-12), newest first, a page at a time (FR-INT-10), each with its attempts so far, the last status and why the last attempt failed. state=dead is the dead-letter list: deliveries whose three days of retries are used up, which replayWebhookDelivery tries again. Read-only; no side effects.
+
+- **Permission:** View on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
+- **Parameters:**
+  - `endpoint_id` (path, required): The endpoint's ID.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `state` (query): Only deliveries in this state; leave it out for all. The dead-letter list is state=dead.
+- **Responses:**
+  - `200` OK [`WebhookDeliveryPage`](../../contracts/schemas/WebhookDeliveryPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `WEBHOOK-06` No such webhook endpoint or delivery.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `WEBHOOK-06`
+
+### `POST /v1/webhook-endpoints/{endpoint_id}/roll-secret`
+
+**Roll a webhook endpoint's signing secret** (`rollWebhookSecret`)
+
+Makes a new signing secret for the endpoint (FR-INT-12) and returns it once; the old one keeps signing alongside it for 24 hours, so the receiver can change over (each delivery then carries two signatures in webhook-signature). Over the version you read (If-Match). Needs a person signed in to Fyniq with step-up. Side effects: the new sealed secret and an audit event (never the secret). It takes no Idempotency-Key and no preview, because the answer carries a secret.
+
+- **Permission:** Create on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
+- **Parameters:**
+  - `endpoint_id` (path, required): The endpoint's ID.
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+- **Responses:**
+  - `200` OK [`WebhookEndpointCreated`](../../contracts/schemas/WebhookEndpointCreated.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `WEBHOOK-01` Webhooks and events are off for this organisation.
+  - `404` Not Found: `WEBHOOK-06` No such webhook endpoint or delivery.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `WEBHOOK-02` Not an address Fyniq may send to; `WEBHOOK-03` Not an event type an endpoint can ask for; `WEBHOOK-04` The endpoint did not echo the challenge.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
+
+### `POST /v1/webhook-endpoints/{endpoint_id}/verify`
+
+**Verify a webhook endpoint** (`verifyWebhookEndpoint`)
+
+Proves an endpoint is the organisation's before any event is sent (FR-INT-12): Fyniq sends it one signed CloudEvent of type fyniq.webhook.verify.v1 whose data holds a challenge, and the endpoint answers 2xx with the challenge in its body (as text or as {"challenge": ...}). Only then is it active; a pending or disabled-and-pending endpoint can be verified. Fyniq sends through its guard: a private or loopback address, a redirect and an answer that takes over 10 seconds are refused. Needs a person signed in to Fyniq with step-up. Side effects: one request to the endpoint and, when it echoes, the endpoint's change to active with its audit event.
+
+- **Permission:** Create on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
+- **Parameters:**
+  - `endpoint_id` (path, required): The endpoint's ID.
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+- **Responses:**
+  - `200` OK [`WebhookEndpoint`](../../contracts/schemas/WebhookEndpoint.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `WEBHOOK-01` Webhooks and events are off for this organisation.
+  - `404` Not Found: `WEBHOOK-06` No such webhook endpoint or delivery.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `WEBHOOK-02` Not an address Fyniq may send to; `WEBHOOK-03` Not an event type an endpoint can ask for; `WEBHOOK-04` The endpoint did not echo the challenge.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
+
 ## Session
 
 Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-08).

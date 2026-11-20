@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "event_types": {
+      "description": "The whole new list of event types.",
+      "items": {
+        "description": "An event type, fyniq.\u003cobject\u003e.\u003cevent\u003e.v\u003cN\u003e, from the deliverable list of the AsyncAPI catalogue.",
+        "examples": [
+          "fyniq.ledger.posted.v1"
+        ],
+        "pattern": "^fyniq\\.[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*\\.v[1-9][0-9]*$",
+        "type": "string"
+      },
+      "maxItems": 50,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "label": {
+      "description": "A new name.",
+      "examples": [
+        "Accounting sync"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it was paused or disabled, for the people who run it.",
+      "examples": [
+        "The receiver is down for maintenance"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "state": {
+      "description": "paused or disabled stop deliveries at once; active resumes a paused (verified) endpoint; pending re-verifies a disabled one.",
+      "enum": [
+        "active",
+        "paused",
+        "disabled",
+        "pending"
+      ],
+      "examples": [
+        "paused"
+      ],
+      "type": "string"
+    },
+    "url": {
+      "description": "A new address; the endpoint is pending again until it echoes a challenge.",
+      "examples": [
+        "https://hooks.example.com/v2"
+      ],
+      "maxLength": 2048,
+      "type": "string"
+    }
+  },
+  "title": "WebhookEndpointChange",
+  "type": "object"
+}
