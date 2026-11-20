@@ -4,7 +4,7 @@ type: task
 title: Review, approve or reject a change the AI proposed
 summary: Review, approve, reject or undo an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
 sources:
-  - docs/user-guide/ai-proposals.md sha256:2b17d1c50f70cbafb0c9690bd235a8094e53e6a4bc260aeba7eeac447b851cdb
+  - docs/user-guide/ai-proposals.md sha256:7a5683c7c6cac6de41bf1208a512c648cdc7b56054d1db879607927386b083d0
 data_class: general
 taint: trusted
 status: draft
@@ -170,6 +170,13 @@ aliases:
 - After a month ends the Owner or the DPO signs its review, with a note, after confirming it is them. A month is signed once, and the signed review is kept as evidence.
 
 (src: docs/user-guide/ai-proposals.md#approval-quality)
+
+## Propose a know-how page
+
+- The assistant can propose a know-how page from a conversation: a short title and a body in plain words, written as a note for an Owner to approve. It is not a page and nothing is published; once approved it appears among the knowledge base's notes under a key that begins proposed., and a person compiles and publishes a page from it as for any note.
+- The text must hold no figure: no amount of money, percentage, decimal, number of a thousand or more, ID, identity number or account number. An answer never becomes a page by itself; a proposal with a figure is refused, and says what to take out.
+
+(src: docs/user-guide/ai-proposals.md#propose-a-know-how-page)
 
 ## Turn a task type on or off
 

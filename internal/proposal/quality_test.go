@@ -109,3 +109,21 @@ func TestApprovalQualityCountsEditsAndReversalsPerTaskTypeAndApprover(t *testing
 		t.Errorf("the most first: %+v", q.PerApproverType[0])
 	}
 }
+
+// A page the AI proposes holds no figure (AI-59): money, a percentage, a decimal, an identifier and a whole number of a thousand or more are refused, however
+// they are written; plain prose, small numbers, ordinals and years are not.
+// req: AI-59
+func TestAProposedPageHoldsNoFigure(t *testing.T) {
+	for _, bad := range []string{"We spent S$4,800 on hosting", "Revenue was SGD 52000", "about 12% more", "12 per cent more", "a margin of 61.4", "the invoice 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90",
+		"NRIC S1234567D", "account 123456789012", "we have 4800 users", "paid 5,000 in March", "$40", "40 USD", "€9"} {
+		if NoFigures(bad) == "" {
+			t.Errorf("%q passed as free of figures", bad)
+		}
+	}
+	for _, ok := range []string{"File the claim within 14 days of the purchase", "Step 3: attach the receipt", "From 2026 the review is quarterly", "Ask the finance controller; see the cash KPI for the balance",
+		"Approvals go to two people", "Use the 2nd form"} {
+		if why := NoFigures(ok); why != "" {
+			t.Errorf("%q refused: %s", ok, why)
+		}
+	}
+}

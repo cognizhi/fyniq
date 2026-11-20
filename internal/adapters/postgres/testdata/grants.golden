@@ -818,6 +818,8 @@ fyniq_executor  INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_executor  SELECT    journal_entry
 fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_executor  SELECT    journal_line
+fyniq_executor  INSERT    kb_note (body, created_at, created_by, data_class, key, kind, title, updated_at, updated_by)
+fyniq_executor  SELECT    kb_note
 fyniq_executor  SELECT    ledger_boundary
 fyniq_executor  SELECT    ledger_purged_entry
 fyniq_executor  SELECT    ledger_revision

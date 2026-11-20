@@ -9897,6 +9897,7 @@ CREATE TRIGGER journal_line_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_l
 CREATE TRIGGER journal_line_no_truncate BEFORE TRUNCATE ON fyniq.journal_line FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER kb_lint_finding_guard BEFORE DELETE OR UPDATE ON fyniq.kb_lint_finding FOR EACH ROW EXECUTE FUNCTION kb_guard()
 CREATE TRIGGER kb_lint_finding_no_truncate BEFORE TRUNCATE ON fyniq.kb_lint_finding FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER kb_note_executor_guard BEFORE INSERT ON fyniq.kb_note FOR EACH ROW EXECUTE FUNCTION kb_note_executor_guard()
 CREATE TRIGGER kb_note_guard BEFORE DELETE OR UPDATE ON fyniq.kb_note FOR EACH ROW EXECUTE FUNCTION kb_guard()
 CREATE TRIGGER kb_note_no_truncate BEFORE TRUNCATE ON fyniq.kb_note FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER kb_page_version_guard BEFORE DELETE OR UPDATE ON fyniq.kb_page_version FOR EACH ROW EXECUTE FUNCTION kb_guard()
@@ -10987,6 +10988,7 @@ journal_line_balances() → trigger | security definer | v | search_path=pg_cata
 journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 55a3d18429a41eae4bbb8231d3bf02d4
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b9269db42a6b251fcf5f6ec4576b4fb8
 kb_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 02422d85fbd6befcedcfdf5c3323050f
+kb_note_executor_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f7276216ba9e29eeb9965968ba30dbe5
 kb_org_search(p_terms text[], p_classes text[], p_limit integer) → TABLE(key text, title text, summary text, snippet text, rank real) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 15760a3c14a0882488f678a84615fbad
 kb_platform_index(p_roles text[], p_classes text[]) → TABLE(key text, type text, title text, summary text, status text, data_class text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7b424e41cfdc6ce4aae26d2373cd74dd
 kb_platform_info() → TABLE(version text, schema text, digest text, loaded_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02dda96e1273c149a12b7ce0e8a0f6a3

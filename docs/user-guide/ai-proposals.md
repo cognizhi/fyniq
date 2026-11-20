@@ -181,6 +181,12 @@ status: draft
   A task type nobody ever edits, or one that is often undone, is worth a look.
 - After a month ends, the Owner or the DPO signs its review (after confirming it is them), with a note. A month is signed once, and the signed review is kept as evidence.
 
+## Propose a know-how page
+
+- Ask the assistant to write up how something is done here, such as how expense claims are filed. It can **propose a know-how page**: a short title and a body in plain words.
+- The proposal is a **note** for an Owner to approve; it is not a page, and nothing is published. Once approved it appears among the knowledge base's notes under a key that begins `proposed.`, and a person compiles and publishes a page from it as for any note.
+- The text must hold **no figure**: no amount of money, percentage, decimal, number of a thousand or more, ID, identity number or account number. Figures are read from the tools when they are asked for, and an answer carries one person's context, so an answer never becomes a page by itself. A proposal with a figure is refused, and says what to take out.
+
 ## Turn a task type on or off
 
 - Every task type starts off. **Turn on…** asks for a second approver, as the setting **AI task types** in
