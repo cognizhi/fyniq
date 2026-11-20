@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { CreditCard, Download, FileText, Printer } from "lucide-react";
+import { CircleX, CreditCard, Download, FileText, Printer } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -218,7 +218,11 @@ export function CustomerPortal() {
                         </th>
                         <td>
                           {i.due_date ? date(i.due_date) : ""}
-                          {i.overdue && <span className="fy-chip fy-chip--critical"> Overdue</span>}
+                          {i.overdue && (
+                            <span className="fy-chip fy-chip--critical">
+                              <Icon of={CircleX} /> Overdue
+                            </span>
+                          )}
                         </td>
                         <td className="fy-num">{money(i.total)}</td>
                         <td className="fy-num fy-strong">{money(i.open)}</td>
