@@ -458,6 +458,9 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"psp_dispute_credit.amount":    func(t *testing.T, b porttest.Books, v string) error { return rawPSPDisputeCredit(t, b, v) },
 	"psp_dispute_loss.amount":      func(t *testing.T, b porttest.Books, v string) error { return rawPSPDisputeLoss(t, b, v) },
 	"payment_batch_release.total":  func(t *testing.T, b porttest.Books, v string) error { return rawRelease(t, b, v) },
+	"salary_batch_line.amount":     func(t *testing.T, b porttest.Books, v string) error { return rawSalaryLine(t, b, v) },
+	"salary_line_event.amount":     func(t *testing.T, b porttest.Books, v string) error { return rawSalaryEvent(t, b, v) },
+	"salary_release.total":         func(t *testing.T, b porttest.Books, v string) error { return rawSalaryRelease(t, b, v) },
 	"break_glass.cap":              func(t *testing.T, b porttest.Books, v string) error { return rawBreakGlassCap(t, b, v) },
 	"break_glass_use.total":        func(t *testing.T, b porttest.Books, v string) error { return rawBreakGlassUse(t, b, v) },
 	"share_issue.shares":           func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "shares", v) },
@@ -1596,6 +1599,56 @@ func rawRelease(t *testing.T, b porttest.Books, value string) error {
 file_name, media_type, file_sealed, file_sha256, payments, currency, minor_units, total)
 VALUES ($1, 1, $2, $3, now(), 'payment-list@1', 'PB-0001.csv', 'text/csv', $4, $5, 1, 'SGD', 2, $6::numeric)`,
 			uuid.New(), uuid.New(), uuid.New(), make([]byte, 64), make([]byte, 32), value)
+		return err
+	})
+}
+
+func rawSalaryLine(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq_api")) // closes at once, as the test holds many connections
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.salary_batch_line (batch_id, line_ref, line_version, person_id, amount, bank_detail_id, bank_detail_version, bank_detail_digest, sealed, event_id, created_at)
+VALUES ($1, $2, 1, $3, $4::numeric, $5, 1, repeat('a', 64), $6, $7, now())`, uuid.New(), uuid.New(), uuid.New(), value, uuid.New(), make([]byte, 64), uuid.New())
+		return err
+	})
+}
+
+func rawSalaryEvent(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq_api")) // closes at once, as the test holds many connections
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.salary_line_event (batch_id, line_ref, person_id, run_id, state, source, instruction_id, amount, recorded_by, at)
+VALUES ($1, $2, $3, $4, 'released', 'release', 'SB0001-R1-L01', $5::numeric, 'user:attack', now())`, uuid.New(), uuid.New(), uuid.New(), uuid.New(), value)
+		return err
+	})
+}
+
+// rawSalaryRelease writes a release as the table's owner with the triggers held back (a release is refused before its checks unless its batch is approved), so only the total's own checks can fail. Its
+// connection closes at once, as the test holds many.
+func rawSalaryRelease(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.salary_release (batch_id, batch_version, approval_id, released_by, released_at, writer, file_name, media_type, file_sealed, file_sha256, lines, total)
+VALUES ($1, 1, $2, $3, now(), 'payment-list@1', 'SB-0001.csv', 'text/csv', $4, $5, 1, $6::numeric)`, uuid.New(), uuid.New(), uuid.New(), make([]byte, 64), make([]byte, 32), value)
 		return err
 	})
 }
