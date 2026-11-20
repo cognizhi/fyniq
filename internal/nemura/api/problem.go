@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/cognizhi/fyniq/internal/nemura/hiring"
+	"github.com/cognizhi/fyniq/internal/nemura/performance"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -128,6 +129,8 @@ var Catalogue = []Code{
 	{hiring.CodeInvalid, http.StatusUnprocessableEntity, "The requisition, the post or the exemption is not valid", "Correct what the message names and send it again."},
 	{hiring.CodeConflict, http.StatusConflict, "That has moved on", "A requisition is decided once, a published post never changes, and the advert's date and an exemption are recorded once: read it again."},
 	{hiring.CodeWording, http.StatusUnprocessableEntity, "The post names criteria the guidelines ask an employer not to use", "Describe the skill or duty instead, or record the genuine occupational requirement for each criterion."},
+	{performance.CodeInvalid, http.StatusUnprocessableEntity, "The goal, the key result or the value is not valid", "Correct what the message names and send it again."},
+	{performance.CodeConflict, http.StatusConflict, "That goal has moved on", "A goal is done or cancelled once, its words and targets never change, and a closed goal's key results are no longer updated."},
 	{"NM_GRIEVANCE_STATE", http.StatusConflict, "That grievance has moved on", "A grievance is decided once, and an unrouted one is taken once: read it again to see where it is."},
 	{"NM_GRIEVANCE_NO_HANDLER", http.StatusConflict, "Nobody else can handle it", "Every HR administrator and the Owner is the complainant, is involved or is the one passing it on: it stays with its handler."},
 	{"NM_ERASURE_ACCESS_REQUEST", http.StatusConflict, "The person has an access request to answer", "Answer the person's request for their own data first (NM-SEC-07)."},

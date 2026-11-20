@@ -14,6 +14,15 @@ Source: PRD-002 §13 · Priority M · Phase P2
 - **WHEN** a person adds a goal aligned to a team goal
 - **THEN** its progress shows under the team goal
 
+#### Scenario: Progress is exact and moves by updates (rev 0.67)
+- **GIVEN** a key result from 0 to 3
+- **WHEN** the person records 2
+- **THEN** it shows 66% (rounded down), the update keeps who gave it, and a closed goal's key results are no longer updated
+
+#### Scenario: Who reads a personal goal (rev 0.67)
+- **WHEN** a member who is not the person, their line manager or in the people team asks for it
+- **THEN** they are told there is no such goal, while the company's and the teams' goals are read by every member
+
 ### Requirement: NM-PRF-02 KPIs
 Role KPIs SHALL have targets and a source, entered or read from Fyniq's permitted metrics, and a KPI built on a company financial figure SHALL show only its status in Nemura.
 
