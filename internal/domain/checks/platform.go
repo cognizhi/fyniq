@@ -52,6 +52,7 @@ var ScheduledJobs = map[string]string{
 	"notify.bills_due":           "Bills-due reminders",
 	"notify.deadlines":           "Statutory deadline reminders",
 	"invoicenow.dispatch":        "InvoiceNow submissions sent",
+	"packs.updates":              "Tasks about statutory pack updates waiting",
 	"notify.cash_buffer":         "Cash buffer alerts",
 	"notify.timesheets":          "Missing-time reminders on Fridays",
 	"projects.revenue_proposals": "Month-end revenue-over-time drafts for fixed-fee projects",

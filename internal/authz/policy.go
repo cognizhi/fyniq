@@ -2206,7 +2206,7 @@ var (
 	CreateBoardPackDraft = Policy{Operation: "createBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	EditBoardPackDraft   = Policy{Operation: "editBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	PublishBoardPack     = Policy{Operation: "publishBoardPack", Capability: ReportDefinitions, Need: Create}
-	// (rev 0.613) Allocation rules (FR-DIM-03): read on the Journals row; saving a rule and running it into a draft journal are a journal's Create, and the journal posts like any other.
+	// (rev 0.615) Allocation rules (FR-DIM-03): read on the Journals row; saving a rule and running it into a draft journal are a journal's Create, and the journal posts like any other.
 	ListAllocationRules   = Policy{Operation: "listAllocationRules", Capability: Journals, Need: View}
 	GetAllocationRule     = Policy{Operation: "getAllocationRule", Capability: Journals, Need: View}
 	ListAllocationRuns    = Policy{Operation: "listAllocationRuns", Capability: Journals, Need: View}

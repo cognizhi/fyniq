@@ -5092,7 +5092,7 @@ compliance_task | compliance_task_pkey | PRIMARY KEY (organisation_id, id)
 compliance_task | compliance_task_proposal_fkey | FOREIGN KEY (organisation_id, proposal_id) REFERENCES ai_proposal(organisation_id, id)
 compliance_task | compliance_task_reason_not_null | NOT NULL reason
 compliance_task | compliance_task_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES agent_run(organisation_id, id)
-compliance_task | compliance_task_source | CHECK ((((source = 'agent_run'::text) AND (run_id IS NOT NULL) AND (proposal_id IS NULL)) OR ((source = 'ai_proposal'::text) AND (proposal_id IS NOT NULL))))
+compliance_task | compliance_task_source | CHECK ((((source = 'agent_run'::text) AND (run_id IS NOT NULL) AND (proposal_id IS NULL)) OR ((source = 'ai_proposal'::text) AND (proposal_id IS NOT NULL)) OR ((source = 'system'::text) AND (run_id IS NULL) AND (proposal_id IS NULL))))
 compliance_task | compliance_task_source_not_null | NOT NULL source
 compliance_task | compliance_task_state | CHECK ((((closed_at IS NOT NULL) = (status <> 'open'::text)) AND ((closed_by IS NOT NULL) = (status = ANY (ARRAY['done'::text, 'dismissed'::text]))) AND ((reason <> ''::text) = (status = 'dismissed'::text)) AND ((closed_at IS NULL) OR (closed_at >= created_at))))
 compliance_task | compliance_task_status | CHECK ((status = ANY (ARRAY['open'::text, 'done'::text, 'dismissed'::text, 'cleared'::text])))
@@ -11330,7 +11330,7 @@ claim_join_domain(p_by uuid, p_org uuid, p_domain text, p_now timestamp with tim
 claim_place_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9d945198410ff448d1bc24902010e4d
 claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57aedc912c161d7d32a66f3e8840bd12
 close_checklist_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f4af92af3952d349375bb5a90970c137
-compliance_task_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9feae7d2ff9d3da98fac4aed312d145f
+compliance_task_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c13e472da961939bd2a0526166b58221
 confirm_account_recovery(p_by uuid, p_for uuid, p_org uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 556b86484c4b57d11bbd4103bdd28538
 confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 254723da0ff40bc2dc8dd67758ba97c3
 connector_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 06787f4aad13062e2a82e6f6927156d1

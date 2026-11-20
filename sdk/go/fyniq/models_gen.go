@@ -4006,10 +4006,11 @@ type PackSource struct {
 
 // PackUpdate is a schema of the contract.
 type PackUpdate struct {
-	Available string       `json:"available"`
-	Changes   []PackChange `json:"changes"`
-	Current   string       `json:"current"`
-	Pack      string       `json:"pack"`
+	Available  string       `json:"available"`
+	Changes    []PackChange `json:"changes"`
+	Correction bool         `json:"correction"`
+	Current    string       `json:"current"`
+	Pack       string       `json:"pack"`
 }
 
 // PackUpdates is a schema of the contract.

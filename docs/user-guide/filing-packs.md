@@ -37,3 +37,5 @@ paper to change it: the latest recorded paper of the year is the one in force, a
 
 When a newer version of a statutory pack you have activated is in force, the page lists it with the rows it would add, remove or change, so you see what accepting it does. Accepting a
 pack is done in Settings › Statutory packs, by two people. A correction to a past period never re-posts anything by itself.
+
+Each morning the platform also raises a task for the Finance controller in Compliance tasks: **Statutory pack update waiting** with how many rows the new version adds, removes and changes, and, when the new version corrects a period the active one already covers, **Assess a pack correction** with the posted documents dated in that period. The tasks clear by themselves once the version is accepted.

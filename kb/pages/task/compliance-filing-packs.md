@@ -4,7 +4,7 @@ type: task
 title: Work out a financial year's tax for the tax agent
 summary: The year's tax-adjusted profit from the ledger, the exemption, the tax and the form, and the statutory updates waiting
 sources:
-  - docs/user-guide/filing-packs.md sha256:f8cb06b3c318f1c1596b69136e0c3248158d5753889cbe10949ffca710c9116c
+  - docs/user-guide/filing-packs.md sha256:b1ec8f7a805f90bd06060e45283e290af9f91b5ba89ab448907b8aff3e289f4a
 data_class: general
 taint: trusted
 status: draft
@@ -42,6 +42,6 @@ Keep as a draft paper saves the year, the exemption and the adjustments with the
 
 ## Statutory updates
 
-A newer version of an activated pack is listed with the rows it would add, remove or change; accepting it is done in Settings › Statutory packs, by two people, and re-posts nothing.
+A newer version of an activated pack is listed with the rows it would add, remove or change; accepting it is done in Settings › Statutory packs, by two people, and re-posts nothing. Each morning the platform raises a task for the Finance controller, Statutory pack update waiting, and, when the new version corrects a period the active one already covers, Assess a pack correction with the posted documents dated in that period; they clear once the version is accepted.
 
 (src: docs/user-guide/filing-packs.md#statutory-updates)

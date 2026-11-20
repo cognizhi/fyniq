@@ -983,3 +983,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.hiring: requisitions and job posts (NM-REC-01 to 03)
 
 ## [2026-11-20] compile | compliance.filing-packs: keep and record the tax working paper with its evidence (FR-TAX-06)
+
+## [2026-11-20] compile | compliance.filing-packs: the platform's tasks for a pack update waiting and a correction (ENG-33)

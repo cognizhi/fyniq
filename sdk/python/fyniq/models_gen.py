@@ -2638,7 +2638,7 @@ _PackSourceOptional = TypedDict("_PackSourceOptional", {}, total=False)
 class PackSource(_PackSourceRequired, _PackSourceOptional):
     """PackSource is a schema of the contract."""
 
-_PackUpdateRequired = TypedDict("_PackUpdateRequired", {"available": "str", "changes": "list[PackChange]", "current": "str", "pack": "str"})
+_PackUpdateRequired = TypedDict("_PackUpdateRequired", {"available": "str", "changes": "list[PackChange]", "correction": "bool", "current": "str", "pack": "str"})
 _PackUpdateOptional = TypedDict("_PackUpdateOptional", {}, total=False)
 
 

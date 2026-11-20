@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
+	"github.com/cognizhi/fyniq/internal/domain/packupdate"
 	"github.com/cognizhi/fyniq/internal/domain/taxfilings"
 	"github.com/cognizhi/fyniq/internal/domain/writeoff"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -104,10 +105,11 @@ type PackChange struct {
 
 // PackUpdate is a newer version of an activated pack the organisation has not accepted, with what it would change (ENG-33).
 type PackUpdate struct {
-	Pack      string       `json:"pack" example:"sg-gst"`
-	Current   string       `json:"current" doc:"The version the organisation has active." example:"sg-gst@2026.2"`
-	Available string       `json:"available" doc:"The newest version in force that it has not activated." example:"sg-gst@2026.3"`
-	Changes   []PackChange `json:"changes" nullable:"false"`
+	Pack       string       `json:"pack" example:"sg-gst"`
+	Current    string       `json:"current" doc:"The version the organisation has active." example:"sg-gst@2026.2"`
+	Available  string       `json:"available" doc:"The newest version in force that it has not activated." example:"sg-gst@2026.3"`
+	Correction bool         `json:"correction" doc:"true when the available version takes effect on the same day as the current one (or earlier): it corrects the period the current one already covers, and the platform raises a task to assess the documents dated in it (ENG-33)." example:"false"`
+	Changes    []PackChange `json:"changes" nullable:"false"`
 }
 
 // PackUpdates is the updates available.
@@ -229,67 +231,13 @@ func registerTaxFilings(a *API) {
 			if err != nil {
 				return err
 			}
-			vs, err := u.Packs().Versions(ctx)
+			ups, err := packupdate.Updates(ctx, u, today)
 			if err != nil {
 				return err
 			}
-			acts, err := u.Packs().Activations(ctx)
-			if err != nil {
-				return err
-			}
-			loaded := map[string]pack.Version{}
-			for _, v := range vs {
-				_, act, err := loadedPack(ctx, u, v.ID)
-				if err != nil {
-					return err
-				}
-				if _, pv, err := packOf(v, act); err == nil {
-					loaded[v.ID] = pv
-				}
-			}
-			active := func(id string) bool {
-				return slices.ContainsFunc(acts, func(x storage.PackActivation) bool { return x.VersionID == id })
-			}
-			inForce := func(v pack.Version) bool {
-				return !v.EffectiveFrom.After(today) && (v.EffectiveTo == nil || !v.EffectiveTo.Before(today))
-			}
-			newer := func(x, y pack.Version) bool {
-				return x.EffectiveFrom.After(y.EffectiveFrom) || (x.EffectiveFrom.Equal(y.EffectiveFrom) && (x.Year > y.Year || (x.Year == y.Year && x.N > y.N)))
-			}
-			names := map[string]bool{}
-			for _, v := range loaded {
-				names[v.Pack] = true
-			}
-			for _, name := range slices.Sorted(func(yield func(string) bool) {
-				for n := range names {
-					if !yield(n) {
-						return
-					}
-				}
-			}) {
-				var cur, next *pack.Version
-				for id, v := range loaded {
-					v := v
-					switch {
-					case v.Pack != name:
-					case active(id) && inForce(v) && (cur == nil || newer(v, *cur)):
-						cur = &v
-					}
-				}
-				if cur == nil {
-					continue
-				}
-				for id, v := range loaded {
-					v := v
-					if v.Pack == name && !active(id) && inForce(v) && newer(v, *cur) && (next == nil || newer(v, *next)) {
-						next = &v
-					}
-				}
-				if next == nil {
-					continue
-				}
-				up := PackUpdate{Pack: name, Current: cur.ID, Available: next.ID, Changes: []PackChange{}}
-				for _, c := range pack.Diff(*cur, *next) {
+			for _, x := range ups {
+				up := PackUpdate{Pack: x.Pack, Current: x.Current.ID, Available: x.Available.ID, Correction: x.Correction, Changes: []PackChange{}}
+				for _, c := range x.Changes {
 					up.Changes = append(up.Changes, PackChange{Table: c.Table, Kind: c.Kind, Key: c.Key, Was: strings.Join(rowsText(c.Was), "; "), Now: strings.Join(rowsText(c.Now), "; ")})
 				}
 				out.Body.Items = append(out.Body.Items, up)

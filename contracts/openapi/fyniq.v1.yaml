@@ -18249,10 +18249,11 @@ components:
           format: uuid
           type: string
         source:
-          description: "What raised it: a run's finding, or an approved proposal."
+          description: "What raised it: a run's finding, an approved proposal, or the platform itself (a statutory pack update waiting)."
           enum:
             - agent_run
             - ai_proposal
+            - system
           examples:
             - agent_run
           type: string
@@ -45098,6 +45099,11 @@ components:
           items:
             $ref: "#/components/schemas/PackChange"
           type: array
+        correction:
+          description: "true when the available version takes effect on the same day as the current one (or earlier): it corrects the period the current one already covers, and the platform raises a task to assess the documents dated in it (ENG-33)."
+          examples:
+            - false
+          type: boolean
         current:
           description: The version the organisation has active.
           examples:
@@ -45111,6 +45117,7 @@ components:
         - pack
         - current
         - available
+        - correction
         - changes
       type: object
     PackUpdates:

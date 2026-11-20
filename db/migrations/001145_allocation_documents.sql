@@ -1,4 +1,4 @@
--- Allocation rules and shares for services (PRD-001 FR-DIM-03, FR-EQ-13; p2-reporting-planning tasks 8.2 and 8.3, rev 0.613).
+-- Allocation rules and shares for services (PRD-001 FR-DIM-03, FR-EQ-13; p2-reporting-planning tasks 8.2 and 8.3, rev 0.615).
 --
 -- Four kinds of document. An allocation rule (the source expense accounts, the key and the targets) and a grant of shares for services (its fair value per share, service start and
 -- tranches) are saved as documents of their own, a new version at each change, and post nothing. A run of a rule over whole months, and a month of a grant's expense, are each
