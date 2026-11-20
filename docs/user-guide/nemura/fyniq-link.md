@@ -29,6 +29,12 @@ The page also lists the API clients registered before the link: the two people w
 
 When Nemura's database has been restored, the people who run the deployment record it, and the link is held: nothing is sent or paid. **After a restore** lists each pay run approved with proof whose answer the restored database does not hold, because Fyniq may have posted it after the restore point. For each, look at the run in Fyniq (its People and HR page shows what it posted) and choose **Fyniq posted it** with Fyniq's reference, or **Fyniq did not post it**: that approval is then sent again. When the last is decided the link resumes and the current state is sent again.
 
+## The Finance and People switch
+
+While Nemura is linked, a person who may cross sees **Finance | People** in the header. It opens the other app with the same account, and each app keeps its own last page: you come back to the page you left. It never changes what you may do: each app has its own roles, a role in one grants nothing in the other, and an employee who only claims sees no switch (their Claims tile opens the personal workspace in Fyniq). Nemura shows it to Owners, Administrators and Payroll administrators; Fyniq decides what is behind it.
+
+Signing out of Fyniq, or being removed from it, signs the person out of Nemura as well; signing out of Nemura does not yet sign you out of Fyniq.
+
 ## Common problems
 
 - **Fyniq refused an event.** The code says why; the content is never shown. Correct what it names, then send the current state again.

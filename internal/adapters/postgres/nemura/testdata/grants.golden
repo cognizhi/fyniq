@@ -859,6 +859,7 @@ nemura_api | function nemura.member_identity | EXECUTE
 nemura_api | function nemura.members_for_identity | EXECUTE
 nemura_api | function nemura.person_has_leave | EXECUTE
 nemura_api | function nemura.replace_member_identities | EXECUTE
+nemura_api | function nemura.revoke_sessions_of_identity | EXECUTE
 nemura_api | function nemura.setup_done | EXECUTE
 nemura_api | schema nemura | USAGE
 nemura_api | table nemura.access_request | SELECT

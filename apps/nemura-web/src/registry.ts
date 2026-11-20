@@ -59,6 +59,7 @@ export const registry: Entry[] = [
   { kind: "route", id: "features", path: "/settings/features", signedIn: true, screen: "nm-features", mode: "expert", help: "features.page", guide: "nemura.features" },
   { kind: "route", id: "packs", path: "/settings/packs", signedIn: true, screen: "nm-country-pack", mode: "expert", help: "packs.page", guide: "nemura.packs" },
   { kind: "route", id: "policy", path: "/settings/policy", signedIn: true, screen: "nm-leave-policy", mode: "expert", help: "policy.page", guide: "nemura.packs" },
+  { kind: "action", id: "workspace-switch", mode: "basic", help: "workspace.switch", guide: "nemura.fyniq-link#the-finance-and-people-switch" },
   { kind: "action", id: "sign-out", mode: "basic", help: "nav.signOut", guide: "nemura.sign-in#signing-out" },
 ];
 

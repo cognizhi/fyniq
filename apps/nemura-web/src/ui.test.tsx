@@ -25,6 +25,8 @@ import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
 import { FyniqLink } from "./pages/FyniqLink";
+import { Shell } from "./pages/Shell";
+import { rememberPage, switchedIn } from "./workspace";
 import { PayRunApproval } from "./pages/PayRunApproval";
 import { MyPay, Payslip } from "./pages/MyPay";
 import { FlexReplies } from "./components/FlexReplies";
@@ -1668,5 +1670,42 @@ describe("the link to Fyniq", () => {
     expect(await screen.findByText("What to give Fyniq")).toBeTruthy();
     expect(screen.getByText("fyniq-link-1")).toBeTruthy();
     expect(bodies.get("POST /v1/link/proposal")).toEqual({ fyniq_organisation_id: base.fyniq_organisation_id });
+  });
+});
+
+// req: NM-UX-03, NM-INT-02
+describe("the Finance | People switch", () => {
+  const inSession = (workspace?: { finance_url: string }) => ({ organisation_id: "o", member_id: "m", roles: ["owner"], landing: "/people", leaver: false, workspace });
+
+  it("shows when the session says the person may cross, opens Fyniq with the same account and says People is here", async () => {
+    answer("GET /v1/session", { status: 200, body: inSession({ finance_url: "https://app.example.test/?switch=1" }) });
+    const { container } = render(<SessionProvider><Shell roles={["owner"]}><p>page</p></Shell></SessionProvider>);
+    const finance = await screen.findByRole("link", { name: "Finance" });
+    expect(finance.getAttribute("href")).toBe("https://app.example.test/?switch=1");
+    expect(screen.getByRole("link", { name: "People" }).getAttribute("aria-current")).toBe("page");
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("does not show without the door: not linked, or roles that do not reach the books", async () => {
+    answer("GET /v1/session", { status: 200, body: inSession(undefined) });
+    render(<SessionProvider><Shell roles={["owner"]}><p>page</p></Shell></SessionProvider>);
+    expect(await screen.findByText("page")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Finance" })).toBeNull();
+  });
+
+  it("keeps the last page and brings the person back to it, and only to a page this app serves", () => {
+    window.localStorage.clear();
+    expect(switchedIn("?switch=1")).toBeUndefined();
+    rememberPage("/people/payroll");
+    expect(switchedIn("?switch=1")).toBe("/people/payroll");
+    expect(switchedIn("")).toBeUndefined();
+    rememberPage("//evil.example.test");
+    rememberPage("/not-a-page");
+    rememberPage("/sign-in");
+    expect(switchedIn("?switch=1")).toBe("/people/payroll");
+    window.localStorage.setItem("nemura.lastPage", "//evil.example.test");
+    expect(switchedIn("?switch=1")).toBeUndefined();
+    window.localStorage.setItem("nemura.lastPage", "/people/payroll\\..\\x");
+    expect(switchedIn("?switch=1")).toBeUndefined();
   });
 });

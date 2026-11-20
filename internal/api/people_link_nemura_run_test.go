@@ -3,6 +3,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -10,9 +11,12 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/linksend"
 	nemuralink "github.com/cognizhi/fyniq/internal/nemura/link"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // The two apps agree on a pay run's proof (PRD-002 NM-INT-06; PRD-001 FR-PPL-09): an approval envelope made and sealed by Nemura's own code (its fields, its canonical bytes, its digest), signed over that digest by
@@ -102,4 +106,75 @@ func sealedJSON(t *testing.T, v any) []byte {
 		t.Fatal(err)
 	}
 	return b
+}
+
+// A person removed from Fyniq is signed out of Nemura too (PRD-001 FR-PPL-18; PRD-002 NM-INT-12): removing a member queues identity.session.revoked for each sign-in identity the person has, by issuer and
+// subject and never an email, in the removal's own unit of work, through the link's one event scope; with no link that has keys nothing is queued.
+// part of FR-PPL-18 (Nemura's half, and sign-out, are its own)
+// asvs: V7.4.1, V8.2.1
+func TestRemovingAMemberTellsNemuraToEndTheirSessions(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	// The removal itself is a change two people approve (FM-1); what it does in its own unit of work is this, and removeMemberNow calls it.
+	if err := e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return e.api.signOutOfNemura(ctx, u, w.approverUser, "removed")
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var told []linksend.SessionRevoked
+	for _, q := range w.queued(t) {
+		if q.Type == linksend.TypeSessionRevoked {
+			var p linksend.SessionRevoked
+			if json.Unmarshal(q.Payload, &p) != nil || q.ObjectType != "identity" || strings.Contains(string(q.Payload), "@") {
+				t.Fatalf("the revocation: %+v", q)
+			}
+			told = append(told, p)
+		}
+	}
+	if len(told) == 0 || told[0].Issuer != w.approver.Issuer || told[0].Subject != w.approver.Subject || told[0].Reason != "removed" {
+		t.Errorf("what Nemura is told of the removal: %+v (the approver is %+v)", told, w.approver)
+	}
+}
+
+// The Finance | People switch is a door and never a grant (PRD-001 FR-PPL-02; PRD-002 NM-UX-03): while the link is active, a person whose roles reach the books is told where Nemura is (the origin the link was approved
+// with), and nobody else is: an employee who only claims, an approver alone and a client that is not a person see no switch; what is behind the door is Nemura's own decision.
+// part of FR-PPL-02 (the landing of an HR-only person is Nemura's)
+// asvs: V8.2.1, V4.2.1
+func TestTheSwitchShowsOnlyForRolesThatReachTheBooksWhileLinked(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	as := func(r authz.Role) string {
+		return e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{r}})
+	}
+	for _, r := range []authz.Role{authz.Owner, authz.Administrator, authz.Accountant, authz.PayrollAdmin, authz.Bookkeeper} {
+		got := e.call(http.MethodGet, "/v1/session", as(r), nil)
+		ws, _ := got.Body["workspace"].(map[string]any)
+		if got.Status != http.StatusOK || ws["people_url"] != nemuraOrigin+"/?switch=1" {
+			t.Errorf("%s: %d %v", r, got.Status, got.Body["workspace"])
+		}
+	}
+	for _, r := range []authz.Role{authz.Employee, authz.LineManager, authz.Approver, authz.Auditor, authz.BoardViewer} {
+		if got := e.call(http.MethodGet, "/v1/session", as(r), nil); got.Status != http.StatusOK || got.Body["workspace"] != nil {
+			t.Errorf("%s sees a switch: %d %v", r, got.Status, got.Body["workspace"])
+		}
+	}
+}
+
+// Another app's credential is no credential here (PRD-001 FR-PPL-18, AI-36; PRD-002 NM-INT-12): Nemura's session cookie, in either of its names, opens no Fyniq operation; the link's own token is no person
+// and reaches no operation of a person's (it reaches only the link's operations); and a Nemura approval's passkey answer is only ever checked for the run it signs (PPL-15), never taken as a Fyniq step-up.
+// asvs: V4.2.1, V8.2.1, V13.2.1
+func TestNemurasCredentialsOpenNothingInFyniq(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	for _, cookie := range []string{"nemura_session=abcdefghijklmnopqrstuvwxyz0123456789", "__Host-nemura_session=abcdefghijklmnopqrstuvwxyz0123456789"} {
+		if r := e.call(http.MethodGet, "/v1/session", "", nil, "Cookie", cookie); r.Status != http.StatusUnauthorized {
+			t.Errorf("Nemura's cookie at Fyniq: %d %s", r.Status, r.Raw)
+		}
+	}
+	// The link's client is no person: a person's session operation and a person's ledger read are refused it.
+	for _, path := range []string{"/v1/session", "/v1/members", "/v1/payroll-mapping"} {
+		if r := e.call(http.MethodGet, path, w.tok, nil); r.Status != http.StatusForbidden && r.Status != http.StatusUnauthorized {
+			t.Errorf("the link's token at %s: %d %s", path, r.Status, r.Raw)
+		}
+	}
 }

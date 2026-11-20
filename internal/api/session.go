@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -45,7 +47,25 @@ type SessionInfo struct {
 	Features        *Features      `json:"features,omitempty" doc:"The organisation's feature switches today (FR-ORG-06); absent when you are a member of none."`
 	Motion          string         `json:"motion,omitempty" enum:"on,off" doc:"The organisation's motion (FR-UX-38): off shows every screen's final state at once for everyone, whatever each person chose; absent when you are a member of none." example:"on"`
 	TimeZone        string         `json:"time_zone,omitempty" doc:"The IANA time zone the organisation's days are counted in, which the web app writes dates and times in (NFR-L10N-01); absent when you are a member of none." example:"Asia/Singapore"`
+	Workspace       *Workspace     `json:"workspace,omitempty" doc:"Present when you may cross to Nemura: the Finance | People switch shows (FR-PPL-02). Absent when the apps are not linked or your roles are personal only (an employee who only claims has no switch: Nemura's Claims tile opens the personal workspace)." `
 	Preferences     *MyPreferences `json:"preferences,omitempty" doc:"Your own preferences in that organisation, with the mode you start in (FR-UX-23, FR-UX-27), so the web app draws the first page the way you chose; absent when you are a member of none."`
+}
+
+// Workspace is the other app's door in the Finance | People switch (PRD-001 FR-PPL-02, PRD-002 NM-UX-03). It is only a way to cross: Nemura decides what the person may do there, and a role held in one app grants nothing in the other.
+type Workspace struct {
+	PeopleURL string `json:"people_url" format:"uri" doc:"Where Nemura's web app is, as the link was approved with it: the switch opens it, and Nemura's own sign-in and rights decide what you see." example:"https://people.example.test/?switch=1"`
+}
+
+// financeWorkspace reports whether the roles have Fyniq's finance workspace: every role but the personal ones (Employee and the line-manager relationship), Nemura's own HR officer and the read-only
+// outsiders, so an employee who only claims sees no switch (FR-PPL-02).
+func financeWorkspace(roles []authz.Role) bool {
+	return slices.ContainsFunc(roles, func(r authz.Role) bool {
+		switch r {
+		case authz.Owner, authz.Administrator, authz.Accountant, authz.Controller, authz.Bookkeeper, authz.PayrollAdmin:
+			return true
+		}
+		return false
+	})
 }
 
 // Features are the organisation's feature switches on a day (FR-ORG-06): the web app shows only what is on.
@@ -166,6 +186,11 @@ func registerSession(a *API) {
 					return err
 				} else if o.Profile.TimeZone != "" {
 					out.TimeZone = o.Profile.TimeZone
+				}
+				if l, err := u.PeopleLinks().Live(ctx); err == nil && l.State == storage.LinkActive && l.NemuraOrigin != "" && p.Class == authn.ClassUser && financeWorkspace(p.Roles) {
+					out.Workspace = &Workspace{PeopleURL: strings.TrimSuffix(l.NemuraOrigin, "/") + "/?switch=1"}
+				} else if err != nil && !errors.Is(err, ports.ErrNotFound) {
+					return err
 				}
 				user := p.UserID
 				if p.Class != authn.ClassUser {

@@ -149,6 +149,8 @@ type Deps struct {
 	LinkAdmin LinkAdmin
 	// RunLink is the pay run's door to the link: its approval envelope, the approval with proof and what became of the submission; nil: the deployment has none.
 	RunLink RunLink
+	// Workspace answers whether the Finance | People switch shows; nil: it never does.
+	Workspace WorkspaceSource
 	// LinkOps is the link's health, its repair and its restore, and a run's receipt; nil: the deployment has none.
 	LinkOps LinkOps
 	// Idempotency stores the Idempotency-Keys of writes; nil turns the header off (a deployment with no database for it never runs).
@@ -274,14 +276,25 @@ type sessionInput struct {
 
 type sessionOutput struct {
 	Body struct {
-		Organisation string   `json:"organisation_id" format:"uuid" doc:"The organisation the session is in." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
-		Member       string   `json:"member_id" format:"uuid" doc:"The person who is signed in." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
-		Roles        []string `json:"roles" doc:"The roles the person holds today, from PRD-002 Appendix B." example:"[\"hr_admin\"]"`
-		Landing      string   `json:"landing" doc:"The page the person lands on: /people for the people team, /me for everyone else." example:"/people"`
-		Person       string   `json:"person_id,omitempty" format:"uuid" doc:"The person record the login is linked to, when there is one." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
-		Leaver       bool     `json:"leaver" doc:"True after the person's last day: the account is for their own documents only." example:"false"`
-		LeaverUntil  string   `json:"leaver_until,omitempty" format:"date" doc:"The day the leaver's account ends, when it is one." example:"2027-12-01"`
+		Organisation string     `json:"organisation_id" format:"uuid" doc:"The organisation the session is in." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
+		Member       string     `json:"member_id" format:"uuid" doc:"The person who is signed in." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
+		Roles        []string   `json:"roles" doc:"The roles the person holds today, from PRD-002 Appendix B." example:"[\"hr_admin\"]"`
+		Landing      string     `json:"landing" doc:"The page the person lands on: /people for the people team, /me for everyone else." example:"/people"`
+		Person       string     `json:"person_id,omitempty" format:"uuid" doc:"The person record the login is linked to, when there is one." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+		Leaver       bool       `json:"leaver" doc:"True after the person's last day: the account is for their own documents only." example:"false"`
+		LeaverUntil  string     `json:"leaver_until,omitempty" format:"date" doc:"The day the leaver's account ends, when it is one." example:"2027-12-01"`
+		Workspace    *Workspace `json:"workspace,omitempty" doc:"Present when the person may cross to Fyniq: the Finance | People switch shows. Absent when the apps are not linked, the person's roles are not ones that reach the books, or this deployment does not name Fyniq's address."`
 	}
+}
+
+// Workspace is the other app's door in the Finance | People switch (PRD-002 NM-UX-03; PRD-001 FR-PPL-02). It is only a way to cross: the other app decides what the person may do there, and a role held in one app grants nothing in the other.
+type Workspace struct {
+	FinanceURL string `json:"finance_url" format:"uri" doc:"Where Fyniq's web app is: the switch opens it, and Fyniq's own sign-in and rights decide what the person sees." example:"https://app.example.test/?switch=1"`
+}
+
+// WorkspaceSource says where the switch leads for a person, or "" when it does not show.
+type WorkspaceSource interface {
+	FinanceURL(ctx context.Context, org uuid.UUID, roles []authz.Role) (string, error)
 }
 
 func (a *API) cookie(header string) string {
@@ -322,6 +335,15 @@ func (a *API) registerSession() {
 		out.Body.Roles = make([]string, len(roles))
 		for i, r := range roles {
 			out.Body.Roles[i] = string(r)
+		}
+		if a.d.Workspace != nil && !s.Leaver {
+			url, err := a.d.Workspace.FinanceURL(ctx, s.Organisation, roles)
+			if err != nil {
+				return nil, huma.Error500InternalServerError("The workspace could not be read.")
+			}
+			if url != "" {
+				out.Body.Workspace = &Workspace{FinanceURL: url}
+			}
 		}
 		return out, nil
 	})

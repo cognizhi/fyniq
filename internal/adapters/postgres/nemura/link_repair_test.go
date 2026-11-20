@@ -180,6 +180,17 @@ func TestAGapIsRepairedWithTheCurrentStateAndTheLinksHealthIsShownByIdentity(t *
 			t.Errorf("a repair does not change a version: %+v", e)
 		}
 	}
+	// Delivering what the repair queued clears the health: the old refused event is no longer what is wrong, and the warning goes with it (N.1 #7 does not stay on for ever).
+	for _, row := range queuedRows(t, lt)[before:] {
+		fy.status = 0
+		if err := work(ctx, lt.c.org, row); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if h3, err := r.ops.Health(ctx, owner); err != nil || h3.Refused != 0 || h3.Failed != 0 || len(h3.Undelivered) != 0 {
+		t.Errorf("after the repair was delivered: %+v %v", h3, err)
+	}
+	before = len(queuedRows(t, lt))
 	// Fyniq asks for a range it is missing: the objects of those sequence numbers are queued again at their current state.
 	before = len(queuedRows(t, lt))
 	if out, err := lt.receive(t, fyniqSays(t, r.fyniqKey, lt, r.fyniqOrg, now, nemura.TypeReplayRequested, "link", r.fyniqOrg.String(), 1, 5, map[string]any{"from_sequence": 1, "to_sequence": 3}), now); err != nil || out != "applied" {

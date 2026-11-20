@@ -54008,6 +54008,8 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
              */
             user_id?: string;
+            /** @description Present when you may cross to Nemura: the Finance | People switch shows (FR-PPL-02). Absent when the apps are not linked or your roles are personal only (an employee who only claims has no switch: Nemura's Claims tile opens the personal workspace). */
+            workspace?: components["schemas"]["Workspace"];
         };
         SetConnectorSecretRequest: {
             /**
@@ -57972,6 +57974,14 @@ export interface components {
              * @example eyJhZnRlciI6IjAxOTI4ZjZlIn0
              */
             next_cursor?: string;
+        };
+        Workspace: {
+            /**
+             * Format: uri
+             * @description Where Nemura's web app is, as the link was approved with it: the switch opens it, and Nemura's own sign-in and rights decide what you see.
+             * @example https://people.example.test/?switch=1
+             */
+            people_url: string;
         };
         WriteOff: {
             /** @description The account it writes off to: as named, or the reason's. */

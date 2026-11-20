@@ -93,3 +93,36 @@ func TestTheLinksHealthRepairAndRestoreAreTheOwnersAndAdministratorsAndTheReceip
 		t.Errorf("a repair of no person: %d", code)
 	}
 }
+
+// A bearer token reaches no session operation and a session reaches no link operation (NM-INT-12, FR-PPL-18): the new list of events, which the people team reads with a session, refuses a bearer token (the link
+// client's, or any), and the inbox that takes Fyniq's bearer token on the same path refuses a session cookie; neither reads the other's credential.
+// req: NM-INT-12
+// asvs: V4.2.1, V8.2.1, V13.2.1
+func TestABearerTokenReachesNoSessionOperationAndAnotherAppsCookieIsNoCookie(t *testing.T) {
+	_, mux := testAPI(t)
+	call := func(method, path, body string, header map[string]string) int {
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		for k, v := range header {
+			req.Header.Set(k, v)
+		}
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	bearer := map[string]string{"Authorization": "Bearer a-token-for-the-link"}
+	for _, c := range []struct{ method, path, body string }{
+		{"GET", "/v1/link/events", ""}, {"GET", "/v1/link/health", ""}, {"POST", "/v1/link/repairs", `{}`}, {"GET", "/v1/link", ""},
+		{"GET", "/v1/session", ""}, {"POST", "/v1/payroll/runs/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43/linked-approval", `{"version":1,"digest":"` + strings.Repeat("a", 64) + `","envelope_sha256":"` + strings.Repeat("b", 64) + `","approval":{"authenticator_data":"AA","client_data":"AA","signature":"AA"}}`},
+	} {
+		if got := call(c.method, c.path, c.body, bearer); got != 401 {
+			t.Errorf("a bearer token at %s %s: %d, want 401", c.method, c.path, got)
+		}
+	}
+	// Another app's cookie is no cookie here: neither Fyniq's session cookie names nor a made-up one open anything.
+	for _, cookie := range []string{"fyniq_session=abc", "__Host-fyniq_session=abc", "session=abc", "nemura_session_x=abc"} {
+		if got := call("GET", "/v1/link/health", "", map[string]string{"Cookie": cookie}); got != 401 {
+			t.Errorf("the cookie %q: %d, want 401", cookie, got)
+		}
+	}
+}

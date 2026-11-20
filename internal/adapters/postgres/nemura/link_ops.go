@@ -2,12 +2,15 @@ package nemura
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/link"
 	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -175,4 +178,30 @@ func (c LinkOpsService) Receipt(ctx context.Context, s api.Session, run uuid.UUI
 		return rows.Err()
 	})
 	return out, err
+}
+
+// WorkspaceService answers whether the Finance | People switch shows in Nemura's header (PRD-002 NM-UX-03): while the link is active, for the roles that reach the books (the Owner, an Administrator and the
+// Payroll administrator), when the deployment names where Fyniq's web app is (NEMURA_FYNIQ_WEB_ORIGIN). Nemura cannot read the person's rights in Fyniq, so this is a door and not a grant: Fyniq's own
+// sign-in and roles decide what is behind it, and an employee who only claims has no door here (design D7 asks for Fyniq's answer too: owner to confirm).
+type WorkspaceService struct {
+	Store         *Store
+	FinanceOrigin string
+}
+
+var _ api.WorkspaceSource = WorkspaceService{}
+
+// FinanceURL is where the switch leads, or "" when it does not show.
+func (w WorkspaceService) FinanceURL(ctx context.Context, org uuid.UUID, roles []authz.Role) (string, error) {
+	if w.FinanceOrigin == "" || !(slices.Contains(roles, authz.Owner) || slices.Contains(roles, authz.Administrator) || slices.Contains(roles, authz.PayrollAdmin)) {
+		return "", nil
+	}
+	active := false
+	err := w.Store.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
+		active = linkActive(ctx, tx)
+		return nil
+	})
+	if err != nil || !active {
+		return "", err
+	}
+	return strings.TrimSuffix(w.FinanceOrigin, "/") + "/?switch=1", nil
 }

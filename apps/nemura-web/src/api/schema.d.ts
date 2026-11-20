@@ -8441,6 +8441,8 @@ export interface components {
              *     ]
              */
             roles: string[] | null;
+            /** @description Present when the person may cross to Fyniq: the Finance | People switch shows. Absent when the apps are not linked, the person's roles are not ones that reach the books, or this deployment does not name Fyniq's address. */
+            workspace?: components["schemas"]["Workspace"];
         };
         SetClassificationInputBody: {
             /** @description The new classification. */
@@ -8863,6 +8865,14 @@ export interface components {
              *     ]
              */
             weekdays: number[] | null;
+        };
+        Workspace: {
+            /**
+             * Format: uri
+             * @description Where Fyniq's web app is: the switch opens it, and Fyniq's own sign-in and rights decide what the person sees.
+             * @example https://app.example.test/?switch=1
+             */
+            finance_url: string;
         };
         YTDInput: {
             /**
