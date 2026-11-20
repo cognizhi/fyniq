@@ -2135,6 +2135,14 @@
       "label": "Subscriptions",
       "tooltip": "What your billing provider, such as Stripe, bills your customers, mirrored read-only: each subscription, and each invoice with the provider's attempts and the invoice Fyniq made of it. Fyniq never retries or charges."
     },
+    "subscription.contract": {
+      "label": "New contract",
+      "tooltip": "Record a customer's subscription: what it is, the monthly value and the day it starts. It is a record, not a posting: invoices post as they do, and the contracted MRR is worked out from it."
+    },
+    "subscription.amend": {
+      "label": "Amend",
+      "tooltip": "Record an upgrade, downgrade, cancellation or renewal from a day. A day in a closed month is refused, and each change goes after the last."
+    },
     "psp.post-invoices": {
       "label": "Issue the drafts",
       "tooltip": "Issue the invoices Fyniq drafted from your provider's, each only when its total, GST included, is the provider's to the cent. Any other waits for a person."

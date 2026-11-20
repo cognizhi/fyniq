@@ -3878,6 +3878,32 @@ type FyniqStatutoryPackVersions struct {
 	LoadedAt      time.Time
 }
 
+type FyniqSubscriptionAmendment struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ContractID     uuid.UUID
+	Kind           string
+	EffectiveOn    time.Time
+	Mrr            string
+	Reason         string
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
+type FyniqSubscriptionContract struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ContactID      uuid.UUID
+	Name           string
+	Currency       string
+	StartsOn       time.Time
+	EndsOn         pgtype.Date
+	Mrr            string
+	Version        int32
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
 type FyniqSuperAdmin struct {
 	UserID    uuid.UUID
 	AddedAt   time.Time

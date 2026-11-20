@@ -1178,6 +1178,12 @@ var (
 	// made of them is the right to post on "Invoices".
 	ListPaymentProviderInvoices = Policy{Operation: "getPaymentProviderInvoices", Capability: BankTransactions, Need: View}
 	PostPaymentProviderInvoices = Policy{Operation: "postPaymentProviderInvoices", Capability: Invoices, Need: Post}
+	// Subscription contracts and their dated amendments (FR-AR-15): records, not postings, entered by those who may post invoices, read by those who see them.
+	CreateSubscriptionContract = Policy{Operation: "createSubscriptionContract", Capability: Invoices, Need: Post}
+	ListSubscriptionContracts  = Policy{Operation: "listSubscriptionContracts", Capability: Invoices, Need: View}
+	GetSubscriptionContract    = Policy{Operation: "getSubscriptionContract", Capability: Invoices, Need: View}
+	AmendSubscriptionContract  = Policy{Operation: "amendSubscriptionContract", Capability: Invoices, Need: Post}
+	GetContractedMRR           = Policy{Operation: "getContractedMRR", Capability: Invoices, Need: View}
 	CreateInvoiceDispute        = Policy{Operation: "createInvoiceDispute", Capability: Invoices, Need: Post}
 	GetInvoiceDisputes          = Policy{Operation: "getInvoiceDisputes", Capability: Invoices, Need: View}
 	ResolveInvoiceDispute       = Policy{Operation: "resolveInvoiceDispute", Capability: Invoices, Need: Post}
@@ -2183,7 +2189,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid, RequestBankRuleAutoApply,
-	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, SettleDisputeCredit, CreateInvoicePaymentLink, GetInvoicePaymentLink, CancelInvoicePaymentLink, ListPaymentProviderInvoices, PostPaymentProviderInvoices, CreateInvoiceDispute, GetInvoiceDisputes, ResolveInvoiceDispute, CreatePortalLink, GetContactPortalLinks, RevokePortalLink, GetPortal, GetPortalInvoicePDF, GetPortalStatement, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
+	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, SettleDisputeCredit, CreateInvoicePaymentLink, GetInvoicePaymentLink, CancelInvoicePaymentLink, ListPaymentProviderInvoices, PostPaymentProviderInvoices, CreateInvoiceDispute, GetInvoiceDisputes, ResolveInvoiceDispute, CreateSubscriptionContract, ListSubscriptionContracts, GetSubscriptionContract, AmendSubscriptionContract, GetContractedMRR, CreatePortalLink, GetContactPortalLinks, RevokePortalLink, GetPortal, GetPortalInvoicePDF, GetPortalStatement, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
 	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
 	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
 	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,

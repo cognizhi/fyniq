@@ -112,6 +112,8 @@ type UnitOfWork interface {
 	PortalLinks() PortalLinks
 	// InvoiceDisputes are the disputes and promises to pay beside invoices (FR-AR-08).
 	InvoiceDisputes() InvoiceDisputes
+	// Subscriptions are the subscription contracts and their amendments (FR-AR-15).
+	Subscriptions() Subscriptions
 	Notifications() Notifications
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates

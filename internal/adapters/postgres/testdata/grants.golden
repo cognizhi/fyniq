@@ -667,6 +667,11 @@ fyniq_api       INSERT    statutory_pack_activation (activated_at, approval_id, 
 fyniq_api       SELECT    statutory_pack_activation
 fyniq_api       SELECT    statutory_pack_rows
 fyniq_api       SELECT    statutory_pack_versions
+fyniq_api       INSERT    subscription_amendment (contract_id, created_at, created_by, effective_on, kind, mrr, reason)
+fyniq_api       SELECT    subscription_amendment
+fyniq_api       INSERT    subscription_contract (contact_id, created_at, created_by, currency, ends_on, mrr, name, starts_on)
+fyniq_api       SELECT    subscription_contract
+fyniq_api       UPDATE    subscription_contract (version)
 fyniq_api       EXECUTE   super_admin_for_identity()
 fyniq_api       EXECUTE   super_admin_list()
 fyniq_api       EXECUTE   switch_session_organisation()
@@ -1089,6 +1094,8 @@ fyniq_readonly  SELECT    statement_mapping
 fyniq_readonly  SELECT    statutory_pack_activation
 fyniq_readonly  SELECT    statutory_pack_rows
 fyniq_readonly  SELECT    statutory_pack_versions
+fyniq_readonly  SELECT    subscription_amendment
+fyniq_readonly  SELECT    subscription_contract
 fyniq_readonly  SELECT    team_mode
 fyniq_readonly  SELECT    tick_drill
 fyniq_readonly  SELECT    time_entry
@@ -1494,6 +1501,8 @@ fyniq_worker    SELECT    statement_mapping
 fyniq_worker    SELECT    statutory_pack_activation
 fyniq_worker    SELECT    statutory_pack_rows
 fyniq_worker    SELECT    statutory_pack_versions
+fyniq_worker    SELECT    subscription_amendment
+fyniq_worker    SELECT    subscription_contract
 fyniq_worker    EXECUTE   super_admin_users()
 fyniq_worker    SELECT    team_mode
 fyniq_worker    EXECUTE   tenant_rows()

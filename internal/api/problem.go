@@ -57,6 +57,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/dimension"
 	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/disputes"
+	"github.com/cognizhi/fyniq/internal/domain/subscription"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
@@ -947,6 +948,12 @@ var codeFacts = map[string]struct {
 	disputes.CodeDate:         {422, "The promised day is not valid"},
 	disputes.CodeOpen:         {409, "The invoice has an open record of that kind"},
 	disputes.CodeWords:        {422, "A reason or resolution is needed"},
+	subscription.CodeContact:  {422, "A subscription is for an active customer"},
+	subscription.CodeTerms:    {422, "The subscription's terms are not valid"},
+	subscription.CodeKind:     {422, "The amendment does not fit what the contract is that day"},
+	subscription.CodeDate:     {422, "The amendment's day is not valid"},
+	subscription.CodeAmount:   {422, "The amendment's monthly value is not valid"},
+	subscription.CodeReason:   {422, "An amendment needs its reason"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},
@@ -1453,6 +1460,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		bke *banking.Error
 		plk *paymentlink.Error
 		dsp *disputes.Error
+		sub *subscription.Error
 		pfe *paymentfile.Error
 		cle *claim.Error
 		dre *director.Error
@@ -1555,6 +1563,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return payeeProblems(pyp).(*Problem)
 	case errors.As(err, &dsp):
 		return problem(dsp.Code, sentence(dsp.Message), sentence(dsp.Fix))
+	case errors.As(err, &sub):
+		return problem(sub.Code, sentence(sub.Message), sentence(sub.Fix))
 	case errors.As(err, &plk):
 		return problem(plk.Code, sentence(plk.Message), sentence(plk.Fix))
 	case errors.As(err, &bke):

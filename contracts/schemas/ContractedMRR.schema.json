@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active": {
+      "description": "How many contracts are active.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "currency": {
+      "description": "The currency: totals are not converted.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "mrr": {
+      "$ref": "Money.schema.json",
+      "description": "The monthly value of the contracts active that day."
+    }
+  },
+  "required": [
+    "currency",
+    "mrr",
+    "active"
+  ],
+  "title": "ContractedMRR",
+  "type": "object"
+}
