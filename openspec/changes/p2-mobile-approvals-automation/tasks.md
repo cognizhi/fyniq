@@ -2,11 +2,15 @@
 
 ## 1. Decisions and specs
 - [ ] 1.1 PRD-001 records the decisions; the specs are updated and stamped. `// req: FR-APR-06`
+  (Done per slice: each built task adds its PRD revision, spec scenario and stamp; rev 0.618 for section 2.)
 
 ## 2. Approvals
-- [ ] 2.1 Delegation of approval authority (D1). `// req: FR-APR-06`, `// req: QA-SEC-03`
-- [ ] 2.2 Reminders and escalation, notify only (D2). `// req: FR-APR-08`
+- [x] 2.1 Delegation of approval authority (D1). `// req: FR-APR-06`, `// req: QA-SEC-03`
+  (Built, rev 0.618, `[owner to confirm]`: migration 001200/001201, `approval_delegation` and `approval_signature.on_behalf_of`, the trigger refusing a signature without a live delegation on its signing day (FYD02), `approval.StandIn`, the three operations with matrix rows, the screen Delegations at `/delegations`, the guide and knowledge pages, the design fragment, and the grants listed for review. Tests: `TestAttackDelegationsLendNoMoreThanTheirDaysAndAreKept`, `TestADelegateSignsTheStepOfTheDelegatorForItsDaysAndNoMore`, `TestADelegatorAndTheirDelegateCountOnceInAQuorum`. **Left:** a delegation by object type or role.)
+- [x] 2.2 Reminders and escalation, notify only (D2). `// req: FR-APR-08`
+  (Built, rev 0.618: the hourly job `approvals.remind`, the settings `approvals.reminder_hours` and `approvals.escalate_hours`, the insert-only `approval_reminder` log, the types `approval.reminder`, `approval.escalated`, `approval.delegated`; `TestAPendingApprovalIsRemindedAndEscalatedButNeverDecided`.)
 - [ ] 2.3 Approve by email link and in the PWA (D3). `// req: FR-APR-07`
+  (Built, rev 0.618: the email half, a link with no token and no action; a test that the approval email's link opens the request is part of the notification fan-out. **Left:** the installable PWA half, with 4.1.)
 
 ## 3. Automation
 - [ ] 3.1 Workflow rules without code (D5). `// req: FR-AUT-03`
