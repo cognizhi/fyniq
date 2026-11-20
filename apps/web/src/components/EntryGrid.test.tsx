@@ -90,6 +90,7 @@ describe("EntryGrid", () => {
     const input = type("Rent");
     key(input, "Enter");
     expect(latest[1]!.memo).toBe("Rent");
+    expect(screen.getByRole("status").textContent).toBe("Memo, row 2, set to Rent"); // a change is announced politely (WCAG 4.1.3)
     expect(active().id).toBe(cell(2, 1)!.id);
     key(active(), "Enter");
     key(screen.getByRole("textbox"), "Escape");

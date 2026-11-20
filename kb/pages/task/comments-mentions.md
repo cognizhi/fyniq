@@ -4,7 +4,7 @@ type: task
 title: Comment on a record and mention a colleague
 summary: Leave a note on an invoice, bill, journal, claim, quote, order or contact, and mention a colleague who may see it
 sources:
-  - docs/user-guide/comments-and-mentions.md sha256:2c5d35ec6f0facd77877d4333cc2c1f15aedb2feae0677e62bc7afe24d4303c5
+  - docs/user-guide/comments-and-mentions.md sha256:8bce91a57da743e922c0758ffdca39c6b962abc2329a3758b15049f5452b6ad1
 data_class: general
 taint: trusted
 status: draft
@@ -39,7 +39,7 @@ aliases:
 
 ## Add a comment
 
-1. Open the record and find **Comments**: on a contact it is the **Activity** tab; on a bill, an invoice or a journal, select **Show comments**.
+1. Open the record and find **Comments**: it is the **Activity** tab of a bill, an invoice, a journal or a contact.
 2. Write in **Add a comment**, up to 2,000 characters.
 3. To mention someone, type **@** and the start of a name, choose with the arrow keys and **Enter**, and go on writing.
 4. Select **Add comment**: it is kept on the record and each person mentioned is told. You are not told of your own.

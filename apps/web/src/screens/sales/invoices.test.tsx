@@ -264,8 +264,10 @@ describe("An invoice", () => {
     const totals = screen.getByRole("heading", { name: "Totals" }).closest("section")!;
     expect(totals.textContent).toContain("GST SR on 3,000.00");
     expect(totals.textContent).toContain("3,270.00 SGD");
+    fireEvent.click(screen.getByRole("tab", { name: "Ledger impact" }));
     expect(screen.getByText(/This invoice adds SGD 3,270.00 to what Acme Analytics Pte Ltd owes/)).toBeTruthy();
     await noViolations(container);
+    fireEvent.click(screen.getByRole("tab", { name: "Details" }));
     fireEvent.click(screen.getByRole("button", { name: "Issue" }));
     await waitFor(() => expect(sent.some((s) => s.method === "POST" && s.path === "/v1/invoices/v1/issue")).toBe(true));
     expect(sent.find((s) => s.path === "/v1/invoices/v1/issue")!.headers.get("If-Match")).toBe(`"1-draft"`);

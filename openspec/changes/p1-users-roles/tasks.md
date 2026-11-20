@@ -66,7 +66,7 @@
   (`TestScopesNarrowAClientToWholeAreas`, tagged `Integration principal`).)
 ## 2. People and sign-in
 
-- [ ] 2.1 Invitations with roles, scopes and expiry. Tests `// req: FR-ADM-01` and `// req: SEC-06`, including the quarterly review list of external users
+- [x] 2.1 Invitations with roles, scopes and expiry. Tests `// req: FR-ADM-01` and `// req: SEC-06`, including the quarterly review list of external users
   (20 Oct 2026, built before `p1-approval-engine` so the founders can work in Fyniq: PRD-001 rev 0.35's founder
   bootstrap. Migration 000029 adds `member_invitation` (a one-time code kept as its SHA-256, valid 7 days, withdrawable,
   accepted once), `accept_member_invitation` (in whichever organisation holds the code, under its row-level security;
@@ -91,6 +91,10 @@
   the second Owner signs them with the invitation; the redeemed role holds them from the first minute;
   `TestAnInvitationNarrowsTheApproverRoleItGives`, `TestAttackAnInvitationsDepartmentScopeNeedsTheApproverRole`), and the invite dialog offers
   the departments. **Left:** invitation emails (`p1-templates-email`); this task stays open for them alone.)
+  (20 Nov 2026, PRD-001 rev 0.385: an invitation can carry an email address, to which one message goes, at once in the bootstrap and otherwise once the
+  invitation is approved; it names the organisation and says to ask the inviter for the code, which is never in an email, and the address is not kept
+  (migrations 000709, 000710; `TestAnInvitationEmailNeverCarriesTheCode`). Decided [owner to confirm]: the code stays given in person or on a call.
+  Built: invitation emails. **Left:** nothing in this task.)
 - [x] 2.2 Mandatory MFA: TOTP through the `SignIn` port's fake, WebAuthn passkeys in the API, no SMS. Tests `// req: FR-ADM-02` (P1 part) and `// req: SEC-01`, with a replayed assertion refused; sign-in and step-up allow password managers, paste and passkeys (the sign-in half of NFR-A11Y-05, which `p1-app-shell` closes)
   (20 Oct 2026, provisional (PRD rev 0.43): TOTP stays with the sign-in provider; the local sign-in page's second factor
   is its fake, ticked by default. Passkeys in the API (`internal/passkey`, go-webauthn v0.18.2; attestation "none", user

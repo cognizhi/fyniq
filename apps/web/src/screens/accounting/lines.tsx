@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { CircleCheck, CircleX, Plus, Trash2 } from "lucide-react";
+import { CircleCheck, CircleX, ClipboardPaste, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 import type { AdvancedDetail } from "../../components/AdvancedDetails";
@@ -9,6 +10,7 @@ import { date as dateOf } from "../../format/date";
 import { isZero, minus, sign, sum, typed } from "../../format/decimal";
 import { Icon, problemOf } from "../../ui";
 import { enteredOrigins, isDirectorAccount, originWords, useDirectors } from "../founders/data";
+import { PasteLines } from "./PasteLines";
 import { listDimensions, type Account, type Dimension, type DimensionValue } from "./data";
 
 type Draft = components["schemas"]["JournalDraft"];
@@ -341,6 +343,7 @@ export function DimensionFields({ ids, keyPrefix, n, prefix, account, set, descr
 // whether they balance as typed (FR-GL-01). The journal editor and the recurring journal editor share it; on is the
 // journal's date, which a line left without a rate takes its rate for.
 export function LineEditor({ id, lines, onChange, base, choices, byId, errors, title = "Lines", on }: { id: string; lines: Line[]; onChange: (lines: Line[]) => void; base: string; choices: Account[]; byId: Map<string, Account>; errors: Errors; title?: string; on?: string }) {
+  const [pasting, setPasting] = useState(false);
   const setLine = (key: string, field: keyof Line, value: string) => onChange(lines.map((l) => (l.key === key ? { ...l, [field]: value } : l)));
   const list = balances({ lines }, base);
   const fieldError = (key: string) =>
@@ -441,10 +444,17 @@ export function LineEditor({ id, lines, onChange, base, choices, byId, errors, t
         })}
       </ol>
       <div className="fy-card__foot fy-row fy-row--wrap fy-row--between gap-2">
-        <Button variant="ghost" size="sm" type="button" onClick={() => onChange([...lines, newLine(base)])}>
-          <Icon of={Plus} />
-          Add a line
-        </Button>
+        <div className="fy-row fy-row--wrap gap-2">
+          <Button variant="ghost" size="sm" type="button" onClick={() => onChange([...lines, newLine(base)])}>
+            <Icon of={Plus} />
+            Add a line
+          </Button>
+          <Button variant="ghost" size="sm" type="button" className="fy-expert-only" onClick={() => setPasting(true)} title="Enter or paste several lines in a grid, with a preview of what a paste would set">
+            <Icon of={ClipboardPaste} />
+            Enter lines in a grid
+          </Button>
+        </div>
+        <PasteLines open={pasting} onClose={() => setPasting(false)} accounts={choices} base={base} onAdd={(added) => onChange([...lines.filter((l) => !blank(l)), ...added])} />
         <BalanceStatus list={list} base={base} />
       </div>
       {errors.lines && <p className="fy-error px-4 pb-3">{errors.lines}</p>}

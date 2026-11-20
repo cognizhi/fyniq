@@ -4,7 +4,7 @@ type: task
 title: Invite someone, or join with an invitation
 summary: Create a one-time invitation with roles, give the code in person, withdraw it if unused, and join a company with a code
 sources:
-  - docs/user-guide/members-and-roles.md sha256:1faa11eb485d6e58f44b430e804de5639a3a53be80a35e11446ed8bc1dc3b42e
+  - docs/user-guide/members-and-roles.md sha256:af4746970713ccd3bb7a35fe0e092599a2cf734948001eba8e5f132ccea9bfa5
 data_class: general
 taint: trusted
 status: published
@@ -29,6 +29,7 @@ aliases:
 - **Settings → Members and roles**, then **Invite**: the person's name and their roles ([[members.roles]] explains roles).
 - For someone from outside the company, such as an auditor, set the date their roles end; the Owner role never ends.
 - If you choose **Approver**, tick the departments it acts for ([[members.roles]]); the other Owner approves them with the invitation.
+- Optionally enter **Their email**: they are told they were invited and to ask you for the code, which is never in the email; the address is not kept, and with another Owner's approval the email goes once it is approved.
 - **Create invitation** (confirming it's you if asked) shows the code once: copy it and give it in person or on a call. It works once and stops working after 7 days.
 - Under **Invitations not yet used**, **Withdraw** one and its code stops working at once.
 

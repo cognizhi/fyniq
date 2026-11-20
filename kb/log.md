@@ -799,3 +799,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | payroll-records.md -> nemura.payroll-records (election kind)
 
 ## [2026-11-20] compile | shell.shortcuts: working in a grid
+
+## [2026-11-20] compile | members.invite, records.comments, accounting.journals: invitation email, grid, record tabs

@@ -148,7 +148,11 @@ export function EntryGrid<R extends Record<string, string>>({ label, columns, ro
     const cells = all
       ? Array.from({ length: block.r2 - block.r1 + 1 }, (_, i) => ({ r: block.r1 + i, key: col.key, value }))
       : [{ r: active.r, key: col.key, value }];
-    commit(setCells(rows, cells), all && cells.length > 1 ? `${cells.length} cells set` : undefined);
+    const was = rows[active.r]?.[col.key] ?? "";
+    commit(
+      setCells(rows, cells),
+      all && cells.length > 1 ? `${cells.length} cells set` : value !== was ? `${col.title}, row ${active.r + 1}, set to ${value === "" ? "empty" : col.kind === "choice" ? (col.choices?.find((c) => c.value === value)?.label ?? value) : value}` : undefined,
+    );
     setEditing(null);
     if (move) go(move);
     else refocus.current = true;

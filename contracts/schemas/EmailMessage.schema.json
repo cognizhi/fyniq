@@ -70,7 +70,8 @@
         "reminder",
         "statement",
         "remittance",
-        "secretary_reminder"
+        "secretary_reminder",
+        "invitation"
       ],
       "examples": [
         "test"

@@ -5,6 +5,7 @@ import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
 import { CommentsOnDemand } from "../../components/RecordComments";
+import { RecordFrame } from "../../components/RecordFrame";
 import { Refusal } from "../../components/Refusal";
 import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
@@ -584,246 +585,257 @@ export function JournalPage() {
   );
 
   return (
-    <div className="fy-page fy-enter">
-      <div className="fy-pagehead">
-        <div className="fy-pagehead__text">
-          <nav className="fy-breadcrumb" aria-label="Breadcrumb">
-            <Link to="/accounting">Accounting</Link>
-            <span aria-hidden="true">›</span>
-            <Link to="/accounting/journals">Journals</Link>
-          </nav>
-          <div className="fy-row fy-row--wrap gap-2">
-            <h1 className="fy-h1">{title}</h1>
-            {j && <StatusChip status={j.status} />}
-            {j && j.status !== "draft" && <CheckChip checks={j.checks} />}
-          </div>
-          {j && (j.prepared_by || j.posted_by) && (
-            <p className="fy-secondary">
-              {[j.prepared_by && `Prepared by ${who(j.prepared_by)}`, j.posted_by && `posted by ${who(j.posted_by)}${j.posted_at ? ` on ${dateTime(j.posted_at)}` : ""}`].filter(Boolean).join(" · ")}
-            </p>
-          )}
-          {j?.recurring_journal && (
-            <p className="fy-small">
-              <Icon of={Repeat} /> Made by the scheduler from{" "}
-              <Link to="/accounting/journals/recurring/$recurringId" params={{ recurringId: j.recurring_journal.id }}>
-                a recurring journal
-              </Link>{" "}
-              (version {j.recurring_journal.version}). Whoever wrote its lines does not approve its posting.
-            </p>
-          )}
-        </div>
-        <div className="fy-pagehead__actions fy-from-medium">
-          {j && journalId && <AskAboutThis context={{ kind: "journal", id: journalId, label: title.slice(0, 200) }} />}
-          {actions}
-          {editActions}
-          {reverseButton}
-        </div>
-      </div>
-      <ReviewBanner screen="journal-editor" />
-      <p className="fy-small" role="status">
-        {status}
-      </p>
-      {one.isError && <Refusal problem={problemOf(one.error)} title="The journal could not be shown" />}
-      {asked && (
-        <div className="fy-banner fy-banner--info" role="note">
-          <Icon of={Clock} size={20} />
-          <div className="fy-banner__text">
-            <strong>{j?.status === "draft" ? "A request to post this journal waits for approval" : "A request to change this journal waits for approval"}</strong>
-            <span className="fy-small">
-              {j?.status === "draft" ? "Another person approves it, and it posts then. Changing the draft cancels the request." : "Another person approves the edit or the reversal, and it posts then."}
-            </span>
-          </div>
-          <div className="fy-banner__action">
-            <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/approvals/$approvalId" params={{ approvalId: asked }}>
-              See the request
-            </Link>
-          </div>
-        </div>
-      )}
-      {problem?.code === overThreshold && (
-        <div className="fy-banner fy-banner--info" role="note">
-          <Icon of={UserCheck} size={20} />
-          <div className="fy-banner__text">
-            <strong>Another person approves this journal</strong>
-            <span className="fy-small">{problem.detail} The one who prepared it never approves it.</span>
-          </div>
-          {mayPost && (
-            <div className="fy-banner__action">
-              <Button size="sm" variant="primary" onClick={() => void (editingPosted ? askEdit() : askPost())} disabled={busy} title={askHelp.tooltip}>
-                <Icon of={UserCheck} />
-                {askHelp.label}
-              </Button>
+    <>
+      <RecordFrame
+        header={
+          <>
+          <div className="fy-pagehead">
+            <div className="fy-pagehead__text">
+              <nav className="fy-breadcrumb" aria-label="Breadcrumb">
+                <Link to="/accounting">Accounting</Link>
+                <span aria-hidden="true">›</span>
+                <Link to="/accounting/journals">Journals</Link>
+              </nav>
+              <div className="fy-row fy-row--wrap gap-2">
+                <h1 className="fy-h1">{title}</h1>
+                {j && <StatusChip status={j.status} />}
+                {j && j.status !== "draft" && <CheckChip checks={j.checks} />}
+              </div>
+              {j && (j.prepared_by || j.posted_by) && (
+                <p className="fy-secondary">
+                  {[j.prepared_by && `Prepared by ${who(j.prepared_by)}`, j.posted_by && `posted by ${who(j.posted_by)}${j.posted_at ? ` on ${dateTime(j.posted_at)}` : ""}`].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              {j?.recurring_journal && (
+                <p className="fy-small">
+                  <Icon of={Repeat} /> Made by the scheduler from{" "}
+                  <Link to="/accounting/journals/recurring/$recurringId" params={{ recurringId: j.recurring_journal.id }}>
+                    a recurring journal
+                  </Link>{" "}
+                  (version {j.recurring_journal.version}). Whoever wrote its lines does not approve its posting.
+                </p>
+              )}
             </div>
-          )}
-        </div>
-      )}
-      {problem && problem.code !== overThreshold && (
-        <>
-          <Refusal problem={problem} title={failed} />
-          {problem.code === noPeriod && (
-            <p className="fy-small">
-              <Link to="/accounting/close">
-                <Icon of={CalendarPlus} /> Open the financial year in Periods and close
-              </Link>
-            </p>
-          )}
-        </>
-      )}
-      {waiting && (
-        <div className="fy-banner fy-banner--warning" role="status">
-          <Icon of={TriangleAlert} size={20} />
-          <div className="fy-banner__text">
-            <strong>{waiting.title}</strong>
-            <span className="fy-small">
-              {waiting.detail} {waiting.fix ? `${waiting.fix}.` : ""}
-            </span>
+            <div className="fy-pagehead__actions fy-from-medium">
+              {j && journalId && <AskAboutThis context={{ kind: "journal", id: journalId, label: title.slice(0, 200) }} />}
+              {actions}
+              {editActions}
+              {reverseButton}
+            </div>
           </div>
-          <div className="fy-banner__action">
-            <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/accounting/close">
-              <Icon of={CalendarPlus} /> Periods and close
-            </Link>
-          </div>
-        </div>
-      )}
-      {!isNew && one.isPending && <p className="fy-secondary">Loading the journal…</p>}
-      {journalId && (j?.status === "posted" || j?.status === "reversed") && roles.some((r) => auditReaders.includes(r)) && <PurgedPostings recordId={journalId} />}
-      {j?.status === "draft" && !dirty && j.checks && <Checks checks={j.checks} />}
-      {isNew && !mayPrepare && <p className="fy-secondary">An Accountant or a Tax agent prepares journals.</p>}
-
-      {f && (editable || editingPosted) && (
-        <form id={`${id}-form`} className="fy-stack fy-stack--6" data-enter="next" onSubmit={editingPosted ? (e) => e.preventDefault() : onSave} noValidate>
-          {editingPosted && (
-            <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby={`${id}-why`}>
-              <h2 className="fy-h3" id={`${id}-why`}>
-                Edit the posted journal
-              </h2>
-              <p className="fy-small fy-secondary">
-                The entry it has is reversed on its own date, {j?.date ? date(j.date) : "the journal's date"}, and the new version posts on the date below, both at once. Both
-                months must be open. {founder ? "In Founder mode another founder approves the edit first." : ""}
+              <p className="fy-small" role="status">
+                {status}
               </p>
-              <div className="fy-field">
-                <label className="fy-label" htmlFor={`${id}-reason`}>
-                  Why it is edited
-                </label>
-                <textarea
-                  className="fy-textarea"
-                  id={`${id}-reason`}
-                  value={reason}
-                  maxLength={500}
-                  onChange={(e) => {
-                    setReason(e.target.value);
-                    setReasonMissing(false);
-                  }}
-                  aria-invalid={reasonMissing || undefined}
-                  aria-describedby={reasonMissing ? `${id}-reason-error` : undefined}
-                />
-                {reasonMissing && (
-                  <span className="fy-error" id={`${id}-reason-error`}>
-                    Say why: the audit trail and the reversal keep the reason.
-                  </span>
-                )}
-              </div>
-            </section>
-          )}
-          <section className="fy-card" aria-labelledby={`${id}-head`}>
-            <div className="fy-card__head">
-              <h2 className="fy-h3" id={`${id}-head`}>
-                Journal
-              </h2>
-            </div>
-            <div className="fy-card__body fy-form fy-form--2">
-              <div className="fy-field">
-                <label className="fy-label" htmlFor={`${id}-date`}>
-                  Date
-                </label>
-                <input className="fy-input" id={`${id}-date`} type="date" value={f.date} onChange={(e) => change({ ...f, date: e.target.value })} aria-invalid={errors.date ? true : undefined} aria-describedby={described("date")} />
-                {fieldError("date")}
-              </div>
-              <div className="fy-field">
-                <label className="fy-label" htmlFor={`${id}-memo`}>
-                  Description
-                </label>
-                <input className="fy-input" id={`${id}-memo`} value={f.memo} maxLength={1000} placeholder="What the journal is for" onChange={(e) => change({ ...f, memo: e.target.value })} />
-              </div>
-              <div className="fy-field">
-                <label className="fy-row gap-2 fy-label">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(f.reverse_on)}
-                    onChange={(e) => change({ ...f, reverse_on: e.target.checked ? firstOfNextMonth(f.date || today()) : "" })}
-                    title={reverseOnHelp.tooltip}
+          </>
+        }
+        tabs={{
+          details: (
+            <>
+              <ReviewBanner screen="journal-editor" />
+              {one.isError && <Refusal problem={problemOf(one.error)} title="The journal could not be shown" />}
+              {asked && (
+                <div className="fy-banner fy-banner--info" role="note">
+                  <Icon of={Clock} size={20} />
+                  <div className="fy-banner__text">
+                    <strong>{j?.status === "draft" ? "A request to post this journal waits for approval" : "A request to change this journal waits for approval"}</strong>
+                    <span className="fy-small">
+                      {j?.status === "draft" ? "Another person approves it, and it posts then. Changing the draft cancels the request." : "Another person approves the edit or the reversal, and it posts then."}
+                    </span>
+                  </div>
+                  <div className="fy-banner__action">
+                    <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/approvals/$approvalId" params={{ approvalId: asked }}>
+                      See the request
+                    </Link>
+                  </div>
+                </div>
+              )}
+              {problem?.code === overThreshold && (
+                <div className="fy-banner fy-banner--info" role="note">
+                  <Icon of={UserCheck} size={20} />
+                  <div className="fy-banner__text">
+                    <strong>Another person approves this journal</strong>
+                    <span className="fy-small">{problem.detail} The one who prepared it never approves it.</span>
+                  </div>
+                  {mayPost && (
+                    <div className="fy-banner__action">
+                      <Button size="sm" variant="primary" onClick={() => void (editingPosted ? askEdit() : askPost())} disabled={busy} title={askHelp.tooltip}>
+                        <Icon of={UserCheck} />
+                        {askHelp.label}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+              {problem && problem.code !== overThreshold && (
+                <>
+                  <Refusal problem={problem} title={failed} />
+                  {problem.code === noPeriod && (
+                    <p className="fy-small">
+                      <Link to="/accounting/close">
+                        <Icon of={CalendarPlus} /> Open the financial year in Periods and close
+                      </Link>
+                    </p>
+                  )}
+                </>
+              )}
+              {waiting && (
+                <div className="fy-banner fy-banner--warning" role="status">
+                  <Icon of={TriangleAlert} size={20} />
+                  <div className="fy-banner__text">
+                    <strong>{waiting.title}</strong>
+                    <span className="fy-small">
+                      {waiting.detail} {waiting.fix ? `${waiting.fix}.` : ""}
+                    </span>
+                  </div>
+                  <div className="fy-banner__action">
+                    <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/accounting/close">
+                      <Icon of={CalendarPlus} /> Periods and close
+                    </Link>
+                  </div>
+                </div>
+              )}
+              {!isNew && one.isPending && <p className="fy-secondary">Loading the journal…</p>}
+              {journalId && (j?.status === "posted" || j?.status === "reversed") && roles.some((r) => auditReaders.includes(r)) && <PurgedPostings recordId={journalId} />}
+              {j?.status === "draft" && !dirty && j.checks && <Checks checks={j.checks} />}
+              {isNew && !mayPrepare && <p className="fy-secondary">An Accountant or a Tax agent prepares journals.</p>}
+        
+              {f && (editable || editingPosted) && (
+                <form id={`${id}-form`} className="fy-stack fy-stack--6" data-enter="next" onSubmit={editingPosted ? (e) => e.preventDefault() : onSave} noValidate>
+                  {editingPosted && (
+                    <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby={`${id}-why`}>
+                      <h2 className="fy-h3" id={`${id}-why`}>
+                        Edit the posted journal
+                      </h2>
+                      <p className="fy-small fy-secondary">
+                        The entry it has is reversed on its own date, {j?.date ? date(j.date) : "the journal's date"}, and the new version posts on the date below, both at once. Both
+                        months must be open. {founder ? "In Founder mode another founder approves the edit first." : ""}
+                      </p>
+                      <div className="fy-field">
+                        <label className="fy-label" htmlFor={`${id}-reason`}>
+                          Why it is edited
+                        </label>
+                        <textarea
+                          className="fy-textarea"
+                          id={`${id}-reason`}
+                          value={reason}
+                          maxLength={500}
+                          onChange={(e) => {
+                            setReason(e.target.value);
+                            setReasonMissing(false);
+                          }}
+                          aria-invalid={reasonMissing || undefined}
+                          aria-describedby={reasonMissing ? `${id}-reason-error` : undefined}
+                        />
+                        {reasonMissing && (
+                          <span className="fy-error" id={`${id}-reason-error`}>
+                            Say why: the audit trail and the reversal keep the reason.
+                          </span>
+                        )}
+                      </div>
+                    </section>
+                  )}
+                  <section className="fy-card" aria-labelledby={`${id}-head`}>
+                    <div className="fy-card__head">
+                      <h2 className="fy-h3" id={`${id}-head`}>
+                        Journal
+                      </h2>
+                    </div>
+                    <div className="fy-card__body fy-form fy-form--2">
+                      <div className="fy-field">
+                        <label className="fy-label" htmlFor={`${id}-date`}>
+                          Date
+                        </label>
+                        <input className="fy-input" id={`${id}-date`} type="date" value={f.date} onChange={(e) => change({ ...f, date: e.target.value })} aria-invalid={errors.date ? true : undefined} aria-describedby={described("date")} />
+                        {fieldError("date")}
+                      </div>
+                      <div className="fy-field">
+                        <label className="fy-label" htmlFor={`${id}-memo`}>
+                          Description
+                        </label>
+                        <input className="fy-input" id={`${id}-memo`} value={f.memo} maxLength={1000} placeholder="What the journal is for" onChange={(e) => change({ ...f, memo: e.target.value })} />
+                      </div>
+                      <div className="fy-field">
+                        <label className="fy-row gap-2 fy-label">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(f.reverse_on)}
+                            onChange={(e) => change({ ...f, reverse_on: e.target.checked ? firstOfNextMonth(f.date || today()) : "" })}
+                            title={reverseOnHelp.tooltip}
+                          />
+                          {reverseOnHelp.label}
+                        </label>
+                        {f.reverse_on && (
+                          <>
+                            <label className="fy-sr" htmlFor={`${id}-reverse-on`}>
+                              Reversal date
+                            </label>
+                            <input
+                              className="fy-input"
+                              id={`${id}-reverse-on`}
+                              type="date"
+                              value={f.reverse_on}
+                              min={f.date || undefined}
+                              onChange={(e) => change({ ...f, reverse_on: e.target.value })}
+                              aria-invalid={errors.reverse_on ? true : undefined}
+                              aria-describedby={described("reverse_on") ?? `${id}-reverse-on-help`}
+                            />
+                            {fieldError("reverse_on") ?? (
+                              <span className="fy-help" id={`${id}-reverse-on-help`}>
+                                Fyniq posts the reversal on this date by itself once the journal is posted, as for an accrual reversing on the first of the next month.
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+        
+                  <LineEditor id={id} lines={f.lines} onChange={(lines) => change({ ...f, lines })} base={base} choices={choices} byId={byId} errors={errors} on={f.date} />
+                </form>
+              )}
+        
+              {j && !editable && !editingPosted && f && (
+                <section className="fy-card" aria-labelledby={`${id}-read`}>
+                  <div className="fy-card__head">
+                    <h2 className="fy-h3" id={`${id}-read`}>
+                      {j.date ? date(j.date) : "No date yet"}
+                    </h2>
+                    {j.status === "draft" && <span className="fy-small fy-muted">An Accountant or a Tax agent changes drafts.</span>}
+                    {j.reverse_on && j.status !== "reversed" && <span className="fy-chip fy-chip--neutral">Reverses by itself on {date(j.reverse_on)}</span>}
+                  </div>
+                  <Lines
+                    caption="Lines as entered"
+                    accounts={byId}
+                    base={base}
+                    lines={(j.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.amount.amount, currency: l.amount.currency, rate: l.fx_rate }))}
                   />
-                  {reverseOnHelp.label}
-                </label>
-                {f.reverse_on && (
-                  <>
-                    <label className="fy-sr" htmlFor={`${id}-reverse-on`}>
-                      Reversal date
-                    </label>
-                    <input
-                      className="fy-input"
-                      id={`${id}-reverse-on`}
-                      type="date"
-                      value={f.reverse_on}
-                      min={f.date || undefined}
-                      onChange={(e) => change({ ...f, reverse_on: e.target.value })}
-                      aria-invalid={errors.reverse_on ? true : undefined}
-                      aria-describedby={described("reverse_on") ?? `${id}-reverse-on-help`}
-                    />
-                    {fieldError("reverse_on") ?? (
-                      <span className="fy-help" id={`${id}-reverse-on-help`}>
-                        Fyniq posts the reversal on this date by itself once the journal is posted, as for an accrual reversing on the first of the next month.
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          </section>
-
-          <LineEditor id={id} lines={f.lines} onChange={(lines) => change({ ...f, lines })} base={base} choices={choices} byId={byId} errors={errors} on={f.date} />
-        </form>
-      )}
-
-      {j && !editable && !editingPosted && f && (
-        <section className="fy-card" aria-labelledby={`${id}-read`}>
-          <div className="fy-card__head">
-            <h2 className="fy-h3" id={`${id}-read`}>
-              {j.date ? date(j.date) : "No date yet"}
-            </h2>
-            {j.status === "draft" && <span className="fy-small fy-muted">An Accountant or a Tax agent changes drafts.</span>}
-            {j.reverse_on && j.status !== "reversed" && <span className="fy-chip fy-chip--neutral">Reverses by itself on {date(j.reverse_on)}</span>}
-          </div>
-          <Lines
-            caption="Lines as entered"
-            accounts={byId}
-            base={base}
-            lines={(j.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.amount.amount, currency: l.amount.currency, rate: l.fx_rate }))}
-          />
-        </section>
-      )}
-
-      {j && journalId && one.data && (
-        <JournalEvidence journalId={journalId} journalEtag={one.data.etag} draft={j.status === "draft"} mayAttach={roles.some((r) => attachers.includes(r))} onChanged={setStatus} />
-      )}
-
-      {j && journalId && <CommentsOnDemand recordType="journal" recordId={journalId} />}
-
-      {preview && (
-        <section className="fy-card" aria-labelledby={`${id}-preview`}>
-          <div className="fy-card__head">
-            <h2 className="fy-h3" id={`${id}-preview`}>
-              What posting writes, in {base}
-            </h2>
-            <span className="fy-chip fy-chip--good">
-              <Icon of={CircleCheck} />
-              Ready to post
-            </span>
-          </div>
-          <Lines caption="What posting writes" accounts={byId} base={base} lines={(preview.entry.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.base_amount.amount, currency: base, values: l.dimension_value_ids }))} />
-          <p className="fy-small fy-muted px-4 pb-3">A check saves nothing. It posts on {date(preview.entry.posting_date)}.</p>
-        </section>
-      )}
+                </section>
+              )}
+        
+              {preview && (
+              <section className="fy-card" aria-labelledby={`${id}-preview`}>
+                <div className="fy-card__head">
+                  <h2 className="fy-h3" id={`${id}-preview`}>
+                    What posting writes, in {base}
+                  </h2>
+                  <span className="fy-chip fy-chip--good">
+                    <Icon of={CircleCheck} />
+                    Ready to post
+                  </span>
+                </div>
+                <Lines caption="What posting writes" accounts={byId} base={base} lines={(preview.entry.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.base_amount.amount, currency: base, values: l.dimension_value_ids }))} />
+                <p className="fy-small fy-muted px-4 pb-3">A check saves nothing. It posts on {date(preview.entry.posting_date)}.</p>
+              </section>
+          
+              )}
+            </>
+          ),
+          attachments: j && journalId && one.data && (
+              <JournalEvidence journalId={journalId} journalEtag={one.data.etag} draft={j.status === "draft"} mayAttach={roles.some((r) => attachers.includes(r))} onChanged={setStatus} />
+          ),
+          activity: j && journalId && <CommentsOnDemand recordType="journal" recordId={journalId} />,
+        }}
+      />
 
       {edited && (
         <section className="fy-card" aria-labelledby={`${id}-edited`}>
@@ -870,6 +882,6 @@ export function JournalPage() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }

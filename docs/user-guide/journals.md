@@ -27,7 +27,9 @@ credits, and it posts on its date.
 1. Select **New journal**.
 2. Enter the **Date** the journal belongs to and a **Description** of what it is for.
 3. For each line, choose the **account**, add a description if it helps, and enter the amount under
-   **Debit** or **Credit**, never both. Select **Add a line** for more.
+   **Debit** or **Credit**, never both. Select **Add a line** for more. In Expert mode, **Enter lines in a grid**
+   opens a spreadsheet-like grid where you can type, or paste cells from Excel or Google Sheets, and see what was read before anything is set;
+   amounts can be sums such as =1250.50*3. The ready rows are added to the journal, which still checks them.
 4. Watch the balance under the lines: it says **Balanced** once the debits equal the credits in each
    currency.
 5. Select **Save as a draft**.

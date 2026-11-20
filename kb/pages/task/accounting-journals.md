@@ -4,7 +4,7 @@ type: task
 title: Prepare, post and reverse journals
 summary: Prepare, check and post journals, ask for approval, edit or reverse a posted one, attach evidence, recurring journals, reversals that wait
 sources:
-  - docs/user-guide/journals.md sha256:5053d50ed7d305d48abb6a808d6fab0b6f69fafae6e53192c98875c1ad544c5c
+  - docs/user-guide/journals.md sha256:de3988bff9f499bb1c6523381b18bf8436867658a3fbef4e7f2566fb607d166d
 data_class: general
 taint: trusted
 status: draft
@@ -59,7 +59,7 @@ aliases:
 
 ## Prepare a journal
 
-- **New journal**: the **Date** and a **Description**, then each line's account, an optional description, and the amount under **Debit** or **Credit**, never both; **Add a line** for more.
+- **New journal**: the **Date** and a **Description**, then each line's account, an optional description, and the amount under **Debit** or **Credit**, never both; **Add a line** for more; in Expert mode, **Enter lines in a grid** opens a spreadsheet-like grid to type or paste lines (a paste is shown before it is set; amounts can be sums such as =1250.50*3), and adds the ready rows to the journal.
 - The balance under the lines says **Balanced** once debits equal credits in each currency; then **Save as a draft**.
 - Changing a draft and selecting **Save the changes** keeps the earlier version in its history; Fyniq records who saved each version.
 - Type amounts without a sign, as `1,234.56` or `S$1,234.56`; a credit goes under **Credit**. A line in another currency takes its currency code; its **Rate** is how much of the base currency one unit buys.
