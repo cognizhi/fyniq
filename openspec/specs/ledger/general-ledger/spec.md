@@ -394,6 +394,13 @@ Source: PRD-001 §8.8 · Priority S · Phase P2
 - **WHEN** the exceptions report is run
 - **THEN** it lists postings dated near or before a lock date
 
+#### Scenario: A pass is the accountant's alone, with a reason (rev REV)
+- **GIVEN** a soft-locked period, or a locked module of an open one
+- **WHEN** a person with the Accountant role, signed in and stepped up, makes a pass with a reason of at least 10 characters for 1 to 8 hours
+- **THEN** their own postings dated in the period are accepted while the pass lasts, each kept on the exceptions report with the reason
+- **AND** a person who holds no pass, another Accountant, a scheduled job, an integration, an agent and the proposal executor are all refused, whatever roles they hold
+- **AND** releasing a lock needs the approving right, a second factor and a reason, never less than locking, and the hard close of a closed period is not opened by a pass
+
 ### Requirement: FR-GL-10 Year-end
 The system SHALL compute retained earnings at **year-end** without requiring closing entries, offer an optional year-end closing entry for statutory presentation, and carry open items forward automatically (one continuous ledger).
 

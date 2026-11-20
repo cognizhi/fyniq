@@ -1,0 +1,50 @@
+<!-- fyniq-screen {"nav": "accounting", "title": "Periods and locks", "mode": "expert", "heights": {"compact": 1500, "medium": 1200, "expanded": 1000}} -->
+<div class="fy-page fy-page--narrow fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#accounting">Accounting</a><i data-icon="chevron-right"></i><span>Periods and close</span></nav>
+      <h1 class="fy-h1">Periods and close</h1>
+      <p class="fy-secondary">Each month is a period. A journal or document posts in the month of its date, while that month is open.</p>
+    </div>
+  </div>
+
+  <section class="fy-card" aria-labelledby="pl-year">
+    <div class="fy-card__head"><h2 class="fy-h3" id="pl-year">Financial year 1</h2><span class="fy-small fy-muted">1 Oct 2026 to 30 Sep 2027</span></div>
+    <div class="fy-tablewrap">
+      <table class="fy-table fy-table--compact" aria-labelledby="pl-year">
+        <thead><tr><th scope="col">Month</th><th scope="col" class="fy-from-medium">Dates</th><th scope="col">Status</th><th scope="col"><span class="fy-sr">Locks</span></th></tr></thead>
+        <tbody>
+          <tr><td><a href="#close">October 2026</a></td><td class="fy-from-medium fy-secondary">1 Oct 2026 to 31 Oct 2026</td><td><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Closed</span></td><td></td></tr>
+          <tr><td><a href="#close">November 2026</a></td><td class="fy-from-medium fy-secondary">1 Nov 2026 to 30 Nov 2026</td><td><span class="fy-chip fy-chip--warning"><i data-icon="lock-keyhole"></i>Soft-locked</span> <span class="fy-chip fy-chip--info"><i data-icon="lock"></i>Sales locked</span></td><td><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="lock-keyhole"></i>Locks</button></td></tr>
+          <tr><td><a href="#close">December 2026</a></td><td class="fy-from-medium fy-secondary">1 Dec 2026 to 31 Dec 2026</td><td><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Open</span></td><td><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="lock-keyhole"></i>Locks</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="pl-dialog">
+    <h2 class="fy-h3" id="pl-dialog">Locks for November 2026</h2>
+    <p class="fy-secondary">A soft lock stops postings from everyone except an Accountant who holds a pass, which is made with a reason and listed on the exceptions report. The close is separate and stricter.</p>
+    <div class="fy-field"><label class="fy-label" for="pl-why">Why (kept in the audit trail; 10 characters or more to release a lock or make a pass)</label><textarea class="fy-textarea" id="pl-why"></textarea></div>
+    <h3 class="fy-h3">The whole month</h3>
+    <div><button class="fy-btn fy-btn--secondary" type="button"><i data-icon="lock-open"></i>Release the soft lock</button></div>
+    <h3 class="fy-h3">By module</h3>
+    <ul class="fy-list">
+      <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Sales</span><span class="fy-list__meta">invoices, credit notes, receipts and refunds</span></span><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="lock-open"></i>Release</button></li>
+      <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Purchases</span><span class="fy-list__meta">bills, supplier payments, claims and credits</span></span><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="lock"></i>Lock</button></li>
+    </ul>
+    <h3 class="fy-h3">Post anyway</h3>
+    <p class="fy-small fy-secondary">A pass lets only you post into this month, for the hours you choose. Every posting made under it is on the exceptions report with your reason.</p>
+    <div><button class="fy-btn fy-btn--secondary" type="button"><i data-icon="key-round"></i>Make a pass</button></div>
+  </section>
+
+  <section class="fy-card" aria-labelledby="pl-exc">
+    <div class="fy-card__head"><h2 class="fy-h3" id="pl-exc">Postings made into locked months</h2></div>
+    <div class="fy-tablewrap">
+      <table class="fy-table fy-table--compact" aria-labelledby="pl-exc">
+        <thead><tr><th scope="col">Dated</th><th scope="col">Kind</th><th scope="col" class="fy-from-medium">Locked</th><th scope="col">Reason</th></tr></thead>
+        <tbody><tr><td>3 Nov 2026</td><td>bill</td><td class="fy-from-medium">The month</td><td>A late bill for the auditor</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</div>

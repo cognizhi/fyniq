@@ -3,7 +3,7 @@ key: accounting.periods
 title: Open the financial year and close the periods
 mode: expert
 roles: [accountant, controller, owner, auditor, tax_agent]
-requirements: [FM-7, FR-ORG-02, FR-GL-04, FR-GL-07, FR-GL-08, FR-GL-10, FR-GL-14, FM-4, AUD-04, INV-07]
+requirements: [FM-7, FR-ORG-02, FR-GL-09, FR-GL-04, FR-GL-07, FR-GL-08, FR-GL-10, FR-GL-14, FM-4, AUD-04, INV-07]
 status: draft            # written with the periods page (P1, p1-general-ledger-close); the close joins it
 ---
 
@@ -183,6 +183,34 @@ carry on from year to year until one does.
 The general ledger reads one financial year at a time, so a range of dates that crosses the start
 of a year is refused.
 
+## Soft-lock a month
+
+A **soft lock** is a step before the close. It stops postings into a month without closing it, so an
+Accountant can still add the one late bill the auditor asked for. It is weaker than the close: the
+close is held by the database and nobody posts into a closed month, a soft lock is held by Fyniq and
+an Accountant who holds a *pass* can post.
+
+1. Open **Accounting → Periods and close** and select **Locks** beside the month. An Accountant or a
+   Controller locks a month; the reason is optional.
+2. Select **Soft-lock the month**. The month shows **Soft-locked**. From then on nobody posts a
+   journal or a document dated in it: not the Controller, not another Accountant, not a scheduled job,
+   not an integration and not the AI's approved proposals.
+3. To lock only one part, select **Lock** beside **Sales** (invoices, credit notes, receipts and
+   refunds), **Purchases** (bills, payments, claims and supplier credits), **Banking** or **Payroll**.
+   The other parts of the month stay open. Manual journals, depreciation, opening balances and the
+   equity entries belong to no part: only the lock of the whole month stops them.
+4. An Accountant who must post anyway writes why (10 characters or more), chooses 1 to 8 hours and
+   selects **Make a pass**, then confirms it's them. The pass is theirs alone and ends by itself.
+   Everything they post under it is listed under **Postings made into locked months** with the reason.
+   Nobody else gets a pass for the Accountant: an Owner or a Controller releases the lock instead.
+5. An Owner or a Controller releases a lock with a reason of 10 characters or more, after confirming
+   it's them: **Release the soft lock**, or **Release** beside a part.
+
+A soft-locked month is closed the usual way: its checks, its attestation and its closing do not change.
+Documents that would post into a locked month wait with the message that says which lock stopped them;
+a scheduled depreciation or reversal waits and is listed as waiting, and a scheduled invoice stays a
+draft until the lock is released.
+
 ## Reopen a month
 
 Only the latest closed month reopens: months reopen in the reverse of the order they closed.
@@ -220,6 +248,9 @@ its review, and the month closed again is reviewed afresh.
 | The checklist template is not valid (CLOSE-11) | Give each task a title, and a due day from 0 to 60 |
 | No such task on the checklist (CLOSE-12) | Reload the page: the template changed |
 | Skipping a task needs a reason (CLOSE-13) | Say why the task does not apply this month |
+| The period is soft-locked (STORAGE-SOFTLOCK-01) | Ask an Accountant to make a pass with a reason, or ask an Owner or a Controller to release the lock |
+| Only an Accountant makes a pass (LOCK-01) | Ask the Accountant; the Owner and the Controller release the lock instead |
+| The reason is too short (LOCK-02) | Say why in at least 10 characters |
 | A change to this record is waiting for approval already (APR-06) | Approve or reject the waiting request first |
 
 ## Related
