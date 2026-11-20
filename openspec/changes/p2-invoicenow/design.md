@@ -7,10 +7,11 @@ Decisions are recorded on the recommended option, tagged `[owner to confirm]` wh
 `ports.AccessPoint` has four methods: `Lookup(participant)` (is the Peppol ID registered and which document types it accepts, the
 SMP lookup), `Send(request)` (the PINT-SG bytes, the participant, the document UUID and an idempotency key; returns the
 transmission ID), `Status(transmission)` (queued, delivered, acknowledged with IRAS's acknowledgement ID, or failed with reasons)
-and `Poll(cursor)` (received documents). The local adapter is deterministic: a send is acknowledged on the second status read,
+and `Poll(cursor)` (received documents). The local adapter is deterministic: a transmission reads queued, delivered and then acknowledged, one step for each status read,
 a participant that starts `9999` is unknown, a body that the rules refuse fails, and a switch (`FYNIQ_LOCAL_AP_OUTAGE`) makes every
-call fail with a transport error. `connectors/peppol-access-point/` holds the manifest (capability `e-invoicing`) and the fixtures
-the real adapter must answer the same way. The cloud adapter arrives with the access point's contract (Q2): `[live-verify]`.
+call fail with a transport error. `connectors/peppol-access-point/contract.json` holds the fixtures every adapter must answer the same way (run by
+`porttest.AccessPointContract`); the manifest (capability `e-invoicing`) arrives with the real adapter, since it names a provider's
+secrets and settings. The cloud adapter arrives with the access point's contract (Q2): `[live-verify]`.
 Options: a hosted access point's API now (blocked on a choice and credentials); a Peppol AS4 access point of our own (a
 certification we do not need). Recommended: the port and a stub.
 
@@ -51,7 +52,6 @@ with a GST code the return reports, in a return period; the population is read, 
 reason, the outage evidence (FR-DOC-05) and two different members, the one who requested it and the one who approved it (the
 database refuses the same person twice, and the approver holds a different role from the requester's list below). Unsent items
 stay queued and are resubmitted when service returns (G4-033).
-[owner to confirm] The requester is the Tax agent or the Accountant; the approver is the Owner.
 
 ## D6. When the requirement applies
 
@@ -61,9 +61,11 @@ gate is "not assessed". Sending a document is always allowed. Auto-send at issue
 
 ## D7. Roles
 
-A new Appendix D row, **InvoiceNow submissions**: view for the Owner, the Finance controller, the Accountant, the Tax agent, the
-Auditor and the Administrator; send, resubmit, exclude and request a contingency for the Finance controller, the Accountant and the
-Tax agent; approve a contingency for the Owner. [owner to confirm]
+No new Appendix D row: InvoiceNow is part of the GST return, so its operations use the **GST return, filing** capability: view for
+the Owner, the Finance controller, the Accountant, the Tax agent and the Auditor; send, resubmit, exclude and request a
+contingency with the create right (Finance controller, Accountant, Tax agent; the Owner and the Finance controller hold approve,
+which covers create); approve a contingency with the approve right (the Owner or the Finance controller, never the person who
+requested it). Sending an invoice stays with the invoice's own right. [owner to confirm]
 
 ## D8. Received documents
 
