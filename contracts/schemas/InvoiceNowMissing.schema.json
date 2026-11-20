@@ -19,10 +19,14 @@
       "type": "string"
     },
     "kind": {
+      "description": "What kind of document it is.",
       "enum": [
         "sale",
         "purchase",
         "credit_note"
+      ],
+      "examples": [
+        "sale"
       ],
       "type": "string"
     },

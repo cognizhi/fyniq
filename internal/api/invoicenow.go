@@ -77,7 +77,7 @@ type InvoiceNowContingency struct {
 type InvoiceNowMissing struct {
 	DocumentID  string `json:"document_id" format:"uuid" doc:"The document id." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02"`
 	Number      string `json:"number" doc:"The number." example:"INV-2027-0007"`
-	Kind        string `json:"kind" enum:"sale,purchase,credit_note"`
+	Kind        string `json:"kind" enum:"sale,purchase,credit_note" doc:"What kind of document it is." example:"sale"`
 	Date        string `json:"date" format:"date" doc:"The date." example:"2027-02-03"`
 	State       string `json:"state" enum:"none,queued,sent,failed,acknowledged" doc:"Where its submission stands: none when it has not been queued." example:"queued"`
 	NeedsChoice bool   `json:"needs_choice" doc:"It has an exempt line and the tax agent has not chosen ES33 or ESN33 (setting invoicenow.es_category)." example:"false"`

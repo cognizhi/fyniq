@@ -40898,7 +40898,11 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02
              */
             document_id: string;
-            /** @enum {string} */
+            /**
+             * @description What kind of document it is.
+             * @example sale
+             * @enum {string}
+             */
             kind: "sale" | "purchase" | "credit_note";
             /**
              * @description It has an exempt line and the tax agent has not chosen ES33 or ESN33 (setting invoicenow.es_category).
