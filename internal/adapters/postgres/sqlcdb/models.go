@@ -1923,6 +1923,22 @@ type FyniqInvoicenowExclusion struct {
 	WithdrawnBy    *string
 }
 
+type FyniqInvoicenowInbound struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	MessageID      string
+	Cursor         string
+	Sender         string
+	Number         string
+	ReceivedAt     time.Time
+	Sha256         []byte
+	Payload        []byte
+	Status         string
+	BillID         *uuid.UUID
+	Note           *string
+	CreatedBy      string
+}
+
 type FyniqInvoicenowSubmission struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

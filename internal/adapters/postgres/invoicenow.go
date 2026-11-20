@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"time"
 
@@ -269,4 +271,110 @@ func (r invoiceNow) Contingencies(ctx context.Context, from, to time.Time) ([]st
 		out = append(out, toContingency(contingencyRow(x)))
 	}
 	return out, nil
+}
+
+type invoiceInboundRow = sqlcdb.InsertInvoiceInboundRow
+
+func toInvoiceInbound(r invoiceInboundRow) storage.InvoiceInbound {
+	return storage.InvoiceInbound{ID: r.ID, MessageID: r.MessageID, Cursor: r.Cursor, Sender: r.Sender, Number: r.Number, ReceivedAt: r.ReceivedAt, SHA256: r.Sha256,
+		Status: r.Status, BillID: r.BillID, Note: str(r.Note)}
+}
+
+func (r invoiceNow) KeepInbound(ctx context.Context, n storage.NewInvoiceInbound) (storage.InvoiceInbound, error) {
+	if err := r.u.check(); err != nil {
+		return storage.InvoiceInbound{}, err
+	}
+	status := n.Status
+	if status == "" {
+		status = "received"
+	}
+	sum := sha256.Sum256(n.Payload)
+	row, err := r.u.q.InsertInvoiceInbound(ctx, sqlcdb.InsertInvoiceInboundParams{MessageID: n.MessageID, Cursor: n.Cursor, Sender: n.Sender, Number: n.Number, At: n.At,
+		Sha256: sum[:], Payload: n.Payload, Status: status, BillID: n.BillID, Note: opt(n.Note), CreatedBy: r.u.actor(ctx)})
+	if err != nil {
+		return storage.InvoiceInbound{}, mapError(err)
+	}
+	out := toInvoiceInbound(row)
+	return out, r.u.event(ctx, "invoicenow.inbound.received", "invoicenow_inbound", out.ID, nil,
+		map[string][2]any{"status": {nil, out.Status}, "sender": {nil, out.Sender}, "number": {nil, out.Number}, "sha256": {nil, hex.EncodeToString(sum[:])}})
+}
+
+func (r invoiceNow) Inbound(ctx context.Context, id uuid.UUID) (storage.InvoiceInbound, error) {
+	if err := r.u.check(); err != nil {
+		return storage.InvoiceInbound{}, err
+	}
+	row, err := r.u.q.InvoiceInboundOf(ctx, id)
+	if err != nil {
+		return storage.InvoiceInbound{}, mapError(err)
+	}
+	return toInvoiceInbound(invoiceInboundRow(row)), nil
+}
+
+func (r invoiceNow) InboundPayload(ctx context.Context, id uuid.UUID) ([]byte, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	b, err := r.u.q.InvoiceInboundPayload(ctx, id)
+	return b, mapError(err)
+}
+
+func (r invoiceNow) InboundPage(ctx context.Context, after *uuid.UUID, limit int) ([]storage.InvoiceInbound, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	rows, err := r.u.q.ListInvoiceInbound(ctx, sqlcdb.ListInvoiceInboundParams{After: after, RowLimit: int32(limit)})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.InvoiceInbound, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, toInvoiceInbound(invoiceInboundRow(x)))
+	}
+	return out, nil
+}
+
+func (r invoiceNow) InboundCursor(ctx context.Context) (string, error) {
+	if err := r.u.check(); err != nil {
+		return "", err
+	}
+	c, err := r.u.q.InvoiceInboundCursor(ctx)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	return c, mapError(err)
+}
+
+func (r invoiceNow) InboundDuplicate(ctx context.Context, sender, number string) (*uuid.UUID, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	id, err := r.u.q.InvoiceInboundDuplicate(ctx, sqlcdb.InvoiceInboundDuplicateParams{Sender: sender, Number: number})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &id, nil
+}
+
+func (r invoiceNow) SettleInbound(ctx context.Context, id uuid.UUID, status string, bill *uuid.UUID, note string) (storage.InvoiceInbound, error) {
+	if err := r.u.check(); err != nil {
+		return storage.InvoiceInbound{}, err
+	}
+	row, err := r.u.q.SettleInvoiceInbound(ctx, sqlcdb.SettleInvoiceInboundParams{ID: id, Status: status, BillID: bill, Note: opt(note)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		if _, gone := r.u.q.InvoiceInboundOf(ctx, id); errors.Is(gone, pgx.ErrNoRows) {
+			return storage.InvoiceInbound{}, ports.ErrNotFound
+		}
+		return storage.InvoiceInbound{}, &storage.Error{Code: storage.CodeVersion, Message: "the received document was drafted or refused already"}
+	}
+	if err != nil {
+		return storage.InvoiceInbound{}, mapError(err)
+	}
+	out := toInvoiceInbound(invoiceInboundRow(row))
+	return out, r.u.event(ctx, "invoicenow.inbound."+status, "invoicenow_inbound", id, nil, map[string][2]any{"status": {"received", status}})
 }

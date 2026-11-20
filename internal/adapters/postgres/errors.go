@@ -210,6 +210,7 @@ var fyCodes = map[string]string{
 	"FYI01": storage.CodeInvoiceNow,         // an InvoiceNow submission off its legal path (001000)
 	"FYI02": storage.CodeInvoiceNow,         // a submission's history changed (001000)
 	"FYI03": storage.CodeInvoiceNow,         // an exclusion changed, or a second live one (001000)
+	"FYI05": storage.CodeInvoiceNow,         // a received document changed (001001)
 	"FYI04": storage.CodeInvoiceNow,         // a contingency approved by its requester, or changed (001000)
 	"FY299": storage.CodeStatutoryFiling,    // a filing record outside its rules, or a second live one of its item (000274)
 	"FY300": storage.CodeForecast,           // a forecast outside its keys, limits or decimal strings (000277)

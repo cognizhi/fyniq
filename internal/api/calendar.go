@@ -16,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/deadlines"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/domain/invoicenow"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -28,7 +29,7 @@ import (
 // that an item is not required, with the reason (design D6). A record is withdrawn with a reason, never edited.
 
 // CalendarCodes are the codes a filing record answers besides the common ones.
-var CalendarCodes = []string{deadlines.CodeFiling, deadlines.CodeRecorded, deadlines.CodeWithdrawn, storage.CodeStatutoryFiling, evidence.CodeMissing}
+var CalendarCodes = []string{CodeInvoiceNowGate, deadlines.CodeFiling, deadlines.CodeRecorded, deadlines.CodeWithdrawn, storage.CodeStatutoryFiling, evidence.CodeMissing}
 
 // StatutoryItem is one deadline of the calendar.
 type StatutoryItem struct {
@@ -557,6 +558,9 @@ func registerCalendar(a *API) {
 				if err != nil {
 					return StatutoryFilingView{}, err
 				}
+				if err := a.heldToInvoiceNow(ctx, u, f); err != nil {
+					return StatutoryFilingView{}, err
+				}
 				if _, err := deadlines.RecordIn(ctx, u, id, today); err != nil {
 					return StatutoryFilingView{}, equityProblems(err)
 				}
@@ -669,4 +673,28 @@ func registerCalendar(a *API) {
 			mt.Schema.Properties["file"].Examples = []any{"%PDF-1.7 … (the file's bytes)"}
 		}
 	}
+}
+
+// heldToInvoiceNow holds a GST F5's filing to the InvoiceNow gate (FR-TAX-11): a return filed while a document of its period has neither IRAS's acknowledgement ID
+// nor an exclusion is refused, unless a contingency two people agreed covers the period. A key that is not an F5's, an outcome that is not "filed" and a gate that is
+// not assessed (the requirement is not marked as applying) pass.
+func (a *API) heldToInvoiceNow(ctx context.Context, u storage.UnitOfWork, f deadlines.Filing) error {
+	obligation, anchor, ok := strings.Cut(f.Key, ":")
+	if obligation != "gst_f5" || !ok || f.Outcome != deadlines.OutcomeFiled {
+		return nil
+	}
+	end, err := time.Parse(time.DateOnly, anchor)
+	if err != nil {
+		return nil
+	}
+	base, err := baseOf(ctx, u)
+	if err != nil {
+		return err
+	}
+	g, found, err := invoicenow.F5Gate(ctx, u, base, end)
+	if err != nil || !found || g.Ready {
+		return err
+	}
+	return problem(CodeInvoiceNowGate, fmt.Sprintf("%d document(s) of the return for %s to %s have neither IRAS's acknowledgement ID nor an exclusion.", len(g.Missing),
+		g.From.Format("2 Jan 2006"), g.To.Format("2 Jan 2006")), "Send each document the gate lists through InvoiceNow, or record why it is left out, or have a contingency approved for the outage (getInvoiceNowGate)")
 }

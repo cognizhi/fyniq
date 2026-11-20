@@ -135,6 +135,7 @@ describe("the Compliance page", () => {
       "/compliance/data-protection",
       "/compliance/privacy/notices",
       "/compliance/gst",
+      "/compliance/invoicenow",
       "/compliance/evidence",
       "/compliance/audit-trail",
     ]);

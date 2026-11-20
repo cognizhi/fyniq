@@ -320,6 +320,9 @@ fyniq_api       SELECT    invoicenow_event
 fyniq_api       INSERT    invoicenow_exclusion (detail, document_id, reason, recorded_at, recorded_by)
 fyniq_api       SELECT    invoicenow_exclusion
 fyniq_api       UPDATE    invoicenow_exclusion (withdrawn_at, withdrawn_by)
+fyniq_api       INSERT    invoicenow_inbound (bill_id, created_by, cursor, message_id, note, number, payload, received_at, sender, sha256, status)
+fyniq_api       SELECT    invoicenow_inbound
+fyniq_api       UPDATE    invoicenow_inbound (bill_id, note, status)
 fyniq_api       INSERT    invoicenow_submission (created_at, created_by, direction, document_id, document_uuid, kind, payload_sha256, recipient, updated_at, version)
 fyniq_api       SELECT    invoicenow_submission
 fyniq_api       UPDATE    invoicenow_submission (iras_ack, last_error, status, transmission_id, updated_at)
@@ -951,6 +954,7 @@ fyniq_readonly  SELECT    invoice_dispute
 fyniq_readonly  SELECT    invoicenow_contingency
 fyniq_readonly  SELECT    invoicenow_event
 fyniq_readonly  SELECT    invoicenow_exclusion
+fyniq_readonly  SELECT    invoicenow_inbound
 fyniq_readonly  SELECT    invoicenow_submission
 fyniq_readonly  SELECT    item
 fyniq_readonly  SELECT    item_price
@@ -1286,6 +1290,7 @@ fyniq_worker    SELECT    invoicenow_contingency
 fyniq_worker    INSERT    invoicenow_event (actor, at, detail, status, submission_id)
 fyniq_worker    SELECT    invoicenow_event
 fyniq_worker    SELECT    invoicenow_exclusion
+fyniq_worker    SELECT    invoicenow_inbound
 fyniq_worker    SELECT    invoicenow_submission
 fyniq_worker    UPDATE    invoicenow_submission (iras_ack, last_error, status, transmission_id, updated_at)
 fyniq_worker    SELECT    item

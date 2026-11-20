@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bill_id": {
+      "description": "The draft bill made from it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a09"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The received document's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "message_id": {
+      "description": "The access point's ID of the message.",
+      "examples": [
+        "msg-1"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Why it waits or was refused.",
+      "examples": [
+        "no active supplier has that Peppol ID: add the supplier, then draft the bill"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "The invoice number it states.",
+      "examples": [
+        "INV-2027-0007"
+      ],
+      "type": "string"
+    },
+    "received_at": {
+      "description": "When it was received.",
+      "examples": [
+        "2027-02-03T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "sender": {
+      "description": "The sender's Peppol participant ID.",
+      "examples": [
+        "0195:SGUEN202012345K"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "received: kept, no draft yet (see note); drafted: a draft bill was made; refused: it is not read, as note says.",
+      "enum": [
+        "received",
+        "drafted",
+        "refused"
+      ],
+      "examples": [
+        "drafted"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "message_id",
+    "sender",
+    "received_at",
+    "status"
+  ],
+  "title": "InvoiceNowInbound",
+  "type": "object"
+}

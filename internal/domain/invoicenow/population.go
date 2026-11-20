@@ -253,3 +253,20 @@ func compareStrings(a, b string) int {
 	}
 	return 0
 }
+
+// F5Gate is the gate for the GST return period that ends on anchor, read from the organisation's registrations (FR-TAX-11): the F5's filing is held to it. The
+// second answer is false when no registration has a return period ending that day.
+func F5Gate(ctx context.Context, u storage.UnitOfWork, base money.Currency, anchor time.Time) (GateResult, bool, error) {
+	regs, err := u.GSTRegistrations().List(ctx)
+	if err != nil {
+		return GateResult{}, false, err
+	}
+	for _, r := range regs {
+		start, end, ok := gst.ReturnPeriod(r, anchor)
+		if ok && end.Equal(anchor) {
+			g, err := Gate(ctx, u, base, start, end)
+			return g, true, err
+		}
+	}
+	return GateResult{}, false, nil
+}

@@ -76,3 +76,28 @@ ORDER BY requested_at DESC, id DESC;
 
 -- name: InvoiceExclusionExists :one
 SELECT id FROM fyniq.invoicenow_exclusion WHERE id = sqlc.arg(id);
+
+-- name: InsertInvoiceInbound :one
+INSERT INTO fyniq.invoicenow_inbound (message_id, cursor, sender, number, received_at, sha256, payload, status, bill_id, note, created_by)
+VALUES (sqlc.arg(message_id), sqlc.arg(cursor), sqlc.arg(sender), sqlc.arg(number), sqlc.arg(at), sqlc.arg(sha256), sqlc.arg(payload), sqlc.arg(status), sqlc.narg(bill_id), sqlc.narg(note), sqlc.arg(created_by))
+RETURNING id, message_id, cursor, sender, number, received_at, sha256, status, bill_id, note;
+
+-- name: InvoiceInboundOf :one
+SELECT id, message_id, cursor, sender, number, received_at, sha256, status, bill_id, note FROM fyniq.invoicenow_inbound WHERE id = sqlc.arg(id);
+
+-- name: InvoiceInboundPayload :one
+SELECT payload FROM fyniq.invoicenow_inbound WHERE id = sqlc.arg(id);
+
+-- name: ListInvoiceInbound :many
+SELECT id, message_id, cursor, sender, number, received_at, sha256, status, bill_id, note FROM fyniq.invoicenow_inbound
+WHERE (sqlc.narg(after)::uuid IS NULL OR id < sqlc.narg(after)) ORDER BY id DESC LIMIT sqlc.arg(row_limit);
+
+-- name: InvoiceInboundCursor :one
+SELECT cursor FROM fyniq.invoicenow_inbound ORDER BY id DESC LIMIT 1;
+
+-- name: InvoiceInboundDuplicate :one
+SELECT id FROM fyniq.invoicenow_inbound WHERE sender = sqlc.arg(sender) AND number = sqlc.arg(number) AND number <> '' AND status <> 'refused' ORDER BY id LIMIT 1;
+
+-- name: SettleInvoiceInbound :one
+UPDATE fyniq.invoicenow_inbound SET status = sqlc.arg(status), bill_id = sqlc.narg(bill_id), note = sqlc.narg(note) WHERE id = sqlc.arg(id) AND status = 'received'
+RETURNING id, message_id, cursor, sender, number, received_at, sha256, status, bill_id, note;

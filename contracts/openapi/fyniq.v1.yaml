@@ -33401,6 +33401,80 @@ components:
         - excluded
         - missing
       type: object
+    InvoiceNowInbound:
+      additionalProperties: false
+      properties:
+        bill_id:
+          description: The draft bill made from it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a09
+          format: uuid
+          type: string
+        id:
+          description: The received document's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01
+          format: uuid
+          type: string
+        message_id:
+          description: The access point's ID of the message.
+          examples:
+            - msg-1
+          type: string
+        note:
+          description: Why it waits or was refused.
+          examples:
+            - "no active supplier has that Peppol ID: add the supplier, then draft the bill"
+          type: string
+        number:
+          description: The invoice number it states.
+          examples:
+            - INV-2027-0007
+          type: string
+        received_at:
+          description: When it was received.
+          examples:
+            - "2027-02-03T09:00:00Z"
+          format: date-time
+          type: string
+        sender:
+          description: The sender's Peppol participant ID.
+          examples:
+            - 0195:SGUEN202012345K
+          type: string
+        status:
+          description: "received: kept, no draft yet (see note); drafted: a draft bill was made; refused: it is not read, as note says."
+          enum:
+            - received
+            - drafted
+            - refused
+          examples:
+            - drafted
+          type: string
+      required:
+        - id
+        - message_id
+        - sender
+        - received_at
+        - status
+      type: object
+    InvoiceNowInboundPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/InvoiceNowInbound"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjIwMjYifQ
+          type: string
+      required:
+        - items
+      type: object
     InvoiceNowMissing:
       additionalProperties: false
       properties:
@@ -100827,7 +100901,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAL-02` The item is recorded already; `CAL-03` The record is withdrawn already; `DOC-10` The record's evidence is missing; `STORAGE-CALENDAR-01` The filing record does not keep that; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-INVOICENOW-01` The GST return waits for InvoiceNow submissions; `CAL-02` The item is recorded already; `CAL-03` The record is withdrawn already; `DOC-10` The record's evidence is missing; `STORAGE-CALENDAR-01` The filing record does not keep that; `STORAGE-LOCK-01` Another change is in progress."
         "413":
           content:
             application/problem+json:
@@ -100901,6 +100975,7 @@ paths:
         - API-INPUT-02
         - API-INPUT-03
         - API-INPUT-04
+        - API-INVOICENOW-01
         - API-RATE-01
         - CAL-01
         - CAL-02
@@ -101151,7 +101226,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAL-02` The item is recorded already; `CAL-03` The record is withdrawn already; `DOC-10` The record's evidence is missing; `STORAGE-CALENDAR-01` The filing record does not keep that; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-INVOICENOW-01` The GST return waits for InvoiceNow submissions; `CAL-02` The item is recorded already; `CAL-03` The record is withdrawn already; `DOC-10` The record's evidence is missing; `STORAGE-CALENDAR-01` The filing record does not keep that; `STORAGE-LOCK-01` Another change is in progress."
         "412":
           content:
             application/problem+json:
@@ -101239,6 +101314,7 @@ paths:
         - API-INPUT-02
         - API-INPUT-03
         - API-INPUT-04
+        - API-INVOICENOW-01
         - API-NOT-FOUND-01
         - API-RATE-01
         - CAL-01
@@ -102093,7 +102169,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAL-02` The item is recorded already; `CAL-03` The record is withdrawn already; `DOC-10` The record's evidence is missing; `STORAGE-CALENDAR-01` The filing record does not keep that; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-INVOICENOW-01` The GST return waits for InvoiceNow submissions; `CAL-02` The item is recorded already; `CAL-03` The record is withdrawn already; `DOC-10` The record's evidence is missing; `STORAGE-CALENDAR-01` The filing record does not keep that; `STORAGE-LOCK-01` Another change is in progress."
         "412":
           content:
             application/problem+json:
@@ -102181,6 +102257,7 @@ paths:
         - API-INPUT-02
         - API-INPUT-03
         - API-INPUT-04
+        - API-INVOICENOW-01
         - API-NOT-FOUND-01
         - API-RATE-01
         - CAL-01
@@ -102309,7 +102386,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAL-02` The item is recorded already; `CAL-03` The record is withdrawn already; `DOC-10` The record's evidence is missing; `STORAGE-CALENDAR-01` The filing record does not keep that; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-INVOICENOW-01` The GST return waits for InvoiceNow submissions; `CAL-02` The item is recorded already; `CAL-03` The record is withdrawn already; `DOC-10` The record's evidence is missing; `STORAGE-CALENDAR-01` The filing record does not keep that; `STORAGE-LOCK-01` Another change is in progress."
         "412":
           content:
             application/problem+json:
@@ -102397,6 +102474,7 @@ paths:
         - API-INPUT-02
         - API-INPUT-03
         - API-INPUT-04
+        - API-INVOICENOW-01
         - API-NOT-FOUND-01
         - API-RATE-01
         - CAL-01
@@ -164740,6 +164818,476 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: GST return, filing
+        right: C
+  /v1/invoicenow/inbound:
+    get:
+      description: The documents suppliers sent through InvoiceNow, newest first, a page at a time, each with its status and the draft bill made from it (FR-AP-05). Read-only; no side effects.
+      operationId: listInvoiceNowInbound
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceNowInboundPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the invoices received through InvoiceNow
+      tags:
+        - Purchases
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        right: V
+  /v1/invoicenow/inbound/poll:
+    post:
+      description: "Reads what the access point holds for the organisation since the last document kept, keeps each as received and makes a draft bill of each whose supplier is a contact (the Peppol ID or the UEN matches); a document that is not PINT-SG, or that the sender sent before under the same number, is refused with why, and one with no known supplier waits for it (FR-AP-05). A draft posts nothing. During an outage it answers 503 and keeps nothing. Side effects: the received documents, the draft bills, audit events. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: pollInvoiceNowInbound
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceNowInboundPage"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-INVOICENOW-01` The InvoiceNow record does not keep that; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Receive the invoices suppliers sent through InvoiceNow
+      tags:
+        - Purchases
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - STORAGE-INVOICENOW-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        note: "Reads the invoices suppliers sent through InvoiceNow and makes draft bills of them: a draft posts nothing."
+        right: C
+  /v1/invoicenow/inbound/{inbound_id}/draft:
+    post:
+      description: "Tries again to make the draft bill of a received document that waited, such as for its supplier to be added (FR-AP-05). One already drafted or refused answers 412. A draft posts nothing. Side effects: the draft bill, the document's status, audit events. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: draftInvoiceNowInbound
+      parameters:
+        - description: The received document's ID.
+          in: path
+          name: inbound_id
+          required: true
+          schema:
+            description: The received document's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceNowInbound"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-INVOICENOW-01` The InvoiceNow record does not keep that; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Make the draft bill of a received document
+      tags:
+        - Purchases
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - STORAGE-INVOICENOW-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bills, vendor credits
         right: C
   /v1/invoicenow/submissions:
     get:

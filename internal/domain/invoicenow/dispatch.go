@@ -121,3 +121,98 @@ func Refresh(ctx context.Context, u storage.UnitOfWork, ap ports.AccessPoint, su
 	}
 	return sub, nil
 }
+
+// DispatchJob is the platform job that hands queued submissions to the access point and reads the status of the sent ones (FR-AR-12, FR-TAX-10), every fifteen minutes. It
+// runs as the worker role, which moves a submission along and cannot queue one; an outage leaves everything queued and the next run tries again (G4-033).
+const DispatchJob = "invoicenow.dispatch"
+
+// DispatchResult is what a run did.
+type DispatchResult struct {
+	Sent, Refreshed, Failed int
+	Outage                  bool
+}
+
+// DispatchAll is the job: each organisation's queued submissions are sent and its sent ones read, a submission at a time in a unit of work of its own, so one that fails
+// does not stop the others. An organisation that fails does not stop the rest.
+func DispatchAll(ctx context.Context, store storage.Store, ap ports.AccessPoint, now func() time.Time) (DispatchResult, error) {
+	var out DispatchResult
+	if ap == nil {
+		return out, nil // no access point is connected
+	}
+	orgs, err := store.Organisations(ctx)
+	if err != nil {
+		return out, err
+	}
+	var errs []error
+	for _, org := range orgs {
+		if outage, err := dispatchOrg(ctx, store, ap, org, now, &out); err != nil {
+			errs = append(errs, fmt.Errorf("organisation %s: %w", org, err))
+		} else if outage {
+			out.Outage = true
+			break // the access point is down for everyone: try again next run
+		}
+	}
+	return out, errors.Join(errs...)
+}
+
+func dispatchOrg(ctx context.Context, store storage.Store, ap ports.AccessPoint, org uuid.UUID, now func() time.Time, out *DispatchResult) (bool, error) {
+	var queued, sent []storage.InvoiceSubmission
+	var base money.Currency
+	if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		if base, err = money.Lookup(o.BaseCurrency); err != nil {
+			return err
+		}
+		if queued, err = u.InvoiceNow().Submissions(ctx, storage.InvoiceSubmissionFilter{Status: string(Queued), Limit: 200}); err != nil {
+			return err
+		}
+		sent, err = u.InvoiceNow().Submissions(ctx, storage.InvoiceSubmissionFilter{Status: string(Sent), Limit: 200})
+		return err
+	}); err != nil {
+		if errors.Is(err, ports.ErrNotFound) {
+			return false, nil // an organisation with no profile yet, or one that is gone, has nothing to send
+		}
+		return false, err
+	}
+	var errs []error
+	for _, s := range append(queued, sent...) {
+		var outage bool
+		err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			var after storage.InvoiceSubmission
+			if s.Status == string(Queued) {
+				after, err = Send(ctx, u, ap, s, base, now())
+				if err == nil {
+					if after.Status == string(Failed) {
+						out.Failed++
+					} else {
+						out.Sent++
+					}
+				}
+			} else {
+				after, err = Refresh(ctx, u, ap, s, now())
+				if err == nil && after.Status != s.Status {
+					out.Refreshed++
+					if after.Status == string(Failed) {
+						out.Failed++
+					}
+				}
+			}
+			if errors.Is(err, ports.ErrAccessPointUnavailable) {
+				outage = true
+				return nil
+			}
+			return err
+		})
+		if outage {
+			return true, nil
+		}
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return false, errors.Join(errs...)
+}
