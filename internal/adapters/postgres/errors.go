@@ -171,9 +171,9 @@ var fyCodes = map[string]string{
 	"FY267": storage.CodeBanking,
 
 	"FY268": storage.CodeSuccession,
-	"FY700": storage.CodeMembership, // a department scope never changes or goes (000702)
-	"FY701": storage.CodeMembership, // only a live Approver role is narrowed to departments (000702)
-	"FY702": storage.CodeMembership, // a scope names department values (000702)
+	"FY700": storage.CodeMembership,         // a department scope never changes or goes (000702)
+	"FY701": storage.CodeMembership,         // only a live Approver role is narrowed to departments (000702)
+	"FY702": storage.CodeMembership,         // a scope names department values (000702)
 	"FY269": storage.CodeVersion,            // an invitation's registry entry never changes (000236)
 	"FY270": storage.CodeIdentityStepUp,     // a sign-in linked or removed without a recent second factor (000239)
 	"FY271": storage.CodeIdentity,           // a sign-in linked already, or the last or current one removed (000239)
@@ -246,7 +246,7 @@ var fyCodes = map[string]string{
 	"FY338": storage.CodeAIBudgetSpent,      // the organisation's, agent's or person's AI budget spent, or not applicable (000359)
 	"FY339": storage.CodeAIQualification,    // a qualification changed or removed, or put out of date twice (000361)
 	"FY340": storage.CodeAIGrant,            // a delegated read grant changed, removed or ended twice (000366)
-	"FY561": storage.CodeKnowledge, // a knowledge-base version, snapshot or page changed or removed, or a note changed but by its next version (000563)
+	"FY561": storage.CodeKnowledge,          // a knowledge-base version, snapshot or page changed or removed, or a note changed but by its next version (000563)
 	"FY341": storage.CodeAIConversation,     // a conversation, turn, tool call or feedback changed against its course, or removed (000369)
 	"FY343": storage.CodeMCPClient,          // a registered AI app's name, redirects or origin changed, a step out of its course, or a delete (000585)
 	"FY342": storage.CodeAIProposal,         // an AI proposal's step out of its lifecycle or by another role, a change to what it proposed, or a delete (000375)
@@ -260,6 +260,14 @@ var fyCodes = map[string]string{
 	"FY900": storage.CodePeopleLink,         // the link deleted, started out of epoch order, moved between states it may not, or a person moved to an older version (000900)
 	"FY901": storage.CodePayrollRun,         // a payroll entry with no receipt from its own transaction (000903)
 	"FY912": storage.CodeSalaryBatch,        // a salary batch's line, event or release changed, a batch moved back, approved or released by its run's preparer or approver, or unapproved (000912)
+	"FYR01": storage.CodeReportDefinition,   // a report definition changed other than as its next version, or deleted (001100)
+	"FYR02": storage.CodeReportSchedule,     // a report schedule changed other than as its next version, or deleted (001100)
+	"FYR03": storage.CodeReportScheduleRun,  // a recorded run of a report schedule changed or deleted (001100)
+	"FYR04": storage.CodeBoardPack,         // a published board pack changed, a pack deleted, or a draft changed out of its course (001101)
+	"FYR05": storage.CodeInvestorUpdate,    // a sent investor update changed, an update deleted, or one sent from an unpublished pack (001101)
+	"FYR06": storage.CodeInvestorRead,      // a read recorded for someone the update was not sent to, or changed (001101)
+	"FYR07": storage.CodeKPIAlert,          // a raised KPI alert changed or deleted (001102)
+	"FYR08": storage.CodeDashboardLayout,   // a dashboard layout changed other than as its next version, or deleted (001103)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
@@ -321,6 +329,10 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"migration_commit_one":                      {storage.CodeDuplicate, "the migration is committed already"},
 	"migration_record_key":                      {storage.CodeDuplicate, "the record is imported already"},
 	"quote_outcome_once":                        {storage.CodeQuoteOutcome, "the quote has an outcome already"},
+	"board_pack_one_draft":                      {storage.CodeBoardPackDraft, "the month has a draft already: edit it, or publish it"},
+	"report_definition_name_live":               {storage.CodeReportName, "a live report already has that name"},
+	"dashboard_layout_role_once":                {storage.CodeVersion, "the role's layout was saved meanwhile"},
+	"dashboard_layout_user_once":                {storage.CodeVersion, "the person's layout was saved meanwhile"},
 	"kpi_input_pkey":                            {storage.CodeVersion, "the month's counts were entered meanwhile"},
 	"check_state_pkey":                          {storage.CodeVersion, "another run wrote the check meanwhile"},
 	"check_owner_pkey":                          {storage.CodeVersion, "the check's owner was named meanwhile"},

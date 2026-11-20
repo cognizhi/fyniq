@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at_revision": {
+      "description": "Read as at this ledger revision.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "minimum": 1,
+      "type": "integer"
+    },
+    "definition": {
+      "$ref": "ReportDefinitionBody.schema.json",
+      "description": "The definition to run; nothing is saved."
+    },
+    "from": {
+      "description": "The run's first month, YYYY-MM; left out, the last month's.",
+      "examples": [
+        "2026-10"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "type": "string"
+    },
+    "to": {
+      "description": "The run's last month, YYYY-MM; left out, the month of the organisation's today.",
+      "examples": [
+        "2026-10"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "definition"
+  ],
+  "title": "RunReportDraftInputBody",
+  "type": "object"
+}

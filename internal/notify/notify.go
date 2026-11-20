@@ -53,6 +53,17 @@ type Type struct {
 // ExportReadyType tells a person their export is ready to download, or why it could not be made (FR-RPT-09).
 const ExportReadyType = "reports.export_ready"
 
+// ReportScheduledType tells a person a saved report scheduled for them is ready (FR-RPT-07). Its title names the report and its month and
+// carries no figure; the notification links to the signed-in report.
+const ReportScheduledType = "reports.scheduled"
+
+// InvestorUpdateType tells a Board viewer or an investor that an update was sent to them (FR-EQ-23): its title names the update and carries no figure;
+// the notification links to the signed-in update.
+const InvestorUpdateType = "investor.update"
+
+// KPIAnomalyType tells the people who approve budgets that a closed month's spend in a category broke from its trend (FR-KPI-06).
+const KPIAnomalyType = "kpi.anomaly"
+
 var Catalogue = []Type{
 	{Key: "security.sign_in", Label: "You signed in", Category: Security, Severity: "info", Email: storage.EmailOff, Locked: true,
 		Note: "Every sign-in is emailed at once by the sign-in alert, so it is not emailed again here"},
@@ -92,6 +103,9 @@ var Catalogue = []Type{
 	{Key: "jobs.failed", Label: "A background job failed", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
 	{Key: AIBudgetType, Label: "An AI budget reached 80% this month", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
 	{Key: ExportReadyType, Label: "Your export is ready", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
+	{Key: ReportScheduledType, Label: "A report scheduled for you is ready", Category: Operations, Severity: "info", Email: storage.EmailDaily},
+	{Key: InvestorUpdateType, Label: "An investor update was sent to you", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
+	{Key: KPIAnomalyType, Label: "Spend in a category is well above its trend", Category: Operations, Severity: "warning", Actionable: true, Email: storage.EmailDaily},
 	{Key: CommentMentionType, Label: "Someone mentioned you in a comment", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: TestType, Label: "A test notification you sent", Category: Operations, Severity: "info", Email: storage.EmailImmediate},
 }

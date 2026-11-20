@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "dimension_value_ids": {
+      "description": "The P\u0026L rows count only the lines that carry each of these dimension values (FR-DIM-02); a balance sheet row is not narrowed, since a dimension's lines are one side of their entries.",
+      "items": {
+        "description": "A value of one of the organisation's dimensions.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c40"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "include_zero": {
+      "description": "Show an account or group row whose figures are all zero; off by default.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "title": "ReportFiltersBody",
+  "type": "object"
+}

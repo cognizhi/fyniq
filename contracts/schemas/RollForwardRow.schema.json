@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "added": {
+      "$ref": "Money.schema.json",
+      "description": "Scheduled by documents dated inside the run."
+    },
+    "closing": {
+      "$ref": "Money.schema.json",
+      "description": "What they hold at the end: opening + added - released + reversed, exactly."
+    },
+    "opening": {
+      "$ref": "Money.schema.json",
+      "description": "What its schedules held on the day before the run."
+    },
+    "party_id": {
+      "description": "The customer or supplier; left out for a spread with none, such as a bank line.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "party_name": {
+      "description": "Their name, or 'No customer or supplier' for a spread with none.",
+      "examples": [
+        "Acme Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "released": {
+      "$ref": "Money.schema.json",
+      "description": "Released to the profit and loss inside the run."
+    },
+    "reversed": {
+      "$ref": "Money.schema.json",
+      "description": "Reversed or cancelled inside the run: a reversed release, a credit note, an edit or a cancellation; it moves the balance either way."
+    }
+  },
+  "required": [
+    "party_name",
+    "opening",
+    "added",
+    "released",
+    "reversed",
+    "closing"
+  ],
+  "title": "RollForwardRow",
+  "type": "object"
+}

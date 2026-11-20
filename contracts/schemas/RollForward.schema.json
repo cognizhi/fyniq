@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The base currency every amount is in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The run's first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "holdings": {
+      "description": "1210 Prepayments and 2400 Deferred revenue, each that the chart has.",
+      "items": {
+        "$ref": "RollForwardHolding.schema.json"
+      },
+      "type": "array"
+    },
+    "to": {
+      "description": "The run's last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "from",
+    "to",
+    "holdings"
+  ],
+  "title": "RollForward",
+  "type": "object"
+}

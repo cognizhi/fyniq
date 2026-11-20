@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "h": {
+      "description": "Its height in rows.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 4,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "tile": {
+      "description": "The tile: a KPI's key, from listDashboardTiles.",
+      "examples": [
+        "cash"
+      ],
+      "maxLength": 40,
+      "type": "string"
+    },
+    "w": {
+      "description": "Its width in columns, so that x + w is at most 12.",
+      "examples": [
+        4
+      ],
+      "format": "int64",
+      "maximum": 12,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "x": {
+      "description": "Its column, from 0.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "maximum": 11,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "y": {
+      "description": "Its row, from 0.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "maximum": 100,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "tile",
+    "x",
+    "y",
+    "w",
+    "h"
+  ],
+  "title": "DashboardTile",
+  "type": "object"
+}

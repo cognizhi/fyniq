@@ -829,3 +829,11 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | ai.proposals: recurring journal and budget draft sections
 
 ## [2026-11-20] compile | ai.proposals: bank rule section
+
+## [2026-11-20] compile | reports.builder: the report builder's guide compiled into its task page
+
+## [2026-11-20] compile | reports.board-pack, equity.updates, equity.board-portal: the board pack, investor update and portal guides compiled
+
+## [2026-11-20] compile | reports.dashboards: the configurable dashboard and spend alerts guide compiled
+
+## [2026-11-20] compile | ai-proposals: approval quality now says edited and undone approvals, per task type and approver (AI-33)

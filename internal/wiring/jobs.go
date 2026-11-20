@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/ai"
+	"github.com/cognizhi/fyniq/internal/anomalyjob"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
@@ -54,6 +55,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/render"
 	"github.com/cognizhi/fyniq/internal/reportexport"
+	"github.com/cognizhi/fyniq/internal/reportsend"
 	"github.com/cognizhi/fyniq/internal/salesmail"
 )
 
@@ -258,6 +260,14 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"bank.releases": func(ctx context.Context) error {
 			_, err := journal.ReleaseBankTransactionsDueAll(ctx, k.Store, clock.Now())
+			return err
+		},
+		anomalyjob.Job: func(ctx context.Context) error { // FR-KPI-06: a closed month's category spend above its trend
+			_, err := anomalyjob.Runner{Store: k.Store, Outbox: k.dispatcher(clock), Clock: clock}.RunAll(ctx)
+			return err
+		},
+		reportsend.Job: func(ctx context.Context) error { // FR-RPT-07: the saved reports that are due, each recipient's right checked again
+			_, err := reportsend.Runner{Store: k.Store, Outbox: k.dispatcher(clock), Clock: clock}.RunAll(ctx)
 			return err
 		},
 		"assets.depreciation": func(ctx context.Context) error { // FR-FA-02: each asset's months due by today

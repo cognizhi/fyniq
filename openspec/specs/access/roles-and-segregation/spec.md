@@ -1711,6 +1711,20 @@ Source: PRD-001 §D
 - **WHEN** a user manages their own MCP connection (opting in, consenting, revoking)
 - **THEN** the Employee, the Auditor, the Board viewer and the AI assistant have no right over it (—)
 
+### Requirement: Permission matrix: Report definitions and schedules
+In Standard mode, each role SHALL hold only the rights over saving, sharing and scheduling a report that the permission matrix gives it (rev 0.541): reading and running a report is the Reports row's.
+
+Source: PRD-001 §D
+
+#### Scenario: Create or prepare
+- **WHEN** a user saves, shares or schedules a report
+- **THEN** the Owner, the Administrator, the Finance controller, the Accountant and the Bookkeeper can create or prepare (C)
+- **AND** scheduling is for the Owner, the Administrator, the Finance controller and the Accountant
+
+#### Scenario: No access
+- **WHEN** a user saves, shares or schedules a report
+- **THEN** the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over it (—)
+
 ### Requirement: Super admin outside the permission matrix
 The Super admin (FR-ADM-06/07) SHALL be an installation role outside the permission matrix that manages sign-in providers, installation-wide email and messaging connections and announcements to everyone, and SHALL see an organisation's data only as a member.
 

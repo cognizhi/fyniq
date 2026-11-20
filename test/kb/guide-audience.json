@@ -192,6 +192,27 @@
     "status": "draft"
   },
   {
+    "file": "board-pack.md",
+    "key": "reports.board-pack",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "board-portal.md",
+    "key": "equity.board-portal",
+    "roles": [
+      "board_viewer",
+      "company_secretary",
+      "owner",
+      "controller"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "budgets.md",
     "key": "planning.budgets",
     "roles": [
@@ -421,6 +442,22 @@
     "status": "draft"
   },
   {
+    "file": "dashboards.md",
+    "key": "reports.dashboards",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "auditor",
+      "tax_agent",
+      "dpo",
+      "board_viewer"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "data-export.md",
     "key": "settings.data",
     "roles": [
@@ -633,6 +670,16 @@
       "auditor",
       "dpo",
       "super_admin"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "investor-updates.md",
+    "key": "equity.updates",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant"
     ],
     "status": "draft"
   },
@@ -952,6 +999,21 @@
       "owner",
       "auditor",
       "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "report-builder.md",
+    "key": "reports.builder",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "auditor",
+      "tax_agent",
+      "dpo"
     ],
     "status": "draft"
   },

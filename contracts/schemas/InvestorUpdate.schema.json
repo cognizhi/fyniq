@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "asks": {
+      "description": "What investors are asked for.",
+      "examples": [
+        "Introductions to two banks."
+      ],
+      "type": "string"
+    },
+    "edit": {
+      "description": "A draft's edits, which is its ETag.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "highlights": {
+      "description": "What a person wrote as the highlights.",
+      "examples": [
+        "Revenue passed S$50,000."
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The update's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "monthly or quarterly.",
+      "enum": [
+        "monthly",
+        "quarterly"
+      ],
+      "examples": [
+        "monthly"
+      ],
+      "type": "string"
+    },
+    "pack": {
+      "$ref": "BoardPack.schema.json",
+      "description": "The pack it is built from, with its figures, when the update is opened."
+    },
+    "pack_id": {
+      "description": "The published pack it is built from: its KPIs, cash, runway and statements are the pack's.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "read": {
+      "description": "For a recipient: whether they have opened it.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "read_by": {
+      "description": "For the people who send it: the recipients who have opened it, so far.",
+      "items": {
+        "description": "A member's user ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "recipients": {
+      "description": "The members it was sent to; fixed when it is sent.",
+      "items": {
+        "description": "A member's user ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "sent_at": {
+      "description": "When it was sent.",
+      "examples": [
+        "2026-11-05T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "status": {
+      "description": "draft or sent; a sent update never changes.",
+      "enum": [
+        "draft",
+        "sent"
+      ],
+      "examples": [
+        "sent"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "Its title.",
+      "examples": [
+        "October 2026 investor update"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "pack_id",
+    "kind",
+    "title",
+    "highlights",
+    "asks",
+    "recipients",
+    "status",
+    "edit"
+  ],
+  "title": "InvestorUpdate",
+  "type": "object"
+}

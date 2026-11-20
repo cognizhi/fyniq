@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "description": "monthly or quarterly.",
+      "enum": [
+        "monthly",
+        "quarterly"
+      ],
+      "examples": [
+        "monthly"
+      ],
+      "type": "string"
+    },
+    "pack_id": {
+      "description": "The published pack to build it from.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "title": {
+      "description": "Its title.",
+      "examples": [
+        "October 2026 investor update"
+      ],
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "pack_id",
+    "kind",
+    "title"
+  ],
+  "title": "CreateInvestorUpdateInputBody",
+  "type": "object"
+}

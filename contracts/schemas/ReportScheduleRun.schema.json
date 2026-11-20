@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ledger_revision": {
+      "description": "The ledger revision when it ran.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "period": {
+      "description": "The month it was for.",
+      "examples": [
+        "2026-10"
+      ],
+      "type": "string"
+    },
+    "ran_at": {
+      "description": "When it ran.",
+      "examples": [
+        "2026-11-05T01:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "ran_on": {
+      "description": "The day it ran.",
+      "examples": [
+        "2026-11-05"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "sent": {
+      "description": "How many recipients were told.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "skipped": {
+      "description": "Whom it skipped, and why.",
+      "items": {
+        "$ref": "SkippedSend.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "ran_on",
+    "period",
+    "ledger_revision",
+    "sent",
+    "skipped",
+    "ran_at"
+  ],
+  "title": "ReportScheduleRun",
+  "type": "object"
+}

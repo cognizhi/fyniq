@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "month": {
+      "description": "The month the pack is for, YYYY-MM; the books must have a period for it.",
+      "examples": [
+        "2026-10"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "month"
+  ],
+  "title": "CreateBoardPackInputBody",
+  "type": "object"
+}

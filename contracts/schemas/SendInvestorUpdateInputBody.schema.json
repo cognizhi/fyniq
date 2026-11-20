@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "recipients": {
+      "description": "Member user IDs: each an active member who may read the board pack, such as a Board viewer (BPACK-04).",
+      "items": {
+        "description": "A member's user ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "recipients"
+  ],
+  "title": "SendInvestorUpdateInputBody",
+  "type": "object"
+}

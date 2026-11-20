@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "asks": {
+      "description": "The asks.",
+      "examples": [
+        "Introductions to two banks."
+      ],
+      "maxLength": 5000,
+      "type": "string"
+    },
+    "highlights": {
+      "description": "The highlights.",
+      "examples": [
+        "Revenue passed S$50,000."
+      ],
+      "maxLength": 5000,
+      "type": "string"
+    },
+    "title": {
+      "description": "Its title.",
+      "examples": [
+        "October 2026 investor update"
+      ],
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "highlights",
+    "asks"
+  ],
+  "title": "EditInvestorUpdateInputBody",
+  "type": "object"
+}

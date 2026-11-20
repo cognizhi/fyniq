@@ -194,6 +194,7 @@
     "access/roles-and-segregation: Permission matrix: AI activity log",
     "access/roles-and-segregation: Permission matrix: Connected apps: enable MCP, allowlist clients, grant integration scopes",
     "access/roles-and-segregation: Permission matrix: Own MCP connection (opt in, consent, revoke)",
+    "access/roles-and-segregation: Permission matrix: Report definitions and schedules",
     "access/roles-and-segregation: Super admin outside the permission matrix",
     "access/roles-and-segregation: Company secretary in the permission matrix",
     "FR-ADM-01",

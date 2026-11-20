@@ -146,6 +146,10 @@ var PlatformSchedules = []Schedule{
 	// Hourly, the months of depreciation of registered assets due by each organisation's own today (FR-FA-02, ENG-05;
 	// rev 0.150).
 	{Job: "assets.depreciation", Every: time.Hour, Offset: 50 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Hourly, the saved reports that are due, each recipient's right checked again and told by a notification with no figure (FR-RPT-07).
+	// Daily at 08:30 Singapore time, after the month closes, the categories whose spend broke from their trend (FR-KPI-06).
+	{Job: "kpi.anomalies", Every: 24 * time.Hour, Offset: 0*time.Hour + 30*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
+	{Job: "reports.send", Every: time.Hour, Offset: 25 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Weekly on Monday at 02:00 in Singapore (Sunday 18:00 UTC; the epoch was a Thursday), the previous week's sample of
 	// auto-reconciliations into each organisation's weekly review (FR-BNK-14, FM-3; rev 0.142).
 	{Job: "bank.review-sample", Every: 7 * 24 * time.Hour, Offset: 90 * time.Hour, Lease: 30 * time.Minute, Stale: 7*24*time.Hour + 3*time.Hour},

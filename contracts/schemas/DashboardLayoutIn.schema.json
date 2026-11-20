@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "tiles": {
+      "description": "The tiles; an empty list clears the layout, so the role's, or the default, shows again.",
+      "items": {
+        "$ref": "DashboardTile.schema.json"
+      },
+      "maxItems": 24,
+      "type": "array"
+    }
+  },
+  "required": [
+    "tiles"
+  ],
+  "title": "DashboardLayoutIn",
+  "type": "object"
+}

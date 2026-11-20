@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The updates, newest first: a reader limited to the board pack sees those sent to them.",
+      "items": {
+        "$ref": "InvestorUpdate.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last.",
+      "examples": [
+        "eyJhZnRlciI6IjEifQ"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "InvestorUpdatePage",
+  "type": "object"
+}

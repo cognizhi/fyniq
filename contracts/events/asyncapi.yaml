@@ -78,11 +78,21 @@ channels:
     messages:
       fyniq.email.suppressed.v1:
         $ref: '#/components/messages/fyniq.email.suppressed.v1'
+  fyniq.investor.update.v1:
+    address: fyniq.investor.update.v1
+    messages:
+      fyniq.investor.update.v1:
+        $ref: '#/components/messages/fyniq.investor.update.v1'
   fyniq.jobs.failed.v1:
     address: fyniq.jobs.failed.v1
     messages:
       fyniq.jobs.failed.v1:
         $ref: '#/components/messages/fyniq.jobs.failed.v1'
+  fyniq.kpi.anomaly.v1:
+    address: fyniq.kpi.anomaly.v1
+    messages:
+      fyniq.kpi.anomaly.v1:
+        $ref: '#/components/messages/fyniq.kpi.anomaly.v1'
   fyniq.ledger.posted.v1:
     address: fyniq.ledger.posted.v1
     messages:
@@ -133,6 +143,11 @@ channels:
     messages:
       fyniq.reports.export_ready.v1:
         $ref: '#/components/messages/fyniq.reports.export_ready.v1'
+  fyniq.reports.scheduled.v1:
+    address: fyniq.reports.scheduled.v1
+    messages:
+      fyniq.reports.scheduled.v1:
+        $ref: '#/components/messages/fyniq.reports.scheduled.v1'
   fyniq.security.alert.v1:
     address: fyniq.security.alert.v1
     messages:
@@ -303,6 +318,13 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.email.suppressed.v1.schema.json'
+    fyniq.investor.update.v1:
+      name: fyniq.investor.update.v1
+      title: fyniq.investor.update.v1
+      summary: "Fires when: An investor update was sent to you"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.investor.update.v1.schema.json'
     fyniq.jobs.failed.v1:
       name: fyniq.jobs.failed.v1
       title: fyniq.jobs.failed.v1
@@ -310,6 +332,13 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.jobs.failed.v1.schema.json'
+    fyniq.kpi.anomaly.v1:
+      name: fyniq.kpi.anomaly.v1
+      title: fyniq.kpi.anomaly.v1
+      summary: "Fires when: Spend in a category is well above its trend"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.kpi.anomaly.v1.schema.json'
     fyniq.ledger.posted.v1:
       name: fyniq.ledger.posted.v1
       title: fyniq.ledger.posted.v1
@@ -380,6 +409,13 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.reports.export_ready.v1.schema.json'
+    fyniq.reports.scheduled.v1:
+      name: fyniq.reports.scheduled.v1
+      title: fyniq.reports.scheduled.v1
+      summary: "Fires when: A report scheduled for you is ready"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.reports.scheduled.v1.schema.json'
     fyniq.security.alert.v1:
       name: fyniq.security.alert.v1
       title: fyniq.security.alert.v1

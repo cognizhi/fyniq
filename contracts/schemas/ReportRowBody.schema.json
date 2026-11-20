@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "An account row's account code.",
+      "examples": [
+        "4000"
+      ],
+      "maxLength": 20,
+      "type": "string"
+    },
+    "format": {
+      "description": "A calc row's format: amount (the currency's decimals), percent (the quotient times 100, 1 decimal) or ratio (2 decimals), rounded once, half away from zero (RND-KPI).",
+      "enum": [
+        "amount",
+        "percent",
+        "ratio"
+      ],
+      "examples": [
+        "percent"
+      ],
+      "type": "string"
+    },
+    "formula": {
+      "description": "A calc row's formula: numbers, the IDs of rows above it, + - * / and brackets, such as (rev - cogs) / rev. A division by zero is not available, never zero.",
+      "examples": [
+        "(rev - cogs) / rev"
+      ],
+      "maxLength": 300,
+      "type": "string"
+    },
+    "group": {
+      "description": "A group row's report group, as the chart names it.",
+      "examples": [
+        "Revenue"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    },
+    "id": {
+      "description": "The row's ID: lower-case letters, digits and underscores, starting with a letter. A formula names a row by it.",
+      "examples": [
+        "rev"
+      ],
+      "maxLength": 24,
+      "minLength": 1,
+      "type": "string"
+    },
+    "kind": {
+      "description": "account: one account by its code; group: every account of a report group of the chart; calc: a formula over rows above it; heading: a label with no figures.",
+      "enum": [
+        "account",
+        "group",
+        "calc",
+        "heading"
+      ],
+      "examples": [
+        "group"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "What the row is called.",
+      "examples": [
+        "Revenue"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "label",
+    "kind"
+  ],
+  "title": "ReportRowBody",
+  "type": "object"
+}

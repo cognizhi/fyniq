@@ -10,6 +10,14 @@
       "format": "int64",
       "type": "integer"
     },
+    "edited": {
+      "description": "How many of them were approved with an item changed or removed (rev 0.544, AI-33).",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
     "quick": {
       "description": "How many of them within ten seconds of first opening the review, with no item changed, or with no look at all.",
       "examples": [
@@ -29,7 +37,8 @@
   "required": [
     "user",
     "approved",
-    "quick"
+    "quick",
+    "edited"
   ],
   "title": "QualityApprover",
   "type": "object"
