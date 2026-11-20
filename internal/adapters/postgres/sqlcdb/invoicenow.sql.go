@@ -178,6 +178,69 @@ func (q *Queries) InsertInvoiceExclusion(ctx context.Context, arg InsertInvoiceE
 	return i, err
 }
 
+const insertInvoiceInbound = `-- name: InsertInvoiceInbound :one
+INSERT INTO fyniq.invoicenow_inbound (message_id, cursor, sender, number, received_at, sha256, payload, status, bill_id, note, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+RETURNING id, message_id, cursor, sender, number, received_at, sha256, status, bill_id, note
+`
+
+type InsertInvoiceInboundParams struct {
+	MessageID string
+	Cursor    string
+	Sender    string
+	Number    string
+	At        time.Time
+	Sha256    []byte
+	Payload   []byte
+	Status    string
+	BillID    *uuid.UUID
+	Note      *string
+	CreatedBy string
+}
+
+type InsertInvoiceInboundRow struct {
+	ID         uuid.UUID
+	MessageID  string
+	Cursor     string
+	Sender     string
+	Number     string
+	ReceivedAt time.Time
+	Sha256     []byte
+	Status     string
+	BillID     *uuid.UUID
+	Note       *string
+}
+
+func (q *Queries) InsertInvoiceInbound(ctx context.Context, arg InsertInvoiceInboundParams) (InsertInvoiceInboundRow, error) {
+	row := q.db.QueryRow(ctx, insertInvoiceInbound,
+		arg.MessageID,
+		arg.Cursor,
+		arg.Sender,
+		arg.Number,
+		arg.At,
+		arg.Sha256,
+		arg.Payload,
+		arg.Status,
+		arg.BillID,
+		arg.Note,
+		arg.CreatedBy,
+	)
+	var i InsertInvoiceInboundRow
+	err := row.Scan(
+		&i.ID,
+		&i.MessageID,
+		&i.Cursor,
+		&i.Sender,
+		&i.Number,
+		&i.ReceivedAt,
+		&i.Sha256,
+		&i.Status,
+		&i.BillID,
+		&i.Note,
+	)
+	return i, err
+}
+
 const insertInvoiceSubmission = `-- name: InsertInvoiceSubmission :one
 INSERT INTO fyniq.invoicenow_submission (document_id, document_uuid, version, kind, direction, recipient, payload_sha256, created_at, updated_at, created_by)
 VALUES ($1, $2, $3, $4, $5, $6,
@@ -387,6 +450,79 @@ func (q *Queries) InvoiceExclusionExists(ctx context.Context, id uuid.UUID) (uui
 	return id_2, err
 }
 
+const invoiceInboundCursor = `-- name: InvoiceInboundCursor :one
+SELECT cursor FROM fyniq.invoicenow_inbound ORDER BY id DESC LIMIT 1
+`
+
+func (q *Queries) InvoiceInboundCursor(ctx context.Context) (string, error) {
+	row := q.db.QueryRow(ctx, invoiceInboundCursor)
+	var cursor string
+	err := row.Scan(&cursor)
+	return cursor, err
+}
+
+const invoiceInboundDuplicate = `-- name: InvoiceInboundDuplicate :one
+SELECT id FROM fyniq.invoicenow_inbound WHERE sender = $1 AND number = $2 AND number <> '' AND status <> 'refused' ORDER BY id LIMIT 1
+`
+
+type InvoiceInboundDuplicateParams struct {
+	Sender string
+	Number string
+}
+
+func (q *Queries) InvoiceInboundDuplicate(ctx context.Context, arg InvoiceInboundDuplicateParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, invoiceInboundDuplicate, arg.Sender, arg.Number)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const invoiceInboundOf = `-- name: InvoiceInboundOf :one
+SELECT id, message_id, cursor, sender, number, received_at, sha256, status, bill_id, note FROM fyniq.invoicenow_inbound WHERE id = $1
+`
+
+type InvoiceInboundOfRow struct {
+	ID         uuid.UUID
+	MessageID  string
+	Cursor     string
+	Sender     string
+	Number     string
+	ReceivedAt time.Time
+	Sha256     []byte
+	Status     string
+	BillID     *uuid.UUID
+	Note       *string
+}
+
+func (q *Queries) InvoiceInboundOf(ctx context.Context, id uuid.UUID) (InvoiceInboundOfRow, error) {
+	row := q.db.QueryRow(ctx, invoiceInboundOf, id)
+	var i InvoiceInboundOfRow
+	err := row.Scan(
+		&i.ID,
+		&i.MessageID,
+		&i.Cursor,
+		&i.Sender,
+		&i.Number,
+		&i.ReceivedAt,
+		&i.Sha256,
+		&i.Status,
+		&i.BillID,
+		&i.Note,
+	)
+	return i, err
+}
+
+const invoiceInboundPayload = `-- name: InvoiceInboundPayload :one
+SELECT payload FROM fyniq.invoicenow_inbound WHERE id = $1
+`
+
+func (q *Queries) InvoiceInboundPayload(ctx context.Context, id uuid.UUID) ([]byte, error) {
+	row := q.db.QueryRow(ctx, invoiceInboundPayload, id)
+	var payload []byte
+	err := row.Scan(&payload)
+	return payload, err
+}
+
 const invoiceSubmissionLatestOfDocument = `-- name: InvoiceSubmissionLatestOfDocument :one
 SELECT document_uuid, version FROM fyniq.invoicenow_submission WHERE document_id = $1 ORDER BY version DESC LIMIT 1
 `
@@ -500,6 +636,60 @@ func (q *Queries) LatestInvoiceSubmissions(ctx context.Context, documents []uuid
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listInvoiceInbound = `-- name: ListInvoiceInbound :many
+SELECT id, message_id, cursor, sender, number, received_at, sha256, status, bill_id, note FROM fyniq.invoicenow_inbound
+WHERE ($1::uuid IS NULL OR id < $1) ORDER BY id DESC LIMIT $2
+`
+
+type ListInvoiceInboundParams struct {
+	After    *uuid.UUID
+	RowLimit int32
+}
+
+type ListInvoiceInboundRow struct {
+	ID         uuid.UUID
+	MessageID  string
+	Cursor     string
+	Sender     string
+	Number     string
+	ReceivedAt time.Time
+	Sha256     []byte
+	Status     string
+	BillID     *uuid.UUID
+	Note       *string
+}
+
+func (q *Queries) ListInvoiceInbound(ctx context.Context, arg ListInvoiceInboundParams) ([]ListInvoiceInboundRow, error) {
+	rows, err := q.db.Query(ctx, listInvoiceInbound, arg.After, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListInvoiceInboundRow
+	for rows.Next() {
+		var i ListInvoiceInboundRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MessageID,
+			&i.Cursor,
+			&i.Sender,
+			&i.Number,
+			&i.ReceivedAt,
+			&i.Sha256,
+			&i.Status,
+			&i.BillID,
+			&i.Note,
 		); err != nil {
 			return nil, err
 		}
@@ -694,6 +884,54 @@ func (q *Queries) MoveInvoiceSubmission(ctx context.Context, arg MoveInvoiceSubm
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CreatedBy,
+	)
+	return i, err
+}
+
+const settleInvoiceInbound = `-- name: SettleInvoiceInbound :one
+UPDATE fyniq.invoicenow_inbound SET status = $1, bill_id = $2, note = $3 WHERE id = $4 AND status = 'received'
+RETURNING id, message_id, cursor, sender, number, received_at, sha256, status, bill_id, note
+`
+
+type SettleInvoiceInboundParams struct {
+	Status string
+	BillID *uuid.UUID
+	Note   *string
+	ID     uuid.UUID
+}
+
+type SettleInvoiceInboundRow struct {
+	ID         uuid.UUID
+	MessageID  string
+	Cursor     string
+	Sender     string
+	Number     string
+	ReceivedAt time.Time
+	Sha256     []byte
+	Status     string
+	BillID     *uuid.UUID
+	Note       *string
+}
+
+func (q *Queries) SettleInvoiceInbound(ctx context.Context, arg SettleInvoiceInboundParams) (SettleInvoiceInboundRow, error) {
+	row := q.db.QueryRow(ctx, settleInvoiceInbound,
+		arg.Status,
+		arg.BillID,
+		arg.Note,
+		arg.ID,
+	)
+	var i SettleInvoiceInboundRow
+	err := row.Scan(
+		&i.ID,
+		&i.MessageID,
+		&i.Cursor,
+		&i.Sender,
+		&i.Number,
+		&i.ReceivedAt,
+		&i.Sha256,
+		&i.Status,
+		&i.BillID,
+		&i.Note,
 	)
 	return i, err
 }

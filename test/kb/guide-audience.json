@@ -637,6 +637,18 @@
     "status": "draft"
   },
   {
+    "file": "invoicenow.md",
+    "key": "compliance.invoicenow",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "invoices.md",
     "key": "sales.invoices",
     "roles": [

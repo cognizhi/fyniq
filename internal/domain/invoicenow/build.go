@@ -11,6 +11,8 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/gst"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -56,8 +58,8 @@ func percent(rate string) string {
 }
 
 // FromInvoice makes the PINT-SG document of a posted invoice or credit note, read as the engine posted it: the lines'
-// nets, the GST of each code under RND-GST-EXCL, and the totals. A document in another currency than SGD is refused until
-// its totals in Singapore dollars are mapped from the posting (p2-invoicenow tasks, Left). The document UUID is the one the
+// nets, the GST of each code under RND-GST-EXCL, and the totals. A document in another currency than SGD takes its GST and its totals in Singapore dollars from the posting's base amounts, so the
+// document and the ledger agree; one with a deposit deducted, or whose base currency is not SGD, is refused. The document UUID is the one the
 // submissions keep for it.
 func FromInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Document, documentUUID uuid.UUID, base money.Currency) (Document, error) {
 	p, problems, err := invoice.Prepare(ctx, u, doc, base)
@@ -68,9 +70,43 @@ func FromInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Document
 		return Document{}, fmt.Errorf("the invoice cannot be read for InvoiceNow: %v", problems)
 	}
 	inv := p.Invoice
+	var sgdTax, sgdNet, sgdGross *money.Money
 	if inv.Currency.Code != "SGD" {
-		return Document{}, &RefusedError{Findings: []Finding{{Rule: "BR-113-GST-SG", Field: "currency",
-			Message: "the GST and the totals in Singapore dollars of a foreign-currency invoice are not yet made: send it by the tax agent's route until they are"}}}
+		// the totals in Singapore dollars are the posting's own base amounts, so the document and the ledger agree (BR-113-GST-SG)
+		if base.Code != "SGD" || len(inv.Deposits) > 0 {
+			return Document{}, &RefusedError{Findings: []Finding{{Rule: "BR-113-GST-SG", Field: "currency",
+				Message: "the totals in Singapore dollars of this invoice cannot be taken from its posting (a base currency that is not SGD, or a deposit deducted): send it by the tax agent's route"}}}
+		}
+		settings, err := journal.LoadSettings(ctx, u)
+		if err != nil {
+			return Document{}, err
+		}
+		entry, err := ledger.PostInvoice(inv, settings)
+		if err != nil {
+			return Document{}, err
+		}
+		tax, gross := money.Zero(base), money.Zero(base)
+		for _, l := range entry.Lines {
+			amount := l.Base
+			if amount.Sign() < 0 {
+				amount = amount.Neg()
+			}
+			switch settings.Accounts[l.AccountID].Role {
+			case ledger.RoleGSTControl:
+				if tax, err = tax.Add(amount); err != nil {
+					return Document{}, err
+				}
+			case ledger.RoleAccountsReceivable:
+				if gross, err = gross.Add(amount); err != nil {
+					return Document{}, err
+				}
+			}
+		}
+		net, err := gross.Sub(tax)
+		if err != nil {
+			return Document{}, err
+		}
+		sgdTax, sgdNet, sgdGross = &tax, &net, &gross
 	}
 	org, err := u.Organisation(ctx)
 	if err != nil {
@@ -100,7 +136,7 @@ func FromInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Document
 	d := Document{Number: doc.Number, UUID: documentUUID.String(), Issued: inv.Date, Due: p.DueDate, Currency: inv.Currency,
 		Seller: Party{Name: org.Profile.LegalName, UEN: org.Profile.UEN, GST: gstNo, Address: AddressOf(org.Profile.RegisteredAddress, "SG")},
 		Buyer:  Party{Name: p.Customer.LegalName, UEN: p.Customer.UENOrTaxID, Address: AddressOf(p.Customer.Address, p.Customer.Country)},
-		Net:    p.Totals.Net, TaxTotal: p.Totals.GST, Gross: p.Totals.Total}
+		Net:    p.Totals.Net, TaxTotal: p.Totals.GST, Gross: p.Totals.Total, SGDTax: sgdTax, SGDNet: sgdNet, SGDGross: sgdGross}
 	if sch, id, ok := strings.Cut(p.Customer.PeppolID, ":"); ok {
 		d.Buyer.EndpointScheme, d.Buyer.EndpointID = sch, id
 	}

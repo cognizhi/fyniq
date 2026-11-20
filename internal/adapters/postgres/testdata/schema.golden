@@ -1510,6 +1510,19 @@ invoicenow_exclusion | recorded_by | text | not null |
 invoicenow_exclusion | recorded_at | timestamp with time zone | not null | 
 invoicenow_exclusion | withdrawn_at | timestamp with time zone | null | 
 invoicenow_exclusion | withdrawn_by | text | null | 
+invoicenow_inbound | organisation_id | uuid | not null | current_org()
+invoicenow_inbound | id | uuid | not null | uuidv7()
+invoicenow_inbound | message_id | text | not null | 
+invoicenow_inbound | cursor | text | not null | 
+invoicenow_inbound | sender | text | not null | 
+invoicenow_inbound | number | text | not null | 
+invoicenow_inbound | received_at | timestamp with time zone | not null | 
+invoicenow_inbound | sha256 | bytea | not null | 
+invoicenow_inbound | payload | bytea | not null | 
+invoicenow_inbound | status | text | not null | 'received'::text
+invoicenow_inbound | bill_id | uuid | null | 
+invoicenow_inbound | note | text | null | 
+invoicenow_inbound | created_by | text | not null | 
 invoicenow_submission | organisation_id | uuid | not null | current_org()
 invoicenow_submission | id | uuid | not null | uuidv7()
 invoicenow_submission | document_id | uuid | not null | 
@@ -5525,6 +5538,29 @@ invoicenow_exclusion | invoicenow_exclusion_recorded_at_not_null | NOT NULL reco
 invoicenow_exclusion | invoicenow_exclusion_recorded_by_not_null | NOT NULL recorded_by
 invoicenow_exclusion | invoicenow_exclusion_withdrawn_whole | CHECK (((withdrawn_at IS NULL) = (withdrawn_by IS NULL)))
 invoicenow_exclusion | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+invoicenow_inbound | invoicenow_inbound_bill_fkey | FOREIGN KEY (organisation_id, bill_id) REFERENCES document(organisation_id, id)
+invoicenow_inbound | invoicenow_inbound_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+invoicenow_inbound | invoicenow_inbound_created_by_not_null | NOT NULL created_by
+invoicenow_inbound | invoicenow_inbound_cursor_not_null | NOT NULL cursor
+invoicenow_inbound | invoicenow_inbound_drafted_has_bill | CHECK (((status = 'drafted'::text) = (bill_id IS NOT NULL)))
+invoicenow_inbound | invoicenow_inbound_id_not_null | NOT NULL id
+invoicenow_inbound | invoicenow_inbound_message_id_not_null | NOT NULL message_id
+invoicenow_inbound | invoicenow_inbound_message_key | UNIQUE (organisation_id, message_id)
+invoicenow_inbound | invoicenow_inbound_note_length | CHECK (((note IS NULL) OR (length(note) <= 1000)))
+invoicenow_inbound | invoicenow_inbound_number_not_null | NOT NULL number
+invoicenow_inbound | invoicenow_inbound_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+invoicenow_inbound | invoicenow_inbound_organisation_id_not_null | NOT NULL organisation_id
+invoicenow_inbound | invoicenow_inbound_payload_not_null | NOT NULL payload
+invoicenow_inbound | invoicenow_inbound_pkey | PRIMARY KEY (organisation_id, id)
+invoicenow_inbound | invoicenow_inbound_received_at_not_null | NOT NULL received_at
+invoicenow_inbound | invoicenow_inbound_sender_form | CHECK (((sender ~ '^[0-9]{4}:[!-~]{1,100}$'::text) OR (sender = ''::text)))
+invoicenow_inbound | invoicenow_inbound_sender_not_null | NOT NULL sender
+invoicenow_inbound | invoicenow_inbound_sha | CHECK ((octet_length(sha256) = 32))
+invoicenow_inbound | invoicenow_inbound_sha256_not_null | NOT NULL sha256
+invoicenow_inbound | invoicenow_inbound_size | CHECK (((octet_length(payload) >= 1) AND (octet_length(payload) <= 10485760)))
+invoicenow_inbound | invoicenow_inbound_status_known | CHECK ((status = ANY (ARRAY['received'::text, 'drafted'::text, 'refused'::text])))
+invoicenow_inbound | invoicenow_inbound_status_not_null | NOT NULL status
+invoicenow_inbound | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 invoicenow_submission | invoicenow_submission_ack_with_status | CHECK (((status = 'acknowledged'::text) = ((iras_ack IS NOT NULL) AND ((length(iras_ack) >= 1) AND (length(iras_ack) <= 100)))))
 invoicenow_submission | invoicenow_submission_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 invoicenow_submission | invoicenow_submission_created_at_not_null | NOT NULL created_at
@@ -8298,6 +8334,7 @@ CREATE INDEX installation_change_pending ON fyniq.installation_change USING btre
 CREATE INDEX invoice_dispute_invoice ON fyniq.invoice_dispute USING btree (organisation_id, invoice_id, created_at)
 CREATE INDEX invoicenow_contingency_period ON fyniq.invoicenow_contingency USING btree (organisation_id, period_from, period_to)
 CREATE INDEX invoicenow_event_submission ON fyniq.invoicenow_event USING btree (organisation_id, submission_id, at)
+CREATE INDEX invoicenow_inbound_sender_number ON fyniq.invoicenow_inbound USING btree (organisation_id, sender, number)
 CREATE INDEX invoicenow_submission_status ON fyniq.invoicenow_submission USING btree (organisation_id, status, created_at)
 CREATE INDEX invoicenow_submission_uuid ON fyniq.invoicenow_submission USING btree (organisation_id, document_uuid)
 CREATE INDEX ip_rate_window_start ON fyniq.ip_rate_window USING btree (window_start)
@@ -8630,6 +8667,8 @@ CREATE UNIQUE INDEX invoicenow_contingency_pkey ON fyniq.invoicenow_contingency 
 CREATE UNIQUE INDEX invoicenow_event_pkey ON fyniq.invoicenow_event USING btree (organisation_id, id)
 CREATE UNIQUE INDEX invoicenow_exclusion_live ON fyniq.invoicenow_exclusion USING btree (organisation_id, document_id) WHERE (withdrawn_at IS NULL)
 CREATE UNIQUE INDEX invoicenow_exclusion_pkey ON fyniq.invoicenow_exclusion USING btree (organisation_id, id)
+CREATE UNIQUE INDEX invoicenow_inbound_message_key ON fyniq.invoicenow_inbound USING btree (organisation_id, message_id)
+CREATE UNIQUE INDEX invoicenow_inbound_pkey ON fyniq.invoicenow_inbound USING btree (organisation_id, id)
 CREATE UNIQUE INDEX invoicenow_submission_pkey ON fyniq.invoicenow_submission USING btree (organisation_id, id)
 CREATE UNIQUE INDEX invoicenow_submission_version_key ON fyniq.invoicenow_submission USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX ip_rate_window_pkey ON fyniq.ip_rate_window USING btree (client, kind, window_start)
@@ -9087,6 +9126,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoice_dispute DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoice_dispute', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_contingency DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_contingency', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_exclusion DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_exclusion', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_inbound DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_inbound', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_submission DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_submission', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
@@ -9377,6 +9417,8 @@ CREATE TRIGGER invoicenow_event_guard BEFORE DELETE OR UPDATE ON fyniq.invoiceno
 CREATE TRIGGER invoicenow_event_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_event FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER invoicenow_exclusion_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_exclusion FOR EACH ROW EXECUTE FUNCTION invoicenow_exclusion_guard()
 CREATE TRIGGER invoicenow_exclusion_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_exclusion FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER invoicenow_inbound_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_inbound FOR EACH ROW EXECUTE FUNCTION invoicenow_inbound_guard()
+CREATE TRIGGER invoicenow_inbound_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_inbound FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER invoicenow_submission_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_submission FOR EACH ROW EXECUTE FUNCTION invoicenow_submission_guard()
 CREATE TRIGGER invoicenow_submission_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_submission FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER journal_entry_asset_depreciation BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'asset_depreciation'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_asset_depreciation()
@@ -9775,6 +9817,7 @@ invoice_dispute | tenant_isolation | * | (organisation_id = current_org()) | (or
 invoicenow_contingency | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 invoicenow_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 invoicenow_exclusion | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoicenow_inbound | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 invoicenow_submission | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10042,6 +10085,7 @@ invoice_dispute | enabled | forced
 invoicenow_contingency | enabled | forced
 invoicenow_event | enabled | forced
 invoicenow_exclusion | enabled | forced
+invoicenow_inbound | enabled | forced
 invoicenow_submission | enabled | forced
 ip_rate_window | disabled | not forced
 item | enabled | forced
@@ -10408,6 +10452,7 @@ invoice_dispute_guard() → trigger | security invoker | v | search_path=pg_cata
 invoicenow_contingency_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 138e294d1c10458554a35a3f3320cea9
 invoicenow_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d4982773ad655f19dec2dba77244a923
 invoicenow_exclusion_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7e3675d3ea2ff6349b15e6f7dfe65e1e
+invoicenow_inbound_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 027ede3d19c4c30aa956a6cd6bbb32c9
 invoicenow_submission_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 00d571f76ae28e8200f30472da101241
 is_owner(p_org uuid, p_membership uuid, p_now timestamp with time zone) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 97b45f40b83ee4da8c083c1ed8bd9b3b
 is_super_admin(p_user uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 74b765a558e7f7fc6d37b5f2a3be3c11

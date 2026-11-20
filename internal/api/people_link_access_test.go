@@ -178,6 +178,15 @@ func TestAnIdentitysAccessIsToldToNemuraWhenARoleOrAPasskeyOrMembershipChanges(t
 	if len(access()) != 0 {
 		t.Fatalf("nothing is queued before something changes: %v", access())
 	}
+	// Only a member mapped to a person of the link crosses (CrossOnlyMappedMembers): an unmapped member's word is not queued, and mapping them queues it.
+	if err := e.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) error { return e.api.tellNemuraEveryone(ctx, u) }); err != nil || len(access()) != 0 {
+		t.Fatalf("an unmapped member crossed: %v %v", access(), err)
+	}
+	w.mapUser(w.approverUser, "Wei Jie Lim")
+	w.mapUser(mei, "Mei Ling Tan")
+	if len(access()) != 2 {
+		t.Fatalf("mapping two members told Nemura of their two identities: %v", access())
+	}
 	tell := func(user uuid.UUID) {
 		if err := e.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) error { return e.api.tellNemuraAccess(ctx, u, user) }); err != nil {
 			t.Fatal(err)
@@ -368,6 +377,28 @@ func TestNemuraEndsTheSessionsOfAMappedUserAndNoOneElse(t *testing.T) {
 	_ = mei
 }
 
+// mapUser makes a person of the link and maps the user to them, as a person of the people team does (mapPersonToUser): the identity of a mapped user alone crosses to Nemura (CrossOnlyMappedMembers).
+func (w *runWorld) mapUser(user uuid.UUID, name string) {
+	w.e.t.Helper()
+	person := uuid.NewString()
+	if r := w.nemuraSays(peoplelink.TypePersonUpserted, "person", person, 1, map[string]any{"person_id": person, "display_name": name, "work_email": "x@example.com", "status": "active", "deleted": false}, nil); r.Status != http.StatusOK {
+		w.e.t.Fatalf("the person: %d %s", r.Status, r.Raw)
+	}
+	admin := w.e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{authz.Administrator}})
+	if r := w.e.call(http.MethodPost, "/v1/people-link/people/"+person+"/user", admin, map[string]any{"user_id": user.String()}); r.Status != http.StatusOK {
+		w.e.t.Fatalf("mapping: %d %s", r.Status, r.Raw)
+	}
+}
+
+func (w *runWorld) preparerUser(t *testing.T) uuid.UUID {
+	t.Helper()
+	u, err := w.e.store.UserForIdentity(context.Background(), w.preparer.Issuer, w.preparer.Subject)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return u
+}
+
 func wei(w *runWorld) uuid.UUID { return w.approverUser }
 
 // sessionEvent sends an identity.session.revoked from Nemura, signed with the link key, as the token's client.
@@ -475,7 +506,11 @@ func TestEnrollingOrRevokingAPasskeyIsToldToALinkedNemura(t *testing.T) {
 		return
 	}
 	if seen, _ := passkeyOf(); seen {
-		t.Fatal("nothing is queued about Mei Ling before she enrols a passkey")
+		t.Fatal("nothing is queued about Mei Ling before she is mapped")
+	}
+	w.mapUser(w.preparerUser(t), "Mei Ling Tan")
+	if seen, passkey := passkeyOf(); !seen || passkey {
+		t.Fatalf("mapping Mei Ling told Nemura she has no passkey: %v %v", seen, passkey)
 	}
 	authenticator := passkeytest.New(t, w.rpHost, w.origin)
 	r := w.desk.call(http.MethodPost, "/v1/session/passkeys/challenge", "same-origin", nil)

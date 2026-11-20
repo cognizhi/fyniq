@@ -622,6 +622,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/invoicenow/contingencies/{contingency_id}/approve` (approveInvoiceNowContingency): Approve a contingency
 - `POST /v1/invoicenow/exclusions` (createInvoiceNowExclusion): Leave a document out of the InvoiceNow submissions
 - `POST /v1/invoicenow/exclusions/{exclusion_id}/withdraw` (withdrawInvoiceNowExclusion): Withdraw an exclusion
+- `GET /v1/invoicenow/inbound` (listInvoiceNowInbound): List the invoices received through InvoiceNow
+- `POST /v1/invoicenow/inbound/poll` (pollInvoiceNowInbound): Receive the invoices suppliers sent through InvoiceNow
+- `POST /v1/invoicenow/inbound/{inbound_id}/draft` (draftInvoiceNowInbound): Make the draft bill of a received document
 - `GET /v1/invoicenow/submissions` (listInvoiceNowSubmissions): List the InvoiceNow submissions
 - `POST /v1/invoicenow/submissions` (queueInvoiceNowSubmission): Queue an invoice or credit note for InvoiceNow
 - `POST /v1/invoicenow/submissions/{submission_id}/retry` (retryInvoiceNowSubmission): Queue a failed submission again

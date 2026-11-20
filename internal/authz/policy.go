@@ -1172,20 +1172,20 @@ var (
 	// A customer's dispute of an invoice, or promise to pay it (FR-AR-08): recorded and resolved under "Invoices" with the right to post.
 	// Model B (FR-PSP-03, FR-PSP-07): the mirrored provider invoices and subscriptions are read under "Bank transactions" like the provider's payouts; issuing the drafts
 	// made of them is the right to post on "Invoices".
-	ListPaymentProviderInvoices  = Policy{Operation: "getPaymentProviderInvoices", Capability: BankTransactions, Need: View}
-	PostPaymentProviderInvoices  = Policy{Operation: "postPaymentProviderInvoices", Capability: Invoices, Need: Post}
-	CreateInvoiceDispute  = Policy{Operation: "createInvoiceDispute", Capability: Invoices, Need: Post}
-	GetInvoiceDisputes    = Policy{Operation: "getInvoiceDisputes", Capability: Invoices, Need: View}
-	ResolveInvoiceDispute = Policy{Operation: "resolveInvoiceDispute", Capability: Invoices, Need: Post}
-	CreatePortalLink       = Policy{Operation: "createPortalLink", Capability: Invoices, Need: Post}
-	GetContactPortalLinks  = Policy{Operation: "getContactPortalLinks", Capability: Invoices, Need: View}
-	RevokePortalLink       = Policy{Operation: "revokePortalLink", Capability: Invoices, Need: Post}
-	GetPortal              = Policy{Operation: "getPortal", Capability: Invoices, Need: View, Public: true}
-	GetPortalInvoicePDF    = Policy{Operation: "getPortalInvoicePDF", Capability: Invoices, Need: View, Public: true}
-	GetPortalStatement     = Policy{Operation: "getPortalStatement", Capability: Invoices, Need: View, Public: true}
-	CreateInvoicePaymentLink = Policy{Operation: "createInvoicePaymentLink", Capability: Invoices, Need: Post}
-	GetInvoicePaymentLink    = Policy{Operation: "getInvoicePaymentLink", Capability: Invoices, Need: View}
-	CancelInvoicePaymentLink = Policy{Operation: "cancelInvoicePaymentLink", Capability: Invoices, Need: Post}
+	ListPaymentProviderInvoices = Policy{Operation: "getPaymentProviderInvoices", Capability: BankTransactions, Need: View}
+	PostPaymentProviderInvoices = Policy{Operation: "postPaymentProviderInvoices", Capability: Invoices, Need: Post}
+	CreateInvoiceDispute        = Policy{Operation: "createInvoiceDispute", Capability: Invoices, Need: Post}
+	GetInvoiceDisputes          = Policy{Operation: "getInvoiceDisputes", Capability: Invoices, Need: View}
+	ResolveInvoiceDispute       = Policy{Operation: "resolveInvoiceDispute", Capability: Invoices, Need: Post}
+	CreatePortalLink            = Policy{Operation: "createPortalLink", Capability: Invoices, Need: Post}
+	GetContactPortalLinks       = Policy{Operation: "getContactPortalLinks", Capability: Invoices, Need: View}
+	RevokePortalLink            = Policy{Operation: "revokePortalLink", Capability: Invoices, Need: Post}
+	GetPortal                   = Policy{Operation: "getPortal", Capability: Invoices, Need: View, Public: true}
+	GetPortalInvoicePDF         = Policy{Operation: "getPortalInvoicePDF", Capability: Invoices, Need: View, Public: true}
+	GetPortalStatement          = Policy{Operation: "getPortalStatement", Capability: Invoices, Need: View, Public: true}
+	CreateInvoicePaymentLink    = Policy{Operation: "createInvoicePaymentLink", Capability: Invoices, Need: Post}
+	GetInvoicePaymentLink       = Policy{Operation: "getInvoicePaymentLink", Capability: Invoices, Need: View}
+	CancelInvoicePaymentLink    = Policy{Operation: "cancelInvoicePaymentLink", Capability: Invoices, Need: Post}
 	ResolvePaymentProviderEvent = Policy{Operation: "resolvePaymentProviderEvent", Capability: BankTransactions, Need: Create}
 	ResolveBankGap              = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
 	ListStatementMappings       = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
@@ -1785,6 +1785,9 @@ var (
 	GetGSTMonitor                = Policy{Operation: "getGSTMonitor", Capability: GSTReturns, Need: View}
 	ListGSTForecasts             = Policy{Operation: "listGSTForecasts", Capability: GSTReturns, Need: View}
 	CreateGSTForecast            = Policy{Operation: "createGSTForecast", Capability: GSTReturns, Need: Create}
+	ListInvoiceNowInbound        = Policy{Operation: "listInvoiceNowInbound", Capability: Bills, Need: View}
+	PollInvoiceNowInbound        = Policy{Operation: "pollInvoiceNowInbound", Capability: Bills, Need: Create, Note: "Reads the invoices suppliers sent through InvoiceNow and makes draft bills of them: a draft posts nothing."}
+	DraftInvoiceNowInbound       = Policy{Operation: "draftInvoiceNowInbound", Capability: Bills, Need: Create}
 	GetInvoiceNowGate            = Policy{Operation: "getInvoiceNowGate", Capability: GSTReturns, Need: View}
 	ListInvoiceNowSubmissions    = Policy{Operation: "listInvoiceNowSubmissions", Capability: GSTReturns, Need: View}
 	QueueInvoiceNowSubmission    = Policy{Operation: "queueInvoiceNowSubmission", Capability: GSTReturns, Need: Create, Note: "Sends a posted invoice or credit note's PINT-SG document to the network: it posts nothing."}
@@ -2208,7 +2211,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
 	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
-	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetInvoiceNowGate, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
+	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetInvoiceNowGate, ListInvoiceNowInbound, PollInvoiceNowInbound, DraftInvoiceNowInbound, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
 	AddGSTForecastEvidence, ListGSTForecastEvidence, GetGSTForecastEvidence, RemoveGSTForecastEvidence, GetStatutoryCalendar,
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,

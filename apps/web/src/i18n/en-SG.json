@@ -1167,6 +1167,10 @@
       "label": "People and HR",
       "tooltip": "Where people records, payroll, leave and letters live (Nemura, an external system, or none), the link's state and how the month's statutory payroll outputs are met."
     },
+    "people.passkey-reminder": {
+      "label": "Add a passkey to approve pay runs in Nemura",
+      "tooltip": "Nemura signs a pay run's approval with a passkey enrolled here. This reminder goes when you add one, and it gives you no role in Fyniq."
+    },
     "people.health": {
       "label": "Link health",
       "tooltip": "How the link to Nemura stands: events waiting, failing or refused, and any run of events Nemura says it delivered that Fyniq never received, which it can send again."
@@ -2746,6 +2750,22 @@
     "compliance.secretary-run-now": {
       "label": "Run now",
       "tooltip": "Queues a run at once, while the assistant is on. It checks first, and asks the model only if something changed."
+    },
+    "compliance.invoicenow": {
+      "label": "InvoiceNow",
+      "tooltip": "The invoices behind the GST return, sent to IRAS through InvoiceNow, and the invoices suppliers sent to you."
+    },
+    "invoicenow.gate": {
+      "label": "Filing gate",
+      "tooltip": "The documents of a return period that have neither IRAS's acknowledgement ID nor a reason to be left out: the GST return waits for them."
+    },
+    "invoicenow.contingency": {
+      "label": "File with the gap",
+      "tooltip": "When the access point or IRAS was down, one person asks and another approves, with the evidence, before the return is filed with documents still unsent."
+    },
+    "invoicenow.receive": {
+      "label": "Receive now",
+      "tooltip": "Reads the invoices suppliers sent through InvoiceNow and makes a draft bill of each whose supplier you have; a draft posts nothing."
     },
     "compliance.gst": {
       "label": "GST",
