@@ -454,7 +454,7 @@ Source: PRD-001 §8.4 · Priority M · Phase P1 / P2
 #### Scenario: An MT942 intraday report makes signals, not statement lines (rev 0.522)
 - **GIVEN** a money account whose email source takes MT942 reports
 - **WHEN** a report with a credit of S$5,450.00 from a named payer arrives, and arrives again
-- **THEN** one pending signal records the credit with the payer and the bank's reference
+- **THEN** one pending signal records the credit with the payer and the bank's reference, closed when the statement line is matched to its invoice or expired
 - **AND** no statement line is made, a debit makes no signal, and a report in another currency than the account's is refused
 
 ### Requirement: FR-BNK-18 Wise and Airwallex

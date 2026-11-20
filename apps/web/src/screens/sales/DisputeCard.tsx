@@ -36,10 +36,14 @@ export function DisputeCard({ invoiceId, mayRecord, open }: { invoiceId: string;
   });
   const list = records.data ?? [];
   if (records.isLoading || (list.length === 0 && !mayRecord)) return null;
+  const hasOpen = (k: string) => list.some((x: Record) => x.status === "open" && x.kind === k);
+  // The kind the form offers: the one chosen, or the one that has no open record yet.
+  const free = (["dispute", "promise"] as const).filter((k) => !hasOpen(k));
+  const shown: "dispute" | "promise" = free.includes(kind) ? kind : (free[0] ?? kind);
   const record = async () => {
     setBusy(true);
     setProblem(null);
-    const body = kind === "dispute" ? { kind, amount: amount.trim(), reason: reason.trim() } : { kind, promised_on: on };
+    const body = shown === "dispute" ? { kind, amount: amount.trim(), reason: reason.trim() } : { kind, promised_on: on };
     const out = await api.POST("/v1/invoices/{invoice_id}/disputes", { params: { path: { invoice_id: invoiceId }, header: { "Idempotency-Key": newKey() } }, body });
     setBusy(false);
     if (!out.data) return setProblem(problemOf(out.error));
@@ -63,7 +67,6 @@ export function DisputeCard({ invoiceId, mayRecord, open }: { invoiceId: string;
   };
   const h = helpText("invoice.dispute");
   const r$ = helpText("invoice.dispute-resolve");
-  const hasOpen = (k: string) => list.some((x: Record) => x.status === "open" && x.kind === k);
   return (
     <section className="fy-card" aria-labelledby={`${id}-head`}>
       <div className="fy-card__head">
@@ -123,12 +126,12 @@ export function DisputeCard({ invoiceId, mayRecord, open }: { invoiceId: string;
               <label className="fy-label" htmlFor={`${id}-kind`}>
                 The customer
               </label>
-              <select className="fy-input" id={`${id}-kind`} value={kind} onChange={(e) => setKind(e.target.value as "dispute" | "promise")}>
+              <select className="fy-input" id={`${id}-kind`} value={shown} onChange={(e) => setKind(e.target.value as "dispute" | "promise")}>
                 {!hasOpen("dispute") && <option value="dispute">disputes part of it</option>}
                 {!hasOpen("promise") && <option value="promise">promises to pay on a day</option>}
               </select>
             </div>
-            {kind === "dispute" ? (
+            {shown === "dispute" ? (
               <>
                 <div className="fy-field">
                   <label className="fy-label" htmlFor={`${id}-amount`}>

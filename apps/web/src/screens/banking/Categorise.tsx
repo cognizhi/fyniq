@@ -188,7 +188,7 @@ function ReconcileNow({ account, onDone }: { account: string; onDone: (reconcile
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const h = helpText("banking.reconcile-now");
-  const why: Record<string, string> = { no_match: "no exact match", ambiguous: "more than one match", line_cap: "over the line limit", rule_cap: "over a rule's daily limit", no_rate: "no rate", refused: "refused" };
+  const why: Record<string, string> = { no_match: "no exact match", ambiguous: "more than one match", link_mismatch: "a payment link's charge that does not settle its invoice exactly", line_cap: "over the line limit", rule_cap: "over a rule's daily limit", no_rate: "no rate", refused: "refused" };
   const go = async () => {
     setBusy(true);
     setProblem(null);

@@ -18,9 +18,9 @@ the loop on the customer side and extends the feeds:
 
 - **Payment links (Model A).** A one-method port, `ports.PaymentLinks`, separate from the read-only
   `ports.PaymentProvider`, creates a HitPay payment request for an issued invoice's open balance. A new connector
-  capability, `payment-link`, triggered only by a person's command (or the organisation's setting that adds a link when
-  an invoice is sent). A `payment_link` row per link, one live link per invoice. The provider's `payment_request`
-  webhook still only names the object: the worker fetches it by GET and mirrors its payments; auto-reconcile takes the
+  capability, `payment-link`, triggered only by a person's command. A `payment_link` row per link, one live link per invoice. The provider's charge
+  names the payment request it was made under; the sweep's list of charges (which the `charge` event only prompts) is
+  mirrored by the worker; auto-reconcile takes the
   charge line (the clearing account's own statement line) to the invoice the link names, once, by the posting rules that
   exist. Nothing new posts and no status is added: "paid, settlement pending" is derived from the receipt and the
   payout not yet matched.

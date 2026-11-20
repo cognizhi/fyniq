@@ -251,10 +251,10 @@ func (r *Runtime) PaymentProvider(ctx context.Context, u storage.UnitOfWork, id 
 }
 
 // LinkRequest is the authority of a payment-link connector's one write: a person with a right on Invoices asked for a payment link
-// on an issued invoice, or an invoice is sent and the organisation's setting adds one (FR-AR-13). It is a system rule, because it
+// on an issued invoice (FR-AR-13). It is a system rule, because it
 // moves no money and completes no approval: the customer pays the company, through the provider, and the AI never triggers it
 // (a request from an AI proposal is refused by checkTrigger).
-var LinkRequest = Authority{Trigger: TriggerSystem, Rule: "a person's request for a payment link on an invoice, or the sending of an invoice"}
+var LinkRequest = Authority{Trigger: TriggerSystem, Rule: "a person's request for a payment link on an invoice"}
 
 // PaymentLinks is an organisation's enabled payment-link connector id under authority a, behind its rate limit and circuit
 // breaker; ErrNotEnabled while it is paused, disabled or uninstalled. The adapter it returns makes payment requests and does

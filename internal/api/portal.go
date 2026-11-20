@@ -235,8 +235,6 @@ func portalLinkOf(l storage.PortalLink, now time.Time) PortalLinkOut {
 
 type createPortalLinkInput struct {
 	ContactPath
-	KeyHeader
-	PreferHeader
 	Body struct {
 		Label string `json:"label,omitempty" maxLength:"200" doc:"A note for the staff, such as who the link is sent to. Never shown to the customer." example:"Sent to ap@acme.example"`
 		Days  int    `json:"days,omitempty" minimum:"1" maximum:"90" doc:"How many days the link works: 30 when left out, at most 90." example:"30"`

@@ -97,9 +97,10 @@ Source: PRD-001 §8.5 · Priority M · Phase P2
 - **AND** when the payout of S$5,414.27 lands next day, bank sync matches it and the clearing account nets to zero
 
 #### Scenario: The automatic leg (rev 0.510)
-- **GIVEN** an invoice with a live payment link and S$5,450.00 open
-- **WHEN** the provider's completed event names the request and its charge line arrives for S$5,450.00
-- **THEN** the worker fetches the request by GET and auto-reconcile records the receipt once, Dr clearing · Cr AR
+- **GIVEN** an invoice with a live payment link and S$450.00 open
+- **WHEN** the sweep lists the provider's charge for S$450.00 under the link's payment request and its statement line arrives
+- **THEN** the worker mirrors it as a payment of the link and auto-reconcile records the receipt once, Dr clearing · Cr AR
+- **AND** a payment above the per-line cap waits for a person
 - **AND** a replay, a second payment, a different amount or a void invoice posts nothing and parks with a warning
 
 ### Requirement: FR-PSP-03 Model B: the product bills at the provider

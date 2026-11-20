@@ -132,6 +132,9 @@ func registerReceivables(a *API) {
 						if !ok || it.Kind != receivables.KindInvoice {
 							continue
 						}
+						if c, err := m.Cmp(it.Open); err == nil && c > 0 {
+							m = it.Open // part of the invoice was paid since: what is disputed is at most what is still open
+						}
 						if byCustomer[cu.ID] == nil {
 							byCustomer[cu.ID] = map[string]money.Money{}
 						}
