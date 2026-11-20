@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "examples": [
+        "Raised from OPS-142."
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "due_on": {
+      "description": "A new date; an empty string clears it.",
+      "examples": [
+        "2026-12-15"
+      ],
+      "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2})?$",
+      "type": "string"
+    },
+    "link_url": {
+      "description": "A new https address; an empty string clears it.",
+      "examples": [
+        "https://example.atlassian.net/browse/OPS-142"
+      ],
+      "maxLength": 2048,
+      "type": "string"
+    },
+    "status": {
+      "description": "Finish the task: for good, and only the client that made it may.",
+      "enum": [
+        "done",
+        "cancelled"
+      ],
+      "examples": [
+        "done"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "examples": [
+        "Chase the signed engagement letter"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "title": "IntegrationTaskChange",
+  "type": "object"
+}

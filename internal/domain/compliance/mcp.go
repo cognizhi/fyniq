@@ -75,7 +75,7 @@ func mcpWriteFindings(entries []audit.Entry) ([]Finding, int) {
 }
 
 // mcpSettings are the settings that open MCP, each of which changes only with a second approver (AI-35, AI-90).
-var mcpSettings = []string{"features.mcp", "mcp.clients", "mcp.registration"}
+var mcpSettings = []string{"features.mcp", "mcp.clients", "mcp.registration", "mcp.third_party"}
 
 // mcpEnablement (CTL-MCP-03, AI-35): of the day's changes of the settings that open MCP, each that opens it (the switch or the
 // registration on, an app added to the allowlist) was carried out by an approval that is approved and signed by someone other than

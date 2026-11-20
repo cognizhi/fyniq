@@ -28299,6 +28299,109 @@ Marks one of the caller's notifications unread again (FR-NTF-01). Side effects: 
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `EML-08`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+## Tasks
+
+Tasks API clients made for people to do (FR-INT-24): a ticketing system or another integration with the scope fyniq.write.tasks makes tasks of its own and updates only those. Never a compliance task, never a financial record, never the AI.
+
+### `GET /v1/tasks`
+
+**List the tasks integrations made** (`listIntegrationTasks`)
+
+The tasks API clients made with fyniq.write.tasks (FR-INT-24), newest first, a page at a time, filtered by state. A client sees only its own; a person who may view the row sees every client's. Compliance tasks are not here (listComplianceTasks). Read-only; no side effects.
+
+- **Permission:** View on Tasks made by integrations: an API client's own tasks, with the scope `fyniq.write.tasks` (rev 0.610)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `status` (query): Only tasks in this state; leave it out for all.
+- **Responses:**
+  - `200` OK [`IntegrationTaskPage`](../../contracts/schemas/IntegrationTaskPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/tasks`
+
+**Make a task as an integration** (`createIntegrationTask`)
+
+Makes a task for a person to do, as the integration client that calls (the scope fyniq.write.tasks; FR-INT-24). It is the client's own: only it updates it. external_ref is your reference, unique among your tasks: asking again with the same reference answers with the task you made, unchanged (200), so a retry is safe. It never makes a compliance task, never a financial record, and it is not on the AI or MCP surface. Only an API client makes one, not a person in the browser. Side effects: the task and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Tasks made by integrations: an API client's own tasks, with the scope `fyniq.write.tasks` (rev 0.610)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`IntegrationTaskCreate`](../../contracts/schemas/IntegrationTaskCreate.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`IntegrationTask`](../../contracts/schemas/IntegrationTask.schema.json)
+  - `201` Created [`IntegrationTask`](../../contracts/schemas/IntegrationTask.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `ITASK-01` Only an integration API client makes these tasks.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `ITASK-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/tasks/{task_id}`
+
+**Read a task an integration made** (`getIntegrationTask`)
+
+A task with its ETag for If-Match (FR-INT-24). A client reads only its own: another client's task, and a compliance task, are not found. Read-only; no side effects.
+
+- **Permission:** View on Tasks made by integrations: an API client's own tasks, with the scope `fyniq.write.tasks` (rev 0.610)
+- **Parameters:**
+  - `task_id` (path, required): The task's ID.
+- **Responses:**
+  - `200` OK [`IntegrationTask`](../../contracts/schemas/IntegrationTask.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PATCH /v1/tasks/{task_id}`
+
+**Update a task an integration made** (`updateIntegrationTask`)
+
+Updates the title, detail, due date or link of a task the calling client made, or finishes it (done or cancelled, for good), over the version you read (If-Match; FR-INT-24). Another client's task and every compliance task are not found: no client edits, completes or dismisses a statutory or agent task. A field left out stays. Side effects: the change and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Tasks made by integrations: an API client's own tasks, with the scope `fyniq.write.tasks` (rev 0.610)
+- **Parameters:**
+  - `task_id` (path, required): The task's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`IntegrationTaskChange`](../../contracts/schemas/IntegrationTaskChange.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`IntegrationTask`](../../contracts/schemas/IntegrationTask.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `ITASK-01` Only an integration API client makes these tasks.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ITASK-02` The task is finished; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `ITASK-01`, `ITASK-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
 ## Connected apps
 
 AI apps working for a person over MCP: the person's own opt-in, which is off until they choose, and the organisation's switch and allowlist (AI-35). Never reachable by an AI app or an integration: a person chooses (§9.6).
@@ -28439,6 +28542,69 @@ Denies a pending registration, once: the app is removed from the OAuth server an
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `MCP-APPS-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/connected-apps/third-party-apps`
+
+**List the third-party AI apps an Administrator registered** (`listMCPThirdPartyApps`)
+
+The AI apps of other publishers registered by hand (AI-46), newest first, each with who publishes it as the Administrator stated it, what it is for, where it processes data, its redirect addresses and whether an Owner has approved it. Read-only; no side effects.
+
+- **Permission:** View on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)
+- **Responses:**
+  - `200` OK [`ThirdPartyApps`](../../contracts/schemas/ThirdPartyApps.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/connected-apps/third-party-apps`
+
+**Register a third-party AI app by hand** (`registerMCPThirdPartyApp`)
+
+An Administrator, signed in and stepped up, registers an AI app of another publisher (AI-46): never automatic, never from a metadata document, nothing fetched. The name and redirect addresses pass the policy that checks a self-registering app (AI-90): a public client with PKCE, exact https or loopback redirects, a name that cannot pass for Fyniq or a known brand. The app is created as an agent with the default read scope alone and cannot connect until an Owner adds it to the apps that may connect. Refused (MCP-REG-05) until an Owner turns on both "AI apps through MCP" and "An Administrator may register an AI app of another publisher", each with a second approver. It makes a data inventory entry. Side effects: the client at the OAuth server, its registration, the app's record, the inventory entry and their audit events. Not idempotent: each call is a new client. Never on the AI's or MCP's tool list.
+
+- **Permission:** Create on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)
+- **Request body:** [`ThirdPartyAppRegister`](../../contracts/schemas/ThirdPartyAppRegister.schema.json)
+- **Responses:**
+  - `201` Created [`ThirdPartyApp`](../../contracts/schemas/ThirdPartyApp.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read; `MCP-REG-02` The registration breaks the policy.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `MCP-REG-01` AI apps cannot register here; `MCP-REG-05` Third-party AI apps are off for this organisation.
+  - `404` Not Found: `MCP-REG-06` No such registered AI app.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `MCP-REG-07` A field of the registration is not acceptable.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests; `MCP-REG-03` Too many registrations.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `502` Bad Gateway: `MCP-REG-04` The sign-in service did not take the registration.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `MCP-REG-01`, `MCP-REG-02`, `MCP-REG-03`, `MCP-REG-04`, `MCP-REG-05`, `MCP-REG-06`, `MCP-REG-07`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `DELETE /v1/connected-apps/third-party-apps/{client_id}`
+
+**Remove a third-party AI app** (`removeMCPThirdPartyApp`)
+
+Removes a registered app at once (AI-46): it is taken out of the OAuth server, so it can sign no one in and its tokens stop, and a waiting registration is denied. It narrows, so no second person is needed; the record and its inventory entry stay for the access review. Side effects: the client at the OAuth server, the registration's status and the record's audit event. Never on the AI's or MCP's tool list.
+
+- **Permission:** Create on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2). The Owner holds A on Connected apps, not C, and removes an app as the Administrator does: it narrows.
+- **Parameters:**
+  - `client_id` (path, required): The app's client ID.
+- **Responses:**
+  - `204` No Content
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `MCP-REG-06` No such registered AI app.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `MCP-REG-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/me/mcp`
 

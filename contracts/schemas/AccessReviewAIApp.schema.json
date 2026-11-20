@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "client_id": {
+      "description": "Its OAuth client ID.",
+      "examples": [
+        "mcp-0123456789abcdef0123"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Acme Books Assistant"
+      ],
+      "type": "string"
+    },
+    "outside_singapore": {
+      "description": "Whether it processes outside Singapore: a transfer to assess (CMP-PD-06).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "publisher": {
+      "description": "Who publishes it, as the Administrator stated it: not verified.",
+      "examples": [
+        "Acme Software Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "purpose": {
+      "description": "What it is used for.",
+      "examples": [
+        "Ask questions about the management accounts"
+      ],
+      "type": "string"
+    },
+    "registered_at": {
+      "description": "When it was registered.",
+      "examples": [
+        "2026-11-21T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "status": {
+      "description": "Where its approval stands: an Owner adds an approved app to the apps that may connect.",
+      "enum": [
+        "pending",
+        "approved",
+        "denied",
+        "expired"
+      ],
+      "examples": [
+        "approved"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_id",
+    "name",
+    "publisher",
+    "purpose",
+    "outside_singapore",
+    "status",
+    "registered_at"
+  ],
+  "title": "AccessReviewAIApp",
+  "type": "object"
+}

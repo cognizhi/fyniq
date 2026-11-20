@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"slices"
 	"strings"
@@ -71,6 +72,11 @@ type MCPRegistration struct {
 	Name         string        `json:"name" doc:"The name it gave itself: Fyniq has not verified it." example:"Acme Books Assistant"`
 	RedirectURIs []RedirectURI `json:"redirect_uris" nullable:"false" maxItems:"5" doc:"Where it sends you to sign in: check this before you allow it."`
 	RegisteredAt time.Time     `json:"registered_at" doc:"When it registered." example:"2026-11-19T09:30:00Z"`
+	// What an Administrator stated when they registered it by hand (AI-46); empty for an app that registered itself. Fyniq has not verified any of it.
+	Publisher          string `json:"publisher,omitempty" doc:"Who publishes it, as the Administrator who registered it stated: not verified." example:"Acme Software Pte Ltd"`
+	Purpose            string `json:"purpose,omitempty" doc:"What the organisation uses it for." example:"Ask questions about the management accounts"`
+	ProcessingLocation string `json:"processing_location,omitempty" doc:"Where the publisher processes what it reads." example:"United States"`
+	OutsideSingapore   bool   `json:"outside_singapore,omitempty" doc:"A transfer to assess under the PDPA before you allow it (CMP-PD-06)." example:"true"`
 }
 
 // MCPRegistrations are the registrations waiting for an Owner.
@@ -299,12 +305,18 @@ func registerConnectedApps(a *API) {
 	}, "cursor", "The registrations waiting for an Owner are capped at 100 and read whole, like a short inbox (AI-90)."), locks, func(ctx context.Context, _ *struct{}) (*registrationsOutput, error) {
 		p, _ := authn.From(ctx)
 		out := &registrationsOutput{Body: MCPRegistrations{Registrations: []MCPRegistration{}}}
+		// The apps an Administrator of this organisation registered by hand (AI-46) wait for its Owner whether or not apps may register themselves; every other waiting
+		// registration is the installation's, shown only while this organisation has self-registration on (AI-90).
 		var on bool
+		var own []storage.MCPThirdPartyApp
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) (err error) {
-			on, err = a.registrationOn(ctx, u)
+			if on, err = a.registrationOn(ctx, u); err != nil {
+				return err
+			}
+			own, err = u.MCPThirdPartyApps().List(ctx)
 			return err
 		})
-		if err != nil || !on || a.deps.MCPClients == nil {
+		if err != nil || a.deps.MCPClients == nil || (!on && len(own) == 0) {
 			return out, err
 		}
 		a.expireMCPClients(ctx, a.deps.Clock.Now())
@@ -312,8 +324,20 @@ func registerConnectedApps(a *API) {
 		if err != nil {
 			return nil, err
 		}
+		byClient := map[string]storage.MCPThirdPartyApp{}
+		for _, o := range own {
+			byClient[o.ClientID] = o
+		}
 		for _, c := range pending {
-			out.Body.Registrations = append(out.Body.Registrations, MCPRegistration{ID: c.ID, Name: c.Name, RedirectURIs: redirects(c.RedirectURIs), RegisteredAt: c.RegisteredAt.UTC()})
+			o, mine := byClient[c.ID]
+			if !on && !mine {
+				continue
+			}
+			r := MCPRegistration{ID: c.ID, Name: c.Name, RedirectURIs: redirects(c.RedirectURIs), RegisteredAt: c.RegisteredAt.UTC()}
+			if mine {
+				r.Publisher, r.Purpose, r.ProcessingLocation, r.OutsideSingapore = o.Publisher, o.Purpose, o.ProcessingLocation, o.OutsideSingapore
+			}
+			out.Body.Registrations = append(out.Body.Registrations, r)
 		}
 		return out, nil
 	})
@@ -325,14 +349,21 @@ func registerConnectedApps(a *API) {
 			"person: it narrows. Side effects: the registration's status and the client at the OAuth server. Never on the AI's or MCP's tool list.",
 	}, "Idempotency-Key", "A denial happens once and a second call answers that nothing is waiting, so a retry is safe without a key (AI-90)."), "Prefer", "A denial narrows and takes effect at once, never held back for a second person (AI-90)."), append([]string{CodeConnectedNoRegist}, locks...), func(ctx context.Context, in *denyRegistrationInput) (*noContent, error) {
 		p, _ := authn.From(ctx)
-		var on bool
+		var on, mine bool
 		if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) (err error) {
-			on, err = a.registrationOn(ctx, u)
-			return err
+			if on, err = a.registrationOn(ctx, u); err != nil {
+				return err
+			}
+			if _, err := u.MCPThirdPartyApps().Get(ctx, in.ClientID); err == nil { // an app this organisation's Administrator registered by hand (AI-46)
+				mine = true
+			} else if !errors.Is(err, ports.ErrNotFound) {
+				return err
+			}
+			return nil
 		}); err != nil {
 			return nil, err
 		}
-		if !on || a.deps.MCPClients == nil || !strings.HasPrefix(in.ClientID, "mcp-") {
+		if !(on || mine) || a.deps.MCPClients == nil || !strings.HasPrefix(in.ClientID, "mcp-") {
 			return nil, problem(CodeConnectedNoRegist, "There is no registration waiting under that ID.", "Open the registrations waiting for an Owner")
 		}
 		done, err := a.deps.MCPClients.DecideClient(ctx, in.ClientID, storage.MCPClientDenied, a.deps.Clock.Now())

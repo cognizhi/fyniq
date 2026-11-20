@@ -2,6 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "ai_apps": {
+      "description": "The third-party AI apps an Administrator registered by hand that are not removed, each a processing path to review (AI-46).",
+      "items": {
+        "$ref": "AccessReviewAIApp.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "as_at": {
       "description": "When it was read.",
       "examples": [
@@ -88,6 +98,7 @@
     "invitations",
     "connectors",
     "integration_clients",
+    "ai_apps",
     "attestations"
   ],
   "title": "AccessReview",

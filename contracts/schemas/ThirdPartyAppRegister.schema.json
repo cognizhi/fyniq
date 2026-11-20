@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "description": "The name it is known by, in plain letters and digits; it cannot pass for Fyniq or a known brand.",
+      "examples": [
+        "Acme Books Assistant"
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "outside_singapore": {
+      "description": "True when it processes outside Singapore: a transfer to assess under the PDPA before an Owner allows it (CMP-PD-06).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "processing_location": {
+      "description": "Where the publisher processes what it reads.",
+      "examples": [
+        "United States"
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "publisher": {
+      "description": "Who publishes it, as you have verified it yourself: Fyniq does not fetch or check it.",
+      "examples": [
+        "Acme Software Pte Ltd"
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "publisher_url": {
+      "description": "The publisher's own https address, shown to the Owner; never fetched.",
+      "examples": [
+        "https://acme.example"
+      ],
+      "maxLength": 2048,
+      "type": "string"
+    },
+    "purpose": {
+      "description": "What the organisation uses it for, for the data inventory.",
+      "examples": [
+        "Ask questions about the management accounts from an AI assistant"
+      ],
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    },
+    "redirect_uris": {
+      "description": "The exact https (or loopback) addresses it signs people in on: no wildcard, query or fragment.",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "publisher",
+    "redirect_uris",
+    "purpose",
+    "processing_location",
+    "outside_singapore"
+  ],
+  "title": "ThirdPartyAppRegister",
+  "type": "object"
+}

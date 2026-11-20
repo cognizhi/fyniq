@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "description": "More about it. Do not put personal data or amounts in it.",
+      "examples": [
+        "Raised from OPS-142."
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "due_on": {
+      "examples": [
+        "2026-12-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "external_ref": {
+      "description": "Your reference for it, such as the ticket key, unique among your own tasks: making a task you made already answers with it, unchanged.",
+      "examples": [
+        "OPS-142"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[\\x21-\\x7E]+$",
+      "type": "string"
+    },
+    "link_url": {
+      "description": "An https address to the ticket.",
+      "examples": [
+        "https://example.atlassian.net/browse/OPS-142"
+      ],
+      "maxLength": 2048,
+      "type": "string"
+    },
+    "title": {
+      "description": "What a person is asked to do, in a line.",
+      "examples": [
+        "Chase the signed engagement letter"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "external_ref",
+    "title"
+  ],
+  "title": "IntegrationTaskCreate",
+  "type": "object"
+}

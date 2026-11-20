@@ -125,12 +125,18 @@ func registerOAuthRegistration(a *API) {
 }
 
 func (a *API) registerClient(ctx context.Context, reg mcpregister.Registration, now time.Time) (*registerClientOutput, error) {
-	a.expireMCPClients(ctx, now)
-	id := "mcp-" + hex.EncodeToString(randomBytes(10))
 	network := ""
 	if from, ok := clientip.From(ctx); ok {
 		network = networkOf(from.IP.String())
 	}
+	return a.registerClientFrom(ctx, reg, now, network)
+}
+
+// registerClientFrom records and creates the client for a registration counted against network: the registering address's /24 or /48 for a client that registered
+// itself (AI-90), the organisation's own count for one an Administrator registered by hand (AI-46).
+func (a *API) registerClientFrom(ctx context.Context, reg mcpregister.Registration, now time.Time, network string) (*registerClientOutput, error) {
+	a.expireMCPClients(ctx, now)
+	id := "mcp-" + hex.EncodeToString(randomBytes(10))
 	refused, err := a.deps.MCPClients.Register(ctx, storage.MCPClientRegistration{ID: id, Name: reg.Name, RedirectURIs: reg.RedirectURIs, Network: network, At: now},
 		storage.MCPClientLimits{PerHour: regPerHour, PerDay: regPerDay, PendingCap: regPendingCap})
 	if err != nil {
