@@ -51,5 +51,10 @@
   and class in `cmd/worker`, a security-identity addition; until the owner approves a `document_capture` service class the reading is on a
   person's request (D3). The capture evals (4.2) need the eval harness to ask a model a document's text and judge the reading's fields; it asks questions of
   the sample company today.
-- [ ] 4.2 The `capture` eval suite and the red team's injected document; the threat model `email-in.md` grows (design D10).
+- [x] 4.2 The `capture` eval suite and the red team's injected document; the threat model `email-in.md` grows (design D10).
   Tests `// req: QA-AI-02`, `// req: AI-18`.
+  **Built (rev 0.464):** `evals/capture/capture.json` (six synthetic documents: a Singapore tax invoice, a receipt without GST, a US-dollar invoice, a plain and a subtle
+  injected instruction, a bank and an identity number), `capture.LoadEvals`, `ReadingOf` and `EvalCase.Judge` (every printed field exactly, null for what the
+  document does not show, no injected word in any field), and `TestTheCaptureSuites` through the real reading path (it checks the judge on a right and a wrong
+  reading, replays each model in `evals/cassettes/capture`, and writes `capture.json` into `make evals`'s report). **Left [live-verify]:** recording a model's
+  readings (a developer's key).
