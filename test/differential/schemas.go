@@ -38,3 +38,8 @@ var PayrollMonthSchema []byte
 //
 //go:embed payroll-run.schema.json
 var PayrollRunSchema []byte
+
+// PartMonthSchema is part-month.schema.json: one hand-worked case of a part month's pay in working days (NM-PAY-12).
+//
+//go:embed part-month.schema.json
+var PartMonthSchema []byte

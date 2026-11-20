@@ -4,7 +4,7 @@ type: task
 title: Set up pay groups and record each person's pay in Nemura
 summary: What the Payroll administrator and the Owner record for payroll, how a pay record, the year to date and a one-off item work, and why nobody else sees pay
 sources:
-  - docs/user-guide/nemura/payroll-records.md sha256:1b5b5864b69221ea217faa5103d905c2035b73f90bed73927f3bdf24da466ace
+  - docs/user-guide/nemura/payroll-records.md sha256:7698ad26347ea56c768edb2f76ed459a2722fbddfe0f0f8577bbf38d9cecfe30
 data_class: personal
 taint: trusted
 status: published
@@ -40,7 +40,7 @@ aliases:
 
 ## Calculate a pay run
 
-- Choose the wage month and calculate the run for a pay group: every person with pay in the group is worked out exactly from their pay record and the inputs (a part month by the days each pay record covers, the one-off items, unpaid leave by the month's working days, approved overtime), each amount rounded once to the cent, and each person's month shows its items with their sources, its working and what to look at.
+- Choose the wage month and calculate the run for a pay group: every person with pay in the group is worked out exactly from their pay record and the inputs (a part month by the working days each pay record covers over the working days of the month, rest days left out and public holidays counted, the one-off items, unpaid leave by the month's working days, approved overtime), each amount rounded once to the cent, and each person's month shows its items with their sources, its working and what to look at.
 - A missing fact stops the run and names the person; a ✖ blocks approval and a ⚠ is shown to the approver.
 - An override replaces one figure of one person's month (employee or employer CPF, SDL or the fund) with a reason of at least ten characters; it applies from the next calculation and is flagged. A version is read-only with a digest; the next version supersedes it, and after an approved version it is a correction with a reason.
 - Overtime on a rest day or public holiday is added as a one-off item, not guessed. (src: docs/user-guide/nemura/payroll-records.md#calculate-a-pay-run)

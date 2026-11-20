@@ -1,0 +1,256 @@
+[
+ {
+  "name": "a full month June 2026",
+  "basic": "4500.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-06-01",
+  "to": "2026-06-30",
+  "want_days": 22,
+  "want_denominator": 22,
+  "want_pay": "4500.00"
+ },
+ {
+  "name": "a joiner on Wed 10 June",
+  "basic": "4500.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-06-10",
+  "to": "2026-06-30",
+  "want_days": 15,
+  "want_denominator": 22,
+  "want_pay": "3068.18"
+ },
+ {
+  "name": "a leaver on Mon 15 June",
+  "basic": "4500.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-06-01",
+  "to": "2026-06-15",
+  "want_days": 11,
+  "want_denominator": 22,
+  "want_pay": "2250.00"
+ },
+ {
+  "name": "a joiner on 10 June who leaves on Sat 20 June",
+  "basic": "4500.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-06-10",
+  "to": "2026-06-20",
+  "want_days": 8,
+  "want_denominator": 22,
+  "want_pay": "1636.36"
+ },
+ {
+  "name": "a pay change on 16 June: the first record",
+  "basic": "4500.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-06-01",
+  "to": "2026-06-15",
+  "want_days": 11,
+  "want_denominator": 22,
+  "want_pay": "2250.00"
+ },
+ {
+  "name": "a pay change on 16 June: the second record",
+  "basic": "4500.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-06-16",
+  "to": "2026-06-30",
+  "want_days": 11,
+  "want_denominator": 22,
+  "want_pay": "2250.00"
+ },
+ {
+  "name": "the last working day of a 23-day July",
+  "basic": "4500.00",
+  "month": "2026-07-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-07-31",
+  "to": "2026-07-31",
+  "want_days": 1,
+  "want_denominator": 23,
+  "want_pay": "195.65"
+ },
+ {
+  "name": "a leap February in full",
+  "basic": "4500.00",
+  "month": "2028-02-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2028-02-01",
+  "to": "2028-02-29",
+  "want_days": 21,
+  "want_denominator": 21,
+  "want_pay": "4500.00"
+ },
+ {
+  "name": "the first day only",
+  "basic": "4500.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-06-01",
+  "to": "2026-06-01",
+  "want_days": 1,
+  "want_denominator": 22,
+  "want_pay": "204.55"
+ },
+ {
+  "name": "a six-day week, joiner on 10 June",
+  "basic": "4500.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "from": "2026-06-10",
+  "to": "2026-06-30",
+  "want_days": 18,
+  "want_denominator": 26,
+  "want_pay": "3115.38"
+ },
+ {
+  "name": "a joiner on Sat 27 June in a five-day week",
+  "basic": "4500.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-06-27",
+  "to": "2026-06-30",
+  "want_days": 2,
+  "want_denominator": 22,
+  "want_pay": "409.09"
+ },
+ {
+  "name": "a span of rest days only",
+  "basic": "4500.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-06-06",
+  "to": "2026-06-07",
+  "want_days": 0,
+  "want_denominator": 22,
+  "want_pay": "0.00"
+ },
+ {
+  "name": "a record that starts after the span ends",
+  "basic": "4500.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-07-01",
+  "to": "2026-06-30",
+  "want_days": 0,
+  "want_denominator": 22,
+  "want_pay": "0.00"
+ },
+ {
+  "name": "a part-time three-day week (Mon, Wed, Fri), joiner on 17 June",
+  "basic": "3000.00",
+  "month": "2026-06-01",
+  "working_weekdays": [
+   1,
+   3,
+   5
+  ],
+  "from": "2026-06-17",
+  "to": "2026-06-30",
+  "want_days": 6,
+  "want_denominator": 13,
+  "want_pay": "1384.62"
+ },
+ {
+  "name": "a public holiday in the span counts as a working day: National Day, Monday 10 Aug 2026, joiner on Wed 5 Aug",
+  "basic": "4500.00",
+  "month": "2026-08-01",
+  "working_weekdays": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "from": "2026-08-05",
+  "to": "2026-08-31",
+  "want_days": 19,
+  "want_denominator": 21,
+  "want_pay": "4071.43"
+ }
+]

@@ -32,7 +32,7 @@ that pay was set, never what it was.
 ## Calculate a pay run
 
 Under **Pay runs**, choose the wage month and select **Calculate the run** for a pay group. Nemura works out every person with pay in the group for the month, exactly, from their pay record and
-the inputs: a joiner's, a leaver's or a pay change's part month (the days each pay record covers over the days of the month), the month's one-off items, unpaid leave (the day's share of the
+the inputs: a joiner's, a leaver's or a pay change's part month (the working days each pay record covers over the working days of the month: MOM's method, with rest days left out and public holidays counted), the month's one-off items, unpaid leave (the day's share of the
 month's working days by the person's pattern), and approved overtime (twelve months of basic salary over fifty-two weeks of the normal hours, times the multiple, times the hours). Each amount is
 rounded once, to the cent. Open the run to read each person's month: their gross pay, CPF, SDL, fund, net pay, the pay items with the record each came from, and what to look at.
 

@@ -716,7 +716,7 @@ def test_overtime_is_twelve_months_over_fifty_two_weeks_times_the_multiple_times
 
 
 def test_each_pay_records_part_month_is_rounded_on_its_own_and_the_amounts_added():  # req: NM-PAY-12 [accountant to confirm: the PRD says "rounded once"]
-    # A pay change in the month is two pay records, each its calendar days over the days of the month (NM-PAY-12); each record's amount is worked out exactly and rounded
+    # A pay change in the month is two pay records, each its working days over the working days of the month (NM-PAY-12, MOM's method); each record's amount is worked out exactly and rounded
     # once, and the month's pay is the amounts added. Three records of 0.02 x 1 / 3 = 0.00666...: 0.01 each, 0.03 in all (rounded once over the three it would be 0.02).
     parts = [derived("part_month", key=f"r{i}", base="0.02", days=1, of=3) for i in range(3)]
     assert Decimal(work(items=parts)["gross"]) == Decimal("0.03")

@@ -32,7 +32,7 @@ var _ api.Asker = AskService{}
 
 // payslipRules say what a line of a payslip is and how it is worked out, as words and with no figure of anyone's pay (NM-AI-06).
 var payslipRules = map[string][2]string{
-	"basic":     {"Basic salary is the fixed monthly pay in your contract, shown before any deduction. In the month you join or leave it is the part of the month you worked.", "PRD-002 NM-PAY-12"},
+	"basic":     {"Basic salary is the fixed monthly pay in your contract, shown before any deduction. In the month you join or leave it is your monthly pay times the working days you were employed over the working days of the month: your rest days are left out and public holidays are counted.", "PRD-002 NM-PAY-12"},
 	"cpf":       {"Your CPF contribution is the share of your wages that goes to your own CPF account. The CPF Board sets its rate by your age and residency, it is worked out on your ordinary wages up to the ceiling, and your employer pays its own share on top of your pay.", "sg-cpf pack (CPF Board)"},
 	"overtime":  {"Overtime pay is paid for the hours you worked beyond your normal hours, at the rate of the Employment Act, which is a multiple of your hourly rate. The hourly rate is worked out from your basic monthly pay and your normal weekly hours.", "sg-people pack part_iv (MOM)"},
 	"deduction": {"A deduction is an amount your employer takes from your pay for a reason the Employment Act allows, such as unpaid leave, absence or accommodation you agreed to. Your payslip names each one.", "Employment Act (MOM)"},
