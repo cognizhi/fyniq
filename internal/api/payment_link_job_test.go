@@ -221,6 +221,10 @@ func TestEveryPathThatIssuesAnInvoiceQueuesItsLinkJob(t *testing.T) {
 	if jobs := e.queuedLinkJobs(); len(jobs) != 1 {
 		t.Fatalf("after the service issued an invoice: %d link jobs", len(jobs))
 	}
+	e.issuedCreditNote("1", "10.00") // issued through the API's own service, which has the hook as the worker's does not: a credit note queues nothing either way
+	if jobs := e.queuedLinkJobs(); len(jobs) != 0 {
+		t.Fatalf("a credit note queued %d link jobs", len(jobs))
+	}
 	provided, _ := e.createInvoice("1", "60.00")
 	total, err := money.Parse("60.00", money.MustLookup("SGD"))
 	if err != nil {
