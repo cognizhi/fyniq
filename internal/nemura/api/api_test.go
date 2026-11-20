@@ -184,7 +184,7 @@ func (f fakeRestricted) Documents(context.Context, Session, uuid.UUID) ([]Docume
 func (f fakeRestricted) Download(context.Context, Session, uuid.UUID, uuid.UUID) (string, []byte, error) {
 	return "application/pdf", []byte("x"), f.err
 }
-func (f fakeRestricted) ProposeBank(context.Context, Session, uuid.UUID, string) (uuid.UUID, error) {
+func (f fakeRestricted) ProposeBank(context.Context, Session, uuid.UUID, string, string, string) (uuid.UUID, error) {
 	return uuid.New(), f.err
 }
 func (f fakeRestricted) DecideBank(context.Context, Session, uuid.UUID, bool, string) error {

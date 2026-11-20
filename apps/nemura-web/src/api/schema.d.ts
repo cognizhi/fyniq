@@ -7390,6 +7390,16 @@ export interface components {
              * @example 123-456-7890
              */
             account: string;
+            /**
+             * @description The bank's Singapore code, 4 digits or 4 and a 3-digit branch. Fyniq looks the bank's BIC up from it, and the approval binds it: give it with the bank's name, or neither.
+             * @example 7171
+             */
+            bank_code?: string;
+            /**
+             * @description The bank's name, given with its code.
+             * @example DBS Bank
+             */
+            bank_name?: string;
         };
         Provider: {
             /**

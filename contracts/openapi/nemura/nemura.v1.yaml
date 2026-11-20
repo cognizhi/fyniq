@@ -6437,6 +6437,18 @@ components:
           examples:
             - 123-456-7890
           type: string
+        bank_code:
+          description: "The bank's Singapore code, 4 digits or 4 and a 3-digit branch. Fyniq looks the bank's BIC up from it, and the approval binds it: give it with the bank's name, or neither."
+          examples:
+            - "7171"
+          pattern: ^[0-9]{4}([0-9]{3})?$
+          type: string
+        bank_name:
+          description: The bank's name, given with its code.
+          examples:
+            - DBS Bank
+          maxLength: 140
+          type: string
       required:
         - account
       type: object

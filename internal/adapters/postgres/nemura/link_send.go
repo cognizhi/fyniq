@@ -100,7 +100,7 @@ func noLink(err error) bool {
 }
 
 // linkPayload builds the payload of a queued event from its source rows, and nothing else (Appendix E); a type Nemura does not send yet is an error, so a row of it is never silently dropped.
-func linkPayload(ctx context.Context, tx pgx.Tx, q QueuedEvent, now time.Time) (any, error) {
+func linkPayload(ctx context.Context, tx pgx.Tx, c ports.Cipher, org uuid.UUID, q QueuedEvent, now time.Time) (any, error) {
 	switch q.Type {
 	case TypePersonUpserted:
 		person, err := uuid.Parse(q.ObjectID)
@@ -134,6 +134,19 @@ func linkPayload(ctx context.Context, tx pgx.Tx, q QueuedEvent, now time.Time) (
 			return nil, fmt.Errorf("the run event %s names a version that was not approved with proof", q.EventID)
 		}
 		return sub, nil
+	case TypePaymentsReady:
+		run, err := uuid.Parse(q.ObjectID)
+		if err != nil {
+			return nil, fmt.Errorf("the payment lines event %s names no run", q.EventID)
+		}
+		ev, ok, err := paymentsReadyAt(ctx, tx, c, org, now, run)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, fmt.Errorf("the payment lines event %s names a run with no posted version or no line to pay", q.EventID)
+		}
+		return ev, nil
 	case TypeLeaveTaken:
 		request, err := uuid.Parse(q.ObjectID)
 		if err != nil {
@@ -189,6 +202,8 @@ func linkRoute(typ string) (path, scope string, ok bool) {
 		return "/v1/people-link/session-events", "identity.sessions.write", true
 	case TypeLeaveTaken:
 		return "/v1/people-link/availability-events", "people.availability.write", true
+	case TypePaymentsReady:
+		return "/v1/people-link/payroll-payments", "payroll.payments.submit", true
 	}
 	return "", "", false
 }
@@ -196,7 +211,8 @@ func linkRoute(typ string) (path, scope string, ok bool) {
 // LinkSender sends the queued events to Fyniq: the link's token (the client-credentials grant at Fyniq's OAuth server, signed by the link's client key), then the signed envelope to Fyniq's API.
 // Both URLs and Fyniq's audience come from the deployment's settings, so the egress allow-list is fixed when the service starts and a link row cannot point the worker at another host (design D12).
 type LinkSender struct {
-	Store    *Store // the worker's
+	Store    *Store       // the worker's
+	Cipher   ports.Cipher // opens a person's bank account for a payment line, in the signing transaction only (design D28)
 	Clock    ports.Clock
 	HTTP     *http.Client // through internal/egress, to Fyniq's API and token hosts only
 	APIURL   string       // Fyniq's API, without a trailing slash
@@ -261,7 +277,7 @@ func (s *LinkSender) Work() outbox.Work {
 				return err
 			}
 			key = sec.Client
-			payload, err := linkPayload(ctx, tx, q, s.Clock.Now())
+			payload, err := linkPayload(ctx, tx, s.Cipher, org, q, s.Clock.Now())
 			if err != nil {
 				return err
 			}

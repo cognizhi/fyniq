@@ -352,3 +352,69 @@ func TestABankAccountChangesOnlyByProposalApprovalAndPasskeyConfirmation(t *test
 		t.Errorf("the chain: %v", err)
 	}
 }
+
+// The bank beside the account is part of what an approver signs (design D28): the digest of an approval binds the bank's code with the account's fingerprint, so one account at another bank is another
+// approval; with no code it is the digest a change proposed before the code existed has; the bank is given with its name or not at all, in its shape; a proposed change never changes it, nor can a person's
+// record hold a code that is not one; and the digest of a payment line's bank-detail record moves with the code.
+// req: NM-PPL-04
+// asvs: V8.2.1, V2.3.5
+func TestTheBankCodeIsBoundIntoWhatAnApproverApproves(t *testing.T) {
+	ctx := context.Background()
+	c := newCompany(t)
+	now := today.Add(10 * time.Hour)
+	cipher, _ := local.NewFieldKeys(bytes.Repeat([]byte{5}, 64))
+	var ana uuid.UUID
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		ana, err = nemura.AddPerson(ctx, tx, c.org, now, c.owner, people.Person{LegalName: "Ana Tan", EmploymentStart: d("2099-01-05"), MemberID: &c.pay}, people.Job{Title: "Analyst", Worksite: "SG", EmploymentType: "full_time"}, nil)
+		return err
+	})
+	fp := []byte("a keyed fingerprint")
+	if !bytes.Equal(nemura.BankDigest(ana, fp), nemura.BankDigestWith(ana, fp, "")) {
+		t.Error("a change with no bank code does not keep the digest it always had")
+	}
+	if bytes.Equal(nemura.BankDigestWith(ana, fp, "7171"), nemura.BankDigestWith(ana, fp, "7339")) || bytes.Equal(nemura.BankDigestWith(ana, fp, "7171"), nemura.BankDigest(ana, fp)) {
+		t.Error("the digest does not bind the bank's code")
+	}
+	if nemura.BankDetailDigest(uuid.New(), fp, "7171") == nemura.BankDetailDigest(uuid.New(), fp, "7171") || nemura.BankDetailDigest(ana, fp, "7171") == nemura.BankDetailDigest(ana, fp, "7339") {
+		t.Error("a payment line's bank-detail digest does not move with the record and the code")
+	}
+	propose := func(code, name string) (uuid.UUID, error) {
+		var id uuid.UUID
+		err := c.do(func(ctx context.Context, tx pgx.Tx) error {
+			var err error
+			id, err = nemura.ProposeBankChangeAt(ctx, tx, cipher, c.org, now, c.pay, ana, "123-456-7890", code, name)
+			return err
+		})
+		return id, err
+	}
+	for what, x := range map[string][2]string{"a code with no name": {"7171", ""}, "a name with no code": {"", "DBS Bank"}, "a code that is not one": {"71A1", "DBS Bank"}, "a name too long": {"7171", string(make([]byte, 141))}} {
+		if _, err := propose(x[0], x[1]); personRefusal(err) != people.CodeInvalid {
+			t.Errorf("%s: %v", what, err)
+		}
+	}
+	change, err := propose("7171", "DBS Bank")
+	if err != nil {
+		t.Fatal(err)
+	}
+	su := connect(t, db.SuperURL())
+	var digest []byte
+	if err := su.QueryRow(ctx, `SELECT a.digest FROM nemura.approval_request a JOIN nemura.bank_account_change c ON c.approval_id = a.id WHERE c.id = $1`, change).Scan(&digest); err != nil || len(digest) != 32 {
+		t.Fatalf("the approval's digest: %v %v", digest, err)
+	}
+	var fpStored []byte
+	if err := su.QueryRow(ctx, `SELECT new_fingerprint FROM nemura.bank_account_change WHERE id = $1`, change).Scan(&fpStored); err != nil || !bytes.Equal(digest, nemura.BankDigestWith(ana, fpStored, "7171")) {
+		t.Errorf("the approval does not bind the bank code: %v", err)
+	}
+	for _, x := range []struct{ role, stmt, want string }{
+		{"nemura_migrator", "UPDATE nemura.bank_account_change SET new_bank_code = '7339' WHERE id = '" + change.String() + "'", "NM126"},
+		{"nemura_migrator", "UPDATE nemura.bank_account_change SET new_bank_name = 'Another' WHERE id = '" + change.String() + "'", "NM126"},
+		{"nemura_api", "UPDATE nemura.bank_account_change SET new_bank_code = '7339'", "42501"},
+		{"nemura_worker", "UPDATE nemura.person_secret SET bank_code = '7171'", "42501"},
+	} {
+		err := store(t, x.role).InOrg(ctx, c.org, func(ctx context.Context, tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
+		if err == nil || !strings.Contains(err.Error(), x.want) {
+			t.Errorf("%s ran %q: %v", x.role, x.stmt, err)
+		}
+	}
+}
