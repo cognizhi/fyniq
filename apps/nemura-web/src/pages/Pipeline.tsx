@@ -65,6 +65,7 @@ export function Pipeline({ requisition, canWrite, canHire = false, canDraft = fa
   const [reason, setReason] = useState("");
   const [text, setText] = useState("");
   const [start, setStart] = useState("");
+  const [offerLetter, setOfferLetter] = useState(false);
   const [employment, setEmployment] = useState<"full_time" | "part_time" | "contract" | "intern">("full_time");
   const [passOn, setPassOn] = useState("");
   const [interviewers, setInterviewers] = useState<Interviewer[]>([]);
@@ -107,6 +108,11 @@ export function Pipeline({ requisition, canWrite, canHire = false, canDraft = fa
               </span>
             )}
             {c.hire && <span className="fy-secondary">{t("pipeline.hired", { start: c.hire.start_date })}</span>}
+            {c.hire?.offer_letter_state && <span className="fy-secondary">{t("pipeline.offerLetterState", { state: c.hire.offer_letter_state })}</span>}
+            {c.hire && canHire && (!c.hire.offer_letter_state || ["refused", "withdrawn"].includes(c.hire.offer_letter_state)) && (
+              <button className="fy-btn fy-btn--secondary fy-btn--sm" type="button" aria-label={t("pipeline.offerLetterAsk", { name: c.name })}
+                onClick={async () => done((await api.POST("/v1/candidates/{id}/offer-letter", { params: { path: { id: c.id } } })).error, t("pipeline.offerLetterAsked"))}>{t("pipeline.offerLetterButton")}</button>
+            )}
             {c.hire?.pass_needed && !c.hire.pass_application_on && canWrite && (
               <form className="fy-row" style={{ gap: "var(--space-2)" }} aria-label={t("pipeline.pass", { name: c.name })} onSubmit={async (e) => { e.preventDefault(); done((await api.POST("/v1/candidates/{id}/pass-application", { params: { path: { id: c.id } }, body: { on: passOn } })).error, t("pipeline.passSaved")); }}>
                 <label className="fy-field"><span>{t("pipeline.passDay")}</span><input className="fy-input" type="date" required value={passOn} onChange={(e) => setPassOn(e.target.value)} /></label>
@@ -115,9 +121,10 @@ export function Pipeline({ requisition, canWrite, canHire = false, canDraft = fa
             )}
             {c.hire?.pass_application_on && <span className="fy-secondary">{t("pipeline.passOn", { on: c.hire.pass_application_on })}</span>}
             {canHire && c.stage === "offer" && (
-              <form className="fy-row" style={{ gap: "var(--space-2)" }} aria-label={t("pipeline.hire", { name: c.name })} onSubmit={async (e) => { e.preventDefault(); done((await api.POST("/v1/candidates/{id}/hire", { params: { path: { id: c.id } }, body: { start_date: start, employment_type: employment } })).error, t("pipeline.hireSaved")); }}>
+              <form className="fy-row" style={{ gap: "var(--space-2)" }} aria-label={t("pipeline.hire", { name: c.name })} onSubmit={async (e) => { e.preventDefault(); done((await api.POST("/v1/candidates/{id}/hire", { params: { path: { id: c.id } }, body: { start_date: start, employment_type: employment, offer_letter: offerLetter || undefined } })).error, t("pipeline.hireSaved")); }}>
                 <label className="fy-field"><span>{t("pipeline.startDay")}</span><input className="fy-input" type="date" required value={start} onChange={(e) => setStart(e.target.value)} /></label>
                 <label className="fy-field"><span>{t("pipeline.employment")}</span><select className="fy-input" value={employment} onChange={(e) => setEmployment(e.target.value as typeof employment)}>{(["full_time", "part_time", "contract", "intern"] as const).map((k) => <option key={k} value={k}>{t(`pipeline.type.${k}`)}</option>)}</select></label>
+                <label className="fy-field fy-field--check"><input type="checkbox" checked={offerLetter} onChange={(e) => setOfferLetter(e.target.checked)} /><span>{t("pipeline.offerLetter")}</span></label>
                 <button className="fy-btn fy-btn--primary fy-btn--sm" type="submit">{t("pipeline.hireButton", { name: c.name })}</button>
               </form>
             )}

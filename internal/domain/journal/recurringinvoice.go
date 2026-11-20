@@ -341,7 +341,7 @@ func (s Invoices) issueScheduled(ctx context.Context, org uuid.UUID, r storage.R
 	})
 	var probs ledger.Problems
 	var ie *invoice.Error
-	if !errors.As(err, &probs) && !errors.As(err, &ie) {
+	if !errors.As(err, &probs) && !errors.As(err, &ie) && storage.CodeOf(err) != storage.CodeSoftLocked { // a soft lock leaves it a draft, as the rules do (FR-GL-09)
 		return err == nil, err
 	}
 	if s.AfterMaking == nil {

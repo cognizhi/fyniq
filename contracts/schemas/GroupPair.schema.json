@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "a": {
+      "description": "The account that normally holds a debit: due from, an intercompany expense, an investment.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6011"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "b": {
+      "description": "The account that normally holds a credit: due to, intercompany revenue, share capital.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6012"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "a",
+    "b"
+  ],
+  "title": "GroupPair",
+  "type": "object"
+}

@@ -33,6 +33,21 @@
       ],
       "type": "string"
     },
+    "locked_modules": {
+      "description": "The modules whose postings the period refuses apart from a pass (FR-GL-09): any of ar, ap, banking and payroll.",
+      "examples": [
+        [
+          "ar"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "starts_on": {
       "description": "Its first day.",
       "examples": [
@@ -42,7 +57,7 @@
       "type": "string"
     },
     "status": {
-      "description": "open takes postings; closed is the hard lock of INV-03, which the database enforces; soft_locked arrives with FR-GL-09 (P2).",
+      "description": "open takes postings; soft_locked takes postings only from an Accountant who holds a pass for the period (FR-GL-09, enforced by the domain); closed is the hard lock of INV-03, which the database enforces.",
       "enum": [
         "open",
         "soft_locked",

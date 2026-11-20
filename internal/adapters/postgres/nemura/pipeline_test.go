@@ -4,17 +4,20 @@ package nemura_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/hiring"
+	"github.com/cognizhi/fyniq/internal/nemura/letters"
 )
 
 type hiringCo struct {
@@ -438,5 +441,138 @@ func TestACandidateIsHiredOnceIntoAPersonAndAPlanAndARoleThatNeedsAPassWaitsForI
 	}
 	if got, err := c.svc.Candidate(ctx, c.sess(c.iv), id2); hireCode(err) != hiring.CodeNotFound {
 		t.Errorf("an interviewer reads a hired candidate they were not assigned to: %+v %v", got, err)
+	}
+}
+
+// The offer letter is made for the person the hire makes, after the offer was accepted (option B of the offer-letter decision): the company's offer letter template is filled
+// from the person's role, team, kind of employment and first day, the hire is refused whole when the company issues no offer letters yet, a letter is asked for once while one
+// is open or issued, and a hire made without one can ask for it later; the letter is then checked and signed as any letter is (NM-REC-06, NM-LTR-01).
+// req: NM-REC-06, NM-LTR-01
+// asvs: V8.3.1
+func TestAnOfferLetterIsMadeForThePersonAtTheHireAndRefusesTheWholeHireWhenTheCompanyIssuesNone(t *testing.T) {
+	c := newHiringCo(t)
+	ctx := context.Background()
+	hr := c.sess(c.hr)
+	var req2 uuid.UUID
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) { // a hire fills its requisition: the second hire has one of its own
+		if req2, err = nemura.RequestRequisition(ctx, tx, c.org, c.now, c.hr, api.RequisitionInput{Title: "Controller", Department: "Finance", Reason: "new", SalaryMin: "7000.00", SalaryMax: "8000.00", TargetStart: "2099-06-01"}); err != nil {
+			return
+		}
+		return nemura.DecideRequisition(ctx, tx, c.org, c.now, c.owner, req2, true, "")
+	})
+	toOffer := func(req uuid.UUID, name string) uuid.UUID {
+		cand, err := c.svc.Add(ctx, hr, req, api.CandidateInput{Name: name, Email: "hire@example.com"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		id := uuid.MustParse(cand.ID)
+		for _, to := range []string{"screening", "interview", "offer"} {
+			if _, err := c.svc.Move(ctx, hr, id, to, ""); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return id
+	}
+	first, nohire, second := toOffer(c.req, "Chen Yu"), toOffer(c.req, "No Hire"), toOffer(req2, "Mei Tan")
+	in := api.HireInput{StartDate: "2099-04-01", EmploymentType: "full_time", OfferLetter: true}
+	// Nothing is set up: the whole hire is refused with the reason, and the candidate is still at the offer stage with no person made.
+	if _, err := c.svc.Hire(ctx, hr, first, in); hireCode(err) != hiring.CodeConflict || !strings.Contains(err.Error(), "offer letter cannot be made") {
+		t.Fatalf("a hire with an offer letter when the company issues none: %v", err)
+	}
+	if got, err := c.svc.Candidate(ctx, hr, first); err != nil || got.Stage != "offer" || got.Hire != nil {
+		t.Fatalf("%+v %v", got, err)
+	}
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		if err := nemura.SetLetterSettings(ctx, tx, c.org, c.now, c.hr, nemura.LetterSettings{Name: "Acme Pte. Ltd.", UEN: "201912345A", Address: "1 Raffles Place, Singapore 048616"}); err != nil {
+			return err
+		}
+		if err := nemura.SetLetterType(ctx, tx, c.org, c.now, c.hr, "offer_letter", true, 5); err != nil {
+			return err
+		}
+		draft, err := nemura.SaveTemplateDraft(ctx, tx, c.org, c.now, c.hr, "offer_letter", letters.OfferDefault, "Standard offer.")
+		if err != nil {
+			return err
+		}
+		_, err = nemura.PublishTemplate(ctx, tx, c.org, c.now.Add(time.Hour), c.owner, draft)
+		return err
+	})
+	got, err := c.svc.Hire(ctx, hr, first, in)
+	if err != nil || got.Hire == nil || got.Hire.OfferLetterID == "" || got.Hire.OfferLetterState != "requested" {
+		t.Fatalf("%+v %v", got, err)
+	}
+	var purpose string
+	var data []byte
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `SELECT purpose, data FROM nemura.letter_request WHERE id = $1`, got.Hire.OfferLetterID).Scan(&purpose, &data)
+	})
+	for _, want := range []string{`"employment.start": "2099-04-01"`, `"job.title": "Analyst"`, `"job.department": "Finance"`, `"employment.type": "full_time"`, `"company.name": "Acme Pte. Ltd."`} {
+		if !strings.Contains(string(data), want) {
+			t.Errorf("the offer letter's facts lack %s: %s", want, data)
+		}
+	}
+	if strings.Contains(string(data), "salary") || purpose != "Offer of employment as Analyst" {
+		t.Errorf("an offer letter carries no pay: %q %s", purpose, data)
+	}
+	// Asked once while open: a second ask is refused; once refused, a new one may be asked.
+	if _, err := c.svc.OfferLetter(ctx, hr, first); hireCode(err) != hiring.CodeConflict {
+		t.Errorf("a second offer letter while one is open: %v", err)
+	}
+	if _, err := c.svc.OfferLetter(ctx, hr, nohire); hireCode(err) != hiring.CodeConflict {
+		t.Errorf("an offer letter for a candidate who is not hired: %v", err)
+	}
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.RefuseLetter(ctx, tx, c.org, c.now.Add(2*time.Hour), c.owner, uuid.MustParse(got.Hire.OfferLetterID), "The start date changed.", false)
+	})
+	again, err := c.svc.OfferLetter(ctx, hr, first)
+	if err != nil || again.Hire.OfferLetterID == got.Hire.OfferLetterID || again.Hire.OfferLetterState != "requested" {
+		t.Fatalf("a new offer letter after a refusal: %+v %v", again.Hire, err)
+	}
+	// The letter is checked by someone other than the person and drawn with the reference: the same flow as every letter.
+	blobs, err := local.NewDir(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		_, _, err := nemura.CheckLetter(ctx, tx, c.org, c.now.Add(3*time.Hour), c.owner, uuid.MustParse(again.Hire.OfferLetterID), letters.Local{}, blobs)
+		return err
+	})
+	if got, err := c.svc.Candidate(ctx, hr, first); err != nil || got.Hire.OfferLetterState != "checked" {
+		t.Fatalf("%+v %v", got.Hire, err)
+	}
+	// A hire made without a letter can ask for it later.
+	h2, err := c.svc.Hire(ctx, hr, second, api.HireInput{StartDate: "2099-05-01", EmploymentType: "part_time"})
+	if err != nil || h2.Hire.OfferLetterID != "" {
+		t.Fatalf("%+v %v", h2.Hire, err)
+	}
+	if h2, err = c.svc.OfferLetter(ctx, hr, second); err != nil || h2.Hire.OfferLetterState != "requested" {
+		t.Fatalf("%+v %v", h2.Hire, err)
+	}
+}
+
+// A hired candidate is not kept for future roles: the consent is refused with the reason, the record being final (NM-REC-05, NM-REC-06).
+// req: NM-REC-05, NM-REC-06
+// asvs: V8.3.1
+func TestAHiredCandidateIsNotKeptForFutureRolesAndTheirConsentIsNeitherGivenNorChanged(t *testing.T) {
+	c := newHiringCo(t)
+	ctx := context.Background()
+	hr := c.sess(c.hr)
+	cand, err := c.svc.Add(ctx, hr, c.req, api.CandidateInput{Name: "With Consent", Email: "k@example.com", ConsentFuture: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := uuid.MustParse(cand.ID)
+	for _, to := range []string{"screening", "interview", "offer"} {
+		if _, err := c.svc.Move(ctx, hr, id, to, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := c.svc.Hire(ctx, hr, id, api.HireInput{StartDate: "2099-04-01", EmploymentType: "full_time"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.svc.Consent(ctx, hr, id, true); hireCode(err) != hiring.CodeConflict || !strings.Contains(err.Error(), "not kept for future roles") {
+		t.Errorf("consent given for a hired candidate: %v", err)
+	}
+	if _, err := c.svc.Consent(ctx, hr, id, false); hireCode(err) != hiring.CodeConflict {
+		t.Errorf("a withdrawal on a hired candidate's final record: %v", err)
 	}
 }

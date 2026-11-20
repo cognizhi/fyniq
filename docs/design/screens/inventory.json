@@ -7756,6 +7756,42 @@
    ]
   },
   {
+   "id": "period-locks",
+   "file": "PeriodLocks",
+   "title": "Periods and locks",
+   "canvas": "workflows",
+   "module": "Accounting",
+   "route": "/accounting/close",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "Accountant",
+    "Controller",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-GL-09",
+    "FR-GL-08",
+    "FR-ORG-02"
+   ],
+   "purpose": "Soft-lock a month or one module of it, release a lock, let an Accountant post anyway under a pass with a reason, and read the exceptions report.",
+   "content": [
+    "The periods by financial year with a status chip: Open, Soft-locked or Closed, and a chip for each locked module",
+    "Locks dialog: soft-lock the month, release it (an Owner or a Controller, with a reason), lock or release Sales, Purchases, Banking or Payroll",
+    "Post anyway: an Accountant makes a pass for 1 to 8 hours with a reason",
+    "Postings made into locked months: the exceptions report with the date, the kind of document, what was locked and the reason"
+   ],
+   "states": [
+    "open",
+    "soft-locked",
+    "a module locked",
+    "closed",
+    "no exceptions yet",
+    "a refusal (needs a reason, needs a second factor)"
+   ]
+  },
+  {
    "id": "usage",
    "file": "Usage",
    "title": "Usage and cost",

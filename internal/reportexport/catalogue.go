@@ -8,7 +8,7 @@ package reportexport
 var Exported = []string{
 	"access_review_attestation", "account", "accountant_review", "accountant_review_journal", "accountant_review_query",
 	"accounting_framework", "accounting_policy", "ai_budget", "ai_call", "ai_connection", "ai_connection_version", "ai_conversation", "ai_feedback", "ai_data_policy", "ai_model", "ai_model_list_read", "ai_price", "ai_price_rate", "ai_proposal", "ai_proposal_undo", "ai_proposal_view", "ai_quality_review", "ai_qualification", "ai_reservation", "ai_route", "ai_route_step", "ai_tool_call", "ai_turn", "agent_run", "allocation", "announcement", "announcement_dismissal", "invoicenow_submission", "invoicenow_event", "invoicenow_exclusion", "invoicenow_contingency", "invoicenow_inbound",
-	"api_client", "approval_delegation", "approval_policy", "approval_reminder", "approval_request", "approval_signature", "audit_boundary", "automation_rule", "audit_chain", "audit_event",
+	"api_client", "group_entity", "group_membership", "group_settings", "group_account_map", "consolidation_rate", "consolidation_run", "approval_delegation", "period_module_lock", "soft_lock_pass", "soft_lock_exception", "approval_policy", "approval_reminder", "approval_request", "approval_signature", "audit_boundary", "automation_rule", "audit_chain", "audit_event",
 	"audit_recovery", "audit_recovery_acknowledgement", "audit_request_detail", "balance", "bank_feed",
 	"bank_gap", "bank_line", "bank_match", "bank_reconciliation", "bank_rule", "bank_signal", "bank_statement", "compliance_task",
 	"bank_transfer", "bill_payment_plan", "brand_version", "break_glass", "break_glass_use", "capture_address",
@@ -42,6 +42,7 @@ var Exported = []string{
 // Excluded are the tables the export leaves out, with why: no secret, key, token, idempotency key or job in flight
 // leaves Fyniq, and none of them is the organisation's own record.
 var Excluded = map[string]string{
+	"sandbox_organisation":          "The registry of sandbox organisations is global and no application role reads it: it holds the flag of an organisation made for testing, which a restore would never set (FR-INT-18).",
 	"people_link":                   "the link to the people platform: a link is made again with its approval and a new epoch, never restored (FR-PPL-16); its key and client are not the organisation's records",
 	"people_link_key":               "the link's public keys and the running number of what Fyniq sent: credentials of the connection, not the organisation's records (FR-PPL-15)",
 	"people_link_ask_key":           "the private key of the link's read-only client for the ask at release: a secret of the connection, never exported (FR-PPL-13, SEC-15)",

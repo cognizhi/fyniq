@@ -69,6 +69,8 @@ type HireView struct {
 	StartDate         string `json:"start_date" format:"date" doc:"Their first day." example:"2027-02-01"`
 	PassNeeded        bool   `json:"pass_needed" doc:"An Employment Pass or S Pass application is expected." example:"true"`
 	PassApplicationOn string `json:"pass_application_on,omitempty" format:"date" doc:"The day the pass application was made, recorded once." example:"2027-01-15"`
+	OfferLetterID     string `json:"offer_letter_id,omitempty" format:"uuid" doc:"The request for the person's offer letter, when one was made (NM-REC-06); it is checked and signed as any letter is." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01"`
+	OfferLetterState  string `json:"offer_letter_state,omitempty" enum:"requested,checked,issued,refused,withdrawn" doc:"Where the offer letter is: requested, checked, issued, refused or withdrawn." example:"requested"`
 }
 
 // HireInput is a hire: what the person record and plan are made from.
@@ -79,6 +81,7 @@ type HireInput struct {
 	JobTitle       string `json:"job_title,omitempty" maxLength:"200" doc:"The job title; the requisition's role when left out." example:"Data scientist"`
 	Department     string `json:"department,omitempty" maxLength:"200" doc:"The team; the requisition's team when left out." example:"Engineering"`
 	TemplateID     string `json:"template_id,omitempty" format:"uuid" doc:"The onboarding template; the standard one when left out." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d5b01"`
+	OfferLetter    bool   `json:"offer_letter,omitempty" doc:"Also ask for the offer letter for the person made at the hire, from the company's offer letter template; refused, and nobody hired, when the company issues none yet." example:"true"`
 }
 
 // InterviewKit is a requisition's questions and scorecard.
@@ -110,6 +113,8 @@ type Pipeline interface {
 	Consent(ctx context.Context, s Session, id uuid.UUID, given bool) (Candidate, error)
 	Hire(ctx context.Context, s Session, id uuid.UUID, in HireInput) (Candidate, error)
 	PassApplication(ctx context.Context, s Session, id uuid.UUID, on string) (Candidate, error)
+	// OfferLetter asks for the offer letter for a hired candidate's person record, once while one is open or issued.
+	OfferLetter(ctx context.Context, s Session, id uuid.UUID) (Candidate, error)
 	Kit(ctx context.Context, s Session, requisition uuid.UUID) (InterviewKit, error)
 	SaveKit(ctx context.Context, s Session, requisition uuid.UUID, in InterviewKit) (InterviewKit, error)
 	MyInterviews(ctx context.Context, s Session) ([]MyInterview, error)
@@ -227,6 +232,7 @@ func init() {
 	IdempotencyExempt["POST /v1/candidates/{id}/scores"] = "a score is appended; the latest of an interviewer's scores for a criterion counts"
 	IdempotencyExempt["POST /v1/candidates/{id}/future-consent"] = "consent is given or withdrawn once each: a repeat is refused (NM_HIRING_CONFLICT)"
 	IdempotencyExempt["POST /v1/candidates/{id}/hire"] = "a candidate is hired once: a repeat is refused (NM_HIRING_CONFLICT)"
+	IdempotencyExempt["POST /v1/candidates/{id}/offer-letter"] = "an offer letter is asked for once while one is open or issued: a repeat is refused (NM_HIRING_CONFLICT)"
 	IdempotencyExempt["POST /v1/candidates/{id}/pass-application"] = "the day is recorded once: a repeat is refused (NM_HIRING_CONFLICT)"
 	IdempotencyExempt["POST /v1/careers/{slug}/applications"] = "an application made twice is two candidates the recruiter merges; it is rate-limited by email address"
 }
@@ -435,6 +441,27 @@ func (a *API) registerPipeline(seen, writer, interviewer, hirer, lineManager fun
 			return nil, needs()
 		}
 		c, err := a.d.Pipeline.Hire(ctx, s, u, in.Body)
+		if err != nil {
+			return nil, hiringError(err)
+		}
+		return &candidateOutput{Body: c}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "requestOfferLetter", Method: http.MethodPost, Path: "/v1/candidates/{id}/offer-letter", Tags: []string{"Hiring"}, DefaultStatus: http.StatusCreated, Summary: "Ask for the offer letter of a hired candidate",
+		Description: "PRD-002 NM-REC-06, NM-LTR-01. Letters are about a person, so the offer letter is made for the person record the hire made, after the offer was accepted: the company's offer letter template is filled from the person's role, team, kind of employment and first day and the letterhead, and then checked by another member of the people team and signed as any letter is. Asked once while one is open or issued (NM_HIRING_CONFLICT); refused with the reason when the company issues no offer letters yet. The HR administrator and the Owner, who made the hire. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
+	}, func(ctx context.Context, in *candPath) (*candidateOutput, error) {
+		s, err := hirer(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		u, err := id(in.ID)
+		if err != nil {
+			return nil, err
+		}
+		if a.d.Pipeline == nil {
+			return nil, needs()
+		}
+		c, err := a.d.Pipeline.OfferLetter(ctx, s, u)
 		if err != nil {
 			return nil, hiringError(err)
 		}

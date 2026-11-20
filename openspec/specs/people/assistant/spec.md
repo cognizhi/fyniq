@@ -76,6 +76,11 @@ Source: PRD-002 §18 · Priority M · Phase P2
 - **WHEN** an employee asks whether they can take childcare leave
 - **THEN** the answer comes from the pack's tool, with the result and the rule, and no detail about other people or facts not needed
 
+#### Scenario: A title that reads as an instruction is not repeated (rev 0.77)
+- **GIVEN** a requisition title of no punctuation that tells a reader to ignore instructions
+- **WHEN** the assistant drafts a job post or an interview kit
+- **THEN** a placeholder stands where the title was
+
 ### Requirement: NM-AI-06 Own pay
 By default the assistant SHALL explain a payslip line from its rule while the app shows the person's own figures, sending no pay figure to a model; an Owner with a second approver MAY enable own-pay explanations that send only the asking person's figures on a payroll-allowed route.
 
@@ -125,6 +130,10 @@ Source: PRD-002 §D · Phase P2
 - **GIVEN** a requisition whose title names a criterion the guidelines ask employers not to use, such as an age
 - **WHEN** the assistant drafts its job post
 - **THEN** the draft holds a placeholder where the title was, no salary and no person, and passes the fair-wording check as written
+
+#### Scenario: The Recruiter's list holds the hiring drafts alone (rev 0.77)
+- **WHEN** a Recruiter lists the assistant's proposals
+- **THEN** only job post and interview kit drafts are listed, they may decide those, and a letter proposal is not found
 
 ### Requirement: people.draft_interview_kit Draft an interview kit
 The catalogue SHALL include `people.draft_interview_kit` in P2: interview questions and a scorecard for a role, approved by a recruiter.

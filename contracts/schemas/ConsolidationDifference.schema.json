@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "a": {
+      "description": "The debit side's account code.",
+      "examples": [
+        "1350"
+      ],
+      "type": "string"
+    },
+    "b": {
+      "description": "The credit side's account code.",
+      "examples": [
+        "2350"
+      ],
+      "type": "string"
+    },
+    "credit": {
+      "description": "The credit side's amount, a credit negative.",
+      "examples": [
+        "-17639.23"
+      ],
+      "type": "string"
+    },
+    "credit_entity": {
+      "description": "The source holding the credit side's account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01"
+      ],
+      "type": "string"
+    },
+    "debit": {
+      "description": "The debit side's amount.",
+      "examples": [
+        "18000.00"
+      ],
+      "type": "string"
+    },
+    "debit_entity": {
+      "description": "The source holding the debit side's account.",
+      "examples": [
+        "parent"
+      ],
+      "type": "string"
+    },
+    "difference": {
+      "description": "The two sides' sum: what is not agreed, left in place and plugged nowhere. Positive: the debit side is larger.",
+      "examples": [
+        "360.77"
+      ],
+      "type": "string"
+    },
+    "matched": {
+      "description": "What was eliminated from both: the smaller side.",
+      "examples": [
+        "17639.23"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "debit_entity",
+    "credit_entity",
+    "a",
+    "b",
+    "debit",
+    "credit",
+    "matched",
+    "difference"
+  ],
+  "title": "ConsolidationDifference",
+  "type": "object"
+}

@@ -95,6 +95,8 @@ var fyCodes = map[string]string{
 	"FYW01": storage.CodeInvalid,  // a webhook endpoint changed beyond its rules, or a webhook record deleted (001151)
 	"FYW02": storage.CodeInvalid,  // a webhook delivery changed beyond its rules (001151)
 	"FYM01": storage.CodeInvalid,  // a third-party AI app changed beyond noting its removal, or deleted (001153)
+	"FYL01": storage.CodeInvalid,  // a soft-lock pass or an exception changed or deleted (001450)
+	"FYL02": storage.CodeInvalid,  // a module lock deleted or changed beyond its next version (001450)
 	"FYA01": storage.CodeInvalid,  // a workflow rule changed out of its course, or deleted (001202)
 	"FYD01": storage.CodeApproval, // a delegation of approval authority changed beyond being ended, or deleted (001200)
 	"FYD02": storage.CodeApproval, // a signature on behalf of someone without a live delegation, or twice for one person (001200)
@@ -153,8 +155,20 @@ var fyCodes = map[string]string{
 	"FY712": storage.CodePracticeHeld,
 	"FY713": storage.CodePractice,
 	"FY714": storage.CodeAmount,
-	"FY960": storage.CodeSandbox, // a sandbox flag changed, removed or given to an organisation that existed (001250)
-	"FY961": storage.CodeSandbox, // a sandbox organisation's name or currency refused (001250)
+	"FYE01": storage.CodeGroup,     // only an Owner of the organisation acts on a link of its group (001350)
+	"FYE02": storage.CodeGroup,     // the installation's, a practice and a sandbox organisation hold no group
+	"FYE03": storage.CodeGroup,     // a parent is no entity and an entity no parent
+	"FYE04": storage.CodeGroup,     // no open invitation row with that ID
+	"FYE05": storage.CodeGroup,     // an invitation is valid for at most 24 hours
+	"FYE06": storage.CodeGroupCode, // the code is wrong, used, withdrawn or old
+	"FYE07": storage.CodeGroup,     // the organisation belongs to a group already
+	"FYE08": storage.CodeGroup,     // a reason of 1 to 500 characters
+	"FYE09": storage.CodeGroupLink, // no live link between the two organisations
+	"FYE10": storage.CodeGroupLink, // no live link that lets the group read the figures
+	"FYE12": storage.CodeGroup,     // a rate and a run are kept as made; the set-up changes as its next version
+	"FYE11": storage.CodeGroup,     // a link is kept and moves forward only
+	"FY960": storage.CodeSandbox,   // a sandbox flag changed, removed or given to an organisation that existed (001250)
+	"FY961": storage.CodeSandbox,   // a sandbox organisation's name or currency refused (001250)
 	"FY234": storage.CodeClaim,
 	"FY235": storage.CodeAsset,
 	"FY236": storage.CodeAsset,

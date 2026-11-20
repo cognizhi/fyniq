@@ -144,7 +144,7 @@ func reliefRequestOf(in BadDebtReliefClaimRequest) (reliefclaim.Request, error) 
 func registerReliefClaims(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	writes := append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeNotFound, CodeStale,
-		CodeIfMatchRequired, storage.CodeDuplicate, storage.CodePeriodClosed, storage.CodeNoPeriod, storage.CodeInvalid}, locks...)
+		CodeIfMatchRequired, storage.CodeDuplicate, storage.CodePeriodClosed, storage.CodeSoftLocked, storage.CodeNoPeriod, storage.CodeInvalid}, locks...)
 	claimCodes := append([]string{reliefclaim.CodeWriteOff, reliefclaim.CodeClaimed, reliefclaim.CodeCredited, reliefclaim.CodeNoPack, reliefclaim.CodeNotYet, reliefclaim.CodeExpired,
 		reliefclaim.CodeFuture, reliefclaim.CodePeriod, reliefclaim.CodeNote, ledger.CodeNoRelief, ledger.CodePaymentAmount, ledger.CodeSystemRole, ledger.CodeRuleAccount}, LedgerCodes...)
 

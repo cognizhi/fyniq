@@ -65,7 +65,7 @@ func (s CustomerCreditApplications) Apply(ctx context.Context, org uuid.UUID, d 
 			return probs
 		}
 		if len(entry.Lines) > 0 {
-			if out.Entry, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
+			if out.Entry, err = appendEntry(ctx, u, toStorage(entry, nil)); err != nil {
 				return err
 			}
 		}
@@ -143,7 +143,7 @@ func (s CustomerCreditApplications) Void(ctx context.Context, org, id uuid.UUID,
 			if err != nil {
 				return err
 			}
-			if out.Entry, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+			if out.Entry, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 				return err
 			}
 		}

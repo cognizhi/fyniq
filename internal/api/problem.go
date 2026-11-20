@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cognizhi/fyniq/internal/domain/comment"
+	"github.com/cognizhi/fyniq/internal/domain/consolidation"
 	"github.com/cognizhi/fyniq/internal/domain/dashboard"
+	"github.com/cognizhi/fyniq/internal/domain/groupconsol"
 	"github.com/cognizhi/fyniq/internal/domain/payrollimport"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/preference"
@@ -887,6 +889,10 @@ var codeFacts = map[string]struct {
 	storage.CodeShareCapital:      {422, "A manual journal cannot post to share capital"},
 	storage.CodeImmutable:         {409, "Posted history cannot change"},
 	storage.CodePeriodClosed:      {409, "The period is closed"},
+	storage.CodeSoftLocked:        {409, "The period is soft-locked"},
+	CodePassNeedsAccountant:       {403, "Only an Accountant makes a pass"},
+	CodeLockReason:                {422, "The reason is too short"},
+	CodePassPeriod:                {409, "A closed period takes no pass"},
 	storage.CodeNoPeriod:          {409, "No period covers the date"},
 	storage.CodeAccountNotPost:    {422, "The account cannot take postings"},
 	storage.CodeAmount:            {422, "An amount or rate is not valid"},
@@ -1096,6 +1102,14 @@ var codeFacts = map[string]struct {
 	storage.CodeClaim:                {409, "The expense claim record does not allow that"},
 	storage.CodePractice:             {403, "A practice organisation is not yours to open"},
 	storage.CodePracticeHeld:         {409, "You hold a practice organisation already"},
+	consolidation.CodeInput:          {422, "The consolidation's input does not fit"},
+	consolidation.CodeRate:           {422, "A translation rate is missing"},
+	groupconsol.CodeUnmapped:         {422, "An account is not mapped"},
+	groupconsol.CodeCounterparty:     {422, "A mapping's counterparty is not in the run"},
+	groupconsol.CodeNothing:          {422, "There is nothing to consolidate"},
+	storage.CodeGroup:                {403, "This is not yours to do in a group"},
+	storage.CodeGroupCode:            {422, "That invitation code is not valid"},
+	storage.CodeGroupLink:            {404, "There is no live link to that organisation"},
 	storage.CodeSandbox:              {409, "A sandbox organisation is made new and stays a sandbox"},
 	claim.CodeCategoryName:           {422, "The category's name does not fit"},
 	claim.CodeCategoryAccount:        {422, "A claim cannot cost that account"},

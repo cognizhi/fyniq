@@ -312,7 +312,7 @@ func (s AccountMerges) PostIn(ctx context.Context, u storage.UnitOfWork, m Merge
 	}
 	var stored *storage.Entry
 	if len(entry.Lines) > 0 {
-		e, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+		e, err := appendEntry(ctx, u, toStorage(entry, nil))
 		if err != nil {
 			return doc, nil, err
 		}

@@ -360,6 +360,11 @@ func letterValues(ctx context.Context, tx pgx.Tx, person uuid.UUID, at time.Time
 	if err != nil {
 		return nil, err
 	}
+	if p.Start.After(dateOf(at)) { // a person who has not started yet (an offer made at the hire): the facts are the ones on their first day
+		if p, err = PersonOn(ctx, tx, person, p.Start); err != nil {
+			return nil, err
+		}
+	}
 	s, ok, err := LetterSettingsOf(ctx, tx)
 	if err != nil {
 		return nil, err

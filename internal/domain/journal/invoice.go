@@ -284,7 +284,7 @@ func (s Invoices) post(ctx context.Context, org, id uuid.UUID, providerTotal *mo
 				c.Prepared.Totals.Total.String(), c.Prepared.Totals.Total.Currency().Code, providerTotal.String(), providerTotal.Currency().Code),
 				Fix: "A person looks at the provider's invoice: its GST or rounding differs from the invoice rules"}
 		}
-		if out, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+		if out, err = appendEntry(ctx, u, toStorage(c.Entry, nil)); err != nil {
 			return err
 		}
 		if err := useDeposits(ctx, u, doc, c.Prepared.Invoice, settings); err != nil {
@@ -346,7 +346,7 @@ func (s Invoices) Void(ctx context.Context, org, id uuid.UUID, date time.Time, r
 		if err != nil {
 			return err
 		}
-		if out, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
 		if err := unuseDeposits(ctx, u, doc.ID, reversal.PostingDate); err != nil { // the deposits it deducted reopen (FR-AR-09)
@@ -430,13 +430,13 @@ func (s Invoices) Edit(ctx context.Context, org, id uuid.UUID, d invoice.Draft, 
 		if err != nil {
 			return err
 		}
-		if out.Reversal, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out.Reversal, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
 		if err := unuseDeposits(ctx, u, doc.ID, reversal.PostingDate); err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(c.Entry, nil)); err != nil {
 			return err
 		}
 		if err := useDeposits(ctx, u, edited, c.Prepared.Invoice, settings); err != nil {

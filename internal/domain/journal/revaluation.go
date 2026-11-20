@@ -76,7 +76,7 @@ func postRun(ctx context.Context, u storage.UnitOfWork, plan fx.Plan, doc storag
 		if err != nil {
 			return fx.Run{}, err
 		}
-		stored, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+		stored, err := appendEntry(ctx, u, toStorage(entry, nil))
 		if err != nil {
 			return fx.Run{}, err
 		}
@@ -225,7 +225,7 @@ func reverseRevaluation(ctx context.Context, u storage.UnitOfWork, doc storage.D
 	if err != nil {
 		return nil, err
 	}
-	out, err := u.Ledger().Append(ctx, toStorage(back, &stored.ID))
+	out, err := appendEntry(ctx, u, toStorage(back, &stored.ID))
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func ReverseRevaluations(ctx context.Context, store storage.Store, org uuid.UUID
 			if reversed {
 				run.Reversed++
 			}
-		case code == storage.CodePeriodClosed || code == storage.CodeNoPeriod:
+		case code == storage.CodePeriodClosed || code == storage.CodeSoftLocked || code == storage.CodeNoPeriod:
 			run.Waiting++
 			if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 				return u.Audit().Record(ctx, storage.AuditRecord{Action: "fx_revaluation.reversal_waiting", ObjectType: "document", ObjectID: id,

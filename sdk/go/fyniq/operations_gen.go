@@ -248,6 +248,7 @@ var Operations = map[string]Operation{
 	"listReportScheduleRuns":               {ID: "listReportScheduleRuns", Method: "GET", Path: "/v1/report-schedules/{id}/runs", Summary: "List a schedule's runs", PathParams: []string{"id"}, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.reports"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listReportSchedules":                  {ID: "listReportSchedules", Method: "GET", Path: "/v1/report-schedules", Summary: "List a saved report's schedules", PathParams: nil, Query: []string{"cursor", "definition_id", "page_size"}, Body: false, Scopes: []string{"fyniq.read.reports"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listSalesReminders":                   {ID: "listSalesReminders", Method: "GET", Path: "/v1/sales-reminders", Summary: "List the reminders due to customers", PathParams: nil, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.sales", "fyniq.write.sales"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
+	"listSoftLockExceptions":               {ID: "listSoftLockExceptions", Method: "GET", Path: "/v1/soft-lock-exceptions", Summary: "List the postings made into locked periods", PathParams: nil, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listStatementMappings":                {ID: "listStatementMappings", Method: "GET", Path: "/v1/statement-mappings", Summary: "List the saved column mappings", PathParams: nil, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.banking", "fyniq.write.banking"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listStatements":                       {ID: "listStatements", Method: "GET", Path: "/v1/statements", Summary: "List the statements made", PathParams: nil, Query: []string{"cursor", "customer_id", "page_size"}, Body: false, Scopes: []string{"fyniq.read.sales", "fyniq.write.sales"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listStatutoryFilingEvidence":          {ID: "listStatutoryFilingEvidence", Method: "GET", Path: "/v1/compliance/filings/{filing_id}/evidence", Summary: "List a filing record's files", PathParams: []string{"filing_id"}, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.compliance"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
@@ -1570,6 +1571,11 @@ func (c *Client) ListReportSchedules(ctx context.Context, opts ...CallOption) (*
 // ListSalesReminders: List the reminders due to customers (GET /v1/sales-reminders; scopes fyniq.read.sales, fyniq.write.sales).
 func (c *Client) ListSalesReminders(ctx context.Context, opts ...CallOption) (*Response, error) {
 	return c.Do(ctx, Operations["listSalesReminders"], []string{}, nil, opts)
+}
+
+// ListSoftLockExceptions: List the postings made into locked periods (GET /v1/soft-lock-exceptions; scopes fyniq.read.accounting, fyniq.write.accounting).
+func (c *Client) ListSoftLockExceptions(ctx context.Context, opts ...CallOption) (*Response, error) {
+	return c.Do(ctx, Operations["listSoftLockExceptions"], []string{}, nil, opts)
 }
 
 // ListStatementMappings: List the saved column mappings (GET /v1/statement-mappings; scopes fyniq.read.banking, fyniq.write.banking).

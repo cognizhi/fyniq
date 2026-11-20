@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "month": {
+      "description": "The month.",
+      "examples": [
+        "2026-09"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "Its state.",
+      "enum": [
+        "open",
+        "soft_locked",
+        "closed"
+      ],
+      "examples": [
+        "closed"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "month",
+    "status"
+  ],
+  "title": "ConsolidationPeriod",
+  "type": "object"
+}

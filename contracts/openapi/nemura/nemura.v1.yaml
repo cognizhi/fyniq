@@ -4345,6 +4345,11 @@ components:
             - Data scientist
           maxLength: 200
           type: string
+        offer_letter:
+          description: Also ask for the offer letter for the person made at the hire, from the company's offer letter template; refused, and nobody hired, when the company issues none yet.
+          examples:
+            - true
+          type: boolean
         start_date:
           description: The first day of employment, today or later.
           examples:
@@ -4370,6 +4375,23 @@ components:
     HireView:
       additionalProperties: false
       properties:
+        offer_letter_id:
+          description: The request for the person's offer letter, when one was made (NM-REC-06); it is checked and signed as any letter is.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01
+          format: uuid
+          type: string
+        offer_letter_state:
+          description: "Where the offer letter is: requested, checked, issued, refused or withdrawn."
+          enum:
+            - requested
+            - checked
+            - issued
+            - refused
+            - withdrawn
+          examples:
+            - requested
+          type: string
         pass_application_on:
           description: The day the pass application was made, recorded once.
           examples:
@@ -12502,7 +12524,7 @@ paths:
         - Assistant
   /v1/assistant/drafts:
     get:
-      description: The approved drafts the executor attached to a letter request or a flexible-work request, for the person who decides it to use. The HR officer, the HR administrator and the Owner. It changes nothing.
+      description: The approved drafts the executor attached to a letter request or a flexible-work request, for the person who decides it to use. The HR officer, the HR administrator and the Owner; the Recruiter the drafts of a requisition only. It changes nothing.
       operationId: listAssistantDrafts
       parameters:
         - description: The browser's cookies; the session cookie is read from them.
@@ -12558,7 +12580,7 @@ paths:
       tags:
         - Assistant
     post:
-      description: "Makes a proposal: a draft letter for an open letter request (its fields filled from the values the request holds from the person's record, its purpose quoted) or a draft reply to an open flexible-work request (an acknowledgement that states no decision and no reason). The request's own words are data, never instructions. The assistant and the task type must be on. The proposal waits for a person to approve it within 72 hours; nothing is checked, issued, signed or replied to. The HR officer, the HR administrator and the Owner. It is audited."
+      description: "Makes a proposal: a draft letter for an open letter request (its fields filled from the values the request holds from the person's record, its purpose quoted) or a draft reply to an open flexible-work request (an acknowledgement that states no decision and no reason). The request's own words are data, never instructions. The assistant and the task type must be on. The proposal waits for a person to approve it within 72 hours; nothing is checked, issued, signed or replied to. The HR officer, the HR administrator and the Owner; the Recruiter for a job post or an interview kit only. It is audited."
       operationId: draftWithAssistant
       parameters:
         - description: The browser's cookies; the session cookie is read from them.
@@ -12633,7 +12655,7 @@ paths:
         - Assistant
   /v1/assistant/proposals:
     get:
-      description: The drafts the assistant proposed, newest first, with what it proposed, who it acted for and where each is. The HR officer, the HR administrator and the Owner. It changes nothing.
+      description: The drafts the assistant proposed, newest first, with what it proposed, who it acted for and where each is. The HR officer, the HR administrator and the Owner; the Recruiter sees the drafts of a job post and an interview kit and no other. It changes nothing.
       operationId: listAssistantProposals
       parameters:
         - description: The browser's cookies; the session cookie is read from them.
@@ -12694,7 +12716,7 @@ paths:
         - Assistant
   /v1/assistant/proposals/{id}:
     get:
-      description: One draft with its text. The HR officer, the HR administrator and the Owner. It changes nothing.
+      description: One draft with its text. The HR officer, the HR administrator and the Owner; the Recruiter a job post or an interview kit draft only (any other is not found). It changes nothing.
       operationId: getAssistantProposal
       parameters:
         - description: The browser's cookies; the session cookie is read from them.
@@ -12757,7 +12779,7 @@ paths:
         - Assistant
   /v1/assistant/proposals/{id}/decision:
     post:
-      description: A named human approves or rejects a pending proposal; a tier 1 draft may be decided by the person who asked for it. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.
+      description: A named human approves or rejects a pending proposal; a tier 1 draft may be decided by the person who asked for it. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. The HR officer, the HR administrator and the Owner decide every task; the Recruiter decides a job post or an interview kit draft only (NM-AI-05). It is audited with the hashes, never the text.
       operationId: decideAssistantProposal
       parameters:
         - description: The browser's cookies; the session cookie is read from them.
@@ -13974,6 +13996,81 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Service Unavailable
       summary: Write a note about a candidate
+      tags:
+        - Hiring
+  /v1/candidates/{id}/offer-letter:
+    post:
+      description: "PRD-002 NM-REC-06, NM-LTR-01. Letters are about a person, so the offer letter is made for the person record the hire made, after the offer was accepted: the company's offer letter template is filled from the person's role, team, kind of employment and first day and the letterhead, and then checked by another member of the people team and signed as any letter is. Asked once while one is open or issued (NM_HIRING_CONFLICT); refused with the reason when the company issues no offer letters yet. The HR administrator and the Owner, who made the hire. It is audited."
+      operationId: requestOfferLetter
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The candidate.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The candidate.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01
+            format: uuid
+            type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Ask for the offer letter of a hired candidate
       tags:
         - Hiring
   /v1/candidates/{id}/pass-application:

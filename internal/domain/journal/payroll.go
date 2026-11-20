@@ -21,7 +21,7 @@ func PostPayrollRunIn(ctx context.Context, u storage.UnitOfWork, run ledger.Payr
 	if err != nil || len(entry.Lines) == 0 {
 		return entry, storage.Entry{}, err
 	}
-	stored, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+	stored, err := appendEntry(ctx, u, toStorage(entry, nil))
 	return entry, stored, err
 }
 

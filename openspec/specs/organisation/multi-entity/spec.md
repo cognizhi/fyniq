@@ -58,6 +58,10 @@ Source: PRD-001 §8.20 · Priority C · Phase P3
 - **THEN** it reads each account's net movement by month in the entity's base currency with its code, name and type, the ledger revision and each period's state, and intercompany offers addressed to the entity
 - **AND** it reads no document, contact, employee, bank, evidence, comment, audit or AI data, and writes nothing
 
+#### Scenario: Only through the database's functions (rev 0.628)
+- **WHEN** a link is made, read or ended
+- **THEN** only the five security-definer functions touch the other organisation, the API role alone may run them, each takes the asker from the transaction and checks the acting person's own Owner role, and the rows' state moves forward only
+
 #### Scenario: Ending the link
 - **WHEN** either Owner ends the link with a reason
 - **THEN** the next read is refused and every read so far is in both audit trails

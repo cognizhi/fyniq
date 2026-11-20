@@ -467,6 +467,7 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"project_revenue_run.earned":              func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "earned", v) },
 	"project_revenue_run.adjustment":          func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "run", v) },
 	"subscription_amendment.mrr":              func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "amendment", v) },
+	"automation_rule.amount_at_least":         func(t *testing.T, b porttest.Books, v string) error { return rawAutomationRule(t, b, v) },
 	"payment_link.amount":                     func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLink(t, b, v) },
 	"payment_link_payment.amount":             func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLinkPayment(t, b, v) },
 	"kpi_alert.spend":                         func(t *testing.T, b porttest.Books, v string) error { return rawKPIAlert(t, b, "spend", v) },
@@ -544,6 +545,8 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"fx_rate.quote": func(t *testing.T, b porttest.Books, v string) error {
 		return rawFXRate(t, b, "1.35", v)
 	},
+	"consolidation_rate.closing": func(t *testing.T, b porttest.Books, v string) error { return rawGroupRate(t, b, v, "0.3056") },
+	"consolidation_rate.average": func(t *testing.T, b porttest.Books, v string) error { return rawGroupRate(t, b, "0.3056", v) },
 	"fx_feed_rate.rate": func(t *testing.T, b porttest.Books, v string) error {
 		return rawFeedRate(t, v, "1.35")
 	},
@@ -628,6 +631,17 @@ func rawFXRate(t *testing.T, b porttest.Books, rate, quote string) error {
 	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.fx_rate (kind, currency, on_date, rate, quote, quote_form, entered_by, entered_at)
 VALUES ('day', 'USD', '2026-10-16', $1::numeric, $2::numeric, 'base-per-unit', 'user:attack-test', now())`, rate, quote)
+		return err
+	})
+}
+
+// rawGroupRate enters a translation rate as the API role with the given closing and average, so only the rates' own checks fail.
+func rawGroupRate(t *testing.T, b porttest.Books, closing, average string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.consolidation_rate (currency, month, closing, average, note, entered_by, entered_at)
+VALUES ('MYR', '2026-10-01', $1::numeric, $2::numeric, 'attack', gen_random_uuid(), now())`, closing, average)
 		return err
 	})
 }

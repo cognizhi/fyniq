@@ -818,6 +818,8 @@ export const actions = [
   { kind: "action", id: "recurring.resume", mode: "expert", help: "recurring.resume", guide: "accounting.journals#recurring-journals" },
   { kind: "action", id: "journal.waiting", mode: "basic", help: "journal.waiting", guide: "accounting.journals#automatic-reversals-that-wait" },
   { kind: "action", id: "period.open-year", mode: "expert", help: "period.open-year", guide: "accounting.periods#open-a-financial-year" },
+  { kind: "action", id: "period.soft-lock", mode: "expert", help: "period.soft-lock", guide: "accounting.periods#soft-lock-a-month" },
+  { kind: "action", id: "period.soft-lock-pass", mode: "expert", help: "period.soft-lock-pass", guide: "accounting.periods#soft-lock-a-month" },
   { kind: "action", id: "opening.save", mode: "expert", help: "opening.save", guide: "accounting.opening-balances#enter-the-opening-balances" },
   { kind: "action", id: "opening.check", mode: "expert", help: "opening.check", guide: "accounting.opening-balances#check-and-post-them" },
   { kind: "action", id: "opening.post", mode: "expert", help: "opening.post", guide: "accounting.opening-balances#check-and-post-them" },

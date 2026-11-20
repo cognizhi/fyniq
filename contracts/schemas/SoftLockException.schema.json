@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "description": "When it was posted.",
+      "examples": [
+        "2026-11-21T09:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "entry_id": {
+      "description": "The journal entry posted.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The exception's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9c01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "period_id": {
+      "description": "The locked period.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "posting_date": {
+      "description": "The date it posted on.",
+      "examples": [
+        "2026-10-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reason": {
+      "description": "The pass's reason.",
+      "examples": [
+        "A late supplier bill dated 30 Oct that the auditor asked to see in October."
+      ],
+      "type": "string"
+    },
+    "scope": {
+      "description": "period when the whole period was soft-locked, else the locked module.",
+      "enum": [
+        "period",
+        "ar",
+        "ap",
+        "banking",
+        "payroll"
+      ],
+      "examples": [
+        "period"
+      ],
+      "type": "string"
+    },
+    "source_type": {
+      "description": "The kind of document it came from.",
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The Accountant who posted it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "period_id",
+    "entry_id",
+    "user_id",
+    "scope",
+    "source_type",
+    "posting_date",
+    "reason",
+    "created_at"
+  ],
+  "title": "SoftLockException",
+  "type": "object"
+}

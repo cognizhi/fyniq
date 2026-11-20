@@ -640,7 +640,7 @@ func (s FixedAssets) Void(ctx context.Context, u storage.UnitOfWork, id uuid.UUI
 		if err != nil {
 			return storage.Document{}, err
 		}
-		if _, err := u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if _, err := appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return storage.Document{}, err
 		}
 	}

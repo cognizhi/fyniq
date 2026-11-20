@@ -2758,7 +2758,7 @@ class PaymentProviderTxn(_PaymentProviderTxnRequired, _PaymentProviderTxnOptiona
     """PaymentProviderTxn is a schema of the contract."""
 
 _PeriodRequired = TypedDict("_PeriodRequired", {"ends_on": "str", "id": "str", "starts_on": "str", "status": "str", "version": "int"})
-_PeriodOptional = TypedDict("_PeriodOptional", {"closed_revision": "int", "financial_year": "int"}, total=False)
+_PeriodOptional = TypedDict("_PeriodOptional", {"closed_revision": "int", "financial_year": "int", "locked_modules": "list[str] | None"}, total=False)
 
 
 class Period(_PeriodRequired, _PeriodOptional):
@@ -3526,6 +3526,20 @@ _SkippedSendOptional = TypedDict("_SkippedSendOptional", {}, total=False)
 
 class SkippedSend(_SkippedSendRequired, _SkippedSendOptional):
     """SkippedSend is a schema of the contract."""
+
+_SoftLockExceptionRequired = TypedDict("_SoftLockExceptionRequired", {"created_at": "str", "entry_id": "str", "id": "str", "period_id": "str", "posting_date": "str", "reason": "str", "scope": "str", "source_type": "str", "user_id": "str"})
+_SoftLockExceptionOptional = TypedDict("_SoftLockExceptionOptional", {}, total=False)
+
+
+class SoftLockException(_SoftLockExceptionRequired, _SoftLockExceptionOptional):
+    """SoftLockException is a schema of the contract."""
+
+_SoftLockExceptionPageRequired = TypedDict("_SoftLockExceptionPageRequired", {"items": "list[SoftLockException]"})
+_SoftLockExceptionPageOptional = TypedDict("_SoftLockExceptionPageOptional", {"next_cursor": "str"}, total=False)
+
+
+class SoftLockExceptionPage(_SoftLockExceptionPageRequired, _SoftLockExceptionPageOptional):
+    """SoftLockExceptionPage is a schema of the contract."""
 
 _StatementRequired = TypedDict("_StatementRequired", {"adds_up": "bool", "ageing": "StatementAgeing", "balance_due": "Money", "currency": "str", "customer": "StatementCustomer", "from": "str", "lines": "list[StatementLine]", "opening_balance": "Money", "overdue": "Money", "to": "str"})
 _StatementOptional = TypedDict("_StatementOptional", {"currencies": "list[str] | None", "date": "str", "difference": "Money", "id": "str", "number": "str", "sends": "list[DocumentSendOut] | None", "version": "int"}, total=False)

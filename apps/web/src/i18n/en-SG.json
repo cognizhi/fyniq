@@ -1739,6 +1739,14 @@
       "label": "Periods and close",
       "tooltip": "The monthly periods of each financial year, open or closed; opening the next year and closing a month."
     },
+    "period.soft-lock": {
+      "label": "Soft-lock the month",
+      "tooltip": "Stop postings into the month from everyone except an Accountant who holds a pass. The close is separate and stricter."
+    },
+    "period.soft-lock-pass": {
+      "label": "Make a pass",
+      "tooltip": "Let only you post into a locked month for a few hours, with a reason the exceptions report keeps."
+    },
     "period.open-year": {
       "label": "Open the year",
       "tooltip": "Create the monthly periods of the next financial year, so its journals and documents can post."

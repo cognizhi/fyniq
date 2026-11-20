@@ -62,11 +62,14 @@ func (a AssistantService) view(r ProposalRow) api.AIProposal {
 	return out
 }
 
-func (a AssistantService) Proposals(ctx context.Context, s api.Session, state string) ([]api.AIProposal, error) {
+func (a AssistantService) Proposals(ctx context.Context, s api.Session, state string, hiringOnly bool) ([]api.AIProposal, error) {
 	out := []api.AIProposal{}
 	err := a.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
 		rows, err := Proposals(ctx, tx, state)
 		for _, r := range rows {
+			if hiringOnly && !assistant.IsHiringDraft(r.Task) { // the Recruiter's list holds the two hiring task types and nothing else (NM-AI-05)
+				continue
+			}
 			out = append(out, a.view(r))
 		}
 		return err
@@ -74,20 +77,36 @@ func (a AssistantService) Proposals(ctx context.Context, s api.Session, state st
 	return out, err
 }
 
-func (a AssistantService) Proposal(ctx context.Context, s api.Session, id uuid.UUID) (api.AIProposal, error) {
+func (a AssistantService) Proposal(ctx context.Context, s api.Session, id uuid.UUID, hiringOnly bool) (api.AIProposal, error) {
 	var out api.AIProposal
 	err := a.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
 		r, err := ProposalOf(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if hiringOnly && !assistant.IsHiringDraft(r.Task) { // another task's proposal is not found for the Recruiter: nothing says it exists
+			return &assistant.Refusal{Code: assistant.CodeNotFound, Message: "There is no such proposal."}
+		}
 		out = a.view(r)
-		return err
+		return nil
 	})
 	return out, err
 }
 
-// Decide approves or rejects a pending proposal. The API has checked that the caller is the HR team or the Owner, which are the approver roles of both P1 task types.
-func (a AssistantService) Decide(ctx context.Context, s api.Session, id uuid.UUID, in api.AIDecision) error {
+// Decide approves or rejects a pending proposal. The caller is the HR team or the Owner (every task) or the Recruiter, whose role is named so that only the tasks that list it as an approver can be decided: the
+// catalogue's approver roles decide, so a Recruiter's approval of a letter is refused in the same place as anyone else's.
+func (a AssistantService) Decide(ctx context.Context, s api.Session, id uuid.UUID, in api.AIDecision, hiringOnly bool) error {
+	role := "hr_officer"
+	if hiringOnly {
+		role = "recruiter"
+	}
 	return a.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
-		return DecideProposal(ctx, tx, s.Organisation, a.Clock.Now(), s.Member, []string{"hr_officer"}, id, in.Approve, in.Reason, in.Final)
+		if hiringOnly { // a proposal of another task is not found for the Recruiter, as in Proposal
+			if p, err := ProposalOf(ctx, tx, id); err != nil || !assistant.IsHiringDraft(p.Task) {
+				return &assistant.Refusal{Code: assistant.CodeNotFound, Message: "There is no such proposal."}
+			}
+		}
+		return DecideProposal(ctx, tx, s.Organisation, a.Clock.Now(), s.Member, []string{role}, id, in.Approve, in.Reason, in.Final)
 	})
 }
 
@@ -135,11 +154,14 @@ func (a AssistantService) Draft(ctx context.Context, s api.Session, in api.AIDra
 }
 
 // Drafts lists the drafts the executor attached to a request.
-func (a AssistantService) Drafts(ctx context.Context, s api.Session, request uuid.UUID) ([]api.AIDraft, error) {
+func (a AssistantService) Drafts(ctx context.Context, s api.Session, request uuid.UUID, hiringOnly bool) ([]api.AIDraft, error) {
 	out := []api.AIDraft{}
 	err := a.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
 		rows, err := DraftsFor(ctx, tx, request)
 		for _, r := range rows {
+			if hiringOnly && r.Kind != "job_post" && r.Kind != "interview_kit" {
+				continue
+			}
 			out = append(out, api.AIDraft{ID: r.ID.String(), ProposalID: r.Proposal.String(), Kind: r.Kind, Payload: r.Payload, AppliedAt: r.AppliedAt.UTC().Format(time.RFC3339)})
 		}
 		return err

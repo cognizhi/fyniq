@@ -158,7 +158,7 @@ func (s WriteOffs) Post(ctx context.Context, org, id uuid.UUID) (PostedWriteOff,
 		if len(c.Problems) > 0 {
 			return c.Problems
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(c.Entry, nil)); err != nil {
 			return err
 		}
 		x := c.Settlement
@@ -224,7 +224,7 @@ func (s WriteOffs) Void(ctx context.Context, org, id uuid.UUID, date time.Time, 
 		if err != nil {
 			return err
 		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		if out.Entry, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
 		allocs, err := u.Allocations().OfSource(ctx, doc.ID)

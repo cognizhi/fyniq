@@ -46,7 +46,7 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 // worker only through record_ai_price_catalogue. ai_agent is the agents that call a model (000356): written only by the
 // migrations, read through ai_agents. mcp_client is the AI apps that registered themselves (000585, AI-90): the installation's, since
 // a client is registered before anyone is signed in; written and read only through SECURITY DEFINER functions.
-var globalTables = []string{"currency", "tenant_directory", "practice_organisation", "sandbox_organisation", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
+var globalTables = []string{"currency", "tenant_directory", "practice_organisation", "group_invitation", "sandbox_organisation", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
 	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row", "webauthn_credential", "webauthn_challenge",
 	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token", "portal_link_token", "installation_connector",
 	"installation_connector_secret", "installation_change", "connector_route", "invitation_code", "sign_in_method",

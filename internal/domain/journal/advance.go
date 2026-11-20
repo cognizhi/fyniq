@@ -131,7 +131,7 @@ func (s CashAdvances) RecordIn(ctx context.Context, u storage.UnitOfWork, a clai
 		return RecordedAdvance{}, err
 	}
 	out := RecordedAdvance{}
-	if out.Entry, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+	if out.Entry, err = appendEntry(ctx, u, toStorage(c.Entry, nil)); err != nil {
 		return RecordedAdvance{}, err
 	}
 	if a.Refunds != nil {
@@ -226,7 +226,7 @@ func (s CashAdvances) VoidIn(ctx context.Context, u storage.UnitOfWork, id uuid.
 		return RecordedAdvance{}, err
 	}
 	out := RecordedAdvance{}
-	if out.Entry, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+	if out.Entry, err = appendEntry(ctx, u, toStorage(reversal, &stored.ID)); err != nil {
 		return RecordedAdvance{}, err
 	}
 	allocs, err := u.Allocations().OfSource(ctx, doc.ID)

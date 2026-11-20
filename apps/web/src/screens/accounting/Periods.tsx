@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarPlus, CalendarRange, CircleCheck, Lock } from "lucide-react";
+import { CalendarPlus, CalendarRange, CircleCheck, Lock, LockKeyhole } from "lucide-react";
 import { useState } from "react";
 import { api, newKey } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
@@ -13,6 +13,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listPeriods, type Period, type PeriodPage } from "./data";
+import { Exceptions, LocksDialog, ModuleChips, SoftLockChip, lockers, passMakers, releasers } from "./PeriodLocks";
 
 type Year = NonNullable<PeriodPage["next_year"]>;
 
@@ -82,8 +83,11 @@ export function Periods() {
   const q = useQuery({ queryKey: ["periods"], queryFn: listPeriods });
   const [opening, setOpening] = useState<Year | null>(null);
   const [status, setStatus] = useState("");
+  const [locking, setLocking] = useState<Period | null>(null);
   const may = (session.roles ?? []).some((r) => openers.includes(r));
   const h = helpText("period.open-year");
+  const roles = session.roles ?? [];
+  const mayLock = roles.some((r) => [...lockers, ...releasers, ...passMakers].includes(r));
   const periods = q.data?.items ?? [];
   const next = q.data?.next_year;
   const years = [...new Set(periods.map((p) => p.financial_year ?? 0))];
@@ -158,6 +162,11 @@ export function Periods() {
                       Dates
                     </th>
                     <th scope="col">Status</th>
+                    {mayLock && (
+                      <th scope="col">
+                        <span className="fy-sr">Locks</span>
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -177,13 +186,26 @@ export function Periods() {
                             <Icon of={Lock} />
                             Closed
                           </span>
+                        ) : p.status === "soft_locked" ? (
+                          <SoftLockChip p={p} />
                         ) : (
                           <span className="fy-chip fy-chip--good">
                             <Icon of={CircleCheck} />
                             Open
                           </span>
                         )}
+                        <ModuleChips p={p} />
                       </td>
+                      {mayLock && (
+                        <td>
+                          {p.status !== "closed" && (
+                            <Button size="sm" variant="ghost" onClick={() => setLocking(p)} aria-label={`Locks for ${monthOf(p)}`}>
+                              <Icon of={LockKeyhole} />
+                              Locks
+                            </Button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -192,6 +214,8 @@ export function Periods() {
           </section>
         );
       })}
+      <Exceptions />
+      <LocksDialog period={locking} roles={roles} onClose={() => setLocking(null)} onDone={setStatus} />
       <OpenYear year={opening} onClose={() => setOpening(null)} onOpened={(n) => setStatus(`The year is open: ${n} ${n === 1 ? "period" : "periods"}.`)} />
     </div>
   );

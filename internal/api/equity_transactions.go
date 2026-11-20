@@ -217,7 +217,7 @@ type (
 
 // EquityTransactionCodes are the codes an equity transaction's writes answer with.
 var EquityTransactionCodes = []string{equity.CodeNotRecord, equity.CodeTransaction, equity.CodeRecorded, equity.CodeEffective, equity.CodeNoMonies,
-	equity.CodeNoEvidence, storage.CodeHolding, storage.CodeShareIssue, storage.CodeParty, storage.CodePeriodClosed, ledger.CodeEquity, ledger.CodeParty,
+	equity.CodeNoEvidence, storage.CodeHolding, storage.CodeShareIssue, storage.CodeParty, storage.CodePeriodClosed, storage.CodeSoftLocked, ledger.CodeEquity, ledger.CodeParty,
 	ledger.CodeNoDate, ledger.CodeReversalDate}
 
 // transactionIn is a draft as the domain reads it: an ID that is not one is left as none, for the checks to name.

@@ -10,8 +10,10 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/hiring"
+	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
 	"github.com/cognizhi/fyniq/internal/nemura/retention"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -126,6 +128,13 @@ func oneCandidate(ctx context.Context, tx pgx.Tx, id uuid.UUID, detail bool) (ap
 		h.StartDate, h.PassApplicationOn = day(start), dayOrEmpty(pass)
 		if plan != nil {
 			h.PlanID = plan.String()
+		}
+		var ol uuid.UUID
+		switch le := tx.QueryRow(ctx, `SELECT id, state FROM nemura.letter_request WHERE person_id = $1 AND type_key = 'offer_letter' ORDER BY (state IN ('requested', 'checked', 'issued')) DESC, requested_at DESC LIMIT 1`, h.PersonID).Scan(&ol, &h.OfferLetterState); {
+		case le == nil:
+			h.OfferLetterID = ol.String()
+		case !errors.Is(le, pgx.ErrNoRows):
+			return c, le
 		}
 		c.Hire = &h
 		c.RetentionUntil = day(start.AddDate(0, hiring.CandidateRetentionMonths, 0)) // a hired candidate's record goes six months after the start date (migration 000071)
@@ -350,6 +359,13 @@ func (p PipelineService) Consent(ctx context.Context, s api.Session, id uuid.UUI
 			return noCandidate
 		} else if err != nil {
 			return err
+		}
+		var stage string
+		if err := tx.QueryRow(ctx, `SELECT stage FROM nemura.candidate WHERE id = $1`, id).Scan(&stage); err != nil {
+			return err
+		}
+		if stage == "hired" { // a hired candidate is a person now: there is no future role to keep them for, their record is final (migration 000072) and goes six months after the start
+			return &hiring.Refusal{Code: hiring.CodeConflict, Message: "A hired candidate is not kept for future roles: they have joined, and their application record is deleted six months after their start date."}
 		}
 		if given && consent != nil || !given && (consent == nil || withdrawn != nil) {
 			return &hiring.Refusal{Code: hiring.CodeConflict, Message: "That consent is given once and withdrawn once, and only after it was given: read the candidate again."}
@@ -577,7 +593,56 @@ func HireCandidate(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, 
 	if err := Audit(ctx, tx, org, at, user(by), "nemura.requisition.filled", audit.Object{Type: "requisition", ID: requisition}, map[string]audit.Change{"state": {"approved", "filled"}}, ""); err != nil {
 		return uuid.Nil, err
 	}
-	return person, Audit(ctx, tx, org, at, user(by), "nemura.candidate.hired", audit.Object{Type: "candidate", ID: id}, map[string]audit.Change{"stage": {"offer", "hired"}, "start_date": {nil, day(start)}}, "")
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.candidate.hired", audit.Object{Type: "candidate", ID: id}, map[string]audit.Change{"stage": {"offer", "hired"}, "start_date": {nil, day(start)}}, ""); err != nil {
+		return uuid.Nil, err
+	}
+	if in.OfferLetter { // the offer letter is made for the person at the hire, after the acceptance (NM-REC-06 with NM-LTR-01)
+		if _, err := requestOfferLetter(ctx, tx, org, at, by, person, title); err != nil {
+			return uuid.Nil, err
+		}
+	}
+	return person, nil
+}
+
+// requestOfferLetter asks for the offer letter of a person made at a hire: the company's offer letter template, filled from the person's record as it is on their first day. A refusal of
+// the letters (the type is off, no template is published, a fact is missing) is returned as the hiring's, so the whole hire is refused with the reason and nothing is left half made.
+func requestOfferLetter(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, person uuid.UUID, title string) (uuid.UUID, error) {
+	id, _, err := RequestLetter(ctx, tx, org, at, by, pack.Version{}, LetterAsk{Person: person, Type: "offer_letter", Purpose: "Offer of employment as " + title})
+	var r *letters.Refusal
+	if errors.As(err, &r) {
+		code := hiring.CodeConflict
+		if r.Code == letters.CodeInvalid {
+			code = hiring.CodeInvalid
+		}
+		return uuid.Nil, &hiring.Refusal{Code: code, Message: "The offer letter cannot be made: " + r.Message}
+	}
+	return id, err
+}
+
+// OfferLetter asks for the offer letter of a hired candidate's person record, once while one is open or issued.
+func (p PipelineService) OfferLetter(ctx context.Context, s api.Session, id uuid.UUID) (c api.Candidate, err error) {
+	err = p.as(ctx, s, func(ctx context.Context, tx pgx.Tx, at time.Time) error {
+		var person uuid.UUID
+		var title string
+		if e := tx.QueryRow(ctx, `SELECT h.person_id, coalesce((SELECT j.job_title FROM nemura.person_job j WHERE j.person_id = h.person_id ORDER BY j.effective_from LIMIT 1), '') FROM nemura.hire h WHERE h.candidate_id = $1 FOR UPDATE OF h`, id).Scan(&person, &title); errors.Is(e, pgx.ErrNoRows) {
+			return &hiring.Refusal{Code: hiring.CodeConflict, Message: "There is no hire for that candidate: the offer letter is made for the person the hire makes."}
+		} else if e != nil {
+			return e
+		}
+		var open bool
+		if e := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM nemura.letter_request WHERE person_id = $1 AND type_key = 'offer_letter' AND state IN ('requested', 'checked', 'issued'))`, person).Scan(&open); e != nil {
+			return e
+		}
+		if open {
+			return &hiring.Refusal{Code: hiring.CodeConflict, Message: "An offer letter is open or issued for this person already: it is not asked for twice."}
+		}
+		if _, e := requestOfferLetter(ctx, tx, s.Organisation, at, s.Member, person, title); e != nil {
+			return e
+		}
+		c, err = oneCandidate(ctx, tx, id, true)
+		return err
+	})
+	return c, err
 }
 
 func (p PipelineService) Hire(ctx context.Context, s api.Session, id uuid.UUID, in api.HireInput) (c api.Candidate, err error) {

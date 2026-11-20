@@ -766,7 +766,7 @@ func (s Service) RunChecks(ctx context.Context, org, periodID uuid.UUID) (storag
 		if err != nil {
 			return err
 		}
-		if p.Status != storage.PeriodOpen {
+		if p.Status == storage.PeriodClosed { // a soft-locked period is still in its close (FR-GL-09)
 			return &Error{CodeNotOpen, fmt.Sprintf("the period %s to %s is %s", p.StartsOn.Format(time.DateOnly), p.EndsOn.Format(time.DateOnly), p.Status),
 				"Only an open period is checked and closed"}
 		}
@@ -927,7 +927,7 @@ func (s Service) Close(ctx context.Context, org, periodID, checkID uuid.UUID, st
 		if err != nil {
 			return err
 		}
-		if p.Status != storage.PeriodOpen {
+		if p.Status == storage.PeriodClosed { // a soft-locked period is still in its close (FR-GL-09)
 			return &Error{CodeNotOpen, fmt.Sprintf("the period %s to %s is %s", p.StartsOn.Format(time.DateOnly), p.EndsOn.Format(time.DateOnly), p.Status),
 				"Only an open period is closed"}
 		}

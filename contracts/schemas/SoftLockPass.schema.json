@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "description": "When it was made.",
+      "examples": [
+        "2026-11-21T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "When it ends.",
+      "examples": [
+        "2026-11-21T13:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The pass's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "period_id": {
+      "description": "The period it is for.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reason": {
+      "description": "The reason given.",
+      "examples": [
+        "A late supplier bill dated 30 Oct that the auditor asked to see in October."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "period_id",
+    "reason",
+    "created_at",
+    "expires_at"
+  ],
+  "title": "SoftLockPass",
+  "type": "object"
+}

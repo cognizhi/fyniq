@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "The entity's account code.",
+      "examples": [
+        "2210"
+      ],
+      "type": "string"
+    },
+    "counterparty_entity_id": {
+      "description": "For an intercompany account, the other entity of the group (its row's id).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "counterparty_parent": {
+      "description": "For an intercompany account, the parent itself is the other side.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "entity_id": {
+      "description": "The entity's row in the group (its id in getEntityGroup); absent for the parent's own accounts.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "group_account_id": {
+      "description": "The parent's account it maps to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6002"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The mapping's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6001"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "version": {
+      "description": "The mapping's version.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "account_code",
+    "group_account_id",
+    "counterparty_parent",
+    "version"
+  ],
+  "title": "GroupMapping",
+  "type": "object"
+}

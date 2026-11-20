@@ -4221,13 +4221,14 @@ type PaymentProviderTxn struct {
 
 // Period is a schema of the contract.
 type Period struct {
-	ClosedRevision *int64 `json:"closed_revision,omitempty"`
-	EndsOn         string `json:"ends_on"`
-	FinancialYear  *int64 `json:"financial_year,omitempty"`
-	ID             string `json:"id"`
-	StartsOn       string `json:"starts_on"`
-	Status         string `json:"status"`
-	Version        int64  `json:"version"`
+	ClosedRevision *int64   `json:"closed_revision,omitempty"`
+	EndsOn         string   `json:"ends_on"`
+	FinancialYear  *int64   `json:"financial_year,omitempty"`
+	ID             string   `json:"id"`
+	LockedModules  []string `json:"locked_modules,omitempty"`
+	StartsOn       string   `json:"starts_on"`
+	Status         string   `json:"status"`
+	Version        int64    `json:"version"`
 }
 
 // PeriodChecklist is a schema of the contract.
@@ -5291,6 +5292,25 @@ type SkipSalesReminder struct {
 type SkippedSend struct {
 	UserID string `json:"user_id"`
 	Why    string `json:"why"`
+}
+
+// SoftLockException is a schema of the contract.
+type SoftLockException struct {
+	CreatedAt   string `json:"created_at"`
+	EntryID     string `json:"entry_id"`
+	ID          string `json:"id"`
+	PeriodID    string `json:"period_id"`
+	PostingDate string `json:"posting_date"`
+	Reason      string `json:"reason"`
+	Scope       string `json:"scope"`
+	SourceType  string `json:"source_type"`
+	UserID      string `json:"user_id"`
+}
+
+// SoftLockExceptionPage is a schema of the contract.
+type SoftLockExceptionPage struct {
+	Items      []SoftLockException `json:"items"`
+	NextCursor *string             `json:"next_cursor,omitempty"`
 }
 
 // Statement is a schema of the contract.

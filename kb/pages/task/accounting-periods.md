@@ -4,7 +4,7 @@ type: task
 title: Open the financial year and close the periods
 summary: What accounting periods are, opening the next financial year, closing a month with two people, explaining its variances, and year end
 sources:
-  - docs/user-guide/periods-and-close.md sha256:640581290b46783620a1f273d5952f7aeabbf0bece7a1e80337b5dcd269988b3
+  - docs/user-guide/periods-and-close.md sha256:08b2aec706645eec709662248031eb9cbd4c8e155088d7bf09190f16b9c11fab
 data_class: general
 taint: trusted
 status: draft
@@ -32,6 +32,11 @@ aliases:
   - retained earnings
   - closing entry
   - month-end revaluation
+  - soft lock
+  - soft-locked period
+  - pass to post into a locked month
+  - exceptions report
+  - lock a module
 ---
 
 # Open the financial year and close the periods
@@ -107,6 +112,17 @@ aliases:
 
 (src: docs/user-guide/periods-and-close.md#year-end)
 
+## Soft-lock a month
+
+- A soft lock stops postings into a month without closing it. It is weaker than the close: the close is the database's and nobody posts into a closed month; a soft lock is Fyniq's, and an Accountant who holds a pass can post.
+- On **Accounting → Periods and close**, an Accountant or a Controller selects **Locks** beside a month, then **Soft-lock the month** (the reason is optional). The month shows **Soft-locked** and takes no posting dated in it from anyone: not a Controller, not another Accountant, not a scheduled job, an integration or the AI's approved proposals.
+- To lock one part only, select **Lock** beside **Sales** (invoices, credit notes, receipts, refunds), **Purchases** (bills, payments, claims, supplier credits), **Banking** or **Payroll**; the rest of the month stays open. Manual journals, depreciation, opening balances and equity entries belong to no part: only the lock of the whole month stops them.
+- An Accountant who must post anyway writes why (10 characters or more), chooses 1 to 8 hours, selects **Make a pass** and confirms it's them. The pass is theirs alone and ends by itself; everything posted under it is listed under **Postings made into locked months** with the reason. Nobody else gets a pass for the Accountant.
+- An Owner or a Controller releases a lock, with a reason of 10 characters or more and after confirming it's them: **Release the soft lock**, or **Release** beside a part.
+- A soft-locked month is closed the usual way. A scheduled depreciation or reversal into a locked month waits and is listed as waiting; a scheduled invoice stays a draft until the lock is released.
+
+(src: docs/user-guide/periods-and-close.md#soft-lock-a-month)
+
 ## Reopen a month
 
 - Only the latest closed month reopens: months reopen in the reverse of the order they closed.
@@ -128,6 +144,9 @@ aliases:
 - PERIOD-02, the year starts too far ahead: open it once the year before it has started.
 - PERIOD-03, not the next year to open: reload the page, as someone else opened that year.
 - PERIOD-04, the financial years are fixed: keep the books start and the year as they are.
+- STORAGE-SOFTLOCK-01, the period is soft-locked: ask an Accountant to make a pass with a reason, or ask an Owner or a Controller to release the lock.
+- LOCK-01, only an Accountant makes a pass: ask the Accountant; the Owner and the Controller release the lock instead.
+- LOCK-02, the reason is too short: say why in at least 10 characters.
 - CLOSE-02, the checks are stale: run them again, then attest.
 - CLOSE-03, an earlier period is open: close the earlier months first.
 - CLOSE-04, the checks refused the close: fix what they found and run them again.

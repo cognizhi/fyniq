@@ -122,6 +122,8 @@ type UnitOfWork interface {
 	ApprovalDelegations() ApprovalDelegations
 	ApprovalReminders() ApprovalReminders
 	AutomationRules() AutomationRules
+	// SoftLocks are the soft-locked periods and modules, a person's pass and the exceptions it made (FR-GL-09).
+	SoftLocks() SoftLocks
 	// Usage is the organisation's use of AI, storage and exports, read-only (FR-ADM-05).
 	Usage() Usage
 	// Help is each person's first-run tour state (FR-UX-34).
@@ -130,6 +132,10 @@ type UnitOfWork interface {
 	Preferences() Preferences
 	// SavedItems are each person's own favourites and saved views (FR-UX-12).
 	SavedItems() SavedItems
+	// Consolidations are the parent's elimination pairs, account mappings, translation rates and frozen runs (FR-ENT-05, FR-ENT-06).
+	Consolidations() Consolidations
+	// EntityGroups is the link between this organisation and others in a group (FR-ENT-04).
+	EntityGroups() EntityGroups
 	// Practices opens a practice organisation from the organisation this unit of work is for, and says whether one is practice (FR-UX-36).
 	Practices() Practices
 	// Sandboxes make a sandbox organisation (the installation's unit of work) and say whether the unit of work's organisation is one (FR-INT-18).
@@ -1018,10 +1024,12 @@ type BalanceDifference struct {
 // The stable error codes of the storage port (ENG-23). The database's own codes (FYnnn) are mapped
 // to these by the adapter; db/README.md lists both.
 const (
-	CodeUnbalanced     = "STORAGE-INV-01" // the entry does not balance
-	CodeShareCapital   = "STORAGE-INV-13" // a manual journal line to a share-capital account
-	CodeImmutable      = "STORAGE-INV-02" // posted history cannot change
-	CodePeriodClosed   = "STORAGE-INV-03" // the posting date is in a closed period
+	CodeUnbalanced   = "STORAGE-INV-01" // the entry does not balance
+	CodeShareCapital = "STORAGE-INV-13" // a manual journal line to a share-capital account
+	CodeImmutable    = "STORAGE-INV-02" // posted history cannot change
+	CodePeriodClosed = "STORAGE-INV-03" // the posting date is in a closed period
+	// CodeSoftLocked: the posting date is in a soft-locked period, or its module is locked for the period, and the person holds no pass (FR-GL-09).
+	CodeSoftLocked     = "STORAGE-SOFTLOCK-01"
 	CodeAccountNotPost = "STORAGE-INV-04" // the account is missing, a group or inactive
 	CodeAmount         = "STORAGE-INV-05" // an amount, rate or currency is not valid
 	CodeNoTenant       = "STORAGE-INV-06" // no organisation, or a row of another organisation
@@ -1090,7 +1098,13 @@ const (
 	CodeClaim = "STORAGE-CLAIM-01"
 	// CodePractice: a practice organisation is opened only by an Owner of an organisation that keeps books, and a person holds one
 	// at a time (FR-UX-36; the owner's decision of 21 Nov 2026). CodePracticeHeld: they hold one already.
-	CodePractice     = "STORAGE-PRACTICE-01"
+	CodePractice = "STORAGE-PRACTICE-01"
+	// CodeGroup: the person is no Owner of the organisation, or the organisation may hold no group (the installation's, a practice, a sandbox) or is an entity already,
+	// or is a parent and so no entity (FR-ENT-04). CodeGroupCode: the invitation code is wrong, used, withdrawn or older than 24 hours (one answer for all, so a guess learns nothing).
+	// CodeGroupLink: no live link to that organisation, or the entity has not consented to what was asked.
+	CodeGroup        = "STORAGE-GROUP-01"
+	CodeGroupCode    = "STORAGE-GROUP-02"
+	CodeGroupLink    = "STORAGE-GROUP-03"
 	CodePracticeHeld = "STORAGE-PRACTICE-02"
 	// CodeSandbox: only a new organisation is made a sandbox one and the flag is never changed or removed; a sandbox organisation's name starts with
 	// "Sandbox: " (FR-INT-18).

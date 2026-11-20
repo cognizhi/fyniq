@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "description": "The account's code.",
+      "examples": [
+        "4000"
+      ],
+      "type": "string"
+    },
+    "amount": {
+      "description": "After the eliminations, in the group currency.",
+      "examples": [
+        "241610.40"
+      ],
+      "type": "string"
+    },
+    "section": {
+      "description": "The section.",
+      "enum": [
+        "balance",
+        "equity",
+        "result",
+        "brought_forward"
+      ],
+      "examples": [
+        "result"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "account",
+    "section",
+    "amount"
+  ],
+  "title": "ConsolidationTotal",
+  "type": "object"
+}
