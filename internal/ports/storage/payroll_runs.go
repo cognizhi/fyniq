@@ -48,6 +48,8 @@ type PayrollRuns interface {
 	SetMapping(ctx context.Context, entries map[string]uuid.UUID, by string, at time.Time) (PayrollMapping, error)
 	// LatestReceipt is the receipt of the highest version received of a run, or ports.ErrNotFound.
 	LatestReceipt(ctx context.Context, source string, run uuid.UUID) (PayrollRunReceipt, error)
+	// ReceiptMonths are the wage months a pay run was posted for, earliest first.
+	ReceiptMonths(ctx context.Context) ([]time.Time, error)
 	// EnvelopeUsed reports whether an approval envelope's digest was received before.
 	EnvelopeUsed(ctx context.Context, sha string) (bool, error)
 	// Receive records a receipt, audited as payroll_run.received. CodePayrollRun when the database refuses it.

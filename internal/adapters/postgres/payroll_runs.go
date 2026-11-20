@@ -120,3 +120,11 @@ func (r payrollRuns) Receive(ctx context.Context, x storage.PayrollRunReceipt) (
 	return x, r.u.event(ctx, "payroll_run.received", "payroll_run_receipt", id, &v, map[string][2]any{"run": {nil, x.RunID.String()}, "version": {nil, x.Version},
 		"approver": {nil, x.ApproverIssuer + "|" + x.ApproverSubject}, "mapping_version": {nil, x.MappingVersion}, "entry_id": {nil, x.EntryID.String()}})
 }
+
+func (r payrollRuns) ReceiptMonths(ctx context.Context) ([]time.Time, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	months, err := r.u.q.PayrollReceiptMonths(ctx)
+	return months, mapError(err)
+}
