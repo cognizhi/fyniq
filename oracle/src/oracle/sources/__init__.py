@@ -30,6 +30,7 @@ RULE_SETS: dict[str, RuleSet] = {
     "customer_deposit": sales.customer_deposit,
     "deposit_refund": sales.deposit_refund,
     "write_off": sales.write_off,
+    "bad_debt_relief": sales.bad_debt_relief,
     "expense_claim": claims.expense_claim,
     "claim_reimbursement": claims.claim_reimbursement,
     "cash_advance": claims.cash_advance,

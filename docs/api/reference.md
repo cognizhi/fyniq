@@ -19257,7 +19257,7 @@ You ask for access to, or correction of, the personal data the company holds abo
 
 **The GST bad debt relief queue** (`getBadDebtRelief`)
 
-The invoices written off as a bad debt that bore GST, each with the GST in the part written off, when a claim may be made and until when (FR-AR-11): from twelve months after the date of supply, or from the write-off when the debtor became insolvent sooner, and within five years of the supply, as the sg-tax-filings pack says. The claim goes in the GST return and is not yet recorded here. Read-only; no side effects.
+The invoices written off as a bad debt that bore GST, each with the GST in the part written off, when a claim may be made and until when (FR-AR-11): from twelve months after the date of supply, or from the write-off when the debtor became insolvent sooner, and within five years of the supply, as the sg-tax-filings pack says. A claim made with claimBadDebtRelief shows on its row. Read-only; no side effects.
 
 - **Permission:** View on GST return, filing
 - **Parameters:**
@@ -19273,6 +19273,84 @@ The invoices written off as a bad debt that bore GST, each with the GST in the p
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/tax/bad-debt-relief/claims`
+
+**Claim GST bad debt relief for a write-off** (`claimBadDebtRelief`)
+
+Claims the GST bad debt relief of a posted bad-debt write-off (FR-AR-11) and posts it at once: Dr the GST control account, Cr the account the write-off took the debt to, in the base currency, for the invoice's output tax in the part written off (RND-BDR, half away from zero, capped at what earlier claims of the invoice left [accountant to confirm]; the posting rule bad_debt_relief@1). Refused unless the date is within the sg-tax-filings pack's dates and not after today, the write-off is a posted bad debt and not claimed already, and no credit note credits its invoice. The conditions of the claim that are not dates (reasonable steps to recover the debt, open market value) are the claimer's declaration: say how in note, and attach files as evidence. Side effects: the claim, its entry, a new ledger revision, balances and audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on GST return, filing. Posts the GST relief of a bad-debt write-off at once (FR-AR-11): the claimer declares the conditions that are not dates. The posting is audited and undone only by a void.
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`BadDebtReliefClaimRequest`](../../contracts/schemas/BadDebtReliefClaimRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`BadDebtReliefClaimPosting`](../../contracts/schemas/BadDebtReliefClaimPosting.schema.json)
+  - `201` Created [`BadDebtReliefClaimPosting`](../../contracts/schemas/BadDebtReliefClaimPosting.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `RELIEF-04` The write-off is claimed already; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-49` A line on 2700 needs its SAFE or note; `LEDGER-52` No GST is left to claim; `RELIEF-03` Not a posted bad-debt write-off; `RELIEF-05` A credit note credits the invoice; `RELIEF-06` No pack holds the relief dates; `RELIEF-07` The twelve months have not passed; `RELIEF-08` The time to claim is over; `RELIEF-09` The claim is dated after today; `RELIEF-10` The F5 period ends before the claim; `RELIEF-11` The note is too long; `STORAGE-INPUT-01` The request is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `DIM-05`, `DIM-06`, `FX-01`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-22`, `LEDGER-23`, `LEDGER-26`, `LEDGER-49`, `LEDGER-52`, `RELIEF-03`, `RELIEF-04`, `RELIEF-05`, `RELIEF-06`, `RELIEF-07`, `RELIEF-08`, `RELIEF-09`, `RELIEF-10`, `RELIEF-11`, `STORAGE-DUPLICATE-01`, `STORAGE-INPUT-01`, `STORAGE-INV-03`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/tax/bad-debt-relief/claims/{claim_id}`
+
+**Get a claim of GST bad debt relief** (`getBadDebtReliefClaim`)
+
+Returns a claim with its ETag: the write-off, the GST claimed, the F5 period, the dates it was allowed by and its status (FR-AR-11). Read-only; no side effects.
+
+- **Permission:** View on GST return, filing
+- **Parameters:**
+  - `claim_id` (path, required): The claim's ID.
+- **Responses:**
+  - `200` OK [`BadDebtReliefClaim`](../../contracts/schemas/BadDebtReliefClaim.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `RELIEF-01` Not a claim of GST bad debt relief.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `RELIEF-02` The saved claim cannot be read.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `RELIEF-01`, `RELIEF-02`
+
+### `POST /v1/tax/bad-debt-relief/claims/{claim_id}/void`
+
+**Void a claim of GST bad debt relief** (`voidBadDebtReliefClaim`)
+
+Voids a posted claim with a reversing entry on the date given, with a reason (FR-GL-12); posted history never changes. The write-off can then be claimed again or voided. Side effects: the reversing entry, a new ledger revision, balances and audit events with the reason. Needs If-Match with the claim's ETag. Idempotent with Idempotency-Key; Prefer: return=preview voids nothing.
+
+- **Permission:** Create on GST return, filing. A reversing entry: posted history never changes (FR-GL-12).
+- **Parameters:**
+  - `claim_id` (path, required): The claim's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`Reversal`](../../contracts/schemas/Reversal.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`BadDebtReliefClaimPosting`](../../contracts/schemas/BadDebtReliefClaimPosting.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `RELIEF-01` Not a claim of GST bad debt relief.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `RELIEF-12` The claim is not posted; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-49` A line on 2700 needs its SAFE or note; `RELIEF-02` The saved claim cannot be read; `RELIEF-13` The void is dated before the claim; `STORAGE-INPUT-01` The request is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `DIM-05`, `DIM-06`, `FX-01`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-49`, `RELIEF-01`, `RELIEF-02`, `RELIEF-12`, `RELIEF-13`, `STORAGE-DUPLICATE-01`, `STORAGE-INPUT-01`, `STORAGE-INV-03`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/tax/working-paper`
 

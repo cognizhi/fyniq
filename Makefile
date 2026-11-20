@@ -24,11 +24,11 @@ GO_IMAGES := api ai mcp worker executor render migrate jobs scanner clamd nemura
 # runner beside the other database suites, and one run on a slow runner passed 30 (3 Nov 2026), past go test's default of
 # ten. With 630 operations it took 36 minutes on main and passed 45 on a slow runner (7 Nov 2026), so the limit is 90.
 GO_TEST_TIMEOUT := 90m
-MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/ledger internal/nemura/payroll
+MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/ledger internal/nemura/payroll internal/domain/allocation internal/domain/sharepay
 # The P1 sources `make differential` draws beside manual journals, and the statements and KPIs over them: what
 # cmd/scenario-run reads and states (test/differential/README.md, "P1 sources", "Statements", "KPIs"), and the forecasts
 # and feasibility studies ("Forecasts", "Feasibility studies", each drawn by its own test).
-DIFFERENTIAL_SOURCES ?= bank,purchases,sales,claims,assets,founders,general-ledger,fx,equity,opening-items,statements,kpis,forecast,feasibility,purge,payroll,payroll-month
+DIFFERENTIAL_SOURCES ?= bank,purchases,sales,claims,assets,founders,general-ledger,fx,equity,opening-items,statements,kpis,forecast,feasibility,purge,payroll,payroll-month,relief
 FLAVOURS ?= release local
 # The platform `make images` builds: empty for the Docker engine's own (linux/arm64 on Apple silicon), or
 # linux/amd64 or linux/arm64 (NFR-IMG-08)

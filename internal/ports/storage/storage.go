@@ -693,6 +693,8 @@ const (
 	DocumentCustomerReceipt DocumentType = "customer_receipt"
 	// DocumentWriteOff writes off what is left of an invoice, for a reason, on another person's approval (FR-AR-17).
 	DocumentWriteOff DocumentType = "write_off"
+	// DocumentBadDebtRelief is a claim of GST bad debt relief for a posted bad-debt write-off (FR-AR-11, rev 0.609): made and posted at once, never edited, undone by a reversal.
+	DocumentBadDebtRelief DocumentType = "bad_debt_relief"
 	// DocumentStatement is a statement of account sent to a customer (FR-AR-08; p1-sales task 7.2): what it said, kept
 	// as it was sent. It posts nothing and is never reversed; posted is sent.
 	DocumentStatement DocumentType = "statement"

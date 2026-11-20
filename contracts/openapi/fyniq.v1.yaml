@@ -9308,6 +9308,9 @@ components:
     BadDebtRelief:
       additionalProperties: false
       properties:
+        claim:
+          $ref: "#/components/schemas/BadDebtReliefClaimRef"
+          description: The live claim of this write-off, when it is claimed (FR-AR-11).
         claim_by:
           description: "The last day to claim: five years from the supply, the day before the anniversary [accountant to confirm]."
           examples:
@@ -9381,6 +9384,164 @@ components:
         - claim_by
         - status
         - pack
+      type: object
+    BadDebtReliefClaim:
+      additionalProperties: false
+      properties:
+        claim_by:
+          description: The last day to claim.
+          examples:
+            - "2031-01-14"
+          format: date
+          type: string
+        date:
+          description: The day it was claimed.
+          examples:
+            - "2027-03-10"
+          format: date
+          type: string
+        eligible_from:
+          description: The first day a claim could be made.
+          examples:
+            - "2027-01-15"
+          format: date
+          type: string
+        f5_period_end:
+          description: The last day of the F5 period it goes in.
+          examples:
+            - "2027-03-31"
+          format: date
+          type: string
+        gst:
+          $ref: "#/components/schemas/Money"
+          description: "The GST claimed, in the base currency: RND-BDR of the invoice's output tax in the part written off [accountant to confirm]."
+        id:
+          description: The claim's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8b01
+          format: uuid
+          type: string
+        invoice_id:
+          description: Its invoice.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02
+          format: uuid
+          type: string
+        note:
+          description: The note it was made with.
+          examples:
+            - Three reminders and a letter of demand
+          type: string
+        pack:
+          description: The sg-tax-filings version whose dates allowed it.
+          examples:
+            - sg-tax-filings@2026.1
+          type: string
+        posted_by:
+          $ref: "#/components/schemas/Person"
+          description: Who claimed it.
+        status:
+          description: posted, or reversed by a void.
+          enum:
+            - posted
+            - reversed
+          examples:
+            - posted
+          type: string
+        version:
+          description: "The version of its content (always 1: a claim is never edited); with the status it makes the ETag."
+          examples:
+            - 1
+          format: int64
+          type: integer
+        write_off_id:
+          description: The write-off claimed for.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01
+          format: uuid
+          type: string
+        written_off:
+          $ref: "#/components/schemas/Money"
+          description: What was written off, in the invoice's currency.
+      required:
+        - id
+        - status
+        - version
+        - write_off_id
+        - invoice_id
+        - date
+        - written_off
+        - gst
+        - pack
+        - eligible_from
+        - claim_by
+      type: object
+    BadDebtReliefClaimPosting:
+      additionalProperties: false
+      properties:
+        claim:
+          $ref: "#/components/schemas/BadDebtReliefClaim"
+          description: The claim after the command.
+        entry:
+          $ref: "#/components/schemas/Entry"
+          description: The entry the claim posted, or the reversing entry a void posted.
+      required:
+        - claim
+        - entry
+      type: object
+    BadDebtReliefClaimRef:
+      additionalProperties: false
+      properties:
+        date:
+          description: The day it was claimed.
+          examples:
+            - "2027-03-10"
+          format: date
+          type: string
+        gst:
+          $ref: "#/components/schemas/Money"
+          description: The GST it claimed, in the base currency.
+        id:
+          description: The claim.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8b01
+          format: uuid
+          type: string
+      required:
+        - id
+        - date
+        - gst
+      type: object
+    BadDebtReliefClaimRequest:
+      additionalProperties: false
+      properties:
+        date:
+          description: "The day it is claimed: within the pack's dates (twelve months from the supply, five years at most) and not after today."
+          examples:
+            - "2027-03-10"
+          format: date
+          type: string
+        f5_period_end:
+          description: The last day of the GST return period the claim goes in; on or after the claim's date.
+          examples:
+            - "2027-03-31"
+          format: date
+          type: string
+        note:
+          description: The steps taken to recover the debt, or the debtor's insolvency, in plain words; files attach to the claim as evidence.
+          examples:
+            - Three reminders and a letter of demand
+          maxLength: 1000
+          type: string
+        write_off_id:
+          description: The posted bad-debt write-off to claim relief for; each is claimed once.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01
+          format: uuid
+          type: string
+      required:
+        - write_off_id
+        - date
       type: object
     BadDebtReliefQueue:
       additionalProperties: false
@@ -257545,7 +257706,7 @@ paths:
         right: P
   /v1/tax/bad-debt-relief:
     get:
-      description: "The invoices written off as a bad debt that bore GST, each with the GST in the part written off, when a claim may be made and until when (FR-AR-11): from twelve months after the date of supply, or from the write-off when the debtor became insolvent sooner, and within five years of the supply, as the sg-tax-filings pack says. The claim goes in the GST return and is not yet recorded here. Read-only; no side effects."
+      description: "The invoices written off as a bad debt that bore GST, each with the GST in the part written off, when a claim may be made and until when (FR-AR-11): from twelve months after the date of supply, or from the write-off when the debtor became insolvent sooner, and within five years of the supply, as the sg-tax-filings pack says. A claim made with claimBadDebtRelief shows on its row. Read-only; no side effects."
       operationId: getBadDebtRelief
       parameters:
         - description: How many items per page, up to 500.
@@ -257670,6 +257831,608 @@ paths:
       x-fyniq-permission:
         capability: GST return, filing
         right: V
+  /v1/tax/bad-debt-relief/claims:
+    post:
+      description: "Claims the GST bad debt relief of a posted bad-debt write-off (FR-AR-11) and posts it at once: Dr the GST control account, Cr the account the write-off took the debt to, in the base currency, for the invoice's output tax in the part written off (RND-BDR, half away from zero, capped at what earlier claims of the invoice left [accountant to confirm]; the posting rule bad_debt_relief@1). Refused unless the date is within the sg-tax-filings pack's dates and not after today, the write-off is a posted bad debt and not claimed already, and no credit note credits its invoice. The conditions of the claim that are not dates (reasonable steps to recover the debt, open market value) are the claimer's declaration: say how in note, and attach files as evidence. Side effects: the claim, its entry, a new ledger revision, balances and audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: claimBadDebtRelief
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BadDebtReliefClaimRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadDebtReliefClaimPosting"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadDebtReliefClaimPosting"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The claim's version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The claim's URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `RELIEF-04` The write-off is claimed already; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-49` A line on 2700 needs its SAFE or note; `LEDGER-52` No GST is left to claim; `RELIEF-03` Not a posted bad-debt write-off; `RELIEF-05` A credit note credits the invoice; `RELIEF-06` No pack holds the relief dates; `RELIEF-07` The twelve months have not passed; `RELIEF-08` The time to claim is over; `RELIEF-09` The claim is dated after today; `RELIEF-10` The F5 period ends before the claim; `RELIEF-11` The note is too long; `STORAGE-INPUT-01` The request is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Claim GST bad debt relief for a write-off
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - DIM-05
+        - DIM-06
+        - FX-01
+        - LEDGER-01
+        - LEDGER-02
+        - LEDGER-03
+        - LEDGER-04
+        - LEDGER-05
+        - LEDGER-06
+        - LEDGER-07
+        - LEDGER-08
+        - LEDGER-09
+        - LEDGER-10
+        - LEDGER-11
+        - LEDGER-12
+        - LEDGER-13
+        - LEDGER-14
+        - LEDGER-15
+        - LEDGER-16
+        - LEDGER-17
+        - LEDGER-22
+        - LEDGER-23
+        - LEDGER-26
+        - LEDGER-49
+        - LEDGER-52
+        - RELIEF-03
+        - RELIEF-04
+        - RELIEF-05
+        - RELIEF-06
+        - RELIEF-07
+        - RELIEF-08
+        - RELIEF-09
+        - RELIEF-10
+        - RELIEF-11
+        - STORAGE-DUPLICATE-01
+        - STORAGE-INPUT-01
+        - STORAGE-INV-03
+        - STORAGE-LOCK-01
+        - STORAGE-PERIOD-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: GST return, filing
+        note: "Posts the GST relief of a bad-debt write-off at once (FR-AR-11): the claimer declares the conditions that are not dates. The posting is audited and undone only by a void."
+        right: C
+  /v1/tax/bad-debt-relief/claims/{claim_id}:
+    get:
+      description: "Returns a claim with its ETag: the write-off, the GST claimed, the F5 period, the dates it was allowed by and its status (FR-AR-11). Read-only; no side effects."
+      operationId: getBadDebtReliefClaim
+      parameters:
+        - description: The claim's ID.
+          in: path
+          name: claim_id
+          required: true
+          schema:
+            description: The claim's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8b01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadDebtReliefClaim"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The claim's version and status, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `RELIEF-01` Not a claim of GST bad debt relief."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `RELIEF-02` The saved claim cannot be read."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a claim of GST bad debt relief
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - RELIEF-01
+        - RELIEF-02
+      x-fyniq-permission:
+        capability: GST return, filing
+        right: V
+  /v1/tax/bad-debt-relief/claims/{claim_id}/void:
+    post:
+      description: "Voids a posted claim with a reversing entry on the date given, with a reason (FR-GL-12); posted history never changes. The write-off can then be claimed again or voided. Side effects: the reversing entry, a new ledger revision, balances and audit events with the reason. Needs If-Match with the claim's ETag. Idempotent with Idempotency-Key; Prefer: return=preview voids nothing."
+      operationId: voidBadDebtReliefClaim
+      parameters:
+        - description: The claim's ID.
+          in: path
+          name: claim_id
+          required: true
+          schema:
+            description: The claim's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8b01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Reversal"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadDebtReliefClaimPosting"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The claim's version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The claim's URL.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `RELIEF-01` Not a claim of GST bad debt relief."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `RELIEF-12` The claim is not posted; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-49` A line on 2700 needs its SAFE or note; `RELIEF-02` The saved claim cannot be read; `RELIEF-13` The void is dated before the claim; `STORAGE-INPUT-01` The request is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Void a claim of GST bad debt relief
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - DIM-05
+        - DIM-06
+        - FX-01
+        - LEDGER-01
+        - LEDGER-02
+        - LEDGER-03
+        - LEDGER-04
+        - LEDGER-05
+        - LEDGER-06
+        - LEDGER-07
+        - LEDGER-08
+        - LEDGER-09
+        - LEDGER-10
+        - LEDGER-11
+        - LEDGER-12
+        - LEDGER-13
+        - LEDGER-14
+        - LEDGER-15
+        - LEDGER-16
+        - LEDGER-17
+        - LEDGER-49
+        - RELIEF-01
+        - RELIEF-02
+        - RELIEF-12
+        - RELIEF-13
+        - STORAGE-DUPLICATE-01
+        - STORAGE-INPUT-01
+        - STORAGE-INV-03
+        - STORAGE-LOCK-01
+        - STORAGE-PERIOD-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: GST return, filing
+        note: "A reversing entry: posted history never changes (FR-GL-12)."
+        right: C
   /v1/tax/working-paper:
     post:
       description: "The working paper the tax agent needs (FR-TAX-06): the year's profit before tax and revenue from the ledger, the adjustments given with their reasons, the chargeable income, the start-up or partial exemption and the Year of Assessment's rebate from the sg-cit pack, the tax, and the form the revenue calls for (sg-tax-filings). Exact decimals, rounded once at the end. It saves nothing: it is a calculation the tax agent signs. Idempotent with Idempotency-Key; Prefer: return=preview answers the same."

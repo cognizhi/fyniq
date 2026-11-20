@@ -1013,6 +1013,90 @@ func TestDepositPartProperties(t *testing.T) {
 	})
 }
 
+// Worked by hand (PRD-001 §10.4, RND-BDR [accountant to confirm]): an invoice of USD 109.00 at 1.35 posted S$12.15 of output tax (9% of
+// S$135.00). A write-off of USD 54.50 of it claims 12.15 x 54.50 / 109.00 = 6.075, which rounds half away from zero to S$6.08; one of
+// all the USD 109.00 claims all S$12.15. An invoice of S$10.90 with S$0.90 of output tax, written off for S$10.00, claims 0.90 x 10.00 /
+// 10.90 = 0.8257 = S$0.83. Three write-offs of a third of S$0.30 owed, over S$0.10 of output tax, claim 0.03, 0.03 and, the last
+// completing the debt, the 0.04 that is left; where an earlier claim left less than the share, the share is capped at what is left.
+// req: RND-BDR
+func TestBadDebtGSTPinnedCases(t *testing.T) {
+	usd := money.MustLookup("USD")
+	m := func(s string, c money.Currency) money.Money {
+		x, err := money.Parse(s, c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return x
+	}
+	for _, c := range []struct {
+		name                                   string
+		output, owed, before, written, claimed string
+		cur                                    money.Currency
+		want                                   string
+	}{
+		{"half a foreign invoice, a half cent rounds away", "12.15", "109.00", "0.00", "54.50", "0.00", usd, "6.08"},
+		{"all of a foreign invoice", "12.15", "109.00", "0.00", "109.00", "0.00", usd, "12.15"},
+		{"ten of 10.90", "0.90", "10.90", "0.00", "10.00", "0.00", sgd, "0.83"},
+		{"a third", "0.10", "0.30", "0.00", "0.10", "0.00", sgd, "0.03"},
+		{"the second third", "0.10", "0.30", "0.10", "0.10", "0.03", sgd, "0.03"},
+		{"the last third takes what is left", "0.10", "0.30", "0.20", "0.10", "0.06", sgd, "0.04"},
+		{"capped at what is left", "0.10", "3.00", "1.00", "1.00", "0.09", sgd, "0.01"},
+		{"nothing of the output tax to claim", "0.00", "10.00", "0.00", "5.00", "0.00", sgd, "0.00"},
+		{"a share that rounds to nothing", "0.01", "100.00", "0.00", "1.00", "0.00", sgd, "0.00"},
+	} {
+		got, err := BadDebtGST(m(c.output, sgd), m(c.owed, c.cur), m(c.before, c.cur), m(c.written, c.cur), m(c.claimed, sgd))
+		if err != nil || got.String() != c.want || got.Currency() != sgd {
+			t.Errorf("%s: BadDebtGST = %v, %v; want %s", c.name, got, err, c.want)
+		}
+	}
+	for _, bad := range []struct{ name, owed, before, written, claimed, output string }{
+		{"more than was owed", "10.00", "0.00", "10.01", "0.00", "0.90"},
+		{"more than was owed with the earlier", "10.00", "5.00", "5.01", "0.00", "0.90"},
+		{"nothing written off", "10.00", "0.00", "0.00", "0.00", "0.90"},
+		{"nothing owed", "0.00", "0.00", "1.00", "0.00", "0.90"},
+		{"more claimed than the output tax", "10.00", "0.00", "5.00", "1.00", "0.90"},
+	} {
+		if _, err := BadDebtGST(m(bad.output, sgd), m(bad.owed, sgd), m(bad.before, sgd), m(bad.written, sgd), m(bad.claimed, sgd)); err == nil {
+			t.Errorf("%s: no error", bad.name)
+		}
+	}
+	if _, err := BadDebtGST(m("1.00", sgd), m("10.00", usd), m("0.00", sgd), m("5.00", usd), m("0.00", sgd)); err == nil {
+		t.Error("amounts written off in two currencies: no error")
+	}
+	if _, err := BadDebtGST(m("1.00", usd), m("10.00", usd), m("0.00", usd), m("5.00", usd), m("0.00", sgd)); err == nil {
+		t.Error("output tax and what was claimed in two currencies: no error")
+	}
+}
+
+// However an invoice's debt is written off in parts, each claimed in turn, the claims add up to exactly its output tax once the debt
+// is written off, and never exceed it before.
+// req: RND-BDR
+// req: QA-ENG-03
+func TestBadDebtGSTPartsAddUpToTheOutputTax(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		owed := money.FromMinor(rapid.Int64Range(1, 100_000_000).Draw(t, "owed"), sgd)
+		output := money.FromMinor(rapid.Int64Range(1, 9_000_000).Draw(t, "output"), sgd)
+		before, claimed, written := money.Zero(sgd), money.Zero(sgd), owed
+		for written.Sign() > 0 {
+			n, _ := written.Minor()
+			part := money.FromMinor(rapid.Int64Range(1, n).Draw(t, "part"), sgd)
+			share, err := BadDebtGST(output, owed, before, part, claimed)
+			if err != nil {
+				t.Fatal(err)
+			}
+			claimed, _ = claimed.Add(share)
+			if c, _ := claimed.Cmp(output); c > 0 {
+				t.Fatalf("claimed %s of %s", claimed, output)
+			}
+			before, _ = before.Add(part)
+			written, _ = written.Sub(part)
+		}
+		if !claimed.Equal(output) {
+			t.Fatalf("the parts claim %s of %s", claimed, output)
+		}
+	})
+}
+
 func km(t tb, s string) money.Quantity {
 	t.Helper()
 	q, err := money.ParseQuantity(s, "distance")

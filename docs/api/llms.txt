@@ -1159,6 +1159,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/supplier-refunds/{refund_id}/void` (voidSupplierRefund): Void a refund from a supplier
 - `POST /v1/supplier-refunds/{refund_id}/void-approval` (requestSupplierRefundVoid): Ask for approval to void a refund from a supplier
 - `GET /v1/tax/bad-debt-relief` (getBadDebtRelief): The GST bad debt relief queue
+- `POST /v1/tax/bad-debt-relief/claims` (claimBadDebtRelief): Claim GST bad debt relief for a write-off
+- `GET /v1/tax/bad-debt-relief/claims/{claim_id}` (getBadDebtReliefClaim): Get a claim of GST bad debt relief
+- `POST /v1/tax/bad-debt-relief/claims/{claim_id}/void` (voidBadDebtReliefClaim): Void a claim of GST bad debt relief
 - `POST /v1/tax/working-paper` (workTaxPaper): Work out a financial year's tax-adjusted profit
 - `GET /v1/team-mode` (getTeamMode): Get the team mode
 - `PATCH /v1/team-mode` (switchTeamMode): Ask to switch the team mode

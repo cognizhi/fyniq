@@ -236,7 +236,7 @@
       "required": ["type"],
       "properties": {"type": {"enum": ["manual_journal", "opening_balances", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
                                          "bill_payment", "invoice", "credit_note", "customer_receipt", "dispute_settlement", "customer_deposit",
-                                         "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
+                                         "deposit_refund", "write_off", "bad_debt_relief", "expense_claim", "claim_reimbursement",
                                          "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
                                          "director_fee", "payroll_run", "director_waiver", "director_repayment",
                                          "director_conversion", "account_merge", "share_issue_cash",
@@ -258,6 +258,7 @@
         {"if": {"properties": {"type": {"const": "customer_deposit"}}}, "then": {"$ref": "#/$defs/customerDeposit"}},
         {"if": {"properties": {"type": {"const": "deposit_refund"}}}, "then": {"$ref": "#/$defs/depositRefund"}},
         {"if": {"properties": {"type": {"const": "write_off"}}}, "then": {"$ref": "#/$defs/writeOff"}},
+        {"if": {"properties": {"type": {"const": "bad_debt_relief"}}}, "then": {"$ref": "#/$defs/badDebtRelief"}},
         {"if": {"properties": {"type": {"const": "pre_incorporation_cost"}}}, "then": {"$ref": "#/$defs/preIncorporationCost"}},
         {"if": {"properties": {"type": {"const": "director_fee"}}}, "then": {"$ref": "#/$defs/directorFee"}},
         {"if": {"properties": {"type": {"const": "payroll_run"}}}, "then": {"$ref": "#/$defs/payrollRun"}},
@@ -545,6 +546,19 @@
         "invoice": {"type": "string"},
         "amount": {"description": "In the invoice's currency, at most what is open.", "$ref": "#/$defs/money"},
         "account": {"description": "The reason's account (FR-AR-17).", "type": "string"}
+      }
+    },
+    "badDebtRelief": {
+      "description": "The claim of GST bad debt relief for a write-off (bad_debt_relief@1, rev 0.609, FR-AR-11): it names only the write-off and the day; each side works out the GST, RND-BDR of the invoice's output tax in the part written off, and posts Dr the GST control account, Cr the account the write-off took the debt to.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "write_off"],
+      "properties": {
+        "type": {"const": "bad_debt_relief"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "write_off": {"description": "The posted write-off of an invoice that is claimed for; a write-off is claimed once.", "type": "string"}
       }
     },
     "expenseClaim": {

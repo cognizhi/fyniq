@@ -2,6 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "claim": {
+      "$ref": "BadDebtReliefClaimRef.schema.json",
+      "description": "The live claim of this write-off, when it is claimed (FR-AR-11)."
+    },
     "claim_by": {
       "description": "The last day to claim: five years from the supply, the day before the anniversary [accountant to confirm].",
       "examples": [
