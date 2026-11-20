@@ -435,6 +435,7 @@ func TestAHoldIsQueuedWithItsChangeAndSentSignedWithTheLinksToken(t *testing.T) 
 	}
 
 	offer, _, fyniqOrg := linked(t, lt, now, &fakeOAuth{})
+	snapshot := len(queuedRows(t, lt)) // the people who already existed went ahead with the link: the hold is the next event after them
 	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
 		_, err := nemura.PutTaxHold(ctx, tx, lt.c.org, now, lt.c.hr, lt.ben, d("2099-06-30"), "resigned, owes tax clearance")
 		return err
@@ -459,6 +460,7 @@ func TestAHoldIsQueuedWithItsChangeAndSentSignedWithTheLinksToken(t *testing.T) 
 		})
 	}
 	readRows()
+	rows = rows[snapshot:]
 	if len(rows) != 1 {
 		t.Fatalf("queued events: %d", len(rows))
 	}
@@ -532,7 +534,7 @@ func TestAHoldIsQueuedWithItsChangeAndSentSignedWithTheLinksToken(t *testing.T) 
 		t.Fatalf("calls %d, tokens %d: the token is got once and kept", len(calls), len(tokens))
 	}
 	first, second := calls[0], calls[1]
-	if first.env.Header.EventID != second.env.Header.EventID || first.env.Header.Sequence != second.env.Header.Sequence || first.env.Header.Sequence != 1 {
+	if first.env.Header.EventID != second.env.Header.EventID || first.env.Header.Sequence != second.env.Header.Sequence || first.env.Header.Sequence != int64(snapshot)+1 {
 		t.Errorf("a retry is the same event: %+v %+v", first.env.Header, second.env.Header)
 	}
 	if second.bearer != tokens[0] || second.path != "/v1/people-link/hold-events" {
@@ -559,10 +561,11 @@ func TestAHoldIsQueuedWithItsChangeAndSentSignedWithTheLinksToken(t *testing.T) 
 		return nemura.ReleaseTaxHold(ctx, tx, lt.c.org, now, lt.c.hr, lt.ben, mustDocument(t, lt, now), d("2099-07-01"), "cleared")
 	})
 	readRows()
+	rows = rows[snapshot:]
 	if len(rows) != 2 {
 		t.Fatalf("queued events after the release: %d", len(rows))
 	}
-	if err := work(ctx, lt.c.org, rows[1]); err != nil || len(calls) != 3 || calls[2].env.Header.Sequence != 2 || calls[2].env.Header.ObjectVersion != 2 {
+	if err := work(ctx, lt.c.org, rows[1]); err != nil || len(calls) != 3 || calls[2].env.Header.Sequence != int64(snapshot)+2 || calls[2].env.Header.ObjectVersion != 2 {
 		t.Errorf("the release: %v %d", err, len(calls))
 	}
 
@@ -578,7 +581,7 @@ func TestAHoldIsQueuedWithItsChangeAndSentSignedWithTheLinksToken(t *testing.T) 
 	if err := work(ctx, lt.c.org, rows[1]); err != nil || len(calls) != before {
 		t.Errorf("an ended link: %v, %d calls", err, len(calls)-before)
 	}
-	if err := work(ctx, lt.c.org, outbox.Row{ID: uuid.New(), Payload: []byte(`{"event_id":"e","type":"payroll.run.approved"}`)}); err == nil {
+	if err := work(ctx, lt.c.org, outbox.Row{ID: uuid.New(), Payload: []byte(`{"event_id":"e","type":"leave.taken.changed"}`)}); err == nil {
 		t.Error("a type Nemura does not send was accepted")
 	}
 }

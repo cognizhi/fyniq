@@ -17,6 +17,20 @@ nothing of Fyniq's code (`internal/archtest`): `internal/domain/peoplelink` and 
 envelope with its public key: its private key is derived at test time from the SHA-256 of a phrase, so no private key is committed. Fyniq's test owns it
 (`go test ./internal/domain/peoplelink -run SignedFixture -update`); Nemura's must verify it and reproduce its signature.
 
+## Object versions, what each event carries and how Nemura builds it (Nemura's side, built in `p1-nemura-fyniq-link` 2.2)
+
+Every event names an object and the object's **version**, which rises by one for each change; Fyniq applies a version only if it is newer than the one it holds, per part (the person's record, the hold and the bank details move apart). Nemura queues an event in the transaction that made the change and builds its payload from the source rows **when it sends it**, so a late event of an older version carries the newest figures and nothing is lost; no payload is in an outbox row, a task or a log. Nemura keeps a durable log of the identities it queued (`nemura.link_event`: event ID, sequence, type, object, version, and whether it was sent, failed or refused), which link health, retry and gap repair read.
+
+| Object | Version is | Queued when |
+|---|---|---|
+| `person` | a counter per person (`nemura.link_object_version`): one more for each change of the record while the link is active, because the record is updated in place | a person is added; their record or their job (department, manager) changes; the link is activated (every person, as a snapshot) |
+| `bank_details` | the ordinal of the person's **confirmed** salary-account changes; `bank_detail_id` is the ID of the confirmed change that made that version. The number, its masked form and its fingerprint never leave Nemura | the employee confirms an approved change (NM-PPL-04); at activation (each person's current version) |
+| `tax_hold` | the hold's own version | a hold is put on or released; at activation (each person's latest version) |
+
+`people.person.upserted` carries the person's **display name** (the preferred name, else the legal name), work email (sent as no email when it is not shaped as Fyniq accepts), `started_on`, `left_on`, `status` (`candidate` before the start day, `active`, `ended` once the leaving date has come), `line_manager_person_id` and, as `department_id` and `cost_centre_id`, **Fyniq's own dimension values**, found by the job's department name (case and surrounding spaces ignored) in the departments Fyniq last told Nemura of (`people.department.changed`); a name Fyniq does not have is `null`. A person who is no longer in Nemura is sent as a tombstone (`deleted: true`). Never an NRIC or FIN, date of birth, salary, classification, leaving reason, medical, disciplinary or review data.
+
+A refusal that asking again cannot change (`PPL-*`, `LEDGER-*`) finishes the event as refused with Fyniq's code; an answer that might pass (a 5xx, a timeout, a rate limit, a token that did not work) is tried again, up to eight times.
+
 ## What Nemura sends and where (Fyniq's side, built in `p1-payroll-link`)
 
 Every call carries the envelope (`{"header": {...}, "signature": "...", "payload": {...}}`) with the link client's bearer token (client-credentials with

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -66,6 +67,11 @@ func QueueLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time,
 	if _, err := Enqueue(ctx, tx, outbox.NewItem{Class: outbox.ClassWorker, Kind: KindLinkSend, Payload: raw, BusinessKey: "link:" + q.EventID, MaxAttempts: 8}); err != nil {
 		return false, err
 	}
+	// The durable, identity-only log: link health, retry and gap repair read it after the outbox has purged the row (NM-INT-04, NM-INT-10).
+	if _, err := tx.Exec(ctx, `INSERT INTO nemura.link_event (link_id, event_id, epoch, sequence, type, object_type, object_id, object_version, queued_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		l.ID, q.EventID, l.Epoch, seq, typ, objectType, objectID, version, at); err != nil {
+		return false, err
+	}
 	return true, Audit(ctx, tx, org, at, audit.Actor{Type: "service", ID: "link"}, "nemura.fyniq_link.queued", audit.Object{Type: "fyniq_link", ID: l.ID},
 		map[string]audit.Change{"type": {nil, typ}, "sequence": {nil, seq}}, "")
 }
@@ -77,8 +83,27 @@ func noLink(err error) bool {
 }
 
 // linkPayload builds the payload of a queued event from its source rows, and nothing else (Appendix E); a type Nemura does not send yet is an error, so a row of it is never silently dropped.
-func linkPayload(ctx context.Context, tx pgx.Tx, q QueuedEvent) (any, error) {
+func linkPayload(ctx context.Context, tx pgx.Tx, q QueuedEvent, now time.Time) (any, error) {
 	switch q.Type {
+	case TypePersonUpserted:
+		person, err := uuid.Parse(q.ObjectID)
+		if err != nil {
+			return nil, fmt.Errorf("the person event %s names no person", q.EventID)
+		}
+		return PersonEventOf(ctx, tx, person, now)
+	case TypeBankDetailsChanged:
+		person, err := uuid.Parse(q.ObjectID)
+		if err != nil {
+			return nil, fmt.Errorf("the bank-details event %s names no person", q.EventID)
+		}
+		ev, ok, err := bankEventAt(ctx, tx, person, q.ObjectVersion)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, fmt.Errorf("the bank-details event %s names a version that does not exist", q.EventID)
+		}
+		return ev, nil
 	case "people.tax_hold.changed":
 		person, err := uuid.Parse(q.ObjectID)
 		if err != nil {
@@ -99,7 +124,7 @@ func linkPayload(ctx context.Context, tx pgx.Tx, q QueuedEvent) (any, error) {
 // linkRoute is where an event type goes on Fyniq's API and the scope its token needs (contracts/peoplelink/README.md).
 func linkRoute(typ string) (path, scope string, ok bool) {
 	switch typ {
-	case "people.person.upserted", "people.bank_details.changed":
+	case TypePersonUpserted, TypeBankDetailsChanged:
 		return "/v1/people-link/projection-events", "people.projection.write", true
 	case "people.tax_hold.changed":
 		return "/v1/people-link/hold-events", "people.holds.write", true
@@ -175,7 +200,7 @@ func (s *LinkSender) Work() outbox.Work {
 				return err
 			}
 			key = sec.Client
-			payload, err := linkPayload(ctx, tx, q)
+			payload, err := linkPayload(ctx, tx, q, s.Clock.Now())
 			if err != nil {
 				return err
 			}
@@ -189,7 +214,7 @@ func (s *LinkSender) Work() outbox.Work {
 		}
 		token, err := s.source(l, key).Token(ctx, scope)
 		if err != nil {
-			return err
+			return s.failed(ctx, org, q, "token", err)
 		}
 		body, err := json.Marshal(env)
 		if err != nil {
@@ -203,7 +228,7 @@ func (s *LinkSender) Work() outbox.Work {
 		req.Header.Set("Authorization", "Bearer "+token)
 		resp, err := s.HTTP.Do(req)
 		if err != nil {
-			return fmt.Errorf("Fyniq did not answer: %w", err)
+			return s.failed(ctx, org, q, "no_answer", fmt.Errorf("Fyniq did not answer: %w", err))
 		}
 		defer func() { _ = resp.Body.Close() }()
 		answer, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<16))
@@ -212,11 +237,70 @@ func (s *LinkSender) Work() outbox.Work {
 				Code string `json:"code"`
 			}
 			_ = json.Unmarshal(answer, &p)
-			return fmt.Errorf("Fyniq answered %d %s", resp.StatusCode, p.Code) // the status and Fyniq's code only, never the payload or the answer's text
+			e := fmt.Errorf("Fyniq answered %d %s", resp.StatusCode, p.Code) // the status and Fyniq's code only, never the payload or the answer's text
+			if finalRefusal(resp.StatusCode, p.Code) {
+				// A refusal that asking again cannot change (the figures were refused, the approver has no passkey in Fyniq, the version is stale): it is settled as refused with Fyniq's code and
+				// the row is finished, so eight retries do not bury the event in the queue. What the person must do shows on the page (NM-INT-03).
+				return s.settle(ctx, org, q, "refused", p.Code, e)
+			}
+			return s.failed(ctx, org, q, p.Code, e)
 		}
-		return s.Store.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
-			return Audit(ctx, tx, org, s.Clock.Now(), audit.Actor{Type: "service", ID: "link"}, "nemura.fyniq_link.sent", audit.Object{Type: "fyniq_link", ID: l.ID},
-				map[string]audit.Change{"type": {nil, q.Type}, "sequence": {nil, q.Sequence}}, "")
-		})
+		return s.settle(ctx, org, q, "sent", "", nil)
 	}
+}
+
+// finalRefusal reports whether Fyniq's answer is one asking again cannot change: a 4xx that is not a timeout or a rate limit, with one of the contract's codes (PPL-*) or a minimum-data refusal.
+func finalRefusal(status int, code string) bool {
+	if status/100 != 4 || status == http.StatusRequestTimeout || status == http.StatusTooManyRequests || status == http.StatusUnauthorized || status == http.StatusForbidden {
+		return false
+	}
+	return strings.HasPrefix(code, "PPL-") || strings.HasPrefix(code, "LEDGER-") || code == "FYNIQ_LINK_MINIMUM" || code == "PAYROLL_PERIOD_CLOSED"
+}
+
+// failed records an attempt that did not get through (with the stable code of what went wrong, never a payload) and returns the error, so the outbox tries again.
+func (s *LinkSender) failed(ctx context.Context, org uuid.UUID, q QueuedEvent, code string, cause error) error {
+	if code == "" {
+		code = "unknown"
+	}
+	if err := s.Store.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `UPDATE nemura.link_event SET state = 'failed', attempts = attempts + 1, code = $2 WHERE event_id = $1 AND state IN ('queued', 'failed')`, q.EventID, code)
+		return err
+	}); err != nil {
+		return errors.Join(cause, err)
+	}
+	return cause
+}
+
+// settle ends an event's life in the log: sent, or refused for good, with the audit event that names the type and the number and never the payload.
+func (s *LinkSender) settle(ctx context.Context, org uuid.UUID, q QueuedEvent, state, code string, cause error) error {
+	now := s.Clock.Now()
+	err := s.Store.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
+		var c *string
+		if code != "" {
+			c = &code
+		}
+		tag, err := tx.Exec(ctx, `UPDATE nemura.link_event SET state = $2, attempts = attempts + 1, code = $3, settled_at = $4 WHERE event_id = $1 AND state IN ('queued', 'failed')`, q.EventID, state, c, now)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return nil // settled already: a retry after a lost answer
+		}
+		var l LinkRow
+		if l, err = LiveLink(ctx, tx); err != nil {
+			return nil // the link ended meanwhile: the log keeps its state, there is nothing to audit against
+		}
+		action := "nemura.fyniq_link.sent"
+		changes := map[string]audit.Change{"type": {nil, q.Type}, "sequence": {nil, q.Sequence}}
+		if state == "refused" {
+			action = "nemura.fyniq_link.refused"
+			changes["code"] = audit.Change{nil, code}
+		}
+		return Audit(ctx, tx, org, now, audit.Actor{Type: "service", ID: "link"}, action, audit.Object{Type: "fyniq_link", ID: l.ID}, changes, "")
+	})
+	if err != nil {
+		return err
+	}
+	_ = cause // a refusal is final: the row finishes, the log and the audit trail say why
+	return nil
 }

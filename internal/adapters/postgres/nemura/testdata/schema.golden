@@ -42,7 +42,11 @@ letter_settings | nemura_migrator | true | true
 letter_template_version | nemura_migrator | true | true
 letter_type | nemura_migrator | true | true
 link_client_route | nemura_migrator | false | false
+link_department | nemura_migrator | true | true
+link_event | nemura_migrator | true | true
 link_inbox | nemura_migrator | true | true
+link_mapping | nemura_migrator | true | true
+link_object_version | nemura_migrator | true | true
 link_run_posting | nemura_migrator | true | true
 member | nemura_migrator | true | true
 offboarding | nemura_migrator | true | true
@@ -520,6 +524,26 @@ link_client_route | peer_client_id | text | true |
 link_client_route | organisation_id | uuid | true | 
 link_client_route | link_id | uuid | true | 
 link_client_route | purpose | text | true | 'events'::text
+link_department | organisation_id | uuid | true | nemura.current_org()
+link_department | mapping_version | integer | true | 
+link_department | department_id | uuid | true | 
+link_department | name | text | true | 
+link_department | cost_centre_id | uuid | false | 
+link_event | organisation_id | uuid | true | nemura.current_org()
+link_event | id | uuid | true | uuidv7()
+link_event | link_id | uuid | true | 
+link_event | event_id | uuid | true | 
+link_event | epoch | integer | true | 
+link_event | sequence | bigint | true | 
+link_event | type | text | true | 
+link_event | object_type | text | true | 
+link_event | object_id | text | true | 
+link_event | object_version | integer | true | 
+link_event | state | text | true | 'queued'::text
+link_event | attempts | integer | true | 0
+link_event | code | text | false | 
+link_event | queued_at | timestamp with time zone | true | 
+link_event | settled_at | timestamp with time zone | false | 
 link_inbox | organisation_id | uuid | true | nemura.current_org()
 link_inbox | id | uuid | true | uuidv7()
 link_inbox | event_id | uuid | true | 
@@ -534,6 +558,14 @@ link_inbox | payload_sha256 | text | true |
 link_inbox | outcome | text | true | 
 link_inbox | code | text | false | 
 link_inbox | received_at | timestamp with time zone | true | 
+link_mapping | organisation_id | uuid | true | nemura.current_org()
+link_mapping | mapping_version | integer | true | 
+link_mapping | event_id | uuid | true | 
+link_mapping | received_at | timestamp with time zone | true | 
+link_object_version | organisation_id | uuid | true | nemura.current_org()
+link_object_version | object_type | text | true | 
+link_object_version | object_id | text | true | 
+link_object_version | version | integer | true | 
 link_run_posting | organisation_id | uuid | true | nemura.current_org()
 link_run_posting | id | uuid | true | uuidv7()
 link_run_posting | run_id | uuid | true | 
@@ -1679,6 +1711,33 @@ link_client_route | link_client_route_peer_client_id_not_null | NOT NULL peer_cl
 link_client_route | link_client_route_pkey | PRIMARY KEY (peer_client_id)
 link_client_route | link_client_route_purpose | CHECK ((purpose = ANY (ARRAY['events'::text, 'ask'::text])))
 link_client_route | link_client_route_purpose_not_null | NOT NULL purpose
+link_department | link_department_department_id_not_null | NOT NULL department_id
+link_department | link_department_mapping_fkey | FOREIGN KEY (organisation_id, mapping_version) REFERENCES nemura.link_mapping(organisation_id, mapping_version)
+link_department | link_department_mapping_version_not_null | NOT NULL mapping_version
+link_department | link_department_name_length | CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))
+link_department | link_department_name_not_null | NOT NULL name
+link_department | link_department_organisation_id_not_null | NOT NULL organisation_id
+link_department | link_department_pkey | PRIMARY KEY (organisation_id, mapping_version, department_id)
+link_event | link_event_attempts_not_null | NOT NULL attempts
+link_event | link_event_code_length | CHECK (((code IS NULL) OR (char_length(code) <= 200)))
+link_event | link_event_epoch_not_null | NOT NULL epoch
+link_event | link_event_event_id_not_null | NOT NULL event_id
+link_event | link_event_event_key | UNIQUE (organisation_id, event_id)
+link_event | link_event_id_not_null | NOT NULL id
+link_event | link_event_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES nemura.fyniq_link(organisation_id, id)
+link_event | link_event_link_id_not_null | NOT NULL link_id
+link_event | link_event_object_id_not_null | NOT NULL object_id
+link_event | link_event_object_type_not_null | NOT NULL object_type
+link_event | link_event_object_version_not_null | NOT NULL object_version
+link_event | link_event_organisation_id_not_null | NOT NULL organisation_id
+link_event | link_event_pkey | PRIMARY KEY (organisation_id, id)
+link_event | link_event_queued_at_not_null | NOT NULL queued_at
+link_event | link_event_sequence_key | UNIQUE (organisation_id, link_id, sequence)
+link_event | link_event_sequence_not_null | NOT NULL sequence
+link_event | link_event_settled_with_state | CHECK (((state = ANY (ARRAY['sent'::text, 'refused'::text])) = (settled_at IS NOT NULL)))
+link_event | link_event_state_known | CHECK ((state = ANY (ARRAY['queued'::text, 'sent'::text, 'failed'::text, 'refused'::text])))
+link_event | link_event_state_not_null | NOT NULL state
+link_event | link_event_type_not_null | NOT NULL type
 link_inbox | link_inbox_code_with_refusal | CHECK (((outcome = 'refused'::text) = (code IS NOT NULL)))
 link_inbox | link_inbox_digest | CHECK ((payload_sha256 ~ '^[0-9a-f]{64}$'::text))
 link_inbox | link_inbox_epoch_not_null | NOT NULL epoch
@@ -1698,6 +1757,18 @@ link_inbox | link_inbox_pkey | PRIMARY KEY (organisation_id, id)
 link_inbox | link_inbox_received_at_not_null | NOT NULL received_at
 link_inbox | link_inbox_sequence_not_null | NOT NULL sequence
 link_inbox | link_inbox_type_not_null | NOT NULL type
+link_mapping | link_mapping_event_id_not_null | NOT NULL event_id
+link_mapping | link_mapping_mapping_version_not_null | NOT NULL mapping_version
+link_mapping | link_mapping_organisation_id_not_null | NOT NULL organisation_id
+link_mapping | link_mapping_pkey | PRIMARY KEY (organisation_id, mapping_version)
+link_mapping | link_mapping_positive | CHECK ((mapping_version >= 1))
+link_mapping | link_mapping_received_at_not_null | NOT NULL received_at
+link_object_version | link_object_version_object_id_not_null | NOT NULL object_id
+link_object_version | link_object_version_object_type_not_null | NOT NULL object_type
+link_object_version | link_object_version_organisation_id_not_null | NOT NULL organisation_id
+link_object_version | link_object_version_pkey | PRIMARY KEY (organisation_id, object_type, object_id)
+link_object_version | link_object_version_positive | CHECK ((version >= 1))
+link_object_version | link_object_version_version_not_null | NOT NULL version
 link_run_posting | link_run_posting_id_not_null | NOT NULL id
 link_run_posting | link_run_posting_once | UNIQUE (organisation_id, run_id, version, status)
 link_run_posting | link_run_posting_organisation_id_not_null | NOT NULL organisation_id
@@ -2494,9 +2565,17 @@ CREATE UNIQUE INDEX letter_template_version_pkey ON nemura.letter_template_versi
 CREATE UNIQUE INDEX letter_type_once ON nemura.letter_type USING btree (organisation_id, type_key)
 CREATE UNIQUE INDEX letter_type_pkey ON nemura.letter_type USING btree (organisation_id, id)
 CREATE UNIQUE INDEX link_client_route_pkey ON nemura.link_client_route USING btree (peer_client_id)
+CREATE UNIQUE INDEX link_department_pkey ON nemura.link_department USING btree (organisation_id, mapping_version, department_id)
+CREATE UNIQUE INDEX link_event_event_key ON nemura.link_event USING btree (organisation_id, event_id)
+CREATE INDEX link_event_object ON nemura.link_event USING btree (organisation_id, object_type, object_id, object_version)
+CREATE UNIQUE INDEX link_event_pkey ON nemura.link_event USING btree (organisation_id, id)
+CREATE UNIQUE INDEX link_event_sequence_key ON nemura.link_event USING btree (organisation_id, link_id, sequence)
+CREATE INDEX link_event_state ON nemura.link_event USING btree (organisation_id, link_id, state, sequence)
 CREATE UNIQUE INDEX link_inbox_event_key ON nemura.link_inbox USING btree (organisation_id, event_id)
 CREATE INDEX link_inbox_object ON nemura.link_inbox USING btree (organisation_id, object_type, object_id, object_version)
 CREATE UNIQUE INDEX link_inbox_pkey ON nemura.link_inbox USING btree (organisation_id, id)
+CREATE UNIQUE INDEX link_mapping_pkey ON nemura.link_mapping USING btree (organisation_id, mapping_version)
+CREATE UNIQUE INDEX link_object_version_pkey ON nemura.link_object_version USING btree (organisation_id, object_type, object_id)
 CREATE UNIQUE INDEX link_run_posting_once ON nemura.link_run_posting USING btree (organisation_id, run_id, version, status)
 CREATE UNIQUE INDEX link_run_posting_pkey ON nemura.link_run_posting USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_pkey ON nemura.member USING btree (organisation_id, id)
@@ -2659,7 +2738,10 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_
 CREATE TRIGGER letter_template_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.letter_template_version FOR EACH ROW EXECUTE FUNCTION nemura.letter_template_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_template_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_template_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_type DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_type', 'id')
+CREATE TRIGGER link_department_guard BEFORE DELETE OR UPDATE ON nemura.link_department FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
+CREATE TRIGGER link_event_guard BEFORE DELETE OR UPDATE ON nemura.link_event FOR EACH ROW EXECUTE FUNCTION nemura.link_event_guard()
 CREATE TRIGGER link_inbox_guard BEFORE DELETE OR UPDATE ON nemura.link_inbox FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
+CREATE TRIGGER link_mapping_guard BEFORE DELETE OR UPDATE ON nemura.link_mapping FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
 CREATE TRIGGER link_run_posting_guard BEFORE DELETE OR UPDATE ON nemura.link_run_posting FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
 CREATE TRIGGER member_deactivated AFTER UPDATE OF deactivated_at ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.member_deactivated()
 CREATE TRIGGER member_no_delete BEFORE DELETE ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.members_no_delete()
@@ -2780,7 +2862,11 @@ letter_request | tenant_isolation | (organisation_id = nemura.current_org()) | (
 letter_settings | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_template_version | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_type | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+link_department | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+link_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 link_inbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+link_mapping | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+link_object_version | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 link_run_posting | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 offboarding | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3446,6 +3532,21 @@ CREATE OR REPLACE FUNCTION nemura.link_client_route(p_client text, OUT organisat
  SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
 AS $function$
   SELECT r.organisation_id, r.link_id, r.purpose FROM nemura.link_client_route r WHERE r.peer_client_id = p_client
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.link_event_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR (NEW.id, NEW.link_id, NEW.event_id, NEW.epoch, NEW.sequence, NEW.type, NEW.object_type, NEW.object_id, NEW.object_version, NEW.queued_at) IS DISTINCT FROM
+     (OLD.id, OLD.link_id, OLD.event_id, OLD.epoch, OLD.sequence, OLD.type, OLD.object_type, OLD.object_id, OLD.object_version, OLD.queued_at)
+     OR (OLD.state IN ('sent', 'refused') AND NEW.state IS DISTINCT FROM OLD.state) OR NEW.attempts < OLD.attempts THEN
+    RAISE EXCEPTION 'The log of what was sent to Fyniq is kept as it was queued: only its state moves, and a settled event stays settled' USING ERRCODE = 'NM192';
+  END IF;
+  RETURN NEW;
+END
 $function$
 
 CREATE OR REPLACE FUNCTION nemura.link_identity(p_issuer text, p_subject text, p_tenant text, p_member uuid)
