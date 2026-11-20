@@ -233,9 +233,17 @@ func TestTheToolsTakeWhatTheirOperationsTake(t *testing.T) {
 	if checks, check := props("checks.list"), contract("CheckOut"); !reflect.DeepEqual(checks["status"]["enum"], check["status"]["enum"]) {
 		t.Errorf("checks.list's statuses %v; a check's %v", checks["status"]["enum"], check["status"]["enum"])
 	}
+	// The packs packs.get does not offer, each with its reason (owner decision, 21 Nov 2026). An exemption is a
+	// decision recorded here, not an exposure: this test still fails if the tool offers an exempt pack.
+	notOffered := map[string]string{
+		"sg-capital-allowances": "owner decision: the pack's elections and rates are applied per asset by the asset register's own schedule (FR-FA-04), so the assistant is not given the pack's values to restate",
+	}
 	dirs, _ := filepath.Glob("../../packs/sg-*")
 	var packs []string
 	for _, d := range dirs {
+		if _, skip := notOffered[filepath.Base(d)]; skip {
+			continue
+		}
 		packs = append(packs, filepath.Base(d))
 	}
 	var offered []string
