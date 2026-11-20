@@ -1521,11 +1521,11 @@ Source: PRD-001 §D
 
 #### Scenario: Create and approve
 - **WHEN** a role acts on the register
-- **THEN** the Owner can record, fix, retest and accept a finding (C/A), and the Administrator can record and mark a fix (C)
+- **THEN** the Owner can record, fix, retest and accept a finding (C/A)
 
 #### Scenario: View
 - **WHEN** a role acts on the register
-- **THEN** the Finance controller, the Auditor and the Compliance officer / DPO can view it (V)
+- **THEN** the Administrator, the Finance controller, the Auditor and the Compliance officer / DPO can view it (V)
 
 #### Scenario: No access
 - **WHEN** a role acts on the register

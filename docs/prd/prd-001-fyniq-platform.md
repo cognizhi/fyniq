@@ -3864,7 +3864,7 @@ bank line and expense claim even for an Owner.
 | Policy library: every member reads and acknowledges the published policies; C/A publishes a version (rev 0.240) | C/A | V | V | V | V | V | V | V | V | V | V | V | V | V | C/A | — |
 | Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244) | V | — | — | — | — | — | — | — | — | — | — | V | — | — | C/A | — |
 | Retention holds: place and lift a hold on a record, a contact or a financial year; the holds in force (rev 0.617) | C/A | — | V | — | — | — | — | — | — | — | — | V | — | — | C/A | — |
-| Security assessments: record a penetration test, its findings, their fixes and retests, and an Owner's acceptance of a finding (rev 0.617) | C/A | C | V | — | — | — | — | — | — | — | — | V | — | — | V | — |
+| Security assessments: record a penetration test, its findings, their fixes and retests, and an Owner's acceptance of a finding (rev 0.617) | C/A | V | V | — | — | — | — | — | — | — | — | V | — | — | V | — |
 | Own personal-data requests: ask for access to or correction of one's own personal data (rev 0.244) | C | C | C | C | C | C | C | C | C | C | C | C | C | C | C | — |
 | Statutory calendar: deadlines, and filings recorded as done (rev 0.211) | C | V | C | C | — | — | — | — | — | — | — | V | C | — | V | — |
 | Checks and books health (rev 0.163) | C/A | V | C/A | A | A | V (sales) | V (purchases) | V (payroll) | V | — | — | V | V | — | V | V |

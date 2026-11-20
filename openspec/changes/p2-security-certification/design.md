@@ -57,7 +57,7 @@ files, and a report is no document of the books).
 - **The control CTL-CHG-12** (verification `security-assessments`): passes while an independent assessment ended within 12 months and no
   Critical or High finding is open past its due date; overdue 12 months after the last; fails with an overdue finding; not assessed while none
   is recorded. Before the first external customer it must pass: the gate arrives with `p3-saas-platform` (a planned check naming it).
-- **Writes** are the Owner's (Administrator may record a fix); the register is read by the Controller, Auditor and DPO. A finding moves
+- **Writes** are the Owner's (an Administrator would be an Owner's second hand on a row the Owner approves, which the Owner rule forbids without an approval-engine row); the register is read by the Administrator, Controller, Auditor and DPO. A finding moves
   forward only (open, fixed, retested; or accepted), enforced by a guard.
 - The test itself and staging's nightly DAST need a firm and a cloud staging: `[live-verify]`.
 
