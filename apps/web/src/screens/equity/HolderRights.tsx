@@ -96,7 +96,18 @@ function RightsList({ r }: { r: RightsDraft }) {
       </div>
       <div className="fy-span-2">
         <dt>Information rights</dt>
-        <dd>{r.information || "None"}</dd>
+        <dd>
+          {r.information || ((r.information_rights ?? []).length === 0 ? "None" : "")}
+          {(r.information_rights ?? []).length > 0 && (
+            <ul className="fy-list" aria-label="Information rights as tasks">
+              {(r.information_rights ?? []).map((x) => (
+                <li key={x.kind}>
+                  {infoWords[x.kind]} within {x.days} days of each period's end
+                </li>
+              ))}
+            </ul>
+          )}
+        </dd>
       </div>
       <div className="fy-span-3">
         <dt>Consent matters</dt>
@@ -118,6 +129,9 @@ function RightsList({ r }: { r: RightsDraft }) {
   );
 }
 
+const infoWords = { monthly_accounts: "Monthly accounts", quarterly_accounts: "Quarterly accounts", annual_accounts: "Annual accounts", board_pack: "The board pack" } as const;
+const infoKinds = ["monthly_accounts", "quarterly_accounts", "annual_accounts", "board_pack"] as const;
+
 const blankRights: RightsDraft = { from: "", board_seats: 0, observer: false, board_majority: false, pro_rata: false, information: "", consents: [], agreements: "", note: "" };
 
 // RightsForm drafts a holder's rights from the agreements (FR-EQ-22), or changes the draft at its version.
@@ -136,6 +150,7 @@ function RightsForm({ holderID, draft, start, onClose, onDone }: { holderID: str
     const body: RightsDraft = { ...form, consents: form.consents.map((c) => c.trim()).filter(Boolean) };
     if (!body.information?.trim()) delete body.information;
     if (!body.note?.trim()) delete body.note;
+    if ((body.information_rights ?? []).length === 0) delete body.information_rights;
     const out = await guarded(confirm, () =>
       draft
         ? api.PUT("/v1/investor-rights/{rights_id}", { params: { path: { rights_id: draft.id }, header: { "If-Match": `"${draft.version}-draft"`, "Idempotency-Key": key } }, body })
@@ -201,6 +216,37 @@ function RightsForm({ holderID, draft, start, onClose, onDone }: { holderID: str
               What and when, such as: Quarterly management accounts within 45 days
             </span>
           </div>
+          <fieldset className="fy-field fy-field--full">
+            <legend className="fy-label">Information they are owed, as calendar tasks</legend>
+            <div className="fy-stack fy-stack--2">
+              {(form.information_rights ?? []).map((x, i) => (
+                <div key={i} className="fy-row gap-2">
+                  <select className="fy-select" aria-label={`Information right ${i + 1}`} value={x.kind}
+                    onChange={(e) => setForm({ ...form, information_rights: (form.information_rights ?? []).map((y, j) => (j === i ? { ...y, kind: e.target.value as (typeof infoKinds)[number] } : y)) })}>
+                    {infoKinds.map((k) => (
+                      <option key={k} value={k}>
+                        {infoWords[k]}
+                      </option>
+                    ))}
+                  </select>
+                  <input className="fy-input fy-num" type="number" min={1} max={365} aria-label={`Days after the period's end for information right ${i + 1}`} value={x.days}
+                    onChange={(e) => setForm({ ...form, information_rights: (form.information_rights ?? []).map((y, j) => (j === i ? { ...y, days: Number(e.target.value || 0) } : y)) })} />
+                  <Button variant="ghost" size="sm" type="button" aria-label={`Remove information right ${i + 1}`}
+                    onClick={() => setForm({ ...form, information_rights: (form.information_rights ?? []).filter((_, j) => j !== i) })}>
+                    <Icon of={Trash2} />
+                  </Button>
+                </div>
+              ))}
+              {(form.information_rights ?? []).length < 4 && (
+                <Button variant="ghost" size="sm" type="button" style={{ alignSelf: "flex-start" }}
+                  onClick={() => setForm({ ...form, information_rights: [...(form.information_rights ?? []), { kind: infoKinds.find((k) => !(form.information_rights ?? []).some((y) => y.kind === k)) ?? "board_pack", days: 45 }] })}>
+                  <Icon of={Plus} />
+                  Add an information right
+                </Button>
+              )}
+              <span className="fy-help">{helpText("equity.information-rights").tooltip}</span>
+            </div>
+          </fieldset>
           <fieldset className="fy-field fy-field--full">
             <legend className="fy-label">Matters that need their consent</legend>
             <div className="fy-stack fy-stack--2">

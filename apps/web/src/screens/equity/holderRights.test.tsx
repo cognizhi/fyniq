@@ -23,6 +23,7 @@ const tests = (controllers: object[]) => ({ at: "2026-10-15", controllers, lapse
 
 // req: FR-EQ-22
 // req: FR-EQ-25
+// req: FR-EQ-28
 // req: G4-101
 describe("a holder's rights and controller standing", () => {
   it("shows the rights in force, that they could confer control, and the controller test not assessed; axe finds nothing", async () => {
@@ -68,6 +69,29 @@ describe("a holder's rights and controller standing", () => {
       holder_id: "c-seed", from: "2026-06-18", board_seats: 1, observer: false, board_majority: false, pro_rata: true, consents: ["Issuing new shares"],
       agreements: "Side letter of 18 Jun 2026",
     });
+  });
+
+  it("drafts rights with their information rights as a list, one kind each, and shows them in force", async () => {
+    const seen = answer({
+      "GET /v1/holders/c-seed": { status: 200, body: { ...holder, contact_id: "c-seed", name: "Seedling Ventures Pte. Ltd.", rights_history: [], controller_history: [] } },
+      "GET /v1/cap-table/statutory-tests": { status: 200, body: tests([]) },
+      "POST /v1/investor-rights": { status: 201, body: { ...rights, status: "draft", evidence: 0 } },
+    });
+    renderPage(HolderPage, { path: "/equity/holders/c-seed", route: "/equity/holders/$contactId", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "Record rights" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("From the agreements"), { target: { value: "Side letter" } });
+    fireEvent.change(within(dialog).getByLabelText("In force from"), { target: { value: "2026-06-18" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add an information right" }));
+    fireEvent.change(within(dialog).getByLabelText("Information right 1"), { target: { value: "quarterly_accounts" } });
+    fireEvent.change(within(dialog).getByLabelText("Days after the period's end for information right 1"), { target: { value: "45" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add an information right" }));
+    expect((within(dialog).getByLabelText("Information right 2") as HTMLSelectElement).value).toBe("monthly_accounts");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Remove information right 2" }));
+    await noViolations(document.body);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Draft the rights" }));
+    await screen.findByText("The rights are drafted. Attach the agreements, then ask for approval.");
+    expect(seen.find((s) => s.method === "POST" && s.path === "/v1/investor-rights")?.body).toMatchObject({ information_rights: [{ kind: "quarterly_accounts", days: 45 }] });
   });
 
   it("shows a controller to lodge with ACRA, and records the next version with its central register day and a notice", async () => {

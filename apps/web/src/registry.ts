@@ -602,6 +602,7 @@ export const actions = [
   { kind: "action", id: "holder.investments", mode: "expert", help: "holder.investments", guide: "equity.register#record-an-investors-rights" },
   { kind: "action", id: "holder.rights", mode: "expert", help: "holder.rights", guide: "equity.register#record-an-investors-rights" },
   { kind: "action", id: "holder.controller", mode: "expert", help: "holder.controller", guide: "equity.register#registrable-controllers-and-the-exempt-status" },
+  { kind: "action", id: "equity.information-rights", mode: "expert", help: "equity.information-rights", guide: "equity.register#record-an-investors-rights" },
   { kind: "action", id: "investor-rights.draft", mode: "expert", help: "investor-rights.draft", guide: "equity.register#record-an-investors-rights" },
   { kind: "action", id: "investor-rights.ask", mode: "expert", help: "investor-rights.ask", guide: "equity.register#record-an-investors-rights" },
   { kind: "action", id: "investor-rights.attach-evidence", mode: "expert", help: "investor-rights.attach-evidence", guide: "equity.register#record-an-investors-rights" },
