@@ -480,6 +480,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/deletion-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The reports of records due for deletion
+         * @description PRD-002 NM-SEC-05. For each kind of record the retention engine deletes (grievances, candidates): how many are due, how many a legal hold keeps, the day the report must be reviewed and its state. No person and no record is named. Only an Owner or an HR administrator. It changes nothing.
+         */
+        get: operations["listDeletionReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/deletion-reports/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review a report of records due for deletion
+         * @description PRD-002 NM-SEC-05. Records that a person has seen what is due and what a hold keeps; only then does the nightly job delete what is still due and not held, with a proof of each that holds no content. A report is reviewed once. Only an Owner or an HR administrator. It is audited and is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["reviewDeletionReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/details-changes/{id}/decision": {
         parameters: {
             query?: never;
@@ -4416,6 +4456,30 @@ export interface components {
             /** @description Newest first, up to 200. */
             proposals: components["schemas"]["AIProposal"][] | null;
         };
+        AlignedGoal: {
+            /**
+             * Format: uuid
+             * @description The aligned goal.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a02
+             */
+            id: string;
+            /**
+             * @description The owner of a personal goal.
+             * @example Ben Lim
+             */
+            person?: string;
+            /**
+             * Format: int64
+             * @description Its progress.
+             * @example 40
+             */
+            progress: number;
+            /**
+             * @description Its title.
+             * @example Ship the pilot dashboard
+             */
+            title: string;
+        };
         AppliedOutputBody: {
             /**
              * @description The days reserved for it.
@@ -5352,6 +5416,76 @@ export interface components {
             /** @description The delegations, newest first. */
             delegations: components["schemas"]["Delegation"][] | null;
         };
+        DeletionReportView: {
+            /**
+             * Format: date
+             * @description The day the report was made.
+             * @example 2027-05-02
+             */
+            created_on: string;
+            /**
+             * Format: int64
+             * @description How many records are due for deletion.
+             * @example 3
+             */
+            due: number;
+            /**
+             * Format: int64
+             * @description How many a legal hold keeps.
+             * @example 0
+             */
+            held: number;
+            /**
+             * Format: uuid
+             * @description The report.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01
+             */
+            id: string;
+            /**
+             * @description The review date has passed with no review;
+             * @example false
+             */
+            overdue: boolean;
+            /**
+             * @description The kind of record that is due: grievances or candidates.
+             * @example candidates
+             */
+            record_type: string;
+            /**
+             * Format: date
+             * @description The day the report must have been reviewed: 30 days after it was made.
+             * @example 2027-06-01
+             */
+            review_by: string;
+            /**
+             * @description Who reviewed it.
+             * @example Hana HR
+             */
+            reviewed_by?: string;
+            /**
+             * Format: date
+             * @description When.
+             * @example 2027-05-03
+             */
+            reviewed_on?: string;
+            /**
+             * @description Waiting for review, reviewed and waiting for the nightly job, or deleted.
+             * @example pending
+             * @enum {string}
+             */
+            state: "pending" | "reviewed" | "deleted";
+        };
+        DeletionReportsOutputBody: {
+            /** @description The reports, the newest first. */
+            reports: components["schemas"]["DeletionReportView"][];
+        };
+        DeletionReviewOutputBody: {
+            /**
+             * @description True once the report is reviewed.
+             * @example true
+             */
+            reviewed: boolean;
+        };
         Dependant: {
             /**
              * @description The formal intent to adopt, instead of a date of birth.
@@ -6200,6 +6334,8 @@ export interface components {
             reply_due: string;
         };
         Goal: {
+            /** @description The goals aligned with it that the reader may read: a personal goal is shown only to the person, their line manager and the people team. */
+            aligned?: components["schemas"]["AlignedGoal"][] | null;
             /**
              * Format: date
              * @description When it is due.
@@ -6237,6 +6373,12 @@ export interface components {
              * @example 60
              */
             progress: number;
+            /**
+             * Format: int64
+             * @description The average, rounded down, of its own key results' progress and its aligned goals' progress that the reader may read; empty when it has neither.
+             * @example 55
+             */
+            rollup_progress?: number;
             /**
              * @description Whose goal it is.
              * @example personal
@@ -14094,6 +14236,163 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listDeletionReports: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletionReportsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    reviewDeletionReport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The report. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletionReviewOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -92,6 +92,22 @@ func Progress(m Measure) int {
 }
 
 // Status says where a measure stands: done at 100%, on track when its progress is at least the share of the period that has passed, behind otherwise. A measure with no period (a KPI) is met or not yet.
+// Rollup is the progress of a goal with the goals aligned to it (NM-PRF-01): the whole-percentage average, rounded down, of its own key results' progress (when it has any) and the progress of each aligned
+// goal. A goal with neither has none, so ok is false. Only the goals the reader may read are passed in, so a personal goal never shows through a number it was not meant to.
+func Rollup(ownProgress int, hasMeasures bool, aligned []int) (progress int, ok bool) {
+	sum, n := 0, len(aligned)
+	for _, p := range aligned {
+		sum += p
+	}
+	if hasMeasures {
+		sum, n = sum+ownProgress, n+1
+	}
+	if n == 0 {
+		return 0, false
+	}
+	return sum / n, true
+}
+
 func Status(progress int, from, due, today time.Time) string {
 	if progress >= 100 {
 		return "done"

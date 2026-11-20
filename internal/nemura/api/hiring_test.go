@@ -98,3 +98,33 @@ func TestTheCareersPageIsPublicAndSignedOutVisitorsReadNothingElseOfHiring(t *te
 		t.Errorf("an application with no sign-in: %d %s", rec.Code, rec.Body.String())
 	}
 }
+
+// Only an Owner or an HR administrator lists and reviews the reports of records due for deletion; nobody signed out and no other role does (NM-SEC-05).
+// req: NM-SEC-05
+// asvs: V8.2.1, V8.2.2
+func TestOnlyAnOwnerOrAnHRAdministratorSeesAndReviewsDeletionReports(t *testing.T) {
+	const id = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01"
+	defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+	call := func(method, path, cookie string) int {
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, nil)
+		if cookie != "" {
+			req.Header.Set("Cookie", cookie)
+		}
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for _, o := range [][2]string{{"GET", "/v1/deletion-reports"}, {"POST", "/v1/deletion-reports/" + id + "/review"}} {
+		if code := call(o[0], o[1], ""); code != 401 {
+			t.Errorf("%s %s signed out: %d", o[0], o[1], code)
+		}
+		for role, want := range map[authz.Role]bool{authz.Owner: true, authz.HRAdmin: true, authz.HROfficer: false, authz.Recruiter: false, authz.Employee: false, authz.Interviewer: false, authz.PayrollAdmin: false, authz.Administrator: false} {
+			testRoles = []authz.Role{role}
+			code := call(o[0], o[1], "nemura_session=good-token")
+			if allowed := code == 200 || code == 409; allowed != want { // the fake answers its configured error for a review: an allowed role is not refused with 401 or 403
+				t.Errorf("%s %s as %s: %d, allowed %v, want %v", o[0], o[1], role, code, allowed, want)
+			}
+		}
+	}
+}

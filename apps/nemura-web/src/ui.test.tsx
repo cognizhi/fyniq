@@ -18,6 +18,7 @@ import { TeamLeave } from "./pages/TeamLeave";
 import { Packs } from "./pages/Packs";
 import { Policy } from "./pages/Policy";
 import { Careers } from "./pages/Careers";
+import { PersonGoals } from "./pages/PersonGoals";
 import { Pipeline } from "./pages/Pipeline";
 import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
@@ -2077,5 +2078,21 @@ describe("pipeline", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hire Mei Tan" }));
     expect(await screen.findByText("The candidate is hired: their person record and onboarding plan are made.")).toBeTruthy();
     expect(bodies.get("POST /v1/candidates/c2/hire")).toEqual({ start_date: "2027-02-01", employment_type: "full_time" });
+  });
+});
+
+// req: NM-PRF-01, NM-PRF-02, QA-UI-05
+describe("a person's goals for the manager", () => {
+  it("shows the goals and KPIs read only, and says there are none when the API does", async () => {
+    const measure = { id: "m1", title: "Pilot customers live", unit: "customers", start_value: "0", target: "3", current: "2", lower_is_better: false, progress: 66, status: "on_track" };
+    answer("GET /v1/people/p1/goals", { status: 200, body: { goals: [{ id: "g1", scope: "personal", title: "Bank sync in beta", starts_on: "2026-07-01", due_on: "2026-12-31", state: "open", progress: 66, measures: [measure] }], kpis: [] } });
+    const { container } = render(<PersonGoals roles={["line_manager"]} personId="p1" />);
+    expect(await screen.findByText("Bank sync in beta")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Update/ })).toBeNull();
+    expect(await violations(container)).toEqual([]);
+    cleanup();
+    answer("GET /v1/people/p2/goals", { status: 404, body: { detail: "There is no such goal." } });
+    render(<PersonGoals roles={["employee"]} personId="p2" />);
+    expect(await screen.findByText(/There are no such goals for you to read/)).toBeTruthy();
   });
 });

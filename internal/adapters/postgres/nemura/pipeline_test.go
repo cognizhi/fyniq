@@ -253,6 +253,15 @@ func TestACandidateNotProgressingIsDeletedSixMonthsLaterOnlyAfterAReviewedReport
 	}
 }
 
+func mustID(t *testing.T, s string) uuid.UUID {
+	t.Helper()
+	id, err := uuid.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
 func day6(t time.Time) string { return t.AddDate(0, 6, 0).Format(time.DateOnly) }
 
 // An application made on the careers page is recorded for a post that is published and approved on a page that is switched on, and for no other; the visitor learns nothing more than whether it was

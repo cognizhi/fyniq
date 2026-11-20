@@ -4,7 +4,7 @@ type: task
 title: Erase a former employee's data
 summary: How an Owner or HR administrator asks for a former employee's data to be erased after its retention, who approves, and what stays
 sources:
-  - docs/user-guide/nemura/erasure.md sha256:763ccd161cbbf21d275b6b56724f36182fb2c253486aac63e708847400e88b21
+  - docs/user-guide/nemura/erasure.md sha256:309cff5ff7767bc1e8e6da75316e5f864f7c8678c7b1e1a31485dd5d5335de35
 data_class: personal
 taint: trusted
 status: published
@@ -30,6 +30,10 @@ aliases:
 2. A second Owner or HR administrator approves with a passkey; Nemura then erases and keeps a signed record outside its database.
 
 (src: docs/user-guide/nemura/erasure.md#ask-for-an-erasure)
+
+## Records due for deletion
+
+- Each night the records whose keeping period has run (grievances five years after the outcome, candidates not progressing six months after the decision, unless they consented to be kept) are listed by kind and count. The Owner or an HR administrator reviews the list within 30 days, then the next nightly job deletes what is still due and not held by a legal hold, leaving a proof with no content. A list not reviewed by its date is marked as overdue on the page. (src: docs/user-guide/nemura/erasure.md#records-due-for-deletion)
 
 ## What is erased, and what stays
 

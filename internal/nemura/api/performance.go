@@ -32,18 +32,28 @@ type Measure struct {
 
 // Goal is a company, team or personal goal.
 type Goal struct {
-	ID       string    `json:"id" format:"uuid" doc:"The goal." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01"`
-	Scope    string    `json:"scope" enum:"company,team,personal" doc:"Whose goal it is." example:"personal"`
-	PersonID string    `json:"person_id,omitempty" format:"uuid" doc:"A personal goal's owner." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
-	Person   string    `json:"person,omitempty" doc:"Their legal name." example:"Ben Lim"`
-	Team     string    `json:"team,omitempty" doc:"A team goal's team." example:"Engineering"`
-	ParentID string    `json:"parent_id,omitempty" format:"uuid" doc:"The goal it aligns with." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a00"`
-	Title    string    `json:"title" doc:"The goal." example:"3 pilot customers live by 31 December"`
-	StartsOn string    `json:"starts_on" format:"date" doc:"When it began." example:"2026-07-01"`
-	DueOn    string    `json:"due_on" format:"date" doc:"When it is due." example:"2026-12-31"`
-	State    string    `json:"state" enum:"open,done,cancelled" doc:"Where it is." example:"open"`
-	Progress int       `json:"progress" minimum:"0" maximum:"100" doc:"The average progress of its key results, a whole percentage rounded down; 0 with none." example:"60"`
-	Measures []Measure `json:"measures" nullable:"false" doc:"Its key results."`
+	ID       string        `json:"id" format:"uuid" doc:"The goal." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01"`
+	Scope    string        `json:"scope" enum:"company,team,personal" doc:"Whose goal it is." example:"personal"`
+	PersonID string        `json:"person_id,omitempty" format:"uuid" doc:"A personal goal's owner." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Person   string        `json:"person,omitempty" doc:"Their legal name." example:"Ben Lim"`
+	Team     string        `json:"team,omitempty" doc:"A team goal's team." example:"Engineering"`
+	ParentID string        `json:"parent_id,omitempty" format:"uuid" doc:"The goal it aligns with." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a00"`
+	Title    string        `json:"title" doc:"The goal." example:"3 pilot customers live by 31 December"`
+	StartsOn string        `json:"starts_on" format:"date" doc:"When it began." example:"2026-07-01"`
+	DueOn    string        `json:"due_on" format:"date" doc:"When it is due." example:"2026-12-31"`
+	State    string        `json:"state" enum:"open,done,cancelled" doc:"Where it is." example:"open"`
+	Progress int           `json:"progress" minimum:"0" maximum:"100" doc:"The average progress of its key results, a whole percentage rounded down; 0 with none." example:"60"`
+	Measures []Measure     `json:"measures" nullable:"false" doc:"Its key results."`
+	Aligned  []AlignedGoal `json:"aligned,omitempty" doc:"The goals aligned with it that the reader may read: a personal goal is shown only to the person, their line manager and the people team."`
+	Rollup   *int          `json:"rollup_progress,omitempty" minimum:"0" maximum:"100" doc:"The average, rounded down, of its own key results' progress and its aligned goals' progress that the reader may read; empty when it has neither." example:"55"`
+}
+
+// AlignedGoal is a goal aligned with another, in the other's roll-up.
+type AlignedGoal struct {
+	ID       string `json:"id" format:"uuid" doc:"The aligned goal." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a02"`
+	Title    string `json:"title" doc:"Its title." example:"Ship the pilot dashboard"`
+	Person   string `json:"person,omitempty" doc:"The owner of a personal goal." example:"Ben Lim"`
+	Progress int    `json:"progress" minimum:"0" maximum:"100" doc:"Its progress." example:"40"`
 }
 
 // MeasureInput is a key result or KPI to set.

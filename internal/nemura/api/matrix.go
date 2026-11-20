@@ -157,6 +157,8 @@ var Matrix = map[string]string{ // #nosec G101 -- operation names and who may ca
 	"GET /v1/requisitions/{id}/interview-kit":             "Recruiter, HR officer, HR administrator, Owner, Interviewer, with Hiring on",
 	"PUT /v1/requisitions/{id}/interview-kit":             "Recruiter, HR administrator, Owner, with Hiring on; questions checked for fair wording",
 	"POST /v1/careers/{slug}/applications":                "anyone, for a published post of a page that is on; rate-limited by email address and in all",
+	"GET /v1/deletion-reports":                            "Owner, HR administrator",
+	"POST /v1/deletion-reports/{id}/review":               "Owner, HR administrator; once",
 	"GET /v1/careers-page":                                "Recruiter, HR officer, HR administrator, Owner, with Hiring on",
 	"PUT /v1/careers-page":                                "Recruiter, HR administrator, Owner, with Hiring on",
 	"POST /v1/requisitions/{id}/job-post/exemption":       "Recruiter, HR administrator, Owner, with Hiring on; once, for a role that needs a pass",

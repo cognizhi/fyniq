@@ -35,6 +35,7 @@ export function Person({ id, roles }: { id: string; roles: readonly string[] }) 
         {state.status === "ready" && <Record rec={state.rec} />}
         {state.status === "ready" && <TermsPanel person={id} roles={roles} />}
         {state.status === "ready" && <a href={`/people/${id}/leave`}>{t("person.leave")}</a>}
+        {state.status === "ready" && <a href={`/people/${id}/goals`}>{t("persongoals.link")}</a>}
         <a href="/people/directory">{t("person.back")}</a>
       </main>
     </Shell>
