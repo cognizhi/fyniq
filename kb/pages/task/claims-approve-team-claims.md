@@ -4,7 +4,7 @@ type: task
 title: Approve or return members' expense claims, and set the expense policy
 summary: Who approves a member's claim, how to approve or return it with a comment under Purchases › Expense claims, and how the expense policy is set
 sources:
-  - docs/user-guide/claims-approve-team.md sha256:8a3cbda567ce3ed1d33bba558e9373484493f46dfb3f44703b3f59539d754b4f
+  - docs/user-guide/claims-approve-team.md sha256:768b3f599d07818c5b44028441e874ee9b3dd1c03527e47267dfada0d263149f
 data_class: general
 taint: trusted
 status: draft
@@ -38,7 +38,7 @@ aliases:
   with a reason).
 - **Approve** shows exactly what is signed. **Return with a comment** says what to fix; the claimant
   sees it in My claims, fixes and submits again, and each version is kept. The last approval posts
-  the claim. **All claims** lists every member's claims by stage, for those who see them all.
+  the claim. **All claims** lists every member's claims by stage, for those who see them all. An Approver without a finance role opens **To approve** from the Inbox (`/me/approve`): it lists the claims of the departments their role covers, or every claim if it approves all; nobody approves their own claim, and an Accountant or Controller sees every claim as the fallback.
 
 (src: docs/user-guide/claims-approve-team.md#approve-or-return-a-claim)
 

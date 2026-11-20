@@ -62,6 +62,7 @@ export const routes = [
   // My claims (FR-AP-14, FR-AP-18, FR-UX-39; p1-expense-claims task 8.1): a member's own claims, card lines and cash
   // advances; /me is where a person whose rights are personal only lands.
   { kind: "route", id: "personal", path: "/me", mode: "basic", signedIn: true, help: "claims.personal", guide: "claims.my-claims" },
+  { kind: "route", id: "personal-approvals", path: "/me/approve", mode: "basic", signedIn: true, help: "approvals.personal", guide: "claims.approve-team#approve-or-return-a-claim" },
   { kind: "route", id: "my-claims", path: "/me/claims", mode: "basic", signedIn: true, help: "claims.my-claims", guide: "claims.my-claims" },
   { kind: "route", id: "claim-new", path: "/me/claims/new", mode: "basic", signedIn: true, help: "claim.new", guide: "claims.my-claims#claim-a-receipt" },
   { kind: "route", id: "claim", path: "/me/claims/$claimId", mode: "basic", signedIn: true, help: "claims.claim", guide: "claims.my-claims#submit-a-claim" },
