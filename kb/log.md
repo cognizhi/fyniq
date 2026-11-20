@@ -851,3 +851,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | sales.invoices: the payment link's statuses and the per-line limit (FR-AR-13)
 
 ## [2026-11-20] compile | compliance.invoicenow: InvoiceNow page (p2-invoicenow)
+
+## [2026-11-20] compile | compliance.filing-packs, sales.bad-debts: the tax working paper and the bad debt relief queue (p2-tax-filings)

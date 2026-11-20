@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "available": {
+      "description": "The newest version in force that it has not activated.",
+      "examples": [
+        "sg-gst@2026.3"
+      ],
+      "type": "string"
+    },
+    "changes": {
+      "items": {
+        "$ref": "PackChange.schema.json"
+      },
+      "type": "array"
+    },
+    "current": {
+      "description": "The version the organisation has active.",
+      "examples": [
+        "sg-gst@2026.2"
+      ],
+      "type": "string"
+    },
+    "pack": {
+      "examples": [
+        "sg-gst"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "pack",
+    "current",
+    "available",
+    "changes"
+  ],
+  "title": "PackUpdate",
+  "type": "object"
+}

@@ -1,0 +1,16 @@
+{
+  "contract": "iras-filing@1",
+  "about": "What every adapter of ports.IRASFiler must answer (FR-TAX-03, FR-TAX-06; p2-tax-filings design D5). IRAS's payload layouts for the GST return and Form C-S APIs are given to registered developers behind IRAS's sign-in and are not written here: the steps use an opaque payload, and the real adapter answers the steps without stub_only against IRAS's sandbox [live-verify] once access is granted.",
+  "sources": [
+    "IRAS API portal, Submission of GST Returns (CorpPass) 1.0.4, apiservices.iras.gov.sg/iras/devportal/product/12693, retrieved 20 Nov 2026: submitF5ReturnCorpPass, submitF5F8ReturnCorpPass, submitF7ReturnCorpPass, submitTransactionListingCorpPass; payloads not shown",
+    "IRAS API Marketplace: Submission of Corporate Tax Records (Form C-S and pre-fill), named in a search of its listings on 20 Nov 2026"
+  ],
+  "steps": [
+    {"name": "a GST F5 is acknowledged", "call": "file", "kind": "gst_f5", "period": "2027-03-31", "key": "k1", "save": "a1", "expect": {"accepted": true}},
+    {"name": "the same key returns the same acknowledgement", "call": "file", "kind": "gst_f5", "period": "2027-03-31", "key": "k1", "expect": {"same_as": "a1"}},
+    {"name": "a validation takes nothing", "call": "file", "kind": "gst_f5", "period": "2027-03-31", "key": "k2", "validate_only": true, "expect": {"accepted": false, "reference": "empty"}},
+    {"name": "a kind IRAS does not take is refused with its reason", "call": "file", "kind": "gst_f9", "period": "2027-03-31", "key": "k3", "expect": {"accepted": false, "problems": "non-empty"}},
+    {"name": "a period that is not a day is refused", "call": "file", "kind": "form_cs", "period": "2027", "key": "k4", "expect": {"accepted": false, "problems": "non-empty"}},
+    {"name": "an outage fails the call and files nothing", "call": "outage", "stub_only": true}
+  ]
+}

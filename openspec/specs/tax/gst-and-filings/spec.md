@@ -295,6 +295,11 @@ Source: PRD-001 §8.11 · Priority S · Phase P2
 - **WHEN** a company's annual revenue is S$200,000, S$200,000.01 and S$5,000,000.01
 - **THEN** it may file Form C-S (Lite) or Form C-S, then Form C-S, then Form C
 
+#### Scenario: The paper is worked from the ledger (rev 0.546)
+- **GIVEN** S$1,000.00 of profit and revenue in a financial year
+- **WHEN** the working paper is asked for under the partial exemption
+- **THEN** 750.00 is exempt, 250.00 is taxed at 17% for 42.50 and the form is C-S (Lite)
+
 ### Requirement: FR-TAX-07 Statutory calendar
 The system SHALL keep a statutory calendar of the organisation's obligations, with dates derived from its FY and GST periods, reminders and Inbox tasks.
 
