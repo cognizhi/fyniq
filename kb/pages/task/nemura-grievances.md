@@ -4,7 +4,7 @@ type: task
 title: Raise a concern, and handle one
 summary: How a member raises a concern in confidence, who may read it, how it is routed and decided, and what the person who raised it reads
 sources:
-  - docs/user-guide/nemura/grievances.md sha256:e4aa84195be31ad180bf7c0e79dbffdd7bbc9c38a4eaa796ab14f84a57d23394
+  - docs/user-guide/nemura/grievances.md sha256:50e007f43c1a1984b04318987bd77847bf84f31d23ccfecd61e8446db561b886
 data_class: general
 taint: trusted
 status: published
@@ -38,7 +38,11 @@ aliases:
 
 ## Handling one
 
-- Only an HR administrator or the Owner who is not involved handles a grievance: they read it (recorded), add notes, interviews and findings that are never changed, write the outcome once, or pass it on with a reason to the next eligible person. (src: docs/user-guide/nemura/grievances.md#handle-a-grievance)
+- Only an HR administrator or the Owner who is not involved handles a grievance: they read it (recorded), add notes, interviews and findings that are never changed, write the outcome once, or pass it on with a reason to the next eligible person. One whose handler has left waits in Waiting to be taken, where an HR administrator or the Owner who is not involved may read and take it. (src: docs/user-guide/nemura/grievances.md#handle-a-grievance)
+
+## How long it is kept
+
+- A decided grievance and its inquiry are kept five years after the outcome, then listed for the Owner's review and deleted only after it, with a proof and never its words; a legal hold keeps it. The five years is the product's choice [owner to confirm]. (src: docs/user-guide/nemura/grievances.md#how-long-a-grievance-is-kept)
 
 ## When it looks wrong
 

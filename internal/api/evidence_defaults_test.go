@@ -101,6 +101,7 @@ func TestEvidenceRulesAreTheDefaults(t *testing.T) {
 		// governance changes and control reviews
 		{"governance_change", "governance", "required", false, []string{"Reason (text)"}, []string{"Supporting document"}},
 		{"control_evidence", "governance", "required", false, []string{"Review record or screenshot"}, nil},
+		{"board_pack", "governance", "required", true, []string{"The published pack's PDF (generated)"}, nil},
 	} {
 		got, ok := rules[w.key]
 		if !ok {

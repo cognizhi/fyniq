@@ -1,0 +1,213 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "allocation",
+ "base_currency": "SGD",
+ "currencies": {
+  "SGD": 2
+ },
+ "as_of": "2026-03-31",
+ "settings": {
+  "books_start": "2026-01-01",
+  "accounts": {
+   "receivable": "1100",
+   "gst": "2200",
+   "fx": "7030"
+  }
+ },
+ "dimensions": [
+  {
+   "name": "Department",
+   "active": true,
+   "values": [
+    {
+     "code": "ENG",
+     "active": true
+    },
+    {
+     "code": "SALES",
+     "active": true
+    },
+    {
+     "code": "OPS",
+     "active": true
+    }
+   ]
+  }
+ ],
+ "accounts": [
+  {
+   "code": "1010",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1100",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2200",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "3010",
+   "type": "equity",
+   "group": false,
+   "active": true,
+   "role": "share-capital"
+  },
+  {
+   "code": "6200",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6210",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7030",
+   "type": "expense",
+   "group": false,
+   "active": true
+  }
+ ],
+ "documents": [
+  {
+   "type": "manual_journal",
+   "id": "JNL-0001",
+   "version": 1,
+   "date": "2026-03-10",
+   "memo": "Cloud hosting for March, shared",
+   "lines": [
+    {
+     "account": "6200",
+     "currency": "SGD",
+     "amount": "1000.00"
+    },
+    {
+     "account": "1010",
+     "currency": "SGD",
+     "amount": "-1000.00"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0002",
+   "version": 1,
+   "date": "2026-03-10",
+   "memo": "Support tooling for March, shared",
+   "lines": [
+    {
+     "account": "6210",
+     "currency": "SGD",
+     "amount": "0.05"
+    },
+    {
+     "account": "1010",
+     "currency": "SGD",
+     "amount": "-0.05"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0003",
+   "version": 1,
+   "date": "2026-03-31",
+   "memo": "Allocation: cloud hosting by 40% ENG, 35% SALES, 25% unplaced (ALLOC-PRORATA)",
+   "lines": [
+    {
+     "account": "6200",
+     "currency": "SGD",
+     "amount": "400.00",
+     "dimensions": {
+      "Department": "ENG"
+     }
+    },
+    {
+     "account": "6200",
+     "currency": "SGD",
+     "amount": "350.00",
+     "dimensions": {
+      "Department": "SALES"
+     }
+    },
+    {
+     "account": "6200",
+     "currency": "SGD",
+     "amount": "-750.00"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0004",
+   "version": 1,
+   "date": "2026-03-31",
+   "memo": "Allocation: support tooling by headcount 1:1:1 over ENG, SALES and OPS",
+   "lines": [
+    {
+     "account": "6210",
+     "currency": "SGD",
+     "amount": "0.02",
+     "dimensions": {
+      "Department": "ENG"
+     }
+    },
+    {
+     "account": "6210",
+     "currency": "SGD",
+     "amount": "0.02",
+     "dimensions": {
+      "Department": "SALES"
+     }
+    },
+    {
+     "account": "6210",
+     "currency": "SGD",
+     "amount": "0.01",
+     "dimensions": {
+      "Department": "OPS"
+     }
+    },
+    {
+     "account": "6210",
+     "currency": "SGD",
+     "amount": "-0.05"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0005",
+   "version": 1,
+   "date": "2026-03-31",
+   "memo": "Allocation that does not add up is refused",
+   "lines": [
+    {
+     "account": "6200",
+     "currency": "SGD",
+     "amount": "400.00",
+     "dimensions": {
+      "Department": "ENG"
+     }
+    },
+    {
+     "account": "6200",
+     "currency": "SGD",
+     "amount": "-399.99"
+    }
+   ]
+  }
+ ],
+ "reversals": []
+}

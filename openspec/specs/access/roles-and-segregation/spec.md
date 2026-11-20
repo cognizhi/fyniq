@@ -1721,6 +1721,10 @@ Source: PRD-001 §D
 - **THEN** the Owner, the Administrator, the Finance controller, the Accountant and the Bookkeeper can create or prepare (C)
 - **AND** scheduling is for the Owner, the Administrator, the Finance controller and the Accountant
 
+#### Scenario: Approving a kept board pack PDF (rev 0.607)
+- **WHEN** a published board pack's PDF is asked to be kept as evidence
+- **THEN** the Owner and the Finance controller hold the approving right (A) over it, another person than the one who asked signs, and no other role approves it
+
 #### Scenario: No access
 - **WHEN** a user saves, shares or schedules a report
 - **THEN** the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over it (—)
@@ -1762,7 +1766,7 @@ Source: PRD-001 §D
 - **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over them (—)
 
 ### Requirement: Permission matrix: Tasks made by integrations: an API client's own tasks
-In Standard mode, each role SHALL hold only the rights over the tasks an integration made that the permission matrix gives it (rev 0.607): the Owner and the Administrator create them, through an integration client holding `fyniq.write.tasks`, and a client updates only its own.
+In Standard mode, each role SHALL hold only the rights over the tasks an integration made that the permission matrix gives it (rev 0.609): the Owner and the Administrator create them, through an integration client holding `fyniq.write.tasks`, and a client updates only its own.
 
 Source: PRD-001 §D
 

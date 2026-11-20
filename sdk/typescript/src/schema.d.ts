@@ -2888,6 +2888,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/board-packs/{id}/pdf/keeping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See whether a board pack's PDF is kept as evidence
+         * @description Where a published pack's PDF is as evidence (FR-RPT-06, FR-DOC-05): not kept, waiting for another person's approval, or kept (the file's name, hash and size, and once committed to the retention-locked store, until when it is kept). A draft pack is not found. Read as exportBoardPack is, by a Board viewer as well. Read-only; no side effects.
+         */
+        get: operations["getBoardPackKeeping"];
+        put?: never;
+        /**
+         * Ask to keep a published board pack's PDF as evidence
+         * @description Lays the published pack out as its PDF, attaches the file as generated evidence to a document of its own and asks another person to approve keeping it (FR-RPT-06, FR-DOC-05, FR-DOC-06): an Owner or Controller who did not ask, in Founder mode the other founder. The answer is 202 with an approval request. The file is the same bytes as exportBoardPack's, and its hash is in the request, so an approver signs for exactly that file. Approved, the file is committed to the retention-locked store and is append-only (FR-DOC-13); refused or lapsed, it may be asked for again. A pack keeps one PDF (BPACK-06); a correction is the next version of the pack. Only the Owner and Controller ask (BPACK-01), stepped up. Side effects: the draft document, the evidence row and file in staging, the approval request and its notification. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+         */
+        post: operations["requestBoardPackKeeping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/board-packs/{id}/publish": {
         parameters: {
             query?: never;
@@ -27858,6 +27882,66 @@ export interface components {
              */
             version: number;
         };
+        BoardPackKeeping: {
+            /**
+             * Format: uuid
+             * @description The document holding the file, once asked.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a40
+             */
+            document_id?: string;
+            /**
+             * Format: uuid
+             * @description The evidence file.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+             */
+            evidence_id?: string;
+            /**
+             * @description The file's name.
+             * @example board-pack-2026-10-v1.pdf
+             */
+            file_name?: string;
+            /**
+             * @description attached while it waits; final once committed to the retention-locked store.
+             * @example final
+             * @enum {string}
+             */
+            file_state?: "attached" | "final";
+            /**
+             * Format: date-time
+             * @description When it was approved.
+             * @example 2026-11-05T03:00:00Z
+             */
+            kept_at?: string;
+            /**
+             * Format: uuid
+             * @description The published pack.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10
+             */
+            pack_id: string;
+            /**
+             * Format: date-time
+             * @description Once final: kept until then (FR-DOC-02).
+             * @example 2034-01-01T00:00:00+08:00
+             */
+            retain_until?: string;
+            /**
+             * @description The SHA-256 of the file, in hexadecimal: the Download the PDF file of the pack has the same.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256?: string;
+            /**
+             * Format: int64
+             * @description Its size in bytes.
+             * @example 48213
+             */
+            size_bytes?: number;
+            /**
+             * @description not_kept: no one has asked; waiting: another person's approval is awaited, or was refused or lapsed and may be asked again; kept: the PDF is evidence, append-only.
+             * @example kept
+             * @enum {string}
+             */
+            state: "not_kept" | "waiting" | "kept";
+        };
         BoardPackPage: {
             /** @description The packs, latest month first, without their figures: open one to read them. */
             items: components["schemas"]["BoardPack"][];
@@ -38020,7 +38104,7 @@ export interface components {
              * @example bill
              * @enum {string}
              */
-            activity: "bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "filing" | "gst_forecast" | "corporate";
+            activity: "bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "filing" | "gst_forecast" | "corporate" | "board_pack";
             /**
              * Format: date
              * @description Its date.
@@ -59795,7 +59879,7 @@ export interface components {
         };
         SearchEvidenceOutputBody: {
             /** @description The kinds of record you may search. */
-            activities: ("bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "filing" | "gst_forecast" | "corporate")[];
+            activities: ("bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "filing" | "gst_forecast" | "corporate" | "board_pack")[];
             /** @description The files on this page, newest record date first. */
             items: components["schemas"]["EvidenceFound"][];
             /**
@@ -86589,6 +86673,266 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getBoardPackKeeping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The pack's ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardPackKeeping"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestBoardPackKeeping: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The pack's ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `BPACK-01` Not a role that builds, publishes or sends. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `BPACK-06` The pack's PDF is kept; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -127761,7 +128105,7 @@ export interface operations {
                 /** @description The next_cursor of the previous page; leave it out for the first page. */
                 cursor?: string;
                 /** @description Only files on this kind of record; every kind you may see when left out. */
-                activity?: "bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "filing" | "gst_forecast" | "corporate";
+                activity?: "bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "filing" | "gst_forecast" | "corporate" | "board_pack";
                 /** @description Only files whose evidence type contains this, case aside. */
                 evidence_type?: string;
                 /** @description Only files on records dated on or after this day. */

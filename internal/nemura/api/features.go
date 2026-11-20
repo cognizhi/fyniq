@@ -17,6 +17,7 @@ type Feature struct {
 	ID             string   `json:"id" doc:"The feature's key." example:"leave"`
 	Name           string   `json:"name" doc:"As the screen names it." example:"Leave"`
 	Phase          string   `json:"phase" enum:"P1,P2,P3" doc:"When it is built; a feature of a later phase cannot be switched on yet." example:"P1"`
+	Built          bool     `json:"built" doc:"Whether a feature of a later phase is built, so that it can be switched on." example:"false"`
 	State          string   `json:"state" enum:"on,off,external" doc:"On, off, or held by another system." example:"on"`
 	ExternalSystem string   `json:"external_system,omitempty" doc:"The system that holds its data, when external." example:"Acme Payroll"`
 	Needs          []string `json:"needs" doc:"The features that must be on, or external, for this one to be on."`
@@ -106,7 +107,7 @@ func (a *API) registerFeatures() {
 			if needs == nil {
 				needs = []string{}
 			}
-			out.Body.Features = append(out.Body.Features, Feature{ID: f.ID, Name: f.Name, Phase: f.Phase, State: st, ExternalSystem: cur[f.ID].System, Needs: needs})
+			out.Body.Features = append(out.Body.Features, Feature{ID: f.ID, Name: f.Name, Phase: f.Phase, Built: f.Built || f.Phase == "P1", State: st, ExternalSystem: cur[f.ID].System, Needs: needs})
 		}
 		return out, nil
 	})

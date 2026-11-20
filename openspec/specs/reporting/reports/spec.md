@@ -149,6 +149,11 @@ Source: PRD-001 §8.12 · Priority S · Phase P2
 - **THEN** the render service lays out the month's statements each beside the period before, the key figures and the texts as frozen, the same file each time, and the export is audited with its hash
 - **AND** a draft has no PDF, and a month that was not closed says so on the page
 
+#### Scenario: The PDF kept as evidence on another person's approval (rev 0.607)
+- **WHEN** the Owner or Controller asks to keep a published pack's PDF as evidence
+- **THEN** the file is attached as generated evidence to a document of its own and another Owner or Controller approves keeping it, in Founder mode the other founder, over the file's SHA-256
+- **AND** once approved the file is committed to the retention-locked store, append-only, found under Board packs in the evidence search, and a pack keeps one PDF
+
 ### Requirement: FR-RPT-07 Scheduled reports
 The system SHALL email reports or post them to Slack on a schedule, checking permissions at send time.
 

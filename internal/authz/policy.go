@@ -80,7 +80,7 @@ const (
 	ReportDefinitions   Capability = "Report definitions and schedules: save, share and schedule a report (rev 0.560)"
 	AuditEngagements    Capability = "Auditor engagement: open, confirm and close (rev 0.574)"
 	AuditRequests       Capability = "Auditor requests and samples: ask, answer, draw (rev 0.574)"
-	IntegrationTasks    Capability = "Tasks made by integrations: an API client's own tasks, with the scope `fyniq.write.tasks` (rev 0.607)"
+	IntegrationTasks    Capability = "Tasks made by integrations: an API client's own tasks, with the scope `fyniq.write.tasks` (rev 0.609)"
 )
 
 // WholeRow are the qualifiers that limit what a role does on a row, not which of its records it sees: an approval or
@@ -128,10 +128,10 @@ const (
 // (FR-FA-03, p1-fixed-assets); a change of a vendor's bank details (FR-CT-03, rev 0.153); the member a director or
 // shareholder signs in as (FR-EQ-01, rev 0.167); merging an account into another (FR-COA-04, rev 0.174); a holder's
 // record and a share class (FR-EQ-15, FR-EQ-16, rev 0.203); the workbook import's commit (FR-MIG-01, rev 0.258); recording the corporate profile's records (FR-CS-01, rev 0.282); an integration client's
-// registration (FR-INT-02, p1-public-api task 3.1).
+// registration (FR-INT-02, p1-public-api task 3.1); keeping a published board pack's PDF as evidence (FR-RPT-06, rev 0.607).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
 	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable,
-	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps, KnowledgeBase, PeopleAndHR, PayRuns}
+	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps, KnowledgeBase, PeopleAndHR, PayRuns, ReportDefinitions}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -300,8 +300,9 @@ var Grants = map[Capability]map[string]Cell{
 		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", ""}, "Releaser": {"C", ""}, "Approver": {"C", ""}, "Employee": {}, "Auditor": {}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"C", ""}, "AI": {},
 	},
 	// (rev 0.560) Saving a report, and scheduling one, are a person's own writes, never the AI's: it reads reports (Reports, dashboards).
+	// (rev 0.607) Keeping a published board pack's PDF as evidence is approved by another person who holds A here: the Owner or the Controller, never whoever asked (in Founder mode the other founder).
 	ReportDefinitions: {
-		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
+		"Owner": {"CA", "approves keeping a board pack's PDF, rev 0.607"}, "Admin": {"C", ""}, "Controller": {"CA", "approves keeping a board pack's PDF, rev 0.607"}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
 	},
 	// (rev 0.574) The Auditor's engagement (FR-UX-42, the owner's decision of 23 Nov 2026): an Owner opens it and a second Owner confirms (the same Owner in Founder
 	// mode); the engagement is time-boxed. The Auditor's one C is on the requests row, to ask and to draw samples, and nowhere else; the Controller and the Accountant answer.
@@ -384,7 +385,7 @@ var (
 	CreateDimensionValue  = Policy{Operation: "createDimensionValue", Capability: ChartOfAccounts, Need: Create}
 	ReplaceDimensionValue = Policy{Operation: "replaceDimensionValue", Capability: ChartOfAccounts, Need: Create}
 	// Webhook endpoints (FR-INT-12, rev 0.605): an organisation integration, an Administrator's to make and change, read by those who view integrations; never the AI.
-	// Tasks made by integrations (FR-INT-24, rev 0.607): an API client with fyniq.write.tasks makes tasks of its own and updates only those, never a
+	// Tasks made by integrations (FR-INT-24, rev 0.609): an API client with fyniq.write.tasks makes tasks of its own and updates only those, never a
 	// compliance task (a statutory or agent task), never the AI; a person with a view reads them.
 	CreateIntegrationTask = Policy{Operation: "createIntegrationTask", Capability: IntegrationTasks, Need: Create}
 	UpdateIntegrationTask = Policy{Operation: "updateIntegrationTask", Capability: IntegrationTasks, Need: Create}
@@ -2193,6 +2194,9 @@ var (
 	CreateBoardPackDraft = Policy{Operation: "createBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	EditBoardPackDraft   = Policy{Operation: "editBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	PublishBoardPack     = Policy{Operation: "publishBoardPack", Capability: ReportDefinitions, Need: Create}
+	// (rev 0.607) The published pack's PDF kept as evidence: asked by the Owner or Controller, approved by another person who holds A on this row.
+	RequestBoardPackKeeping = Policy{Operation: "requestBoardPackKeeping", Capability: ReportDefinitions, Need: Create, Note: "Another person approves it, stepped up."}
+	GetBoardPackKeeping     = Policy{Operation: "getBoardPackKeeping", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
 	// Dashboards (FR-VIZ-09, FR-KPI-05): the catalogue and the layout that applies are read by anyone who may read the KPIs (the board pack's view included);
 	// a person arranges their own as their own write (the AI never does), and an Owner or Administrator a role's (the handler decides).
 	ListDashboardTiles = Policy{Operation: "listDashboardTiles", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
@@ -2349,7 +2353,7 @@ var Policies = index(ListMCPThirdPartyApps, RegisterMCPThirdPartyApp, RemoveMCPT
 	AddInvestorRightsEvidence, ListInvestorRightsEvidence, GetInvestorRightsEvidence, RemoveInvestorRightsEvidence, CreateControllerEntry,
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
 	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListReportDefinitions, GetReportDefinition, RunReportDefinition, RunReportDraft, CreateReportDefinition, ReplaceReportDefinition,
-	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListCapTableGrants, GetForecastAccuracy, ListAuditEngagements, OpenAuditEngagement, ConfirmAuditEngagement, CloseAuditEngagement, ListAuditRequests, AskAuditRequest, AnswerAuditRequest, CloseAuditRequest, DrawAuditSample, ListAuditSamples, GrantCapTableAccess, RevokeCapTableAccess, GetGrantedCapTable, ListBoardPacks, GetBoardPack, ExportBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack,
+	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListCapTableGrants, GetForecastAccuracy, ListAuditEngagements, OpenAuditEngagement, ConfirmAuditEngagement, CloseAuditEngagement, ListAuditRequests, AskAuditRequest, AnswerAuditRequest, CloseAuditRequest, DrawAuditSample, ListAuditSamples, GrantCapTableAccess, RevokeCapTableAccess, GetGrantedCapTable, ListBoardPacks, GetBoardPack, ExportBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack, RequestBoardPackKeeping, GetBoardPackKeeping,
 	ListKPIAlerts, GetDeferralRollForward, ListDashboardTiles, GetMyDashboard, GetRoleDashboard, SaveMyDashboard, SaveRoleDashboard, ListInvestorUpdates, GetInvestorUpdate, CreateInvestorUpdate, EditInvestorUpdate, SendInvestorUpdate, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
 	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetBadDebtRelief, WorkTaxPaper, ListStatutoryPackUpdates, GetInvoiceNowGate, ListInvoiceNowInbound, PollInvoiceNowInbound, DraftInvoiceNowInbound, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
