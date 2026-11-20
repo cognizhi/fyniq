@@ -128,6 +128,8 @@ type UnitOfWork interface {
 	Preferences() Preferences
 	// SavedItems are each person's own favourites and saved views (FR-UX-12).
 	SavedItems() SavedItems
+	// Consolidations are the parent's elimination pairs, account mappings, translation rates and frozen runs (FR-ENT-05, FR-ENT-06).
+	Consolidations() Consolidations
 	// EntityGroups is the link between this organisation and others in a group (FR-ENT-04).
 	EntityGroups() EntityGroups
 	// Practices opens a practice organisation from the organisation this unit of work is for, and says whether one is practice (FR-UX-36).

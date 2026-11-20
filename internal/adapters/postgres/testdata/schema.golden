@@ -1087,6 +1087,25 @@ consent_record | event | text | not null |
 consent_record | at | timestamp with time zone | not null | 
 consent_record | recorded_by | text | not null | 
 consent_record | note | text | null | 
+consolidation_rate | organisation_id | uuid | not null | current_org()
+consolidation_rate | id | uuid | not null | uuidv7()
+consolidation_rate | currency | text | not null | 
+consolidation_rate | month | date | not null | 
+consolidation_rate | closing | numeric(20,10) | not null | 
+consolidation_rate | average | numeric(20,10) | not null | 
+consolidation_rate | note | text | not null | 
+consolidation_rate | entered_by | uuid | not null | 
+consolidation_rate | entered_at | timestamp with time zone | not null | 
+consolidation_run | organisation_id | uuid | not null | current_org()
+consolidation_run | id | uuid | not null | uuidv7()
+consolidation_run | from_month | date | not null | 
+consolidation_run | to_month | date | not null | 
+consolidation_run | currency | text | not null | 
+consolidation_run | provisional | boolean | not null | 
+consolidation_run | inputs | jsonb | not null | 
+consolidation_run | result | jsonb | not null | 
+consolidation_run | created_by | uuid | not null | 
+consolidation_run | created_at | timestamp with time zone | not null | 
 contact | organisation_id | uuid | not null | current_org()
 contact | id | uuid | not null | uuidv7()
 contact | legal_name | text | not null | 
@@ -1458,6 +1477,18 @@ fx_rate | entered_at | timestamp with time zone | not null |
 fx_rate | withdrawn_by | text | null | 
 fx_rate | withdrawn_at | timestamp with time zone | null | 
 fx_rate | withdrawn_reason | text | null | 
+group_account_map | organisation_id | uuid | not null | current_org()
+group_account_map | id | uuid | not null | uuidv7()
+group_account_map | entity_row | uuid | null | 
+group_account_map | entity_account_code | text | not null | 
+group_account_map | group_account_id | uuid | not null | 
+group_account_map | counterparty_row | uuid | null | 
+group_account_map | counterparty_parent | boolean | not null | false
+group_account_map | version | integer | not null | 1
+group_account_map | created_by | uuid | not null | 
+group_account_map | created_at | timestamp with time zone | not null | 
+group_account_map | updated_by | uuid | not null | 
+group_account_map | updated_at | timestamp with time zone | not null | 
 group_entity | organisation_id | uuid | not null | current_org()
 group_entity | id | uuid | not null | uuidv7()
 group_entity | label | text | not null | 
@@ -1497,6 +1528,11 @@ group_membership | ended_by | uuid | null |
 group_membership | ended_at | timestamp with time zone | null | 
 group_membership | ended_reason | text | null | 
 group_membership | version | integer | not null | 1
+group_settings | organisation_id | uuid | not null | current_org()
+group_settings | pairs | jsonb | not null | '[]'::jsonb
+group_settings | version | integer | not null | 1
+group_settings | updated_by | uuid | not null | 
+group_settings | updated_at | timestamp with time zone | not null | 
 gst_registration | organisation_id | uuid | not null | current_org()
 gst_registration | id | uuid | not null | uuidv7()
 gst_registration | registered_from | date | not null | 
@@ -5316,6 +5352,39 @@ consent_record | consent_record_purpose_fkey | FOREIGN KEY (organisation_id, pur
 consent_record | consent_record_purpose_id_not_null | NOT NULL purpose_id
 consent_record | consent_record_recorded_by_not_null | NOT NULL recorded_by
 consent_record | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+consolidation_rate | consolidation_rate_average_not_null | NOT NULL average
+consolidation_rate | consolidation_rate_closing_not_null | NOT NULL closing
+consolidation_rate | consolidation_rate_currency_fkey | FOREIGN KEY (currency) REFERENCES currency(code)
+consolidation_rate | consolidation_rate_currency_not_null | NOT NULL currency
+consolidation_rate | consolidation_rate_entered_at_not_null | NOT NULL entered_at
+consolidation_rate | consolidation_rate_entered_by_not_null | NOT NULL entered_by
+consolidation_rate | consolidation_rate_enterer_fkey | FOREIGN KEY (entered_by) REFERENCES app_user(user_id)
+consolidation_rate | consolidation_rate_id_not_null | NOT NULL id
+consolidation_rate | consolidation_rate_month_first | CHECK ((month = (date_trunc('month'::text, (month)::timestamp with time zone))::date))
+consolidation_rate | consolidation_rate_month_not_null | NOT NULL month
+consolidation_rate | consolidation_rate_note_length | CHECK (((length(btrim(note)) >= 1) AND (length(btrim(note)) <= 200)))
+consolidation_rate | consolidation_rate_note_not_null | NOT NULL note
+consolidation_rate | consolidation_rate_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+consolidation_rate | consolidation_rate_organisation_id_not_null | NOT NULL organisation_id
+consolidation_rate | consolidation_rate_pkey | PRIMARY KEY (organisation_id, id)
+consolidation_rate | consolidation_rate_positive | CHECK (((closing <> 'NaN'::numeric) AND (closing > (0)::numeric) AND (average <> 'NaN'::numeric) AND (average > (0)::numeric)))
+consolidation_rate | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+consolidation_run | consolidation_run_created_at_not_null | NOT NULL created_at
+consolidation_run | consolidation_run_created_by_not_null | NOT NULL created_by
+consolidation_run | consolidation_run_creator_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+consolidation_run | consolidation_run_currency_not_null | NOT NULL currency
+consolidation_run | consolidation_run_documents | CHECK (((jsonb_typeof(inputs) = 'object'::text) AND (jsonb_typeof(result) = 'object'::text)))
+consolidation_run | consolidation_run_from_month_not_null | NOT NULL from_month
+consolidation_run | consolidation_run_id_not_null | NOT NULL id
+consolidation_run | consolidation_run_inputs_not_null | NOT NULL inputs
+consolidation_run | consolidation_run_months | CHECK (((from_month = (date_trunc('month'::text, (from_month)::timestamp with time zone))::date) AND (to_month = (date_trunc('month'::text, (to_month)::timestamp with time zone))::date) AND (from_month <= to_month)))
+consolidation_run | consolidation_run_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+consolidation_run | consolidation_run_organisation_id_not_null | NOT NULL organisation_id
+consolidation_run | consolidation_run_pkey | PRIMARY KEY (organisation_id, id)
+consolidation_run | consolidation_run_provisional_not_null | NOT NULL provisional
+consolidation_run | consolidation_run_result_not_null | NOT NULL result
+consolidation_run | consolidation_run_to_month_not_null | NOT NULL to_month
+consolidation_run | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 contact | contact_country_format | CHECK ((country ~ '^[A-Z]{2}$'::text))
 contact | contact_created_at_not_null | NOT NULL created_at
 contact | contact_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
@@ -5897,6 +5966,27 @@ fx_rate | fx_rate_withdrawn_by_format | CHECK ((withdrawn_by ~ '^[a-z][a-z_]{0,1
 fx_rate | fx_rate_withdrawn_reason_length | CHECK (((length(btrim(withdrawn_reason)) >= 1) AND (length(btrim(withdrawn_reason)) <= 500)))
 fx_rate | fx_rate_withdrawn_whole | CHECK ((((withdrawn_by IS NULL) = (withdrawn_at IS NULL)) AND ((withdrawn_by IS NULL) = (withdrawn_reason IS NULL))))
 fx_rate | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+group_account_map | group_account_map_account_fkey | FOREIGN KEY (organisation_id, group_account_id) REFERENCES account(organisation_id, id)
+group_account_map | group_account_map_code_format | CHECK ((entity_account_code ~ '^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$'::text))
+group_account_map | group_account_map_counterparty_fkey | FOREIGN KEY (organisation_id, counterparty_row) REFERENCES group_entity(organisation_id, id)
+group_account_map | group_account_map_counterparty_parent_not_null | NOT NULL counterparty_parent
+group_account_map | group_account_map_created_at_not_null | NOT NULL created_at
+group_account_map | group_account_map_created_by_not_null | NOT NULL created_by
+group_account_map | group_account_map_creator_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+group_account_map | group_account_map_entity_account_code_not_null | NOT NULL entity_account_code
+group_account_map | group_account_map_entity_fkey | FOREIGN KEY (organisation_id, entity_row) REFERENCES group_entity(organisation_id, id)
+group_account_map | group_account_map_group_account_id_not_null | NOT NULL group_account_id
+group_account_map | group_account_map_id_not_null | NOT NULL id
+group_account_map | group_account_map_not_itself | CHECK ((counterparty_row IS DISTINCT FROM entity_row))
+group_account_map | group_account_map_one_counterparty | CHECK ((NOT ((counterparty_row IS NOT NULL) AND counterparty_parent)))
+group_account_map | group_account_map_organisation_id_not_null | NOT NULL organisation_id
+group_account_map | group_account_map_pkey | PRIMARY KEY (organisation_id, id)
+group_account_map | group_account_map_updated_at_not_null | NOT NULL updated_at
+group_account_map | group_account_map_updated_by_not_null | NOT NULL updated_by
+group_account_map | group_account_map_updater_fkey | FOREIGN KEY (updated_by) REFERENCES app_user(user_id)
+group_account_map | group_account_map_version_not_null | NOT NULL version
+group_account_map | group_account_map_version_positive | CHECK ((version >= 1))
+group_account_map | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 group_entity | group_entity_active_linked | CHECK (((state <> 'active'::text) OR (entity_org IS NOT NULL)))
 group_entity | group_entity_ended_whole | CHECK ((((state = 'ended'::text) = (ended_at IS NOT NULL)) AND ((state = 'ended'::text) = (ended_by IS NOT NULL)) AND ((state = 'ended'::text) = (ended_reason IS NOT NULL))))
 group_entity | group_entity_id_not_null | NOT NULL id
@@ -5954,6 +6044,17 @@ group_membership | group_membership_state_not_null | NOT NULL state
 group_membership | group_membership_version_not_null | NOT NULL version
 group_membership | group_membership_version_positive | CHECK ((version >= 1))
 group_membership | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+group_settings | group_settings_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+group_settings | group_settings_organisation_id_not_null | NOT NULL organisation_id
+group_settings | group_settings_pairs_array | CHECK (((jsonb_typeof(pairs) = 'array'::text) AND (jsonb_array_length(pairs) <= 20)))
+group_settings | group_settings_pairs_not_null | NOT NULL pairs
+group_settings | group_settings_pkey | PRIMARY KEY (organisation_id)
+group_settings | group_settings_updated_at_not_null | NOT NULL updated_at
+group_settings | group_settings_updated_by_not_null | NOT NULL updated_by
+group_settings | group_settings_updater_fkey | FOREIGN KEY (updated_by) REFERENCES app_user(user_id)
+group_settings | group_settings_version_not_null | NOT NULL version
+group_settings | group_settings_version_positive | CHECK ((version >= 1))
+group_settings | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 gst_registration | gst_registration_accounting_basis_not_null | NOT NULL accounting_basis
 gst_registration | gst_registration_basis_known | CHECK ((accounting_basis = 'invoice'::text))
 gst_registration | gst_registration_dates | CHECK ((deregistered_from > registered_from))
@@ -9391,6 +9492,8 @@ CREATE INDEX check_run_latest ON fyniq.check_run USING btree (organisation_id, r
 CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
 CREATE INDEX compliance_task_by_status ON fyniq.compliance_task USING btree (organisation_id, status, due_on)
 CREATE INDEX consent_record_person ON fyniq.consent_record USING btree (organisation_id, purpose_id, person, at)
+CREATE INDEX consolidation_rate_lookup ON fyniq.consolidation_rate USING btree (organisation_id, currency, month, entered_at)
+CREATE INDEX consolidation_run_recent ON fyniq.consolidation_run USING btree (organisation_id, created_at DESC, id)
 CREATE INDEX contact_document_template_latest ON fyniq.contact_document_template USING btree (organisation_id, contact_id, kind, document_type, set_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
 CREATE INDEX control_run_latest_idx ON fyniq.control_run USING btree (organisation_id, check_how, ran_at)
@@ -9704,6 +9807,8 @@ CREATE UNIQUE INDEX connector_route_pkey ON fyniq.connector_route USING btree (c
 CREATE UNIQUE INDEX consent_purpose_name_once ON fyniq.consent_purpose USING btree (organisation_id, name)
 CREATE UNIQUE INDEX consent_purpose_pkey ON fyniq.consent_purpose USING btree (organisation_id, id)
 CREATE UNIQUE INDEX consent_record_pkey ON fyniq.consent_record USING btree (organisation_id, id)
+CREATE UNIQUE INDEX consolidation_rate_pkey ON fyniq.consolidation_rate USING btree (organisation_id, id)
+CREATE UNIQUE INDEX consolidation_run_pkey ON fyniq.consolidation_run USING btree (organisation_id, id)
 CREATE UNIQUE INDEX contact_document_template_pkey ON fyniq.contact_document_template USING btree (organisation_id, id)
 CREATE UNIQUE INDEX contact_member_once ON fyniq.contact USING btree (organisation_id, member_user_id) WHERE (member_user_id IS NOT NULL)
 CREATE UNIQUE INDEX contact_pkey ON fyniq.contact USING btree (organisation_id, id)
@@ -9766,6 +9871,9 @@ CREATE UNIQUE INDEX fixed_asset_source_pkey ON fyniq.fixed_asset_source USING bt
 CREATE UNIQUE INDEX fx_feed_rate_pkey ON fyniq.fx_feed_rate USING btree (base_currency, currency, on_date)
 CREATE UNIQUE INDEX fx_rate_day_current ON fyniq.fx_rate USING btree (organisation_id, currency, on_date) WHERE ((kind = 'day'::text) AND (withdrawn_at IS NULL))
 CREATE UNIQUE INDEX fx_rate_pkey ON fyniq.fx_rate USING btree (organisation_id, id)
+CREATE UNIQUE INDEX group_account_map_entity_code ON fyniq.group_account_map USING btree (organisation_id, entity_row, entity_account_code) WHERE (entity_row IS NOT NULL)
+CREATE UNIQUE INDEX group_account_map_own_code ON fyniq.group_account_map USING btree (organisation_id, entity_account_code) WHERE (entity_row IS NULL)
+CREATE UNIQUE INDEX group_account_map_pkey ON fyniq.group_account_map USING btree (organisation_id, id)
 CREATE UNIQUE INDEX group_entity_one_live ON fyniq.group_entity USING btree (organisation_id, entity_org) WHERE (state = 'active'::text)
 CREATE UNIQUE INDEX group_entity_pkey ON fyniq.group_entity USING btree (organisation_id, id)
 CREATE UNIQUE INDEX group_invitation_code_key ON fyniq.group_invitation USING btree (code_hash)
@@ -9773,6 +9881,7 @@ CREATE UNIQUE INDEX group_invitation_one_open ON fyniq.group_invitation USING bt
 CREATE UNIQUE INDEX group_invitation_pkey ON fyniq.group_invitation USING btree (id)
 CREATE UNIQUE INDEX group_membership_one_live ON fyniq.group_membership USING btree (organisation_id) WHERE (state = 'active'::text)
 CREATE UNIQUE INDEX group_membership_pkey ON fyniq.group_membership USING btree (organisation_id, id)
+CREATE UNIQUE INDEX group_settings_pkey ON fyniq.group_settings USING btree (organisation_id)
 CREATE UNIQUE INDEX gst_registration_pkey ON fyniq.gst_registration USING btree (organisation_id, id)
 CREATE UNIQUE INDEX heartbeat_pkey ON fyniq.heartbeat USING btree (name)
 CREATE UNIQUE INDEX holding_movement_issue_once ON fyniq.holding_movement USING btree (organisation_id, share_issue_id)
@@ -10166,6 +10275,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_en
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_template', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.consent_purpose DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('consent_purpose', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.consent_record DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('consent_record', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.consolidation_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('consolidation_rate', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.consolidation_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('consolidation_run', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.contact_document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'contact_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.control_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('control_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.conversion_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'settlement_id')
@@ -10318,8 +10429,10 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.email_su
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.evidence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('evidence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fixed_asset_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'asset_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.group_account_map DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('group_account_map', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.group_entity DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('group_entity', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.group_membership DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('group_membership', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.group_settings DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('group_settings', 'organisation_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'message_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.integration_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('integration_task', 'id')
@@ -10547,6 +10660,10 @@ CREATE TRIGGER consent_purpose_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.
 CREATE TRIGGER consent_purpose_no_truncate BEFORE TRUNCATE ON fyniq.consent_purpose FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER consent_record_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.consent_record FOR EACH ROW EXECUTE FUNCTION consent_guard()
 CREATE TRIGGER consent_record_no_truncate BEFORE TRUNCATE ON fyniq.consent_record FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER consolidation_rate_guard BEFORE DELETE OR UPDATE ON fyniq.consolidation_rate FOR EACH ROW EXECUTE FUNCTION group_config_guard()
+CREATE TRIGGER consolidation_rate_no_truncate BEFORE TRUNCATE ON fyniq.consolidation_rate FOR EACH STATEMENT EXECUTE FUNCTION group_config_guard()
+CREATE TRIGGER consolidation_run_guard BEFORE DELETE OR UPDATE ON fyniq.consolidation_run FOR EACH ROW EXECUTE FUNCTION group_config_guard()
+CREATE TRIGGER consolidation_run_no_truncate BEFORE TRUNCATE ON fyniq.consolidation_run FOR EACH STATEMENT EXECUTE FUNCTION group_config_guard()
 CREATE TRIGGER contact_document_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.contact_document_template FOR EACH ROW EXECUTE FUNCTION document_template_choice_guard()
 CREATE TRIGGER contact_document_template_no_truncate BEFORE TRUNCATE ON fyniq.contact_document_template FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER contact_executor_guard BEFORE UPDATE ON fyniq.contact FOR EACH ROW EXECUTE FUNCTION contact_executor_guard()
@@ -10619,10 +10736,14 @@ CREATE TRIGGER fx_feed_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.fx_feed_r
 CREATE TRIGGER fx_feed_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_feed_rate FOR EACH STATEMENT EXECUTE FUNCTION fx_feed_rate_immutable()
 CREATE TRIGGER fx_rate_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.fx_rate FOR EACH ROW EXECUTE FUNCTION fx_rate_guard()
 CREATE TRIGGER fx_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_rate FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER group_account_map_guard BEFORE DELETE OR UPDATE ON fyniq.group_account_map FOR EACH ROW EXECUTE FUNCTION group_config_guard()
+CREATE TRIGGER group_account_map_no_truncate BEFORE TRUNCATE ON fyniq.group_account_map FOR EACH STATEMENT EXECUTE FUNCTION group_config_guard()
 CREATE TRIGGER group_entity_guard BEFORE DELETE OR UPDATE ON fyniq.group_entity FOR EACH ROW EXECUTE FUNCTION group_row_guard()
 CREATE TRIGGER group_entity_no_truncate BEFORE TRUNCATE ON fyniq.group_entity FOR EACH STATEMENT EXECUTE FUNCTION group_row_guard()
 CREATE TRIGGER group_membership_guard BEFORE DELETE OR UPDATE ON fyniq.group_membership FOR EACH ROW EXECUTE FUNCTION group_row_guard()
 CREATE TRIGGER group_membership_no_truncate BEFORE TRUNCATE ON fyniq.group_membership FOR EACH STATEMENT EXECUTE FUNCTION group_row_guard()
+CREATE TRIGGER group_settings_guard BEFORE DELETE OR UPDATE ON fyniq.group_settings FOR EACH ROW EXECUTE FUNCTION group_config_guard()
+CREATE TRIGGER group_settings_no_truncate BEFORE TRUNCATE ON fyniq.group_settings FOR EACH STATEMENT EXECUTE FUNCTION group_config_guard()
 CREATE TRIGGER gst_forecast_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION gst_forecast_guard()
 CREATE TRIGGER holding_movement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.holding_movement FOR EACH ROW EXECUTE FUNCTION holding_movement_guard()
 CREATE TRIGGER holding_movement_no_truncate BEFORE TRUNCATE ON fyniq.holding_movement FOR EACH STATEMENT EXECUTE FUNCTION holding_movement_guard()
@@ -11074,6 +11195,8 @@ close_checklist_template | tenant_isolation | * | (organisation_id = current_org
 compliance_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 consent_purpose | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 consent_record | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+consolidation_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+consolidation_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact_document_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 control_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -11106,8 +11229,10 @@ equity_step | tenant_isolation | * | (organisation_id = current_org()) | (organi
 evidence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 fixed_asset_source | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 fx_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+group_account_map | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 group_entity | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 group_membership | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+group_settings | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 holding_movement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -11367,6 +11492,8 @@ compliance_task | enabled | forced
 connector_route | disabled | not forced
 consent_purpose | enabled | forced
 consent_record | enabled | forced
+consolidation_rate | enabled | forced
+consolidation_run | enabled | forced
 contact | enabled | forced
 contact_document_template | enabled | forced
 control_run | enabled | forced
@@ -11402,9 +11529,11 @@ evidence | enabled | forced
 fixed_asset_source | enabled | forced
 fx_feed_rate | disabled | not forced
 fx_rate | enabled | forced
+group_account_map | enabled | forced
 group_entity | enabled | forced
 group_invitation | disabled | not forced
 group_membership | enabled | forced
+group_settings | enabled | forced
 gst_registration | enabled | forced
 heartbeat | disabled | not forced
 holding_movement | enabled | forced
@@ -11807,6 +11936,7 @@ forecast_keys(o jsonb, allowed text[], required text[]) → boolean | security i
 fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 849c4b9702a2ace8fe0e241dba3da8ef
 fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
 group_caller_is_owner(p_user uuid, p_at timestamp with time zone) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 79bec6543c8a36fda80eafc7eacaf77a
+group_config_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 587f1e7e547e5bd6e99798f8e50a5028
 group_entity_figures(p_entity uuid, p_through date) → TABLE(account_code text, account_name text, account_type text, base_currency text, month date, net_base numeric) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a8f8a2d6bfdc257e88dd65d67097e512
 group_entity_periods(p_entity uuid, p_through date) → TABLE(period_month date, period_status text, ledger_revision bigint) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1a9a12c1ed90c1bd050662cfe1c20c85
 group_link_is_live(p_parent uuid, p_entity uuid, p_scope text) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | b964524d048799a5ffd513f934e2a3bb
