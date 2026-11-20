@@ -63,3 +63,8 @@ var AllocationSchema []byte
 //
 //go:embed share-service.schema.json
 var ShareServiceSchema []byte
+
+// ConsolidationSchema is consolidation.schema.json: one case of a group's consolidation, each entity translated into the group currency with its translation reserve and the mirror accounts of two entities eliminated, differences listed and none plugged (FR-ENT-06, RND-TRANSLATE).
+//
+//go:embed consolidation.schema.json
+var ConsolidationSchema []byte

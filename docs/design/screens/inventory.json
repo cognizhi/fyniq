@@ -5798,7 +5798,7 @@
     "FR-ENT-04",
     "FR-ENT-05"
    ],
-   "purpose": "Link organisations in a group by the consent of both Owners: invite an entity, accept an invitation, see what the group may read, map accounts and end a link (an entity is an organisation, rev 0.622).",
+   "purpose": "Link organisations in a group by the consent of both Owners: invite an entity, accept an invitation, see what the group may read, map accounts and end a link (an entity is an organisation, rev 0.625).",
    "content": [
     "The group: parent, entities with their base currency, state (invited, linked, ended) and when",
     "Invite an entity: a one-time code for the entity's Owner, valid 24 hours",

@@ -1484,3 +1484,32 @@ func TestRecognisedIsTheFeeTimesProgressRoundedOnceHalfAwayFromZero(t *testing.T
 		}
 	}
 }
+
+// RND-TRANSLATE: a line translated into the group currency rounds once, half away from zero, to the group currency's minor units.
+// req: RND-TRANSLATE, FR-ENT-06
+func TestATranslatedLineRoundsOnceHalfAwayFromZero(t *testing.T) {
+	myr, sgd, jpy := money.MustLookup("MYR"), money.MustLookup("SGD"), money.MustLookup("JPY")
+	rate := func(s string, to money.Currency) money.Rate {
+		r, err := money.ParseRate(s, myr, to, "the group's table")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return r
+	}
+	amount := func(s string) money.Money { m, _ := money.Parse(s, myr); return m }
+	for _, c := range []struct {
+		amount, rate string
+		to           money.Currency
+		want         string
+	}{
+		{"1.00", "0.3250", sgd, "0.33"}, {"-1.00", "0.3250", sgd, "-0.33"}, {"1.00", "0.3249999999", sgd, "0.32"}, {"1000.00", "27.55", jpy, "27550"}, {"0.10", "27.55", jpy, "3"}, {"-0.10", "27.55", jpy, "-3"},
+	} {
+		got, err := Translate(amount(c.amount), rate(c.rate, c.to))
+		if err != nil || got.String() != c.want {
+			t.Errorf("%s × %s into %s is %v (%v), want %s", c.amount, c.rate, c.to, got, err, c.want)
+		}
+	}
+	if TranslateName != "RND-TRANSLATE" {
+		t.Error(TranslateName)
+	}
+}
