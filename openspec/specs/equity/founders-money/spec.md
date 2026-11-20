@@ -223,7 +223,7 @@ Source: PRD-001 §8.22 · Priority M · Phase P1 (with payroll)
 - **THEN** the choice applies by month, "No salary" by default, posting nothing; the fee posts `director_fee@1`, Dr 6050 / Cr 2120
 - **AND** the pay run's part and C.2 #24 come with `p1-payroll-link`
 
-#### Scenario: Deferred director pay is deferred (rev 0.591)
+#### Scenario: Deferred director pay is deferred (rev 0.594)
 - **GIVEN** the owner's decision of 21 Nov 2026
 - **WHEN** a director's pay choice is "salary deferred"
 - **THEN** it stays a recorded choice: no pay run calculates the deferral and nothing moves net pay to 2120
