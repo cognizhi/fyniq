@@ -48,7 +48,10 @@ On step 2, a bank or wallet account also shows **Payment file**: see
 - **Bank reports by email**: the bank emails its daily report, and its incoming-funds alerts, to your
   **bank-ingest address**. Only the bank's addresses you register are accepted, and only when the
   bank's mail passes DMARC; anything else waits in quarantine for someone to decide. The worker imports
-  each report as a statement, and its lines wait for **Reconcile now**.
+  each report as a statement, and its lines wait for **Reconcile now**. A report in the **MT942**
+  format (the bank's intraday report) is different: it makes no statement lines, only a pending
+  "likely paid" signal for each credit, which the daily MT940 closes or which expires after the
+  signal days (`bank.signal_expiry_days`).
 - **A connector**: an organisation connector such as Wise or Airwallex, installed and turned on under
   **Settings → Integrations**, reads the account's transactions every hour with a read-only key.
 

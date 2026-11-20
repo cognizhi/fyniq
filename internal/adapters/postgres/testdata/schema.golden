@@ -6110,7 +6110,7 @@ money_account_source | money_account_source_by_form | CHECK ((set_by ~ '^[a-z][a
 money_account_source | money_account_source_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
 money_account_source | money_account_source_connector_kind | CHECK (((kind = 'connector'::text) = (connector_id IS NOT NULL)))
 money_account_source | money_account_source_email_senders | CHECK (((kind <> 'email'::text) OR (((cardinality(senders) >= 1) AND (cardinality(senders) <= 10)) AND (report_format IS NOT NULL))))
-money_account_source | money_account_source_format_known | CHECK ((report_format = ANY (ARRAY['csv'::text, 'xlsx'::text, 'ofx'::text, 'camt053'::text, 'mt940'::text, 'mt940_sap'::text])))
+money_account_source | money_account_source_format_known | CHECK ((report_format = ANY (ARRAY['csv'::text, 'xlsx'::text, 'ofx'::text, 'camt053'::text, 'mt940'::text, 'mt940_sap'::text, 'mt942'::text])))
 money_account_source | money_account_source_from_date_not_null | NOT NULL from_date
 money_account_source | money_account_source_from_key | UNIQUE (organisation_id, money_account_id, from_date)
 money_account_source | money_account_source_id_not_null | NOT NULL id

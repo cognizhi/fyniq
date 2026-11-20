@@ -4,7 +4,7 @@ type: task
 title: Add a money account and choose where its data comes from
 summary: Add a bank, card, wallet, gateway or cash account in three steps, and set its statements to arrive as files, by email or through a connector
 sources:
-  - docs/user-guide/banking.md sha256:1f8e4ad3777dfc03197a1acf5b0909c3ece5813a95dd6214784a634d60cdcbc8
+  - docs/user-guide/banking.md sha256:3a9112663e374a3fc4360d3c0f9cd8b13514f04bced020feb3eb6206c8170058
 data_class: general
 taint: trusted
 status: draft
@@ -35,7 +35,7 @@ aliases:
 
 ## Who sets the data source
 
-- Statement files need nothing more; setting bank reports by email or a connector, and naming the bank-ingest address, is for an Administrator.
+- An MT942 intraday report makes pending signals only, never statement lines. Statement files need nothing more; setting bank reports by email or a connector, and naming the bank-ingest address, is for an Administrator.
 - A source starts on a day and never changes the days before it.
 
 (src: docs/user-guide/banking.md#where-its-data-comes-from)

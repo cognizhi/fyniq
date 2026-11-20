@@ -24,12 +24,14 @@ const (
 	FormatCAMT053  = "camt053"
 	FormatMT940    = "mt940"
 	FormatMT940SAP = "mt940_sap"
+	// FormatMT942 is the bank's intraday report (SWIFT MT942, rev 0.522): it has no balances, and its lines are pending signals, never statement lines.
+	FormatMT942 = "mt942"
 )
 
 // Versions are each reader's version, recorded with every statement it read: a reader's change bumps its number.
 var Versions = map[string]string{
 	FormatCSV: "csv@1", FormatXLSX: "xlsx@1", FormatOFX: "ofx@1", FormatCAMT053: "camt053@1", FormatMT940: "mt940@1",
-	FormatMT940SAP: "mt940_sap@1",
+	FormatMT940SAP: "mt940_sap@1", FormatMT942: "mt942@1",
 }
 
 // The stable codes of the readers (ENG-23).
@@ -121,8 +123,8 @@ func Parse(format string, data []byte, m *Mapping, cur money.Currency, lim Limit
 			"the file is %d bytes; the most is %d", len(data), lim.MaxBytes)
 	}
 	switch format {
-	case FormatMT940, FormatMT940SAP:
-		return parseMT940(data, format == FormatMT940SAP, lim)
+	case FormatMT940, FormatMT940SAP, FormatMT942:
+		return parseMT940(data, format == FormatMT940SAP, format == FormatMT942, lim)
 	case FormatCAMT053:
 		return parseCAMT053(data, lim)
 	case FormatOFX:

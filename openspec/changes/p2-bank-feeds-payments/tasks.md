@@ -23,8 +23,9 @@ Decisions are in design.md. Cloud and real-account checks are tagged `[live-veri
 
 ## 2. Host-to-host files (FR-BNK-17, FR-BNK-15)
 
-- [ ] 2.1 `ports.FileDrop`, the local directory adapter, the sync of drop folders as a bank-data source.
-- [ ] 2.2 An MT942 reader (`internal/bankfile`) whose lines are signals; closing a signal by the MT940 line.
+- [ ] 2.1 `ports.FileDrop`, the local directory adapter, the sync of drop folders as a bank-data source. **Left** (MT942 reports arrive by the existing email source meanwhile).
+- [x] 2.2 An MT942 reader (`internal/bankfile`) whose lines are signals; closing a signal by the MT940 line.
+  - Built (rev 0.522): `mt942` as a money account's report format (migrations 001074, 001075), `bankfile` reads it (no balances, the floor limit's currency), `bankingest.Intraday` records each credit as a pending signal once per bank reference; the existing signal machinery closes it by the MT940 line or expires it. `TestAnIntradayMT942ReportHasLinesAndNoBalances`, `TestAnIntradayReportMakesSignalsAndNoStatementLines`. Not built as a manual import format: an intraday report arrives as a report on the account's source.
   - Tests: an intraday file creates signals and no statement line; the daily file closes them. `// req: FR-BNK-16`
 - **Left:** the SFTP adapter, PGP and the static egress IP `[live-verify]` (DBS onboarding); DBS RAPID and UOB API Services
   adapters: no public specification, so no code and no cassette `[verify]`.

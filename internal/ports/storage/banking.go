@@ -44,6 +44,7 @@ const (
 	FormatCAMT053  = "camt053"
 	FormatMT940    = "mt940"
 	FormatMT940SAP = "mt940_sap"
+	FormatMT942    = "mt942"
 	FormatAPI      = "api"
 )
 

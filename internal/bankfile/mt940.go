@@ -69,7 +69,9 @@ func mt940Amount(mark, s string, cur money.Currency, line int, field string) (mo
 	return m, nil
 }
 
-func parseMT940(data []byte, sap bool, lim Limits) ([]Statement, error) {
+// parseMT940 reads MT940, or, with intraday, MT942: the same lines and details, but no balances: its currency is the floor limit's (:34F:)
+// and it need not have an opening balance.
+func parseMT940(data []byte, sap, intraday bool, lim Limits) ([]Statement, error) {
 	fields, err := mt940Fields(data, lim)
 	if err != nil {
 		return nil, err
@@ -95,6 +97,15 @@ func parseMT940(data []byte, sap bool, lim Limits) ([]Statement, error) {
 			if cur.Account, err = text(id, f.line, ":25:", lim); err != nil {
 				return nil, err
 			}
+		case "34F":
+			if !intraday || cur == nil || len(v) < 3 {
+				continue
+			}
+			c, err := currency(v[:3], f.line, ":34F:")
+			if err != nil {
+				return nil, err
+			}
+			cur.Currency = c
 		case "60F", "60M", "62F", "62M":
 			if cur == nil {
 				return nil, refuse(CodeFormat, f.line, ":"+f.tag+":", "Export the statement as MT940 from the bank.", "a balance before the statement's :20:")
@@ -195,6 +206,9 @@ func parseMT940(data []byte, sap bool, lim Limits) ([]Statement, error) {
 		}
 	}
 	for i := range out {
+		if out[i].Currency.Code == "" && intraday {
+			return nil, refuse(CodeFormat, 0, ":34F:", "Send the bank's intraday report as MT942.", "statement %d has no floor limit with its currency", i+1)
+		}
 		if out[i].Currency.Code == "" {
 			return nil, refuse(CodeFormat, 0, ":60F:", "Export the statement as MT940 from the bank.", "statement %d has no opening balance", i+1)
 		}
