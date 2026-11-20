@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/checks"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -54,4 +55,22 @@ func (d DeletionReportService) Review(ctx context.Context, s api.Session, id uui
 		}
 		return nil
 	})
+}
+
+// RetentionFacts are the reports of records due for deletion that no person has reviewed, for N.1 #11 and #12 (NM-REC-05, NM-SEC-05). It reads the reports and never the records: a report keeps counts only.
+func RetentionFacts(ctx context.Context, tx pgx.Tx) ([]checks.DeletionWaiting, error) {
+	rows, err := tx.Query(ctx, `SELECT record_type, due_count, held_count, created_on, review_by FROM nemura.deletion_report WHERE state = 'pending' ORDER BY review_by, id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []checks.DeletionWaiting
+	for rows.Next() {
+		var w checks.DeletionWaiting
+		if err := rows.Scan(&w.Record, &w.Due, &w.Held, &w.Created, &w.ReviewBy); err != nil {
+			return nil, err
+		}
+		out = append(out, w)
+	}
+	return out, rows.Err()
 }
