@@ -1127,6 +1127,16 @@
     "status": "published"
   },
   {
+    "file": "share-grants.md",
+    "key": "equity.share-grants",
+    "roles": [
+      "accountant",
+      "controller",
+      "owner"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "sign-in-providers.md",
     "key": "settings.sign-in-providers",
     "roles": [

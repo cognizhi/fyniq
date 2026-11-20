@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "archived": {
+      "description": "true to archive the grant: no month is proposed for it again.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "expense_account": {
+      "description": "The expense account the monthly expense is debited to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "fair_value": {
+      "description": "The fair value of a share at the grant date, in the base currency, at most six decimals: measured once, never remeasured.",
+      "examples": [
+        "0.50"
+      ],
+      "pattern": "^[0-9]+(\\.[0-9]{1,6})?$",
+      "type": "string"
+    },
+    "id": {
+      "description": "The grant's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "recipient": {
+      "description": "Who the shares are granted to.",
+      "examples": [
+        "Wei Jie Ong"
+      ],
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    },
+    "reserve_account": {
+      "description": "The equity account (the share-based payment reserve) it is credited to; never share capital.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "service_start": {
+      "description": "The first day of the month the service starts.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "tranches": {
+      "description": "The tranches: each has its own service period, from the service start to its vest day's month.",
+      "items": {
+        "$ref": "ShareGrantTranche.schema.json"
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "type": "array"
+    },
+    "valuation": {
+      "description": "Where the fair value comes from, such as the valuation report and its date [verify valuation].",
+      "examples": [
+        "Independent valuation of 30 Sep 2026"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of its content; it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "recipient",
+    "fair_value",
+    "service_start",
+    "tranches",
+    "expense_account",
+    "reserve_account"
+  ],
+  "title": "ShareGrant",
+  "type": "object"
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expense": {
+      "description": "The tranches' parts for it.",
+      "examples": [
+        "500.00"
+      ],
+      "type": "string"
+    },
+    "journal_id": {
+      "description": "The draft journal, once proposed.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "month": {
+      "description": "The month.",
+      "examples": [
+        "2026-01"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "month",
+    "expense"
+  ],
+  "title": "ShareGrantMonthExpense",
+  "type": "object"
+}

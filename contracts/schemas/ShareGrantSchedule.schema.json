@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "grant_id": {
+      "description": "The grant.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "months": {
+      "description": "Each month's expense, with the journal proposed for it.",
+      "items": {
+        "$ref": "ShareGrantMonthExpense.schema.json"
+      },
+      "type": "array"
+    },
+    "note": {
+      "description": "What it is.",
+      "examples": [
+        "No tax deduction is claimed for newly issued shares; the reserve moves to share capital when the shares are issued."
+      ],
+      "type": "string"
+    },
+    "total": {
+      "description": "The grant's total expense.",
+      "examples": [
+        "6000.00"
+      ],
+      "type": "string"
+    },
+    "tranches": {
+      "description": "Each tranche's total and parts.",
+      "items": {
+        "$ref": "ShareGrantTrancheExpense.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "grant_id",
+    "total",
+    "tranches",
+    "months",
+    "note"
+  ],
+  "title": "ShareGrantSchedule",
+  "type": "object"
+}

@@ -159,6 +159,7 @@ export const routes = [
   { kind: "route", id: "equity-instruments", path: "/equity/instruments", mode: "expert", signedIn: true, help: "equity.instruments", guide: "equity.register#safes-and-convertible-notes" },
   { kind: "route", id: "equity-instrument-new", path: "/equity/instruments/new", mode: "expert", signedIn: true, help: "instrument.draft", guide: "equity.register#record-a-safe-or-note" },
   { kind: "route", id: "equity-instrument", path: "/equity/instruments/$instrumentId", mode: "expert", signedIn: true, help: "equity.instrument", guide: "equity.register#record-a-safe-or-note" },
+  { kind: "route", id: "share-grants", path: "/equity/share-grants", mode: "expert", signedIn: true, help: "equity.share-grants", guide: "equity.share-grants" },
   { kind: "route", id: "equity-options", path: "/equity/options", mode: "expert", signedIn: true, help: "equity.options", guide: "equity.register#the-option-pool-and-grants" },
   { kind: "route", id: "equity-option-grant-new", path: "/equity/options/grants/new", mode: "expert", signedIn: true, help: "option-grant.draft", guide: "equity.register#record-the-pool-and-a-grant" },
   { kind: "route", id: "equity-option-grant", path: "/equity/options/grants/$grantId", mode: "expert", signedIn: true, help: "equity.option-grant", guide: "equity.register#record-the-pool-and-a-grant" },
