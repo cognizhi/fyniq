@@ -1648,7 +1648,7 @@ var (
 	GetCapTable = Policy{Operation: "getCapTable", Capability: CapTable, Need: View, Unqualified: true}
 	// The exit waterfall sandbox (FR-EQ-29, rev 0.591) shows every holder's proceeds, so it is read under the whole cap table's unqualified V: a Board viewer's "own holding" is not it.
 	GetExitWaterfall = Policy{Operation: "getExitWaterfall", Capability: CapTable, Need: View, Unqualified: true}
-	// The funding plan of a forecast (FR-PLN-07, rev 0.601) shows every holder's part before and after each planned round, so it is read under the whole cap table's unqualified V, not the forecast's.
+	// The funding plan of a forecast (FR-PLN-07, rev 0.602) shows every holder's part before and after each planned round, so it is read under the whole cap table's unqualified V, not the forecast's.
 	GetForecastFundingPlan = Policy{Operation: "getForecastFundingPlan", Capability: CapTable, Need: View, Unqualified: true}
 	ExportCapTable         = Policy{Operation: "exportCapTable", Capability: CapTable, Need: View, Unqualified: true}
 	GetMyHolding           = Policy{Operation: "getMyHolding", Capability: CapTable, Need: View, Unqualified: true,

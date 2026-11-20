@@ -123,7 +123,7 @@ type ForecastFunding struct {
 	Rate   string `json:"rate,omitempty" doc:"A loan's yearly interest rate, as a fraction." example:"0.055"`
 	Tenor  int    `json:"tenor,omitempty" minimum:"0" maximum:"360" doc:"A loan's months of equal repayments, from the month after it is drawn." example:"36"`
 	Notes  string `json:"notes,omitempty" maxLength:"200" doc:"Notes." example:"SME working-capital loan"`
-	// PreMoney is the valuation an equity round is planned at (rev 0.601): the funding plan prices the round with it through the equity register's round model.
+	// PreMoney is the valuation an equity round is planned at (rev 0.602): the funding plan prices the round with it through the equity register's round model.
 	PreMoney string `json:"pre_money,omitempty" doc:"For an Equity row: the pre-money valuation the round is planned at, which the funding plan divides by the shares fully diluted before the round to price it (FR-PLN-07)." example:"4000000.00"`
 }
 
