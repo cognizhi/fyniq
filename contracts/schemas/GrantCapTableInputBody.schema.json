@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why the full cap table is opened to them.",
+      "examples": [
+        "Lead investor's board seat"
+      ],
+      "maxLength": 500,
+      "minLength": 3,
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The Board or investor viewer: an active member holding the Board viewer role.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "reason"
+  ],
+  "title": "GrantCapTableInputBody",
+  "type": "object"
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why the grant ends.",
+      "examples": [
+        "The seat ended"
+      ],
+      "maxLength": 500,
+      "minLength": 3,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "RevokeCapTableInputBody",
+  "type": "object"
+}

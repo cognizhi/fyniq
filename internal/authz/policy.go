@@ -630,7 +630,7 @@ var (
 	// The link to the people platform (FR-PPL-01, FR-PPL-16): a person with C on "People and HR" asks, the Owner and a second approver approve; the
 	// link's client alone calls the event operations, with the scope each names (PRD-002 Appendix E).
 	GetPeopleLink                = Policy{Operation: "getPeopleLink", Capability: PeopleAndHR, Need: View}
-	FinishPeopleUnlink = Policy{Operation: "finishPeopleUnlink", Capability: PeopleAndHR, Need: Create}
+	FinishPeopleUnlink           = Policy{Operation: "finishPeopleUnlink", Capability: PeopleAndHR, Need: Create}
 	GetPeopleLinkHealth          = Policy{Operation: "getPeopleLinkHealth", Capability: PeopleAndHR, Need: View}
 	RepairPeopleLink             = Policy{Operation: "repairPeopleLink", Capability: PeopleAndHR, Need: Create}
 	RequestPeopleLink            = Policy{Operation: "requestPeopleLink", Capability: PeopleAndHR, Need: Create}
@@ -906,7 +906,7 @@ var (
 	AddCardLineEvidence  = Policy{Operation: "addCardLineEvidence", Capability: ExpenseClaims, Need: Create}
 	ListCardLineEvidence = Policy{Operation: "listCardLineEvidence", Capability: ExpenseClaims, Need: Create}
 	// FR-AP-08 (rev 0.549): the holder's own captured receipts of the line's amount near its date, and attaching one. The AI and MCP clients hold neither.
-	ListCardReceiptSuggestions   = Policy{Operation: "listCardReceiptSuggestions", Capability: ExpenseClaims, Need: Create, Note: "The holder's own read captures of the line's amount near its date; never another member's or the organisation's."}
+	ListCardReceiptSuggestions  = Policy{Operation: "listCardReceiptSuggestions", Capability: ExpenseClaims, Need: Create, Note: "The holder's own read captures of the line's amount near its date; never another member's or the organisation's."}
 	AttachCardReceiptSuggestion = Policy{Operation: "attachCardReceiptSuggestion", Capability: ExpenseClaims, Need: Create, Note: "Attaches one of the holder's own suggested captures as the receipt of the card line's document, then dismisses the capture."}
 	// The fixed asset register (FR-FA-01…03; p1-fixed-assets design D5), under Appendix D's "Fixed assets" row: read under
 	// V; registered and changed under C (the Accountant), which posts nothing.
@@ -2113,6 +2113,16 @@ var (
 // reports is the board pack reads the published packs and the updates sent to them (the handlers narrow it); the roles that read the whole
 // ledger's reports also see drafts. Building, publishing and sending are the Report definitions row's C, which the AI never holds; the Owner,
 // Controller and Accountant build and the Owner and Controller publish and send (the handlers decide).
+// The Owner's grant of the full cap table to a Board or investor viewer (FR-EQ-24; owner's decision of 23 Nov 2026): a grant is made and ended by an
+// Owner only (the handlers decide), and a viewer reads the whole table through getGrantedCapTable while a grant stands.
+var (
+	ListCapTableGrants   = Policy{Operation: "listCapTableGrants", Capability: CapTable, Need: View, Unqualified: true}
+	GrantCapTableAccess  = Policy{Operation: "grantCapTableAccess", Capability: CapTable, Need: Approve}
+	RevokeCapTableAccess = Policy{Operation: "revokeCapTableAccess", Capability: CapTable, Need: Approve}
+	GetGrantedCapTable   = Policy{Operation: "getGrantedCapTable", Capability: CapTable, Need: View, Unqualified: true, Qualified: []string{"own holding; all if granted"},
+		Note: "A viewer whose cell reads 'all if granted' reads it only while an Owner's grant stands (CAPGRANT-02)."}
+)
+
 var (
 	ListBoardPacks       = Policy{Operation: "listBoardPacks", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
 	GetBoardPack         = Policy{Operation: "getBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
@@ -2275,7 +2285,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	AddInvestorRightsEvidence, ListInvestorRightsEvidence, GetInvestorRightsEvidence, RemoveInvestorRightsEvidence, CreateControllerEntry,
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
 	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListReportDefinitions, GetReportDefinition, RunReportDefinition, RunReportDraft, CreateReportDefinition, ReplaceReportDefinition,
-	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListBoardPacks, GetBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack,
+	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListCapTableGrants, GrantCapTableAccess, RevokeCapTableAccess, GetGrantedCapTable, ListBoardPacks, GetBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack,
 	ListKPIAlerts, GetDeferralRollForward, ListDashboardTiles, GetMyDashboard, GetRoleDashboard, SaveMyDashboard, SaveRoleDashboard, ListInvestorUpdates, GetInvestorUpdate, CreateInvestorUpdate, EditInvestorUpdate, SendInvestorUpdate, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
 	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetBadDebtRelief, WorkTaxPaper, ListStatutoryPackUpdates, GetInvoiceNowGate, ListInvoiceNowInbound, PollInvoiceNowInbound, DraftInvoiceNowInbound, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,

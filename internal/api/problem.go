@@ -534,6 +534,10 @@ var codeFacts = map[string]struct {
 	CodeReportScheduler:           {403, "Not a role that schedules reports"},
 	CodeReportRecipient:           {422, "A recipient may not read reports"},
 	storage.CodeDashboardLayout:   {409, "A dashboard layout changes only as its next version"},
+	storage.CodeCapTableGrant:     {409, "A cap table grant changes only by being revoked"},
+	storage.CodeCapTableGrantLive: {409, "That person holds a grant already"},
+	CodeCapGrantOwner:             {403, "Only an Owner grants the full cap table"},
+	CodeCapGrantNone:              {403, "No grant of the full cap table"},
 	storage.CodeKPIAlert:          {409, "A raised alert is never changed"},
 	storage.CodeBoardPack:         {409, "A board pack changes only as a draft, and a published one never"},
 	storage.CodeBoardPackDraft:    {409, "The month has a draft already"},
@@ -1267,6 +1271,8 @@ var codeFacts = map[string]struct {
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
 var storageFixes = map[string]string{
+	storage.CodeCapTableGrant: "A grant ends once; grant it again to open the cap table again",
+	storage.CodeCapTableGrantLive: "Revoke that person's grant first",
 	storage.CodeDashboardLayout: "Read the layout again and save the change as its next version",
 	storage.CodeKPIAlert: "The next month is its own alert",
 	storage.CodeBoardPack:      "Read the draft again and save the change as its next edit, or publish a corrected version",
