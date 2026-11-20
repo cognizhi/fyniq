@@ -1449,12 +1449,15 @@ var (
 )
 
 var (
-	ListApprovalPolicies  = Policy{Operation: "listApprovalPolicies", Capability: ApprovalPolicies, Need: View}
-	GetApprovalPolicy     = Policy{Operation: "getApprovalPolicy", Capability: ApprovalPolicies, Need: View}
-	ListStatutoryPacks    = Policy{Operation: "listStatutoryPacks", Capability: StatutoryParameters, Need: View}
-	GetStatutoryPack      = Policy{Operation: "getStatutoryPack", Capability: StatutoryParameters, Need: View}
-	GetStatutoryValues    = Policy{Operation: "getStatutoryValues", Capability: StatutoryParameters, Need: View}
-	ActivateStatutoryPack = Policy{Operation: "activateStatutoryPack", Capability: StatutoryParameters, Need: Create,
+	ListApprovalPolicies     = Policy{Operation: "listApprovalPolicies", Capability: ApprovalPolicies, Need: View}
+	GetApprovalPolicy        = Policy{Operation: "getApprovalPolicy", Capability: ApprovalPolicies, Need: View}
+	GetBadDebtRelief         = Policy{Operation: "getBadDebtRelief", Capability: GSTReturns, Need: View}
+	WorkTaxPaper             = Policy{Operation: "workTaxPaper", Capability: GSTReturns, Need: Create, Note: "A calculation the tax agent signs: it saves nothing and files nothing."}
+	ListStatutoryPackUpdates = Policy{Operation: "listStatutoryPackUpdates", Capability: StatutoryParameters, Need: View}
+	ListStatutoryPacks       = Policy{Operation: "listStatutoryPacks", Capability: StatutoryParameters, Need: View}
+	GetStatutoryPack         = Policy{Operation: "getStatutoryPack", Capability: StatutoryParameters, Need: View}
+	GetStatutoryValues       = Policy{Operation: "getStatutoryValues", Capability: StatutoryParameters, Need: View}
+	ActivateStatutoryPack    = Policy{Operation: "activateStatutoryPack", Capability: StatutoryParameters, Need: Create,
 		Note: "Always waits for approval by a member who holds A on the row (the Owner or the Controller), never the proposer (ENG-32, SOD-10); " +
 			"needs a person signed in who passed step-up in the last 5 minutes."}
 	GetTeamMode    = Policy{Operation: "getTeamMode", Capability: UsersAndRoles, Need: View}
@@ -2211,7 +2214,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
 	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
-	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetInvoiceNowGate, ListInvoiceNowInbound, PollInvoiceNowInbound, DraftInvoiceNowInbound, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
+	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetBadDebtRelief, WorkTaxPaper, ListStatutoryPackUpdates, GetInvoiceNowGate, ListInvoiceNowInbound, PollInvoiceNowInbound, DraftInvoiceNowInbound, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
 	AddGSTForecastEvidence, ListGSTForecastEvidence, GetGSTForecastEvidence, RemoveGSTForecastEvidence, GetStatutoryCalendar,
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,

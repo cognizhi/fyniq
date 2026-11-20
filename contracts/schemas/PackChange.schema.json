@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "key": {
+      "description": "The row's first column.",
+      "examples": [
+        "registration_threshold"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "What happened to the row.",
+      "enum": [
+        "added",
+        "removed",
+        "changed"
+      ],
+      "examples": [
+        "added"
+      ],
+      "type": "string"
+    },
+    "now": {
+      "description": "The rows it has, written the same way; empty for a removed row.",
+      "examples": [
+        "registration_threshold|2026-11-07|1000000.00"
+      ],
+      "type": "string"
+    },
+    "table": {
+      "description": "The table.",
+      "examples": [
+        "limits"
+      ],
+      "type": "string"
+    },
+    "was": {
+      "description": "The rows it had, each with its columns joined by a vertical bar, rows by a semicolon; empty for an added row.",
+      "examples": [
+        "registration_threshold|2026-11-07|1000000.00"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "table",
+    "kind",
+    "key",
+    "was",
+    "now"
+  ],
+  "title": "PackChange",
+  "type": "object"
+}

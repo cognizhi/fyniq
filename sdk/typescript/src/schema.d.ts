@@ -17689,6 +17689,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/statutory-packs/updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The statutory pack updates available
+         * @description For each pack the organisation has activated, the newest version in force that it has not activated, with the rows added, removed and changed between the two (ENG-33): what accepting the update would do. Nothing re-posts by itself. Read-only; no side effects.
+         */
+        get: operations["listStatutoryPackUpdates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/statutory-packs/{version_id}": {
         parameters: {
             query?: never;
@@ -17923,6 +17943,46 @@ export interface paths {
          * @description Asks for another person's approval to void a refund on the date given, with a reason (FR-GL-12, FM-1): what voidSupplierRefund asks for in Founder mode (CREDIT-11). The answer is 202 with an approval request, which a person who holds A on "Bills, vendor credits" and did not ask approves, stepped up; on the approval the void posts and the credit reopens. Needs a person signed in who passed step-up, and If-Match with the refund's ETag. Idempotent with Idempotency-Key.
          */
         post: operations["requestSupplierRefundVoid"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tax/bad-debt-relief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The GST bad debt relief queue
+         * @description The invoices written off as a bad debt that bore GST, each with the GST in the part written off, when a claim may be made and until when (FR-AR-11): from twelve months after the date of supply, or from the write-off when the debtor became insolvent sooner, and within five years of the supply, as the sg-tax-filings pack says. The claim goes in the GST return and is not yet recorded here. Read-only; no side effects.
+         */
+        get: operations["getBadDebtRelief"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tax/working-paper": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Work out a financial year's tax-adjusted profit
+         * @description The working paper the tax agent needs (FR-TAX-06): the year's profit before tax and revenue from the ledger, the adjustments given with their reasons, the chargeable income, the start-up or partial exemption and the Year of Assessment's rebate from the sg-cit pack, the tax, and the form the revenue calls for (sg-tax-filings). Exact decimals, rounded once at the end. It saves nothing: it is a calculation the tax agent signs. Idempotent with Idempotency-Key; Prefer: return=preview answers the same.
+         */
+        post: operations["workTaxPaper"];
         delete?: never;
         options?: never;
         head?: never;
@@ -24063,6 +24123,77 @@ export interface components {
              * @enum {string}
              */
             state: "pending" | "dispatched" | "running" | "done" | "failed" | "unknown_outcome" | "dead";
+        };
+        BadDebtRelief: {
+            /**
+             * Format: date
+             * @description The last day to claim: five years from the supply, the day before the anniversary [accountant to confirm].
+             * @example 2031-01-14
+             */
+            claim_by: string;
+            /**
+             * Format: date
+             * @description The first day a claim may be made.
+             * @example 2027-03-10
+             */
+            eligible_from: string;
+            /** @description The GST in the part written off, in the invoice's currency, in the invoice's proportion [accountant to confirm]. */
+            gst: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The invoice written off.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02
+             */
+            invoice_id: string;
+            /**
+             * @description Its number.
+             * @example INV-2026-0007
+             */
+            invoice_number: string;
+            /**
+             * @description The sg-tax-filings version the dates come from.
+             * @example sg-tax-filings@2026.1
+             */
+            pack: string;
+            /**
+             * @description not_yet: the twelve months have not passed; eligible: a claim may be made; expired: it is out of time.
+             * @example eligible
+             * @enum {string}
+             */
+            status: "not_yet" | "eligible" | "expired";
+            /**
+             * Format: date
+             * @description The invoice's date: its tax point.
+             * @example 2026-01-15
+             */
+            supply_date: string;
+            /**
+             * Format: uuid
+             * @description The write-off.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01
+             */
+            write_off_id: string;
+            /** @description What was written off, in the invoice's currency. */
+            written_off: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The day the write-off posted from.
+             * @example 2027-03-10
+             */
+            written_off_on: string;
+        };
+        BadDebtReliefQueue: {
+            items: components["schemas"]["BadDebtRelief"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjIwMjYifQ
+             */
+            next_cursor?: string;
+            /**
+             * Format: date
+             * @example 2027-03-10
+             */
+            today: string;
         };
         BankBillsMatch: {
             /** @description What the line settles of each bill. */
@@ -46886,6 +47017,34 @@ export interface components {
              */
             proposed_by: string;
         };
+        PackChange: {
+            /**
+             * @description The row's first column.
+             * @example registration_threshold
+             */
+            key: string;
+            /**
+             * @description What happened to the row.
+             * @example added
+             * @enum {string}
+             */
+            kind: "added" | "removed" | "changed";
+            /**
+             * @description The rows it has, written the same way; empty for a removed row.
+             * @example registration_threshold|2026-11-07|1000000.00
+             */
+            now: string;
+            /**
+             * @description The table.
+             * @example limits
+             */
+            table: string;
+            /**
+             * @description The rows it had, each with its columns joined by a vertical bar, rows by a semicolon; empty for an added row.
+             * @example registration_threshold|2026-11-07|1000000.00
+             */
+            was: string;
+        };
         PackPinnedResult: {
             /**
              * @description The case's name.
@@ -46951,6 +47110,29 @@ export interface components {
              * @example https://www.iras.gov.sg/taxes/goods-services-tax-(gst)
              */
             url: string;
+        };
+        PackUpdate: {
+            /**
+             * @description The newest version in force that it has not activated.
+             * @example sg-gst@2026.3
+             */
+            available: string;
+            changes: components["schemas"]["PackChange"][];
+            /**
+             * @description The version the organisation has active.
+             * @example sg-gst@2026.2
+             */
+            current: string;
+            /** @example sg-gst */
+            pack: string;
+        };
+        PackUpdates: {
+            items: components["schemas"]["PackUpdate"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjIwMjYifQ
+             */
+            next_cursor?: string;
         };
         PaperSection: {
             /**
@@ -57884,6 +58066,150 @@ export interface components {
              * @example Filed by the tax agent on 20 January
              */
             reason: string;
+        };
+        TaxAdjustment: {
+            /**
+             * @description In Singapore dollars: positive adds to the profit, negative takes off.
+             * @example 15000.00
+             */
+            amount: string;
+            /**
+             * @description Whether evidence is attached to it elsewhere (the working paper does not keep files yet).
+             * @example true
+             */
+            evidence?: boolean;
+            /**
+             * @description non_deductible: an expense the Act does not allow, added back; capital_allowance_difference: the allowances less the depreciation, negative to take them off.
+             * @example non_deductible
+             * @enum {string}
+             */
+            kind: "non_deductible" | "capital_allowance_difference" | "other";
+            /**
+             * @description Why: the tax agent signs the working.
+             * @example Client entertainment
+             */
+            reason: string;
+        };
+        TaxWorkingPaper: {
+            /**
+             * @description Their net.
+             * @example 0.00
+             */
+            adjustments: string;
+            /**
+             * @description Never below zero.
+             * @example 300000.00
+             */
+            chargeable_income: string;
+            /**
+             * @description The sg-cit version worked with.
+             * @example sg-cit@2026.1
+             */
+            cit_pack: string;
+            /**
+             * @description The exemption of the scheme, exact.
+             * @example 102500.00
+             */
+            exempt: string;
+            /**
+             * @description The form the revenue calls for.
+             * @example C-S
+             */
+            form: string;
+            /**
+             * @description The sg-tax-filings version the form limits come from.
+             * @example sg-tax-filings@2026.1
+             */
+            forms_pack: string;
+            /**
+             * Format: date
+             * @description The financial year's first day.
+             * @example 2026-01-01
+             */
+            from: string;
+            /**
+             * @description The loss the year leaves, when the adjusted profit is below zero.
+             * @example 0.00
+             */
+            loss_forward: string;
+            /**
+             * @description What is taxed at the rate.
+             * @example 197500.00
+             */
+            normal_chargeable: string;
+            /**
+             * @description The form a company of that revenue may file instead.
+             * @example C-S
+             */
+            optional_form?: string;
+            /**
+             * @description The year's profit before tax from the ledger.
+             * @example 300000.00
+             */
+            profit_before_tax: string;
+            /**
+             * @description The rate, as a fraction.
+             * @example 0.17
+             */
+            rate: string;
+            /**
+             * @description The Year of Assessment's rebate with the cash grant taken off when eligible.
+             * @example 16787.50
+             */
+            rebate: string;
+            /**
+             * @description The year's revenue from the ledger, in Singapore dollars.
+             * @example 850000.00
+             */
+            revenue: string;
+            /**
+             * @description Exact.
+             * @example 33575.00
+             */
+            tax_before_rebate: string;
+            /**
+             * @description Exact, before the cash grant is paid.
+             * @example 16787.50
+             */
+            tax_payable: string;
+            /**
+             * @description To the cent, half away from zero [accountant to confirm].
+             * @example 16787.50
+             */
+            tax_payable_rounded: string;
+            /**
+             * Format: date
+             * @description Its last day.
+             * @example 2026-12-31
+             */
+            to: string;
+            /**
+             * Format: int64
+             * @description The Year of Assessment.
+             * @example 2027
+             */
+            ya: number;
+        };
+        TaxWorkingPaperRequest: {
+            /** @description What the tax agent adds to or takes off the profit. */
+            adjustments?: components["schemas"]["TaxAdjustment"][] | null;
+            /**
+             * @description The company met the cash grant's local employee condition.
+             * @example false
+             */
+            cash_grant_eligible?: boolean;
+            /**
+             * Format: date
+             * @description The last day of the financial year, which must be a closed month's end in the books.
+             * @example 2026-12-31
+             */
+            financial_year_end: string;
+            /**
+             * @description sute: the start-up exemption, a qualifying company's first three Years of Assessment; pte: the partial exemption.
+             * @example pte
+             * @enum {string}
+             */
+            scheme: "sute" | "pte";
         };
         TeamMode: {
             /**
@@ -194289,6 +194615,104 @@ export interface operations {
             };
         };
     };
+    listStatutoryPackUpdates: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackUpdates"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getStatutoryPack: {
         parameters: {
             query?: never;
@@ -195702,6 +196126,245 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getBadDebtRelief: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadDebtReliefQueue"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    workTaxPaper: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaxWorkingPaperRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxWorkingPaper"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

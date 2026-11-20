@@ -148,7 +148,7 @@ Source: PRD-001 §8.6 · Priority M with FR-AR-12 · Phase P2
 - **WHEN** the same sender sends the same invoice number again
 - **THEN** no second draft bill is made and the refusal names the first
 
-#### Scenario: A sender who is not yet a supplier (rev 0.544)
+#### Scenario: A sender who is not yet a supplier (rev 0.547)
 - **WHEN** an invoice arrives from a Peppol ID and a UEN no supplier has
 - **THEN** it is kept as received with the reason and no bill is made until the supplier is added and the draft is asked for
 

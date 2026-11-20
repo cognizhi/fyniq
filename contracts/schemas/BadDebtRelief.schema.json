@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "claim_by": {
+      "description": "The last day to claim: five years from the supply, the day before the anniversary [accountant to confirm].",
+      "examples": [
+        "2031-01-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "eligible_from": {
+      "description": "The first day a claim may be made.",
+      "examples": [
+        "2027-03-10"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "gst": {
+      "$ref": "Money.schema.json",
+      "description": "The GST in the part written off, in the invoice's currency, in the invoice's proportion [accountant to confirm]."
+    },
+    "invoice_id": {
+      "description": "The invoice written off.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "invoice_number": {
+      "description": "Its number.",
+      "examples": [
+        "INV-2026-0007"
+      ],
+      "type": "string"
+    },
+    "pack": {
+      "description": "The sg-tax-filings version the dates come from.",
+      "examples": [
+        "sg-tax-filings@2026.1"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "not_yet: the twelve months have not passed; eligible: a claim may be made; expired: it is out of time.",
+      "enum": [
+        "not_yet",
+        "eligible",
+        "expired"
+      ],
+      "examples": [
+        "eligible"
+      ],
+      "type": "string"
+    },
+    "supply_date": {
+      "description": "The invoice's date: its tax point.",
+      "examples": [
+        "2026-01-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "write_off_id": {
+      "description": "The write-off.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "written_off": {
+      "$ref": "Money.schema.json",
+      "description": "What was written off, in the invoice's currency."
+    },
+    "written_off_on": {
+      "description": "The day the write-off posted from.",
+      "examples": [
+        "2027-03-10"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "write_off_id",
+    "invoice_id",
+    "invoice_number",
+    "supply_date",
+    "written_off_on",
+    "written_off",
+    "gst",
+    "eligible_from",
+    "claim_by",
+    "status",
+    "pack"
+  ],
+  "title": "BadDebtRelief",
+  "type": "object"
+}

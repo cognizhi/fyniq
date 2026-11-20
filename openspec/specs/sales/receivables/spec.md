@@ -474,6 +474,11 @@ Source: PRD-001 §8.5 · Priority S · Phase P2
 - **WHEN** the relief is read on 10 Mar 2027
 - **THEN** a claim may be made from 10 Mar 2027 and until 14 Jan 2031, and a debtor insolvent before 15 Jan 2027 would not wait for the twelve months
 
+#### Scenario: The queue shows the GST in the part written off (rev 0.546)
+- **GIVEN** an invoice of S$10.90 with S$0.90 of GST, written off for S$10.00
+- **WHEN** the relief queue is read
+- **THEN** it shows S$0.83 of GST and the pack's dates for the supply
+
 ### Requirement: FR-AR-17 Write-off of a receivable or payable residual
 The system SHALL write off a receivable or payable residual only by a reason-coded, approval-gated write-off with evidence, posted to the account the reason names.
 

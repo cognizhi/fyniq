@@ -2775,6 +2775,18 @@
       "label": "Receive now",
       "tooltip": "Reads the invoices suppliers sent through InvoiceNow and makes a draft bill of each whose supplier you have; a draft posts nothing."
     },
+    "compliance.filing-packs": {
+      "label": "Year-end tax working paper",
+      "tooltip": "The tax-adjusted profit of a financial year for the tax agent, with the exemption, the rebate and the form the revenue calls for."
+    },
+    "compliance.pack-updates": {
+      "label": "Statutory updates waiting",
+      "tooltip": "A newer version of a statutory pack you have activated, with the rows it would add, remove or change; accepting it re-posts nothing."
+    },
+    "sales.bad-debts": {
+      "label": "Bad debts and GST relief",
+      "tooltip": "Invoices written off as a bad debt that bore GST, with when the GST may be claimed back and until when."
+    },
     "compliance.gst": {
       "label": "GST",
       "tooltip": "Whether the company must register for GST, tested against IRAS's threshold, with the forecasts it rests on."

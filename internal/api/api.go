@@ -449,6 +449,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerAcra(a)
 	registerGSTMonitor(a)
 	registerInvoiceNow(a)
+	registerTaxFilings(a)
 	registerCalendar(a)
 	registerForecasts(a)
 	registerBudgets(a)
