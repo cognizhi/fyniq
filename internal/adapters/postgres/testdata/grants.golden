@@ -704,6 +704,7 @@ fyniq_executor  SELECT    close_checklist_template
 fyniq_executor  INSERT    compliance_task (created_at, detail, due_on, finding_key, owner_role, owner_user, proposal_id, source, title)
 fyniq_executor  SELECT    compliance_task
 fyniq_executor  SELECT    contact
+fyniq_executor  UPDATE    contact (address, billing_email, default_account_id, default_gst_code, payment_terms_days, phone, version)
 fyniq_executor  SELECT    contact_document_template
 fyniq_executor  SELECT    currencies
 fyniq_executor  EXECUTE   current_org()
