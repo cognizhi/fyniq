@@ -38,6 +38,25 @@ func (l paymentLinks) Create(ctx context.Context, n storage.NewPaymentLink) (sto
 		"amount": {nil, string(k.Amount)}, "currency": {nil, k.Currency}})
 }
 
+// CreateByFunction records a link through the database's narrow function, for the platform's own job, which holds no right on the table (FR-AR-13).
+func (l paymentLinks) CreateByFunction(ctx context.Context, n storage.NewPaymentLink) (storage.PaymentLink, error) {
+	if err := l.u.check(); err != nil {
+		return storage.PaymentLink{}, err
+	}
+	id, err := l.u.q.CreatePaymentLinkByPlatform(ctx, sqlcdb.CreatePaymentLinkByPlatformParams{InvoiceID: n.InvoiceID, ConnectorID: n.ConnectorID, ProviderRequestID: n.ProviderRequestID, Url: n.URL,
+		Reference: n.Reference, Currency: n.Currency, Amount: string(n.Amount), ExpiresAt: n.ExpiresAt})
+	if err != nil {
+		return storage.PaymentLink{}, mapError(err)
+	}
+	k, err := l.Get(ctx, id)
+	if err != nil {
+		return storage.PaymentLink{}, err
+	}
+	return k, l.u.event(ctx, "payment_link.created", "payment_link", k.ID, nil, map[string][2]any{"connector_id": {nil, k.ConnectorID.String()},
+		"invoice_id": {nil, k.InvoiceID.String()}, "provider_request_id": {nil, k.ProviderRequestID}, "reference": {nil, k.Reference},
+		"amount": {nil, string(k.Amount)}, "currency": {nil, k.Currency}})
+}
+
 func (l paymentLinks) Get(ctx context.Context, id uuid.UUID) (storage.PaymentLink, error) {
 	if err := l.u.check(); err != nil {
 		return storage.PaymentLink{}, err

@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:ab353e22aafc4208a40b7c68823f62a812d2cbb5c2736e6b1081525482e88bc2
+  - docs/user-guide/invoices.md sha256:d04ec6f668b7d6ae133e3cf052c469de70e583d72ccb593028daa59ba8c05e24
 data_class: general
 taint: trusted
 status: draft
@@ -120,7 +120,7 @@ aliases:
 - The amount is always the invoice's open balance, read when the link is made, never typed; a draft, void or paid invoice has no link, and an invoice has one live link at a time.
 - When the customer pays, **Reconcile now** records the receipt on the invoice once. Another amount, a second payment or a payment on a cancelled link stays in the queue as **link mismatch** for a person, and a payment above the per-line limit (S$500 by default) waits for a person too. A link shows as Expired after its date and as Paid once the invoice has nothing open.
 - **Cancel the link** closes it here with a reason; HitPay's page stays payable until it expires. A foreign-currency invoice needs a provider account in that currency; the PayNow QR image and Stripe payment links are not built yet.
-- An invoice (or reminder) emailed while it has a live payment link ends with "You can pay this invoice online:" and the stored link, so sending asks the provider for nothing; a cancelled, paid or expired link is left out, and an Owner can switch it off (**Put an invoice's payment link in its email**). A link made automatically at issue and the link on the PDF are not built yet.
+- An invoice (or reminder) emailed while it has a live payment link ends with "You can pay this invoice online:" and the stored link, so sending asks the provider for nothing; a cancelled, paid or expired link is left out, and an Owner can switch it off (**Put an invoice's payment link in its email**). With **Make a payment link when an invoice is issued** on (an Administrator switches it on), issuing queues a job that asks the provider for the link outside the request and stores it, so an invoice emailed after that carries it. The link on the PDF is not built yet.
 
 (src: docs/user-guide/invoices.md#a-payment-link-on-an-invoice)
 
