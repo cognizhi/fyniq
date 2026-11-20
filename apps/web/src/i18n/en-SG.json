@@ -1187,6 +1187,18 @@
       "label": "Record the arrangement",
       "tooltip": "Records, as evidence, how one item is met from this month. A pay run is not approved for payment while an item has none."
     },
+    "payroll.overview": {
+      "label": "Payroll",
+      "tooltip": "Fyniq's part of payroll: where each feature lives, the state of the link to Nemura, how the month's statutory outputs are met and the latest salary payments."
+    },
+    "payroll.employee": {
+      "label": "Person from Nemura",
+      "tooltip": "What Nemura told Fyniq about one person: status, department, line manager, any tax-clearance hold, and which Fyniq user they are. Never pay, a bank number or an NRIC."
+    },
+    "people.map": {
+      "label": "Map to this user",
+      "tooltip": "Says which Fyniq user this person of Nemura is. It is chosen by a person and never matched by email; it grants no role."
+    },
     "payroll.salary-payments": {
       "label": "Salary payments",
       "tooltip": "The salary lines Nemura sends for each pay run Fyniq has posted: prepared, approved by another person, then released in parts."
@@ -2162,6 +2174,10 @@
     "sales.subscriptions": {
       "label": "Subscriptions",
       "tooltip": "What your billing provider, such as Stripe, bills your customers, mirrored read-only: each subscription, and each invoice with the provider's attempts and the invoice Fyniq made of it. Fyniq never retries or charges."
+    },
+    "project.revenue-over-time": {
+      "label": "Revenue over time",
+      "tooltip": "For a fixed-fee project, recognise revenue by the work done (cost to date over the estimated total cost) instead of as each milestone is invoiced. The month's journal is a draft for a person to approve."
     },
     "subscription.contract": {
       "label": "New contract",

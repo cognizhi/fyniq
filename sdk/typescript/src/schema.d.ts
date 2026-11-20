@@ -5315,7 +5315,7 @@ export interface paths {
         put?: never;
         /**
          * Make a customer's portal link
-         * @description Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. A person's alone: the AI and MCP have no tool for it. Side effects: the link and its audit event.
+         * @description Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. With send_email the link is also queued to the customer's billing email address from the statements sender (the address cannot be chosen here), in the same step. A person's alone: the AI and MCP have no tool for it. Side effects: the link, the queued email if asked for, and their audit events.
          */
         post: operations["createPortalLink"];
         delete?: never;
@@ -15731,6 +15731,66 @@ export interface paths {
         get: operations["listProjectMilestones"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_id}/revenue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a fixed-fee project's revenue over time for a month
+         * @description The project's election (revenue as each milestone is invoiced, or over time) and, for an over-time project, the month's figures as the journal would book them (FR-PRJ-11): the fee (the milestones' total), the cost to date, progress by cost-to-cost, the revenue earned (RND-RECOGNISE), what the ledger holds, the adjustment and the contract asset or liability. The figures are read from the posted ledger; why they cannot be shown is in `problem`. Read-only.
+         */
+        get: operations["getProjectRevenue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_id}/revenue-election": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Elect a fixed-fee project's revenue over time, or back to milestones
+         * @description The accountant's choice for a fixed-fee project in the base currency (FR-PRJ-11): over_time with the estimated total cost above nothing, or milestone, which is the default. Changing it needs If-Match with the election's ETag; the first election needs none. It posts nothing; the month's journal is proposed with proposeProjectRevenueJournal. Side effects: the election and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        put: operations["setProjectRevenueElection"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_id}/revenue-journals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Propose a month's revenue journal for a project elected for revenue over time
+         * @description Makes the month's journal as a draft for a person to approve and post (FR-PRJ-11): Dr or Cr the contract asset and the contract liability by what the position moves them by and the opposite on the revenue account, every line carrying the project; the accounts are set under organisation settings. The month is the first day of a month up to this one and after the last month proposed, each earlier journal being posted; a month is proposed once and a journal that would move nothing is refused. The draft is approved and posted like any journal. Side effects: the draft journal, the run recording it, audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["proposeProjectRevenueJournal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -32819,6 +32879,11 @@ export interface components {
              * @example Sent to ap@acme.example
              */
             label?: string;
+            /**
+             * @description Also email the link to the customer's billing email address, from the statements sender; nothing is made if it cannot be queued. The address is the contact's own and cannot be chosen here.
+             * @example true
+             */
+            send_email?: boolean;
         };
         CreateReportScheduleInputBody: {
             /**
@@ -51535,6 +51600,11 @@ export interface components {
              */
             created_at: string;
             /**
+             * @description The customer's billing email address the link was queued to, when send_email was true.
+             * @example ap@acme.example
+             */
+            emailed_to?: string;
+            /**
              * Format: date-time
              * @description When it stops working.
              * @example 2026-12-20T09:30:00Z
@@ -52977,6 +53047,97 @@ export interface components {
              */
             time_cost?: string;
         };
+        ProjectRevenue: {
+            election: components["schemas"]["ProjectRevenueElection"];
+            /**
+             * Format: date
+             * @description The month the figures are for.
+             * @example 2026-10-01
+             */
+            month?: string;
+            /** @description The figures as the month's journal would book them; absent when the project is not elected or cannot be worked out (see problem). */
+            position?: components["schemas"]["ProjectRevenuePosition"];
+            /**
+             * @description Why the figures are not shown, in plain words.
+             * @example The project has no milestones, so it has no fee to recognise.
+             */
+            problem?: string;
+            /** @description The months already proposed, oldest first. */
+            runs: components["schemas"]["ProjectRevenueRun"][];
+        };
+        ProjectRevenueElection: {
+            /** @description The estimated total cost of the project, in its currency; set for over_time. */
+            estimated_cost?: components["schemas"]["Money"];
+            /**
+             * @description milestone: revenue is recognised as each milestone is invoiced (the default); over_time: by cost-to-cost progress, through a monthly journal proposed for approval.
+             * @example over_time
+             * @enum {string}
+             */
+            method: "milestone" | "over_time";
+            /**
+             * Format: int64
+             * @description The election's version, for If-Match; 0 when none was made.
+             * @example 1
+             */
+            version: number;
+        };
+        ProjectRevenuePosition: {
+            /** @description The revenue this month's journal books: earned less held; negative when invoiced ahead of progress. */
+            adjustment: components["schemas"]["Money"];
+            /** @description The contract asset after the journal: earned and not yet invoiced. */
+            contract_asset: components["schemas"]["Money"];
+            /** @description The contract liability after the journal: invoiced and not yet earned. */
+            contract_liability: components["schemas"]["Money"];
+            /** @description The project's costs posted to the end of the month (direct and payroll-tagged), the input of cost-to-cost progress. */
+            cost_to_date: components["schemas"]["Money"];
+            /** @description The revenue earned to date: RND-RECOGNISE of the fee by progress. */
+            earned: components["schemas"]["Money"];
+            /** @description The estimated total cost. */
+            estimated_cost: components["schemas"]["Money"];
+            /** @description The fixed fee: the total of the project's milestones. */
+            fee: components["schemas"]["Money"];
+            /** @description The revenue the ledger holds for the project to date. */
+            held: components["schemas"]["Money"];
+            /** @description The revenue invoiced to the project to date, net of GST: the revenue the ledger holds less the earlier journals' adjustments. */
+            invoiced: components["schemas"]["Money"];
+            /**
+             * @description The journal would move nothing.
+             * @example false
+             */
+            nothing_to_propose: boolean;
+            /**
+             * @description The cost has reached the estimate: the whole fee is earned and the estimate needs revisiting.
+             * @example false
+             */
+            overrun: boolean;
+            /**
+             * @description Cost to date over the estimate as a percentage, at most 100.0 (RND-PERCENT).
+             * @example 50.0
+             */
+            progress: string;
+        };
+        ProjectRevenueRun: {
+            /** @description The revenue it books; negative when invoiced ahead of progress. */
+            adjustment: components["schemas"]["Money"];
+            /** @description The revenue earned to date after it. */
+            earned: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The draft journal proposed for approval; open it under Journals.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b01
+             */
+            journal_id: string;
+            /**
+             * Format: date
+             * @description The month's first day.
+             * @example 2026-10-01
+             */
+            month: string;
+        };
+        ProjectRevenueRunOutputBody: {
+            figures: components["schemas"]["ProjectRevenuePosition"];
+            run: components["schemas"]["ProjectRevenueRun"];
+        };
         ProjectTask: {
             /**
              * @description false once put out of use: kept, as time names it.
@@ -53092,6 +53253,14 @@ export interface components {
             total: components["schemas"]["Money"];
             /** @description Approved billable time that no billing rate covers: enter a rate from the day (setBillingRate) to bill it. */
             unpriced_time: components["schemas"]["UnbilledTime"][];
+        };
+        ProposeProjectRevenueInputBody: {
+            /**
+             * Format: date
+             * @description The month's first day: after the last month proposed, up to this month.
+             * @example 2026-10-01
+             */
+            month: string;
         };
         PspAccountsOutputBody: {
             /** @description The provider accounts, by money account name. */
@@ -57049,6 +57218,11 @@ export interface components {
              */
             line_version: number;
             /**
+             * @description True when Fyniq does not know this line's bank's BIC: fill it in when preparing the batch (bank_bics on prepareSalaryBatch), or the batch cannot be asked for approval.
+             * @example false
+             */
+            needs_bic?: boolean;
+            /**
              * Format: uuid
              * @description The person of the employee projection.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c12
@@ -57081,6 +57255,15 @@ export interface components {
             next_cursor?: string;
         };
         SalaryBatchPrepare: {
+            /**
+             * @description The BIC of the bank of each line Fyniq could not derive it for (the line's ID to an 8 or 11 character BIC). Fyniq looks a BIC up from the bank code Nemura sends; a code it does not know needs a person to fill it in here, from the bank's own advice. Each becomes a new version of the line, so an earlier approval is stale.
+             * @example {
+             *       "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10": "DBSSSGSG"
+             *     }
+             */
+            bank_bics?: {
+                [key: string]: string;
+            };
             /**
              * @description FAST pays within minutes, up to the bank's limit; GIRO over the next working days.
              * @example giro
@@ -57865,6 +58048,19 @@ export interface components {
              * @example zepto-send-token-example
              */
             value: string;
+        };
+        SetProjectRevenueInputBody: {
+            /**
+             * @description The estimated total cost in the project's currency, above nothing; needed for over_time.
+             * @example 6000.00
+             */
+            estimated_cost?: string;
+            /**
+             * @description How the project recognises its revenue.
+             * @example over_time
+             * @enum {string}
+             */
+            method: "milestone" | "over_time";
         };
         Setting: {
             /** @description Every recorded change, by version; only when one setting is read or changed. */
@@ -184137,6 +184333,418 @@ export interface operations {
             };
         };
     };
+    getProjectRevenue: {
+        parameters: {
+            query?: {
+                /** @description The month's first day; this month when left out. */
+                month?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project's ID. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRevenue"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setProjectRevenueElection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The project's ID. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetProjectRevenueInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRevenue"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PRJ-REV-01` Revenue over time is for an elected fixed-fee project; `PRJ-REV-02` The fee or the estimate is not usable. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    proposeProjectRevenueJournal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The project's ID. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposeProjectRevenueInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRevenueRunOutputBody"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRevenueRunOutputBody"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PRJ-REV-01` Revenue over time is for an elected fixed-fee project; `PRJ-REV-02` The fee or the estimate is not usable; `PRJ-REV-03` That month cannot be proposed now; `PRJ-REV-04` The accounts for revenue over time are not set up; `PRJ-REV-05` The journal would move nothing. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listProjectTasks: {
         parameters: {
             query?: {
@@ -195404,7 +196012,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `SB-13` There is no such line in the salary batch. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -195431,7 +196039,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO; `SB-14` A salary line's bank has no BIC Fyniq knows. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -195565,7 +196173,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account; `SB-14` A salary line's bank has no BIC Fyniq knows. */
             422: {
                 headers: {
                     [name: string]: unknown;

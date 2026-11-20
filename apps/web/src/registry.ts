@@ -116,6 +116,8 @@ export const routes = [
   { kind: "route", id: "payment-batches", path: "/purchases/payment-batches", mode: "basic", signedIn: true, help: "purchases.payment-batches", guide: "purchases.payment-batches" },
   { kind: "route", id: "payment-batch", path: "/purchases/payment-batches/$batchId", mode: "basic", signedIn: true, help: "purchases.payment-batch", guide: "purchases.payment-batches#release-a-batch" },
   // Salary payments (FR-PAY-11, FR-PPL-12, FR-PPL-17; p1-payroll-link task 8.1): Basic, for the roles that prepare, approve or release them.
+  { kind: "route", id: "payroll", path: "/payroll", mode: "basic", signedIn: true, help: "payroll.overview", guide: "payroll.salary-payments#payroll-in-the-books" },
+  { kind: "route", id: "employee-record", path: "/payroll/employees/$personId", mode: "basic", signedIn: true, help: "payroll.employee", guide: "payroll.salary-payments#a-person-from-nemura" },
   { kind: "route", id: "salary-payments", path: "/payroll/salary-payments", mode: "basic", signedIn: true, help: "payroll.salary-payments", guide: "payroll.salary-payments" },
   { kind: "route", id: "salary-payment", path: "/payroll/salary-payments/$batchId", mode: "basic", signedIn: true, help: "payroll.salary-payment", guide: "payroll.salary-payments#release-the-free-lines" },
   { kind: "route", id: "recurring-bills", path: "/purchases/bills/recurring", mode: "basic", signedIn: true, help: "purchases.recurring-bills", guide: "purchases.bills#recurring-bills" },
@@ -654,6 +656,7 @@ export const actions = [
   { kind: "action", id: "salary.ask", mode: "basic", help: "salary.ask", guide: "payroll.salary-payments#approve-a-salary-batch" },
   { kind: "action", id: "salary.release", mode: "basic", help: "salary.release", guide: "payroll.salary-payments#release-the-free-lines" },
   { kind: "action", id: "salary.bank-match", mode: "basic", help: "salary.bank-match", guide: "payroll.salary-payments#what-became-of-a-payment" },
+  { kind: "action", id: "people.map", mode: "basic", help: "people.map", guide: "payroll.salary-payments#a-person-from-nemura" },
   { kind: "action", id: "salary.record", mode: "basic", help: "salary.record", guide: "payroll.salary-payments#what-became-of-a-payment" },
   { kind: "action", id: "salary.cancel", mode: "basic", help: "salary.cancel", guide: "payroll.salary-payments#prepare-a-salary-batch" },
   { kind: "action", id: "batch.cancel", mode: "basic", help: "batch.cancel", guide: "purchases.payment-batches#cancel-a-batch" },
@@ -680,6 +683,7 @@ export const actions = [
   { kind: "action", id: "invoice.ask-approval", mode: "basic", help: "invoice.ask-approval", guide: "sales.invoices#invoices-above-the-self-approval-threshold" },
   { kind: "action", id: "contact.portal-link", mode: "basic", help: "contact.portal-link", guide: "contacts.manage#the-customer-portal" },
   { kind: "action", id: "contact.portal-revoke", mode: "basic", help: "contact.portal-revoke", guide: "contacts.manage#the-customer-portal" },
+  { kind: "action", id: "project.revenue-over-time", mode: "expert", help: "project.revenue-over-time", guide: "projects.billing#revenue-over-time" },
   { kind: "action", id: "subscription.contract", mode: "expert", help: "subscription.contract", guide: "sales.invoices#subscription-contracts" },
   { kind: "action", id: "subscription.amend", mode: "expert", help: "subscription.amend", guide: "sales.invoices#subscription-contracts" },
   { kind: "action", id: "psp.post-invoices", mode: "expert", help: "psp.post-invoices", guide: "sales.invoices#subscriptions-a-provider-bills" },
@@ -839,6 +843,7 @@ export const nav = [
   // Accounting is Expert (experience/modes "Basic and Expert navigation"); its first page is the chart.
   { kind: "nav", id: "nav.purchases", route: "/purchases/bills", icon: ReceiptText, group: "main", roles: ["bookkeeper", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "tax_agent"], mode: "basic", help: "nav.purchases", guide: "purchases.bills" },
   { kind: "nav", id: "nav.claims-review", route: "/purchases/claims", icon: ReceiptText, group: "main", roles: ["controller", "accountant", "ap_specialist", "bookkeeper", "owner", "tax_agent"], mode: "basic", help: "claims.review", guide: "claims.approve-team#approve-or-return-a-claim" },
+  { kind: "nav", id: "nav.payroll", route: "/payroll", icon: HandCoins, group: "organisation", feature: "payroll", roles: ["payroll_administrator", "payment_releaser", "controller", "accountant", "owner"], mode: "basic", help: "payroll.overview", guide: "payroll.salary-payments#payroll-in-the-books" },
   { kind: "nav", id: "nav.banking", route: "/banking", icon: Landmark, group: "main", roles: ["bookkeeper", "accountant", "controller", "owner", "ar_specialist", "ap_specialist", "payment_releaser", "tax_agent"], mode: "basic", help: "banking.accounts", guide: "banking.accounts" },
   { kind: "nav", id: "nav.reports", route: "/reports", icon: ChartColumn, group: "main", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "approver", "auditor", "tax_agent", "board_viewer"], mode: "basic", help: "reports.index", guide: "reports.statements" },
   { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["bookkeeper", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },

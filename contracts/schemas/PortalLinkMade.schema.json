@@ -18,6 +18,13 @@
       "format": "date-time",
       "type": "string"
     },
+    "emailed_to": {
+      "description": "The customer's billing email address the link was queued to, when send_email was true.",
+      "examples": [
+        "ap@acme.example"
+      ],
+      "type": "string"
+    },
     "expires_at": {
       "description": "When it stops working.",
       "examples": [

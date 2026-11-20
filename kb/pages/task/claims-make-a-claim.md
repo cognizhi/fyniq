@@ -4,7 +4,7 @@ type: task
 title: Claim back money spent for the company
 summary: How a member claims a receipt or a trip in My claims, submits it, completes card lines, uses a cash advance, or keeps it as a loan
 sources:
-  - docs/user-guide/claims-my-claims.md sha256:e07252464dd362039e00ffd8a51e8128431fa2572566b6e1c2006ef74d42a965
+  - docs/user-guide/claims-my-claims.md sha256:5dd8b357d74a47b3df1cd581e19e859d52a98edc12a07df8cdc01a60d27bc062
 data_class: general
 taint: trusted
 status: draft
@@ -107,7 +107,7 @@ aliases:
 
 - A card holder's payments show under **Card lines** once finance imports the statement:
   **Complete** each with the category and GST code of its receipt, or as personal spend, then
-  attach the receipt. A receipt in the member's own inbox that the model read as the same amount, dated within 5 days of the booking, is suggested under **Receipt**: **Attach** it, or not; nothing is attached by itself. A cardholder is also told once a day while a card payment has had no receipt for more than 3 days. Personal spend is owed to the company until refunded; no claim settles it.
+  attach the receipt. A receipt mailed to the member's own capture address that the model read as the same amount, dated within 5 days of the booking, is suggested under **Receipt**: **Attach** it, or not; nothing is attached by itself. A cardholder is also told once a day while a card payment has had no receipt for more than 3 days. Personal spend is owed to the company until refunded; no claim settles it.
   (src: docs/user-guide/claims-my-claims.md#complete-your-company-card-lines)
 - A cash advance shows under **Cash advances**; claims that choose it under **Settles a cash
   advance** settle what is open, anything above is paid back, and what is left is refunded by bank

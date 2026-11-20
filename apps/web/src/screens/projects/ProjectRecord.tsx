@@ -17,6 +17,7 @@ import { ProjectForm } from "./ProjectForm";
 import { ProjectMilestones } from "./ProjectMilestones";
 import { ProjectProfitability } from "./ProjectProfitability";
 import { ProjectRates } from "./ProjectRates";
+import { ProjectRevenue } from "./ProjectRevenue";
 import { ProjectUnbilled } from "./ProjectUnbilled";
 import { FeatureOff } from "./Projects";
 
@@ -308,6 +309,7 @@ export function ProjectRecord() {
           <ProjectProfitability project={projectId} startsOn={p.starts_on ?? undefined} />
           <ProjectRates project={projectId} billed={p.billing_method !== "internal"} may={may} />
           {(p.billing_method === "fixed_fee" || p.billing_method === "retainer") && <ProjectMilestones project={projectId} method={p.billing_method} />}
+          {p.billing_method === "fixed_fee" && <ProjectRevenue project={projectId} />}
           <ProjectUnbilled project={projectId} />
         </>
       )}

@@ -1,0 +1,36 @@
+{
+  "id": "kb.propose_page",
+  "version": 1,
+  "name": "Propose a know-how page",
+  "description": "Proposes a know-how page from this conversation: a short title and a body in plain words, on how something is done in this organisation (a process, a policy in practice, where to find something). It is written as a knowledge-base NOTE for an Owner or Administrator to approve; it is not a page, and nothing is published until a person compiles and publishes a page from it. The text must hold no figure: no amount of money, percentage, decimal, number of a thousand or more, ID, identity number or account number, because figures are read from the tools when they are asked for and an answer carries one person's context. A proposal with a figure is refused.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["key", "title", "body"],
+    "properties": {
+      "key": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9.-]{0,60}$",
+        "maxLength": 61,
+        "description": "The page's key, lower case with hyphens, such as how-we-file-expense-claims; Fyniq adds the prefix proposed."
+      },
+      "title": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 120,
+        "description": "The page's title, in plain words."
+      },
+      "body": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 6000,
+        "description": "The know-how, in plain words and short sections, with no figure; say where a figure is read instead."
+      }
+    }
+  },
+  "command": "ProposePage",
+  "tier": 1,
+  "limits": { "items": 1 },
+  "approvers": ["owner"],
+  "expiry_hours": 72
+}

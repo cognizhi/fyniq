@@ -162,6 +162,12 @@ func ContractedMRR(ctx context.Context, u storage.UnitOfWork, day time.Time) ([]
 	for _, a := range all {
 		by[a.ContractID] = append(by[a.ContractID], a)
 	}
+	return Totals(contracts, by, day)
+}
+
+// Totals is ContractedMRR over contracts and their amendments (by contract) already read: the monthly value of those active on day, by currency in the
+// order each is first met, and how many.
+func Totals(contracts []storage.SubscriptionContract, by map[uuid.UUID][]storage.SubscriptionAmendment, day time.Time) ([]Total, error) {
 	var out []Total
 	index := map[string]int{}
 	for _, c := range contracts {

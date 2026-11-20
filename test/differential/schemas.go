@@ -43,3 +43,13 @@ var PayrollRunSchema []byte
 //
 //go:embed part-month.schema.json
 var PartMonthSchema []byte
+
+// SubscriptionSchema is subscription.schema.json: one hand-worked set of subscription contracts and the contracted MRR on given days (FR-AR-15, FR-KPI-02).
+//
+//go:embed subscription.schema.json
+var SubscriptionSchema []byte
+
+// ProjectRevenueSchema is project-revenue.schema.json: one hand-worked case of a fixed-fee project's revenue over time by cost-to-cost progress (FR-PRJ-11, RND-RECOGNISE).
+//
+//go:embed project-revenue.schema.json
+var ProjectRevenueSchema []byte

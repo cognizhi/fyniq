@@ -34,6 +34,7 @@ const (
 	DepositName      = "RND-DEPOSIT"
 	MileageName      = "RND-MILEAGE"
 	TimeName         = "RND-TIME"
+	RecogniseName    = "RND-RECOGNISE"
 	MarkupName       = "RND-MARKUP"
 	ShareName        = "RND-SHARE"
 	OwnershipName    = "RND-DISPLAY"
@@ -691,6 +692,35 @@ func Time(minutes int, rate money.UnitPrice) (money.Money, error) {
 		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "minutes", Message: err.Error()}
 	}
 	return money.FromRounded(halfAwayFromZero(&hourly, rate.Currency().MinorUnits), rate.Currency())
+}
+
+// Recognised is RND-RECOGNISE (PRD-001 §10.4, rev 0.567; FR-PRJ-11): the revenue of a fixed-fee project recognised to date by cost-to-cost progress =
+// round(price × cost to date ÷ estimated total cost, the price's minor units), half away from zero, computed exactly before its one rounding, on the cumulative
+// figures and never per month, so the months' journals add up to it exactly. Cost at or above the estimate recognises the whole price. A price of zero or more,
+// a cost of zero or more and an estimate above zero, all in one currency.
+func Recognised(price, cost, estimate money.Money) (money.Money, error) {
+	if price.Currency() != cost.Currency() || price.Currency() != estimate.Currency() {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "currency", Message: "the price, the cost and the estimate are in one currency", Fix: "Use the project's currency for all three"}
+	}
+	switch {
+	case price.Sign() < 0:
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "price", Message: "the fixed fee is " + price.String(), Fix: "A fixed fee is zero or more"}
+	case cost.Sign() < 0:
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "cost", Message: "the cost to date is " + cost.String(), Fix: "The cost to date is zero or more"}
+	case estimate.Sign() <= 0:
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "estimate", Message: "the estimated total cost is " + estimate.String(), Fix: "Estimate the total cost above nothing"}
+	}
+	if c, _ := cost.Cmp(estimate); c >= 0 {
+		return price, nil
+	}
+	var product, quotient apd.Decimal
+	if _, err := work.Mul(&product, price.Decimal(), cost.Decimal()); err != nil {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "cost", Message: err.Error()}
+	}
+	if _, err := work.Quo(&quotient, &product, estimate.Decimal()); err != nil {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "estimate", Message: err.Error()}
+	}
+	return money.FromRounded(halfAwayFromZero(&quotient, price.Currency().MinorUnits), price.Currency())
 }
 
 // markupPattern reads a markup strictly: a percentage from 0 to 999.99 with at most two decimals ("10", "12.5", "250").

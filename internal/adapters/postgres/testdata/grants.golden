@@ -564,6 +564,11 @@ fyniq_api       UPDATE    project_member (is_active, is_manager)
 fyniq_api       INSERT    project_milestone (amount, due_on, kind, name, project_id)
 fyniq_api       SELECT    project_milestone
 fyniq_api       UPDATE    project_milestone (accepted_on, changed_at, version)
+fyniq_api       INSERT    project_revenue_election (estimated_cost, method, project_id, set_at, set_by)
+fyniq_api       SELECT    project_revenue_election
+fyniq_api       UPDATE    project_revenue_election (estimated_cost, method, set_at, set_by, version)
+fyniq_api       INSERT    project_revenue_run (adjustment, created_at, created_by, earned, journal_id, month, project_id)
+fyniq_api       SELECT    project_revenue_run
 fyniq_api       INSERT    project_task (billable, name, project_id)
 fyniq_api       SELECT    project_task
 fyniq_api       UPDATE    project_task (billable, changed_at, is_active, name, version)
@@ -813,6 +818,8 @@ fyniq_executor  INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_executor  SELECT    journal_entry
 fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_executor  SELECT    journal_line
+fyniq_executor  INSERT    kb_note (body, created_at, created_by, data_class, key, kind, title, updated_at, updated_by)
+fyniq_executor  SELECT    kb_note
 fyniq_executor  SELECT    ledger_boundary
 fyniq_executor  SELECT    ledger_purged_entry
 fyniq_executor  SELECT    ledger_revision
@@ -1079,6 +1086,8 @@ fyniq_readonly  SELECT    project
 fyniq_readonly  SELECT    project_billed_item
 fyniq_readonly  SELECT    project_member
 fyniq_readonly  SELECT    project_milestone
+fyniq_readonly  SELECT    project_revenue_election
+fyniq_readonly  SELECT    project_revenue_run
 fyniq_readonly  SELECT    project_task
 fyniq_readonly  SELECT    psp_account
 fyniq_readonly  SELECT    psp_balance
@@ -1465,6 +1474,8 @@ fyniq_worker    SELECT    project
 fyniq_worker    SELECT    project_billed_item
 fyniq_worker    SELECT    project_member
 fyniq_worker    SELECT    project_milestone
+fyniq_worker    SELECT    project_revenue_election
+fyniq_worker    SELECT    project_revenue_run
 fyniq_worker    SELECT    project_task
 fyniq_worker    SELECT    psp_account
 fyniq_worker    UPDATE    psp_account (sweep_error, swept_at, swept_through)

@@ -24,6 +24,7 @@ prepared, approved by another person and released like a payment batch. Fyniq ne
 ## Prepare a salary batch
 
 - **Payroll › Salary payments**, open the batch and choose **Prepare the batch**: the bank account, the payment date, and GIRO or FAST.
+- Nemura sends each person's bank by its code and name, and Fyniq looks the BIC up from the code. For a bank Fyniq does not know, the batch cannot be asked for approval until you fill in that bank's BIC when preparing it, from the bank's own advice; the line then becomes a new version, so an earlier approval is stale.
 - A batch that is prepared again needs its approval again.
 - **Cancel the batch** is for a batch with nothing released; it pays nothing.
 
@@ -53,3 +54,14 @@ prepared, approved by another person and released like a payment batch. Fyniq ne
 - The Owner and the Payroll administrator see each person, the account masked to its last four digits and the amount.
 - The Payment releaser, the Controller, the Accountant and the Auditor see the batch's total, the number of people and its state, and no line.
 - Names and accounts are in no notification, audit trail entry or log.
+
+## Payroll in the books
+
+- **Payroll** in the sidebar (when the organisation has switched payroll on) is Fyniq's part of payroll on one page: where each feature lives (People records, Payroll, Leave, Letters), the state of the link to Nemura and a warning when it is not delivering everything, whether every statutory output of the month has a recorded arrangement, and the latest salary batches.
+- Each part is read on its own, so a role that may not see one part still sees the others. Linking, unlinking and recording arrangements are in **Settings › People and HR**.
+
+## A person from Nemura
+
+- Open a person from **Payroll** to see what Nemura told Fyniq: their status, department and line manager, and whether they are held for tax clearance. Pay, bank numbers and NRIC stay in Nemura.
+- **Map to this user** says which Fyniq user the person is. You choose the user; Fyniq never matches by email, and the mapping grants no role. Only an Owner, an Administrator or the People and HR right may map a person.
+

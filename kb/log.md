@@ -880,6 +880,20 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | nemura.payroll-approval: the IR8A file and the CPF and IR8A buttons (p2-payroll-outputs)
 
+## [2026-11-20] compile | claims.my-claims: receipt suggestions come from the holder's own capture address (FR-AP-08)
+
 ## [2026-11-20] compile | compliance.invoicenow: the exclusion form and the contingency approval button
 
 ## [2026-11-20] compile | compliance.gst: aliases for the GST rate question, so the newer tax pages do not outrank it
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (the BIC from the bank code)
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (payroll in the books)
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (a person from Nemura)
+
+## [2026-11-20] compile | projects.billing, settings.organisation: revenue over time (FR-PRJ-11)
+
+## [2026-11-20] compile | ai-proposals: the assistant proposes a know-how page, never a figure (AI-59)
+
+## [2026-11-20] compile | contacts.and-items: emailing the portal link (FR-AR-14)

@@ -15,6 +15,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/bankcode"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
@@ -241,7 +242,22 @@ func (a *API) receivePayrollPayments(ctx context.Context, in *payrollPaymentsInp
 				}
 				next.LineVersion = prior.LineVersion + 1
 			}
-			detail, err := salarybatch.Detail{PayeeName: line.PayeeName, BankBIC: line.BankBIC, AccountName: line.AccountName, AccountNumber: line.AccountNumber}.Marshal()
+			// The BIC: Nemura's own when it sent one, else looked up from its bank code in Fyniq's table (design D26); a code the table does not have leaves it empty, and a person fills it in when preparing
+			// the batch. A line that is revised keeps the BIC a person filled in for the same bank.
+			bic := line.BankBIC
+			if bic == "" {
+				bic, _ = bankcode.BIC(line.BankCode, now)
+			}
+			if bic == "" {
+				if prior, ok := byRef[line.LineID]; ok && prior.Sealed != nil {
+					if clear, err := a.deps.Fields.Open(ctx, prior.Sealed, salarybatch.LineAAD(p.Organisation, prior.BatchID, prior.LineRef, prior.LineVersion)); err == nil {
+						if was, err := salarybatch.ReadDetail(clear); err == nil && was.BankCode == line.BankCode && was.AccountNumber == line.AccountNumber {
+							bic = was.BankBIC
+						}
+					}
+				}
+			}
+			detail, err := salarybatch.Detail{PayeeName: line.PayeeName, BankBIC: bic, BankCode: line.BankCode, BankName: line.BankName, AccountName: line.AccountName, AccountNumber: line.AccountNumber}.Marshal()
 			if err != nil {
 				return err
 			}

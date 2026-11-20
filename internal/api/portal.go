@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/portal"
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
 	"github.com/cognizhi/fyniq/internal/domain/statement"
+	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -219,6 +220,8 @@ type PortalLinkMade struct {
 	PortalLinkOut
 	Token string `json:"token" doc:"The link's token, shown this once: Fyniq keeps only its hash. The customer's address is the portal page's, then #, then this." example:"q7Kx3m9VbN2pR8tY1wE5uI0oP4aS6dF3gH7jK9lZ2xC"`
 	Path  string `json:"path" doc:"The path of the portal page with the token in its fragment, to put after the web app's origin." example:"/portal/#q7Kx3m9VbN2pR8tY1wE5uI0oP4aS6dF3gH7jK9lZ2xC"`
+	// EmailedTo is the address the link was emailed to when send_email was asked for.
+	EmailedTo string `json:"emailed_to,omitempty" doc:"The customer's billing email address the link was queued to, when send_email was true." example:"ap@acme.example"`
 }
 
 func portalLinkOf(l storage.PortalLink, now time.Time) PortalLinkOut {
@@ -238,6 +241,8 @@ type createPortalLinkInput struct {
 	Body struct {
 		Label string `json:"label,omitempty" maxLength:"200" doc:"A note for the staff, such as who the link is sent to. Never shown to the customer." example:"Sent to ap@acme.example"`
 		Days  int    `json:"days,omitempty" minimum:"1" maximum:"90" doc:"How many days the link works: 30 when left out, at most 90." example:"30"`
+		// SendEmail also emails the link to the customer's billing address from the statements sender, in the same step: the link is made only if the email is queued.
+		SendEmail bool `json:"send_email,omitempty" doc:"Also email the link to the customer's billing email address, from the statements sender; nothing is made if it cannot be queued. The address is the contact's own and cannot be chosen here." example:"true"`
 	}
 }
 
@@ -426,7 +431,7 @@ func registerPortal(a *API) {
 		Summary: "Make a customer's portal link", DefaultStatus: http.StatusCreated,
 		Description: "Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer " +
 			"carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with " +
-			"revokePortalLink. The contact must be an active customer. A person's alone: the AI and MCP have no tool for it. Side effects: the link and its audit event.",
+			"revokePortalLink. The contact must be an active customer. With send_email the link is also queued to the customer's billing email address from the statements sender (the address cannot be chosen here), in the same step. A person's alone: the AI and MCP have no tool for it. Side effects: the link, the queued email if asked for, and their audit events.",
 	}, "If-Match", "A portal link is a record of its own and changes nothing of the contact (FR-AR-14).")),
 		[]string{storage.CodeInvalid, CodeNotFound, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, storage.CodeRetry, storage.CodeLockTimeout},
 		func(ctx context.Context, in *createPortalLinkInput) (*portalLinkMadeOutput, error) {
@@ -462,6 +467,27 @@ func registerPortal(a *API) {
 					return err
 				}
 				made = PortalLinkMade{PortalLinkOut: portalLinkOf(l, now), Token: token, Path: "/portal/#" + token}
+				if !in.Body.SendEmail {
+					return nil
+				}
+				// The email carries the link with its token in the fragment, which a browser never sends to a server, as an invoice's online link does; only the hash is kept.
+				to := strings.TrimSpace(c.BillingEmail)
+				switch {
+				case a.deps.Outbox == nil || a.deps.Origin == "":
+					return problem(CodeUnavailable, "Email cannot be sent from this deployment.", "Make the link without send_email and share it yourself, or ask the operator to configure email and the web address")
+				case to == "":
+					return invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.send_email", Message: "needs the customer's billing email address", Fix: "Set the contact's billing email first, or make the link without send_email"}})
+				}
+				org, err := u.Organisation(ctx)
+				if err != nil {
+					return err
+				}
+				text := "Hello,\n\n" + org.Profile.LegalName + " has set up a page for you where you can see what you owe, pay online where that is offered, and download your invoices and statements:\n\n" +
+					a.deps.Origin + made.Path + "\n\nThe link works until " + l.ExpiresAt.UTC().Format("2 January 2006") + ". Please keep it private: anyone who has it can see your invoices.\n\nIf you did not expect this email, you can ignore it."
+				if _, err := email.QueueWith(ctx, *a.deps.Outbox, u, p.Organisation, email.PurposeStatement, to, "Your account with "+org.Profile.LegalName, text, nil); err != nil {
+					return err
+				}
+				made.EmailedTo = to
 				return nil
 			})
 			if err != nil {

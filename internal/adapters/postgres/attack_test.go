@@ -446,43 +446,46 @@ VALUES ('%s', '%s', '%s', %s, 'Reviewed.', 0, '%s', %s)`, period, check, by, at,
 // nanAttacks try NaN and an out-of-range value in each numeric column; TestEveryNumericColumn…
 // fails when a numeric column has no entry here.
 var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) error{
-	"bank_transfer.from_amount":    func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "from", v) },
-	"bank_transfer.to_amount":      func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "to", v) },
-	"bank_transfer.fee":            func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "fee", v) },
-	"bank_signal.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawSignal(t, b, v) },
-	"psp_txn.gross":                func(t *testing.T, b porttest.Books, v string) error { return rawPSPTxn(t, b, "gross", v) },
-	"psp_txn.fee":                  func(t *testing.T, b porttest.Books, v string) error { return rawPSPTxn(t, b, "fee", v) },
-	"psp_txn.net":                  func(t *testing.T, b porttest.Books, v string) error { return rawPSPTxn(t, b, "net", v) },
-	"psp_payout.amount":            func(t *testing.T, b porttest.Books, v string) error { return rawPSPPayout(t, b, v) },
-	"psp_balance.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawPSPBalance(t, b, v) },
-	"psp_dispute_credit.amount":    func(t *testing.T, b porttest.Books, v string) error { return rawPSPDisputeCredit(t, b, v) },
-	"psp_subscription.amount":      func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "subscription", v) },
-	"psp_invoice.total":            func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "total", v) },
-	"psp_invoice.amount_paid":      func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "paid", v) },
-	"invoice_dispute.amount":       func(t *testing.T, b porttest.Books, v string) error { return rawInvoiceDispute(t, b, v) },
-	"subscription_contract.mrr":    func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "contract", v) },
-	"subscription_amendment.mrr":   func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "amendment", v) },
-	"payment_link.amount":          func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLink(t, b, v) },
-	"payment_link_payment.amount":  func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLinkPayment(t, b, v) },
-	"kpi_alert.spend":              func(t *testing.T, b porttest.Books, v string) error { return rawKPIAlert(t, b, "spend", v) },
-	"kpi_alert.mean":               func(t *testing.T, b porttest.Books, v string) error { return rawKPIAlert(t, b, "mean", v) },
-	"psp_dispute_loss.amount":      func(t *testing.T, b porttest.Books, v string) error { return rawPSPDisputeLoss(t, b, v) },
-	"payment_batch_release.total":  func(t *testing.T, b porttest.Books, v string) error { return rawRelease(t, b, v) },
-	"salary_batch_line.amount":     func(t *testing.T, b porttest.Books, v string) error { return rawSalaryLine(t, b, v) },
-	"salary_line_event.amount":     func(t *testing.T, b porttest.Books, v string) error { return rawSalaryEvent(t, b, v) },
-	"salary_release.total":         func(t *testing.T, b porttest.Books, v string) error { return rawSalaryRelease(t, b, v) },
-	"break_glass.cap":              func(t *testing.T, b porttest.Books, v string) error { return rawBreakGlassCap(t, b, v) },
-	"break_glass_use.total":        func(t *testing.T, b porttest.Books, v string) error { return rawBreakGlassUse(t, b, v) },
-	"share_issue.shares":           func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "shares", v) },
-	"share_issue.price":            func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "price", v) },
-	"share_issue.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "amount", v) },
-	"holding_movement.shares":      func(t *testing.T, b porttest.Books, v string) error { return rawMovementShares(t, b, v) },
-	"person_cost_rate.hourly_rate": func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "person_cost_rate", v) },
-	"billing_rate.hourly_rate":     func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "billing_rate", v) },
-	"project_milestone.amount":     func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "project_milestone", v) },
-	"project.budget_amount":        func(t *testing.T, b porttest.Books, v string) error { return rawProject(t, b, v) },
-	"claim_category.line_limit":    func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "limit", v) },
-	"claim_category.receipt_above": func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "receipt", v) },
+	"bank_transfer.from_amount":               func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "from", v) },
+	"bank_transfer.to_amount":                 func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "to", v) },
+	"bank_transfer.fee":                       func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "fee", v) },
+	"bank_signal.amount":                      func(t *testing.T, b porttest.Books, v string) error { return rawSignal(t, b, v) },
+	"psp_txn.gross":                           func(t *testing.T, b porttest.Books, v string) error { return rawPSPTxn(t, b, "gross", v) },
+	"psp_txn.fee":                             func(t *testing.T, b porttest.Books, v string) error { return rawPSPTxn(t, b, "fee", v) },
+	"psp_txn.net":                             func(t *testing.T, b porttest.Books, v string) error { return rawPSPTxn(t, b, "net", v) },
+	"psp_payout.amount":                       func(t *testing.T, b porttest.Books, v string) error { return rawPSPPayout(t, b, v) },
+	"psp_balance.amount":                      func(t *testing.T, b porttest.Books, v string) error { return rawPSPBalance(t, b, v) },
+	"psp_dispute_credit.amount":               func(t *testing.T, b porttest.Books, v string) error { return rawPSPDisputeCredit(t, b, v) },
+	"psp_subscription.amount":                 func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "subscription", v) },
+	"psp_invoice.total":                       func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "total", v) },
+	"psp_invoice.amount_paid":                 func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "paid", v) },
+	"invoice_dispute.amount":                  func(t *testing.T, b porttest.Books, v string) error { return rawInvoiceDispute(t, b, v) },
+	"subscription_contract.mrr":               func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "contract", v) },
+	"project_revenue_election.estimated_cost": func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "election", v) },
+	"project_revenue_run.earned":              func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "earned", v) },
+	"project_revenue_run.adjustment":          func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "run", v) },
+	"subscription_amendment.mrr":              func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "amendment", v) },
+	"payment_link.amount":                     func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLink(t, b, v) },
+	"payment_link_payment.amount":             func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLinkPayment(t, b, v) },
+	"kpi_alert.spend":                         func(t *testing.T, b porttest.Books, v string) error { return rawKPIAlert(t, b, "spend", v) },
+	"kpi_alert.mean":                          func(t *testing.T, b porttest.Books, v string) error { return rawKPIAlert(t, b, "mean", v) },
+	"psp_dispute_loss.amount":                 func(t *testing.T, b porttest.Books, v string) error { return rawPSPDisputeLoss(t, b, v) },
+	"payment_batch_release.total":             func(t *testing.T, b porttest.Books, v string) error { return rawRelease(t, b, v) },
+	"salary_batch_line.amount":                func(t *testing.T, b porttest.Books, v string) error { return rawSalaryLine(t, b, v) },
+	"salary_line_event.amount":                func(t *testing.T, b porttest.Books, v string) error { return rawSalaryEvent(t, b, v) },
+	"salary_release.total":                    func(t *testing.T, b porttest.Books, v string) error { return rawSalaryRelease(t, b, v) },
+	"break_glass.cap":                         func(t *testing.T, b porttest.Books, v string) error { return rawBreakGlassCap(t, b, v) },
+	"break_glass_use.total":                   func(t *testing.T, b porttest.Books, v string) error { return rawBreakGlassUse(t, b, v) },
+	"share_issue.shares":                      func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "shares", v) },
+	"share_issue.price":                       func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "price", v) },
+	"share_issue.amount":                      func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "amount", v) },
+	"holding_movement.shares":                 func(t *testing.T, b porttest.Books, v string) error { return rawMovementShares(t, b, v) },
+	"person_cost_rate.hourly_rate":            func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "person_cost_rate", v) },
+	"billing_rate.hourly_rate":                func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "billing_rate", v) },
+	"project_milestone.amount":                func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "project_milestone", v) },
+	"project.budget_amount":                   func(t *testing.T, b porttest.Books, v string) error { return rawProject(t, b, v) },
+	"claim_category.line_limit":               func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "limit", v) },
+	"claim_category.receipt_above":            func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "receipt", v) },
 	"claim_category.attendees_above": func(t *testing.T, b porttest.Books, v string) error {
 		return rawClaimCategory(t, b, "attendees", v)
 	},
@@ -1609,6 +1612,28 @@ VALUES ($1, 'sub_1', 'cus_1', 'active', 'SGD', $2::numeric, 'month', 1, now())`,
 		}
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.psp_invoice (connector_id, provider_invoice_id, provider_customer_id, status, currency, total, amount_paid, seen_at)
 VALUES ($1, 'in_1', 'cus_1', 'open', 'SGD', $2::numeric, $3::numeric, now())`, uuid.New(), total, paid)
+		return err
+	})
+}
+
+func rawProjectRevenue(t *testing.T, b porttest.Books, kind, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c := shortConn(t, "fyniq_api")
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		if kind == "election" {
+			_, err := tx.Exec(ctx, `INSERT INTO fyniq.project_revenue_election (project_id, method, estimated_cost, set_by, set_at)
+VALUES ($1, 'over_time', $2::numeric, 'user:x', now())`, uuid.New(), value)
+			return err
+		}
+		if kind == "earned" {
+			_, err := tx.Exec(ctx, `INSERT INTO fyniq.project_revenue_run (project_id, month, journal_id, adjustment, earned, created_by, created_at)
+VALUES ($1, '2026-10-01', $2, 0, $3::numeric, 'user:x', now())`, uuid.New(), uuid.New(), value)
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.project_revenue_run (project_id, month, journal_id, adjustment, earned, created_by, created_at)
+VALUES ($1, '2026-10-01', $2, $3::numeric, 0, 'user:x', now())`, uuid.New(), uuid.New(), value)
 		return err
 	})
 }

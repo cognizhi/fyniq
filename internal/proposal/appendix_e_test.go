@@ -11,7 +11,7 @@ func TestTheAppendixETaskTypesAreNotOnTheNeverList(t *testing.T) {
 	for id, cmd := range map[string]string{"bank.categorise_lines": "CategoriseBankLines", "bank.match_payments": "MatchPayments", "bank.rule_upsert": "UpsertBankRule", "doc.attach": "AttachDocument",
 		"ap.draft_bill": "DraftBill", "exp.draft_claim": "DraftClaim", "ar.draft_reminders": "DraftReminders", "plan.save_scenario": "SaveScenario", "rpt.draft_commentary": "DraftCommentary",
 		"gl.post_journal": "PostJournal", "ar.post_invoice": "PostInvoice", "ap.post_bill": "PostBill", "ct.update_contact": "UpdateContact", "recur.create_template": "CreateRecurring",
-		"plan.propose_budget": "CreateBudgetVersion"} {
+		"plan.propose_budget": "CreateBudgetVersion", "kb.propose_page": "ProposePage"} {
 		if why := Refuse(id, cmd); why != "" {
 			t.Errorf("%s/%s refused: %s", id, cmd, why)
 		}

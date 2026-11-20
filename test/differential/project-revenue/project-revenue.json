@@ -1,0 +1,222 @@
+[
+ {
+  "name": "the first month: cost earns revenue ahead of any invoice",
+  "currency": "SGD",
+  "minor_units": 2,
+  "price": "10000.00",
+  "estimate": "6000.00",
+  "cost": "1500.00",
+  "billed": "0.00",
+  "held": "0.00",
+  "want": {
+   "progress": "25.0",
+   "overrun": false,
+   "earned": "2500.00",
+   "adjustment": "2500.00",
+   "asset": "2500.00",
+   "liability": "0.00",
+   "asset_change": "2500.00",
+   "liability_change": "0.00"
+  }
+ },
+ {
+  "name": "a milestone invoiced after a first journal: earned falls behind what the ledger holds",
+  "currency": "SGD",
+  "minor_units": 2,
+  "price": "10000.00",
+  "estimate": "6000.00",
+  "cost": "3000.00",
+  "billed": "4000.00",
+  "held": "6500.00",
+  "want": {
+   "progress": "50.0",
+   "overrun": false,
+   "earned": "5000.00",
+   "adjustment": "-1500.00",
+   "asset": "1000.00",
+   "liability": "0.00",
+   "asset_change": "-1500.00",
+   "liability_change": "0.00"
+  }
+ },
+ {
+  "name": "invoiced ahead of progress becomes a contract liability",
+  "currency": "SGD",
+  "minor_units": 2,
+  "price": "10000.00",
+  "estimate": "6000.00",
+  "cost": "3000.00",
+  "billed": "7000.00",
+  "held": "7000.00",
+  "want": {
+   "progress": "50.0",
+   "overrun": false,
+   "earned": "5000.00",
+   "adjustment": "-2000.00",
+   "asset": "0.00",
+   "liability": "2000.00",
+   "asset_change": "0.00",
+   "liability_change": "2000.00"
+  }
+ },
+ {
+  "name": "the liability shrinks as the work catches up",
+  "currency": "SGD",
+  "minor_units": 2,
+  "price": "10000.00",
+  "estimate": "6000.00",
+  "cost": "4500.00",
+  "billed": "7000.00",
+  "held": "5000.00",
+  "want": {
+   "progress": "75.0",
+   "overrun": false,
+   "earned": "7500.00",
+   "adjustment": "2500.00",
+   "asset": "500.00",
+   "liability": "0.00",
+   "asset_change": "500.00",
+   "liability_change": "-2000.00"
+  }
+ },
+ {
+  "name": "the cumulative figure is rounded once to the cent, 3333.3666 up",
+  "currency": "SGD",
+  "minor_units": 2,
+  "price": "10000.00",
+  "estimate": "3000.00",
+  "cost": "1000.01",
+  "billed": "0.00",
+  "held": "0.00",
+  "want": {
+   "progress": "33.3",
+   "overrun": false,
+   "earned": "3333.37",
+   "adjustment": "3333.37",
+   "asset": "3333.37",
+   "liability": "0.00",
+   "asset_change": "3333.37",
+   "liability_change": "0.00"
+  }
+ },
+ {
+  "name": "cost at the estimate earns the whole price",
+  "currency": "SGD",
+  "minor_units": 2,
+  "price": "10000.00",
+  "estimate": "6000.00",
+  "cost": "6000.00",
+  "billed": "4000.00",
+  "held": "4000.00",
+  "want": {
+   "progress": "100.0",
+   "overrun": true,
+   "earned": "10000.00",
+   "adjustment": "6000.00",
+   "asset": "6000.00",
+   "liability": "0.00",
+   "asset_change": "6000.00",
+   "liability_change": "0.00"
+  }
+ },
+ {
+  "name": "an overrun still earns only the price",
+  "currency": "SGD",
+  "minor_units": 2,
+  "price": "10000.00",
+  "estimate": "6000.00",
+  "cost": "7500.00",
+  "billed": "10000.00",
+  "held": "9000.00",
+  "want": {
+   "progress": "100.0",
+   "overrun": true,
+   "earned": "10000.00",
+   "adjustment": "1000.00",
+   "asset": "0.00",
+   "liability": "0.00",
+   "asset_change": "0.00",
+   "liability_change": "-1000.00"
+  }
+ },
+ {
+  "name": "no cost yet earns nothing and leaves an invoice a liability",
+  "currency": "SGD",
+  "minor_units": 2,
+  "price": "10000.00",
+  "estimate": "6000.00",
+  "cost": "0.00",
+  "billed": "2500.00",
+  "held": "2500.00",
+  "want": {
+   "progress": "0.0",
+   "overrun": false,
+   "earned": "0.00",
+   "adjustment": "-2500.00",
+   "asset": "0.00",
+   "liability": "2500.00",
+   "asset_change": "0.00",
+   "liability_change": "2500.00"
+  }
+ },
+ {
+  "name": "a currency with no minor units rounds to the unit",
+  "currency": "JPY",
+  "minor_units": 0,
+  "price": "1000000",
+  "estimate": "700000",
+  "cost": "100001",
+  "billed": "0",
+  "held": "0",
+  "want": {
+   "progress": "14.3",
+   "overrun": false,
+   "earned": "142859",
+   "adjustment": "142859",
+   "asset": "142859",
+   "liability": "0",
+   "asset_change": "142859",
+   "liability_change": "0"
+  }
+ },
+ {
+  "name": "a fee of nothing earns nothing",
+  "currency": "SGD",
+  "minor_units": 2,
+  "price": "0.00",
+  "estimate": "6000.00",
+  "cost": "2000.00",
+  "billed": "0.00",
+  "held": "0.00",
+  "want": {
+   "progress": "33.3",
+   "overrun": false,
+   "earned": "0.00",
+   "adjustment": "0.00",
+   "asset": "0.00",
+   "liability": "0.00",
+   "asset_change": "0.00",
+   "liability_change": "0.00"
+  }
+ },
+ {
+  "name": "a half cent rounds away from zero",
+  "currency": "SGD",
+  "minor_units": 2,
+  "price": "1.00",
+  "estimate": "8.00",
+  "cost": "1.00",
+  "billed": "0.00",
+  "held": "0.00",
+  "want": {
+   "progress": "12.5",
+   "overrun": false,
+   "earned": "0.13",
+   "adjustment": "0.13",
+   "asset": "0.13",
+   "liability": "0.00",
+   "asset_change": "0.13",
+   "liability_change": "0.00"
+  }
+ }
+]

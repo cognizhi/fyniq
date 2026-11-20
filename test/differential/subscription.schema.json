@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fyniq.example/schemas/differential/subscription.schema.json",
+  "title": "Subscription contracts and their contracted MRR (PRD-001 FR-AR-15, FR-KPI-02)",
+  "description": "A set of contracts, each with a start, an optional agreed end, a monthly value and dated amendments, and the checks both implementations must reproduce: on a day, the sum of the monthly values of the contracts in force, by currency, with how many are. A contract is in force from its start; each amendment dated on or before the day sets the monthly value from its day (a cancellation ends it, a renewal starts it again and outlives the agreed end); with no renewal in force the agreed end is its last day. Nothing is converted between currencies and nothing is rounded: values are summed as written.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "contracts", "checks"],
+  "properties": {
+    "name": {"type": "string", "minLength": 1},
+    "contracts": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "currency", "starts_on", "mrr"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+          "starts_on": {"type": "string", "format": "date"},
+          "ends_on": {"type": "string", "format": "date"},
+          "mrr": {"type": "string", "pattern": "^[0-9]+\\.[0-9]{2}$"},
+          "amendments": {
+            "type": "array",
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["kind", "effective_on", "mrr"],
+              "properties": {
+                "kind": {"enum": ["upgrade", "downgrade", "cancel", "renew"]},
+                "effective_on": {"type": "string", "format": "date"},
+                "mrr": {"type": "string", "pattern": "^[0-9]+\\.[0-9]{2}$"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "checks": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["on", "want"],
+        "properties": {
+          "on": {"type": "string", "format": "date"},
+          "want": {
+            "type": "array",
+            "description": "Per currency with at least one contract in force that day, in the order the currencies first appear among the contracts",
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["currency", "mrr", "active"],
+              "properties": {
+                "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+                "mrr": {"type": "string", "pattern": "^[0-9]+\\.[0-9]{2}$"},
+                "active": {"type": "integer", "minimum": 1}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

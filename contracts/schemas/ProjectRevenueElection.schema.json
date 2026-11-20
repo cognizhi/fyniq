@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "estimated_cost": {
+      "$ref": "Money.schema.json",
+      "description": "The estimated total cost of the project, in its currency; set for over_time."
+    },
+    "method": {
+      "description": "milestone: revenue is recognised as each milestone is invoiced (the default); over_time: by cost-to-cost progress, through a monthly journal proposed for approval.",
+      "enum": [
+        "milestone",
+        "over_time"
+      ],
+      "examples": [
+        "over_time"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The election's version, for If-Match; 0 when none was made.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "method",
+    "version"
+  ],
+  "title": "ProjectRevenueElection",
+  "type": "object"
+}
