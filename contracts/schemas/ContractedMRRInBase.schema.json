@@ -15,6 +15,7 @@
         ],
         "type": "string"
       },
+      "maxItems": 50,
       "type": "array"
     },
     "mrr": {

@@ -370,7 +370,7 @@ Source: PRD-001 §C.2
 - **THEN** `founders.balances-confirmed`, the close's `directors-confirmed`, reports each balance not confirmed or changed since
 
 ### Requirement: C.2 #24 Director's pay deferred without choice
-The system SHALL check, on every relevant change and nightly, for a director's pay deferred without a recorded pay choice (FR-EQ-04); a finding blocks the close. (rev 0.593) Deferred, the owner's decision of 21 Nov 2026: no pay run calculates a director's deferred pay, so the check waits for a deferral feature that is not planned; C.2 #21 and #23 watch the director's account meanwhile.
+The system SHALL check, on every relevant change and nightly, for a director's pay deferred without a recorded pay choice (FR-EQ-04); a finding blocks the close. (rev 0.594) Deferred, the owner's decision of 21 Nov 2026: no pay run calculates a director's deferred pay, so the check waits for a deferral feature that is not planned; C.2 #21 and #23 watch the director's account meanwhile.
 
 Source: PRD-001 §C.2
 
@@ -383,7 +383,7 @@ Source: PRD-001 §C.2
 - **WHEN** the director's pay is deferred
 - **THEN** the check does not report it
 
-#### Scenario: Deferred until a deferral feature (rev 0.593)
+#### Scenario: Deferred until a deferral feature (rev 0.594)
 - **GIVEN** no pay run calculates a director's deferred pay
 - **WHEN** a pay run is posted
 - **THEN** the check has nothing to find and is not built

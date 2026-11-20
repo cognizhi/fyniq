@@ -4,8 +4,10 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/pdftext"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -170,5 +173,52 @@ func TestAnInvestorUpdateGoesOnceToThoseItIsSentTo(t *testing.T) {
 	if l := e.call(http.MethodGet, "/v1/investor-updates", controller, nil); len(l.Body["items"].([]any)) != 1 ||
 		len(l.Body["items"].([]any)[0].(map[string]any)["read_by"].([]any)) != 1 {
 		t.Errorf("the sender sees who has read it: %s", l.Raw)
+	}
+}
+
+// A published board pack is a PDF of its frozen figures and texts (FR-RPT-06, design D4): the statements and key figures of the month, the highlights, the commentary and the asks,
+// the same bytes each time, with its hash in the audit trail; a month that was not closed says so; a draft has no PDF; a Board viewer reads a published one.
+// req: FR-RPT-06
+func TestABoardPackIsARenderedPDFOfItsFrozenFigures(t *testing.T) {
+	e := newEnv(t)
+	kpiBooks(e)
+	controller := e.person(uuid.New(), authz.Controller)
+	board := e.person(uuid.New(), authz.BoardViewer)
+	made := e.call(http.MethodPost, "/v1/board-packs", controller, map[string]any{"month": "2026-11"})
+	id := made.str("id")
+	e.problemIs(e.call(http.MethodGet, "/v1/board-packs/"+id+"/pdf", controller, nil), "exportBoardPack", 404, CodeNotFound)
+	texts := map[string]any{"highlights": "Revenue passed S$5,000.", "commentary": strings.Repeat("Hosting rose with the new region. ", 30), "asks": "An introduction to two banks."}
+	if r := e.call(http.MethodPut, "/v1/board-packs/"+id, controller, texts, "If-Match", `"1"`); r.Status != http.StatusOK {
+		t.Fatalf("editing = %d: %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, "/v1/board-packs/"+id+"/publish", controller, nil, "If-Match", `"2"`); r.Status != http.StatusOK {
+		t.Fatalf("publishing = %d: %s", r.Status, r.Raw)
+	}
+	pdf := e.call(http.MethodGet, "/v1/board-packs/"+id+"/pdf", board, nil)
+	if pdf.Status != http.StatusOK || pdf.str("media_type") != "application/pdf" || pdf.str("file_name") != "board-pack-2026-11-v1.pdf" {
+		t.Fatalf("the PDF = %d: %.300s", pdf.Status, pdf.Raw)
+	}
+	data, err := base64.StdEncoding.DecodeString(pdf.str("content_base64"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text, err := pdftext.Text(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Board pack 2026-11", "Profit and loss", "Balance sheet", "Revenue passed S$5,000.", "An introduction to two banks.", "Key figures"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("the PDF's text lacks %q", want)
+		}
+	}
+	if !strings.Contains(text, "6,000.00") {
+		t.Errorf("the PDF lacks November's revenue of 6,000.00")
+	}
+	again := e.call(http.MethodGet, "/v1/board-packs/"+id+"/pdf", controller, nil)
+	if again.str("sha256") != pdf.str("sha256") {
+		t.Errorf("the same pack rendered twice differs: %s and %s", pdf.str("sha256"), again.str("sha256"))
+	}
+	if trail := auditTrail(t, e); !strings.Contains(trail, "board_pack") || !strings.Contains(trail, pdf.str("sha256")) {
+		t.Errorf("the export was not audited with its hash")
 	}
 }

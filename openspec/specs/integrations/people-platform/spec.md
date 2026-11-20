@@ -408,7 +408,7 @@ Source: PRD-001 §8.26 · Priority M · Phase P1
 - **WHEN** either database is restored
 - **THEN** the deletions in the privacy register are applied again (CMP-PD-02)
 
-#### Scenario: The receipt for an ignored bank-details event (rev 0.594)
+#### Scenario: The receipt for an ignored bank-details event (rev 0.597)
 - **WHEN** Fyniq ignores a people.bank_details.changed event as no newer than the version it holds
 - **THEN** its receipt carries that version and the record it holds, an ID and a number and never an account
 - **AND** no other event's receipt carries them

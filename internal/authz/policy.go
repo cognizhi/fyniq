@@ -2160,6 +2160,8 @@ var (
 var (
 	ListBoardPacks       = Policy{Operation: "listBoardPacks", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
 	GetBoardPack         = Policy{Operation: "getBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	// The PDF of a published pack (FR-RPT-06): read as the pack is, by whoever reads published packs; a draft has none.
+	ExportBoardPack = Policy{Operation: "exportBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
 	CreateBoardPackDraft = Policy{Operation: "createBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	EditBoardPackDraft   = Policy{Operation: "editBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	PublishBoardPack     = Policy{Operation: "publishBoardPack", Capability: ReportDefinitions, Need: Create}
@@ -2319,7 +2321,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	AddInvestorRightsEvidence, ListInvestorRightsEvidence, GetInvestorRightsEvidence, RemoveInvestorRightsEvidence, CreateControllerEntry,
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
 	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListReportDefinitions, GetReportDefinition, RunReportDefinition, RunReportDraft, CreateReportDefinition, ReplaceReportDefinition,
-	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListCapTableGrants, GetForecastAccuracy, ListAuditEngagements, OpenAuditEngagement, ConfirmAuditEngagement, CloseAuditEngagement, ListAuditRequests, AskAuditRequest, AnswerAuditRequest, CloseAuditRequest, DrawAuditSample, ListAuditSamples, GrantCapTableAccess, RevokeCapTableAccess, GetGrantedCapTable, ListBoardPacks, GetBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack,
+	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListCapTableGrants, GetForecastAccuracy, ListAuditEngagements, OpenAuditEngagement, ConfirmAuditEngagement, CloseAuditEngagement, ListAuditRequests, AskAuditRequest, AnswerAuditRequest, CloseAuditRequest, DrawAuditSample, ListAuditSamples, GrantCapTableAccess, RevokeCapTableAccess, GetGrantedCapTable, ListBoardPacks, GetBoardPack, ExportBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack,
 	ListKPIAlerts, GetDeferralRollForward, ListDashboardTiles, GetMyDashboard, GetRoleDashboard, SaveMyDashboard, SaveRoleDashboard, ListInvestorUpdates, GetInvestorUpdate, CreateInvestorUpdate, EditInvestorUpdate, SendInvestorUpdate, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
 	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetBadDebtRelief, WorkTaxPaper, ListStatutoryPackUpdates, GetInvoiceNowGate, ListInvoiceNowInbound, PollInvoiceNowInbound, DraftInvoiceNowInbound, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,

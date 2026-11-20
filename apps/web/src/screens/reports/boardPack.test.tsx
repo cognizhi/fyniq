@@ -45,6 +45,28 @@ describe("the board pack and the portal", () => {
     await noViolations(document.body);
   });
 
+  it("downloads a published pack as a PDF under the name the server gave it", async () => {
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/board-packs": { status: 200, body: { items: [published] } },
+      "GET /v1/board-packs/22222222-2222-4222-8222-222222222222": { status: 200, body: published },
+      "GET /v1/board-packs/22222222-2222-4222-8222-222222222222/pdf": { status: 200, body: { export_id: "e1", file_name: "board-pack-2026-10-v1.pdf", media_type: "application/pdf", sha256: "ab", size_bytes: 4, rows: 3, ledger_revision: 42, content_base64: "JVBERg==" } },
+    });
+    const made: string[] = [];
+    (URL as unknown as { createObjectURL: (b: Blob) => string }).createObjectURL = () => "blob:test";
+    (URL as unknown as { revokeObjectURL: () => void }).revokeObjectURL = () => undefined;
+    const click = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () {
+      made.push(this.download);
+    };
+    renderPage(BoardPack, { path: "/reports/board-pack", session: controller, mode: "expert" });
+    await screen.findByRole("option", { name: /2026-10, version 1/ });
+    fireEvent.change(screen.getByLabelText("Open a pack"), { target: { value: published.id } });
+    fireEvent.click(await screen.findByRole("button", { name: /Download the PDF/ }));
+    await waitFor(() => expect(made).toEqual(["board-pack-2026-10-v1.pdf"]));
+    HTMLAnchorElement.prototype.click = click;
+  });
+
   it("shows a Board viewer the published packs and updates sent to them, with the frozen figures and no draft", async () => {
     answer({
       "GET /v1/board-packs": { status: 200, body: { items: [{ ...published, figures: undefined }] } },

@@ -4,7 +4,7 @@ type: task
 title: Build and publish the monthly board pack
 summary: Starting a month's board pack, writing its texts, publishing it so its figures are frozen, correcting it, and who reads it
 sources:
-  - docs/user-guide/board-pack.md sha256:e5b47664574ae3f6e1df9476e8f4ebdedb0bf76cf2971902d3293b555dde0af1
+  - docs/user-guide/board-pack.md sha256:26ac12a601f423c4d73e884d8b2fc0b91b174f573112bc009e187140a1258a6e
 data_class: general
 taint: trusted
 status: draft
@@ -43,6 +43,7 @@ aliases:
 ## Publish it
 
 - **Publish** reads the figures at the ledger's revision at that moment and freezes them with the texts, so a posting made afterwards does not change the pack. A month that is not closed is published all the same, and the pack says so.
+- **Download the PDF** saves the published pack as a PDF: the month's statements, each beside the period before, its key figures and the texts, as frozen. The file is the same each time, the export is recorded with its hash, a draft has no PDF, and a month that was not closed says so on the page.
 - A published pack never changes. To correct it, start the pack of the same month again: that is the next version, which supersedes the first; the first stays.
 
 (src: docs/user-guide/board-pack.md#publish-it)
