@@ -14193,6 +14193,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payment-providers/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the invoices and subscriptions a billing provider bills
+         * @description What Fyniq mirrors of a provider that bills the customers (Model B, FR-PSP-03): each invoice with the provider's status, its collection state (the attempts so far, the next retry, the outcome) and the AR document made of it, and each subscription with what it bills each interval. Read-only: Fyniq never retries, charges or changes anything at the provider. A provider with no revenue account named on its provider account is not mirrored.
+         */
+        get: operations["getPaymentProviderInvoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payment-providers/invoices/post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue the drafts made of a billing provider's invoices
+         * @description Issues each draft AR document made of a provider's invoice (FR-PSP-07), as the provider's connector acting for the caller, only when its total, GST included, is the provider's to the cent: one whose total differs, or the invoice rules refuse, is parked with why for a person, and one that cannot be issued now (a closed period) waits. The worker posts nothing: this runs here and when a person presses Reconcile now. Needs the right to post on Invoices. Idempotent by nature (a draft already issued is not posted again); Prefer: return=preview issues nothing.
+         */
+        post: operations["postPaymentProviderInvoices"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payment-providers/payouts": {
         parameters: {
             query?: never;
@@ -47797,6 +47837,17 @@ export interface components {
             /** @description What the provider said it holds for the organisation and has not paid out, at the last sweep. */
             provider_balance?: components["schemas"]["Money"];
             /**
+             * Format: uuid
+             * @description The revenue chart account a Model B provider's invoices book to (FR-PSP-03); none: they wait for a person.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b15
+             */
+            revenue_account_id?: string;
+            /**
+             * @description Its code and name.
+             * @example 4010 Subscription revenue
+             */
+            revenue_account_name?: string;
+            /**
              * @description Why the last sweep could not close a gap (C.2 #43).
              * @example the provider answered 503
              */
@@ -47839,6 +47890,12 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11
              */
             payout_account_id?: string;
+            /**
+             * Format: uuid
+             * @description The revenue chart account a Model B provider's invoices book to, such as 4010 Subscription revenue; left out, a mirrored invoice waits for a person (FR-PSP-03).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b15
+             */
+            revenue_account_id?: string;
         };
         PaymentProviderDispute: {
             /**
@@ -47958,6 +48015,100 @@ export interface components {
              */
             status: "received" | "processed" | "parked" | "failed";
         };
+        PaymentProviderInvoice: {
+            /**
+             * Format: int64
+             * @description The provider's payment attempts so far; Fyniq never retries or charges.
+             * @example 2
+             */
+            attempt_count: number;
+            /**
+             * Format: uuid
+             * @description The contact the provider's customer was made into.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01
+             */
+            contact_id?: string;
+            /**
+             * @description The customer's name, as the provider has it; its ID when it has none.
+             * @example Lumen Health Pte Ltd
+             */
+            customer: string;
+            /**
+             * Format: uuid
+             * @description The AR document made of it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+             */
+            document_id?: string;
+            /**
+             * Format: date
+             * @description The day the provider finalised it.
+             * @example 2026-11-01
+             */
+            finalized_on?: string;
+            /**
+             * @description The provider's page for the invoice.
+             * @example https://invoice.stripe.com/i/acct/test_1
+             */
+            hosted_url?: string;
+            /**
+             * Format: uuid
+             * @description The mirror's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5001
+             */
+            id: string;
+            /**
+             * Format: date
+             * @description When the provider will try next.
+             * @example 2026-11-27
+             */
+            next_attempt_on?: string;
+            /**
+             * @description The provider's invoice number.
+             * @example ACME-0001
+             */
+            number?: string;
+            /**
+             * @description How the provider says it ended.
+             * @example paid
+             * @enum {string}
+             */
+            outcome?: "paid" | "uncollectible" | "void";
+            /**
+             * @description Why a parked invoice waits.
+             * @example Not made into an invoice: it has a discount (FR-PSP-07). A person decides it.
+             */
+            parked_reason?: string;
+            /**
+             * @description The provider's connector.
+             * @example stripe
+             */
+            provider: string;
+            /**
+             * @description The provider's ID.
+             * @example in_1Q9
+             */
+            provider_invoice_id: string;
+            /**
+             * Format: date-time
+             * @description When Fyniq last read it.
+             * @example 2026-11-20T09:30:00Z
+             */
+            seen_at: string;
+            /**
+             * @description mirrored: read, no AR document yet; drafted: its AR document made, not issued; posted: issued; parked: for a person.
+             * @example posted
+             * @enum {string}
+             */
+            state: "mirrored" | "drafted" | "posted" | "parked";
+            /**
+             * @description The provider's status of the invoice.
+             * @example open
+             * @enum {string}
+             */
+            status: "draft" | "open" | "paid" | "uncollectible" | "void";
+            /** @description The provider's total, tax included. */
+            total: components["schemas"]["Money"];
+        };
         PaymentProviderPayout: {
             /** @description Paid out, as the provider reports it. */
             amount: components["schemas"]["Money"];
@@ -48013,6 +48164,58 @@ export interface components {
             status: string;
             /** @description What it settles. */
             transactions: components["schemas"]["PaymentProviderTxn"][];
+        };
+        PaymentProviderSubscription: {
+            /** @description What it bills each interval, before tax, from its flat-priced items. */
+            amount: components["schemas"]["Money"];
+            /**
+             * @description Whether it ends at the end of the period.
+             * @example false
+             */
+            cancel_at_period_end: boolean;
+            /**
+             * Format: date
+             * @description The day it was cancelled.
+             * @example 2026-11-10
+             */
+            canceled_on?: string;
+            /**
+             * Format: date
+             * @description The end of the period it is in.
+             * @example 2026-12-01
+             */
+            current_period_end?: string;
+            /**
+             * @description The customer's name, as the provider has it; its ID when it has none.
+             * @example Lumen Health Pte Ltd
+             */
+            customer: string;
+            /**
+             * Format: uuid
+             * @description The mirror's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5002
+             */
+            id: string;
+            /**
+             * @description How often, such as every month or every 3 months.
+             * @example every month
+             */
+            interval: string;
+            /**
+             * @description The provider's connector.
+             * @example stripe
+             */
+            provider: string;
+            /**
+             * @description The provider's ID.
+             * @example sub_1
+             */
+            provider_subscription_id: string;
+            /**
+             * @description The provider's status: active, past_due, unpaid, canceled, paused, trialing…
+             * @example active
+             */
+            status: string;
         };
         PaymentProviderTxn: {
             /**
@@ -49981,6 +50184,26 @@ export interface components {
              */
             same_uen: boolean;
         };
+        PostedProviderInvoices: {
+            /**
+             * Format: int64
+             * @description Set aside for a person: the invoice rules' total differs from the provider's, or the invoice cannot be issued.
+             * @example 0
+             */
+            parked: number;
+            /**
+             * Format: int64
+             * @description Drafts issued: their total is the provider's to the cent.
+             * @example 3
+             */
+            posted: number;
+            /**
+             * Format: int64
+             * @description Left as drafts for now, such as one dated in a closed period.
+             * @example 0
+             */
+            waiting: number;
+        };
         PracticeOrganisation: {
             /**
              * @description Its books' currency: the organisation it was opened from.
@@ -51341,6 +51564,12 @@ export interface components {
              * @example eyJhZnRlciI6IjAxOTIifQ
              */
             next_cursor?: string;
+        };
+        PspInvoicesOutputBody: {
+            /** @description The mirrored invoices, newest first, with the AR document made of each. */
+            invoices: components["schemas"]["PaymentProviderInvoice"][];
+            /** @description The mirrored subscriptions. */
+            subscriptions: components["schemas"]["PaymentProviderSubscription"][];
         };
         PspPayoutsOutputBody: {
             /** @description The payouts, newest first. */
@@ -170092,6 +170321,225 @@ export interface operations {
                 };
             };
             /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-07` The event is not waiting for a person; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPaymentProviderInvoices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PspInvoicesOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    postPaymentProviderInvoices: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostedProviderInvoices"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;

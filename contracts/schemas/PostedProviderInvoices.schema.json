@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parked": {
+      "description": "Set aside for a person: the invoice rules' total differs from the provider's, or the invoice cannot be issued.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "posted": {
+      "description": "Drafts issued: their total is the provider's to the cent.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "waiting": {
+      "description": "Left as drafts for now, such as one dated in a closed period.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "posted",
+    "parked",
+    "waiting"
+  ],
+  "title": "PostedProviderInvoices",
+  "type": "object"
+}

@@ -52,6 +52,7 @@ type Runner struct {
 type Result struct {
 	Transactions int // balance transactions recorded
 	Payouts      int // payouts recorded or updated
+	Invoices     int // provider invoices and subscriptions mirrored or changed, and drafts made (Model B)
 	Errors       []string
 }
 
@@ -171,7 +172,13 @@ func (r Runner) Run(ctx context.Context, org, id uuid.UUID) (Result, error) {
 	}
 	ctx = connector.Principal(ctx, c, nil)
 	ctx = storage.WithReason(ctx, "Provider sweep (FR-PSP-06)")
-	if err := r.sweep(ctx, org, id, pp, accounts, now, &res); err != nil {
+	if err := r.sweep(ctx, org, id, pp, accounts, now, &res); err == nil {
+		if mirrored, merr := r.sweepMirror(ctx, org, id, pp, accounts, now); merr != nil {
+			res.Errors = append(res.Errors, merr.Error())
+		} else {
+			res.Invoices += mirrored
+		}
+	} else {
 		res.Errors = append(res.Errors, err.Error())
 		for _, a := range accounts {
 			if serr := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -316,6 +323,17 @@ type Handler struct {
 // Handle implements pspevents.Handler.
 func (h Handler) Handle(ctx context.Context, u storage.UnitOfWork, c storage.InstalledConnector, ev storage.PSPEvent, obj ports.ProviderObject) (string, error) {
 	now := h.Clock.Now()
+	switch obj.Kind {
+	case ports.ProviderInvoice, ports.ProviderCustomer, ports.ProviderSubscription: // Model B's mirror (FR-PSP-03): no sweep of money lines is needed
+		park, err := MirrorObject(ctx, u, c.ID, obj, now)
+		if err != nil || park != "" {
+			return park, err
+		}
+		if obj.Kind == ports.ProviderInvoice {
+			_, err = MakeDrafts(ctx, u, c.ID)
+		}
+		return "", err
+	}
 	if obj.Kind == ports.ProviderPayout && obj.Amount != "" {
 		var arrival *time.Time
 		if !obj.Created.IsZero() {
@@ -363,4 +381,55 @@ func recordLinkPayment(ctx context.Context, u storage.UnitOfWork, connector uuid
 		}
 	}
 	return nil
+}
+
+// sweepMirror is the completeness sweep of Model B (FR-PSP-01, FR-PSP-03): the provider's invoices and subscriptions created since the earliest day any
+// account is complete to, less Lookback, mirrored by what the provider reports now (an event that never came is made up for), and the drafts made of
+// the invoices that are ready. A provider with no revenue account is not billing through it, and nothing is read.
+func (r Runner) sweepMirror(ctx context.Context, org, id uuid.UUID, pp ports.PaymentProvider, accounts []storage.PSPAccount, now time.Time) (int, error) {
+	on := false
+	from := now.Add(-History)
+	for _, a := range accounts {
+		if a.RevenueAccountID != nil {
+			on = true
+		}
+		if a.SweptThrough != nil && a.SweptThrough.Add(-Lookback).After(from) {
+			from = a.SweptThrough.Add(-Lookback)
+		}
+	}
+	if !on {
+		return 0, nil
+	}
+	n := 0
+	for start := from; start.Before(now); start = start.Add(window) {
+		end := start.Add(window)
+		if end.After(now) {
+			end = now
+		}
+		var objects []ports.ProviderObject
+		for _, k := range []ports.ProviderKind{ports.ProviderSubscription, ports.ProviderInvoice} {
+			page, err := pp.List(ctx, k, start, end, "")
+			if err != nil {
+				return n, fmt.Errorf("%ss of %s: %w", k, start.Format(time.DateOnly), err)
+			}
+			objects = append(objects, page.Objects...)
+		}
+		if err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			for _, o := range objects {
+				if _, err := MirrorObject(ctx, u, id, o, now); err != nil {
+					return err
+				}
+				n++
+			}
+			return nil
+		}); err != nil {
+			return n, err
+		}
+	}
+	err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		made, err := MakeDrafts(ctx, u, id)
+		n += made
+		return err
+	})
+	return n, err
 }

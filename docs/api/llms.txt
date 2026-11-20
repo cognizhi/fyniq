@@ -872,6 +872,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/payment-providers/disputes/{dispute_id}/loss` (prepareDisputeLoss): Prepare the journal that writes a lost dispute off
 - `GET /v1/payment-providers/events` (listPaymentProviderEvents): List the payment providers' webhook events
 - `POST /v1/payment-providers/events/{event_id}/resolution` (resolvePaymentProviderEvent): Mark a parked provider event as dealt with
+- `GET /v1/payment-providers/invoices` (getPaymentProviderInvoices): Read the invoices and subscriptions a billing provider bills
+- `POST /v1/payment-providers/invoices/post` (postPaymentProviderInvoices): Issue the drafts made of a billing provider's invoices
 - `GET /v1/payment-providers/payouts` (listPaymentProviderPayouts): List the payment providers' payouts
 - `GET /v1/payroll-arrangements` (getPayrollArrangements): Show how a month's statutory payroll outputs are met
 - `POST /v1/payroll-arrangements` (setPayrollArrangement): Record how an item of the payroll go-live gate is met

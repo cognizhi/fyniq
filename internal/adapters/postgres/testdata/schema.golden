@@ -2522,12 +2522,21 @@ psp_account | created_by | text | not null |
 psp_account | created_at | timestamp with time zone | not null | 
 psp_account | version | integer | not null | 1
 psp_account | dispute_loss_account_id | uuid | null | 
+psp_account | revenue_account_id | uuid | null | 
 psp_balance | organisation_id | uuid | not null | current_org()
 psp_balance | id | uuid | not null | uuidv7()
 psp_balance | connector_id | uuid | not null | 
 psp_balance | currency | text | not null | 
 psp_balance | amount | numeric(20,4) | not null | 
 psp_balance | taken_at | timestamp with time zone | not null | 
+psp_customer | organisation_id | uuid | not null | current_org()
+psp_customer | id | uuid | not null | uuidv7()
+psp_customer | connector_id | uuid | not null | 
+psp_customer | provider_customer_id | text | not null | 
+psp_customer | name | text | null | 
+psp_customer | email | text | null | 
+psp_customer | contact_id | uuid | null | 
+psp_customer | seen_at | timestamp with time zone | not null | 
 psp_dispute_credit | organisation_id | uuid | not null | current_org()
 psp_dispute_credit | id | uuid | not null | uuidv7()
 psp_dispute_credit | connector_id | uuid | not null | 
@@ -2566,6 +2575,29 @@ psp_event | status | text | not null | 'received'::text
 psp_event | parked_reason | text | null | 
 psp_event | processed_at | timestamp with time zone | null | 
 psp_event | last_error | text | null | 
+psp_invoice | organisation_id | uuid | not null | current_org()
+psp_invoice | id | uuid | not null | uuidv7()
+psp_invoice | connector_id | uuid | not null | 
+psp_invoice | provider_invoice_id | text | not null | 
+psp_invoice | provider_customer_id | text | not null | 
+psp_invoice | provider_subscription_id | text | null | 
+psp_invoice | number | text | null | 
+psp_invoice | status | text | not null | 
+psp_invoice | currency | text | not null | 
+psp_invoice | total | numeric(20,4) | not null | 
+psp_invoice | amount_paid | numeric(20,4) | not null | 0
+psp_invoice | attempt_count | integer | not null | 0
+psp_invoice | next_attempt_on | date | null | 
+psp_invoice | outcome | text | null | 
+psp_invoice | hosted_url | text | null | 
+psp_invoice | finalized_on | date | null | 
+psp_invoice | due_on | date | null | 
+psp_invoice | draft_lines | jsonb | not null | '[]'::jsonb
+psp_invoice | state | text | not null | 'mirrored'::text
+psp_invoice | parked_reason | text | null | 
+psp_invoice | document_id | uuid | null | 
+psp_invoice | version | integer | not null | 1
+psp_invoice | seen_at | timestamp with time zone | not null | 
 psp_payout | organisation_id | uuid | not null | current_org()
 psp_payout | id | uuid | not null | uuidv7()
 psp_payout | connector_id | uuid | not null | 
@@ -2577,6 +2609,21 @@ psp_payout | arrival_date | date | null |
 psp_payout | automatic | boolean | not null | true
 psp_payout | provider_at | timestamp with time zone | not null | 
 psp_payout | seen_at | timestamp with time zone | not null | 
+psp_subscription | organisation_id | uuid | not null | current_org()
+psp_subscription | id | uuid | not null | uuidv7()
+psp_subscription | connector_id | uuid | not null | 
+psp_subscription | provider_subscription_id | text | not null | 
+psp_subscription | provider_customer_id | text | not null | 
+psp_subscription | status | text | not null | 
+psp_subscription | currency | text | not null | 
+psp_subscription | amount | numeric(20,4) | not null | 
+psp_subscription | interval_unit | text | not null | 
+psp_subscription | interval_count | integer | not null | 
+psp_subscription | period_start | date | null | 
+psp_subscription | period_end | date | null | 
+psp_subscription | cancel_at_period_end | boolean | not null | false
+psp_subscription | canceled_on | date | null | 
+psp_subscription | seen_at | timestamp with time zone | not null | 
 psp_txn | organisation_id | uuid | not null | current_org()
 psp_txn | id | uuid | not null | uuidv7()
 psp_txn | connector_id | uuid | not null | 
@@ -7115,6 +7162,7 @@ psp_account | psp_account_organisation_id_not_null | NOT NULL organisation_id
 psp_account | psp_account_payout_fkey | FOREIGN KEY (organisation_id, payout_account_id) REFERENCES money_account(organisation_id, id)
 psp_account | psp_account_payout_other | CHECK (((payout_account_id IS NULL) OR (payout_account_id <> money_account_id)))
 psp_account | psp_account_pkey | PRIMARY KEY (organisation_id, money_account_id)
+psp_account | psp_account_revenue_fkey | FOREIGN KEY (organisation_id, revenue_account_id) REFERENCES account(organisation_id, id)
 psp_account | psp_account_sweep_pair | CHECK (((swept_through IS NULL) = (swept_at IS NULL)))
 psp_account | psp_account_version_not_null | NOT NULL version
 psp_account | psp_account_version_positive | CHECK ((version >= 1))
@@ -7130,6 +7178,17 @@ psp_balance | psp_balance_organisation_id_not_null | NOT NULL organisation_id
 psp_balance | psp_balance_pkey | PRIMARY KEY (organisation_id, id)
 psp_balance | psp_balance_taken_at_not_null | NOT NULL taken_at
 psp_balance | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_customer | psp_customer_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_customer | psp_customer_connector_id_not_null | NOT NULL connector_id
+psp_customer | psp_customer_contact_fkey | FOREIGN KEY (organisation_id, contact_id) REFERENCES contact(organisation_id, id)
+psp_customer | psp_customer_id_not_null | NOT NULL id
+psp_customer | psp_customer_lengths | CHECK ((((length(provider_customer_id) >= 1) AND (length(provider_customer_id) <= 255)) AND ((length(name) >= 1) AND (length(name) <= 200)) AND ((length(email) >= 3) AND (length(email) <= 254))))
+psp_customer | psp_customer_organisation_id_not_null | NOT NULL organisation_id
+psp_customer | psp_customer_pkey | PRIMARY KEY (organisation_id, id)
+psp_customer | psp_customer_provider_customer_id_not_null | NOT NULL provider_customer_id
+psp_customer | psp_customer_provider_once | UNIQUE (organisation_id, connector_id, provider_customer_id)
+psp_customer | psp_customer_seen_at_not_null | NOT NULL seen_at
+psp_customer | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 psp_dispute_credit | psp_dispute_credit_amount | CHECK (((amount <> 'NaN'::numeric) AND (amount > (0)::numeric)))
 psp_dispute_credit | psp_dispute_credit_amount_not_null | NOT NULL amount
 psp_dispute_credit | psp_dispute_credit_by_form | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
@@ -7191,6 +7250,37 @@ psp_event | psp_event_received_at_not_null | NOT NULL received_at
 psp_event | psp_event_status_known | CHECK ((status = ANY (ARRAY['received'::text, 'processed'::text, 'parked'::text, 'failed'::text])))
 psp_event | psp_event_status_not_null | NOT NULL status
 psp_event | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_invoice | psp_invoice_amount_paid_not_null | NOT NULL amount_paid
+psp_invoice | psp_invoice_amounts | CHECK (((total <> 'NaN'::numeric) AND (total >= (0)::numeric) AND (amount_paid <> 'NaN'::numeric) AND (amount_paid >= (0)::numeric)))
+psp_invoice | psp_invoice_attempt_count_not_null | NOT NULL attempt_count
+psp_invoice | psp_invoice_attempts | CHECK (((attempt_count >= 0) AND (attempt_count <= 1000)))
+psp_invoice | psp_invoice_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_invoice | psp_invoice_connector_id_not_null | NOT NULL connector_id
+psp_invoice | psp_invoice_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+psp_invoice | psp_invoice_currency_not_null | NOT NULL currency
+psp_invoice | psp_invoice_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+psp_invoice | psp_invoice_document_once | UNIQUE (organisation_id, document_id)
+psp_invoice | psp_invoice_draft_lines_not_null | NOT NULL draft_lines
+psp_invoice | psp_invoice_id_not_null | NOT NULL id
+psp_invoice | psp_invoice_lengths | CHECK ((((length(provider_invoice_id) >= 1) AND (length(provider_invoice_id) <= 255)) AND ((length(provider_customer_id) >= 1) AND (length(provider_customer_id) <= 255)) AND ((length(number) >= 1) AND (length(number) <= 100)) AND ((length(hosted_url) >= 1) AND (length(hosted_url) <= 2048)) AND ((length(parked_reason) >= 1) AND (length(parked_reason) <= 500))))
+psp_invoice | psp_invoice_lines_array | CHECK (((jsonb_typeof(draft_lines) = 'array'::text) AND (octet_length((draft_lines)::text) <= 262144)))
+psp_invoice | psp_invoice_organisation_id_not_null | NOT NULL organisation_id
+psp_invoice | psp_invoice_outcome_known | CHECK (((outcome IS NULL) OR (outcome = ANY (ARRAY['paid'::text, 'uncollectible'::text, 'void'::text]))))
+psp_invoice | psp_invoice_parked_reason | CHECK (((state = 'parked'::text) = (parked_reason IS NOT NULL)))
+psp_invoice | psp_invoice_pkey | PRIMARY KEY (organisation_id, id)
+psp_invoice | psp_invoice_provider_customer_id_not_null | NOT NULL provider_customer_id
+psp_invoice | psp_invoice_provider_invoice_id_not_null | NOT NULL provider_invoice_id
+psp_invoice | psp_invoice_provider_once | UNIQUE (organisation_id, connector_id, provider_invoice_id)
+psp_invoice | psp_invoice_seen_at_not_null | NOT NULL seen_at
+psp_invoice | psp_invoice_state_document | CHECK ((((state = ANY (ARRAY['drafted'::text, 'posted'::text])) = (document_id IS NOT NULL)) OR (state = 'parked'::text)))
+psp_invoice | psp_invoice_state_known | CHECK ((state = ANY (ARRAY['mirrored'::text, 'drafted'::text, 'posted'::text, 'parked'::text])))
+psp_invoice | psp_invoice_state_not_null | NOT NULL state
+psp_invoice | psp_invoice_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'open'::text, 'paid'::text, 'uncollectible'::text, 'void'::text])))
+psp_invoice | psp_invoice_status_not_null | NOT NULL status
+psp_invoice | psp_invoice_total_not_null | NOT NULL total
+psp_invoice | psp_invoice_version_not_null | NOT NULL version
+psp_invoice | psp_invoice_version_positive | CHECK ((version >= 1))
+psp_invoice | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 psp_payout | psp_payout_amount | CHECK ((amount <> 'NaN'::numeric))
 psp_payout | psp_payout_amount_not_null | NOT NULL amount
 psp_payout | psp_payout_automatic_not_null | NOT NULL automatic
@@ -7208,6 +7298,26 @@ psp_payout | psp_payout_provider_at_not_null | NOT NULL provider_at
 psp_payout | psp_payout_seen_at_not_null | NOT NULL seen_at
 psp_payout | psp_payout_status_not_null | NOT NULL status
 psp_payout | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_subscription | psp_subscription_amount | CHECK (((amount <> 'NaN'::numeric) AND (amount >= (0)::numeric)))
+psp_subscription | psp_subscription_amount_not_null | NOT NULL amount
+psp_subscription | psp_subscription_cancel_at_period_end_not_null | NOT NULL cancel_at_period_end
+psp_subscription | psp_subscription_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_subscription | psp_subscription_connector_id_not_null | NOT NULL connector_id
+psp_subscription | psp_subscription_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+psp_subscription | psp_subscription_currency_not_null | NOT NULL currency
+psp_subscription | psp_subscription_id_not_null | NOT NULL id
+psp_subscription | psp_subscription_interval | CHECK (((interval_unit = ANY (ARRAY['day'::text, 'week'::text, 'month'::text, 'year'::text])) AND ((interval_count >= 1) AND (interval_count <= 3650))))
+psp_subscription | psp_subscription_interval_count_not_null | NOT NULL interval_count
+psp_subscription | psp_subscription_interval_unit_not_null | NOT NULL interval_unit
+psp_subscription | psp_subscription_lengths | CHECK ((((length(provider_subscription_id) >= 1) AND (length(provider_subscription_id) <= 255)) AND ((length(provider_customer_id) >= 1) AND (length(provider_customer_id) <= 255)) AND ((length(status) >= 1) AND (length(status) <= 40))))
+psp_subscription | psp_subscription_organisation_id_not_null | NOT NULL organisation_id
+psp_subscription | psp_subscription_pkey | PRIMARY KEY (organisation_id, id)
+psp_subscription | psp_subscription_provider_customer_id_not_null | NOT NULL provider_customer_id
+psp_subscription | psp_subscription_provider_once | UNIQUE (organisation_id, connector_id, provider_subscription_id)
+psp_subscription | psp_subscription_provider_subscription_id_not_null | NOT NULL provider_subscription_id
+psp_subscription | psp_subscription_seen_at_not_null | NOT NULL seen_at
+psp_subscription | psp_subscription_status_not_null | NOT NULL status
+psp_subscription | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 psp_txn | psp_txn_amounts | CHECK (((gross <> 'NaN'::numeric) AND (fee <> 'NaN'::numeric) AND (net <> 'NaN'::numeric) AND (net = (gross - fee))))
 psp_txn | psp_txn_category_known | CHECK ((category = ANY (ARRAY['charge'::text, 'refund'::text, 'dispute'::text, 'dispute_reversal'::text, 'fee'::text, 'payout'::text, 'other'::text])))
 psp_txn | psp_txn_category_not_null | NOT NULL category
@@ -8260,6 +8370,9 @@ CREATE INDEX psp_account_connector ON fyniq.psp_account USING btree (organisatio
 CREATE INDEX psp_balance_latest ON fyniq.psp_balance USING btree (organisation_id, connector_id, currency, taken_at DESC)
 CREATE INDEX psp_event_object ON fyniq.psp_event USING btree (organisation_id, connector_id, object_kind, object_id)
 CREATE INDEX psp_event_status ON fyniq.psp_event USING btree (organisation_id, status, received_at)
+CREATE INDEX psp_invoice_customer ON fyniq.psp_invoice USING btree (organisation_id, connector_id, provider_customer_id)
+CREATE INDEX psp_invoice_state ON fyniq.psp_invoice USING btree (organisation_id, state)
+CREATE INDEX psp_subscription_customer ON fyniq.psp_subscription USING btree (organisation_id, connector_id, provider_customer_id)
 CREATE INDEX psp_txn_payout ON fyniq.psp_txn USING btree (organisation_id, connector_id, payout_id) WHERE (payout_id IS NOT NULL)
 CREATE INDEX psp_txn_source ON fyniq.psp_txn USING btree (organisation_id, connector_id, source_kind, source_id)
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
@@ -8686,14 +8799,21 @@ CREATE UNIQUE INDEX project_task_project_key ON fyniq.project_task USING btree (
 CREATE UNIQUE INDEX psp_account_id_key ON fyniq.psp_account USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_account_pkey ON fyniq.psp_account USING btree (organisation_id, money_account_id)
 CREATE UNIQUE INDEX psp_balance_pkey ON fyniq.psp_balance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_customer_pkey ON fyniq.psp_customer USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_customer_provider_once ON fyniq.psp_customer USING btree (organisation_id, connector_id, provider_customer_id)
 CREATE UNIQUE INDEX psp_dispute_credit_once ON fyniq.psp_dispute_credit USING btree (organisation_id, connector_id, dispute_id)
 CREATE UNIQUE INDEX psp_dispute_credit_pkey ON fyniq.psp_dispute_credit USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_dispute_loss_once ON fyniq.psp_dispute_loss USING btree (organisation_id, connector_id, dispute_id)
 CREATE UNIQUE INDEX psp_dispute_loss_pkey ON fyniq.psp_dispute_loss USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_event_once ON fyniq.psp_event USING btree (organisation_id, connector_id, event_id)
 CREATE UNIQUE INDEX psp_event_pkey ON fyniq.psp_event USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_invoice_document_once ON fyniq.psp_invoice USING btree (organisation_id, document_id)
+CREATE UNIQUE INDEX psp_invoice_pkey ON fyniq.psp_invoice USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_invoice_provider_once ON fyniq.psp_invoice USING btree (organisation_id, connector_id, provider_invoice_id)
 CREATE UNIQUE INDEX psp_payout_once ON fyniq.psp_payout USING btree (organisation_id, connector_id, payout_id)
 CREATE UNIQUE INDEX psp_payout_pkey ON fyniq.psp_payout USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_subscription_pkey ON fyniq.psp_subscription USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_subscription_provider_once ON fyniq.psp_subscription USING btree (organisation_id, connector_id, provider_subscription_id)
 CREATE UNIQUE INDEX psp_txn_once ON fyniq.psp_txn USING btree (organisation_id, connector_id, txn_id)
 CREATE UNIQUE INDEX psp_txn_pkey ON fyniq.psp_txn USING btree (organisation_id, id)
 CREATE UNIQUE INDEX quote_outcome_once ON fyniq.quote_outcome USING btree (organisation_id, document_id)
@@ -8996,7 +9116,10 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_milestone DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_account', 'money_account_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_customer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_customer', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_invoice', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_payout DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_payout', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_subscription DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_subscription', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_txn DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_txn', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
@@ -9440,14 +9563,20 @@ CREATE TRIGGER project_milestone_guard BEFORE INSERT OR DELETE OR UPDATE ON fyni
 CREATE TRIGGER project_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_task FOR EACH ROW EXECUTE FUNCTION project_part_guard()
 CREATE TRIGGER psp_balance_guard BEFORE DELETE OR UPDATE ON fyniq.psp_balance FOR EACH ROW EXECUTE FUNCTION psp_balance_guard()
 CREATE TRIGGER psp_balance_no_truncate BEFORE TRUNCATE ON fyniq.psp_balance FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_customer_no_truncate BEFORE TRUNCATE ON fyniq.psp_customer FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_dispute_credit_guard BEFORE DELETE OR UPDATE ON fyniq.psp_dispute_credit FOR EACH ROW EXECUTE FUNCTION psp_dispute_credit_guard()
 CREATE TRIGGER psp_dispute_credit_no_truncate BEFORE TRUNCATE ON fyniq.psp_dispute_credit FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_dispute_loss_guard BEFORE DELETE OR UPDATE ON fyniq.psp_dispute_loss FOR EACH ROW EXECUTE FUNCTION psp_dispute_loss_guard()
 CREATE TRIGGER psp_dispute_loss_no_truncate BEFORE TRUNCATE ON fyniq.psp_dispute_loss FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_event_guard BEFORE DELETE OR UPDATE ON fyniq.psp_event FOR EACH ROW EXECUTE FUNCTION psp_event_guard()
 CREATE TRIGGER psp_event_no_truncate BEFORE TRUNCATE ON fyniq.psp_event FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_invoice_no_truncate BEFORE TRUNCATE ON fyniq.psp_invoice FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_mirror_guard BEFORE DELETE OR UPDATE ON fyniq.psp_customer FOR EACH ROW EXECUTE FUNCTION psp_mirror_guard()
+CREATE TRIGGER psp_mirror_guard BEFORE DELETE OR UPDATE ON fyniq.psp_invoice FOR EACH ROW EXECUTE FUNCTION psp_mirror_guard()
+CREATE TRIGGER psp_mirror_guard BEFORE DELETE OR UPDATE ON fyniq.psp_subscription FOR EACH ROW EXECUTE FUNCTION psp_mirror_guard()
 CREATE TRIGGER psp_payout_guard BEFORE DELETE OR UPDATE ON fyniq.psp_payout FOR EACH ROW EXECUTE FUNCTION psp_payout_guard()
 CREATE TRIGGER psp_payout_no_truncate BEFORE TRUNCATE ON fyniq.psp_payout FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_subscription_no_truncate BEFORE TRUNCATE ON fyniq.psp_subscription FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_txn_guard BEFORE DELETE OR UPDATE ON fyniq.psp_txn FOR EACH ROW EXECUTE FUNCTION psp_txn_guard()
 CREATE TRIGGER psp_txn_no_truncate BEFORE TRUNCATE ON fyniq.psp_txn FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER quote_outcome_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.quote_outcome FOR EACH ROW EXECUTE FUNCTION quote_outcome_guard()
@@ -9734,10 +9863,13 @@ project_milestone | tenant_isolation | * | (organisation_id = current_org()) | (
 project_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_customer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_dispute_credit | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_dispute_loss | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_invoice | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_payout | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_subscription | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_txn | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 quote_outcome | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10008,10 +10140,13 @@ project_milestone | enabled | forced
 project_task | enabled | forced
 psp_account | enabled | forced
 psp_balance | enabled | forced
+psp_customer | enabled | forced
 psp_dispute_credit | enabled | forced
 psp_dispute_loss | enabled | forced
 psp_event | enabled | forced
+psp_invoice | enabled | forced
 psp_payout | enabled | forced
+psp_subscription | enabled | forced
 psp_txn | enabled | forced
 quote_outcome | enabled | forced
 rate_limit_window | enabled | forced
@@ -10190,6 +10325,7 @@ corporate_register_guard() → trigger | security invoker | v | search_path=pg_c
 count_ip_request(p_client text, p_kind text, p_window timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8575f61e43912f7761275d614681a8b1
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
 create_practice_organisation(p_user uuid, p_source uuid, p_name text, p_currency text, p_at timestamp with time zone, OUT organisation_id uuid, OUT membership_id uuid, OUT assignment_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3bd3533cac5bdd714b774c72f3b3018b
+create_provider_invoice_draft(p_connector uuid, p_provider_invoice text) → TABLE(document_id uuid, contact_id uuid, contact_made boolean) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a3c9b9fb23ce7e6bb4814cca73f1b62a
 create_scheduled_bill_draft(p_recurring_bill uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 034ac02e0e0c8386e09e6dfb54a6f8fa
 create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b23a8c0aa6277cadb7bd3f6aae5f5661
 create_scheduled_invoice_draft(p_recurring_invoice uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2965fc4edb05408641ee8a47909a2109
@@ -10399,6 +10535,7 @@ psp_balance_guard() → trigger | security invoker | v | search_path=pg_catalog,
 psp_dispute_credit_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3ff52623e3d9977b1183a6afe837b287
 psp_dispute_loss_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0624664dfa2f00777a7eee9eb2377308
 psp_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 795487512cdc896caeba25ce58b8402a
+psp_mirror_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10fabdb01dd15110e497312ab9c878cd
 psp_payout_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c1040a9a3046d2137cdb49737f962685
 psp_txn_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d6b484102bd0270d4a6b98d0ea3be9f7
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37

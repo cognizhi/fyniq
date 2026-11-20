@@ -106,6 +106,8 @@ type UnitOfWork interface {
 	PSP() PSPLedger
 	// PaymentLinks are the payment links on invoices and the payments made under them (FR-AR-13, FR-PSP-02).
 	PaymentLinks() PaymentLinks
+	// PSPMirror is the Model B mirror of a billing provider: its customers, subscriptions and invoices (FR-PSP-03, FR-PSP-07).
+	PSPMirror() PSPMirror
 	// PortalLinks are the customer portal's links, one customer each (FR-AR-14).
 	PortalLinks() PortalLinks
 	// InvoiceDisputes are the disputes and promises to pay beside invoices (FR-AR-08).

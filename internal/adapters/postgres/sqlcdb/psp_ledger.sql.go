@@ -14,10 +14,10 @@ import (
 )
 
 const insertPSPAccount = `-- name: InsertPSPAccount :one
-INSERT INTO fyniq.psp_account (money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, created_by, created_at)
-VALUES ($1, $2, $3, $4, $5, $6,
-  $7, $8)
-RETURNING money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, swept_through, swept_at, sweep_error, version
+INSERT INTO fyniq.psp_account (money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, revenue_account_id, created_by, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7,
+  $8, $9)
+RETURNING money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, revenue_account_id, swept_through, swept_at, sweep_error, version
 `
 
 type InsertPSPAccountParams struct {
@@ -27,6 +27,7 @@ type InsertPSPAccountParams struct {
 	FeeAccountID         uuid.UUID
 	DisputesAccountID    *uuid.UUID
 	DisputeLossAccountID *uuid.UUID
+	RevenueAccountID     *uuid.UUID
 	CreatedBy            string
 	CreatedAt            time.Time
 }
@@ -38,6 +39,7 @@ type InsertPSPAccountRow struct {
 	FeeAccountID         uuid.UUID
 	DisputesAccountID    *uuid.UUID
 	DisputeLossAccountID *uuid.UUID
+	RevenueAccountID     *uuid.UUID
 	SweptThrough         pgtype.Date
 	SweptAt              *time.Time
 	SweepError           *string
@@ -52,6 +54,7 @@ func (q *Queries) InsertPSPAccount(ctx context.Context, arg InsertPSPAccountPara
 		arg.FeeAccountID,
 		arg.DisputesAccountID,
 		arg.DisputeLossAccountID,
+		arg.RevenueAccountID,
 		arg.CreatedBy,
 		arg.CreatedAt,
 	)
@@ -63,6 +66,7 @@ func (q *Queries) InsertPSPAccount(ctx context.Context, arg InsertPSPAccountPara
 		&i.FeeAccountID,
 		&i.DisputesAccountID,
 		&i.DisputeLossAccountID,
+		&i.RevenueAccountID,
 		&i.SweptThrough,
 		&i.SweptAt,
 		&i.SweepError,
@@ -400,7 +404,7 @@ func (q *Queries) LatestPSPBalance(ctx context.Context, arg LatestPSPBalancePara
 }
 
 const pSPAccount = `-- name: PSPAccount :one
-SELECT money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, swept_through, swept_at, sweep_error, version
+SELECT money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, revenue_account_id, swept_through, swept_at, sweep_error, version
   FROM fyniq.psp_account WHERE money_account_id = $1
 `
 
@@ -411,6 +415,7 @@ type PSPAccountRow struct {
 	FeeAccountID         uuid.UUID
 	DisputesAccountID    *uuid.UUID
 	DisputeLossAccountID *uuid.UUID
+	RevenueAccountID     *uuid.UUID
 	SweptThrough         pgtype.Date
 	SweptAt              *time.Time
 	SweepError           *string
@@ -427,6 +432,7 @@ func (q *Queries) PSPAccount(ctx context.Context, moneyAccountID uuid.UUID) (PSP
 		&i.FeeAccountID,
 		&i.DisputesAccountID,
 		&i.DisputeLossAccountID,
+		&i.RevenueAccountID,
 		&i.SweptThrough,
 		&i.SweptAt,
 		&i.SweepError,
@@ -436,7 +442,7 @@ func (q *Queries) PSPAccount(ctx context.Context, moneyAccountID uuid.UUID) (PSP
 }
 
 const pSPAccounts = `-- name: PSPAccounts :many
-SELECT money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, swept_through, swept_at, sweep_error, version
+SELECT money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, revenue_account_id, swept_through, swept_at, sweep_error, version
   FROM fyniq.psp_account ORDER BY money_account_id
 `
 
@@ -447,6 +453,7 @@ type PSPAccountsRow struct {
 	FeeAccountID         uuid.UUID
 	DisputesAccountID    *uuid.UUID
 	DisputeLossAccountID *uuid.UUID
+	RevenueAccountID     *uuid.UUID
 	SweptThrough         pgtype.Date
 	SweptAt              *time.Time
 	SweepError           *string
@@ -469,6 +476,7 @@ func (q *Queries) PSPAccounts(ctx context.Context) ([]PSPAccountsRow, error) {
 			&i.FeeAccountID,
 			&i.DisputesAccountID,
 			&i.DisputeLossAccountID,
+			&i.RevenueAccountID,
 			&i.SweptThrough,
 			&i.SweptAt,
 			&i.SweepError,
@@ -950,9 +958,9 @@ func (q *Queries) SweptPSPAccount(ctx context.Context, arg SweptPSPAccountParams
 
 const updatePSPAccount = `-- name: UpdatePSPAccount :one
 UPDATE fyniq.psp_account SET payout_account_id = $1, fee_account_id = $2,
-  disputes_account_id = $3, dispute_loss_account_id = $4, version = version + 1
-WHERE money_account_id = $5 AND version = $6
-RETURNING money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, swept_through, swept_at, sweep_error, version
+  disputes_account_id = $3, dispute_loss_account_id = $4, revenue_account_id = $5, version = version + 1
+WHERE money_account_id = $6 AND version = $7
+RETURNING money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, revenue_account_id, swept_through, swept_at, sweep_error, version
 `
 
 type UpdatePSPAccountParams struct {
@@ -960,6 +968,7 @@ type UpdatePSPAccountParams struct {
 	FeeAccountID         uuid.UUID
 	DisputesAccountID    *uuid.UUID
 	DisputeLossAccountID *uuid.UUID
+	RevenueAccountID     *uuid.UUID
 	MoneyAccountID       uuid.UUID
 	Version              int32
 }
@@ -971,6 +980,7 @@ type UpdatePSPAccountRow struct {
 	FeeAccountID         uuid.UUID
 	DisputesAccountID    *uuid.UUID
 	DisputeLossAccountID *uuid.UUID
+	RevenueAccountID     *uuid.UUID
 	SweptThrough         pgtype.Date
 	SweptAt              *time.Time
 	SweepError           *string
@@ -983,6 +993,7 @@ func (q *Queries) UpdatePSPAccount(ctx context.Context, arg UpdatePSPAccountPara
 		arg.FeeAccountID,
 		arg.DisputesAccountID,
 		arg.DisputeLossAccountID,
+		arg.RevenueAccountID,
 		arg.MoneyAccountID,
 		arg.Version,
 	)
@@ -994,6 +1005,7 @@ func (q *Queries) UpdatePSPAccount(ctx context.Context, arg UpdatePSPAccountPara
 		&i.FeeAccountID,
 		&i.DisputesAccountID,
 		&i.DisputeLossAccountID,
+		&i.RevenueAccountID,
 		&i.SweptThrough,
 		&i.SweptAt,
 		&i.SweepError,

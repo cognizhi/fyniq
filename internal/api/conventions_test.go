@@ -40,6 +40,8 @@ func TestConventionExemptions(t *testing.T) {
 	// An event of the link carries its own ID, which the inbox dedupes (FR-PPL-15); a preview of a signed message proves nothing.
 	want = append(want, "receivePeopleHoldEvent Idempotency-Key", "receivePeopleHoldEvent Prefer", "receivePeopleSessionEvent Idempotency-Key", "receivePeopleSessionEvent Prefer", "receivePeopleProjectionEvent Idempotency-Key", "receivePeopleProjectionEvent Prefer",
 		"submitPayrollRun Idempotency-Key", "submitPayrollRun Prefer", "receivePayrollPayments Idempotency-Key", "receivePayrollPayments Prefer")
+	// Posting the provider's drafts does nothing twice by its state (FR-PSP-07, rev 0.524).
+	want = append(want, "postPaymentProviderInvoices Idempotency-Key")
 	// A dispute or promise is a record of its own (FR-AR-08, rev 0.521).
 	want = append(want, "createInvoiceDispute If-Match")
 	// A portal link carries a one-time secret, and is a record of its own (FR-AR-14, rev 0.512).
