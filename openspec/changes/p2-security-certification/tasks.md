@@ -31,6 +31,7 @@ Before each slice load `fyniq-security-compliance` (and `fyniq-feature-change`, 
 - [x] 4.3 The Security assessments tab of Compliance › Controls, help keys, guide page, knowledge page, design fragment. `// req: SEC-25`
   Built: `SecurityAssessments.tsx`, help keys `compliance.security-assessments`, `.assessment-record`, `.finding-step`, the guide's "Security assessments" and its knowledge page, the design inventory; `SecurityAssessments.test.tsx`.
 - [ ] 4.4 `[live-verify]` The independent test by an outside firm; DAST against staging (CTL-CHG-07's nightly check).
+  Built: `docs/runbooks/penetration-test.md`, the steps from engaging the firm to the retest. **Left:** the test itself, and staging's nightly DAST (`dast-staging.yml` waits for `STAGING_ORIGIN`), need a firm and a cloud staging.
 
 ## 5. Readiness by framework (CMP-08)
 - [x] 5.1 `GET /v1/compliance/readiness` from the registry and the dashboard, with Annex A's clause numbers; fixtures for CE, CT, ISO and SOC 2. `// req: CMP-08`
@@ -38,3 +39,4 @@ Before each slice load `fyniq-security-compliance` (and `fyniq-feature-change`, 
 - [x] 5.2 The Readiness tab on Controls, help, guide, knowledge page, design fragment. `// req: CMP-08`
   Built: `Readiness.tsx`, help key `compliance.readiness`, the guide's "Readiness by framework" and its knowledge page; `Readiness.test.tsx`.
 - [ ] 5.3 `[live-verify]` A certification body's reading of the gaps; the statement of applicability's wording.
+  **Left:** Annex A's titles and the statement of applicability's applicability and justification per number wait for the certification body (the titles are the standard's text, not an official public page); the evidence export per framework is CMP-04 (`p2-mobile-approvals-automation` 9.2).
