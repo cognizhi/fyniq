@@ -2597,6 +2597,37 @@ type FyniqPaymentBatchRelease struct {
 	BreakGlassID   *uuid.UUID
 }
 
+type FyniqPaymentLink struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	ConnectorID       uuid.UUID
+	InvoiceID         uuid.UUID
+	ProviderRequestID string
+	Url               string
+	Reference         string
+	Currency          string
+	Amount            string
+	Status            string
+	ClosedReason      *string
+	ExpiresAt         *time.Time
+	Version           int32
+	CreatedBy         string
+	CreatedAt         time.Time
+	ClosedAt          *time.Time
+}
+
+type FyniqPaymentLinkPayment struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	LinkID            uuid.UUID
+	ConnectorID       uuid.UUID
+	ProviderPaymentID string
+	Currency          string
+	Amount            string
+	PaidAt            time.Time
+	SeenAt            time.Time
+}
+
 type FyniqPayrollArrangement struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

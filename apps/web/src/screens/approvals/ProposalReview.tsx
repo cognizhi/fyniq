@@ -1,13 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useParams } from "@tanstack/react-router";
-import { ChevronLeft, FileText, ShieldCheck, Sparkles } from "lucide-react";
+import { ChevronLeft, FileText, ShieldCheck, Sparkles, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { api } from "../../api/client";
+import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
+import { Button } from "../../components/ui/button";
 import { dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
-import { Icon, problemOf } from "../../ui";
+import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { PaperView, type PaperShape } from "../compliance/CorporatePaper";
 
 type Proposal = components["schemas"]["AIProposalDetail"];
@@ -56,6 +57,80 @@ function papersOf(impact: unknown): { paper: PaperShape }[] | null {
   const docs = (impact as { corporate_documents?: { paper?: PaperShape }[] } | null)?.corporate_documents;
   if (!Array.isArray(docs) || !docs.every((d) => d && typeof d.paper?.title === "string")) return null;
   return docs as { paper: PaperShape }[];
+}
+
+// Undo is the undo of an executed proposal (AI-31, AI-91): offered to someone who holds the right its change needs, with a reason, once. The server says
+// whether it may be offered (can_undo) and refuses when a record moved since; the screen shows the server's answer (FR-UX-22).
+function Undo({ p }: { p: Proposal }) {
+  const queries = useQueryClient();
+  const help = helpText("ai-proposal.undo");
+  const [open, setOpen] = useState(false);
+  const [why, setWhy] = useState("");
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (p.undone_at)
+    return (
+      <section className="fy-card" aria-labelledby="proposal-undone">
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id="proposal-undone">
+            Undone
+          </h2>
+        </div>
+        <div className="fy-card__body fy-stack fy-stack--2">
+          <p role="status">
+            <Icon of={Undo2} /> This change was undone {dateTime(p.undone_at)}.
+          </p>
+          {p.undo_reason && <p className="fy-small fy-secondary">Why: {p.undo_reason}</p>}
+        </div>
+      </section>
+    );
+  if (!p.can_undo) return null;
+  const run = async () => {
+    setProblem(null);
+    setBusy(true);
+    const r = await api.POST("/v1/ai/proposal-undos", { params: { header: { "Idempotency-Key": newKey() } }, body: { proposal_id: p.id, reason: why.trim() } });
+    setBusy(false);
+    if (r.error) return setProblem(problemOf(r.error));
+    setOpen(false);
+    await queries.invalidateQueries({ queryKey: ["ai-proposal", p.id] }); // the server's answer (FR-UX-22)
+  };
+  return (
+    <section className="fy-card" aria-labelledby="proposal-undo">
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id="proposal-undo" title={help.tooltip}>
+          {help.label}
+        </h2>
+      </div>
+      <div className="fy-card__body fy-stack fy-stack--3">
+        <p className="fy-small fy-secondary">
+          Puts back what this change replaced, as you, and is kept in the audit trail. It works only while nobody has changed the same record since, and for a ledger
+          entry while its period is open.
+        </p>
+        {!open ? (
+          <Button variant="secondary" onClick={() => setOpen(true)}>
+            <Icon of={Undo2} />
+            Undo this change…
+          </Button>
+        ) : (
+          <div className="fy-stack fy-stack--2">
+            <label className="fy-field">
+              <span className="fy-label">Why you are undoing it</span>
+              <input className="fy-input" value={why} maxLength={500} onChange={(e) => setWhy(e.target.value)} />
+            </label>
+            <div className="fy-row fy-row--wrap gap-2">
+              <Button variant="destructive" disabled={busy || why.trim() === ""} onClick={() => void run()}>
+                Undo it
+              </Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                Keep the change
+              </Button>
+            </div>
+          </div>
+        )}
+        {problem && <Refusal problem={problem} title="It was not undone" />}
+      </div>
+    </section>
+  );
 }
 
 // ProposalReview is an AI proposal as its approver reviews it (AI-07; design D5, D10; docs/design/screens ProposalReview):
@@ -166,6 +241,8 @@ export function ProposalReview({ proposalId, onSelect }: { proposalId: string; o
           )}
         </div>
       </section>
+
+      <Undo p={p} />
 
       <section className="fy-card" aria-labelledby="proposal-evidence">
         <div className="fy-card__head">

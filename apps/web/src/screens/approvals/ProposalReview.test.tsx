@@ -60,6 +60,7 @@ const proposal: Proposal = {
   agent: "chat",
   model: "claude-opus-5-5",
   prompt: "chat@3",
+  can_undo: false,
   you_may_approve: true,
 };
 
@@ -144,5 +145,36 @@ describe("an AI proposal's review", () => {
     renderPage(ProposalPage, { path: "/inbox/proposals/p-1", route: "/inbox/proposals/$proposalId" });
     expect(await screen.findByText("Not this year")).toBeTruthy();
     expect((screen.getByRole("checkbox", { name: "Keep item 1" }) as HTMLInputElement).disabled).toBe(true);
+  });
+
+  // req: AI-31
+  // req: AI-91
+  it("offers the undo of an executed change to someone who may do it, asks why, and shows it undone from the server's answer", async () => {
+    const done: Proposal = { ...proposal, status: "executed", approval_id: undefined, item_list: [], items: 0, can_undo: true, you_may_approve: false };
+    let undone = false;
+    const seen = answer({
+      "GET /v1/ai/proposals/p-1": () => ({ status: 200, body: undone ? { ...done, can_undo: false, undone_at: "2026-11-15T11:00:00Z", undo_reason: "Wrong branch" } : done }),
+      "POST /v1/ai/proposal-undos": () => {
+        undone = true;
+        return { status: 201, body: { proposal_id: "p-1", undone_by: "u", undone_at: "2026-11-15T11:00:00Z", reason: "Wrong branch", reversed: {} } };
+      },
+    });
+    const { container } = renderPage(ProposalPage, { path: "/inbox/proposals/p-1", route: "/inbox/proposals/$proposalId" });
+    fireEvent.click(await screen.findByRole("button", { name: /Undo this change/ }));
+    expect((screen.getByRole("button", { name: "Undo it" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText("Why you are undoing it"), { target: { value: "Wrong branch" } });
+    await noViolations(container);
+    fireEvent.click(screen.getByRole("button", { name: "Undo it" }));
+    expect(await screen.findByText(/This change was undone/)).toBeTruthy();
+    expect(screen.getByText("Why: Wrong branch")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Undo this change/ })).toBeNull();
+    expect(seen.find((x) => x.path === "/v1/ai/proposal-undos")?.body).toEqual({ proposal_id: "p-1", reason: "Wrong branch" });
+  });
+
+  it("offers no undo to someone who may not, or for a change that cannot be undone", async () => {
+    serve({ ...proposal, status: "executed", approval_id: undefined, item_list: [], items: 0, can_undo: false, you_may_approve: false });
+    renderPage(ProposalPage, { path: "/inbox/proposals/p-1", route: "/inbox/proposals/$proposalId" });
+    await screen.findByText("Summary");
+    expect(screen.queryByRole("button", { name: /Undo this change/ })).toBeNull();
   });
 });

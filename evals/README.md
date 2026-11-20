@@ -33,6 +33,8 @@ real orchestrator through the API, as a person asks. Three kinds:
   a fixture of the harness: it is checked to judge soundly, and no model is asked it. Each task type of the release
   adds its own suite.
 
+A proposal suite whose task types need a right the founder's Owner and Controller roles do not hold, such as an Accountant's journal or budget, names an `asker`: the role of a member the harness adds, who asks the cases.
+
 Each case also names its `solution`, the reads a right answer makes (a proposal case's reads come before its proposal,
 and it may make none). The API's `TestTheAssistantSuites`, which
 `make evals` runs first and `make test` runs too, checks the harness on every change. It works each expected value out

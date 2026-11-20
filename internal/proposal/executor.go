@@ -81,7 +81,11 @@ func (x Executor) Work(ctx context.Context, org uuid.UUID, row storage.OutboxRow
 		case err != nil:
 			return err
 		}
-		body, err := json.Marshal(map[string]any{"run": row.ID.String(), "records": nonEmpty(done.Records), "entries": nonEmpty(done.Entries)})
+		record := map[string]any{"run": row.ID.String(), "records": nonEmpty(done.Records), "entries": nonEmpty(done.Entries)}
+		if len(done.Undo) > 0 {
+			record["undo"] = done.Undo
+		}
+		body, err := json.Marshal(record)
 		if err != nil {
 			return err
 		}

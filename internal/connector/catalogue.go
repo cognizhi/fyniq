@@ -62,6 +62,9 @@ type Binding struct {
 	BankData      func(Config) (ports.BankData, error)
 	// PaymentProvider builds a payment provider's read-only view of its objects (FR-PSP-01): no method of it writes.
 	PaymentProvider func(Config) (ports.PaymentProvider, error)
+	// PaymentLinks builds the adapter that asks the provider for a payment request on an invoice (FR-AR-13): the connector's one write,
+	// on a port of its own so PaymentProvider stays read-only.
+	PaymentLinks func(Config) (ports.PaymentLinks, error)
 	// Model builds a model provider's adapter for one AI connection (AI-71): its configuration and credential are the
 	// connection's, never an installed connector's (p1-ai-providers design D2).
 	Model func(Config) (ports.ModelProvider, error)
@@ -87,6 +90,9 @@ func (b Binding) kinds() []Kind {
 	}
 	if b.PaymentProvider != nil {
 		ks = append(ks, PaymentProvider)
+	}
+	if b.PaymentLinks != nil {
+		ks = append(ks, PaymentLink)
 	}
 	if b.Model != nil {
 		ks = append(ks, ModelProvider)
