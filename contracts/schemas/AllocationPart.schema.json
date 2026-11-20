@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "Its part, in the base currency.",
+      "examples": [
+        "400.00"
+      ],
+      "type": "string"
+    },
+    "target": {
+      "description": "The target's label.",
+      "examples": [
+        "Engineering"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "target",
+    "amount"
+  ],
+  "title": "AllocationPart",
+  "type": "object"
+}

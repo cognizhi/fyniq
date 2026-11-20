@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "description": "Debit positive, credit negative, in the base currency.",
+      "examples": [
+        "400.00"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "What the line says.",
+      "examples": [
+        "Engineering"
+      ],
+      "type": "string"
+    },
+    "values": {
+      "description": "The dimension values the line carries.",
+      "items": {
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "account_id",
+    "amount",
+    "description",
+    "values"
+  ],
+  "title": "AllocationLine",
+  "type": "object"
+}

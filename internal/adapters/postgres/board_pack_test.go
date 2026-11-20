@@ -361,3 +361,32 @@ func TestAttackAKeptBoardPackPDFIsPostedOnlyByApproval(t *testing.T) {
 		t.Error("the worker made a kept-PDF document")
 	}
 }
+
+// A recorded run of an allocation rule, and a month of a share grant's expense, are appended once and never reversed: the record of what a rule proposed stays as it was
+// (FR-DIM-03, FR-EQ-13; FYR14).
+// req: FR-DIM-03
+// req: QA-ENG-05
+// asvs: V4.2.1
+func TestAttackARecordedRunIsNeverReversed(t *testing.T) {
+	ctx := context.Background()
+	books := porttest.NewBooks(t, store(t, "fyniq_api"), "Recorded run Pte Ltd")
+	for _, kind := range []storage.DocumentType{storage.DocumentAllocationRun, storage.DocumentShareGrantMonth} {
+		var id uuid.UUID
+		if err := store(t, "fyniq_api").Do(ctx, books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			d, err := u.Documents().Create(ctx, storage.NewDocument{Type: kind, Payload: []byte(`{"date":"2026-10-31"}`)})
+			id = d.ID
+			if err != nil {
+				return err
+			}
+			return u.Documents().SetStatus(ctx, d.ID, storage.DocumentPosted)
+		}); err != nil {
+			t.Fatalf("%s recorded: %v", kind, err)
+		}
+		err := store(t, "fyniq_api").Do(ctx, books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			return u.Documents().SetStatus(ctx, id, storage.DocumentReversed)
+		})
+		if storage.CodeOf(err) != storage.CodeProposalRun {
+			t.Errorf("a recorded %s reversed: %v", kind, err)
+		}
+	}
+}

@@ -2694,6 +2694,165 @@ components:
         - id
         - reply_due
       type: object
+    Goal:
+      additionalProperties: false
+      properties:
+        due_on:
+          description: When it is due.
+          examples:
+            - "2026-12-31"
+          format: date
+          type: string
+        id:
+          description: The goal.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01
+          format: uuid
+          type: string
+        measures:
+          description: Its key results.
+          items:
+            $ref: "#/components/schemas/Measure"
+          type: array
+        parent_id:
+          description: The goal it aligns with.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a00
+          format: uuid
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: A personal goal's owner.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        progress:
+          description: The average progress of its key results, a whole percentage rounded down; 0 with none.
+          examples:
+            - 60
+          format: int64
+          maximum: 100
+          minimum: 0
+          type: integer
+        scope:
+          description: Whose goal it is.
+          enum:
+            - company
+            - team
+            - personal
+          examples:
+            - personal
+          type: string
+        starts_on:
+          description: When it began.
+          examples:
+            - "2026-07-01"
+          format: date
+          type: string
+        state:
+          description: Where it is.
+          enum:
+            - open
+            - done
+            - cancelled
+          examples:
+            - open
+          type: string
+        team:
+          description: A team goal's team.
+          examples:
+            - Engineering
+          type: string
+        title:
+          description: The goal.
+          examples:
+            - 3 pilot customers live by 31 December
+          type: string
+      required:
+        - id
+        - scope
+        - title
+        - starts_on
+        - due_on
+        - state
+        - progress
+        - measures
+      type: object
+    GoalClosingInputBody:
+      additionalProperties: false
+      properties:
+        state:
+          description: Done, or cancelled when it no longer applies.
+          enum:
+            - done
+            - cancelled
+          examples:
+            - done
+          type: string
+      required:
+        - state
+      type: object
+    GoalInput:
+      additionalProperties: false
+      properties:
+        due_on:
+          description: "When it is due: today or later."
+          examples:
+            - "2026-12-31"
+          format: date
+          type: string
+        measures:
+          description: Its key results.
+          items:
+            $ref: "#/components/schemas/MeasureInput"
+          maxItems: 10
+          type:
+            - array
+            - "null"
+        parent_id:
+          description: The goal it aligns with.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a00
+          format: uuid
+          type: string
+        person_id:
+          description: For a personal goal, its owner; the caller when left out.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        scope:
+          description: Whose goal it is.
+          enum:
+            - company
+            - team
+            - personal
+          examples:
+            - personal
+          type: string
+        team:
+          description: For a team goal, the team.
+          examples:
+            - Engineering
+          maxLength: 120
+          type: string
+        title:
+          description: The goal.
+          examples:
+            - 3 pilot customers live by 31 December
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - scope
+        - title
+        - due_on
+      type: object
     GovAsk:
       additionalProperties: false
       properties:
@@ -5580,6 +5739,123 @@ components:
         - envelope_sha256
         - approval
       type: object
+    Measure:
+      additionalProperties: false
+      properties:
+        current:
+          description: Its latest value, a decimal string.
+          examples:
+            - "2"
+          type: string
+        id:
+          description: The measure.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4b01
+          format: uuid
+          type: string
+        lower_is_better:
+          description: "Lower is better: the target is below the start value."
+          examples:
+            - false
+          type: boolean
+        progress:
+          description: How far from the start value to the target, a whole percentage rounded down.
+          examples:
+            - 66
+          format: int64
+          maximum: 100
+          minimum: 0
+          type: integer
+        start_value:
+          description: Where it started, a decimal string.
+          examples:
+            - "0"
+          type: string
+        status:
+          description: Done at 100%; on track when progress keeps up with the share of the period that has passed; behind otherwise; not yet for a KPI that has not reached its target.
+          enum:
+            - done
+            - on_track
+            - behind
+            - not_yet
+          examples:
+            - on_track
+          type: string
+        target:
+          description: Where it should get to, a decimal string.
+          examples:
+            - "3"
+          type: string
+        title:
+          description: What is measured.
+          examples:
+            - Pilot customers live
+          type: string
+        unit:
+          description: Its unit.
+          examples:
+            - customers
+          type: string
+      required:
+        - id
+        - title
+        - start_value
+        - target
+        - current
+        - lower_is_better
+        - progress
+        - status
+      type: object
+    MeasureInput:
+      additionalProperties: false
+      properties:
+        start_value:
+          description: Where it starts, a decimal string; 0 when left out.
+          examples:
+            - "0"
+          pattern: ^-?[0-9]{1,12}(\.[0-9]{1,4})?$
+          type: string
+        target:
+          description: Where it should get to, a decimal string; below the start value means lower is better.
+          examples:
+            - "3"
+          pattern: ^-?[0-9]{1,12}(\.[0-9]{1,4})?$
+          type: string
+        title:
+          description: What is measured.
+          examples:
+            - Pilot customers live
+          maxLength: 200
+          minLength: 1
+          type: string
+        unit:
+          description: Its unit.
+          examples:
+            - customers
+          maxLength: 30
+          type: string
+      required:
+        - title
+        - target
+      type: object
+    MeasureUpdateInputBody:
+      additionalProperties: false
+      properties:
+        note:
+          description: A note.
+          examples:
+            - Second pilot went live on Monday.
+          maxLength: 300
+          type: string
+        value:
+          description: The value now, a decimal string.
+          examples:
+            - "2"
+          pattern: ^-?[0-9]{1,12}(\.[0-9]{1,4})?$
+          type: string
+      required:
+        - value
+      type: object
     MyDetails:
       additionalProperties: false
       properties:
@@ -5617,6 +5893,35 @@ components:
           type: string
       required:
         - emergency_contacts
+      type: object
+    MyGoalsOutputBody:
+      additionalProperties: false
+      properties:
+        company:
+          description: The company's goals.
+          items:
+            $ref: "#/components/schemas/Goal"
+          type: array
+        kpis:
+          description: The caller's role KPIs.
+          items:
+            $ref: "#/components/schemas/Measure"
+          type: array
+        mine:
+          description: The caller's own goals.
+          items:
+            $ref: "#/components/schemas/Goal"
+          type: array
+        team:
+          description: The teams' goals.
+          items:
+            $ref: "#/components/schemas/Goal"
+          type: array
+      required:
+        - company
+        - team
+        - mine
+        - kpis
       type: object
     MyPayslipsOutputBody:
       additionalProperties: false
@@ -7163,6 +7468,23 @@ components:
           type: integer
       required:
         - published
+      type: object
+    PersonGoalsOutputBody:
+      additionalProperties: false
+      properties:
+        goals:
+          description: The person's goals.
+          items:
+            $ref: "#/components/schemas/Goal"
+          type: array
+        kpis:
+          description: The person's role KPIs.
+          items:
+            $ref: "#/components/schemas/Measure"
+          type: array
+      required:
+        - goals
+        - kpis
       type: object
     PersonInput:
       additionalProperties: false
@@ -12293,6 +12615,148 @@ paths:
       summary: Withdraw one's own flexible work request
       tags:
         - Leave
+  /v1/goals:
+    post:
+      description: Sets a company, team or personal goal with up to ten key results, each a number from a start value to a target (decimal strings; a target below the start value means lower is better). The HR administrator or the Owner sets company goals; they and any line manager set team goals; a person sets their own goals, their line manager their reports', and the HR administrator and the Owner anyone's. A personal goal may align with a goal of the company or team. A goal's words never change. It is audited.
+      operationId: setGoal
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Set a goal
+      tags:
+        - Performance
+  /v1/goals/{id}/closing:
+    post:
+      description: Marks a goal done or cancelled, once, by whoever may change it. It is audited.
+      operationId: closeGoal
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The goal.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The goal.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalClosingInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Mark a goal done or cancelled
+      tags:
+        - Performance
   /v1/government-paid-claims/{id}/events:
     post:
       description: "Records what the portal answered: a receipt of some or all of the amount, or a rejection. A claim's state is worked out from its events. The HR officer and the HR administrator. It is audited."
@@ -15967,6 +16431,59 @@ paths:
       summary: Make a formal flexible work request
       tags:
         - Leave
+  /v1/me/goals:
+    get:
+      description: PRD-002 NM-PRF-01, NM-PRF-02. The company's and the teams' goals, which every member reads so that a personal goal can align with one, and the caller's own goals and role KPIs, each key result with its progress and where it stands. Any signed-in member. It changes nothing.
+      operationId: listMyGoals
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyGoalsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: My goals
+      tags:
+        - Performance
   /v1/me/grievances:
     get:
       description: The caller's own grievances, newest first, with their state, who handles each and, once decided, the written outcome. The inquiry record is never shown to the complainant.
@@ -17144,6 +17661,81 @@ paths:
       summary: Tell the company you are sick
       tags:
         - Leave
+  /v1/measures/{id}/updates:
+    post:
+      description: "Records the value of a key result or role KPI now, with who gave it and when: the history is kept and the latest value is the measure's. By whoever may change the goal, or by the person for their own KPI. It is audited."
+      operationId: updateMeasure
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The measure.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The measure.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4b01
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeasureUpdateInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Measure"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Update a key result or KPI
+      tags:
+        - Performance
   /v1/offboardings:
     get:
       description: The active leavings, the soonest last day first, each with its dates kept apart, its checklist, where the service letter is and the leave settlement to the last day. The HR officer, the HR administrator and the Owner. It changes nothing.
@@ -20709,6 +21301,75 @@ paths:
       summary: A leaver's final pay
       tags:
         - Payroll
+  /v1/people/{id}/goals:
+    get:
+      description: A person's personal goals and role KPIs. The person reads their own, their line manager their reports', and the HR officer, the HR administrator and the Owner anyone's; anyone else is told there is no such person. It changes nothing.
+      operationId: listPersonGoals
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonGoalsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: A person's goals and KPIs
+      tags:
+        - Performance
   /v1/people/{id}/government-paid-leave:
     post:
       description: "Records maternity, paternity or shared parental leave for a child the person declared, under the country pack's rule for the child's birth date: a Singapore Citizen child, the months of service the scheme asks for, its window and weeks. A block never overlaps other leave. The claim deadline is worked out. The HR officer and the HR administrator. It is audited; the child's date of birth is not in the audit event."
@@ -20956,6 +21617,81 @@ paths:
       summary: Change a person's job, manager or department
       tags:
         - People
+  /v1/people/{id}/kpis:
+    post:
+      description: Sets a role KPI for a person with its target, entered by a person; a KPI read from Fyniq's metrics arrives with the link. The person's line manager, the HR administrator and the Owner. It is audited.
+      operationId: setKPI
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeasureInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Measure"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Set a role KPI
+      tags:
+        - Performance
   /v1/people/{id}/leave/{year}:
     get:
       description: "Returns a person's working pattern and, for each leave type, the balance (entitled, taken, booked, expired, encashed, left) and the steps of the calculation with their sources. The person reads their own; the line manager reads their reports'; the people team reads anyone's (Appendix B: Leave requests). Anyone else is refused as if the person did not exist. It changes nothing."
@@ -24133,6 +24869,8 @@ tags:
     name: Self-service
   - description: Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07).
     name: Letters
+  - description: Company, team and personal goals with key results, and role KPIs (NM-PRF-01, NM-PRF-02).
+    name: Performance
   - description: Requisitions approved by the Owner, job posts checked for fair wording and the Fair Consideration Framework's advert dates (NM-REC-01 to NM-REC-03).
     name: Hiring
   - description: "The confidential grievance channel: filing, routing away from the people it is about, the inquiry record and the written outcome (NM-SEC-06)."

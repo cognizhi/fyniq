@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "description": "The first day of the first month.",
+      "examples": [
+        "2026-03-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "rule_id": {
+      "description": "The rule to run.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "to": {
+      "description": "The last day of the last month (the same month or a later one, at most a year in all).",
+      "examples": [
+        "2026-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "usage": {
+      "$ref": "AllocationUsage.schema.json",
+      "description": "With the usage key: the usage file."
+    }
+  },
+  "required": [
+    "rule_id",
+    "from",
+    "to"
+  ],
+  "title": "AllocationRunInput",
+  "type": "object"
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "target": {
+      "description": "The target's label.",
+      "examples": [
+        "Engineering"
+      ],
+      "type": "string"
+    },
+    "weight": {
+      "description": "In the key's unit: hundredths of a percent, people, or millionths of a unit of usage.",
+      "examples": [
+        4000
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "target",
+    "weight"
+  ],
+  "title": "AllocationWeight",
+  "type": "object"
+}

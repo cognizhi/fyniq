@@ -203,6 +203,11 @@ Source: PRD-001 §8.2 · Priority S · Phase P2
 - **WHEN** a shared cost is split by fixed percentages, by headcount or by usage
 - **THEN** the weights are whole numbers, the part the key cannot place is the last weight, and the split is by ALLOC-PRORATA so the parts and the unallocated amount add to the cost exactly
 
+#### Scenario: A rule runs over whole months into a draft journal (rev 0.615)
+- **WHEN** a rule runs over whole months
+- **THEN** the cost split is the source accounts' postings with no dimension value, the usage key refuses a file that does not equal the bill it explains, and the journal is a draft an approver posts
+- **AND** a rule allocates a month once, and the recorded run is never changed or reversed
+
 #### Scenario: Unallocated line
 - **WHEN** the key cannot place part of a cost
 - **THEN** that part stays on an **unallocated** line

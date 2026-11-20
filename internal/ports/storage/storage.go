@@ -717,6 +717,14 @@ const (
 	// DocumentBoardPackPDF holds a published board pack's PDF as evidence (FR-RPT-06, FR-DOC-05): one per pack, a draft with the file attached until another person approves keeping it, then
 	// posted, so the file is committed to the retention-locked store and is append-only (FR-DOC-13). It posts nothing and is never reversed (FYR12).
 	DocumentBoardPackPDF DocumentType = "board_pack_pdf"
+	// DocumentAllocationRule is an allocation rule (FR-DIM-03): the source expense accounts, the key and the targets, a new version at each change; it posts nothing. DocumentAllocationRun is
+	// a rule's run over whole months, saved with the draft journal it proposed, posted at once so it is never changed and never reversed (FYR14).
+	DocumentAllocationRule DocumentType = "allocation_rule"
+	DocumentAllocationRun  DocumentType = "allocation_run"
+	// DocumentShareGrant is a grant of shares for services (FR-EQ-13): the holder, the fair value per share, the service start and the tranches, a new version at each change; it posts nothing.
+	// DocumentShareGrantMonth is a month of a grant's expense proposed as a draft journal, posted at once so it is never changed and never reversed (FYR14).
+	DocumentShareGrant      DocumentType = "share_grant"
+	DocumentShareGrantMonth DocumentType = "share_grant_month"
 	// DocumentExpenseClaim is a member's claim for what they spent for the company (FR-AP-07, FR-AP-17;
 	// p1-expense-claims): its receipt and mileage lines, posted by expense_claim@1 once another person approves it.
 	DocumentExpenseClaim DocumentType = "expense_claim"

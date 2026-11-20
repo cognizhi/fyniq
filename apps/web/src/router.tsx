@@ -119,6 +119,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "compliance-filing-packs": lazyRouteComponent(() => import("./screens/compliance/FilingPack"), "FilingPack"),
   "bad-debts": lazyRouteComponent(() => import("./screens/sales/BadDebts"), "BadDebts"),
   "compliance-gst": lazyRouteComponent(() => import("./screens/compliance/GstReturns"), "GstReturns"),
+  allocations: lazyRouteComponent(() => import("./screens/accounting/Allocations"), "Allocations"),
   "evidence-search": lazyRouteComponent(() => import("./screens/accounting/EvidenceSearch"), "EvidenceSearch"),
   "audit-trail": lazyRouteComponent(() => import("./screens/compliance/AuditTrail"), "AuditTrail"),
   compliance: lazyRouteComponent(() => import("./screens/compliance/Compliance"), "Compliance"),

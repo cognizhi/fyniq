@@ -126,6 +126,13 @@ var Categories = []Category{
 		Columns:    []string{"letter_request.purpose", "letter_request.data", "letter_request.decision_reason", "letter_issued.data", "letter_template_version.note", "letter_delegation.revoked_reason"},
 	},
 	{
+		Key: "performance-goals", What: "A person's goals and role KPIs with their key results, and each value given for one with the note that came with it",
+		Purpose:    "To agree what a person works towards, to see how far they have got and to talk about it fairly (NM-PRF-01, NM-PRF-02)",
+		Capability: "Performance (P2)",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record, as MOM requires employment records for 1 year after the person leaves; the company may keep them longer [owner to confirm]"},
+		Columns:    []string{"measure_update.note"},
+	},
+	{
 		Key: "grievances", What: "A concern a member raised in confidence: what happened in their words, the people it is about (by person), who handles it, the inquiry record (notes, interviews, findings and hand-overs) and the written outcome with what it concludes",
 		Purpose:    "To look into a workplace concern fairly and in confidence, to give the person who raised it a written outcome and to show the company handled it (Workplace Fairness Act and the Tripartite Guidelines, NM-SEC-06)",
 		Capability: "Grievances (NM-SEC-06)",

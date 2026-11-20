@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accounts": {
+      "description": "The expense accounts whose cost, with no dimension value, is split (IDs of accounts).",
+      "items": {
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01"
+        ],
+        "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "type": "array"
+    },
+    "archived": {
+      "description": "true to put the rule out of use: it is not run again and its runs stay.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "key": {
+      "description": "fixed: percentages on the targets; headcount: the people of each target's department in the people projection, those with no department being what it cannot place; usage: a usage file's quantities per code, the rows naming no target being what it cannot place.",
+      "enum": [
+        "fixed",
+        "headcount",
+        "usage"
+      ],
+      "examples": [
+        "fixed"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The rule's name.",
+      "examples": [
+        "Cloud hosting by department"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "targets": {
+      "description": "Where the cost goes.",
+      "items": {
+        "$ref": "AllocationTarget.schema.json"
+      },
+      "maxItems": 50,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "accounts",
+    "key",
+    "targets"
+  ],
+  "title": "AllocationRuleInput",
+  "type": "object"
+}

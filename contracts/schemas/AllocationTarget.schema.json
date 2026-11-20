@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "With the usage key: the code the usage file names this target by.",
+      "examples": [
+        "customer-acme"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    },
+    "label": {
+      "description": "What the target is called.",
+      "examples": [
+        "Engineering"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "percent": {
+      "description": "With the fixed key: this target's percentage, above nothing, at most two decimals; together at most 100, the rest stays unallocated.",
+      "examples": [
+        "40"
+      ],
+      "pattern": "^[0-9]+(\\.[0-9]{1,2})?$",
+      "type": "string"
+    },
+    "values": {
+      "description": "The dimension values the allocated lines carry, one of each dimension at most (the department, the project, a customer or a product).",
+      "items": {
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"
+        ],
+        "type": "string"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "label",
+    "values"
+  ],
+  "title": "AllocationTarget",
+  "type": "object"
+}

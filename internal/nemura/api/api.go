@@ -62,6 +62,7 @@ func Config(v string) huma.Config {
 		{Name: "Onboarding", Description: "The task to invite new people to Fyniq, and a leaver's dates, checklist and leave settlement (NM-ONB-02, NM-ONB-03)."},
 		{Name: "Self-service", Description: "A person's own details and requests, and what waits for the people team (NM-ESS-03, NM-ESS-04)."},
 		{Name: "Letters", Description: "Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07)."},
+		{Name: "Performance", Description: "Company, team and personal goals with key results, and role KPIs (NM-PRF-01, NM-PRF-02)."},
 		{Name: "Hiring", Description: "Requisitions approved by the Owner, job posts checked for fair wording and the Fair Consideration Framework's advert dates (NM-REC-01 to NM-REC-03)."},
 		{Name: "Grievances", Description: "The confidential grievance channel: filing, routing away from the people it is about, the inquiry record and the written outcome (NM-SEC-06)."},
 		{Name: "Privacy", Description: "Erasure of a former employee's personal data after its retention, by two people (NM-SEC-08)."},
@@ -163,6 +164,8 @@ type Deps struct {
 	LinkOps LinkOps
 	// Erasure is the erasure of a former employee's personal data (NM-SEC-08); nil: the deployment has none.
 	Erasure ErasureOps
+	// Performance is goals and KPIs (NM-PRF-01, NM-PRF-02); nil: the deployment has none.
+	Performance Performance
 	// Hiring is requisitions and job posts (NM-REC-01 to NM-REC-03); nil: the deployment has none.
 	Hiring Hiring
 	// Plans is onboarding plans (NM-ONB-01); nil: the deployment has none.
@@ -212,6 +215,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerOnboarding()
 	a.registerPlans()
 	a.registerHiring()
+	a.registerPerformance()
 	a.registerPayroll()
 	a.registerLink()
 	a.registerLinkAdmin()

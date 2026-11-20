@@ -24,6 +24,7 @@ export function Shell({ children, directory, features, roles }: { children: Reac
             <a href="/me/details">{t("nav.details")}</a>
             <a href="/me/ask/hr">{t("nav.ask")}</a>
             <a href="/me/letters/new">{t("letters.ask")}</a>
+            <a href="/me/goals">{t("nav.goals")}</a>
             <a href="/me/grievances">{t("nav.concerns")}</a>
             {directory && <a href="/people/requests">{t("nav.queue")}</a>}
             {directory && <a href="/people/onboarding">{t("nav.onboarding")}</a>}
