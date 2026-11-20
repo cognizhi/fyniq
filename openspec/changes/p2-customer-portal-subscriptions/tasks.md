@@ -19,7 +19,9 @@ Migrations 001070 to 001099. Cloud and real-account checks are tagged `[live-ver
 
 ## 3. Subscription contracts (FR-AR-15)
 
-- [ ] 3.1 Contracts and dated amendments, the derived schedule and contracted MRR, the `subscriptions` screen's own-contract half.
+- [x] 3.1 Contracts and dated amendments, the derived schedule and contracted MRR, the `subscriptions` screen's own-contract half.
+  - Built (rev 0.566): migration 001079, `internal/domain/subscription`, `internal/adapters/postgres/subscription.go`, `internal/api/subscriptions.go` (`createSubscriptionContract`, `listSubscriptionContracts`, `getSubscriptionContract`, `amendSubscriptionContract`, `getContractedMRR`), `SubscriptionContracts` on `/sales/subscriptions`, help keys, guide, kb. Tests: `TestAContractsMonthlyValueFollowsItsAmendmentsFromTheirDays`, `TestTheScheduleIsTheValueInForceOnEachMonthsLastDay` (worked by hand), `TestASubscriptionContractNeverChangesAndItsAmendmentsOnlyAccumulate`, `TestASubscriptionContractIsAmendedFromDatedDaysAndItsMRRIsDerived`, `matrixSubscriptions`, the NaN attacks, `subscriptions.test.tsx`. Records only, no posting: no oracle half is needed (design D3).
+  - **Left:** evidence on an amendment (FR-DOC-05), the day-weighted revenue schedule feeding deferred revenue (with an oracle half), a base-currency total, the contract on the customer portal, the KPI page's contracted MRR tile (FR-KPI-04).
 
 ## 4. Revenue over time for fixed-fee projects (FR-PRJ-11)
 

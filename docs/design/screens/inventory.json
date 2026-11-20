@@ -1061,6 +1061,7 @@
     "Built (rev 0.524): subscriptions with what each bills and its status; invoices with the provider's status, attempts and next retry beside Fyniq's state (read, draft made, issued, waiting for a person); Issue the drafts; a banner for a parked invoice and for one the provider voided after it was issued",
     "Parked items with ⚠ for the accountant (usage prices, trials with add-ons)",
     "P2: contract amendments (upgrade, downgrade, cancel) with dated schedule changes and evidence",
+    "Built (rev 0.566): Your subscription contracts: a table with status and monthly value today, New contract, Amend (upgrade, downgrade, cancel, renew from a day), and the contracted MRR by currency; evidence on an amendment is left",
     "Booked MRR vs contracted MRR, each named"
    ],
    "states": [
