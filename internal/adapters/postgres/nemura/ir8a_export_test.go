@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -125,6 +126,46 @@ func TestTheIR8APayloadIsMadeFromTheYearsApprovedRuns(t *testing.T) {
 	if _, err := svc.Export(ctx, prep, runID, bad); payCode(err) != payroll.CodeInvalid || !strings.Contains(err.Error(), "A6") {
 		t.Errorf("no contact number: %v", err)
 	}
+	// a year of more than one part: IRAS takes 2,000 records in a submission (A11), so the year is made a part at a time; here the part holds one record
+	for _, p := range []uuid.UUID{lt.ben, lt.cy} {
+		if err := restricted.SetIR8AParticulars(ctx, hr, p, api.IR8AParticulars{Sex: "M", AddressType: "L", Address1: "1 Raffles Place", PostalCode: "048616"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	whole, err := svc.Export(ctx, prep, runID, good)
+	if err != nil || whole.Lines != 2 || whole.Parts != 0 || whole.FileName != "ir8a-2026.json" {
+		t.Fatalf("a year of two people in one payload: %+v %v", whole, err)
+	}
+	svc.AISChunk = 1
+	var seen []string
+	var wholeTotal int
+	for part := 1; part <= 2; part++ {
+		in := good
+		in.Part = part
+		f, err := svc.Export(ctx, prep, runID, in)
+		if err != nil || f.Lines != 1 || f.Parts != 2 || f.Part != part || f.FileName != fmt.Sprintf("ir8a-2026-part-%d-of-2.json", part) || f.Total != "4500.00" {
+			t.Fatalf("part %d: %+v %v", part, f, err)
+		}
+		raw, _ := base64.StdEncoding.DecodeString(f.ContentBase64)
+		var one struct {
+			Org    map[string]any   `json:"orgAndSubmissionInfo"`
+			People []map[string]any `json:"employeePersonalParticulars"`
+		}
+		if err := json.Unmarshal(raw, &one); err != nil || len(one.People) != 1 || one.Org["totalNumberIR8A"] != float64(1) || one.Org["amountTotalIncomeOfIR8A"] != float64(4500) {
+			t.Fatalf("part %d's payload: %v %s", part, err, raw)
+		}
+		seen = append(seen, one.People[0]["idNumber"].(string))
+		wholeTotal += int(one.Org["amountTotalIncomeOfIR8A"].(float64))
+	}
+	if seen[0] == seen[1] || wholeTotal != 9000 {
+		t.Errorf("the parts hold the same person twice, or do not add up: %v %d", seen, wholeTotal)
+	}
+	third := good
+	third.Part = 3
+	if _, err := svc.Export(ctx, prep, runID, third); payCode(err) != payroll.CodeInvalid || !strings.Contains(err.Error(), "part 3 does not exist") {
+		t.Errorf("a part the year does not have: %v", err)
+	}
+	svc.AISChunk = 0
 	// the reads are audited; the trail holds neither the NRIC nor the address
 	var reads, leaks int
 	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body LIKE '%NRIC or FIN%'`, lt.c.org).Scan(&reads); err != nil || reads == 0 {

@@ -48,6 +48,8 @@ type Manifest struct {
 	Skipped   []Skipped `json:"skipped"`
 	Reference string    `json:"reference,omitempty"`
 	FileName  string    `json:"file_name,omitempty"`
+	Parts     int       `json:"parts,omitempty"` // an IR8A payload of a year of more than one part
+	Part      int       `json:"part,omitempty"`
 }
 
 // safeCell keeps a spreadsheet from running a cell as a formula: a value that starts with =, +, - or @ (or a tab or return) is prefixed with an apostrophe.

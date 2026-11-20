@@ -172,3 +172,26 @@ func TestARequisitionIsApprovedOnceAndItsPostIsCheckedPublishedOnceAndKeepsItsAd
 		t.Errorf("another organisation sees %d requisitions: %v", len(seen), err)
 	}
 }
+
+// In founder mode the Owner asks for a requisition and approves it themselves: the record names the same person twice and the approval is
+// accepted (the owner's decision of 21 Nov 2026, the one exception to NM-ROLE-05, for requisitions only).
+// req: NM-REC-01
+// asvs: V8.3.1
+func TestTheOwnerMayApproveARequisitionTheyAskedFor(t *testing.T) {
+	c := newCompany(t)
+	now := today.Add(11 * time.Hour)
+	in := api.RequisitionInput{Title: "Bookkeeper", Department: "Finance", Reason: "new", SalaryMin: "4000.00", SalaryMax: "5000.00", TargetStart: "2099-06-01"}
+	var req uuid.UUID
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
+		req, err = nemura.RequestRequisition(ctx, tx, c.org, now, c.owner, in)
+		return
+	})
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.DecideRequisition(ctx, tx, c.org, now, c.owner, req, true, "My own request, in founder mode.")
+	})
+	var r api.Requisition
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) { r, err = nemura.OneRequisition(ctx, tx, req); return })
+	if r.State != "approved" || r.RequestedBy == "" || r.RequestedBy != r.DecidedBy {
+		t.Errorf("%+v", r)
+	}
+}

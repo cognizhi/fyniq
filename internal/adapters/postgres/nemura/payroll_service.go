@@ -29,6 +29,8 @@ type PayrollService struct {
 	Renderer letters.Renderer
 	// Cipher opens the sealed bank accounts of a payment file; without it a payment file answers NM_UNAVAILABLE.
 	Cipher ports.Cipher
+	// AISChunk is the most records in a part of the IR8A payload; 0 is IRAS's limit of 2,000 (A11). Only tests set a smaller one.
+	AISChunk int
 }
 
 var _ api.Payroll = PayrollService{}
@@ -619,14 +621,14 @@ func (p PayrollService) Export(ctx context.Context, s api.Session, run uuid.UUID
 		case "cpf":
 			file, m, err = ExportCPF(ctx, tx, p.Cipher, s.Organisation, p.Clock.Now(), s.Member, run, in.Version, CPFInput{PaymentType: in.PaymentType, Serial: in.Serial, AdviceCode: in.AdviceCode})
 		case "ais":
-			file, m, err = ExportAIS(ctx, tx, p.Cipher, s.Organisation, p.Clock.Now(), s.Member, run, in.Version, AISInput{AuthorisedPerson: in.AuthorisedPerson, ContactNumber: in.ContactNumber, Email: in.Email, SubmissionType: in.SubmissionType})
+			file, m, err = ExportAIS(ctx, tx, p.Cipher, s.Organisation, p.Clock.Now(), s.Member, run, in.Version, AISInput{AuthorisedPerson: in.AuthorisedPerson, ContactNumber: in.ContactNumber, Email: in.Email, SubmissionType: in.SubmissionType, Part: in.Part, Chunk: p.AISChunk})
 		default:
 			file, m, err = ExportPayments(ctx, tx, p.Cipher, s.Organisation, p.Clock.Now(), s.Member, run, in.Version)
 		}
 		if err != nil {
 			return err
 		}
-		out = api.ExportFile{ID: m.ID, Kind: m.Kind, Version: m.Version, Month: m.Month, Lines: m.Lines, Total: m.Total, SHA256: m.SHA256, Note: m.Note, Reference: m.Reference, FileName: m.FileName, Skipped: []api.ExportSkipped{}, ContentBase64: base64.StdEncoding.EncodeToString(file)}
+		out = api.ExportFile{ID: m.ID, Kind: m.Kind, Version: m.Version, Month: m.Month, Lines: m.Lines, Total: m.Total, SHA256: m.SHA256, Note: m.Note, Reference: m.Reference, FileName: m.FileName, Parts: m.Parts, Part: m.Part, Skipped: []api.ExportSkipped{}, ContentBase64: base64.StdEncoding.EncodeToString(file)}
 		for _, k := range m.Skipped {
 			out.Skipped = append(out.Skipped, api.ExportSkipped{PersonID: k.PersonID, Person: k.Person, Reason: k.Reason})
 		}

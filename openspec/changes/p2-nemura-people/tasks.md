@@ -30,6 +30,10 @@ Nemura's migrations are in `db/nemura/migrations` (continue from the highest num
 - [ ] 4.4 Offer to hire: the person record, the onboarding plan, the pass application date. `// req: NM-REC-06`
 - [ ] 4.5 The assistant's `people.draft_job_post` and `people.draft_interview_kit`, and the fairness red-team cases. `// req: NM-AI-05`
 
+## 4.0 Owner decisions applied (rev 0.69)
+- [x] 4.0 The Owner and HR administrator may create requisitions; every member reads company and team goals. `// req: NM-REC-01, NM-PRF-01`
+  (Built, 21 Nov 2026, PRD-002 rev 0.69: Appendix B rows Hiring and Performance, `TestHiringOperationsFollowAppendixBsHiringRow`, `TestTheOwnerMayApproveARequisitionTheyAskedFor`, the authz matrix test; no migration needed, the database never restricted the asker.)
+
 ## 5. Performance (NM-PRF-01 to 05)
 - [ ] 5.1 Goals and KPIs. `// req: NM-PRF-01, NM-PRF-02`
   (Built in part, 21 Nov 2026, PRD-002 rev 0.67: migration 000067, `internal/nemura/performance`, `performance.go` in the adapter, `/v1/me/goals` and the goal operations, the page My goals; `TestAMeasureIsWholeAndItsProgressIsExactAndRoundedDown`, `TestGoalsAreReadAndChangedOnlyByTheirPeople…`. **Left:** a manager's and HR's page of a person's goals (the operation exists), the roll-up of aligned goals' progress, KPIs read from Fyniq's metrics and a company financial KPI's status-only display `[live-verify]` (needs the link).)
