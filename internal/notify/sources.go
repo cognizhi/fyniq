@@ -60,6 +60,10 @@ const SecurityAlertType = "security.alert"
 // (SEC-37): a security type, so it is always on and emailed at once.
 const PrivateEndpointType = "security.private_endpoint"
 
+// SandboxType is the notice to every Super admin that a sandbox organisation was made (FR-INT-18): a security type, so it is always on and
+// emailed at once.
+const SandboxType = "security.sandbox_organisation"
+
 // SignInMethodType tells a person a sign-in with a provider was linked to their account, or removed (FR-ADM-08, rev 0.196).
 const SignInMethodType = "security.sign_in_methods"
 

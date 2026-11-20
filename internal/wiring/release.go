@@ -125,14 +125,15 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		return nil, err
 	}
 	kit := &Kit{
-		Mail:   mail,
-		Origin: os.Getenv("FYNIQ_PUBLIC_ORIGIN"),
-		Store:  store,
-		Tokens: &gcp.TaskTokens{Invokers: c.Invokers, Keys: GoogleKeys(), Clock: clock},
-		Queue:  gcp.NewTasks(gcp.TasksAPI, c.Tasks, tokens, google),
-		Jobs:   gcp.NewRunJobs(gcp.RunAPI, c.Job, tokens, google),
-		Blobs:  gcp.NewStorage(gcp.StorageAPI, c.Anchors.Bucket, tokens, google),
-		Signer: gcp.NewKMS(gcp.KMSAPI, c.Anchors.KeyVersion, tokens, google),
+		Mail:         mail,
+		Origin:       os.Getenv("FYNIQ_PUBLIC_ORIGIN"),
+		SandboxHosts: SandboxWebhookHosts(os.Getenv),
+		Store:        store,
+		Tokens:       &gcp.TaskTokens{Invokers: c.Invokers, Keys: GoogleKeys(), Clock: clock},
+		Queue:        gcp.NewTasks(gcp.TasksAPI, c.Tasks, tokens, google),
+		Jobs:         gcp.NewRunJobs(gcp.RunAPI, c.Job, tokens, google),
+		Blobs:        gcp.NewStorage(gcp.StorageAPI, c.Anchors.Bucket, tokens, google),
+		Signer:       gcp.NewKMS(gcp.KMSAPI, c.Anchors.KeyVersion, tokens, google),
 	}
 	kit.Fields = fields
 	if c.Evidence.Staging != "" && c.Evidence.Bucket != "" {

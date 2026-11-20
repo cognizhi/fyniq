@@ -60,6 +60,9 @@ func Enqueue(ctx context.Context, u storage.UnitOfWork, ap ports.AccessPoint, do
 		PayloadSHA256: sum[:], At: now})
 }
 
+// SandboxReason is why a sandbox organisation's submission is failed instead of sent (FR-INT-18).
+const SandboxReason = "a sandbox organisation sends nothing outside Fyniq, so nothing goes to the access point"
+
 // Send hands a queued submission to the access point. The document is built again from the posted document and must be the
 // bytes that were queued; a document that changed since is failed with that reason, never sent. An outage leaves the
 // submission queued and returns ports.ErrAccessPointUnavailable for the job to retry (G4-033).
@@ -69,6 +72,12 @@ func Send(ctx context.Context, u storage.UnitOfWork, ap ports.AccessPoint, sub s
 	}
 	fail := func(reason string) (storage.InvoiceSubmission, error) {
 		return u.InvoiceNow().Move(ctx, sub.ID, storage.InvoiceSubmissionMove{Status: string(Failed), Error: reason, At: now})
+	}
+	if sandbox, err := u.Sandboxes().Is(ctx); err != nil || sandbox { // FR-INT-18: nothing goes to the access point from a sandbox organisation
+		if err != nil {
+			return sub, err
+		}
+		return fail(SandboxReason)
 	}
 	doc, err := u.Documents().Get(ctx, sub.DocumentID)
 	if err != nil {
@@ -105,6 +114,9 @@ func Send(ctx context.Context, u storage.UnitOfWork, ap ports.AccessPoint, sub s
 func Refresh(ctx context.Context, u storage.UnitOfWork, ap ports.AccessPoint, sub storage.InvoiceSubmission, now time.Time) (storage.InvoiceSubmission, error) {
 	if sub.Status != string(Sent) || sub.TransmissionID == "" {
 		return sub, nil
+	}
+	if sandbox, err := u.Sandboxes().Is(ctx); err != nil || sandbox { // FR-INT-18: no call to the access point from a sandbox organisation
+		return sub, err
 	}
 	st, err := ap.Status(ctx, sub.TransmissionID)
 	if err != nil {

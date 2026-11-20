@@ -389,6 +389,7 @@ var (
 	// compliance task (a statutory or agent task), never the AI; a person with a view reads them.
 	CreateIntegrationTask = Policy{Operation: "createIntegrationTask", Capability: IntegrationTasks, Need: Create}
 	UpdateIntegrationTask = Policy{Operation: "updateIntegrationTask", Capability: IntegrationTasks, Need: Create}
+	CloseIntegrationTask  = Policy{Operation: "closeIntegrationTask", Capability: Integrations, Need: Create, OwnerMay: true, Note: "Needs a person signed in to Fyniq with the right on Organisation integrations (Administrator; the Owner too, as for every integration), who also finishes the tasks integrations made: no API client, token, agent or AI finishes a task this way, and no scope reaches it (FR-INT-24)."}
 	ListIntegrationTasks  = Policy{Operation: "listIntegrationTasks", Capability: IntegrationTasks, Need: View}
 	GetIntegrationTask    = Policy{Operation: "getIntegrationTask", Capability: IntegrationTasks, Need: View}
 
@@ -1601,8 +1602,11 @@ var (
 
 // Registered private endpoints (SEC-37): a Super admin's, the other one approving a registration once there are two.
 var (
-	ListPrivateEndpoints    = Policy{Operation: "listPrivateEndpoints", Capability: SuperAdmins, Need: View, NoOrganisation: true, Note: superAdminNote}
-	RegisterPrivateEndpoint = Policy{Operation: "registerPrivateEndpoint", Capability: SuperAdmins, Need: Create, NoOrganisation: true,
+	ListPrivateEndpoints      = Policy{Operation: "listPrivateEndpoints", Capability: SuperAdmins, Need: View, NoOrganisation: true, Note: superAdminNote}
+	CreateSandboxOrganisation = Policy{Operation: "createSandboxOrganisation", Capability: SuperAdmins, Need: Create, NoOrganisation: true,
+		Note: superAdminNote + " With two Super admins a sandbox organisation waits for the other's approval; the deployment must enable sandboxes (FR-INT-18)."}
+	LoadSandboxSampleCompany = Policy{Operation: "loadSandboxSampleCompany", Capability: SuperAdmins, Need: Create, NoOrganisation: true, Note: superAdminNote}
+	RegisterPrivateEndpoint  = Policy{Operation: "registerPrivateEndpoint", Capability: SuperAdmins, Need: Create, NoOrganisation: true,
 		Note: superAdminNote + " With two Super admins a registration waits for the other's approval."}
 )
 
@@ -2275,7 +2279,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(ListMCPThirdPartyApps, RegisterMCPThirdPartyApp, RemoveMCPThirdPartyApp, CreateIntegrationTask, UpdateIntegrationTask, ListIntegrationTasks, GetIntegrationTask, ListWebhookEndpoints, GetWebhookEndpoint, CreateWebhookEndpoint, ChangeWebhookEndpoint, RollWebhookSecret, VerifyWebhookEndpoint, ListWebhookDeliveries, ReplayWebhookDelivery, UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, ListPayrollRuns, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, RecordSalaryLineState, MatchSalaryBankLine, GetPayrollArrangements, SetPayrollArrangement, ListPayrollImports, ImportPayrollJournal, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, GetPeopleLinkHealth, RepairPeopleLink, FinishPeopleUnlink, RequestPeopleLink, RequestPeopleUnlink, RequestPeopleSourceChange, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ReceivePeopleAvailabilityEvent, ListPeopleAvailability, ReceivePeopleSessionEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(ListMCPThirdPartyApps, RegisterMCPThirdPartyApp, RemoveMCPThirdPartyApp, CreateIntegrationTask, UpdateIntegrationTask, CloseIntegrationTask, ListIntegrationTasks, GetIntegrationTask, ListWebhookEndpoints, GetWebhookEndpoint, CreateWebhookEndpoint, ChangeWebhookEndpoint, RollWebhookSecret, VerifyWebhookEndpoint, ListWebhookDeliveries, ReplayWebhookDelivery, UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, ListPayrollRuns, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, RecordSalaryLineState, MatchSalaryBankLine, GetPayrollArrangements, SetPayrollArrangement, ListPayrollImports, ImportPayrollJournal, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, GetPeopleLinkHealth, RepairPeopleLink, FinishPeopleUnlink, RequestPeopleLink, RequestPeopleUnlink, RequestPeopleSourceChange, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ReceivePeopleAvailabilityEvent, ListPeopleAvailability, ReceivePeopleSessionEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,
@@ -2360,7 +2364,7 @@ var Policies = index(ListMCPThirdPartyApps, RegisterMCPThirdPartyApp, RemoveMCPT
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetPlatformVersion, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, GetStatutoryValues, ActivateStatutoryPack,
 	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp,
-	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod, ListPrivateEndpoints, RegisterPrivateEndpoint,
+	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod, ListPrivateEndpoints, RegisterPrivateEndpoint, CreateSandboxOrganisation, LoadSandboxSampleCompany,
 	GetMyRecoveryCodes, ReplaceMyRecoveryCodes, RecoverAccount, ConfirmAccountRecovery, GetJoinOffer, RequestToJoin, ListJoinRequests,
 	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain, GetBrand, GetBrandFile, ChangeBrand, GetOperation, ListMyOperations,
 	ListHolders, GetHolder, CreateHolderRecord, GetHolderRecord, ReplaceHolderRecord, RequestHolderRecordApproval, AddHolderRecordEvidence,

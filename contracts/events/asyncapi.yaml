@@ -198,6 +198,11 @@ channels:
     messages:
       fyniq.security.roles.v1:
         $ref: '#/components/messages/fyniq.security.roles.v1'
+  fyniq.security.sandbox_organisation.v1:
+    address: fyniq.security.sandbox_organisation.v1
+    messages:
+      fyniq.security.sandbox_organisation.v1:
+        $ref: '#/components/messages/fyniq.security.sandbox_organisation.v1'
   fyniq.security.second_factor.v1:
     address: fyniq.security.second_factor.v1
     messages:
@@ -491,6 +496,13 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.security.roles.v1.schema.json'
+    fyniq.security.sandbox_organisation.v1:
+      name: fyniq.security.sandbox_organisation.v1
+      title: fyniq.security.sandbox_organisation.v1
+      summary: "Fires when: A sandbox organisation was made"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.sandbox_organisation.v1.schema.json'
     fyniq.security.second_factor.v1:
       name: fyniq.security.second_factor.v1
       title: fyniq.security.second_factor.v1

@@ -117,7 +117,7 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			if k.Fields == nil || k.Egress == nil {
 				return nil // no field key or no guard: no secret to open and nowhere safe to send
 			}
-			return webhooks.Deliverer{Store: k.Store, Cipher: k.Fields, Egress: k.Egress, Clock: clock, Source: k.Origin}.RunAll(ctx)
+			return webhooks.Deliverer{Store: k.Store, Cipher: k.Fields, Egress: k.Egress, Clock: clock, Source: k.Origin, SandboxHosts: k.SandboxHosts}.RunAll(ctx)
 		},
 		"ratelimit.purge": func(ctx context.Context) error {
 			_, err := PurgeRateLimitWindows(ctx, k.Store, clock.Now())

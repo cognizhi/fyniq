@@ -3164,6 +3164,10 @@ sales_reminder | send_id | uuid | null |
 sales_reminder | reason | text | null | 
 sales_reminder | decided_by | text | not null | 
 sales_reminder | decided_at | timestamp with time zone | not null | now()
+sandbox_organisation | organisation_id | uuid | not null | 
+sandbox_organisation | created_by | uuid | not null | 
+sandbox_organisation | change_id | uuid | null | 
+sandbox_organisation | created_at | timestamp with time zone | not null | 
 security_incident | organisation_id | uuid | not null | current_org()
 security_incident | id | uuid | not null | uuidv7()
 security_incident | title | text | not null | 
@@ -5862,7 +5866,7 @@ installation_change | installation_change_requested_by_not_null | NOT NULL reque
 installation_change | installation_change_requester_mfa_at_not_null | NOT NULL requester_mfa_at
 installation_change | installation_change_status_known | CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'expired'::text])))
 installation_change | installation_change_status_not_null | NOT NULL status
-installation_change | installation_change_step_known | CHECK ((step = ANY (ARRAY['install'::text, 'configure'::text, 'secret'::text, 'enable'::text, 'resume'::text, 'disable'::text, 'uninstall'::text, 'order'::text, 'consent'::text, 'sign_in'::text, 'private_endpoint'::text])))
+installation_change | installation_change_step_known | CHECK ((step = ANY (ARRAY['install'::text, 'configure'::text, 'secret'::text, 'enable'::text, 'resume'::text, 'disable'::text, 'uninstall'::text, 'order'::text, 'consent'::text, 'sign_in'::text, 'private_endpoint'::text, 'sandbox'::text])))
 installation_change | installation_change_step_not_null | NOT NULL step
 installation_change | installation_change_summary_length | CHECK (((length(summary) >= 1) AND (length(summary) <= 300)))
 installation_change | installation_change_summary_not_null | NOT NULL summary
@@ -8496,6 +8500,13 @@ sales_reminder | sales_reminder_reason_length | CHECK (((reason IS NULL) OR ((le
 sales_reminder | sales_reminder_send_fkey | FOREIGN KEY (organisation_id, send_id) REFERENCES document_send(organisation_id, id)
 sales_reminder | sales_reminder_step_not_null | NOT NULL step
 sales_reminder | sales_reminder_step_range | CHECK (((step >= '-30'::integer) AND (step <= 365)))
+sandbox_organisation | sandbox_organisation_change_fkey | FOREIGN KEY (change_id) REFERENCES installation_change(id)
+sandbox_organisation | sandbox_organisation_created_at_not_null | NOT NULL created_at
+sandbox_organisation | sandbox_organisation_created_by_not_null | NOT NULL created_by
+sandbox_organisation | sandbox_organisation_org_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+sandbox_organisation | sandbox_organisation_organisation_id_not_null | NOT NULL organisation_id
+sandbox_organisation | sandbox_organisation_pkey | PRIMARY KEY (organisation_id)
+sandbox_organisation | sandbox_organisation_user_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 security_incident | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 security_incident | security_incident_detected | CHECK ((detected_at <= opened_at))
 security_incident | security_incident_detected_at_not_null | NOT NULL detected_at
@@ -9730,6 +9741,7 @@ CREATE UNIQUE INDEX salary_release_line_pkey ON fyniq.salary_release_line USING 
 CREATE UNIQUE INDEX salary_release_pkey ON fyniq.salary_release USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sales_reminder_once ON fyniq.sales_reminder USING btree (organisation_id, document_id, step)
 CREATE UNIQUE INDEX sales_reminder_pkey ON fyniq.sales_reminder USING btree (organisation_id, id)
+CREATE UNIQUE INDEX sandbox_organisation_pkey ON fyniq.sandbox_organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX security_incident_pkey ON fyniq.security_incident USING btree (organisation_id, id)
 CREATE UNIQUE INDEX security_incident_step_pkey ON fyniq.security_incident_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX share_issue_entry_once ON fyniq.share_issue USING btree (organisation_id, entry_id)
@@ -10572,6 +10584,7 @@ CREATE TRIGGER salary_release_line_no_truncate BEFORE TRUNCATE ON fyniq.salary_r
 CREATE TRIGGER salary_release_no_truncate BEFORE TRUNCATE ON fyniq.salary_release FOR EACH STATEMENT EXECUTE FUNCTION salary_append_only()
 CREATE TRIGGER sales_reminder_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sales_reminder FOR EACH ROW EXECUTE FUNCTION sales_reminder_guard()
 CREATE TRIGGER sales_reminder_no_truncate BEFORE TRUNCATE ON fyniq.sales_reminder FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER sandbox_organisation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sandbox_organisation FOR EACH ROW EXECUTE FUNCTION sandbox_organisation_guard()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.document_link FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.document_number FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.document_send FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
@@ -11186,6 +11199,7 @@ salary_line_event | enabled | forced
 salary_release | enabled | forced
 salary_release_line | enabled | forced
 sales_reminder | enabled | forced
+sandbox_organisation | disabled | not forced
 security_incident | enabled | forced
 security_incident_step | enabled | forced
 share_issue | enabled | forced
@@ -11354,6 +11368,7 @@ create_practice_organisation(p_user uuid, p_source uuid, p_name text, p_currency
 create_project_revenue_draft(p_project uuid, p_month date, p_payload jsonb, p_adjustment numeric, p_earned numeric) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c17e3914cf993332ea7297c79b1f3de5
 create_provider_credit_note_draft(p_connector uuid, p_provider_credit_note text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ba5a14e9dac485ea458391449072f2d9
 create_provider_invoice_draft(p_connector uuid, p_provider_invoice text) → TABLE(document_id uuid, contact_id uuid, contact_made boolean) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a3c9b9fb23ce7e6bb4814cca73f1b62a
+create_sandbox_organisation(p_by uuid, p_change uuid, p_organisation uuid, p_name text, p_currency text, p_at timestamp with time zone, OUT membership_id uuid, OUT assignment_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b4b7780af194a2a1149a44a93db6c94e
 create_scheduled_bill_draft(p_recurring_bill uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 034ac02e0e0c8386e09e6dfb54a6f8fa
 create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b23a8c0aa6277cadb7bd3f6aae5f5661
 create_scheduled_invoice_draft(p_recurring_invoice uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2965fc4edb05408641ee8a47909a2109
@@ -11522,6 +11537,7 @@ organisation_connector_routed() → trigger | security definer | v | search_path
 organisation_created() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9
 organisation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e64f58bdebe328f60e1806f8c9cbcbe6
 organisation_is_practice(p_org uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | fa5110d76f6c6beb844c6f741c76b0da
+organisation_is_sandbox(p_org uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | e60c7bb52b20098263edb135420f5646
 organisation_kind_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ca73dacb480df743be50b20da1632d78
 organisation_registered() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d82a943b556593182602dbe5a532147
 organisation_setting_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4d07be7995f65387c9c970d632b1bcb8
@@ -11627,6 +11643,7 @@ salary_is_run_party(org uuid, receipt uuid, who uuid) → boolean | security def
 salary_line_insert_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b810a5fb84146784957d2b042c7a827d
 salary_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 459a4750193bd423c30a4e47d90b7e6f
 sales_reminder_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cbd827bdca43d21c794de23c30d61fd7
+sandbox_organisation_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c7b5e82c0231b57a45868e06d8c9b37f
 scheduled_invoice_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7b1f59fc29d82c1dc9f6f4ae5afc9272
 scheduled_issue_allowed(p_document uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 574b7af4c2dbb0a7e81f6dedebde4a8b
 scheduled_issue_fence() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f5b36ed327ce553d134249eb0e82efde

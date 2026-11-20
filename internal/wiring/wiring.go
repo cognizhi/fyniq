@@ -49,6 +49,8 @@ type Kit struct {
 	Converter ports.Converter
 	// Origin is the web app's origin, such as https://fyniq.example.com: the links in notifications' email (FR-NTF-01).
 	Origin string
+	// SandboxHosts are the only hosts a sandbox organisation's webhooks may reach (FR-INT-18); none by default.
+	SandboxHosts []string
 	// Mail is the outbound email (FR-INT-21): its providers in order (none: no email is sent), the platform's
 	// sender, and the domains an organisation may choose its senders on.
 	Mail MailConfig
