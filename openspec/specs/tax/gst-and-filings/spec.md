@@ -190,6 +190,11 @@ Source: PRD-001 §8.11 · Priority M before GST registration; else S · Phase As
 - **THEN** each has a recorded exclusion with its reason
 - **AND** no submission is expected for them
 
+#### Scenario: A submission and an exclusion (rev 0.480)
+- **WHEN** a posted sale is queued and a purchase from a supplier not registered for GST is excluded with its reason
+- **THEN** the first has a submission that moves from queued to acknowledged with IRAS's acknowledgement ID
+- **AND** a resubmission of the same document keeps its document UUID
+
 ### Requirement: FR-TAX-11 Filing gate with a contingency
 F5 filing SHALL wait until every in-scope item has an IRAS acknowledgement ID or a recorded exclusion, with a dual-approved contingency for outages. The business stays responsible for complete submission; IRAS may extend due dates at its discretion.
 
@@ -216,6 +221,11 @@ Source: PRD-001 §8.11 · Priority M before GST registration; else S · Phase As
 - **THEN** filing is possible only through the dual-approved contingency with evidence
 - **AND** unsent items stay queued and are resubmitted
 - **AND** nothing is marked complete without an IRAS acknowledgement ID
+
+#### Scenario: The gate and the contingency (rev 0.480)
+- **WHEN** a document of the period has neither an acknowledgement ID nor an exclusion
+- **THEN** the gate is blocked and lists it
+- **AND** only a contingency requested by one person and approved by another, with the outage evidence, lets the return be filed
 
 ### Requirement: FR-TAX-12 GST corrections from the first filed return
 From the first filed return, the system SHALL post GST corrections to filed periods in the open ledger period and place them in an adjustment queue with the original tax period and the amount per box; the tax agent decides how each is filed.
@@ -270,6 +280,11 @@ Source: PRD-001 §8.11 · Priority S · Phase P2
 #### Scenario: Data pack for the tax agent
 - **WHEN** the tax agent requests the year's data
 - **THEN** an ECI and Form C-S/C-S Lite data pack is produced
+
+#### Scenario: The working paper (rev 0.480)
+- **WHEN** the tax agent opens a financial year's working paper
+- **THEN** it starts from the ledger's profit, adds the adjustments entered with reasons and evidence, and ends at the chargeable income with the exemption and rebate from the pack
+- **AND** it names the form (C-S Lite, C-S or C) by revenue
 
 ### Requirement: FR-TAX-07 Statutory calendar
 The system SHALL keep a statutory calendar of the organisation's obligations, with dates derived from its FY and GST periods, reminders and Inbox tasks.

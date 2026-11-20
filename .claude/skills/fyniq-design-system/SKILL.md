@@ -25,7 +25,7 @@ and republish the canvases and the Fyniq design system (fyniq-openspec `referenc
 1. Find the requirement IDs (§7, §8) and the page override, if any.
 2. Decide what Basic and Expert show (§7.8 table). Tag everything in the feature registry.
 3. Lay out with tokens only: surfaces, spacing (4 px grid), density, one primary action.
-4. Choose components from MASTER §7 (shadcn/ui on Base UI); AG Grid for entry grids,
+4. Choose components from MASTER §7 (shadcn/ui on Base UI); our own `EntryGrid` for entry grids (not AG Grid: MASTER §7),
    TanStack Table for statements; ECharts for charts.
 5. Write the states: loading (skeleton after 300 ms), empty (teaching), error (with recovery),
    permission-denied, locked period.

@@ -241,6 +241,11 @@ Source: PRD-001 §8.7 · Priority S · Phase P2
 - **THEN** it is due at month end
 - **AND** it must be paid by the 14th of the next month to avoid interest
 
+#### Scenario: Nemura makes the file (rev 0.480)
+- **GIVEN** an organisation that runs payroll in Nemura
+- **WHEN** a run version is approved
+- **THEN** Nemura makes the CPF Board's EZPay (FTP) file from it as a written-once export, and Fyniq never produces it (PRD-002 NM-PAY-13)
+
 ### Requirement: FR-PAY-10 IR8A, Auto-Inclusion Scheme and IR21
 The system SHALL produce the IR8A / Auto-Inclusion Scheme file (Appendix 8A/8B where relevant) and run an IR21 workflow with a clearance hold on all monies due to the employee on every payment path.
 
@@ -286,6 +291,11 @@ Source: PRD-001 §8.7 · Priority M from 5 employees; else S · Phase P2 / P1 (I
 - **GIVEN** Nemura is linked
 - **WHEN** a payment to an employee is released in Fyniq
 - **THEN** the hold lives in Nemura and Fyniq checks it at that release (FR-PPL-13)
+
+#### Scenario: Nemura makes the AIS payload (rev 0.480)
+- **GIVEN** an organisation that runs payroll in Nemura
+- **WHEN** the year's runs are paid
+- **THEN** Nemura makes the IR8A payload of IRAS's AIS-API 2.0 and checks it against IRAS's data-item rules (PRD-002 NM-PAY-14)
 
 ### Requirement: FR-PAY-11 Salary payment batch
 The system SHALL pay salaries through a salary payment batch (FR-BNK-12).

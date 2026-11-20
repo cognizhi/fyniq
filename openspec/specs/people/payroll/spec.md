@@ -245,3 +245,30 @@ Source: PRD-002 §9 · Priority M · Phase P1
 - **GIVEN** a person on S$4,500.00 a month starts on 11 June 2026
 - **WHEN** the June run is calculated
 - **THEN** their basic salary is 4,500.00 × 20 ÷ 30 = 3,000.00, rounded once, with the ratio shown
+
+### Requirement: NM-PAY-13 The CPF submission file
+Nemura SHALL make the CPF Board's EZPay (FTP) file from an approved run version, as a written-once export with its manifest, and never treat it as proof of submission.
+
+Source: PRD-002 §9 · Priority M · Phase P2
+
+#### Scenario: The Board's own sample reads back
+- **GIVEN** the file specification's sample
+- **WHEN** it is parsed with the same column table
+- **THEN** every field and the trailer's totals agree
+
+#### Scenario: A file is not proof
+- **WHEN** the file is made
+- **THEN** the run does not show CPF as submitted until the person records the Board's receipt with evidence
+
+### Requirement: NM-PAY-14 IR8A and the Auto-Inclusion Scheme
+Nemura SHALL make the year's IR8A payload of IRAS's AIS-API 2.0 from the paid runs, check it against IRAS's data-item rules and submit it through a port, chunked at 2,000 records.
+
+Source: PRD-002 §9 · Priority M · Phase P2
+
+#### Scenario: Totals agree
+- **WHEN** the payload is made
+- **THEN** each person's total income equals salary, bonus, director's fees and others income, and the organisation's total equals the sum
+
+#### Scenario: A rejected submission is kept
+- **WHEN** IRAS answers with return code 30
+- **THEN** the field messages are shown by record and nothing is marked submitted
