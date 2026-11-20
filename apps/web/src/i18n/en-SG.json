@@ -2707,6 +2707,10 @@
       "label": "Security assessments",
       "tooltip": "Each penetration test and other assessment of the platform, with its findings: due by their severity, fixed, retested or accepted. An independent test is due every year. The Owner keeps it."
     },
+    "compliance.readiness": {
+      "label": "Readiness",
+      "tooltip": "For each framework, how many of its mapped controls pass, and the ones that do not; and the ISO/IEC 27001 Annex A numbers no control maps to. Readiness, never a certificate."
+    },
     "compliance.assessment-record": {
       "label": "Record an assessment",
       "tooltip": "Say who tested, what was covered and when, what it concluded, and the report's SHA-256 and where it is kept; the report itself stays outside Fyniq. An entry is never changed."

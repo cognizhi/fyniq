@@ -12,6 +12,7 @@ import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
 import { IncidentsTab } from "./Incidents";
 import { HeartbeatDrillsTab } from "./HeartbeatDrills";
+import { ReadinessTab } from "./Readiness";
 import { RestoreDrillsTab } from "./RestoreDrills";
 import { SecurityAssessmentsTab } from "./SecurityAssessments";
 import { useHingeSplit } from "../../shell/hinge";
@@ -85,7 +86,7 @@ export function Controls() {
   const [framework, setFramework] = useState("");
   const [status, setStatus] = useState<Status | "">("");
   const [open, setOpen] = useState<string | null>(null);
-  const [tab, setTab] = useState<"controls" | "incidents" | "drills" | "heartbeat" | "assessments">("controls");
+  const [tab, setTab] = useState<"controls" | "incidents" | "drills" | "heartbeat" | "assessments" | "readiness">("controls");
   const all = list.data?.items ?? [];
   const shown = all
     .filter((c) => (!framework || c.frameworks.includes(framework as Control["frameworks"][number])) && (!status || c.status === status))
@@ -124,11 +125,15 @@ export function Controls() {
         <button type="button" role="tab" aria-selected={tab === "assessments"} onClick={() => setTab("assessments")} title={helpText("compliance.security-assessments").tooltip}>
           {helpText("compliance.security-assessments").label}
         </button>
+        <button type="button" role="tab" aria-selected={tab === "readiness"} onClick={() => setTab("readiness")} title={helpText("compliance.readiness").tooltip}>
+          {helpText("compliance.readiness").label}
+        </button>
       </div>
       {tab === "incidents" && <IncidentsTab />}
       {tab === "drills" && <RestoreDrillsTab />}
       {tab === "heartbeat" && <HeartbeatDrillsTab />}
       {tab === "assessments" && <SecurityAssessmentsTab />}
+      {tab === "readiness" && <ReadinessTab />}
       {tab === "controls" && list.isError && <Refusal problem={problemOf(list.error)} title="The controls could not be shown" />}
       {tab === "controls" && list.isPending && <p className="fy-small">Loading the controls…</p>}
       {tab === "controls" && list.data && !list.data.release && (
