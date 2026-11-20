@@ -18,6 +18,14 @@
       "format": "uuid",
       "type": "string"
     },
+    "balancing_allowance": {
+      "$ref": "Money.schema.json",
+      "description": "For the year of a sale: the tax written down value less the proceeds, when the proceeds are lower; tax deductible (IRAS)."
+    },
+    "balancing_charge": {
+      "$ref": "Money.schema.json",
+      "description": "For the year of a sale: the proceeds less the tax written down value, when the proceeds are higher, at most the allowances allowed before; taxable (IRAS)."
+    },
     "brought_forward": {
       "$ref": "Money.schema.json",
       "description": "The tax written down value brought forward: its cost less the allowances of the years before."
@@ -47,6 +55,7 @@
       "enum": [
         "s19",
         "s19a1",
+        "s19a2",
         "s19a10a"
       ],
       "examples": [
@@ -68,10 +77,22 @@
       ],
       "type": "string"
     },
+    "proceeds": {
+      "$ref": "Money.schema.json",
+      "description": "For the year of a sale: the sale proceeds net of GST (nothing for a write-off)."
+    },
     "purchased_on": {
       "description": "The day it was bought.",
       "examples": [
         "2026-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "sold_on": {
+      "description": "For the year of a sale (rev 0.603): the day the whole asset was sold. No allowance is given in the year: brought forward is the tax written down value.",
+      "examples": [
+        "2028-09-01"
       ],
       "format": "date",
       "type": "string"

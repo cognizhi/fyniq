@@ -16,6 +16,7 @@ const (
 	MethodS19     = "s19"     // the initial allowance, then annual allowances over the elected working life
 	MethodS19A1   = "s19a1"   // a third of the cost in each of 3 years of assessment
 	MethodS19A10A = "s19a10a" // the whole cost in one year, for a low-value asset, within the year's cap
+	MethodS19A2   = "s19a2"   // the whole cost in one year, for a computer or prescribed automation equipment, with no cap (sg-capital-allowances@2026.2)
 )
 
 func init() {
@@ -28,7 +29,9 @@ func init() {
 			"series":    {"case", "method", "years", "cost", "want", "why", "source"},
 			"lowvalue":  {"case", "ya", "costs", "want_taken", "why", "source"},
 			"elections": {"case", "prescribed", "want", "why", "source"},
+			"balancing": {"case", "cost", "twdv", "proceeds", "want", "why", "source"},
 		},
+		Since: map[string][2]int{"balancing": {2026, 2}}, // 2026.1 was written before the balancing allowance and charge, and holds no such table
 	}
 }
 
@@ -168,7 +171,8 @@ func spreadEven(total int64, n int) []int64 {
 //   - s19, over years (an election WorkingLifeElections allows): the initial allowance round(cost × 20%, cents, half away from zero) in the first year, and the rest of the cost, the
 //     80%, spread over the years by ALLOC-EVEN as the annual allowances, the first of them in the first year too (IRAS: IA = 20% of the cost, AA = 80% of the cost / the years);
 //   - s19a1: the cost spread over 3 years by ALLOC-EVEN;
-//   - s19a10a: the whole cost in the one year (whether the asset qualifies and fits the year's cap is LowValueClaims's).
+//   - s19a10a: the whole cost in the one year (whether the asset qualifies and fits the year's cap is LowValueClaims's);
+//   - s19a2: the whole cost in the one year, a computer or prescribed automation equipment, with no cap and no limit of cost (IRAS: AA = 100% of the cost).
 //
 // The rounding to cents (IRAS shows whole dollars) is ours [accountant to confirm]. ya is the year of assessment of the asset's acquisition, whose rules apply.
 func CapitalAllowanceSeries(v Version, method string, years int, cost int64, ya int) ([]int64, error) {
@@ -190,10 +194,23 @@ func CapitalAllowanceSeries(v Version, method string, years int, cost int64, ya 
 		return out, nil
 	case MethodS19A1:
 		return spreadEven(cost, rules.S19A1Years), nil
-	case MethodS19A10A:
+	case MethodS19A10A, MethodS19A2:
 		return []int64{cost}, nil
 	}
-	return nil, fmt.Errorf("the method %q is not section 19, 19A(1) or 19A(10A)", method)
+	return nil, fmt.Errorf("the method %q is not section 19, 19A(1), 19A(2) or 19A(10A)", method)
+}
+
+// Balancing is the balancing allowance or charge of a sale (IRAS, "Calculating BA/ BC"): sale proceeds less the tax written down value, all in cents. Proceeds below the written down
+// value give a balancing allowance of the difference; proceeds above it a balancing charge of the difference, restricted to the allowances allowed before, which is the cost less
+// the written down value. Exactly one of the two is nonzero, or neither.
+func Balancing(cost, twdv, proceeds int64) (allowance, charge int64) {
+	switch {
+	case proceeds < twdv:
+		return twdv - proceeds, 0
+	case proceeds > twdv:
+		return 0, min(proceeds-twdv, cost-twdv)
+	}
+	return 0, 0
 }
 
 // LowValueClaims says which of the assets (their costs in cents, in the order the company's claim takes them) take the one-year write-off of section 19A(10A) in the year of
@@ -337,6 +354,25 @@ func runCapitalAllowances(v Version) []Result {
 			}
 		}
 		r.Got = b.String()
+		r.Pass = r.Got == r.Want
+		out = append(out, r)
+	}
+	for _, row := range v.Pinned["balancing"].Rows {
+		r := Result{Table: "balancing", Case: row[0], Why: row[5], Want: row[4]}
+		cost, ok1 := cents(row[1])
+		twdv, ok2 := cents(row[2])
+		proceeds, ok3 := cents(row[3])
+		if !ok1 || !ok2 || !ok3 {
+			r.Got = "an amount does not read"
+			out = append(out, r)
+			continue
+		}
+		ba, bc := Balancing(cost, twdv, proceeds)
+		if bc > 0 {
+			r.Got = fmt.Sprintf("BC %d.%02d", bc/100, bc%100)
+		} else {
+			r.Got = fmt.Sprintf("BA %d.%02d", ba/100, ba%100)
+		}
 		r.Pass = r.Got == r.Want
 		out = append(out, r)
 	}

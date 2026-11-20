@@ -73,7 +73,7 @@ type FixedAssetDraft struct {
 
 // FixedAssetTaxElection is the capital allowance claim a company elects for an asset (FR-FA-04, rev 0.591).
 type FixedAssetTaxElection struct {
-	Method                     string `json:"method" enum:"s19,s19a1,s19a10a" doc:"s19: the initial allowance of 20% and annual allowances over a working life; s19a1: a third a year over 3 years; s19a10a: the whole cost in one year, for an asset of at most S$5,000 within S$30,000 a year of assessment. The pack sg-capital-allowances holds the values." example:"s19a1"`
+	Method                     string `json:"method" enum:"s19,s19a1,s19a2,s19a10a" doc:"s19: the initial allowance of 20% and annual allowances over a working life; s19a1: a third a year over 3 years; s19a2: the whole cost in one year for a computer or prescribed automation equipment, with no cap (rev 0.603); s19a10a: the whole cost in one year, for an asset of at most S$5,000 within S$30,000 a year of assessment. The pack sg-capital-allowances holds the values." example:"s19a1"`
 	PrescribedWorkingLifeYears int    `json:"prescribed_working_life_years,omitempty" minimum:"1" maximum:"16" doc:"Section 19 only: the working life the Sixth Schedule of the Income Tax Act prescribes for the asset (12 or less, or 16): it decides which lives may be elected." example:"6"`
 	WorkingLifeYears           int    `json:"working_life_years,omitempty" minimum:"1" maximum:"16" doc:"Section 19 only: the years elected, 6 or 12 for a prescribed life of 12 years or less, 6, 12 or 16 for 16. The election is irrevocable once made." example:"6"`
 }

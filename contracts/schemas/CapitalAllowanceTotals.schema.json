@@ -10,6 +10,14 @@
       "$ref": "Money.schema.json",
       "description": "The sum of the annual allowances."
     },
+    "balancing_allowance": {
+      "$ref": "Money.schema.json",
+      "description": "The sum of the balancing allowances of the year's sales (rev 0.603)."
+    },
+    "balancing_charge": {
+      "$ref": "Money.schema.json",
+      "description": "The sum of the balancing charges of the year's sales (rev 0.603)."
+    },
     "brought_forward": {
       "$ref": "Money.schema.json",
       "description": "The sum of the tax written down values brought forward."
@@ -28,7 +36,9 @@
     "initial_allowance",
     "annual_allowance",
     "allowance",
-    "carried_forward"
+    "carried_forward",
+    "balancing_allowance",
+    "balancing_charge"
   ],
   "title": "CapitalAllowanceTotals",
   "type": "object"

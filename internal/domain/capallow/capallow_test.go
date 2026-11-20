@@ -27,7 +27,7 @@ func day(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0,
 
 func version(t *testing.T) pack.Version {
 	t.Helper()
-	v, err := pack.Load(packs.FS, "sg-capital-allowances/2026.1")
+	v, err := pack.Load(packs.FS, "sg-capital-allowances/2026.2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +187,7 @@ func TestTheYearOfAssessmentFollowsTheFinancialYear(t *testing.T) {
 	}
 }
 
-// The engine's schedule and the independent reference's (oracle/src/oracle/capital_allowances.py, written from IRAS's page) agree to the cent on the 120 schedules
+// The engine's schedule and the independent reference's (oracle/src/oracle/capital_allowances.py, written from IRAS's page) agree to the cent on the 160 schedules
 // test/differential/capital-allowances/cases.json holds: the year of assessment of each purchase, each row's allowance, initial allowance, tax written down value brought and
 // carried forward, the assets listed apart and why, and the totals.
 // req: FR-FA-04
@@ -209,16 +209,26 @@ func TestTheScheduleAgreesWithTheOracleToTheCent(t *testing.T) {
 			Prescribed int     `json:"prescribed"`
 			Years      int     `json:"years"`
 			Disposed   bool    `json:"disposed"`
+			Disposal   *struct {
+				On       string `json:"on"`
+				Proceeds string `json:"proceeds"`
+			} `json:"disposal"`
 		} `json:"assets"`
 		Result struct {
 			Rows []struct {
 				ID, Allowance, Initial, Brought, Carried string
+				Sold                                     *struct {
+					Allowance string `json:"balancing_allowance"`
+					Charge    string `json:"balancing_charge"`
+				} `json:"sold"`
 			} `json:"rows"`
 			Apart []struct {
 				ID, Reason string
 			} `json:"apart"`
 			TotalAllowance string `json:"total_allowance"`
 			TotalCarried   string `json:"total_carried"`
+			TotalBA        string `json:"total_balancing_allowance"`
+			TotalBC        string `json:"total_balancing_charge"`
 		} `json:"result"`
 	}
 	if err := json.Unmarshal(raw, &cases); err != nil {
@@ -228,7 +238,7 @@ func TestTheScheduleAgreesWithTheOracleToTheCent(t *testing.T) {
 		t.Fatalf("only %d cases", len(cases))
 	}
 	v := version(t)
-	rows := 0
+	rows, sales := 0, 0
 	for n, c := range cases {
 		books, _ := time.Parse(time.DateOnly, c.BooksStart)
 		end, _ := time.Parse(time.DateOnly, c.FirstYearEnd)
@@ -240,6 +250,14 @@ func TestTheScheduleAgreesWithTheOracleToTheCent(t *testing.T) {
 				x.Election = &asset.TaxElection{Method: *a.Method, PrescribedYears: a.Prescribed, Years: a.Years}
 			}
 			x.Disposed = a.Disposed
+			if a.Disposal != nil {
+				on, _ := time.Parse(time.DateOnly, a.Disposal.On)
+				proceeds, err := money.Parse(a.Disposal.Proceeds, sgd)
+				if err != nil {
+					t.Fatal(err)
+				}
+				x.Disposal = &Disposal{On: on, Proceeds: proceeds}
+			}
 			in = append(in, x)
 		}
 		got, err := Work(v, period.Calendar{BooksStart: books, FirstYearEnd: end}, sgd, c.YA, in)
@@ -254,6 +272,12 @@ func TestTheScheduleAgreesWithTheOracleToTheCent(t *testing.T) {
 			if g.Asset.Number != w.ID || g.Allowance.String() != w.Allowance || g.Initial.String() != w.Initial || g.BroughtFw.String() != w.Brought || g.CarriedFw.String() != w.Carried {
 				t.Errorf("case %d (YA %d) %s: engine %s (initial %s, from %s to %s), reference %s (initial %s, from %s to %s)", n, c.YA, w.ID, g.Allowance, g.Initial, g.BroughtFw, g.CarriedFw,
 					w.Allowance, w.Initial, w.Brought, w.Carried)
+			}
+			if (g.Sold == nil) != (w.Sold == nil) || (w.Sold != nil && (g.BalancingAllow.String() != w.Sold.Allowance || g.BalancingCharge.String() != w.Sold.Charge)) {
+				t.Errorf("case %d (YA %d) %s: engine's sale %v (allowance %s, charge %s), reference's %+v", n, c.YA, w.ID, g.Sold != nil, g.BalancingAllow, g.BalancingCharge, w.Sold)
+			}
+			if w.Sold != nil {
+				sales++
 			}
 			rows++
 		}
@@ -270,11 +294,63 @@ func TestTheScheduleAgreesWithTheOracleToTheCent(t *testing.T) {
 		if !slices.Equal(apart, want) {
 			t.Errorf("case %d (YA %d): engine lists apart %v, reference %v", n, c.YA, apart, want)
 		}
-		if got.Totals.Allowance.String() != c.Result.TotalAllowance || got.Totals.CarriedFw.String() != c.Result.TotalCarried {
-			t.Errorf("case %d: totals %s/%s, reference %s/%s", n, got.Totals.Allowance, got.Totals.CarriedFw, c.Result.TotalAllowance, c.Result.TotalCarried)
+		if got.Totals.Allowance.String() != c.Result.TotalAllowance || got.Totals.CarriedFw.String() != c.Result.TotalCarried ||
+			got.Totals.BalancingAllow.String() != c.Result.TotalBA || got.Totals.BalancingCharge.String() != c.Result.TotalBC {
+			t.Errorf("case %d: totals %s/%s, balancing %s/%s; reference %s/%s, balancing %s/%s", n, got.Totals.Allowance, got.Totals.CarriedFw, got.Totals.BalancingAllow,
+				got.Totals.BalancingCharge, c.Result.TotalAllowance, c.Result.TotalCarried, c.Result.TotalBA, c.Result.TotalBC)
 		}
 	}
-	if rows < 80 {
-		t.Errorf("only %d rows compared", rows)
+	if rows < 80 || sales < 10 {
+		t.Errorf("only %d rows compared, %d of sales", rows, sales)
+	}
+}
+
+// IRAS's example of sales: furniture of S$3,000 on the three-year write-off sold after two years' allowances for S$200 has a written down value of 1,000 and a balancing allowance
+// of 800; a computer of 2,000 written off in one year under section 19A(2) and sold for 200 has a balancing charge of 200; a van of 20,000 on the three-year write-off sold after
+// one allowance of 6,666.67 for 21,000 has a written down value of 13,333.33 and a charge restricted to the 6,666.67 allowed (IRAS shows 13,333 and 6,667). The year of a sale takes no
+// allowance, the years after it say nothing, and a part disposal is still listed apart.
+// req: FR-FA-04
+func TestASaleGivesItsBalancingAllowanceOrChargeInItsYearAndNoAllowance(t *testing.T) {
+	v := version(t)
+	sold := func(a Asset, on time.Time, proceeds string) Asset {
+		p, err := money.Parse(proceeds, sgd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		a.Disposed, a.Disposal = true, &Disposal{On: on, Proceeds: p}
+		return a
+	}
+	furniture := sold(item(t, "FA-F", "3000.00", day(2026, 6, 1), &asset.TaxElection{Method: asset.TaxS19A1}), day(2028, 9, 1), "200.00")
+	computer := sold(item(t, "FA-C", "2000.00", day(2026, 6, 1), &asset.TaxElection{Method: asset.TaxS19A2}), day(2027, 9, 1), "200.00")
+	van := sold(item(t, "FA-V", "20000.00", day(2026, 6, 1), &asset.TaxElection{Method: asset.TaxS19A1}), day(2027, 9, 1), "21000.00")
+	part := item(t, "FA-P", "1000.00", day(2026, 6, 1), &asset.TaxElection{Method: asset.TaxS19A1})
+	part.Disposed = true
+	for _, c := range []struct {
+		ya                     int
+		a                      Asset
+		brought, allow, ba, bc string
+	}{
+		{2029, furniture, "1000.00", "0.00", "800.00", "0.00"},
+		{2028, computer, "0.00", "0.00", "0.00", "200.00"},
+		{2028, van, "13333.33", "0.00", "0.00", "6666.67"},
+	} {
+		s, err := Work(v, calendar, sgd, c.ya, []Asset{c.a})
+		if err != nil || len(s.Rows) != 1 {
+			t.Fatalf("%s in YA %d: %v, %s", c.a.Number, c.ya, err, figures(s))
+		}
+		r := s.Rows[0]
+		if r.Sold == nil || r.BroughtFw.String() != c.brought || r.Allowance.String() != c.allow || r.CarriedFw.String() != "0.00" || r.BalancingAllow.String() != c.ba || r.BalancingCharge.String() != c.bc ||
+			s.Totals.BalancingAllow.String() != c.ba || s.Totals.BalancingCharge.String() != c.bc {
+			t.Errorf("%s in YA %d: from %s, allowance %s, balancing %s / %s", c.a.Number, c.ya, r.BroughtFw, r.Allowance, r.BalancingAllow, r.BalancingCharge)
+		}
+	}
+	if s, _ := Work(v, calendar, sgd, 2027, []Asset{van}); len(s.Rows) != 1 || s.Rows[0].Sold != nil || s.Rows[0].Allowance.String() != "6666.67" {
+		t.Errorf("the year before the sale claims as it would: %s", figures(s))
+	}
+	if s, _ := Work(v, calendar, sgd, 2029, []Asset{van, computer}); len(s.Rows) != 0 || len(s.Apart) != 0 {
+		t.Errorf("the years after a sale say nothing: %s %s", figures(s), reasons(s))
+	}
+	if s, _ := Work(v, calendar, sgd, 2027, []Asset{part}); reasons(s) != "FA-P:disposed" {
+		t.Errorf("a part disposal is listed apart: %s", reasons(s))
 	}
 }
