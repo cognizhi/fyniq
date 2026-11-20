@@ -66,7 +66,7 @@ Source: PRD-001 §8.6 · Priority S · Phase P2
 - **WHEN** the daily job runs twice in a day
 - **THEN** the cardholder has one Inbox item listing both lines
 
-#### Scenario: A cardholder is told once a day of card lines with no receipt (rev 0.546)
+#### Scenario: A cardholder is told once a day of card lines with no receipt (rev 0.548)
 - **GIVEN** two lines of a card booked 20 Oct and the setting claims.receipt_reminder_days at 3
 - **WHEN** the daily job runs on 22 Oct and on 24 Oct
 - **THEN** nothing is told on 22 Oct, and on 24 Oct the holder alone gets one notice naming two lines and the oldest date; the same day again tells nothing
