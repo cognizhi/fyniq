@@ -134,6 +134,19 @@ func linkPayload(ctx context.Context, tx pgx.Tx, q QueuedEvent, now time.Time) (
 			return nil, fmt.Errorf("the run event %s names a version that was not approved with proof", q.EventID)
 		}
 		return sub, nil
+	case TypeLeaveTaken:
+		request, err := uuid.Parse(q.ObjectID)
+		if err != nil {
+			return nil, fmt.Errorf("the leave event %s names no entry", q.EventID)
+		}
+		ev, ok, err := leaveEventAt(ctx, tx, request)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, fmt.Errorf("the leave event %s names a request that is neither approved nor cancelled", q.EventID)
+		}
+		return ev, nil
 	case TypeSessionRevoked:
 		var ev SessionRevokedEvent
 		if err := json.Unmarshal(q.Payload, &ev); err != nil || ev.Issuer == "" || ev.Subject == "" || (ev.Reason != "signed_out" && ev.Reason != "removed") {
@@ -174,6 +187,8 @@ func linkRoute(typ string) (path, scope string, ok bool) {
 		return "/v1/people-link/payroll-runs", "payroll.journal.submit", true
 	case TypeSessionRevoked:
 		return "/v1/people-link/session-events", "identity.sessions.write", true
+	case TypeLeaveTaken:
+		return "/v1/people-link/availability-events", "people.availability.write", true
 	}
 	return "", "", false
 }

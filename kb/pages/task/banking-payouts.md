@@ -4,7 +4,7 @@ type: task
 title: Check a payment provider's payouts and settle a lost dispute
 summary: Read each Stripe or HitPay payout against its clearing account, deal with parked events, and write off or credit a lost dispute
 sources:
-  - docs/user-guide/banking.md sha256:3a9112663e374a3fc4360d3c0f9cd8b13514f04bced020feb3eb6206c8170058
+  - docs/user-guide/banking.md sha256:bdc2177c8bb0f0a6ea043d0475036f8601fa128c0eeff0245f18f79ff8973159
 data_class: general
 taint: trusted
 status: draft

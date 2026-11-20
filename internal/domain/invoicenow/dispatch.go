@@ -210,6 +210,9 @@ func dispatchOrg(ctx context.Context, store storage.Store, ap ports.AccessPoint,
 		if outage {
 			return true, nil
 		}
+		if errors.Is(err, ports.ErrNotFound) {
+			continue // the organisation or the document is gone since the queue was read: nothing to send
+		}
 		if err != nil {
 			errs = append(errs, err)
 		}

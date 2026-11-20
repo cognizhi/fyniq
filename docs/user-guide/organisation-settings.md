@@ -302,6 +302,11 @@ what is shown, never what a person may do.
   after its date.
 - A contact's own payment terms always win over these.
 
+## Payment link in the invoice email
+
+**Put an invoice's payment link in its email** (on unless changed) adds a line saying where to pay online to an invoice or reminder emailed while the invoice has a
+live payment link. The link is the one already stored; nothing is asked of the payment provider while an email is sent. See [Invoices](invoices.md).
+
 ## Bill reminders
 
 **Remind of bills due within** says how many days ahead the Inbox lists the bills to pay: 3 days unless
@@ -432,6 +437,12 @@ one, so these are the company's own policy: Fyniq recommends **S$0.60** a km for
 - The distance is rounded to 0.1 km and the amount to the cent, trip by trip.
 - A mileage line claims no GST.
 - A change needs a second approver, as the other money settings do.
+
+## Project revenue over time
+
+Three accounts take the journal of a fixed-fee project elected for **revenue over time**: **Contract asset account** (1150 unless changed) for what is earned and
+not yet invoiced, **Contract liability account** (2400 Deferred revenue) for what is invoiced ahead of the work, and **Revenue over time account** (4030). Each
+must be an active account that takes postings, and changing one needs a second person's approval. See [Project billing](projects-billing.md).
 
 ## Capitalisation threshold
 

@@ -592,7 +592,85 @@ func registerPeopleLink(a *API) {
 	}), eventCodes, func(ctx context.Context, in *peopleEventInput) (*peopleEventOutput, error) {
 		return a.receivePeopleEvent(ctx, in, peoplelink.TypeSessionRevoked)
 	})
+	register(a, authz.ReceivePeopleAvailabilityEvent, byID(huma.Operation{
+		OperationID: "receivePeopleAvailabilityEvent", Method: http.MethodPost, Path: "/v1/people-link/availability-events", Tags: []string{"People"},
+		Summary: "Receive approved leave from Nemura",
+		Description: "Nemura's `leave.taken.changed` (PRD-002 Appendix E, design D27): a person's approved leave, by entry, with its dates, half days and days, and a tombstone when it is cancelled. It never carries the leave's " +
+			"type, reason or balance, and a field Appendix E does not list is refused. It needs the link's client and the scope people.availability.write and is checked, applied once and versioned by (epoch, version) " +
+			"exactly as receivePeopleProjectionEvent is: an older word arriving late changes nothing. It informs who is away (listPeopleAvailability) and moves no money and decides no approval. Side effects: the " +
+			"entry and its audit event (the entry and its version, never a date), and the inbox row. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).",
+	}), eventCodes, func(ctx context.Context, in *peopleEventInput) (*peopleEventOutput, error) {
+		return a.receivePeopleEvent(ctx, in, peoplelink.TypeLeaveTaken)
+	})
+	register(a, authz.ListPeopleAvailability, huma.Operation{
+		OperationID: "listPeopleAvailability", Method: http.MethodGet, Path: "/v1/people-link/availability", Tags: []string{"People"},
+		Summary: "List who is away",
+		Description: "The approved leave Nemura told Fyniq of that overlaps a range (FR-PPL-06), a page at a time, by start date: the person's name, the dates, half days and days. A range is at most 366 days; left out, it is " +
+			"today to 30 days on. Never the leave's type or reason, which Nemura does not send, and never a cancelled entry. Read-only; no side effects.",
+	}, append([]string{CodeCursor, CodeInvalid}, locks...), func(ctx context.Context, in *peopleAvailabilityInput) (*peopleAvailabilityOutput, error) {
+		p, _ := authn.From(ctx)
+		from, to := a.deps.Clock.Now().UTC().Truncate(24*time.Hour), time.Time{}
+		to = from.AddDate(0, 0, 30)
+		var err error
+		if in.From != "" {
+			if from, err = time.Parse(time.DateOnly, in.From); err != nil {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "query.from", Message: "is not a date", Fix: "Send the start of the range as YYYY-MM-DD"}})
+			}
+			to = from.AddDate(0, 0, 30)
+		}
+		if in.To != "" {
+			if to, err = time.Parse(time.DateOnly, in.To); err != nil || to.Before(from) || to.Sub(from) > 366*24*time.Hour {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "query.to", Message: "is not a date, is before the start or is more than 366 days after it", Fix: "Send the end of the range as YYYY-MM-DD"}})
+			}
+		}
+		out := PeopleAvailabilityPage{Items: []PeopleAvailability{}}
+		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			all, err := u.PeopleLinks().LeaveBetween(ctx, from, to)
+			if err != nil {
+				return err
+			}
+			page, next, err := pageOf(all, func(x storage.PeopleLeave) string { return x.EntryID.String() }, in.PageQuery)
+			for _, x := range page {
+				who, perr := u.PeopleLinks().Person(ctx, x.PersonID)
+				if perr != nil {
+					return perr
+				}
+				out.Items = append(out.Items, PeopleAvailability{EntryID: x.EntryID.String(), PersonID: x.PersonID.String(), PersonName: who.DisplayName, StartDate: x.Start.Format(time.DateOnly),
+					EndDate: x.End.Format(time.DateOnly), StartHalf: x.StartHalf, EndHalf: x.EndHalf, Days: x.Days})
+			}
+			out.NextCursor = next
+			return err
+		})
+		return &peopleAvailabilityOutput{Body: out}, err
+	})
 }
+
+// PeopleAvailability is one entry of approved leave as Nemura told Fyniq: never its type or reason.
+type PeopleAvailability struct {
+	EntryID    string `json:"entry_id" format:"uuid" doc:"Nemura's leave entry." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e01"`
+	PersonID   string `json:"person_id" format:"uuid" doc:"The person, as in the projection." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e02"`
+	PersonName string `json:"person_name,omitempty" doc:"The person's name in the projection." example:"Ana Lim"`
+	StartDate  string `json:"start_date" format:"date" doc:"The first day away." example:"2026-12-21"`
+	EndDate    string `json:"end_date" format:"date" doc:"The last day away." example:"2026-12-24"`
+	StartHalf  bool   `json:"start_half" doc:"The first day is a half day." example:"false"`
+	EndHalf    bool   `json:"end_half" doc:"The last day is a half day." example:"false"`
+	Days       string `json:"days" pattern:"^[0-9]{1,3}(\\.[0-9]{1,2})?$" doc:"The days of leave, a decimal string." example:"3.5"`
+}
+
+// PeopleAvailabilityPage is a page of who is away.
+type PeopleAvailabilityPage struct {
+	Items      []PeopleAvailability `json:"items" nullable:"false" doc:"The approved leave that overlaps the range, by start date."`
+	NextCursor string               `json:"next_cursor,omitempty" doc:"The cursor of the next page; none on the last." example:"eyJhZnRlciI6IjEwMDAifQ"`
+}
+
+type (
+	peopleAvailabilityInput struct {
+		PageQuery
+		From string `query:"from" format:"date" doc:"The first day of the range; left out, today." example:"2026-12-01"`
+		To   string `query:"to" format:"date" doc:"The last day of the range, within 366 days of the first; left out, 30 days after it." example:"2026-12-31"`
+	}
+	peopleAvailabilityOutput struct{ Body PeopleAvailabilityPage }
+)
 
 // linkKey reads Nemura's Ed25519 public key: 32 bytes, base64url without padding.
 func linkKey(s string) (ed25519.PublicKey, error) {
@@ -637,6 +715,7 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 		var next peoplelink.Person
 		var access *storage.PeopleAccess
 		var revoke *peoplelink.SessionRevoked
+		var leave *storage.PeopleLeave
 		var ignored bool
 		var perr error
 		switch env.Header.Type {
@@ -644,6 +723,8 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 			access, ignored, perr = a.accessOf(ctx, u, env, now)
 		case peoplelink.TypeSessionRevoked:
 			revoke, perr = revokedOf(env)
+		case peoplelink.TypeLeaveTaken:
+			leave, ignored, perr = a.leaveOf(ctx, u, env, now)
 		default:
 			next, ignored, perr = a.applyPeopleEvent(ctx, u, env, now)
 		}
@@ -683,6 +764,10 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 		if revoke != nil {
 			return a.endSessionsOf(ctx, u, l, *revoke, now)
 		}
+		if leave != nil {
+			_, err := u.PeopleLinks().SaveLeave(ctx, *leave)
+			return err
+		}
 		return u.PeopleLinks().SavePerson(ctx, next)
 	})
 	if err != nil {
@@ -710,6 +795,43 @@ func (a *API) accessOf(ctx context.Context, u storage.UnitOfWork, env peoplelink
 	version, epoch := int64(env.Header.ObjectVersion), env.Header.Epoch // a sequence starts again with each link: the answer is kept with its epoch, and the newest (epoch, version) wins
 	older := err == nil && (held.Epoch > epoch || (held.Epoch == epoch && held.Version >= version))
 	return &storage.PeopleAccess{Issuer: ev.Issuer, Subject: ev.Subject, PeopleAccess: ev.PeopleAccess, PayrollApprover: ev.PayrollApprover, Version: version, Epoch: epoch, ReceivedAt: now}, older, nil
+}
+
+// leaveOf reads Nemura's word on a leave entry (leave.taken.changed) strictly, and says whether it is older than the one held: the entry's version orders it, within the link's epoch. A word about a person Fyniq
+// does not know is refused (send the person first), and an entry never changes its person.
+func (a *API) leaveOf(ctx context.Context, u storage.UnitOfWork, env peoplelink.Envelope, now time.Time) (*storage.PeopleLeave, bool, error) {
+	var ev peoplelink.LeaveTaken
+	d := json.NewDecoder(bytes.NewReader(env.Payload))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&ev); err != nil || env.Header.ObjectVersion < 1 {
+		return nil, false, &peoplelink.Refusal{Code: CodeLinkMinimum, Message: "the payload has a field, or a value, that PRD-002 Appendix E does not list for " + env.Header.Type}
+	}
+	if err := ev.Check(); err != nil {
+		return nil, false, err
+	}
+	if env.Header.ObjectID != ev.EntryID.String() {
+		return nil, false, &peoplelink.Refusal{Code: peoplelink.CodeMalformed, Message: "the header's object is not the leave entry the payload names"}
+	}
+	person, err := u.PeopleLinks().Person(ctx, ev.PersonID)
+	if err != nil {
+		return nil, false, err
+	}
+	if !person.Known() {
+		return nil, false, &peoplelink.Refusal{Code: peoplelink.CodePayPerson, Message: "the leave is for a person Fyniq does not know: send the people events first"}
+	}
+	held, err := u.PeopleLinks().LeaveOf(ctx, ev.EntryID)
+	if err != nil && !errors.Is(err, ports.ErrNotFound) {
+		return nil, false, err
+	}
+	if err == nil && held.PersonID != ev.PersonID {
+		return nil, false, &peoplelink.Refusal{Code: peoplelink.CodeMalformed, Message: "a leave entry never changes its person"}
+	}
+	version, epoch := int64(env.Header.ObjectVersion), env.Header.Epoch
+	older := err == nil && (held.Epoch > epoch || (held.Epoch == epoch && held.Version >= version))
+	from, _ := time.Parse(time.DateOnly, ev.StartDate)
+	to, _ := time.Parse(time.DateOnly, ev.EndDate)
+	return &storage.PeopleLeave{EntryID: ev.EntryID, PersonID: ev.PersonID, Start: from, End: to, StartHalf: ev.StartHalf, EndHalf: ev.EndHalf, Days: ev.Days, Cancelled: ev.Cancelled,
+		Version: version, Epoch: epoch, ReceivedAt: now}, older, nil
 }
 
 // linkedEnvelope checks an event against the link as Fyniq holds it: the link is active, the call came through the link's own client, and the envelope's

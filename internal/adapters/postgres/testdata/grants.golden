@@ -513,6 +513,9 @@ fyniq_api       SELECT    pd_shredding_run
 fyniq_api       UPDATE    pd_shredding_run (approved_at, approved_by, status, version)
 fyniq_api       INSERT    pd_transfer (assessed_by, assessed_on, basis, countries, data, evidence, flow, next_review_on, purpose, recipient, saved_at, saved_by, state, transfer_id, version)
 fyniq_api       SELECT    pd_transfer
+fyniq_api       INSERT    people_leave (cancelled, days, end_date, end_half, entry_id, epoch, id, person_id, received_at, start_date, start_half, version)
+fyniq_api       SELECT    people_leave
+fyniq_api       UPDATE    people_leave (cancelled, days, end_date, end_half, epoch, received_at, start_date, start_half, version)
 fyniq_api       INSERT    people_link (approval_id, changed_at, client_id, created_at, created_by, epoch, id, link_key, nemura_organisation_id, nemura_origin, state)
 fyniq_api       SELECT    people_link
 fyniq_api       UPDATE    people_link (changed_at, client_id, state, version)
@@ -573,6 +576,11 @@ fyniq_api       UPDATE    project_member (is_active, is_manager)
 fyniq_api       INSERT    project_milestone (amount, due_on, kind, name, project_id)
 fyniq_api       SELECT    project_milestone
 fyniq_api       UPDATE    project_milestone (accepted_on, changed_at, version)
+fyniq_api       INSERT    project_revenue_election (estimated_cost, excluded_cost, excluded_reason, method, project_id, set_at, set_by)
+fyniq_api       SELECT    project_revenue_election
+fyniq_api       UPDATE    project_revenue_election (estimated_cost, excluded_cost, excluded_reason, method, set_at, set_by, version)
+fyniq_api       INSERT    project_revenue_run (adjustment, created_at, created_by, earned, journal_id, month, project_id)
+fyniq_api       SELECT    project_revenue_run
 fyniq_api       INSERT    project_task (billable, name, project_id)
 fyniq_api       SELECT    project_task
 fyniq_api       UPDATE    project_task (billable, changed_at, is_active, name, version)
@@ -1073,6 +1081,7 @@ fyniq_readonly  SELECT    pd_request
 fyniq_readonly  SELECT    pd_request_step
 fyniq_readonly  SELECT    pd_shredding_run
 fyniq_readonly  SELECT    pd_transfer
+fyniq_readonly  SELECT    people_leave
 fyniq_readonly  SELECT    people_link
 fyniq_readonly  SELECT    people_link_access
 fyniq_readonly  SELECT    people_link_inbox
@@ -1094,6 +1103,8 @@ fyniq_readonly  SELECT    project
 fyniq_readonly  SELECT    project_billed_item
 fyniq_readonly  SELECT    project_member
 fyniq_readonly  SELECT    project_milestone
+fyniq_readonly  SELECT    project_revenue_election
+fyniq_readonly  SELECT    project_revenue_run
 fyniq_readonly  SELECT    project_task
 fyniq_readonly  SELECT    psp_account
 fyniq_readonly  SELECT    psp_balance
@@ -1460,6 +1471,7 @@ fyniq_worker    INSERT    pd_shredding_run (cohort, keys, listed_at)
 fyniq_worker    SELECT    pd_shredding_run
 fyniq_worker    UPDATE    pd_shredding_run (register, version)
 fyniq_worker    SELECT    pd_transfer
+fyniq_worker    SELECT    people_leave
 fyniq_worker    SELECT    people_link
 fyniq_worker    SELECT    people_link_access
 fyniq_worker    SELECT    people_link_inbox
@@ -1485,6 +1497,8 @@ fyniq_worker    SELECT    project
 fyniq_worker    SELECT    project_billed_item
 fyniq_worker    SELECT    project_member
 fyniq_worker    SELECT    project_milestone
+fyniq_worker    SELECT    project_revenue_election
+fyniq_worker    SELECT    project_revenue_run
 fyniq_worker    SELECT    project_task
 fyniq_worker    SELECT    psp_account
 fyniq_worker    UPDATE    psp_account (sweep_error, swept_at, swept_through)

@@ -66,7 +66,9 @@ token hash dropped (the tenant export's `Dropped` list). `[counsel to confirm]` 
 
 - Whoever holds a link acts as the customer until it ends: a forwarded email is a forwarded login. This is the design's accepted residual
   risk (option A against customer logins, design D1); the controls above bound it in time, scope and reach, and revocation is immediate.
-- Fyniq does not email the link: the maker sends it, which keeps the choice of recipient with a person (a mistyped address is theirs to avoid).
-  An email through the existing send path is a later addition.
+- Emailing the link (rev 0.574, `send_email`): the address is the contact's own billing email, never one in the request, so a staff member cannot
+  send the link to an address of their choosing through Fyniq; the token is in the email's body only (in the URL's fragment, as an invoice's online
+  link), the delivery log and the audit trail carry the recipient and never the token, and the link is made only if the email is queued. A wrong
+  billing address on the contact would send it to the wrong person, so the contact's billing email is as sensitive as the link `[owner to confirm]`.
 - A payment on the provider's page is recorded by reconciliation, never by the portal; the portal does not say "paid" until the books do.
 - Paid invoices are not listed (the statement shows them); a payment-link click-through is not recorded.

@@ -36,6 +36,22 @@ Nothing is billed while the invoice is a draft. **When you issue the invoice**, 
 list; if you **void** the invoice, they come back. Two drafts may name the same work, but only the first to be issued bills it: issuing the
 second is refused, and you remove the work from it or void the first.
 
+## Revenue over time
+
+An accountant (or Controller or Owner) can elect a **fixed-fee** project in the base currency for **revenue over time** on its record (Expert mode): the
+estimated total cost, instead of recognising each milestone as it is invoiced. Fyniq then works each month out from the posted ledger: the **fee** is the
+milestones' total, the **cost to date** is the costs posted to the project, **progress** is cost to date over the estimate (at most 100%), and the **revenue
+earned** is the fee times that progress, rounded once to the cent on the running total. A milestone invoice already books revenue, so the month's journal is a
+true-up: it moves the revenue the ledger holds to what is earned, and the difference is a **contract asset** (earned, not yet invoiced) or a **contract
+liability** (invoiced ahead of the work).
+
+**Propose the month's journal** makes it as a draft, every line carrying the project, for a person to approve and post like any journal. A month is proposed
+once, in order, and only after the earlier months' journals are posted. The three accounts are set under organisation settings (Projects). If some of the costs posted to the project do not show progress (waste, rework, a cost out of proportion to the work), enter the running total to
+**leave out of progress** with the reason when you elect it, and progress is measured by the costs posted less those: the page shows both. More left
+out than was posted is refused. When the cost
+reaches the estimate the whole fee is earned and the page says to revisit the estimate. The method is for the accountant to confirm: Fyniq follows the
+input method of SFRS(I) 15.
+
 ## Fixed fee and retainer
 
 On a **fixed-fee** project, add its **milestones**: a name, an amount in the project's currency and a due date. A milestone's name and amount

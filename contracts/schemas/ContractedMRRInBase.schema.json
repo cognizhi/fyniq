@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "missing": {
+      "description": "Currencies with no rate for the day, left out of mrr: while there are any, mrr is not the whole.",
+      "examples": [
+        [
+          "JPY"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "mrr": {
+      "$ref": "Money.schema.json",
+      "description": "The sum of each currency's total converted once into the base currency (RND-FX); only the currencies that have a rate."
+    },
+    "rates": {
+      "description": "The rate each currency was converted at, with its date: the rate of the day or the nearest the rate cascade found.",
+      "items": {
+        "$ref": "ContractedMRRRate.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "mrr",
+    "rates",
+    "missing"
+  ],
+  "title": "ContractedMRRInBase",
+  "type": "object"
+}

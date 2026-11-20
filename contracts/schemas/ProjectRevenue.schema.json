@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "election": {
+      "$ref": "ProjectRevenueElection.schema.json"
+    },
+    "month": {
+      "description": "The month the figures are for.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "position": {
+      "$ref": "ProjectRevenuePosition.schema.json",
+      "description": "The figures as the month's journal would book them; absent when the project is not elected or cannot be worked out (see problem)."
+    },
+    "problem": {
+      "description": "Why the figures are not shown, in plain words.",
+      "examples": [
+        "The project has no milestones, so it has no fee to recognise."
+      ],
+      "type": "string"
+    },
+    "runs": {
+      "description": "The months already proposed, oldest first.",
+      "items": {
+        "$ref": "ProjectRevenueRun.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "election",
+    "runs"
+  ],
+  "title": "ProjectRevenue",
+  "type": "object"
+}

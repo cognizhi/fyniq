@@ -1,0 +1,91 @@
+{
+  "id": "filedrop",
+  "name": "Bank statement files over SFTP",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "Reads a bank's statement files (MT940, camt.053 or OFX) from the SFTP folder the bank delivers to, into Banking, read-only: each money account named by a statement is fed hourly in file-name order. It never writes to, renames or deletes in the folder.",
+  "scope": "organisation",
+  "capabilities": [
+    {
+      "kind": "bank-data",
+      "trigger": "system-rule",
+      "trigger_rule": "The sync schedule: the tick's hourly bank.sync.",
+      "on_pause": "hold",
+      "on_disable": "hold",
+      "in_flight": "finish"
+    }
+  ],
+  "configuration": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["address", "user", "folder", "host_key_sha256"],
+    "properties": {
+      "address": {
+        "type": "string",
+        "title": "SFTP server",
+        "description": "The bank's SFTP host and port, such as sftp.bank.example:22.",
+        "pattern": "^[A-Za-z0-9.-]{1,253}:[0-9]{1,5}$"
+      },
+      "user": {
+        "type": "string",
+        "title": "User name",
+        "description": "The user the bank gave this connection.",
+        "pattern": "^[A-Za-z0-9._-]{1,100}$"
+      },
+      "folder": {
+        "type": "string",
+        "title": "Folder",
+        "description": "The folder the bank leaves statement files in, such as /outbox.",
+        "pattern": "^[A-Za-z0-9._/-]{1,200}$"
+      },
+      "host_key_sha256": {
+        "type": "string",
+        "title": "Host key fingerprint",
+        "description": "The server's host key as the bank gives it, SHA256:… (as ssh-keygen -l prints it). A server with any other key is refused.",
+        "pattern": "^SHA256:[A-Za-z0-9+/]{43}$"
+      },
+      "format": {
+        "type": "string",
+        "title": "File format",
+        "description": "The format of the files the bank delivers.",
+        "enum": ["mt940", "camt053", "ofx"],
+        "default": "mt940"
+      }
+    }
+  },
+  "secrets": [
+    {
+      "name": "private_key",
+      "title": "Private key",
+      "description": "The private key (OpenSSH or PEM, without a passphrase) whose public half the bank authorised for this user.",
+      "used_by": [
+        "worker",
+        "api"
+      ],
+      "rotation_overlap_hours": 24
+    }
+  ],
+  "provider_scopes": [
+    "SFTP: read the statement folder (list and read; no write)"
+  ],
+  "fyniq_scopes": [],
+  "data_classes": [],
+  "regions": [
+    "SG"
+  ],
+  "destinations": [
+    {
+      "configured": "address"
+    }
+  ],
+  "webhooks": [],
+  "health_check": "Each feed's last sync and why it stopped: a refused key, a changed host key, an unreadable or PGP-wrapped file.",
+  "test_action": "Connects, lists the folder's files and the accounts their statements name, and reports whether the bank accepted the key and the host key matched.",
+  "local_substitute": "A directory on this machine in local mode (the filedrop-local connector), and an in-process SFTP server in tests. Against a real bank it is [live-verify].",
+  "limits": {
+    "requests_per_minute": 30,
+    "breaker_failures": 5,
+    "breaker_cooldown_seconds": 600
+  }
+}

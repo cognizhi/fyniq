@@ -3048,6 +3048,22 @@ type FyniqPdTransfer struct {
 	SavedAt        time.Time
 }
 
+type FyniqPeopleLeave struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	EntryID        uuid.UUID
+	PersonID       uuid.UUID
+	StartDate      time.Time
+	EndDate        time.Time
+	StartHalf      bool
+	EndHalf        bool
+	Days           string
+	Cancelled      bool
+	Version        int64
+	Epoch          int32
+	ReceivedAt     time.Time
+}
+
 type FyniqPeopleLink struct {
 	OrganisationID       uuid.UUID
 	ID                   uuid.UUID
@@ -3375,6 +3391,31 @@ type FyniqProjectMilestone struct {
 	Version        int32
 	CreatedAt      time.Time
 	ChangedAt      time.Time
+}
+
+type FyniqProjectRevenueElection struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Method         string
+	EstimatedCost  *string
+	Version        int32
+	SetBy          string
+	SetAt          time.Time
+	ExcludedCost   string
+	ExcludedReason *string
+}
+
+type FyniqProjectRevenueRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Month          time.Time
+	JournalID      uuid.UUID
+	Adjustment     string
+	Earned         string
+	CreatedBy      string
+	CreatedAt      time.Time
 }
 
 type FyniqProjectTask struct {

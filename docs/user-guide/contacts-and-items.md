@@ -126,7 +126,9 @@ templates](document-templates.md).
 A customer of the organisation can have a private **customer portal**: one link where they see the invoices still due, pay
 where a payment link exists, download each invoice as a PDF and read their statement of account. On a customer's page, an
 Accountant or an AR specialist selects **Make a portal link**, may add a note about who it is for, and copies the link that
-appears: it is shown **only once**, because Fyniq keeps just a fingerprint of it. Send it to the customer yourself.
+appears: it is shown **only once**, because Fyniq keeps just a fingerprint of it. Either send it to the customer yourself, or tick
+**Email it to the customer's billing address** before you make it: Fyniq then emails it from the statements sender to the billing email on the
+customer's record (you cannot choose another address), and makes the link only if the email could be queued.
 
 - The link works for 30 days (at most 90) or until you **Revoke** it. A link that has ended, was revoked or never existed shows
   the same plain message, so a leaked address tells nobody anything.

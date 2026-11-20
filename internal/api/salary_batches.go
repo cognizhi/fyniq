@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/bankcode"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payee"
@@ -54,6 +55,7 @@ type SalaryBatchLine struct {
 	LineVersion       int    `json:"line_version" doc:"The line's version: a revised line is a new version, and the batch is approved again." example:"1"`
 	State             string `json:"state" enum:"scheduled,released,sent,accepted,paid,rejected,returned,unknown" doc:"Where the payment is (FR-PPL-12): paid only from the bank feed matching the debit or a person's record with evidence." example:"scheduled"`
 	InstructionID     string `json:"instruction_id,omitempty" doc:"The instruction ID the release gave it." example:"SB0003-R1-L07"`
+	NeedsBIC          bool   `json:"needs_bic,omitempty" doc:"True when Fyniq does not know this line's bank's BIC: fill it in when preparing the batch (bank_bics on prepareSalaryBatch), or the batch cannot be asked for approval." example:"false"`
 	Waiting           string `json:"waiting,omitempty" enum:"held,hold_unknown,bank_details,unknown_outcome" doc:"Why the line is not released now: held for tax clearance, Nemura did not say whether it is held, the person's bank details changed, or an unknown outcome blocks a new instruction." example:"held"`
 }
 
@@ -106,9 +108,10 @@ type SalaryBatchPage struct {
 
 // SalaryBatchPrepare names where and when a salary batch is paid from.
 type SalaryBatchPrepare struct {
-	MoneyAccountID string `json:"money_account_id" format:"uuid" doc:"The SGD bank account the batch is paid from: the chart's money account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
-	PaymentDate    string `json:"payment_date" format:"date" doc:"The day the bank pays it." example:"2026-11-30"`
-	Method         string `json:"method" enum:"fast,giro" doc:"FAST pays within minutes, up to the bank's limit; GIRO over the next working days." example:"giro"`
+	MoneyAccountID string            `json:"money_account_id" format:"uuid" doc:"The SGD bank account the batch is paid from: the chart's money account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
+	PaymentDate    string            `json:"payment_date" format:"date" doc:"The day the bank pays it." example:"2026-11-30"`
+	Method         string            `json:"method" enum:"fast,giro" doc:"FAST pays within minutes, up to the bank's limit; GIRO over the next working days." example:"giro"`
+	BankBICs       map[string]string `json:"bank_bics,omitempty" doc:"The BIC of the bank of each line Fyniq could not derive it for (the line's ID to an 8 or 11 character BIC). Fyniq looks a BIC up from the bank code Nemura sends; a code it does not know needs a person to fill it in here, from the bank's own advice. Each becomes a new version of the line, so an earlier approval is stale." example:"{\"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10\":\"DBSSSGSG\"}"`
 }
 
 // SalaryBatchCancel is why a batch is cancelled.
@@ -198,6 +201,7 @@ var salaryFixes = map[string]string{
 	salarybatch.CodeMethod:      "Choose fast or giro",
 	salarybatch.CodeState:       "Choose a state the line may move to from where it is; paid, rejected, returned and unknown need evidence",
 	salarybatch.CodeLine:        "Use a line of this batch",
+	salarybatch.CodeBIC:         "Prepare the batch again and fill in the BIC of each bank Fyniq does not know, from the bank's own advice",
 }
 
 func salaryProblem(code, detail string) *Problem { return problem(code, detail, salaryFixes[code]) }
@@ -310,6 +314,9 @@ func maskAccount(d salarybatch.Detail) string {
 	if len(n) > 4 {
 		n = n[len(n)-4:]
 	}
+	if d.BankBIC == "" {
+		return "BIC needed ••••" + n
+	}
 	return d.BankBIC + " ••••" + n
 }
 
@@ -401,6 +408,7 @@ func (a *API) salaryOf(ctx context.Context, u storage.UnitOfWork, p authn.Princi
 				if clear, err := a.deps.Fields.Open(ctx, l.Sealed, salarybatch.LineAAD(p.Organisation, b.ID, l.LineRef, l.LineVersion)); err == nil {
 					if d, err := salarybatch.ReadDetail(clear); err == nil {
 						line.Account = maskAccount(d)
+						line.NeedsBIC = d.BankBIC == ""
 					}
 				}
 			}
@@ -427,6 +435,12 @@ func (a *API) salaryChecks(ctx context.Context, u storage.UnitOfWork, b storage.
 	if problem := a.checkSalaryAccount(ctx, u, b); problem != nil {
 		add(salarybatch.CodeAccount, "money_account_id", problem.Detail)
 	}
+	// A line whose bank has no BIC Fyniq knows cannot be paid: a person fills it in when preparing the batch (design D26).
+	if lacking, err := a.linesLackingBIC(ctx, u, b); err != nil {
+		return nil, err
+	} else if len(lacking) > 0 {
+		add(salarybatch.CodeBIC, "bank_bics", fmt.Sprintf("%d line(s) are for a bank whose BIC Fyniq does not know.", len(lacking)))
+	}
 	// The payroll go-live gate (FR-PAY-15, G4-009): a pay run that pays a person is not approved for payment until how the month's statutory outputs are met is recorded as evidence.
 	missing, err := payrollGate(ctx, u, b.WageMonth)
 	if err != nil {
@@ -439,6 +453,30 @@ func (a *API) salaryChecks(ctx context.Context, u storage.UnitOfWork, b storage.
 		}
 		out = append(out, BillCheck{Severity: "error", Code: peoplelink.CodeGate, Field: "payroll_arrangements", Message: "How this month's statutory outputs are met is not recorded: " + strings.Join(words, ", ") + ".",
 			Fix: "Record each in Settings, People and HR, Payroll arrangements, with its evidence (FR-PAY-15)"})
+	}
+	return out, nil
+}
+
+// linesLackingBIC are the batch's current lines whose sealed bank has no BIC, with their opened details. Nothing leaves the function but the lines and what they seal.
+func (a *API) linesLackingBIC(ctx context.Context, u storage.UnitOfWork, b storage.SalaryBatch) (map[uuid.UUID]salarybatch.Detail, error) {
+	lines, err := u.SalaryBatches().Lines(ctx, b.ID)
+	if err != nil {
+		return nil, err
+	}
+	p, _ := authn.From(ctx)
+	out := map[uuid.UUID]salarybatch.Detail{}
+	for _, l := range lines {
+		clear, err := a.deps.Fields.Open(ctx, l.Sealed, salarybatch.LineAAD(p.Organisation, b.ID, l.LineRef, l.LineVersion))
+		if err != nil {
+			return nil, err
+		}
+		d, err := salarybatch.ReadDetail(clear)
+		if err != nil {
+			return nil, err
+		}
+		if d.BankBIC == "" {
+			out[l.LineRef] = d
+		}
 	}
 	return out, nil
 }
@@ -664,6 +702,9 @@ func (a *API) releaseSalaryBatch(ctx context.Context, u storage.UnitOfWork, p au
 		if total, err = total.Add(amount); err != nil {
 			return SalaryBatch{}, err
 		}
+		if d.BankBIC == "" { // never written: a line without a BIC waits for a person to fill it in (design D26)
+			return SalaryBatch{}, salaryProblem(salarybatch.CodeBIC, "A line's bank has no BIC: prepare the batch again and fill it in.")
+		}
 		instruction := fmt.Sprintf("SB%04d-R%d-L%02d", b.Seq, round, i+1)
 		f.Payments = append(f.Payments, paymentfile.Payment{Payee: d.PayeeName, Kind: "employee", BIC: d.BankBIC, AccountName: d.AccountName, Number: d.AccountNumber, Amount: amount, Reference: instruction})
 		relLines = append(relLines, storage.SalaryReleaseLine{LineRef: l.LineRef, LineID: l.ID, InstructionID: instruction})
@@ -821,7 +862,7 @@ func registerSalaryBatches(a *API) {
 			"it is stale and the batch is approved again. A cancelled batch, or one that has a line released, is not prepared again. Side effects: the batch's version and its audit event. Needs If-Match with the " +
 			"batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeInvalid, salarybatch.CodeDate, salarybatch.CodeMethod,
-		salarybatch.CodeAccount, salarybatch.CodeNotOpen, storage.CodeSalaryBatch}, locks...), func(ctx context.Context, in *salaryPrepareInput) (*salaryWriteOutput, error) {
+		salarybatch.CodeAccount, salarybatch.CodeNotOpen, salarybatch.CodeBIC, salarybatch.CodeLine, storage.CodeSalaryBatch}, locks...), func(ctx context.Context, in *salaryPrepareInput) (*salaryWriteOutput, error) {
 		id, err := parseID("batch_id", in.BatchID)
 		if err != nil {
 			return nil, err
@@ -860,6 +901,52 @@ func registerSalaryBatches(a *API) {
 			probe.MoneyAccountID, probe.PayDate = account, &day
 			if pr := a.checkSalaryAccount(ctx, u, probe); pr != nil {
 				return SalaryBatch{}, pr
+			}
+			// The BIC a person fills in for a bank Fyniq does not know is a new version of the line, sealed as every line is, so the approval binds it (design D26).
+			if len(in.Body.BankBICs) > 0 {
+				lacking, err := a.linesLackingBIC(ctx, u, b)
+				if err != nil {
+					return SalaryBatch{}, err
+				}
+				var revised []storage.SalaryLine
+				lines, err := u.SalaryBatches().Lines(ctx, b.ID)
+				if err != nil {
+					return SalaryBatch{}, err
+				}
+				for ref, bic := range in.Body.BankBICs {
+					id, err := parseID("body.bank_bics", ref)
+					if err != nil {
+						return SalaryBatch{}, err
+					}
+					d, ok := lacking[id]
+					if !ok {
+						return SalaryBatch{}, salaryProblem(salarybatch.CodeLine, "A line named in bank_bics has a BIC already, or is not in this batch.")
+					}
+					bic = strings.ToUpper(strings.TrimSpace(bic))
+					if !bankcode.ValidBIC(bic) {
+						return SalaryBatch{}, salaryProblem(salarybatch.CodeBIC, "A BIC is 8 or 11 letters and digits, as on the bank's own advice.")
+					}
+					d.BankBIC = bic
+					clear, err := d.Marshal()
+					if err != nil {
+						return SalaryBatch{}, err
+					}
+					for _, l := range lines {
+						if l.LineRef != id {
+							continue
+						}
+						l.LineVersion++
+						sealed, err := a.deps.Fields.Seal(ctx, clear, salarybatch.LineAAD(p.Organisation, b.ID, l.LineRef, l.LineVersion))
+						if err != nil {
+							return SalaryBatch{}, err
+						}
+						l.Sealed = sealed
+						revised = append(revised, l)
+					}
+				}
+				if b, err = u.SalaryBatches().Revise(ctx, b.ID, b.LinesVersion, revised, a.deps.Clock.Now()); err != nil {
+					return SalaryBatch{}, err
+				}
 			}
 			// A prepared batch that was approved is approved again: its version moves on, and the release checks the new approval.
 			if b, err = u.SalaryBatches().Prepare(ctx, id, b.Version, account, day, in.Body.Method, "user:"+p.UserID.String(), a.deps.Clock.Now()); err != nil {
@@ -940,7 +1027,7 @@ func registerSalaryBatches(a *API) {
 			"event with counts and the file's hash only. No break-glass releases a salary. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check " +
 			"and releases nothing.",
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired, CodeStepUpRequired, salarybatch.CodeNotOpen,
-		salarybatch.CodeReapprove, salarybatch.CodeSeparation, salarybatch.CodeNothing, salarybatch.CodeAccount, peoplelink.CodeHold, peoplelink.CodeHoldUnknown, payee.CodeNoKeys, storage.CodeSalaryBatch,
+		salarybatch.CodeReapprove, salarybatch.CodeSeparation, salarybatch.CodeNothing, salarybatch.CodeAccount, salarybatch.CodeBIC, peoplelink.CodeHold, peoplelink.CodeHoldUnknown, payee.CodeNoKeys, storage.CodeSalaryBatch,
 		team.CodeAction, paymentfile.CodeProvider, paymentfile.CodeNotBuilt}, locks...), func(ctx context.Context, in *salaryCommandInput) (*salaryWriteOutput, error) {
 		id, err := parseID("batch_id", in.BatchID)
 		if err != nil {

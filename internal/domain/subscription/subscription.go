@@ -13,7 +13,9 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -317,6 +319,54 @@ func Amend(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, version int,
 			return storage.SubscriptionAmendment{}, &Error{CodeDate, "The contract has an amendment for that day already.", "Enter a later day"}
 		}
 		return storage.SubscriptionAmendment{}, err
+	}
+	return out, nil
+}
+
+// ConvertedRate is the rate one currency's total was converted at.
+type ConvertedRate struct {
+	Currency string
+	Rate     string    // base currency per one unit, as the rate cascade found it
+	Source   string    // where it came from, such as "MAS daily feed of 2026-10-30"
+	Of       time.Time // the date the rate is of: not always the day asked for
+}
+
+// BaseTotal is the contracted MRR converted into the base currency as a figure of its own, beside the totals in each contract's currency (FR-KPI-04, rev 0.579): each currency's total is
+// converted once under RND-FX at the rate the cascade finds for the day (the organisation's, the daily feed's, the month's), and the converted totals are added. A currency with no rate is
+// left out and named in Missing, so the figure is never a guess; it is then not the whole.
+type BaseTotal struct {
+	Amount  money.Money
+	Rates   []ConvertedRate
+	Missing []string
+}
+
+// InBase converts totals into base on day.
+func InBase(ctx context.Context, u storage.UnitOfWork, totals []Total, base money.Currency, day time.Time) (BaseTotal, error) {
+	out := BaseTotal{Amount: money.Zero(base)}
+	for _, t := range totals {
+		cur, err := money.Lookup(t.Currency)
+		if err != nil {
+			return BaseTotal{}, err
+		}
+		found, err := fx.Lookup(ctx, u, base, cur, day)
+		var fe *fx.Error
+		if errors.As(err, &fe) && fe.Code == fx.CodeNoRate {
+			out.Missing = append(out.Missing, t.Currency)
+			continue
+		}
+		if err != nil {
+			return BaseTotal{}, err
+		}
+		converted := t.MRR
+		if cur != base {
+			if converted, err = rounding.FX(t.MRR, found.Rate); err != nil {
+				return BaseTotal{}, err
+			}
+		}
+		if out.Amount, err = out.Amount.Add(converted); err != nil {
+			return BaseTotal{}, err
+		}
+		out.Rates = append(out.Rates, ConvertedRate{Currency: t.Currency, Rate: found.Rate.String(), Source: found.Rate.Source, Of: found.Of})
 	}
 	return out, nil
 }

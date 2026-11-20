@@ -353,6 +353,12 @@ var matrixPeopleLink = map[string]func(e *env, tok string) (response, func() boo
 	"receivePeopleSessionEvent": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/people-link/session-events", tok, map[string]any{}), nil
 	},
+	"receivePeopleAvailabilityEvent": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/people-link/availability-events", tok, map[string]any{}), nil
+	},
+	"listPeopleAvailability": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/people-link/availability", tok, nil), nil
+	},
 }
 
 // A payment to a person held for tax clearance is not released (FR-PPL-13, FR-PPL-10): the release refuses while the projection shows the person held, by an approval or by break-glass

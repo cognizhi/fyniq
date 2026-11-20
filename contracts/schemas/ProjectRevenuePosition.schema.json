@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adjustment": {
+      "$ref": "Money.schema.json",
+      "description": "The revenue this month's journal books: earned less held; negative when invoiced ahead of progress."
+    },
+    "contract_asset": {
+      "$ref": "Money.schema.json",
+      "description": "The contract asset after the journal: earned and not yet invoiced."
+    },
+    "contract_liability": {
+      "$ref": "Money.schema.json",
+      "description": "The contract liability after the journal: invoiced and not yet earned."
+    },
+    "cost_to_date": {
+      "$ref": "Money.schema.json",
+      "description": "What progress is measured by: the project's costs posted to the end of the month (direct and payroll-tagged) less those left out as not showing progress."
+    },
+    "costs_left_out": {
+      "$ref": "Money.schema.json",
+      "description": "The part of them the accountant left out of progress, with the reason on the election."
+    },
+    "costs_posted": {
+      "$ref": "Money.schema.json",
+      "description": "The project's costs posted to the end of the month, before any are left out."
+    },
+    "earned": {
+      "$ref": "Money.schema.json",
+      "description": "The revenue earned to date: RND-RECOGNISE of the fee by progress."
+    },
+    "estimated_cost": {
+      "$ref": "Money.schema.json",
+      "description": "The estimated total cost."
+    },
+    "fee": {
+      "$ref": "Money.schema.json",
+      "description": "The fixed fee: the total of the project's milestones."
+    },
+    "held": {
+      "$ref": "Money.schema.json",
+      "description": "The revenue the ledger holds for the project to date."
+    },
+    "invoiced": {
+      "$ref": "Money.schema.json",
+      "description": "The revenue invoiced to the project to date, net of GST: the revenue the ledger holds less the earlier journals' adjustments."
+    },
+    "nothing_to_propose": {
+      "description": "The journal would move nothing.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "overrun": {
+      "description": "The cost has reached the estimate: the whole fee is earned and the estimate needs revisiting.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "progress": {
+      "description": "Cost to date over the estimate as a percentage, at most 100.0 (RND-PERCENT).",
+      "examples": [
+        "50.0"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "fee",
+    "estimated_cost",
+    "cost_to_date",
+    "costs_posted",
+    "costs_left_out",
+    "progress",
+    "overrun",
+    "earned",
+    "invoiced",
+    "held",
+    "adjustment",
+    "contract_asset",
+    "contract_liability",
+    "nothing_to_propose"
+  ],
+  "title": "ProjectRevenuePosition",
+  "type": "object"
+}

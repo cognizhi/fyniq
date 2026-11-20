@@ -21,8 +21,9 @@ aliases:
   - taxable supplies
   - taxable turnover
   - GST forecast
-  - GST rate
   - current GST rate
+  - GST rate
+  - what is the GST rate
 ---
 
 # GST registration and the registration monitor

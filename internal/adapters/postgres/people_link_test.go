@@ -15,6 +15,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -346,5 +347,66 @@ func TestAttackTheLinksKeysAreKeptOnceAndOnlyTheWorkerReadsTheSecrets(t *testing
 	}
 	if !strings.Contains(trail, keys.NemuraClientID) || strings.Contains(trail, "kty") || strings.Contains(trail, "pkcs8") || strings.Contains(trail, "link_public") {
 		t.Errorf("the audit trail of the keys: %q", trail)
+	}
+}
+
+// Leave Nemura told Fyniq of is kept by (epoch, version) and never changed back or deleted (PRD-001 FR-PPL-06; design D27): a newer word replaces an older, an older or equal one changes nothing, an entry never changes
+// its person, the API alone writes it, and another organisation sees none of it.
+// req: FR-PPL-06
+// asvs: V8.2.1, V4.2.1
+func TestAttackLeaveFromNemuraIsKeptByVersionPerOrganisation(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Leave home Pte Ltd")
+	other := books(t, "Leave elsewhere Pte Ltd")
+	now := time.Date(2026, time.November, 2, 3, 0, 0, 0, time.UTC)
+	entry, person := uuid.New(), uuid.New()
+	leave := func(version int64, epoch int, end int, cancelled bool) storage.PeopleLeave {
+		return storage.PeopleLeave{EntryID: entry, PersonID: person, Start: porttest.Day(12, 21), End: porttest.Day(12, end), Days: "3.00", Cancelled: cancelled, Version: version, Epoch: epoch, ReceivedAt: now}
+	}
+	save := func(l storage.PeopleLeave) bool {
+		var ok bool
+		if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			ok, err = u.PeopleLinks().SaveLeave(ctx, l)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return ok
+	}
+	if !save(leave(1, 1, 24, false)) || !save(leave(2, 1, 23, false)) {
+		t.Fatal("a first word and a newer one are kept")
+	}
+	if save(leave(2, 1, 30, false)) || save(leave(1, 1, 30, false)) {
+		t.Error("an equal or older word replaced a newer one")
+	}
+	if !save(leave(1, 2, 22, false)) { // a link made again starts its sequence at 1, in a newer epoch
+		t.Error("a word of a newer epoch was ignored")
+	}
+	if save(leave(9, 1, 30, false)) {
+		t.Error("a word of an older epoch replaced a newer epoch's")
+	}
+	var held storage.PeopleLeave
+	_ = store(t, "fyniq_worker").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		held, err = u.PeopleLinks().LeaveOf(ctx, entry)
+		return err
+	})
+	if held.End.Day() != 22 || held.Epoch != 2 {
+		t.Errorf("what is held: %+v", held)
+	}
+	_ = store(t, "fyniq_api").Do(ctx, other.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := u.PeopleLinks().LeaveOf(ctx, entry); err == nil {
+			t.Error("another organisation sees the entry")
+		}
+		return nil
+	})
+	for _, x := range []struct{ role, what, stmt, state string }{
+		{"fyniq_migrator", "change an entry", "UPDATE fyniq.people_leave SET days = 1", "FY900"},
+		{"fyniq_migrator", "delete an entry", "DELETE FROM fyniq.people_leave", "FY900"},
+		{"fyniq_api", "delete an entry as the API", "DELETE FROM fyniq.people_leave", "42501"},
+		{"fyniq_api", "move an entry to another person", "UPDATE fyniq.people_leave SET person_id = gen_random_uuid()", "42501"},
+		{"fyniq_worker", "write an entry as the worker", "INSERT INTO fyniq.people_leave (entry_id, person_id, start_date, end_date, days, version, epoch, received_at) VALUES (gen_random_uuid(), gen_random_uuid(), '2026-12-01', '2026-12-02', 1, 1, 1, now())", "42501"},
+	} {
+		err := asOrg(ctx, conn(t, x.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
+		wantState(t, x.what, err, x.state)
 	}
 }

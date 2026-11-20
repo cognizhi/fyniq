@@ -995,6 +995,48 @@ Asks to link the organisation to a Nemura organisation (FR-PPL-01, FR-PPL-16, PR
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-CLIENT-01`, `API-CLIENT-05`, `API-CLIENT-06`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `PPL-10`, `STORAGE-LOCK-01`, `STORAGE-PEOPLE-LINK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/people-link/availability`
+
+**List who is away** (`listPeopleAvailability`)
+
+The approved leave Nemura told Fyniq of that overlaps a range (FR-PPL-06), a page at a time, by start date: the person's name, the dates, half days and days. A range is at most 366 days; left out, it is today to 30 days on. Never the leave's type or reason, which Nemura does not send, and never a cancelled entry. Read-only; no side effects.
+
+- **Permission:** View on People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `from` (query): The first day of the range; left out, today.
+  - `to` (query): The last day of the range, within 366 days of the first; left out, 30 days after it.
+- **Responses:**
+  - `200` OK [`PeopleAvailabilityPage`](../../contracts/schemas/PeopleAvailabilityPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/people-link/availability-events`
+
+**Receive approved leave from Nemura** (`receivePeopleAvailabilityEvent`)
+
+Nemura's `leave.taken.changed` (PRD-002 Appendix E, design D27): a person's approved leave, by entry, with its dates, half days and days, and a tombstone when it is cancelled. It never carries the leave's type, reason or balance, and a field Appendix E does not list is refused. It needs the link's client and the scope people.availability.write and is checked, applied once and versioned by (epoch, version) exactly as receivePeopleProjectionEvent is: an older word arriving late changes nothing. It informs who is away (listPeopleAvailability) and moves no money and decides no approval. Side effects: the entry and its audit event (the entry and its version, never a date), and the inbox row. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals
+- **Request body:** [`PeopleLinkEvent`](../../contracts/schemas/PeopleLinkEvent.schema.json)
+- **Responses:**
+  - `200` OK [`PeopleLinkReceipt`](../../contracts/schemas/PeopleLinkReceipt.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PPL-02` The event's signature does not verify with the link key; `PPL-03` The event's payload is not the one its signed header names; `PPL-04` The event was signed more than 5 minutes from now; `PPL-05` The event is of another epoch of the link; `PPL-06` The event is not from the linked organisation to this one; `PPL-08` The event came through a client that is not the link's.
+  - `409` Conflict: `PPL-07` The organisation has no active link to the people platform; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PEOPLE-LINK-01` The link or a person of the projection moved against its course.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PPL-01` The event is not well formed; `PPL-09` The event carries more than the people platform shares (PRD-002 Appendix E).
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PPL-01`, `PPL-02`, `PPL-03`, `PPL-04`, `PPL-05`, `PPL-06`, `PPL-07`, `PPL-08`, `PPL-09`, `STORAGE-LOCK-01`, `STORAGE-PEOPLE-LINK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/people-link/health`
 
 **Show how the link to the people platform stands** (`getPeopleLinkHealth`)
@@ -1380,15 +1422,15 @@ Names the SGD bank account the batch is paid from, the payment date and the meth
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`SalaryBatch`](../../contracts/schemas/SalaryBatch.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
-  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `SB-13` There is no such line in the salary batch.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SB-04` The salary batch is not in the state the command needs; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
-  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO; `SB-14` A salary line's bank has no BIC Fyniq knows.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `SB-02`, `SB-04`, `SB-10`, `SB-11`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SALARY-BATCH-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `SB-02`, `SB-04`, `SB-10`, `SB-11`, `SB-13`, `SB-14`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SALARY-BATCH-01`
 
 ### `POST /v1/salary-batches/{batch_id}/release`
 
@@ -1409,12 +1451,12 @@ Releases an approved salary batch (FR-PAY-11, FR-PPL-13): the Payment releaser, 
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PPL-21` A person held for tax clearance is not paid; `PPL-22` Nemura did not say whether a person is held, so nothing is released to them; `SB-03` No line of the salary batch can be released now; `SB-04` The salary batch is not in the state the command needs; `SB-05` The salary batch needs approving again; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
-  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account; `SB-14` A salary line's bank has no BIC Fyniq knows.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-15`, `PAYFILE-01`, `PAYFILE-02`, `PPL-21`, `PPL-22`, `SB-02`, `SB-03`, `SB-04`, `SB-05`, `SB-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SALARY-BATCH-01`, `TEAM-04`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-15`, `PAYFILE-01`, `PAYFILE-02`, `PPL-21`, `PPL-22`, `SB-02`, `SB-03`, `SB-04`, `SB-05`, `SB-06`, `SB-14`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SALARY-BATCH-01`, `TEAM-04`
 
 ### `GET /v1/salary-batches/{batch_id}/releases/{release_id}/file`
 
@@ -3854,6 +3896,84 @@ The milestones of a fixed-fee project, or the periods of a retainer, oldest firs
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
+
+### `GET /v1/projects/{project_id}/revenue`
+
+**Read a fixed-fee project's revenue over time for a month** (`getProjectRevenue`)
+
+The project's election (revenue as each milestone is invoiced, or over time) and, for an over-time project, the month's figures as the journal would book them (FR-PRJ-11): the fee (the milestones' total), the cost to date, progress by cost-to-cost, the revenue earned (RND-RECOGNISE), what the ledger holds, the adjustment and the contract asset or liability. The figures are read from the posted ledger; why they cannot be shown is in `problem`. Read-only.
+
+- **Permission:** View on Project reports and cost rates (rev 0.8)
+- **Parameters:**
+  - `project_id` (path, required): The project's ID.
+  - `month` (query): The month's first day; this month when left out.
+- **Responses:**
+  - `200` OK [`ProjectRevenue`](../../contracts/schemas/ProjectRevenue.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
+
+### `PUT /v1/projects/{project_id}/revenue-election`
+
+**Elect a fixed-fee project's revenue over time, or back to milestones** (`setProjectRevenueElection`)
+
+The accountant's choice for a fixed-fee project in the base currency (FR-PRJ-11): over_time with the estimated total cost above nothing, or milestone, which is the default. Changing it needs If-Match with the election's ETag; the first election needs none. It posts nothing; the month's journal is proposed with proposeProjectRevenueJournal. Side effects: the election and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Post on Journals
+- **Parameters:**
+  - `project_id` (path, required): The project's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`SetProjectRevenueInputBody`](../../contracts/schemas/SetProjectRevenueInputBody.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ProjectRevenue`](../../contracts/schemas/ProjectRevenue.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PRJ-REV-01` Revenue over time is for an elected fixed-fee project; `PRJ-REV-02` The fee or the estimate is not usable.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`, `PRJ-REV-01`, `PRJ-REV-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/projects/{project_id}/revenue-journals`
+
+**Propose a month's revenue journal for a project elected for revenue over time** (`proposeProjectRevenueJournal`)
+
+Makes the month's journal as a draft for a person to approve and post (FR-PRJ-11): Dr or Cr the contract asset and the contract liability by what the position moves them by and the opposite on the revenue account, every line carrying the project; the accounts are set under organisation settings. The month is the first day of a month up to this one and after the last month proposed, each earlier journal being posted; a month is proposed once and a journal that would move nothing is refused. The draft is approved and posted like any journal. Side effects: the draft journal, the run recording it, audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Journals
+- **Parameters:**
+  - `project_id` (path, required): The project's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ProposeProjectRevenueInputBody`](../../contracts/schemas/ProposeProjectRevenueInputBody.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ProjectRevenueRunOutputBody`](../../contracts/schemas/ProjectRevenueRunOutputBody.schema.json)
+  - `201` Created [`ProjectRevenueRunOutputBody`](../../contracts/schemas/ProjectRevenueRunOutputBody.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PRJ-REV-01` Revenue over time is for an elected fixed-fee project; `PRJ-REV-02` The fee or the estimate is not usable; `PRJ-REV-03` That month cannot be proposed now; `PRJ-REV-04` The accounts for revenue over time are not set up; `PRJ-REV-05` The journal would move nothing.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`, `PRJ-REV-01`, `PRJ-REV-02`, `PRJ-REV-03`, `PRJ-REV-04`, `PRJ-REV-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/projects/{project_id}/tasks`
 
@@ -6361,7 +6481,7 @@ The customer's portal links, newest first: when each was made, when it expires, 
 
 **Make a customer's portal link** (`createPortalLink`)
 
-Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. A person's alone: the AI and MCP have no tool for it. Side effects: the link and its audit event.
+Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. With send_email the link is also queued to the customer's billing email address from the statements sender (the address cannot be chosen here), in the same step. A person's alone: the AI and MCP have no tool for it. Side effects: the link, the queued email if asked for, and their audit events.
 
 - **Permission:** Post on Invoices, credit notes
 - **Parameters:**
@@ -8324,7 +8444,7 @@ Records a dated amendment (FR-AR-15): an upgrade or downgrade sets a new monthly
 
 **Read the contracted MRR on a day** (`getContractedMRR`)
 
-The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Nothing is converted. Read-only.
+The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Each currency stays as it is; in_base is a separate figure, the totals converted into the base currency at the rates of the day (each total converted once, RND-FX) and labelled with each rate and its date, and any currency with no rate named in missing. Read-only.
 
 - **Permission:** View on Invoices, credit notes
 - **Parameters:**

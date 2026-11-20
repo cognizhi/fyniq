@@ -100,4 +100,22 @@ describe("salary payments", () => {
     expect(post.body).toEqual({ bank_line_id: "b1", line_ids: ["l2", "l3"] });
     expect(await screen.findByText(/Matched the bank debit and marked 2 line\(s\) paid/)).toBeTruthy();
   });
+
+  it("asks for the BIC of a bank Fyniq does not know when preparing the batch, and sends it with the preparation", async () => {
+    const batch = { ...base, status: "open" as const, state: "received" as const, payment_date: undefined, method: undefined, money_account_id: undefined, lines_visible: true,
+      lines: [{ ...lines[1], state: "scheduled" as const, needs_bic: true, account: "BIC needed ••••3307" }] };
+    const seen = answer({
+      "GET /v1/salary-batches/s1": { status: 200, body: batch, headers: { ETag: '"1-open"' } },
+      "GET /v1/money-accounts": { status: 200, body: { items: [{ id: "m1", account_id: "a1", name: "DBS Current", kind: "bank", currency: "SGD" }] } },
+      "POST /v1/salary-batches/s1/prepare": { status: 200, body: { ...batch, status: "open" }, headers: { ETag: '"2-open"' } },
+    });
+    renderPage(SalaryPayment, { path: "/payroll/salary-payments/s1", route: "/payroll/salary-payments/$batchId", session: payroll });
+    fireEvent.click(await screen.findByRole("button", { name: /Prepare the batch/ }));
+    const bic = await screen.findByLabelText("BIC for Cai Yu");
+    fireEvent.change(bic, { target: { value: "ocbcsgsg" } });
+    fireEvent.change(screen.getByLabelText("Payment date"), { target: { value: "2026-10-31" } });
+    fireEvent.click(screen.getAllByRole("button", { name: /Prepare the batch/ }).at(-1)!);
+    await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/salary-batches/s1/prepare")).toBe(true));
+    expect(seen.find((x) => x.method === "POST")!.body).toMatchObject({ payment_date: "2026-10-31", bank_bics: { l2: "OCBCSGSG" } });
+  });
 });

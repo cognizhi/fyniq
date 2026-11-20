@@ -26,6 +26,12 @@ import (
 // nemuraSays posts an event from Nemura to the projection's door, signed with the link key and sent as the link's client.
 func (w *runWorld) nemuraSays(typ, objectType, objectID string, version int, payload map[string]any, edit func(*peoplelink.Header)) response {
 	w.e.t.Helper()
+	return w.nemuraSaysTo("/v1/people-link/projection-events", typ, objectType, objectID, version, payload, edit)
+}
+
+// nemuraSaysTo is nemuraSays at the door named.
+func (w *runWorld) nemuraSaysTo(path, typ, objectType, objectID string, version int, payload map[string]any, edit func(*peoplelink.Header)) response {
+	w.e.t.Helper()
 	raw, _ := json.Marshal(payload)
 	now := w.e.clock.Now().UTC().Format(time.RFC3339)
 	h := peoplelink.Header{EventID: uuid.NewString(), Type: typ, SchemaVersion: 1, SourceSystem: "nemura", SourceOrganisation: w.nemura, TargetOrganisation: w.org.String(), Epoch: 1,
@@ -40,7 +46,7 @@ func (w *runWorld) nemuraSays(typ, objectType, objectID string, version int, pay
 	b, _ := json.Marshal(env)
 	var body map[string]any
 	_ = json.Unmarshal(b, &body)
-	return w.e.call(http.MethodPost, "/v1/people-link/projection-events", w.tok, body)
+	return w.e.call(http.MethodPost, path, w.tok, body)
 }
 
 // person is a signed-in person of the world: a session of the given roles with the identity and provider it was signed in with.

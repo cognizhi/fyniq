@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "estimated_cost": {
+      "description": "The estimated total cost in the project's currency, above nothing; needed for over_time.",
+      "examples": [
+        "6000.00"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,15})(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "excluded_cost": {
+      "description": "The running total of the project's posted costs to leave out of its progress because they do not show it (waste, rework, a cost out of proportion to the work: SFRS(I) 15 B19); over_time only, with excluded_reason; left out for none.",
+      "examples": [
+        "250.00"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,15})(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "excluded_reason": {
+      "description": "Why those costs do not show progress; needed with excluded_cost above nothing.",
+      "examples": [
+        "Rework of a drawing the customer had already approved"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "method": {
+      "description": "How the project recognises its revenue.",
+      "enum": [
+        "milestone",
+        "over_time"
+      ],
+      "examples": [
+        "over_time"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "method"
+  ],
+  "title": "SetProjectRevenueInputBody",
+  "type": "object"
+}

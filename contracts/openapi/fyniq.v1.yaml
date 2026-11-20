@@ -18760,6 +18760,29 @@ components:
         - mrr
         - active
       type: object
+    ContractedMRRInBase:
+      additionalProperties: false
+      properties:
+        missing:
+          description: "Currencies with no rate for the day, left out of mrr: while there are any, mrr is not the whole."
+          examples:
+            - - JPY
+          items:
+            type: string
+          type: array
+        mrr:
+          $ref: "#/components/schemas/Money"
+          description: The sum of each currency's total converted once into the base currency (RND-FX); only the currencies that have a rate.
+        rates:
+          description: "The rate each currency was converted at, with its date: the rate of the day or the nearest the rate cascade found."
+          items:
+            $ref: "#/components/schemas/ContractedMRRRate"
+          type: array
+      required:
+        - mrr
+        - rates
+        - missing
+      type: object
     ContractedMRROutputBody:
       additionalProperties: false
       properties:
@@ -18769,6 +18792,9 @@ components:
             - "2026-10-31"
           format: date
           type: string
+        in_base:
+          $ref: "#/components/schemas/ContractedMRRInBase"
+          description: The totals converted into the base currency at the rates of the day, as a separate figure; absent when no contract is active.
         totals:
           description: The monthly value of the contracts active that day, by currency (contracted MRR, FR-KPI-02); nothing is converted.
           items:
@@ -18777,6 +18803,36 @@ components:
       required:
         - as_at
         - totals
+      type: object
+    ContractedMRRRate:
+      additionalProperties: false
+      properties:
+        currency:
+          description: The currency converted.
+          examples:
+            - USD
+          type: string
+        rate:
+          description: Base currency per one unit of the currency.
+          examples:
+            - "1.3472"
+          type: string
+        rate_date:
+          description: The date the rate is of.
+          examples:
+            - "2026-10-30"
+          format: date
+          type: string
+        source:
+          description: Where the rate came from.
+          examples:
+            - MAS daily feed of 2026-10-30
+          type: string
+      required:
+        - currency
+        - rate
+        - rate_date
+        - source
       type: object
     Control:
       additionalProperties: false
@@ -20851,6 +20907,11 @@ components:
             - Sent to ap@acme.example
           maxLength: 200
           type: string
+        send_email:
+          description: Also email the link to the customer's billing email address, from the statements sender; nothing is made if it cannot be queued. The address is the contact's own and cannot be chosen here.
+          examples:
+            - true
+          type: boolean
       type: object
     CreateReportScheduleInputBody:
       additionalProperties: false
@@ -45757,6 +45818,79 @@ components:
       required:
         - items
       type: object
+    PeopleAvailability:
+      additionalProperties: false
+      properties:
+        days:
+          description: The days of leave, a decimal string.
+          examples:
+            - "3.5"
+          pattern: ^[0-9]{1,3}(\.[0-9]{1,2})?$
+          type: string
+        end_date:
+          description: The last day away.
+          examples:
+            - "2026-12-24"
+          format: date
+          type: string
+        end_half:
+          description: The last day is a half day.
+          examples:
+            - false
+          type: boolean
+        entry_id:
+          description: Nemura's leave entry.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e01
+          format: uuid
+          type: string
+        person_id:
+          description: The person, as in the projection.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e02
+          format: uuid
+          type: string
+        person_name:
+          description: The person's name in the projection.
+          examples:
+            - Ana Lim
+          type: string
+        start_date:
+          description: The first day away.
+          examples:
+            - "2026-12-21"
+          format: date
+          type: string
+        start_half:
+          description: The first day is a half day.
+          examples:
+            - false
+          type: boolean
+      required:
+        - entry_id
+        - person_id
+        - start_date
+        - end_date
+        - start_half
+        - end_half
+        - days
+      type: object
+    PeopleAvailabilityPage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The approved leave that overlaps the range, by start date.
+          items:
+            $ref: "#/components/schemas/PeopleAvailability"
+          type: array
+        next_cursor:
+          description: The cursor of the next page; none on the last.
+          examples:
+            - eyJhZnRlciI6IjEwMDAifQ
+          type: string
+      required:
+        - items
+      type: object
     PeopleLink:
       additionalProperties: false
       properties:
@@ -47770,6 +47904,11 @@ components:
             - "2026-11-20T09:30:00Z"
           format: date-time
           type: string
+        emailed_to:
+          description: The customer's billing email address the link was queued to, when send_email was true.
+          examples:
+            - ap@acme.example
+          type: string
         expires_at:
           description: When it stops working.
           examples:
@@ -49714,6 +49853,171 @@ components:
         - billable_minutes
         - rate_basis
       type: object
+    ProjectRevenue:
+      additionalProperties: false
+      properties:
+        election:
+          $ref: "#/components/schemas/ProjectRevenueElection"
+        month:
+          description: The month the figures are for.
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        position:
+          $ref: "#/components/schemas/ProjectRevenuePosition"
+          description: The figures as the month's journal would book them; absent when the project is not elected or cannot be worked out (see problem).
+        problem:
+          description: Why the figures are not shown, in plain words.
+          examples:
+            - The project has no milestones, so it has no fee to recognise.
+          type: string
+        runs:
+          description: The months already proposed, oldest first.
+          items:
+            $ref: "#/components/schemas/ProjectRevenueRun"
+          type: array
+      required:
+        - election
+        - runs
+      type: object
+    ProjectRevenueElection:
+      additionalProperties: false
+      properties:
+        estimated_cost:
+          $ref: "#/components/schemas/Money"
+          description: The estimated total cost of the project, in its currency; set for over_time.
+        excluded_cost:
+          $ref: "#/components/schemas/Money"
+          description: The running total of the project's posted costs left out of its progress because they do not show it (SFRS(I) 15 B19), with its reason; absent when none.
+        excluded_reason:
+          description: Why they are left out.
+          examples:
+            - Rework of a drawing the customer had already approved
+          type: string
+        method:
+          description: "milestone: revenue is recognised as each milestone is invoiced (the default); over_time: by cost-to-cost progress, through a monthly journal proposed for approval."
+          enum:
+            - milestone
+            - over_time
+          examples:
+            - over_time
+          type: string
+        version:
+          description: The election's version, for If-Match; 0 when none was made.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - method
+        - version
+      type: object
+    ProjectRevenuePosition:
+      additionalProperties: false
+      properties:
+        adjustment:
+          $ref: "#/components/schemas/Money"
+          description: "The revenue this month's journal books: earned less held; negative when invoiced ahead of progress."
+        contract_asset:
+          $ref: "#/components/schemas/Money"
+          description: "The contract asset after the journal: earned and not yet invoiced."
+        contract_liability:
+          $ref: "#/components/schemas/Money"
+          description: "The contract liability after the journal: invoiced and not yet earned."
+        cost_to_date:
+          $ref: "#/components/schemas/Money"
+          description: "What progress is measured by: the project's costs posted to the end of the month (direct and payroll-tagged) less those left out as not showing progress."
+        costs_left_out:
+          $ref: "#/components/schemas/Money"
+          description: The part of them the accountant left out of progress, with the reason on the election.
+        costs_posted:
+          $ref: "#/components/schemas/Money"
+          description: The project's costs posted to the end of the month, before any are left out.
+        earned:
+          $ref: "#/components/schemas/Money"
+          description: "The revenue earned to date: RND-RECOGNISE of the fee by progress."
+        estimated_cost:
+          $ref: "#/components/schemas/Money"
+          description: The estimated total cost.
+        fee:
+          $ref: "#/components/schemas/Money"
+          description: "The fixed fee: the total of the project's milestones."
+        held:
+          $ref: "#/components/schemas/Money"
+          description: The revenue the ledger holds for the project to date.
+        invoiced:
+          $ref: "#/components/schemas/Money"
+          description: "The revenue invoiced to the project to date, net of GST: the revenue the ledger holds less the earlier journals' adjustments."
+        nothing_to_propose:
+          description: The journal would move nothing.
+          examples:
+            - false
+          type: boolean
+        overrun:
+          description: "The cost has reached the estimate: the whole fee is earned and the estimate needs revisiting."
+          examples:
+            - false
+          type: boolean
+        progress:
+          description: Cost to date over the estimate as a percentage, at most 100.0 (RND-PERCENT).
+          examples:
+            - "50.0"
+          type: string
+      required:
+        - fee
+        - estimated_cost
+        - cost_to_date
+        - costs_posted
+        - costs_left_out
+        - progress
+        - overrun
+        - earned
+        - invoiced
+        - held
+        - adjustment
+        - contract_asset
+        - contract_liability
+        - nothing_to_propose
+      type: object
+    ProjectRevenueRun:
+      additionalProperties: false
+      properties:
+        adjustment:
+          $ref: "#/components/schemas/Money"
+          description: The revenue it books; negative when invoiced ahead of progress.
+        earned:
+          $ref: "#/components/schemas/Money"
+          description: The revenue earned to date after it.
+        journal_id:
+          description: The draft journal proposed for approval; open it under Journals.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b01
+          format: uuid
+          type: string
+        month:
+          description: The month's first day.
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+      required:
+        - month
+        - journal_id
+        - adjustment
+        - earned
+      type: object
+    ProjectRevenueRunOutputBody:
+      additionalProperties: false
+      properties:
+        figures:
+          $ref: "#/components/schemas/ProjectRevenuePosition"
+        run:
+          $ref: "#/components/schemas/ProjectRevenueRun"
+      required:
+        - run
+        - figures
+      type: object
     ProjectTask:
       additionalProperties: false
       properties:
@@ -49889,6 +50193,18 @@ components:
         - time_value
         - expense_value
         - total
+      type: object
+    ProposeProjectRevenueInputBody:
+      additionalProperties: false
+      properties:
+        month:
+          description: "The month's first day: after the last month proposed, up to this month."
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+      required:
+        - month
       type: object
     PspAccountsOutputBody:
       additionalProperties: false
@@ -55682,6 +55998,11 @@ components:
             - 1
           format: int64
           type: integer
+        needs_bic:
+          description: "True when Fyniq does not know this line's bank's BIC: fill it in when preparing the batch (bank_bics on prepareSalaryBatch), or the batch cannot be asked for approval."
+          examples:
+            - false
+          type: boolean
         person_id:
           description: The person of the employee projection.
           examples:
@@ -55743,6 +56064,13 @@ components:
     SalaryBatchPrepare:
       additionalProperties: false
       properties:
+        bank_bics:
+          additionalProperties:
+            type: string
+          description: The BIC of the bank of each line Fyniq could not derive it for (the line's ID to an 8 or 11 character BIC). Fyniq looks a BIC up from the bank code Nemura sends; a code it does not know needs a person to fill it in here, from the bank's own advice. Each becomes a new version of the line, so an earlier approval is stale.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10: DBSSSGSG
+          type: object
         method:
           description: FAST pays within minutes, up to the bank's limit; GIRO over the next working days.
           enum:
@@ -56918,6 +57246,38 @@ components:
           writeOnly: true
       required:
         - value
+      type: object
+    SetProjectRevenueInputBody:
+      additionalProperties: false
+      properties:
+        estimated_cost:
+          description: The estimated total cost in the project's currency, above nothing; needed for over_time.
+          examples:
+            - "6000.00"
+          pattern: ^(0|[1-9][0-9]{0,15})(\.[0-9]{1,4})?$
+          type: string
+        excluded_cost:
+          description: "The running total of the project's posted costs to leave out of its progress because they do not show it (waste, rework, a cost out of proportion to the work: SFRS(I) 15 B19); over_time only, with excluded_reason; left out for none."
+          examples:
+            - "250.00"
+          pattern: ^(0|[1-9][0-9]{0,15})(\.[0-9]{1,4})?$
+          type: string
+        excluded_reason:
+          description: Why those costs do not show progress; needed with excluded_cost above nothing.
+          examples:
+            - Rework of a drawing the customer had already approved
+          maxLength: 500
+          type: string
+        method:
+          description: How the project recognises its revenue.
+          enum:
+            - milestone
+            - over_time
+          examples:
+            - over_time
+          type: string
+      required:
+        - method
       type: object
     Setting:
       additionalProperties: false
@@ -117311,7 +117671,7 @@ paths:
         capability: Invoices, credit notes
         right: V
     post:
-      description: "Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. A person's alone: the AI and MCP have no tool for it. Side effects: the link and its audit event."
+      description: "Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. With send_email the link is also queued to the customer's billing email address from the statements sender (the address cannot be chosen here), in the same step. A person's alone: the AI and MCP have no tool for it. Side effects: the link, the queued email if asked for, and their audit events."
       operationId: createPortalLink
       parameters:
         - description: The contact's ID.
@@ -218091,6 +218451,275 @@ paths:
       x-fyniq-permission:
         capability: "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
         right: C
+  /v1/people-link/availability:
+    get:
+      description: "The approved leave Nemura told Fyniq of that overlaps a range (FR-PPL-06), a page at a time, by start date: the person's name, the dates, half days and days. A range is at most 366 days; left out, it is today to 30 days on. Never the leave's type or reason, which Nemura does not send, and never a cancelled entry. Read-only; no side effects."
+      operationId: listPeopleAvailability
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: The first day of the range; left out, today.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: The first day of the range; left out, today.
+            examples:
+              - "2026-12-01"
+            format: date
+            type: string
+        - description: The last day of the range, within 366 days of the first; left out, 30 days after it.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: The last day of the range, within 366 days of the first; left out, 30 days after it.
+            examples:
+              - "2026-12-31"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeopleAvailabilityPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List who is away
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
+        right: V
+  /v1/people-link/availability-events:
+    post:
+      description: "Nemura's `leave.taken.changed` (PRD-002 Appendix E, design D27): a person's approved leave, by entry, with its dates, half days and days, and a tombstone when it is cancelled. It never carries the leave's type, reason or balance, and a field Appendix E does not list is refused. It needs the link's client and the scope people.availability.write and is checked, applied once and versioned by (epoch, version) exactly as receivePeopleProjectionEvent is: an older word arriving late changes nothing. It informs who is away (listPeopleAvailability) and moves no money and decides no approval. Side effects: the entry and its audit event (the entry and its version, never a date), and the inbox row. Only the link's client may call it; on the never-list for the AI and MCP (§9.6)."
+      operationId: receivePeopleAvailabilityEvent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PeopleLinkEvent"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeopleLinkReceipt"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PPL-02` The event's signature does not verify with the link key; `PPL-03` The event's payload is not the one its signed header names; `PPL-04` The event was signed more than 5 minutes from now; `PPL-05` The event is of another epoch of the link; `PPL-06` The event is not from the linked organisation to this one; `PPL-08` The event came through a client that is not the link's."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PPL-07` The organisation has no active link to the people platform; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PEOPLE-LINK-01` The link or a person of the projection moved against its course."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `PPL-01` The event is not well formed; `PPL-09` The event carries more than the people platform shares (PRD-002 Appendix E)."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Receive approved leave from Nemura
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - PPL-01
+        - PPL-02
+        - PPL-03
+        - PPL-04
+        - PPL-05
+        - PPL-06
+        - PPL-07
+        - PPL-08
+        - PPL-09
+        - STORAGE-LOCK-01
+        - STORAGE-PEOPLE-LINK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: "The event's ID is its idempotency key: the inbox receives each ID once and a repeat answers duplicate (FR-PPL-15, NM-INT-10)."
+        Prefer: "An event is a signed message between the apps, not a person's command: a preview of it would prove nothing (FR-INT-14)."
+      x-fyniq-permission:
+        capability: "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
+        right: C
   /v1/people-link/health:
     get:
       description: "Reads Nemura's event log by identity (sequence, type, object and state, never a payload) with the link's read-only client and sets it against what Fyniq's inbox received (PRD-001 FR-PPL-08, FR-PPL-15): how many events wait, fail or were refused, the highest sequence on each side and the runs of sequence numbers Nemura says it delivered and Fyniq never received, which is a gap. When Nemura cannot be read it says why and the numbers are Fyniq's own. Needs People and HR's right. Read-only; no side effects. Nothing here reaches the AI or MCP (§9.6)."
@@ -227284,6 +227913,539 @@ paths:
       x-fyniq-permission:
         capability: Project reports and cost rates (rev 0.8)
         right: V
+  /v1/projects/{project_id}/revenue:
+    get:
+      description: "The project's election (revenue as each milestone is invoiced, or over time) and, for an over-time project, the month's figures as the journal would book them (FR-PRJ-11): the fee (the milestones' total), the cost to date, progress by cost-to-cost, the revenue earned (RND-RECOGNISE), what the ledger holds, the adjustment and the contract asset or liability. The figures are read from the posted ledger; why they cannot be shown is in `problem`. Read-only."
+      operationId: getProjectRevenue
+      parameters:
+        - description: The project's ID.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            description: The project's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+            format: uuid
+            type: string
+        - description: The month's first day; this month when left out.
+          explode: false
+          in: query
+          name: month
+          schema:
+            description: The month's first day; this month when left out.
+            examples:
+              - "2026-10-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectRevenue"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The election's version, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Read a fixed-fee project's revenue over time for a month
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PRJ-09
+      x-fyniq-permission:
+        capability: Project reports and cost rates (rev 0.8)
+        right: V
+  /v1/projects/{project_id}/revenue-election:
+    put:
+      description: "The accountant's choice for a fixed-fee project in the base currency (FR-PRJ-11): over_time with the estimated total cost above nothing, or milestone, which is the default. Changing it needs If-Match with the election's ETag; the first election needs none. It posts nothing; the month's journal is proposed with proposeProjectRevenueJournal. Side effects: the election and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: setProjectRevenueElection
+      parameters:
+        - description: The project's ID.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            description: The project's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetProjectRevenueInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectRevenue"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The election's version, for If-Match.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PRJ-REV-01` Revenue over time is for an elected fixed-fee project; `PRJ-REV-02` The fee or the estimate is not usable."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Elect a fixed-fee project's revenue over time, or back to milestones
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PRJ-09
+        - PRJ-REV-01
+        - PRJ-REV-02
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        right: P
+  /v1/projects/{project_id}/revenue-journals:
+    post:
+      description: "Makes the month's journal as a draft for a person to approve and post (FR-PRJ-11): Dr or Cr the contract asset and the contract liability by what the position moves them by and the opposite on the revenue account, every line carrying the project; the accounts are set under organisation settings. The month is the first day of a month up to this one and after the last month proposed, each earlier journal being posted; a month is proposed once and a journal that would move nothing is refused. The draft is approved and posted like any journal. Side effects: the draft journal, the run recording it, audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: proposeProjectRevenueJournal
+      parameters:
+        - description: The project's ID.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            description: The project's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProposeProjectRevenueInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectRevenueRunOutputBody"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectRevenueRunOutputBody"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PRJ-REV-01` Revenue over time is for an elected fixed-fee project; `PRJ-REV-02` The fee or the estimate is not usable; `PRJ-REV-03` That month cannot be proposed now; `PRJ-REV-04` The accounts for revenue over time are not set up; `PRJ-REV-05` The journal would move nothing."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Propose a month's revenue journal for a project elected for revenue over time
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PRJ-09
+        - PRJ-REV-01
+        - PRJ-REV-02
+        - PRJ-REV-03
+        - PRJ-REV-04
+        - PRJ-REV-05
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        If-Match: It makes a new journal and a run of its own and changes nothing of the project; a month is proposed once (FR-PRJ-11).
+      x-fyniq-permission:
+        capability: Journals
+        right: C
   /v1/projects/{project_id}/tasks:
     get:
       description: "What time on the project is logged against (FR-PRJ-05): by name, those out of use after the live ones, a page at a time. A person who reads only the projects they are on gets 404 for another one. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects."
@@ -242776,7 +243938,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Not Found: `API-NOT-FOUND-01` Not found."
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `SB-13` There is no such line in the salary batch."
         "409":
           content:
             application/problem+json:
@@ -242794,7 +243956,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO; `SB-14` A salary line's bank has no BIC Fyniq knows."
         "428":
           content:
             application/problem+json:
@@ -242861,6 +244023,8 @@ paths:
         - SB-04
         - SB-10
         - SB-11
+        - SB-13
+        - SB-14
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
         - STORAGE-SALARY-BATCH-01
@@ -242978,7 +244142,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account; `SB-14` A salary line's bank has no BIC Fyniq knows."
         "428":
           content:
             application/problem+json:
@@ -243053,6 +244217,7 @@ paths:
         - SB-04
         - SB-05
         - SB-06
+        - SB-14
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
         - STORAGE-SALARY-BATCH-01
@@ -251358,7 +252523,7 @@ paths:
         right: P
   /v1/subscription-mrr:
     get:
-      description: The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Nothing is converted. Read-only.
+      description: The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Each currency stays as it is; in_base is a separate figure, the totals converted into the base currency at the rates of the day (each total converted once, RND-FX) and labelled with each rate and its date, and any currency with no rate named in missing. Read-only.
       operationId: getContractedMRR
       parameters:
         - description: The day; today when left out.

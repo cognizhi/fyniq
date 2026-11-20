@@ -581,7 +581,7 @@ func TestAHoldIsQueuedWithItsChangeAndSentSignedWithTheLinksToken(t *testing.T) 
 	if err := work(ctx, lt.c.org, rows[1]); err != nil || len(calls) != before {
 		t.Errorf("an ended link: %v, %d calls", err, len(calls)-before)
 	}
-	if err := work(ctx, lt.c.org, outbox.Row{ID: uuid.New(), Payload: []byte(`{"event_id":"e","type":"leave.taken.changed"}`)}); err == nil {
+	if err := work(ctx, lt.c.org, outbox.Row{ID: uuid.New(), Payload: []byte(`{"event_id":"e","type":"payroll.leave_liability.sent"}`)}); err == nil {
 		t.Error("a type Nemura does not send was accepted")
 	}
 }

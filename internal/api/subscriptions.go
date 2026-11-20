@@ -10,6 +10,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/subscription"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -60,6 +61,21 @@ type SubscriptionContractDetail struct {
 type SubscriptionContractPage struct {
 	Items      []SubscriptionContract `json:"items" nullable:"false"`
 	NextCursor string                 `json:"next_cursor,omitempty" doc:"Pass it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjEwMCJ9"`
+}
+
+// ContractedMRRInBase is the contracted MRR converted into the base currency, labelled with the rates and their dates.
+type ContractedMRRInBase struct {
+	MRR     Money               `json:"mrr" doc:"The sum of each currency's total converted once into the base currency (RND-FX); only the currencies that have a rate."`
+	Rates   []ContractedMRRRate `json:"rates" nullable:"false" doc:"The rate each currency was converted at, with its date: the rate of the day or the nearest the rate cascade found."`
+	Missing []string            `json:"missing" nullable:"false" doc:"Currencies with no rate for the day, left out of mrr: while there are any, mrr is not the whole." example:"[\"JPY\"]"`
+}
+
+// ContractedMRRRate is a rate a currency's total was converted at.
+type ContractedMRRRate struct {
+	Currency string `json:"currency" doc:"The currency converted." example:"USD"`
+	Rate     string `json:"rate" doc:"Base currency per one unit of the currency." example:"1.3472"`
+	RateDate string `json:"rate_date" format:"date" doc:"The date the rate is of." example:"2026-10-30"`
+	Source   string `json:"source" doc:"Where the rate came from." example:"MAS daily feed of 2026-10-30"`
 }
 
 // ContractedMRR is the monthly value of the active contracts on a day, in one currency.
@@ -144,6 +160,8 @@ type contractedMRROutput struct {
 	Body struct {
 		AsAt   string          `json:"as_at" format:"date" doc:"The day." example:"2026-10-31"`
 		Totals []ContractedMRR `json:"totals" nullable:"false" doc:"The monthly value of the contracts active that day, by currency (contracted MRR, FR-KPI-02); nothing is converted."`
+		// InBase is a figure of its own, never a replacement for the totals above.
+		InBase *ContractedMRRInBase `json:"in_base,omitempty" doc:"The totals converted into the base currency at the rates of the day, as a separate figure; absent when no contract is active."`
 	}
 }
 
@@ -365,7 +383,7 @@ func registerSubscriptions(a *API) {
 		OperationID: "getContractedMRR", Method: http.MethodGet, Path: "/v1/subscription-mrr", Tags: []string{"Sales"},
 		Summary: "Read the contracted MRR on a day",
 		Description: "The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the " +
-			"booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Nothing is converted. Read-only.",
+			"booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Each currency stays as it is; in_base is a separate figure, the totals converted into the base currency at the rates of the day (each total converted once, RND-FX) and labelled with each rate and its date, and any currency with no rate named in missing. Read-only.",
 	}, []string{CodeInvalid}, func(ctx context.Context, in *contractedMRRInput) (*contractedMRROutput, error) {
 		p, _ := authn.From(ctx)
 		var out contractedMRROutput
@@ -382,10 +400,33 @@ func registerSubscriptions(a *API) {
 			}
 			out.Body.AsAt = dateOf(day)
 			totals, err := subscription.ContractedMRR(ctx, u, day)
+			if err != nil {
+				return err
+			}
 			for _, t := range totals {
 				out.Body.Totals = append(out.Body.Totals, ContractedMRR{Currency: t.Currency, MRR: Money{Amount: t.MRR.String(), Currency: t.Currency}, Active: t.Active})
 			}
-			return err
+			if len(totals) == 0 {
+				return nil
+			}
+			org, err := u.Organisation(ctx)
+			if err != nil {
+				return err
+			}
+			base, err := money.Lookup(org.BaseCurrency)
+			if err != nil {
+				return err
+			}
+			b, err := subscription.InBase(ctx, u, totals, base, day)
+			if err != nil {
+				return err
+			}
+			in := ContractedMRRInBase{MRR: Money{Amount: b.Amount.String(), Currency: base.Code}, Rates: []ContractedMRRRate{}, Missing: append([]string{}, b.Missing...)}
+			for _, r := range b.Rates {
+				in.Rates = append(in.Rates, ContractedMRRRate{Currency: r.Currency, Rate: r.Rate, RateDate: dateOf(r.Of), Source: r.Source})
+			}
+			out.Body.InBase = &in
+			return nil
 		})
 		return &out, err
 	})

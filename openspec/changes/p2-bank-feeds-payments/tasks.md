@@ -23,14 +23,19 @@ Decisions are in design.md. Cloud and real-account checks are tagged `[live-veri
 
 ## 2. Host-to-host files (FR-BNK-17, FR-BNK-15)
 
-- [ ] 2.1 `ports.FileDrop`, the local directory adapter, the sync of drop folders as a bank-data source. **Left** (MT942 reports arrive by the existing email source meanwhile).
+- [x] 2.1 `ports.FileDrop`, the local directory adapter, the sync of drop folders as a bank-data source (rev 0.577): `internal/ports/filedrop.go`, `internal/adapters/sftp` (pinned host key, key auth, read-only), `internal/adapters/local/filedrop.go` (local build), `internal/adapters/filedrop` (files as transactions), `connectors/filedrop` and local mode's `filedrop-local`. Tests: `TestAnSFTPFolderListsAndReadsPlainFilesFromAPinnedHost` (an in-process SFTP server), `TestStatementFilesInADropFolderAreAnAccountsTransactions`, `TestADirectoryDropListsAndReadsOnlyItsOwnPlainFiles`, `TestStatementFilesInADropFolderFeedAMoneyAccount`. MT942 files in a drop folder are not routed to signals yet (reports arrive by the email source).
 - [x] 2.2 An MT942 reader (`internal/bankfile`) whose lines are signals; closing a signal by the MT940 line.
   - Built (rev 0.522): `mt942` as a money account's report format (migrations 001074, 001075), `bankfile` reads it (no balances, the floor limit's currency), `bankingest.Intraday` records each credit as a pending signal once per bank reference; the existing signal machinery closes it when its statement line is matched to the invoice, or expires it (`TestAnIncomingFundsAlertSpeedsUpMatching` proves the closing for alerts; an intraday signal is the same record). `TestAnIntradayMT942ReportHasLinesAndNoBalances`, `TestAnIntradayReportMakesSignalsAndNoStatementLines`. Not built as a manual import format: an intraday report arrives as a report on the account's source.
   - Tests: an intraday file creates signals and no statement line; the daily file closes them. `// req: FR-BNK-16`
-- **Left:** the SFTP adapter, PGP and the static egress IP `[live-verify]` (DBS onboarding); DBS RAPID and UOB API Services
+- **Left:** PGP, the static egress IP and a run against a real bank's SFTP `[live-verify]` (DBS onboarding), MT942 files from a drop folder as signals; DBS RAPID and UOB API Services
   adapters: no public specification, so no code and no cassette `[verify]`.
 
 ## 3. Corporate cards (FR-AP-08)
 
 - [x] 3.1 Receipt suggestions for a card line (rev 0.549: `capture.SuggestsFor`, `listCardReceiptSuggestions`, `attachCardReceiptSuggestion`; tests `TestAReceiptIsSuggestedOnlyForTheSameAmountNearTheDate`, `TestACapturedReceiptIsSuggestedForACardLineAndAttachedByItsHolder`). Only mail to the holder's own capture address (an Employee may not upload to the inbox).
 - [x] 3.2 The daily missing-receipt reminder through the Inbox (rev 0.548: the job `notify.card_receipts`, notification `card.receipt_missing`, setting `claims.receipt_reminder_days`; test `TestACardholderIsToldOnceADayOfTheirLinesWithNoReceipt`). 
+
+## 5. The payment link in the invoice email (FR-AR-13, rev 0.578)
+
+- [x] 5.1 The email carries a live stored link: `salesmail.livePaymentLink`, the setting `invoices.payment_link_in_email`; test `TestAnInvoiceEmailCarriesItsLivePaymentLinkOnlyWhileItIsLive`. No provider call in the send path.
+- [ ] 5.2 **Left, designed:** the link made automatically when an invoice is issued: the issue enqueues a `payment_link.make` worker job; the worker asks the provider (`Runtime.PaymentLinks`, egress-guarded) and stores the link through a narrow `SECURITY DEFINER` function that checks the invoice is posted and the URL is https; the email then carries the link only once created, and a send before that goes without it. The function is a worker grant and is `needs-human-review`. The link on the invoice's PDF is a template change with its own version (FR-TPL-03).

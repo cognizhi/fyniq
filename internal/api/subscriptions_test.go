@@ -95,6 +95,33 @@ func TestASubscriptionContractIsAmendedFromDatedDaysAndItsMRRIsDerived(t *testin
 	if list.Status != 200 || len(list.Body["items"].([]any)) != 2 {
 		t.Errorf("listSubscriptionContracts: %d %s", list.Status, list.Raw)
 	}
+	// The converted figure is a separate one: each currency stays as it is, USD at the day's rate becomes base currency once, labelled with the rate and its date; a day with no rate
+	// names the currency it left out.
+	if r := e.call(http.MethodPost, "/v1/fx/rates", acc, map[string]any{"kind": "day", "currency": "USD", "on": "2026-10-15", "quote": "0.8", "quote_form": "foreign-per-base", "note": "Bank's rate"}); r.Status != http.StatusCreated {
+		t.Fatalf("the USD rate: %d %s", r.Status, r.Raw)
+	}
+	if r := post(map[string]any{"contact_id": customer, "name": "Overseas seats", "currency": "USD", "starts_on": "2026-09-01", "mrr": "20.00"}); r.Status != http.StatusCreated {
+		t.Fatalf("a USD contract: %d %s", r.Status, r.Raw)
+	}
+	mrr := e.call(http.MethodGet, "/v1/subscription-mrr?as_at=2026-10-15", acc, nil)
+	inBase, _ := mrr.Body["in_base"].(map[string]any)
+	rates, _ := inBase["rates"].([]any)
+	if mrr.Status != 200 || len(mrr.Body["totals"].([]any)) != 2 || inBase["mrr"].(map[string]any)["amount"] != "65.50" || len(rates) != 2 {
+		t.Fatalf("the converted figure: %d %s", mrr.Status, mrr.Raw)
+	}
+	var usd map[string]any
+	for _, x := range rates {
+		if x.(map[string]any)["currency"] == "USD" {
+			usd = x.(map[string]any)
+		}
+	}
+	if usd == nil || usd["rate"] != "1.25" || usd["rate_date"] != "2026-10-15" {
+		t.Errorf("the USD rate it was converted at: %v", usd)
+	}
+	later := e.call(http.MethodGet, "/v1/subscription-mrr?as_at=2026-12-01", acc, nil)
+	if lb, _ := later.Body["in_base"].(map[string]any); later.Status != 200 || len(lb["missing"].([]any)) != 1 || lb["missing"].([]any)[0] != "USD" || lb["mrr"].(map[string]any)["amount"] != "170.50" {
+		t.Errorf("a day with no USD rate: %d %s", later.Status, later.Raw)
+	}
 	// A closed month takes no amendment.
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
 		periods, err := u.Periods().List(ctx)

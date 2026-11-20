@@ -108,6 +108,13 @@ export function SubscriptionContracts({ may }: { may: boolean }) {
             not the revenue booked.
           </p>
         )}
+        {mrr.data?.in_base && (
+          <p className="fy-secondary">
+            Converted into {mrr.data.in_base.mrr.currency}: {money(mrr.data.in_base.mrr)}, each currency converted once at the rate of the day (
+            {mrr.data.in_base.rates.map((r) => `${r.currency} ${r.rate} of ${date(r.rate_date)}`).join("; ") || "no rate needed"}).
+            {mrr.data.in_base.missing.length > 0 && ` Left out, with no rate for the day: ${mrr.data.in_base.missing.join(", ")}, so this is not the whole.`} A separate figure from the totals above.
+          </p>
+        )}
         {problem && <Refusal problem={problem} title="The change was not saved" />}
         {list.isError && <Refusal problem={problemOf(list.error)} title="The contracts could not be read" />}
         {adding && (

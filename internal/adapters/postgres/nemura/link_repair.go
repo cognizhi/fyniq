@@ -72,7 +72,8 @@ func RequeueCurrent(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time,
 			n++
 		}
 	}
-	return n, nil
+	k, err := requeueLeave(ctx, tx, org, at, person, uuid.Nil) // the person's approved and cancelled leave, at the version each has
+	return n + k, err
 }
 
 // RepairLink queues the current state again, for one person or for everyone (person uuid.Nil), and sends again what could not be delivered: an event that failed or was refused (other than a pay run, which
@@ -173,11 +174,11 @@ func applyReplay(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Time, e
 	if ev.FromSequence < 1 || ev.ToSequence < ev.FromSequence || ev.ToSequence-ev.FromSequence >= 10000 {
 		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "A replay asks for a range of Nemura's sequence numbers, from 1, of at most 10,000."}
 	}
-	rows, err := tx.Query(ctx, `SELECT DISTINCT object_type, object_id, type FROM nemura.link_event WHERE sequence BETWEEN $1 AND $2 AND (object_type IN ('person', 'bank_details', 'tax_hold') OR type = $3)`, ev.FromSequence, ev.ToSequence, TypeIdentityAccess)
+	rows, err := tx.Query(ctx, `SELECT DISTINCT object_type, object_id, type FROM nemura.link_event WHERE sequence BETWEEN $1 AND $2 AND (object_type IN ('person', 'bank_details', 'tax_hold', 'leave_request') OR type = $3)`, ev.FromSequence, ev.ToSequence, TypeIdentityAccess)
 	if err != nil {
 		return err
 	}
-	var persons, members []uuid.UUID
+	var persons, members, leaves []uuid.UUID
 	for rows.Next() {
 		var t, id, typ string
 		if err := rows.Scan(&t, &id, &typ); err != nil {
@@ -185,7 +186,9 @@ func applyReplay(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Time, e
 			return err
 		}
 		if p, err := uuid.Parse(id); err == nil {
-			if typ == TypeIdentityAccess {
+			if t == "leave_request" {
+				leaves = append(leaves, p) // the entry is told again at the version it has now
+			} else if typ == TypeIdentityAccess {
 				members = append(members, p) // what an identity may enter is the member's: told again as it stands now
 			} else {
 				persons = append(persons, p)
@@ -212,6 +215,11 @@ func applyReplay(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Time, e
 		}
 		seen[p] = true
 		if _, err := RequeueCurrent(ctx, tx, org, now, p); err != nil {
+			return err
+		}
+	}
+	for _, r := range leaves {
+		if _, err := requeueLeave(ctx, tx, org, now, uuid.Nil, r); err != nil {
 			return err
 		}
 	}

@@ -7,6 +7,8 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/adapters/filedrop"
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authn"
@@ -36,6 +39,9 @@ type fakeBank struct {
 }
 
 var bank = &fakeBank{txns: map[string][]ports.BankDataTransaction{}}
+
+// bankOverride, when set by a test that restores it, is what the example-bank connector reads instead of bank (a drop folder of statement files, say).
+var bankOverride ports.BankData
 
 func (f *fakeBank) Accounts(context.Context) ([]ports.BankDataAccount, error) {
 	f.mu.Lock()
@@ -87,7 +93,12 @@ func fakeBankConnector(t testing.TB) connector.Binding {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return connector.Binding{Manifest: m, BankData: func(connector.Config) (ports.BankData, error) { return bank, nil },
+	return connector.Binding{Manifest: m, BankData: func(connector.Config) (ports.BankData, error) {
+		if bankOverride != nil {
+			return bankOverride, nil
+		}
+		return bank, nil
+	},
 		VerifyWebhook: func(_ connector.Config, h http.Header, _ []byte, _ time.Time) error {
 			if h.Get("X-Signature") != "good" {
 				return errors.New("bad signature")
@@ -375,5 +386,57 @@ func TestASourceSwitchKeepsTheChain(t *testing.T) {
 	}
 	if l := e.call(http.MethodGet, path, e.as(authz.Auditor), nil); len(l.Body["items"].([]any)) != 2 {
 		t.Fatalf("the account's files: %s", l.Raw)
+	}
+}
+
+// A bank's statement files in a drop folder feed a money account through the same sync as an API feed (FR-BNK-15, FR-BNK-17; p2-bank-feeds-payments task 2.1): the account is the one a statement
+// names, each file's lines are imported with the bank's reference as their ID and the running balances continuity-checked, the cursor is the last file taken in, a second sync adds nothing, and
+// a later file adds only its own lines. The folder is only read.
+// req: FR-BNK-15
+// req: FR-BNK-17
+func TestStatementFilesInADropFolderFeedAMoneyAccount(t *testing.T) {
+	e := newEnv(t)
+	dir := t.TempDir()
+	write := func(name, body string) {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	file := func(account, opening, closing string, refs ...string) string {
+		out := "{1:F01EXAMSGSGAXXX0000000000}{2:I940EXAMSGSGXXXXN}{4:\n:20:S\n:25:EXAMSGSG/" + account + "\n:28C:1/1\n:60F:C251001SGD" + opening + "\n"
+		for _, r := range refs {
+			out += ":61:2610" + r[:2] + "10" + r[:2] + "C" + r[2:] + "NTRFNONREF//BR" + r + "\n:86:TRANSFER " + r + "\n"
+		}
+		return out + ":62F:C261001SGD" + closing + "\n-}"
+	}
+	acct := "0" + strings.ReplaceAll(uuid.NewString()[:8], "-", "")[:7]
+	write("S_20251001.sta", file(acct, "1000,00", "1100,00", "03100,00"))
+	bankOverride = filedrop.Statements{Drop: local.Directory{Root: dir}}
+	t.Cleanup(func() { bankOverride = nil })
+	c := e.enabledBankConnector()
+	m := e.fedAccount(acct, c)
+	worker, err := postgres.Open(context.Background(), db.URL("fyniq_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(worker.Close)
+	s := bankfeed.Syncer{Store: worker, Runtime: e.api.deps.Connectors.Runtime, Clock: e.clock}
+	got, err := s.Sync(context.Background(), e.books.Org, c.ID)
+	if err != nil || got.Accounts != 1 || got.Added != 1 || len(got.Errors) != 0 {
+		t.Fatalf("the first sync: %+v, %v", got, err)
+	}
+	if again, err := s.Sync(context.Background(), e.books.Org, c.ID); err != nil || again.Added != 0 {
+		t.Errorf("a second sync: %+v, %v", again, err)
+	}
+	write("S_20251002.sta", file(acct, "1100,00", "1150,00", "0450,00"))
+	if next, err := s.Sync(context.Background(), e.books.Org, c.ID); err != nil || next.Added != 1 {
+		t.Errorf("a later file: %+v, %v", next, err)
+	}
+	lines := e.linesOf(m)
+	if len(lines) != 2 || e.feedOf(m).LastError != "" {
+		t.Errorf("the lines %d, the feed %+v", len(lines), e.feedOf(m))
+	}
+	if entries, _ := os.ReadDir(dir); len(entries) != 2 {
+		t.Errorf("the folder was changed: %d files", len(entries))
 	}
 }

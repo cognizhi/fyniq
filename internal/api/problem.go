@@ -84,6 +84,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/portal"
 	"github.com/cognizhi/fyniq/internal/domain/project"
 	"github.com/cognizhi/fyniq/internal/domain/projectbilling"
+	"github.com/cognizhi/fyniq/internal/domain/projectrevenue"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
@@ -321,6 +322,7 @@ var codeFacts = map[string]struct {
 	salarybatch.CodeMethod:        {422, "The method is not FAST or GIRO"},
 	salarybatch.CodeState:         {422, "The line cannot move to that state, or its source cannot give it"},
 	salarybatch.CodeLine:          {404, "There is no such line in the salary batch"},
+	salarybatch.CodeBIC:           {422, "A salary line's bank has no BIC Fyniq knows"},
 	ledger.CodePayroll:            {422, "The pay run does not fit the posting rule"},
 	storage.CodePayrollRun:        {409, "A pay run's receipt is kept once, and a payroll entry needs one"},
 	CodeNoLink:                    {409, "The organisation has no active link to the people platform"},
@@ -971,33 +973,38 @@ var codeFacts = map[string]struct {
 	banking.CodeDecided:     {403, "You recorded the bank transactions this sign-off covers (SOD-5)"},
 
 	// A money account's payment file (FR-BNK-12, rev 0.157).
-	paymentfile.CodeProvider:  {422, "The payment file is not one the account's bank takes"},
-	paymentfile.CodeNotBuilt:  {422, "The payment file is not available yet"},
-	CodePSPNotProvider:        {422, "The money account is not a payment provider's"},
-	CodePSPPayout:             {422, "The account payouts land in cannot take them"},
-	CodePSPFee:                {422, "The account fees post to cannot take them"},
-	CodePSPDisputes:           {422, "The account a dispute waits in cannot hold it"},
-	CodePSPDisputeState:       {409, "The dispute cannot be written off now"},
-	CodePSPDisputeLimit:       {422, "The dispute is above the expense limit"},
-	CodePSPEventState:         {409, "The event is not waiting for a person"},
-	CodePSPCredit:             {422, "The credit cannot settle the dispute"},
-	paymentlink.CodeNotIssued: {422, "A payment link is for an issued invoice with something open"},
-	paymentlink.CodeNoAccount: {422, "No provider account collects the invoice's currency"},
-	paymentlink.CodeLive:      {409, "The invoice has a payment link already"},
-	CodeLinkConnector:         {422, "No payment-link connector is enabled"},
-	CodeLinkClosed:            {409, "The payment link is not live"},
-	portal.CodeLink:           {404, "This link does not open anything"},
-	disputes.CodeNotOpen:      {422, "A dispute or promise is for an invoice with something open"},
-	disputes.CodeAmount:       {422, "The disputed amount is not valid"},
-	disputes.CodeDate:         {422, "The promised day is not valid"},
-	disputes.CodeOpen:         {409, "The invoice has an open record of that kind"},
-	disputes.CodeWords:        {422, "A reason or resolution is needed"},
-	subscription.CodeContact:  {422, "A subscription is for an active customer"},
-	subscription.CodeTerms:    {422, "The subscription's terms are not valid"},
-	subscription.CodeKind:     {422, "The amendment does not fit what the contract is that day"},
-	subscription.CodeDate:     {422, "The amendment's day is not valid"},
-	subscription.CodeAmount:   {422, "The amendment's monthly value is not valid"},
-	subscription.CodeReason:   {422, "An amendment needs its reason"},
+	paymentfile.CodeProvider:    {422, "The payment file is not one the account's bank takes"},
+	paymentfile.CodeNotBuilt:    {422, "The payment file is not available yet"},
+	CodePSPNotProvider:          {422, "The money account is not a payment provider's"},
+	CodePSPPayout:               {422, "The account payouts land in cannot take them"},
+	CodePSPFee:                  {422, "The account fees post to cannot take them"},
+	CodePSPDisputes:             {422, "The account a dispute waits in cannot hold it"},
+	CodePSPDisputeState:         {409, "The dispute cannot be written off now"},
+	CodePSPDisputeLimit:         {422, "The dispute is above the expense limit"},
+	CodePSPEventState:           {409, "The event is not waiting for a person"},
+	CodePSPCredit:               {422, "The credit cannot settle the dispute"},
+	paymentlink.CodeNotIssued:   {422, "A payment link is for an issued invoice with something open"},
+	paymentlink.CodeNoAccount:   {422, "No provider account collects the invoice's currency"},
+	paymentlink.CodeLive:        {409, "The invoice has a payment link already"},
+	CodeLinkConnector:           {422, "No payment-link connector is enabled"},
+	CodeLinkClosed:              {409, "The payment link is not live"},
+	portal.CodeLink:             {404, "This link does not open anything"},
+	disputes.CodeNotOpen:        {422, "A dispute or promise is for an invoice with something open"},
+	disputes.CodeAmount:         {422, "The disputed amount is not valid"},
+	disputes.CodeDate:           {422, "The promised day is not valid"},
+	disputes.CodeOpen:           {409, "The invoice has an open record of that kind"},
+	disputes.CodeWords:          {422, "A reason or resolution is needed"},
+	projectrevenue.CodeProject:  {422, "Revenue over time is for an elected fixed-fee project"},
+	projectrevenue.CodeEstimate: {422, "The fee or the estimate is not usable"},
+	projectrevenue.CodeMonth:    {422, "That month cannot be proposed now"},
+	projectrevenue.CodeAccounts: {422, "The accounts for revenue over time are not set up"},
+	projectrevenue.CodeNothing:  {422, "The journal would move nothing"},
+	subscription.CodeContact:    {422, "A subscription is for an active customer"},
+	subscription.CodeTerms:      {422, "The subscription's terms are not valid"},
+	subscription.CodeKind:       {422, "The amendment does not fit what the contract is that day"},
+	subscription.CodeDate:       {422, "The amendment's day is not valid"},
+	subscription.CodeAmount:     {422, "The amendment's monthly value is not valid"},
+	subscription.CodeReason:     {422, "An amendment needs its reason"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},
@@ -1518,6 +1525,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		plk *paymentlink.Error
 		dsp *disputes.Error
 		sub *subscription.Error
+		prv *projectrevenue.Error
 		pfe *paymentfile.Error
 		cle *claim.Error
 		dre *director.Error
@@ -1620,6 +1628,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return payeeProblems(pyp).(*Problem)
 	case errors.As(err, &dsp):
 		return problem(dsp.Code, sentence(dsp.Message), sentence(dsp.Fix))
+	case errors.As(err, &prv):
+		return problem(prv.Code, sentence(prv.Message), sentence(prv.Fix))
 	case errors.As(err, &sub):
 		return problem(sub.Code, sentence(sub.Message), sentence(sub.Fix))
 	case errors.As(err, &plk):

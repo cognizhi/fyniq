@@ -70,6 +70,7 @@ describe("the subscriptions a provider bills", () => {
     renderPage(Subscriptions, { path: "/sales/subscriptions", session: accountant });
     expect(await screen.findByText("An invoice waits for a person")).toBeTruthy();
     expect(screen.getByText(/The provider voided or wrote off an invoice you issued/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "ACME-0004 (voided)" }).getAttribute("href")).toBe("/sales/invoices/d1");
     fireEvent.click(await screen.findByRole("button", { name: "Issue the drafts" }));
     expect(await screen.findByText("1 issued, 0 set aside for a person, 0 waiting.")).toBeTruthy();
   });
@@ -90,12 +91,13 @@ describe("the subscriptions a provider bills", () => {
     answer({
       "GET /v1/payment-providers/invoices": { status: 200, body: { subscriptions: [], invoices: [] } },
       "GET /v1/subscription-contracts": { status: 200, body: { items: [contract] } },
-      "GET /v1/subscription-mrr": { status: 200, body: { as_at: "2026-10-15", totals: [{ currency: "SGD", mrr: sgd("150.00"), active: 1 }] } },
+      "GET /v1/subscription-mrr": { status: 200, body: { as_at: "2026-10-15", totals: [{ currency: "SGD", mrr: sgd("150.00"), active: 1 }], in_base: { mrr: sgd("150.00"), rates: [{ currency: "SGD", rate: "1", rate_date: "2026-10-15", source: "base" }], missing: ["JPY"] } } },
       "POST /v1/subscription-contracts/k1/amendments": { status: 201, body: { ...contract, version: 3 } },
     });
     const { container } = renderPage(Subscriptions, { path: "/sales/subscriptions", session: accountant });
     expect(await screen.findByText(/Contracted MRR on/)).toBeTruthy();
     expect(screen.getByText(/SGD 150.00 from 1 contract/)).toBeTruthy();
+    expect(screen.getByText(/Converted into SGD: SGD 150.00.*Left out, with no rate for the day: JPY/)).toBeTruthy();
     expect(screen.getByText("Active")).toBeTruthy();
     await noViolations(container);
     fireEvent.click(screen.getByRole("button", { name: "Amend: Growth plan" }));

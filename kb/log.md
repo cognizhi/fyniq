@@ -884,6 +884,16 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | compliance.invoicenow: the exclusion form and the contingency approval button
 
+## [2026-11-20] compile | compliance.gst: aliases for the GST rate question, so the newer tax pages do not outrank it
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (the BIC from the bank code)
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (payroll in the books)
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (a person from Nemura)
+
+## [2026-11-20] compile | projects.billing, settings.organisation: revenue over time (FR-PRJ-11)
+
 ## [2026-11-20] compile | ai-proposals: the assistant proposes a know-how page, never a figure (AI-59)
 
 ## [2026-11-20] compile | audit.engagement: the auditor's engagement, requests and samples (FR-UX-42)
@@ -891,3 +901,15 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | planning.cash: how the forecast did, the kept weekly projections against the cash (FR-PLN-04)
 
 ## [2026-11-20] compile | reports.kpis: customer counts from recurring invoices ahead of an entry (FR-KPI-04)
+
+## [2026-11-20] compile | contacts.and-items: emailing the portal link (FR-AR-14)
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (who is away)
+
+## [2026-11-20] compile | banking.accounts: SFTP statement files (FR-BNK-17)
+
+## [2026-11-20] compile | sales.invoices: the contracted MRR in the base currency (FR-AR-15)
+
+## [2026-11-20] compile | sales.invoices, settings.organisation: the payment link in the invoice email (FR-AR-13)
+
+## [2026-11-20] compile | projects.billing: costs left out of a project's progress (FR-PRJ-11)
