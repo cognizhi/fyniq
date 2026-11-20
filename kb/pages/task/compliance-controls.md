@@ -2,16 +2,16 @@
 key: compliance.controls
 type: task
 title: See whether the controls hold
-summary: Every control with its status, owner, frameworks, checks and evidence; the notice when one fails; the incident, restore drill and heartbeat drill registers
+summary: Every control with its status, owner, frameworks, checks and evidence; the notice when one fails; the incident, drill and security assessment registers
 sources:
-  - docs/user-guide/compliance-controls.md sha256:1b20bfb0a3a0b45f1618d68a46c299567ac6862a6e41ebf351ea915d44dd8f03
+  - docs/user-guide/compliance-controls.md sha256:54157ec618a004c4f7fc59946f181afe6be1506084ad3567602234705fc85c44
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-11
+compiled_at: 2026-11-21
 aliases:
   - compliance center
   - control dashboard
@@ -113,3 +113,12 @@ aliases:
 - Drills are only ever added, each in the audit trail. The DPO keeps the register; the Owners, the Administrators, the Controller, the Accountant and the Auditor read it.
 
 (src: docs/user-guide/compliance-controls.md#heartbeat-drills)
+
+## Security assessments
+
+- The **Security assessments** tab is the register of the platform's penetration tests and other assessments: the Owner selects **Record an assessment** with what it was, who tested, whether they are independent, what it covered, the dates and what it concluded; the report stays outside Fyniq, so record its SHA-256 and where it is kept; **Add a finding** adds one later, such as at a retest.
+- Each finding is due by its severity from the day it was found: a Critical one in 7 days, a High one in 30, a Medium one in 90 and a Low one in 180; **Record a step** says it was fixed, then retested, or the Owner accepts it with a reason before it is retested; a Critical or High finding past its day, or fixed and not retested 30 days on, shows **Overdue**.
+- An independent test is due every year: the review **Security assessments** ([[compliance.reviews]]) and the control CTL-CHG-12 are due from 30 days before the 12 months end, overdue after them and while a Critical or High finding is overdue; with nothing recorded they wait without failing until the first external customer is onboarded, when an independent test is needed.
+- Entries are only ever added and audited; the Owner keeps the register, the Administrators, Controller, Auditor and DPO read it.
+
+(src: docs/user-guide/compliance-controls.md#security-assessments)

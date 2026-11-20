@@ -1011,3 +1011,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.erasure: the review of records due for deletion (NM-SEC-05)
 
 ## [2026-11-20] compile | nemura.goals: a person's goals for the manager and the people team, and the roll-up (NM-PRF-01)
+
+## [2026-11-20] compile | compliance.controls: security assessments register (SEC-25)
