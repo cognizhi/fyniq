@@ -693,6 +693,9 @@ fyniq_executor  SELECT    audit_recovery
 fyniq_executor  SELECT    audit_recovery_acknowledgement
 fyniq_executor  INSERT    audit_request_detail (country, id, ip, occurred_at, region, user_agent)
 fyniq_executor  SELECT    balance
+fyniq_executor  INSERT    bank_rule (action, active, changed_at, changed_by, conditions, created_at, created_by, from_ai_proposal, name, position)
+fyniq_executor  SELECT    bank_rule
+fyniq_executor  UPDATE    bank_rule (action, active, changed_at, changed_by, conditions, name, position, version)
 fyniq_executor  SELECT    bill_payment_plan
 fyniq_executor  SELECT    billing_rate
 fyniq_executor  SELECT    brand_version

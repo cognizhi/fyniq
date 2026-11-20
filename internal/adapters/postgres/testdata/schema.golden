@@ -8796,6 +8796,7 @@ CREATE TRIGGER bank_line_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_l
 CREATE TRIGGER bank_match_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_match FOR EACH ROW EXECUTE FUNCTION bank_match_guard()
 CREATE TRIGGER bank_match_posting BEFORE INSERT ON fyniq.bank_match FOR EACH ROW WHEN ((new.kind <> 'transfer'::text)) EXECUTE FUNCTION bank_match_posting()
 CREATE TRIGGER bank_reconciliation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_reconciliation FOR EACH ROW EXECUTE FUNCTION bank_reconciliation_guard()
+CREATE TRIGGER bank_rule_executor_guard BEFORE INSERT ON fyniq.bank_rule FOR EACH ROW EXECUTE FUNCTION bank_rule_executor_guard()
 CREATE TRIGGER bank_rule_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_rule FOR EACH ROW EXECUTE FUNCTION bank_rule_guard()
 CREATE TRIGGER bank_signal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_signal FOR EACH ROW EXECUTE FUNCTION bank_signal_guard()
 CREATE TRIGGER bank_statement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_statement FOR EACH ROW EXECUTE FUNCTION bank_statement_guard()
@@ -9777,6 +9778,7 @@ bank_line_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 bank_match_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 77572e05359c76183975bc337e3affc6
 bank_match_posting() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bc95c43cde2aa0497b302e639f3cba7d
 bank_reconciliation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a4079755bc9304c8cc9c5643218122ef
+bank_rule_executor_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2f08bac1286ac0de68608957c487f0d1
 bank_rule_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7dc2dbe6bc4742a3e7aa1ca50e74c82d
 bank_signal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 168c07c54a5e00ffbbefbe7532c5e2b6
 bank_statement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2375aff85db5cee60bba8eea6a3b5004
