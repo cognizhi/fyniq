@@ -181,6 +181,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/board-packs` (createBoardPackDraft): Start a month's board pack
 - `GET /v1/board-packs/{id}` (getBoardPack): Get a board pack
 - `PUT /v1/board-packs/{id}` (editBoardPackDraft): Write a pack's highlights, commentary and asks
+- `GET /v1/board-packs/{id}/pdf` (exportBoardPack): Export a published board pack as a PDF
 - `POST /v1/board-packs/{id}/publish` (publishBoardPack): Publish a board pack
 - `GET /v1/break-glass` (listBreakGlass): List the break-glasses
 - `POST /v1/break-glass` (startBreakGlass): Start break-glass

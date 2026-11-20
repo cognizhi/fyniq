@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, Save, Send } from "lucide-react";
+import { FileDown, Plus, Save, Send } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -77,6 +77,22 @@ export function BoardPack() {
     setProblem(null);
     setTexts(null);
     await refresh();
+  };
+  // downloadPdf asks for the published pack's PDF and saves it under the name the server gave it (FR-RPT-06).
+  const downloadPdf = async () => {
+    if (!p) return;
+    setBusy(true);
+    const { data, error } = await api.GET("/v1/board-packs/{id}/pdf", { params: { path: { id: p.id } } });
+    setBusy(false);
+    if (error || !data) return setProblem(problemOf(error));
+    setProblem(null);
+    const bytes = Uint8Array.from(atob(data.content_base64), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = data.file_name;
+    a.click();
+    URL.revokeObjectURL(url);
   };
   const publish = async () => {
     if (!p) return;
@@ -157,6 +173,13 @@ export function BoardPack() {
               </div>
             )}
             {draft && <p className="fy-small fy-muted">Publishing freezes the figures below as they read at that moment. Save your texts first.</p>}
+            {!draft && (
+              <div className="fy-row gap-3">
+                <Button variant="secondary" onClick={downloadPdf} disabled={busy}>
+                  <Icon of={FileDown} /> Download the PDF
+                </Button>
+              </div>
+            )}
             {!draft && <p className="fy-small fy-muted">A published pack never changes. To correct it, start the pack of this month again: that is the next version.</p>}
           </section>
           <PackFigures pack={p} />

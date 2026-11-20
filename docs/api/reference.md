@@ -13253,6 +13253,27 @@ Saves a draft's texts as its next edit (FR-RPT-06): what a person writes or acce
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `BPACK-01`, `BPACK-02`, `STORAGE-BPACK-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+### `GET /v1/board-packs/{id}/pdf`
+
+**Export a published board pack as a PDF** (`exportBoardPack`)
+
+A published board pack laid out as a PDF by the render service (FR-RPT-06): the month's statements, each beside the period before, its key figures and the texts a person wrote, as frozen when it was published, so the file a board reads is the file it keeps reading; a month that was not closed says so on the page. The file is returned in base64 with its SHA-256 and the ledger revision it was read at. A draft has no PDF (BPACK-02 is for a draft changed; here, not found). A PDF the render service cannot make now is REPORT-08. Side effects: an audit event of the export with the hash. Never cached.
+
+- **Permission:** View on Reports, dashboards
+- **Parameters:**
+  - `id` (path, required): The pack's ID.
+- **Responses:**
+  - `200` OK [`ReportFile`](../../contracts/schemas/ReportFile.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-08`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/board-packs/{id}/publish`
 
 **Publish a board pack** (`publishBoardPack`)

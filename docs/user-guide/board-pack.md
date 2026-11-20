@@ -32,6 +32,8 @@ yours. **Save the texts** keeps them; each save is the next edit.
 pack a board read is the pack it keeps reading: a posting made afterwards does not change it. A month that
 is not closed is published all the same, and the pack says so.
 
+**Download the PDF** saves the published pack as a PDF: the month's statements, each beside the period before, its key figures and the texts, as they were frozen. The file is the same each time it is asked for, and the export is recorded with its hash. A draft has no PDF, and a month that was not closed says so on the page.
+
 A published pack never changes. To correct it, start the pack of the same month again: that is the next
 version, and it supersedes the first, which stays.
 
