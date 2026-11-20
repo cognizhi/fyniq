@@ -54,6 +54,7 @@ var ScheduledJobs = map[string]string{
 	"invoicenow.dispatch":      "InvoiceNow submissions sent",
 	"notify.cash_buffer":       "Cash buffer alerts",
 	"notify.timesheets":        "Missing-time reminders on Fridays",
+	"notify.card_receipts":     "Card lines with no receipt, told to the cardholder",
 	"kb.lint":                  "The knowledge base's weekly lint",
 	"audit.erase":              "Security events' details erased after their retention",
 	"retention.purge":          "The purge after retention, where it is switched on",

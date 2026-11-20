@@ -4,7 +4,7 @@ type: task
 title: Change or reset an organisation setting, or edit the profile
 summary: Change a company-wide setting from a date, reset it to recommended, why some need a second approver, and edit the profile
 sources:
-  - docs/user-guide/organisation-settings.md sha256:17dc9f8de2125d1213a4f5a6ba1428d39c8570fd73a6c760ffc8bf4c69cad54d
+  - docs/user-guide/organisation-settings.md sha256:4c8b257052e3c659c7875fc53580fb4ce706fba62c21bbcd0ee957efa557db34
 data_class: general
 taint: trusted
 status: draft

@@ -33,6 +33,11 @@ channels:
     messages:
       fyniq.bills.due.v1:
         $ref: '#/components/messages/fyniq.bills.due.v1'
+  fyniq.card.receipt_missing.v1:
+    address: fyniq.card.receipt_missing.v1
+    messages:
+      fyniq.card.receipt_missing.v1:
+        $ref: '#/components/messages/fyniq.card.receipt_missing.v1'
   fyniq.cash.below_buffer.v1:
     address: fyniq.cash.below_buffer.v1
     messages:
@@ -255,6 +260,13 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.bills.due.v1.schema.json'
+    fyniq.card.receipt_missing.v1:
+      name: fyniq.card.receipt_missing.v1
+      title: fyniq.card.receipt_missing.v1
+      summary: "Fires when: Lines of your company card have no receipt yet"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.card.receipt_missing.v1.schema.json'
     fyniq.cash.below_buffer.v1:
       name: fyniq.cash.below_buffer.v1
       title: fyniq.cash.below_buffer.v1
