@@ -309,6 +309,12 @@ var matrixAssets = map[string]func(e *env, tok string) (response, func() bool){
 		}
 		return r, func() bool { return requestsOf(e, approval.ObjectFixedAsset) == was }
 	},
+	"getFixedAssetMovement": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/fixed-asset-movement?from=2026-10&to=2026-12", tok, nil), nil
+	},
+	"getCapitalAllowanceSchedule": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/capital-allowances?ya=2027", tok, nil), nil
+	},
 	"listUnregisteredAssetLines": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/fixed-assets/unregistered", tok, nil), nil
 	},

@@ -928,6 +928,9 @@ var (
 	GetFixedAsset      = Policy{Operation: "getFixedAsset", Capability: FixedAssets, Need: View}
 	RegisterFixedAsset = Policy{Operation: "registerFixedAsset", Capability: FixedAssets, Need: Create}
 	ChangeFixedAsset   = Policy{Operation: "changeFixedAsset", Capability: FixedAssets, Need: Create}
+	// The asset reports (FR-FA-04, rev 0.591): the movement schedule and the tax capital allowance schedule, read under V on "Fixed assets".
+	GetFixedAssetMovement       = Policy{Operation: "getFixedAssetMovement", Capability: FixedAssets, Need: View}
+	GetCapitalAllowanceSchedule = Policy{Operation: "getCapitalAllowanceSchedule", Capability: FixedAssets, Need: View}
 	// The purchases on asset accounts not in the register yet (FR-FA-01; design D5), read under V.
 	ListUnregisteredAssetLines = Policy{Operation: "listUnregisteredAssetLines", Capability: FixedAssets, Need: View}
 	// Disposals (FR-FA-03; design D4, D5): posted under P (the Accountant), read under V; a void is posting, in Founder mode
@@ -2233,7 +2236,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
 	ListCashAdvances, GetCashAdvance, RecordCashAdvance, RecordCashAdvanceRefund, VoidCashAdvance, RequestCashAdvanceVoid,
 	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence, ListCardReceiptSuggestions, AttachCardReceiptSuggestion, GetClaimGSTCodes,
-	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, ListUnregisteredAssetLines,
+	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, GetFixedAssetMovement, GetCapitalAllowanceSchedule, ListUnregisteredAssetLines,
 	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
 	ListDirectorAccounts, GetDirectorStatement, ExportDirectorStatement, GetMyDirectorAccount, LinkContactMember, GetRelatedParties, ExportRelatedParties,

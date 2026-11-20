@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allowance": {
+      "$ref": "Money.schema.json",
+      "description": "The year's allowance: initial + annual."
+    },
+    "annual_allowance": {
+      "$ref": "Money.schema.json",
+      "description": "The rest of the year's allowance."
+    },
+    "asset_id": {
+      "description": "The asset.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "brought_forward": {
+      "$ref": "Money.schema.json",
+      "description": "The tax written down value brought forward: its cost less the allowances of the years before."
+    },
+    "carried_forward": {
+      "$ref": "Money.schema.json",
+      "description": "brought forward - allowance."
+    },
+    "cost": {
+      "$ref": "Money.schema.json",
+      "description": "The cost it was bought for."
+    },
+    "first_ya": {
+      "description": "The year of assessment of its first claim: the year after the financial year it was bought in ends.",
+      "examples": [
+        2027
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "initial_allowance": {
+      "$ref": "Money.schema.json",
+      "description": "Section 19 only, in the first year: 20% of the cost."
+    },
+    "method": {
+      "description": "The method elected.",
+      "enum": [
+        "s19",
+        "s19a1",
+        "s19a10a"
+      ],
+      "examples": [
+        "s19a1"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "MacBook Pro 14, Wei Ling"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number in the register.",
+      "examples": [
+        "FA-0001"
+      ],
+      "type": "string"
+    },
+    "purchased_on": {
+      "description": "The day it was bought.",
+      "examples": [
+        "2026-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "working_life_years": {
+      "description": "Section 19: the years elected.",
+      "examples": [
+        6
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "asset_id",
+    "name",
+    "purchased_on",
+    "cost",
+    "method",
+    "first_ya",
+    "brought_forward",
+    "initial_allowance",
+    "annual_allowance",
+    "allowance",
+    "carried_forward"
+  ],
+  "title": "CapitalAllowanceRow",
+  "type": "object"
+}

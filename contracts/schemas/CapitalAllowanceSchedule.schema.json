@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "apart": {
+      "description": "The assets the schedule cannot place, listed apart and never guessed.",
+      "items": {
+        "$ref": "CapitalAllowanceApart.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The base currency every amount is in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "notes": {
+      "description": "What the schedule does not work out, [accountant to confirm].",
+      "items": {
+        "examples": [
+          "Amounts are in cents, each year's share by ALLOC-EVEN [accountant to confirm]."
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "pack": {
+      "description": "The sg-capital-allowances version the rules come from.",
+      "examples": [
+        "sg-capital-allowances@2026.1"
+      ],
+      "type": "string"
+    },
+    "rows": {
+      "description": "The assets claiming in the year, by purchase date.",
+      "items": {
+        "$ref": "CapitalAllowanceRow.schema.json"
+      },
+      "type": "array"
+    },
+    "totals": {
+      "$ref": "CapitalAllowanceTotals.schema.json",
+      "description": "The columns' sums."
+    },
+    "ya": {
+      "description": "The year of assessment.",
+      "examples": [
+        2027
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "currency",
+    "ya",
+    "pack",
+    "rows",
+    "apart",
+    "totals",
+    "notes"
+  ],
+  "title": "CapitalAllowanceSchedule",
+  "type": "object"
+}

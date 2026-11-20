@@ -2382,7 +2382,8 @@
     "Register: asset, category, cost, date, useful life, residual value, method, accumulated depreciation, NBV",
     "Asset side-peek with depreciation schedule (6610 / 1590), source bill",
     "Dispose or write off with gain or loss; partial disposal",
-    "P2: movement schedule and tax capital allowance schedule"
+    "Movements tab: cost and accumulated depreciation by asset, opening, additions, charge, disposals, closing, tied to the ledger (FR-FA-04)",
+    "Capital allowances tab: a year of assessment by asset (S19, S19A(1), S19A(10A)), the assets listed apart with why, and the election in the side-peek (FR-FA-04)"
    ],
    "states": [
     "empty",

@@ -1078,6 +1078,8 @@ var codeFacts = map[string]struct {
 	asset.CodeOpening:                {422, "The opening figures do not fit"},
 	asset.CodeTooLong:                {422, "A text of the asset does not fit"},
 	asset.CodePosted:                 {409, "Its depreciation has posted already"},
+	asset.CodeTaxMethod:              {422, "The capital allowance election does not fit"},
+	asset.CodeTaxFixed:               {409, "A section 19 election is irrevocable"},
 	asset.CodeDisposed:               {409, "Nothing of the asset is left"},
 	storage.CodeAsset:                {409, "The asset register does not allow that"},
 	asset.CodeNotDisposal:            {404, "Not a disposal of a fixed asset"},

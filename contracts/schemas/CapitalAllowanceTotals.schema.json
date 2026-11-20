@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allowance": {
+      "$ref": "Money.schema.json",
+      "description": "The total claim of the year: initial + annual."
+    },
+    "annual_allowance": {
+      "$ref": "Money.schema.json",
+      "description": "The sum of the annual allowances."
+    },
+    "brought_forward": {
+      "$ref": "Money.schema.json",
+      "description": "The sum of the tax written down values brought forward."
+    },
+    "carried_forward": {
+      "$ref": "Money.schema.json",
+      "description": "The sum of the tax written down values carried forward."
+    },
+    "initial_allowance": {
+      "$ref": "Money.schema.json",
+      "description": "The sum of the initial allowances."
+    }
+  },
+  "required": [
+    "brought_forward",
+    "initial_allowance",
+    "annual_allowance",
+    "allowance",
+    "carried_forward"
+  ],
+  "title": "CapitalAllowanceTotals",
+  "type": "object"
+}

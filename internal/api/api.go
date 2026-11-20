@@ -63,10 +63,10 @@ type Deps struct {
 	AccessPoint ports.AccessPoint
 	// IRASFiler files returns with IRAS (FR-TAX-03); nil when IRAS's API is not connected. No operation calls it until the GST F5 caller exists (p1-gst 7.2).
 	IRASFiler ports.IRASFiler
-	Auth        authn.Authenticator
-	SignIn      ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
-	Log         *slog.Logger
-	Version     string // the platform version: the document's info.version
+	Auth      authn.Authenticator
+	SignIn    ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
+	Log       *slog.Logger
+	Version   string // the platform version: the document's info.version
 	// Build is the build's commit, time and flavour (REL-05): the platform version's endpoint answers them, and every
 	// exported report carries the commit beside the version.
 	Build PlatformBuild
@@ -402,6 +402,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerReportExports(a)
 	registerSchedules(a)
 	registerDeferralRollForward(a)
+	registerAssetReports(a)
 	registerAccountMerges(a)
 	registerAccountEditing(a)
 	registerDimensions(a)

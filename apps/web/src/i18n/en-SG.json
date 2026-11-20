@@ -1991,6 +1991,18 @@
       "label": "Voided",
       "tooltip": "Assets voided as registered by mistake: their depreciation reversed, their lines free to register again."
     },
+    "fixed-assets.movement": {
+      "label": "Movements",
+      "tooltip": "For a run of months: each asset's cost and accumulated depreciation at the start, what was added, charged and taken off by disposals, and at the end, tied to the ledger."
+    },
+    "fixed-assets.capital-allowances": {
+      "label": "Capital allowances",
+      "tooltip": "The tax capital allowance of a year of assessment: what each asset claims under the method elected for it (section 19, 19A(1) or 19A(10A)). Assets Fyniq cannot place are listed apart, never guessed."
+    },
+    "fixed-assets.tax-election": {
+      "label": "Capital allowance",
+      "tooltip": "Elect how the asset claims its tax capital allowance: section 19 over its working life (irrevocable once made), section 19A(1) over 3 years, or section 19A(10A) in one year for an asset of at most S$5,000. It posts nothing."
+    },
     "fx.find-rate": {
       "label": "Find the rate a posting takes",
       "tooltip": "A posting without a rate of its own takes your rate for its date, else the daily feed's from that day or up to 7 days before, else your monthly rate."

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "method": {
+      "description": "s19: the initial allowance of 20% and annual allowances over a working life; s19a1: a third a year over 3 years; s19a10a: the whole cost in one year, for an asset of at most S$5,000 within S$30,000 a year of assessment. The pack sg-capital-allowances holds the values.",
+      "enum": [
+        "s19",
+        "s19a1",
+        "s19a10a"
+      ],
+      "examples": [
+        "s19a1"
+      ],
+      "type": "string"
+    },
+    "prescribed_working_life_years": {
+      "description": "Section 19 only: the working life the Sixth Schedule of the Income Tax Act prescribes for the asset (12 or less, or 16): it decides which lives may be elected.",
+      "examples": [
+        6
+      ],
+      "format": "int64",
+      "maximum": 16,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "working_life_years": {
+      "description": "Section 19 only: the years elected, 6 or 12 for a prescribed life of 12 years or less, 6, 12 or 16 for 16. The election is irrevocable once made.",
+      "examples": [
+        6
+      ],
+      "format": "int64",
+      "maximum": 16,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "method"
+  ],
+  "title": "FixedAssetTaxElection",
+  "type": "object"
+}

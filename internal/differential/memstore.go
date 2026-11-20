@@ -43,6 +43,15 @@ func (m *memStore) Settings() storage.Settings       { return memSettings{m: m} 
 func (m *memStore) KPIInputs() storage.KPIInputs     { return memInputs{m: m} }
 func (m *memStore) Retention() storage.Retention     { return memRetention{} }
 
+// RecurringInvoices has none: the scenarios post no recurring invoice, so the customer counts (FR-KPI-04) find nothing to count from them.
+func (m *memStore) RecurringInvoices() storage.RecurringInvoices { return memRecurring{} }
+
+type memRecurring struct{ storage.RecurringInvoices }
+
+func (memRecurring) Page(context.Context, string, *uuid.UUID, int) ([]storage.RecurringInvoice, error) {
+	return nil, nil
+}
+
 // memRetention is a ledger never purged after retention (AUD-10): the balance service reads every date.
 type memRetention struct{ storage.Retention }
 

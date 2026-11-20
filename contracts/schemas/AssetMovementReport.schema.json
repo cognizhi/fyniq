@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "categories": {
+      "description": "One per asset account that holds an asset.",
+      "items": {
+        "$ref": "MovementCategory.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The base currency every amount is in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The run's first day.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "tied": {
+      "description": "True when every account ties: nothing is unexplained.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "ties": {
+      "description": "The register against the ledger at the end of the run.",
+      "items": {
+        "$ref": "MovementTie.schema.json"
+      },
+      "type": "array"
+    },
+    "to": {
+      "description": "The run's last day.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "total": {
+      "$ref": "MovementAsset.schema.json",
+      "description": "The totals of every asset."
+    }
+  },
+  "required": [
+    "currency",
+    "from",
+    "to",
+    "categories",
+    "total",
+    "ties",
+    "tied"
+  ],
+  "title": "AssetMovementReport",
+  "type": "object"
+}

@@ -195,3 +195,32 @@ func TestAnOpeningAssetCarriesItsAccumulatedDepreciation(t *testing.T) {
 		t.Errorf("a sourced asset without a books start: %v", p)
 	}
 }
+
+// A capital allowance election reads back as saved, an asset with none reads back with none, and its own shape is checked: a section 19 election names both lives, the others
+// neither, and a method that is not one of the three is refused.
+// req: FR-FA-04
+func TestATaxElectionReadsBackAndHasItsShape(t *testing.T) {
+	a := laptop(t)
+	b, _ := Encode(a)
+	if got, _ := Read(storage.Document{Type: storage.DocumentFixedAsset, Payload: b}); got.Tax != nil || strings.Contains(string(b), `"tax"`) {
+		t.Errorf("no election: %v in %s", got.Tax, b)
+	}
+	a.Tax = &TaxElection{Method: TaxS19, PrescribedYears: 6, Years: 12}
+	b, _ = Encode(a)
+	got, err := Read(storage.Document{Type: storage.DocumentFixedAsset, Payload: b})
+	if err != nil || got.Tax == nil || *got.Tax != *a.Tax {
+		t.Errorf("read back %v, %v", got.Tax, err)
+	}
+	for _, c := range []struct {
+		t  *TaxElection
+		ok bool
+	}{
+		{nil, true}, {&TaxElection{Method: TaxS19, PrescribedYears: 6, Years: 6}, true}, {&TaxElection{Method: TaxS19A1}, true}, {&TaxElection{Method: TaxS19A10A}, true},
+		{&TaxElection{Method: TaxS19}, false}, {&TaxElection{Method: TaxS19, PrescribedYears: 6}, false}, {&TaxElection{Method: TaxS19A1, Years: 3}, false},
+		{&TaxElection{Method: TaxS19A10A, PrescribedYears: 6}, false}, {&TaxElection{Method: "s19a2"}, false}, {&TaxElection{}, false},
+	} {
+		if e := CheckTax(c.t); (e == nil) != c.ok || (e != nil && e.Code != CodeTaxMethod) {
+			t.Errorf("%+v: %v", c.t, e)
+		}
+	}
+}

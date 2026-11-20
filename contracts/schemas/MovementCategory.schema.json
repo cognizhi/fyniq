@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "Its code.",
+      "examples": [
+        "1510"
+      ],
+      "type": "string"
+    },
+    "account_id": {
+      "description": "The asset account: its category.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "account_name": {
+      "description": "Its name.",
+      "examples": [
+        "Computer equipment"
+      ],
+      "type": "string"
+    },
+    "assets": {
+      "description": "Its assets, by number.",
+      "items": {
+        "$ref": "MovementAsset.schema.json"
+      },
+      "type": "array"
+    },
+    "total": {
+      "$ref": "MovementAsset.schema.json",
+      "description": "The totals of its assets."
+    }
+  },
+  "required": [
+    "account_id",
+    "account_code",
+    "account_name",
+    "assets",
+    "total"
+  ],
+  "title": "MovementCategory",
+  "type": "object"
+}

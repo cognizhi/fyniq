@@ -12250,16 +12250,16 @@ Saves the asset's next version with what is sent (FR-FA-01, FR-FA-02): its name 
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `ASSET-01` Not a fixed asset.
-  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-11` Its depreciation has posted already; `ASSET-12` Nothing of the asset is left; `ASSET-21` The asset was voided; `STORAGE-ASSET-01` The asset register does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-11` Its depreciation has posted already; `ASSET-12` Nothing of the asset is left; `ASSET-21` The asset was voided; `ASSET-24` A section 19 election is irrevocable; `STORAGE-ASSET-01` The asset register does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
-  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read; `ASSET-03` The asset cannot come from that line; `ASSET-04` Not an asset account of the register; `ASSET-05` The useful life does not fit; `ASSET-06` The residual value does not fit; `ASSET-07` Depreciation cannot start then; `ASSET-08` The depreciation method is not available; `ASSET-09` The opening figures do not fit; `ASSET-10` A text of the asset does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read; `ASSET-03` The asset cannot come from that line; `ASSET-04` Not an asset account of the register; `ASSET-05` The useful life does not fit; `ASSET-06` The residual value does not fit; `ASSET-07` Depreciation cannot start then; `ASSET-08` The depreciation method is not available; `ASSET-09` The opening figures do not fit; `ASSET-10` A text of the asset does not fit; `ASSET-23` The capital allowance election does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `ASSET-01`, `ASSET-02`, `ASSET-03`, `ASSET-04`, `ASSET-05`, `ASSET-06`, `ASSET-07`, `ASSET-08`, `ASSET-09`, `ASSET-10`, `ASSET-11`, `ASSET-12`, `ASSET-21`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `STORAGE-ASSET-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `ASSET-01`, `ASSET-02`, `ASSET-03`, `ASSET-04`, `ASSET-05`, `ASSET-06`, `ASSET-07`, `ASSET-08`, `ASSET-09`, `ASSET-10`, `ASSET-11`, `ASSET-12`, `ASSET-21`, `ASSET-23`, `ASSET-24`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `STORAGE-ASSET-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/fixed-assets/{asset_id}/disposals`
 
@@ -12352,6 +12352,43 @@ Asks for another person's approval to void an asset registered by mistake (FM-1;
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `ASSET-01`, `ASSET-02`, `ASSET-20`, `ASSET-21`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/reports/capital-allowances`
+
+**Get the tax capital allowance schedule of a year of assessment** (`getCapitalAllowanceSchedule`)
+
+For a year of assessment (FR-FA-04): each registered asset's allowance under the method the company elected for it (changeFixedAsset's tax_election), from the pack sg-capital-allowances: section 19 (an initial allowance of 20% of the cost in the first year, and annual allowances of the other 80% over the elected working life of 6, 12 or 16 years), section 19A(1) (a third a year over 3 years) and section 19A(10A) (the whole cost in one year, for an asset of at most S$5,000, the year's claims within S$30,000, taken whole in the order of purchase), with the tax written down value brought and carried forward. An asset the schedule cannot place (none elected, a disposal stands, bought before YA 2023, a working life that is not allowed, over the cap) is listed apart with why, never guessed. The year of assessment of a purchase is the year after the financial year it was bought in ends. Amounts are rounded to cents by ALLOC-EVEN, IRAS shows whole dollars [accountant to confirm]. Read-only; no side effects.
+
+- **Permission:** View on Fixed assets
+- **Parameters:**
+  - `ya` (query, required): The year of assessment, such as 2027 for the financial year that ends in 2026.
+- **Responses:**
+  - `200` OK [`CapitalAllowanceSchedule`](../../contracts/schemas/CapitalAllowanceSchedule.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `GET /v1/reports/fixed-asset-movement`
+
+**Get the fixed asset movement schedule** (`getFixedAssetMovement`)
+
+For a run of months (FR-FA-04): each registered asset's cost and accumulated depreciation on the day before the run, the cost added by an asset bought inside it, the depreciation it charged (net of reversals), what a disposal took off, and the cost and accumulated depreciation at the end, with the net book value; by asset account, so that closing = opening + additions - disposals and closing accumulated = opening + charge - disposals, exactly. The register is tied to the ledger at the end of the run through the balance service (INV-07): what the register does not explain is shown as unexplained, never hidden. Read-only; no side effects.
+
+- **Permission:** View on Fixed assets
+- **Parameters:**
+  - `from` (query, required): The run's first month, YYYY-MM.
+  - `to` (query): The run's last month, YYYY-MM; left out, the first month's.
+- **Responses:**
+  - `200` OK [`AssetMovementReport`](../../contracts/schemas/AssetMovementReport.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
 
 ## Periods
 
