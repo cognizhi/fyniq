@@ -3,7 +3,7 @@ key: approvals.decide
 title: Approve a change
 mode: basic
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [FM-1, FM-2, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-10, FM-3, FM-6, FR-AP-22]
+requirements: [FM-1, FM-2, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-06, FR-APR-07, FR-APR-08, FR-APR-10, FM-3, FM-6, FR-AP-22]
 ---
 
 # Approve a change
@@ -65,6 +65,39 @@ your device's signature with the approval, so anyone checking later can verify i
 Some changes need more than one approval, in steps ([Choose who approves a change](approval-policies.md)).
 The request shows each step and the approvals it has. The change is made with the last approval.
 You approve a request once, and only at a step that names you or one of your roles.
+
+## Approve from an email
+
+An email that says an approval waits for you carries a link to the request. The link approves nothing: it
+opens Fyniq, asks you to sign in if you are not, and shows the request. You then approve or reject it as
+above, with your passkey or by confirming it's you. If a mail program opens the link for you, nothing
+happens either: only you, signed in, can decide. By default the email names only the kind of change and
+links to Fyniq; the amounts and names stay in the app.
+
+## Delegate your approvals
+
+When you are away, an approval that needs you waits, and expires after seven days. Delegate your
+approvals to another member for the days you are away.
+
+1. Open **Inbox**, then **Away? Delegate your approvals**, and select **Delegate my approvals**.
+2. Choose the member, the first and the last day (up to 90 days apart) and say why, such as "Annual
+   leave". Confirm it's you.
+3. Your delegate can now sign the steps that name you, on those days. You both get a notice, and the
+   delegation is in the audit trail.
+
+A delegation lends no right: your delegate must hold an approval right themselves, signs as
+themselves with their own passkey, and the approval says it was made on your behalf. They sign only
+what you could sign, never a request they asked for, and never one you have signed. You and your
+delegate count as one person in an approval, so once your delegate signs for you, you do not sign it
+too. To end a delegation before its last day, open it in the same list and select **End now**; what
+your delegate signed stays.
+
+## Reminders and escalation
+
+Fyniq reminds the people who may sign a waiting approval once a day, up to three times, and if nobody has
+decided it after three days it tells the Owners and the person who asked. Reminders and escalation only
+tell people: they never approve, reject or extend a request, which still expires after seven days.
+Change the times under **Settings → Organisation → Approvals** ([Approval reminders](organisation-settings.md#approval-reminders)).
 
 ## Approve a person's bank account
 

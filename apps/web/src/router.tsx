@@ -40,6 +40,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "ai-tasks": lazyRouteComponent(() => import("./screens/approvals/AITasks"), "AITasks"),
   "review-log": lazyRouteComponent(() => import("./screens/approvals/ReviewLog"), "ReviewLog"),
   "break-glass": lazyRouteComponent(() => import("./screens/approvals/BreakGlass"), "BreakGlassPage"),
+  "approval-delegations": lazyRouteComponent(() => import("./screens/approvals/Delegations"), "Delegations"),
   projects: lazyRouteComponent(() => import("./screens/projects/Projects"), "Projects"),
   "project-record": lazyRouteComponent(() => import("./screens/projects/ProjectRecord"), "ProjectRecord"),
   "my-time": lazyRouteComponent(() => import("./screens/projects/MyTime"), "MyTime"),

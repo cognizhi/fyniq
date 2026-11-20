@@ -174,6 +174,14 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
 | AI assistant | Off | AI stays off until an Owner turns it on with a second approver; switching it off takes effect at once |
 | AI apps through MCP | Off | No AI app reaches your books until an Owner turns it on with a second approver; see [AI apps through MCP](#ai-apps-through-mcp) |
 
+## Approval reminders
+
+Two settings time the reminders of a waiting approval (FR-APR-08): **Remind approvers every** (24 hours
+recommended, 1 to 72) and **Escalate a waiting approval after** (72 hours recommended, 2 to 168). A
+reminder goes to the people who may sign the approval's current step, up to three times; the escalation
+tells the Owners and the person who asked, and ends the reminders. Neither changes who may sign or when
+the request expires. Either can be changed without a second approver.
+
 ## Motion
 
 Fyniq uses a few short transitions so you can follow what changed: a page or panel fading in, rows
