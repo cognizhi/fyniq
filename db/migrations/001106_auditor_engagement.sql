@@ -166,8 +166,11 @@ GRANT UPDATE (status, answer, evidence_ids, answered_by, answered_at, closed_by,
 GRANT INSERT (engagement_id, rule, seed, population, items, drawn_by, drawn_at) ON fyniq.auditor_sample TO fyniq_api;
 
 -- +goose Down
+-- squawk-ignore ban-drop-table
 DROP TABLE fyniq.auditor_sample;
+-- squawk-ignore ban-drop-table
 DROP TABLE fyniq.auditor_request;
+-- squawk-ignore ban-drop-table
 DROP TABLE fyniq.auditor_engagement;
 DROP FUNCTION fyniq.auditor_child_guard();
 DROP FUNCTION fyniq.auditor_engagement_guard();
