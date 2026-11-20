@@ -98,10 +98,11 @@
       "type": "string"
     },
     "source": {
-      "description": "What raised it: a run's finding, or an approved proposal.",
+      "description": "What raised it: a run's finding, an approved proposal, or the platform itself (a statutory pack update waiting).",
       "enum": [
         "agent_run",
-        "ai_proposal"
+        "ai_proposal",
+        "system"
       ],
       "examples": [
         "agent_run"

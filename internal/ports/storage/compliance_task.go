@@ -31,7 +31,7 @@ type ComplianceTask struct {
 	OwnerUser  *uuid.UUID
 	DueOn      *time.Time // a date
 	Escalated  bool
-	Source     string // agent_run or ai_proposal
+	Source     string // agent_run, ai_proposal or system
 	Run        *uuid.UUID
 	Proposal   *uuid.UUID
 	Status     string
@@ -81,6 +81,8 @@ type ComplianceTasks interface {
 	RaiseForRun(ctx context.Context, run uuid.UUID, t NewComplianceTask) (ComplianceTask, error)
 	// RaiseForProposal raises an approved proposal's task: a conflict when its key has an open task already.
 	RaiseForProposal(ctx context.Context, proposal uuid.UUID, t NewComplianceTask) (ComplianceTask, error)
+	// RaiseSystem raises the platform's own task for a finding no run and no proposal made, such as a statutory pack update waiting (ENG-33): the worker's; a conflict when its key has an open task already.
+	RaiseSystem(ctx context.Context, t NewComplianceTask) (ComplianceTask, error)
 	Get(ctx context.Context, id uuid.UUID) (ComplianceTask, error)
 	// OpenFor is the finding's open task, or ports.ErrNotFound.
 	OpenFor(ctx context.Context, findingKey string) (ComplianceTask, error)

@@ -41,6 +41,25 @@ func main() {
 		fmt.Fprintln(os.Stderr, "sdkgen:", err)
 		os.Exit(1)
 	}
+	rawContract, err := os.ReadFile(*contract)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "sdkgen:", err)
+		os.Exit(1)
+	}
+	reach := map[string]bool{}
+	for _, o := range ops {
+		reach[o.ID] = true
+	}
+	set, err := readSchemas(rawContract, reach)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "sdkgen:", err)
+		os.Exit(1)
+	}
+	goModels, err := format.Source(set.goModels())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "sdkgen: the Go models:", err)
+		os.Exit(1)
+	}
 	goSource, err := format.Source(goFile(ops))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "sdkgen:", err)
@@ -49,6 +68,8 @@ func main() {
 	files := map[string][]byte{
 		"sdk/go/fyniq/operations_gen.go":     goSource,
 		"sdk/python/fyniq/operations_gen.py": pyFile(ops),
+		"sdk/go/fyniq/models_gen.go":         goModels,
+		"sdk/python/fyniq/models_gen.py":     set.pyModels(),
 	}
 	stale := false
 	for _, path := range slices.Sorted(mapKeys(files)) {
@@ -68,7 +89,7 @@ func main() {
 		os.Exit(1)
 	}
 	if !*check {
-		fmt.Printf("✔ %d operations in sdk/go and sdk/python\n", len(ops))
+		fmt.Printf("✔ %d operations and %d models in sdk/go and sdk/python\n", len(ops), len(set.names))
 	}
 }
 

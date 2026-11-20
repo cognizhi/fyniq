@@ -1552,6 +1552,20 @@ installation_connector_secret | set_by | text | not null |
 installation_connector_secret | set_at | timestamp with time zone | not null | 
 installation_connector_secret | valid_until | timestamp with time zone | null | 
 installation_connector_secret | destroyed_at | timestamp with time zone | null | 
+integration_task | organisation_id | uuid | not null | current_org()
+integration_task | id | uuid | not null | uuidv7()
+integration_task | client_id | text | not null | 
+integration_task | external_ref | text | not null | 
+integration_task | title | text | not null | 
+integration_task | detail | text | not null | ''::text
+integration_task | due_on | date | null | 
+integration_task | link_url | text | null | 
+integration_task | status | text | not null | 'open'::text
+integration_task | created_by | uuid | not null | 
+integration_task | created_at | timestamp with time zone | not null | 
+integration_task | updated_at | timestamp with time zone | not null | 
+integration_task | closed_at | timestamp with time zone | null | 
+integration_task | version | integer | not null | 1
 investor_update | organisation_id | uuid | not null | current_org()
 investor_update | id | uuid | not null | uuidv7()
 investor_update | pack_id | uuid | not null | 
@@ -1911,6 +1925,21 @@ mcp_seen | user_id | uuid | not null |
 mcp_seen | kind | text | not null | 
 mcp_seen | value | text | not null | 
 mcp_seen | first_seen | timestamp with time zone | not null | 
+mcp_third_party_app | organisation_id | uuid | not null | current_org()
+mcp_third_party_app | id | uuid | not null | uuidv7()
+mcp_third_party_app | client_id | text | not null | 
+mcp_third_party_app | name | text | not null | 
+mcp_third_party_app | publisher | text | not null | 
+mcp_third_party_app | publisher_url | text | null | 
+mcp_third_party_app | redirect_uris | text[] | not null | 
+mcp_third_party_app | purpose | text | not null | 
+mcp_third_party_app | processing_location | text | not null | 
+mcp_third_party_app | outside_singapore | boolean | not null | 
+mcp_third_party_app | inventory_entry | uuid | not null | 
+mcp_third_party_app | registered_by | uuid | not null | 
+mcp_third_party_app | registered_at | timestamp with time zone | not null | 
+mcp_third_party_app | removed_at | timestamp with time zone | null | 
+mcp_third_party_app | removed_by | uuid | null | 
 mcp_user_optin | organisation_id | uuid | not null | current_org()
 mcp_user_optin | id | uuid | not null | uuidv7()
 mcp_user_optin | user_id | uuid | not null | 
@@ -5063,7 +5092,7 @@ compliance_task | compliance_task_pkey | PRIMARY KEY (organisation_id, id)
 compliance_task | compliance_task_proposal_fkey | FOREIGN KEY (organisation_id, proposal_id) REFERENCES ai_proposal(organisation_id, id)
 compliance_task | compliance_task_reason_not_null | NOT NULL reason
 compliance_task | compliance_task_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES agent_run(organisation_id, id)
-compliance_task | compliance_task_source | CHECK ((((source = 'agent_run'::text) AND (run_id IS NOT NULL) AND (proposal_id IS NULL)) OR ((source = 'ai_proposal'::text) AND (proposal_id IS NOT NULL))))
+compliance_task | compliance_task_source | CHECK ((((source = 'agent_run'::text) AND (run_id IS NOT NULL) AND (proposal_id IS NULL)) OR ((source = 'ai_proposal'::text) AND (proposal_id IS NOT NULL)) OR ((source = 'system'::text) AND (run_id IS NULL) AND (proposal_id IS NULL))))
 compliance_task | compliance_task_source_not_null | NOT NULL source
 compliance_task | compliance_task_state | CHECK ((((closed_at IS NOT NULL) = (status <> 'open'::text)) AND ((closed_by IS NOT NULL) = (status = ANY (ARRAY['done'::text, 'dismissed'::text]))) AND ((reason <> ''::text) = (status = 'dismissed'::text)) AND ((closed_at IS NULL) OR (closed_at >= created_at))))
 compliance_task | compliance_task_status | CHECK ((status = ANY (ARRAY['open'::text, 'done'::text, 'dismissed'::text, 'cleared'::text])))
@@ -5877,6 +5906,28 @@ installation_connector_secret | installation_connector_secret_ref_form | CHECK (
 installation_connector_secret | installation_connector_secret_ref_not_null | NOT NULL ref
 installation_connector_secret | installation_connector_secret_set_at_not_null | NOT NULL set_at
 installation_connector_secret | installation_connector_secret_set_by_not_null | NOT NULL set_by
+integration_task | integration_task_client_form | CHECK ((client_id ~ '^[!-~]{1,200}$'::text))
+integration_task | integration_task_client_id_not_null | NOT NULL client_id
+integration_task | integration_task_closed | CHECK (((closed_at IS NOT NULL) = (status <> 'open'::text)))
+integration_task | integration_task_created_at_not_null | NOT NULL created_at
+integration_task | integration_task_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+integration_task | integration_task_created_by_not_null | NOT NULL created_by
+integration_task | integration_task_detail_not_null | NOT NULL detail
+integration_task | integration_task_external_ref_not_null | NOT NULL external_ref
+integration_task | integration_task_id_not_null | NOT NULL id
+integration_task | integration_task_link | CHECK (((link_url IS NULL) OR ((link_url ~ '^https://[^[:space:]]+$'::text) AND (length(link_url) <= 2048))))
+integration_task | integration_task_organisation_id_not_null | NOT NULL organisation_id
+integration_task | integration_task_pkey | PRIMARY KEY (organisation_id, id)
+integration_task | integration_task_ref_form | CHECK ((external_ref ~ '^[!-~]{1,200}$'::text))
+integration_task | integration_task_ref_once | UNIQUE (organisation_id, client_id, external_ref)
+integration_task | integration_task_status | CHECK ((status = ANY (ARRAY['open'::text, 'done'::text, 'cancelled'::text])))
+integration_task | integration_task_status_not_null | NOT NULL status
+integration_task | integration_task_title_not_null | NOT NULL title
+integration_task | integration_task_updated_at_not_null | NOT NULL updated_at
+integration_task | integration_task_version | CHECK ((version >= 1))
+integration_task | integration_task_version_not_null | NOT NULL version
+integration_task | integration_task_words | CHECK ((((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)) AND (length(detail) <= 2000)))
+integration_task | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 investor_update | investor_update_asks_not_null | NOT NULL asks
 investor_update | investor_update_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (updated_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((sent_by IS NULL) OR (sent_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
 investor_update | investor_update_created_at_not_null | NOT NULL created_at
@@ -6425,6 +6476,28 @@ mcp_seen | mcp_seen_organisation_id_not_null | NOT NULL organisation_id
 mcp_seen | mcp_seen_pkey | PRIMARY KEY (organisation_id, user_id, kind, value)
 mcp_seen | mcp_seen_user_id_not_null | NOT NULL user_id
 mcp_seen | mcp_seen_value_not_null | NOT NULL value
+mcp_third_party_app | mcp_third_party_app_client | CHECK ((client_id ~ '^mcp-[0-9a-f]{20}$'::text))
+mcp_third_party_app | mcp_third_party_app_client_id_not_null | NOT NULL client_id
+mcp_third_party_app | mcp_third_party_app_client_once | UNIQUE (client_id)
+mcp_third_party_app | mcp_third_party_app_id_not_null | NOT NULL id
+mcp_third_party_app | mcp_third_party_app_inventory_entry_not_null | NOT NULL inventory_entry
+mcp_third_party_app | mcp_third_party_app_name_not_null | NOT NULL name
+mcp_third_party_app | mcp_third_party_app_organisation_id_not_null | NOT NULL organisation_id
+mcp_third_party_app | mcp_third_party_app_outside_singapore_not_null | NOT NULL outside_singapore
+mcp_third_party_app | mcp_third_party_app_pkey | PRIMARY KEY (organisation_id, id)
+mcp_third_party_app | mcp_third_party_app_processing_location_not_null | NOT NULL processing_location
+mcp_third_party_app | mcp_third_party_app_publisher_not_null | NOT NULL publisher
+mcp_third_party_app | mcp_third_party_app_purpose_not_null | NOT NULL purpose
+mcp_third_party_app | mcp_third_party_app_redirect_uris_not_null | NOT NULL redirect_uris
+mcp_third_party_app | mcp_third_party_app_registered_at_not_null | NOT NULL registered_at
+mcp_third_party_app | mcp_third_party_app_registered_by_fkey | FOREIGN KEY (registered_by) REFERENCES app_user(user_id)
+mcp_third_party_app | mcp_third_party_app_registered_by_not_null | NOT NULL registered_by
+mcp_third_party_app | mcp_third_party_app_removed | CHECK (((removed_at IS NULL) = (removed_by IS NULL)))
+mcp_third_party_app | mcp_third_party_app_removed_by_fkey | FOREIGN KEY (removed_by) REFERENCES app_user(user_id)
+mcp_third_party_app | mcp_third_party_app_uris | CHECK (((cardinality(redirect_uris) >= 1) AND (cardinality(redirect_uris) <= 5)))
+mcp_third_party_app | mcp_third_party_app_url | CHECK (((publisher_url IS NULL) OR ((publisher_url ~ '^https://[^[:space:]]+$'::text) AND (length(publisher_url) <= 2048))))
+mcp_third_party_app | mcp_third_party_app_words | CHECK ((((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)) AND ((length(btrim(publisher)) >= 1) AND (length(btrim(publisher)) <= 100)) AND ((length(btrim(purpose)) >= 1) AND (length(btrim(purpose)) <= 300)) AND ((length(btrim(processing_location)) >= 1) AND (length(btrim(processing_location)) <= 100))))
+mcp_third_party_app | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 mcp_user_optin | mcp_user_optin_id_not_null | NOT NULL id
 mcp_user_optin | mcp_user_optin_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
 mcp_user_optin | mcp_user_optin_opted_in_not_null | NOT NULL opted_in
@@ -9039,6 +9112,7 @@ CREATE INDEX inbound_file_message ON fyniq.inbound_file USING btree (organisatio
 CREATE INDEX inbound_message_sender ON fyniq.inbound_message USING btree (organisation_id, sender, address_id) WHERE (status = 'quarantined'::text)
 CREATE INDEX inbound_message_status ON fyniq.inbound_message USING btree (organisation_id, status, received_at)
 CREATE INDEX installation_change_pending ON fyniq.installation_change USING btree (connector) WHERE (status = 'pending'::text)
+CREATE INDEX integration_task_by_status ON fyniq.integration_task USING btree (organisation_id, status, id DESC)
 CREATE INDEX invoice_dispute_invoice ON fyniq.invoice_dispute USING btree (organisation_id, invoice_id, created_at)
 CREATE INDEX invoicenow_contingency_period ON fyniq.invoicenow_contingency USING btree (organisation_id, period_from, period_to)
 CREATE INDEX invoicenow_event_submission ON fyniq.invoicenow_event USING btree (organisation_id, submission_id, at)
@@ -9067,6 +9141,7 @@ CREATE INDEX mcp_call_of_user ON fyniq.mcp_call USING btree (organisation_id, us
 CREATE INDEX mcp_call_recent ON fyniq.mcp_call USING btree (organisation_id, at DESC)
 CREATE INDEX mcp_client_network_recent ON fyniq.mcp_client USING btree (network, registered_at)
 CREATE INDEX mcp_client_pending ON fyniq.mcp_client USING btree (status, registered_at)
+CREATE INDEX mcp_third_party_app_by_time ON fyniq.mcp_third_party_app USING btree (organisation_id, registered_at DESC)
 CREATE INDEX mcp_user_optin_latest ON fyniq.mcp_user_optin USING btree (organisation_id, user_id, set_at)
 CREATE INDEX migration_archive_run ON fyniq.migration_archive USING btree (organisation_id, run_id)
 CREATE INDEX migration_commit_approval ON fyniq.migration_commit USING btree (organisation_id, approval_id)
@@ -9392,6 +9467,8 @@ CREATE UNIQUE INDEX installation_connector_secret_current ON fyniq.installation_
 CREATE UNIQUE INDEX installation_connector_secret_once ON fyniq.installation_connector_secret USING btree (ref)
 CREATE UNIQUE INDEX installation_connector_secret_pkey ON fyniq.installation_connector_secret USING btree (id)
 CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
+CREATE UNIQUE INDEX integration_task_pkey ON fyniq.integration_task USING btree (organisation_id, id)
+CREATE UNIQUE INDEX integration_task_ref_once ON fyniq.integration_task USING btree (organisation_id, client_id, external_ref)
 CREATE UNIQUE INDEX investor_update_pkey ON fyniq.investor_update USING btree (organisation_id, id)
 CREATE UNIQUE INDEX investor_update_read_once ON fyniq.investor_update_read USING btree (organisation_id, update_id, user_id)
 CREATE UNIQUE INDEX investor_update_read_pkey ON fyniq.investor_update_read USING btree (organisation_id, id)
@@ -9446,6 +9523,8 @@ CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (o
 CREATE UNIQUE INDEX mcp_call_pkey ON fyniq.mcp_call USING btree (organisation_id, id)
 CREATE UNIQUE INDEX mcp_client_pkey ON fyniq.mcp_client USING btree (client_id)
 CREATE UNIQUE INDEX mcp_seen_pkey ON fyniq.mcp_seen USING btree (organisation_id, user_id, kind, value)
+CREATE UNIQUE INDEX mcp_third_party_app_client_once ON fyniq.mcp_third_party_app USING btree (client_id)
+CREATE UNIQUE INDEX mcp_third_party_app_pkey ON fyniq.mcp_third_party_app USING btree (organisation_id, id)
 CREATE UNIQUE INDEX mcp_user_optin_pkey ON fyniq.mcp_user_optin USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_invitation_code_key ON fyniq.member_invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX member_invitation_pkey ON fyniq.member_invitation USING btree (organisation_id, id)
@@ -9901,6 +9980,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fixed_as
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'message_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.integration_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('integration_task', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.investor_update DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('investor_update', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoice_dispute DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoice_dispute', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_contingency DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_contingency', 'id')
@@ -9913,6 +9993,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.join_req
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.kb_lint_finding DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_lint_finding', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.kb_note DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_note', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.kpi_input DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kpi_input', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.mcp_third_party_app DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('mcp_third_party_app', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.member_invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('member_invitation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.migration_commit DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.migration_difference DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
@@ -10205,6 +10286,8 @@ CREATE TRIGGER installation_connector_secret_guard BEFORE DELETE OR UPDATE ON fy
 CREATE TRIGGER installation_connector_secret_named BEFORE INSERT ON fyniq.installation_connector_secret FOR EACH ROW EXECUTE FUNCTION connector_secret_named()
 CREATE TRIGGER installation_connector_secret_no_truncate BEFORE TRUNCATE ON fyniq.installation_connector_secret FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER instrument_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION instrument_guard()
+CREATE TRIGGER integration_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.integration_task FOR EACH ROW EXECUTE FUNCTION integration_task_guard()
+CREATE TRIGGER integration_task_no_truncate BEFORE TRUNCATE ON fyniq.integration_task FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER investor_right_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION investor_right_guard()
 CREATE TRIGGER investor_update_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.investor_update FOR EACH ROW EXECUTE FUNCTION investor_update_guard()
 CREATE TRIGGER investor_update_no_truncate BEFORE TRUNCATE ON fyniq.investor_update FOR EACH STATEMENT EXECUTE FUNCTION investor_update_guard()
@@ -10266,6 +10349,8 @@ CREATE TRIGGER mcp_client_guard BEFORE DELETE OR UPDATE ON fyniq.mcp_client FOR 
 CREATE TRIGGER mcp_client_no_truncate BEFORE TRUNCATE ON fyniq.mcp_client FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER mcp_seen_guard BEFORE DELETE OR UPDATE ON fyniq.mcp_seen FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER mcp_seen_no_truncate BEFORE TRUNCATE ON fyniq.mcp_seen FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER mcp_third_party_app_guard BEFORE DELETE OR UPDATE ON fyniq.mcp_third_party_app FOR EACH ROW EXECUTE FUNCTION mcp_third_party_app_guard()
+CREATE TRIGGER mcp_third_party_app_no_truncate BEFORE TRUNCATE ON fyniq.mcp_third_party_app FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER mcp_user_optin_guard BEFORE DELETE OR UPDATE ON fyniq.mcp_user_optin FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER mcp_user_optin_no_truncate BEFORE TRUNCATE ON fyniq.mcp_user_optin FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER member_invitation_guard BEFORE UPDATE ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION member_invitation_guard()
@@ -10656,6 +10741,7 @@ holding_movement | tenant_isolation | * | (organisation_id = current_org()) | (o
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_file | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+integration_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 investor_update | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 investor_update_read | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 invoice_dispute | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10682,6 +10768,7 @@ ledger_purged_entry | tenant_isolation | * | (organisation_id = current_org()) |
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 mcp_call | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 mcp_seen | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+mcp_third_party_app | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 mcp_user_optin | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 member_invitation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_archive | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10947,6 +11034,7 @@ installation_announcement | disabled | not forced
 installation_change | disabled | not forced
 installation_connector | disabled | not forced
 installation_connector_secret | disabled | not forced
+integration_task | enabled | forced
 investor_update | enabled | forced
 investor_update_read | enabled | forced
 invitation_code | disabled | not forced
@@ -10981,6 +11069,7 @@ ledger_revision | enabled | forced
 mcp_call | enabled | forced
 mcp_client | disabled | not forced
 mcp_seen | enabled | forced
+mcp_third_party_app | enabled | forced
 mcp_user_optin | enabled | forced
 member_invitation | enabled | forced
 migration_archive | enabled | forced
@@ -11240,7 +11329,7 @@ claim_join_domain(p_by uuid, p_org uuid, p_domain text, p_now timestamp with tim
 claim_place_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9d945198410ff448d1bc24902010e4d
 claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57aedc912c161d7d32a66f3e8840bd12
 close_checklist_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f4af92af3952d349375bb5a90970c137
-compliance_task_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9feae7d2ff9d3da98fac4aed312d145f
+compliance_task_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c13e472da961939bd2a0526166b58221
 confirm_account_recovery(p_by uuid, p_for uuid, p_org uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 556b86484c4b57d11bbd4103bdd28538
 confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 254723da0ff40bc2dc8dd67758ba97c3
 connector_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 06787f4aad13062e2a82e6f6927156d1
@@ -11339,6 +11428,7 @@ installation_connectors() → SETOF installation_connector | security definer | 
 installation_dual_control() → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | a3a29b8dc4a420477e6b9ff6948499d8
 installation_org() → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9731da83e60ff6283071958a473dc801
 instrument_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 249c231a7cc53d4f0e283ebd13cde723
+integration_task_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5489dc023ae40792d72f80453f0e76ba
 investor_right_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 96cf1779564b1618a9b0c82c231fe328
 investor_update_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 61bfca06922e94b4f963dc2716fddc3e
 investor_update_read_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b2420800b375b543d651fac2a0440734
@@ -11402,6 +11492,7 @@ mcp_clients_named(p_ids text[]) → SETOF mcp_client | security definer | s | se
 mcp_clients_pending() → SETOF mcp_client | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4c562e36eec5a6f3140f98101328a5f3
 mcp_purge_calls(p_before timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b9fb6462aed784046e564c4fc8006bb5
 mcp_registration_open(p_now timestamp with time zone) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 354766d8448266a6f1bde09a79437dc8
+mcp_third_party_app_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 789a71b45b3e5a365400f39e50499026
 member_activity() → TABLE(user_id uuid, last_sign_in_at timestamp with time zone, passkeys bigint) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | b701999f6be623442445b3c78c74c09e
 member_emails() → TABLE(user_id uuid, email text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | de5d5500c1abd3c22db2454f742d293e
 member_invitation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bbbd3cfc69b3ef2e3f033c058258160c

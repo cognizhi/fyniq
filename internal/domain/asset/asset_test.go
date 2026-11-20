@@ -217,7 +217,7 @@ func TestATaxElectionReadsBackAndHasItsShape(t *testing.T) {
 	}{
 		{nil, true}, {&TaxElection{Method: TaxS19, PrescribedYears: 6, Years: 6}, true}, {&TaxElection{Method: TaxS19A1}, true}, {&TaxElection{Method: TaxS19A10A}, true},
 		{&TaxElection{Method: TaxS19}, false}, {&TaxElection{Method: TaxS19, PrescribedYears: 6}, false}, {&TaxElection{Method: TaxS19A1, Years: 3}, false},
-		{&TaxElection{Method: TaxS19A10A, PrescribedYears: 6}, false}, {&TaxElection{Method: "s19a2"}, false}, {&TaxElection{}, false},
+		{&TaxElection{Method: TaxS19A10A, PrescribedYears: 6}, false}, {&TaxElection{Method: TaxS19A2}, true}, {&TaxElection{Method: "s19a3"}, false}, {&TaxElection{}, false},
 	} {
 		if e := CheckTax(c.t); (e == nil) != c.ok || (e != nil && e.Code != CodeTaxMethod) {
 			t.Errorf("%+v: %v", c.t, e)

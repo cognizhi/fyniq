@@ -11,7 +11,7 @@
 - [x] 2.2 The form selector and the ECI and filing deadlines (D2). `// req: FR-TAX-06`
   (Built: `pack.FilingForm` and `sg-tax-filings@2026.1`'s limits; the deadlines are `sg-deadlines`'s. The thresholds are quoted from IRAS's overview page as a search returned its text on 20 Nov 2026: read the page again at the next review.)
 - [x] 2.3 Store, API, matrix rows. `// req: FR-TAX-06`, `// req: QA-SEC-03`
-  (Built, rev 0.610, 21 Nov 2026: the document `tax_working_paper` (migration 001122) so the evidence table can attach, `taxfilings.Stored` (draft, revise, record with the figures kept, evidence required when there are adjustments), nine operations with matrix rows (`TestATaxWorkingPaperKeepsItsAdjustmentsWithEvidenceAndIsRecorded`), and the Kept papers section of the page. **Left of 2.4:** the ECI and Form C-S data pack.)
+  (Built, rev 0.613, 21 Nov 2026: the document `tax_working_paper` (migration 001122) so the evidence table can attach, `taxfilings.Stored` (draft, revise, record with the figures kept, evidence required when there are adjustments), nine operations with matrix rows (`TestATaxWorkingPaperKeepsItsAdjustmentsWithEvidenceAndIsRecorded`), and the Kept papers section of the page. **Left of 2.4:** the ECI and Form C-S data pack.)
 - [ ] 2.4 Screen `filing-packs`. `// req: QA-UI-05`
 
 ## 3. Bad-debt relief
@@ -24,8 +24,8 @@
   (Built: Sales > Bad debts has the claim form and the claimed chip; the design fragment, the guide page and the knowledge-base page say how.)
 
 ## 4. Pack updates
-- [ ] 4.1 `pack.update_available` with its diff and `pack.correction_assessment` (D4). `// req: ENG-33`
-  (Built in part: `pack.Diff`. **Left:** the tasks.)
+- [x] 4.1 `pack.update_available` with its diff and `pack.correction_assessment` (D4). `// req: ENG-33`
+  (Built, rev 0.614, 21 Nov 2026: `pack.Diff`; the update view moved to the domain (`packupdate.Updates`); the compliance task source `system` (migration 001124/001125; the worker alone raises one), `ComplianceTasks.RaiseSystem`; `packupdate.Raise` and the daily job `packs.updates` raising `pack.update_available` and `pack.correction_assessment` (the correction counts the documents of the types the pack reaches), cleared when accepted; `TestAPackUpdateWaitingBecomesTheplatformsOwnTasksAndClearsWhenAccepted`, `TestThePlatformRaisesItsOwnTasksAndNobodyElseDoes`. A correction is a version taking effect on the same day as the active one or earlier `[accountant to confirm]`.)
 
 ## 5. The IRAS filing port
 - [ ] 5.1 `ports.IRASFiling`, the stub and the idempotent record (D5). **[live-verify]** the payload mapping against IRAS's sandbox. `// req: FR-TAX-03`

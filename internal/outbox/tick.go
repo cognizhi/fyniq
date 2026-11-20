@@ -109,6 +109,8 @@ var PlatformSchedules = []Schedule{
 	{Job: "notify.deadlines", Every: 24 * time.Hour, Offset: 23*time.Hour + 35*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Every fifteen minutes, the InvoiceNow submissions queued are sent and the ones sent are read up to IRAS's acknowledgement ID (FR-AR-12, FR-TAX-10; p2-invoicenow).
 	{Job: "invoicenow.dispatch", Every: 15 * time.Minute, Offset: 0, Lease: 10 * time.Minute, Stale: time.Hour},
+	// Daily at 06:45 Singapore time, each organisation's tasks about a statutory pack update waiting, or a correction to a past period, raised or cleared (ENG-33; p2-tax-filings).
+	{Job: "packs.updates", Every: 24 * time.Hour, Offset: 22*time.Hour + 45*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Daily at 07:40 Singapore time, after the deadlines, each organisation's 60-day cash projection against its buffer
 	// line, once per crossing (FR-PLN-09, FR-NTF-01; p1-planning design D7).
 	{Job: "notify.cash_buffer", Every: 24 * time.Hour, Offset: 23*time.Hour + 40*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},

@@ -1971,6 +1971,23 @@ type FyniqInstallationConnectorSecret struct {
 	DestroyedAt *time.Time
 }
 
+type FyniqIntegrationTask struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ClientID       string
+	ExternalRef    string
+	Title          string
+	Detail         string
+	DueOn          pgtype.Date
+	LinkUrl        *string
+	Status         string
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	ClosedAt       *time.Time
+	Version        int32
+}
+
 type FyniqInvestorUpdate struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2436,6 +2453,24 @@ type FyniqMcpSeen struct {
 	Kind           string
 	Value          string
 	FirstSeen      time.Time
+}
+
+type FyniqMcpThirdPartyApp struct {
+	OrganisationID     uuid.UUID
+	ID                 uuid.UUID
+	ClientID           string
+	Name               string
+	Publisher          string
+	PublisherUrl       *string
+	RedirectUris       []string
+	Purpose            string
+	ProcessingLocation string
+	OutsideSingapore   bool
+	InventoryEntry     uuid.UUID
+	RegisteredBy       uuid.UUID
+	RegisteredAt       time.Time
+	RemovedAt          *time.Time
+	RemovedBy          *uuid.UUID
 }
 
 type FyniqMcpUserOptin struct {

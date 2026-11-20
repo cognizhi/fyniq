@@ -37,6 +37,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/invoicenow"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/packupdate"
 	"github.com/cognizhi/fyniq/internal/domain/projectrevenue"
 	"github.com/cognizhi/fyniq/internal/domain/retention"
 	"github.com/cognizhi/fyniq/internal/domain/security"
@@ -168,6 +169,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		invoicenow.DispatchJob: func(ctx context.Context) error { // FR-AR-12: the InvoiceNow submissions queued and sent
 			_, err := invoicenow.DispatchAll(ctx, k.Store, k.AccessPoint, clock.Now)
+			return err
+		},
+		packupdate.Job: func(ctx context.Context) error { // ENG-33: the tasks about a statutory pack update waiting
+			_, err := packupdate.RaiseAll(ctx, k.Store, clock.Now)
 			return err
 		},
 		reminders.DeadlinesJob: func(ctx context.Context) error {

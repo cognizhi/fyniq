@@ -19,5 +19,10 @@ for item in api.paginate(api.list_journals):          # follows next_cursor
 ```
 
 A write takes an Idempotency-Key the client makes once and keeps across retries (FR-INT-08); a 429, or a read's 503, is retried after its `Retry-After` when that is short (FR-INT-16); `Response.etag` goes back in `if_match` (FR-INT-09).
+The contract's schemas are `TypedDict`s in `fyniq/models_gen.py` (`from fyniq.models_gen import IntegrationTaskCreate`): required keys apart from optional ones, for a type checker; the methods still take and return JSON.
 Money is a decimal string: parse it with `decimal.Decimal`, never `float` (ENG-10). There is a method only for an operation a client's scopes can reach.
 After a change to the API: `make openapi` regenerates it; `make api-check` fails while it is stale; `make sdk-test` runs its tests.
+
+## Publishing
+
+Not on PyPI yet: the models are published in a release first, then a trusted-publisher workflow (no stored token) uploads the wheel `[owner to confirm]`.

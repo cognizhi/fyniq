@@ -329,6 +329,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/connected-apps/people/{user_id}/connections/{client_id}` (revokeMemberConnection): Disconnect a person's AI app
 - `GET /v1/connected-apps/registrations` (listMCPRegistrations): See the AI apps waiting for an Owner
 - `POST /v1/connected-apps/registrations/{client_id}/deny` (denyMCPRegistration): Deny a registered AI app
+- `GET /v1/connected-apps/third-party-apps` (listMCPThirdPartyApps): List the third-party AI apps an Administrator registered
+- `POST /v1/connected-apps/third-party-apps` (registerMCPThirdPartyApp): Register a third-party AI app by hand
+- `DELETE /v1/connected-apps/third-party-apps/{client_id}` (removeMCPThirdPartyApp): Remove a third-party AI app
 - `GET /v1/connector-catalogue` (listConnectorCatalogue): List the connectors of this release
 - `GET /v1/contacts` (listContacts): List the contacts
 - `POST /v1/contacts` (createContact): Add a contact
@@ -1158,6 +1161,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/supplier-refunds/{refund_id}` (getSupplierRefund): Get a refund from a supplier
 - `POST /v1/supplier-refunds/{refund_id}/void` (voidSupplierRefund): Void a refund from a supplier
 - `POST /v1/supplier-refunds/{refund_id}/void-approval` (requestSupplierRefundVoid): Ask for approval to void a refund from a supplier
+- `GET /v1/tasks` (listIntegrationTasks): List the tasks integrations made
+- `POST /v1/tasks` (createIntegrationTask): Make a task as an integration
+- `GET /v1/tasks/{task_id}` (getIntegrationTask): Read a task an integration made
+- `PATCH /v1/tasks/{task_id}` (updateIntegrationTask): Update a task an integration made
 - `GET /v1/tax/bad-debt-relief` (getBadDebtRelief): The GST bad debt relief queue
 - `POST /v1/tax/bad-debt-relief/claims` (claimBadDebtRelief): Claim GST bad debt relief for a write-off
 - `GET /v1/tax/bad-debt-relief/claims/{claim_id}` (getBadDebtReliefClaim): Get a claim of GST bad debt relief

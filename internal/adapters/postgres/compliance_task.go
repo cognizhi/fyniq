@@ -32,6 +32,15 @@ func (r complianceTasks) RaiseForProposal(ctx context.Context, proposal uuid.UUI
 	return r.raised(ctx, row, err)
 }
 
+func (r complianceTasks) RaiseSystem(ctx context.Context, t storage.NewComplianceTask) (storage.ComplianceTask, error) {
+	if err := r.u.check(); err != nil {
+		return storage.ComplianceTask{}, err
+	}
+	row, err := r.u.q.RaiseSystemTask(ctx, sqlcdb.RaiseSystemTaskParams{FindingKey: t.FindingKey, Title: t.Title, Detail: t.Detail, OwnerRole: optText(t.OwnerRole),
+		OwnerUser: t.OwnerUser, DueOn: pgDate(t.DueOn), Escalated: t.Escalated, CreatedAt: t.CreatedAt})
+	return r.raised(ctx, row, err)
+}
+
 func (r complianceTasks) raised(ctx context.Context, row sqlcdb.FyniqComplianceTask, err error) (storage.ComplianceTask, error) {
 	if err != nil {
 		return storage.ComplianceTask{}, mapError(err)

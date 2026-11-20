@@ -262,6 +262,7 @@ what is shown, never what a person may do.
   Owner has turned this on with a second approver. A registered app is limited to the default read access, is not
   verified, and cannot connect until an Owner adds it to the apps that may connect. A registration nobody approves
   expires after 7 days, and an approved app nobody uses after 30. Turning it off takes effect at once.
+- **An Administrator may register an AI app of another publisher**: off unless changed. An Owner turns it on with a second approver, with **AI apps through MCP** on too. An Administrator, with a second factor, then registers an app by hand under **Settings › Connected apps**: its name, who publishes it, what you use it for, where it processes data (and whether that is outside Singapore) and the exact addresses it signs people in on. Fyniq fetches nothing the Administrator names and does not check the publisher: the Owner decides. The app is limited to the default read access and cannot connect until an Owner adds it to the apps that may connect. The registration makes an entry in your personal-data inventory, a transfer to assess when the app is outside Singapore, and the app is in the quarterly access review. An Administrator or an Owner can remove it at once. Turning it off takes effect at once.
 - Each person also has to opt in before an app can act for them, and sees what the app may read when they allow it.
 - This release only holds these settings. No AI app can connect until the MCP server is opened for the deployment, which
   is done separately, after a security review.

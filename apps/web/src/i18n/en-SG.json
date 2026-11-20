@@ -2119,6 +2119,26 @@
       "label": "Connector",
       "tooltip": "One connector: its lifecycle, configuration and secrets, its test and health, an upgrade to consent to, and its history."
     },
+    "settings.webhooks": {
+      "label": "Webhooks",
+      "tooltip": "The addresses Fyniq sends signed event messages to, each verified before it is active, with their secrets and the events that never arrived."
+    },
+    "webhooks.add": {
+      "label": "Add endpoint",
+      "tooltip": "Add an https address and the event types it receives; it receives nothing until you verify it, and its signing secret is shown once."
+    },
+    "webhooks.verify": {
+      "label": "Verify",
+      "tooltip": "Send one signed message with a challenge; the endpoint is active only when it answers 2xx with the challenge in its body."
+    },
+    "webhooks.roll-secret": {
+      "label": "Roll secret",
+      "tooltip": "Make a new signing secret, shown once; the old one keeps signing for 24 hours alongside it so your system can change over."
+    },
+    "webhooks.dead-letters": {
+      "label": "Dead letters",
+      "tooltip": "Events that did not reach this endpoint in three days of tries; replay one to send it again with the same webhook-id."
+    },
     "connector.install": {
       "label": "Install",
       "tooltip": "Install the connector and consent to its manifest; it stays off until it is configured, tested and enabled. A second person approves it first."

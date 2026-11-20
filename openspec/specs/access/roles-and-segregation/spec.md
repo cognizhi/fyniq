@@ -1765,6 +1765,23 @@ Source: PRD-001 §D
 - **WHEN** a user reads or changes the requests and samples
 - **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over them (—)
 
+### Requirement: Permission matrix: Tasks made by integrations: an API client's own tasks
+In Standard mode, each role SHALL hold only the rights over the tasks an integration made that the permission matrix gives it (rev 0.610): the Owner and the Administrator create them, through an integration client holding `fyniq.write.tasks`, and a client updates only its own.
+
+Source: PRD-001 §D
+
+#### Scenario: Create or prepare
+- **WHEN** an integration client acting for a member makes or updates its own task
+- **THEN** a member who is the Owner or the Administrator can create it (C)
+
+#### Scenario: View
+- **WHEN** a user reads the tasks integrations made
+- **THEN** the Finance controller, the Accountant and the Auditor can view them (V)
+
+#### Scenario: No access
+- **WHEN** a user reads or changes the tasks integrations made
+- **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over them (—)
+
 ### Requirement: Super admin outside the permission matrix
 The Super admin (FR-ADM-06/07) SHALL be an installation role outside the permission matrix that manages sign-in providers, installation-wide email and messaging connections and announcements to everyone, and SHALL see an organisation's data only as a member.
 

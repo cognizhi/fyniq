@@ -328,6 +328,59 @@ func (q *Queries) RaiseRunTask(ctx context.Context, arg RaiseRunTaskParams) (Fyn
 	return i, err
 }
 
+const raiseSystemTask = `-- name: RaiseSystemTask :one
+INSERT INTO fyniq.compliance_task (finding_key, title, detail, owner_role, owner_user, due_on, escalated, source, created_at)
+VALUES ($1, $2, $3, $4, $5, $6,
+  $7, 'system', $8)
+RETURNING organisation_id, id, finding_key, title, detail, owner_role, owner_user, due_on, escalated, source, run_id, proposal_id, status, reason, created_at, closed_at, closed_by, version
+`
+
+type RaiseSystemTaskParams struct {
+	FindingKey string
+	Title      string
+	Detail     string
+	OwnerRole  *string
+	OwnerUser  *uuid.UUID
+	DueOn      pgtype.Date
+	Escalated  bool
+	CreatedAt  time.Time
+}
+
+func (q *Queries) RaiseSystemTask(ctx context.Context, arg RaiseSystemTaskParams) (FyniqComplianceTask, error) {
+	row := q.db.QueryRow(ctx, raiseSystemTask,
+		arg.FindingKey,
+		arg.Title,
+		arg.Detail,
+		arg.OwnerRole,
+		arg.OwnerUser,
+		arg.DueOn,
+		arg.Escalated,
+		arg.CreatedAt,
+	)
+	var i FyniqComplianceTask
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.FindingKey,
+		&i.Title,
+		&i.Detail,
+		&i.OwnerRole,
+		&i.OwnerUser,
+		&i.DueOn,
+		&i.Escalated,
+		&i.Source,
+		&i.RunID,
+		&i.ProposalID,
+		&i.Status,
+		&i.Reason,
+		&i.CreatedAt,
+		&i.ClosedAt,
+		&i.ClosedBy,
+		&i.Version,
+	)
+	return i, err
+}
+
 const updateComplianceTask = `-- name: UpdateComplianceTask :one
 UPDATE fyniq.compliance_task SET title = $1, detail = $2, owner_role = $3,
   owner_user = $4, due_on = $5, escalated = $6, version = version + 1
