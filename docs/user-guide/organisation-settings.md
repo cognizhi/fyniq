@@ -182,6 +182,13 @@ reminder goes to the people who may sign the approval's current step, up to thre
 tells the Owners and the person who asked, and ends the reminders. Neither changes who may sign or when
 the request expires. Either can be changed without a second approver.
 
+## Offline receipts
+
+**Keep an offline receipt for** (72 hours recommended, 1 to 168) is how long a receipt captured with no
+signal waits on the phone before it is removed (FR-UX-16). It is kept sealed on the device, removed
+when the person signs out, never kept on a device the person marked as shared, and checked by Fyniq
+when it uploads. See [Use Fyniq on your phone](mobile-app.md). A change needs no second approver.
+
 ## Motion
 
 Fyniq uses a few short transitions so you can follow what changed: a page or panel fading in, rows

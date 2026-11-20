@@ -1013,3 +1013,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.erasure: the review of records due for deletion (NM-SEC-05)
 
 ## [2026-11-20] compile | nemura.goals: a person's goals for the manager and the people team, and the roll-up (NM-PRF-01)
+
+## [2026-11-20] compile | docs/user-guide/mobile-app.md → app.mobile (new: the installable app, approving and capturing on a phone, the offline receipt queue; FR-UX-16, p2-mobile-approvals-automation); organisation-settings.md → settings.organisation (offline receipts)

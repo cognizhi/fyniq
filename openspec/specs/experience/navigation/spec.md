@@ -642,6 +642,10 @@ Source: PRD-001 §7.2 · Priority S · Phase P2
 - **WHEN** the user is offline
 - **THEN** the offline queue is off
 
+#### Scenario: The service worker keeps the app's files and nothing else (rev 0.621)
+- **WHEN** the installed app has no signal
+- **THEN** it opens from the files the service worker kept, and the worker handles GET requests for the app's own files alone, never the API and never a write, so no figure is stored and nothing is replayed later
+
 #### Scenario: Scope of this requirement
 - **WHEN** responsive layouts are needed for a screen
 - **THEN** they follow FR-UX-37 (P1); this requirement covers the installable PWA, camera capture and the offline queue
