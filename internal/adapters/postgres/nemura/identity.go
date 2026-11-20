@@ -316,8 +316,10 @@ func DeactivateMember(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Tim
 		map[string]audit.Change{"deactivated_at": {nil, at.UTC().Format(time.RFC3339)}}, ""); err != nil {
 		return err
 	}
-	_, err = QueueAccessEvents(ctx, tx, org, at, member) // Fyniq is told the identity no longer enters Nemura
-	return err
+	if _, err = QueueAccessEvents(ctx, tx, org, at, member); err != nil { // Fyniq is told the identity no longer enters Nemura
+		return err
+	}
+	return QueueMemberSessionsRevoked(ctx, tx, org, at, member, "removed") // and that their sessions there end, if they are mapped to a person of the link
 }
 
 // OpenSession starts a session for a member of the organisation in a transaction of its own and returns its token.
@@ -339,14 +341,21 @@ func (s *Store) CloseSession(ctx context.Context, token string, now time.Time) e
 	}
 	return s.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
 		var id, member uuid.UUID
-		err := tx.QueryRow(ctx, "SELECT id, member_id FROM nemura.session WHERE token_hash = $1 AND revoked_at IS NULL", hash).Scan(&id, &member)
+		var issuer, subject *string // how the session was signed in, when that was recorded
+		err := tx.QueryRow(ctx, "SELECT id, member_id, issuer, subject FROM nemura.session WHERE token_hash = $1 AND revoked_at IS NULL", hash).Scan(&id, &member, &issuer, &subject)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
 		}
 		if err != nil {
 			return err
 		}
-		return Revoke(ctx, tx, org, now, member, id)
+		if err := Revoke(ctx, tx, org, now, member, id); err != nil {
+			return err
+		}
+		if issuer == nil || subject == nil {
+			return nil
+		}
+		return QueueSessionRevoked(ctx, tx, org, now, *issuer, *subject, "signed_out") // an active link tells Fyniq, which ends the sessions of the person if they are mapped there
 	})
 }
 

@@ -519,6 +519,17 @@ func registerPeopleLink(a *API) {
 	}), eventCodes, func(ctx context.Context, in *peopleEventInput) (*peopleEventOutput, error) {
 		return a.receivePeopleEvent(ctx, in, peoplelink.TypeTaxHoldChanged)
 	})
+	register(a, authz.ReceivePeopleSessionEvent, byID(huma.Operation{
+		OperationID: "receivePeopleSessionEvent", Method: http.MethodPost, Path: "/v1/people-link/session-events", Tags: []string{"People"},
+		Summary: "Receive a sign-out or removal from Nemura",
+		Description: "Nemura's `identity.session.revoked` (PRD-002 NM-INT-12, Appendix E): a person was signed out of, or removed from, Nemura, named by sign-in issuer and subject and never an email, with a reason " +
+			"(signed_out or removed). Fyniq ends that person's sessions, and only when the identity is a user mapped to a person of the link (mapPersonToUser); it changes no membership, role or passkey, and it answers " +
+			"the same whether or not it ended any, so the call tells Nemura nothing of who has an account here. It needs the link's client and the scope identity.sessions.write (a link made before the scope existed " +
+			"is approved again to hold it), and is checked, applied once by event ID and never ordered by version, as receivePeopleProjectionEvent is. Side effects: the sessions ended, the audit event (the reason and how " +
+			"many, never the identity), and the inbox row. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).",
+	}), eventCodes, func(ctx context.Context, in *peopleEventInput) (*peopleEventOutput, error) {
+		return a.receivePeopleEvent(ctx, in, peoplelink.TypeSessionRevoked)
+	})
 }
 
 // linkKey reads Nemura's Ed25519 public key: 32 bytes, base64url without padding.
@@ -563,11 +574,15 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 			ObjectType: env.Header.ObjectType, ObjectID: env.Header.ObjectID, ObjectVersion: env.Header.ObjectVersion, PayloadSHA256: env.Header.PayloadSHA256, ReceivedAt: now}
 		var next peoplelink.Person
 		var access *storage.PeopleAccess
+		var revoke *peoplelink.SessionRevoked
 		var ignored bool
 		var perr error
-		if env.Header.Type == peoplelink.TypeAccessChanged {
+		switch env.Header.Type {
+		case peoplelink.TypeAccessChanged:
 			access, ignored, perr = a.accessOf(ctx, u, env, now)
-		} else {
+		case peoplelink.TypeSessionRevoked:
+			revoke, perr = revokedOf(env)
+		default:
 			next, ignored, perr = a.applyPeopleEvent(ctx, u, env, now)
 		}
 		switch {
@@ -602,6 +617,9 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 		if access != nil {
 			_, err := u.PeopleLinks().SaveAccess(ctx, *access)
 			return err
+		}
+		if revoke != nil {
+			return a.endSessionsOf(ctx, u, l, *revoke, now)
 		}
 		return u.PeopleLinks().SavePerson(ctx, next)
 	})
@@ -903,4 +921,42 @@ func lineManagerOf(ctx context.Context, u storage.UnitOfWork, user uuid.UUID) (u
 		return uuid.Nil, nil
 	}
 	return mgr.UserID, nil
+}
+
+// revokedOf reads Nemura's identity.session.revoked strictly: an identity, and a reason of two.
+func revokedOf(env peoplelink.Envelope) (*peoplelink.SessionRevoked, error) {
+	var ev peoplelink.SessionRevoked
+	d := json.NewDecoder(bytes.NewReader(env.Payload))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&ev); err != nil || ev.Issuer == "" || ev.Subject == "" || len(ev.Issuer) > 500 || len(ev.Subject) > 500 || (ev.Reason != "signed_out" && ev.Reason != "removed") {
+		return nil, &peoplelink.Refusal{Code: CodeLinkMinimum, Message: "the payload has a field, or a value, that PRD-002 Appendix E does not list for " + env.Header.Type}
+	}
+	return &ev, nil
+}
+
+// endSessionsOf ends the sessions of the user behind an identity Nemura says was signed out or removed, and only when that user is mapped to a person of the link: an identity with no user here, or a user no
+// person was mapped to, is left exactly as it is, and the caller cannot tell which it was (FR-PPL-18). Nothing but sessions ends: no membership, role or passkey changes. The audit event holds the reason and the count.
+func (a *API) endSessionsOf(ctx context.Context, u storage.UnitOfWork, l storage.PeopleLinkRow, ev peoplelink.SessionRevoked, now time.Time) error {
+	sessions, ok := a.deps.Installation.(storage.Sessions)
+	if !ok || a.deps.Installation == nil {
+		return nil
+	}
+	user, err := a.deps.Installation.UserForIdentity(ctx, ev.Issuer, ev.Subject)
+	if errors.Is(err, ports.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if _, err := u.PeopleLinks().PersonOfUser(ctx, user); errors.Is(err, ports.ErrNotFound) {
+		return nil // not mapped to a person of the link: not Nemura's to sign out
+	} else if err != nil {
+		return err
+	}
+	n, err := sessions.EndSessionsOfUser(ctx, user, now)
+	if err != nil {
+		return err
+	}
+	return u.Audit().Record(ctx, storage.AuditRecord{Action: "people_link.sessions_ended", ObjectType: "people_link", ObjectID: l.ID,
+		Changes: map[string][2]any{"reason": {nil, ev.Reason}, "sessions_ended": {nil, n}}})
 }

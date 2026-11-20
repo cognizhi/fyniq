@@ -78,6 +78,7 @@ func (f *fakeSessions) EndSession(_ context.Context, h []byte, _ time.Time) erro
 	return nil
 }
 
+func (f *fakeSessions) EndSessionsOfUser(context.Context, uuid.UUID, time.Time) (int, error) { return 0, nil }
 func (f *fakeSessions) UserSessions(context.Context, uuid.UUID, time.Time, time.Duration) ([]storage.Device, error) {
 	return nil, nil
 }

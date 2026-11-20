@@ -870,6 +870,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/people-link/people` (listPeopleProjection): List the people of the employee projection
 - `POST /v1/people-link/people/{person_id}/user` (mapPersonToUser): Map a person of the projection to a Fyniq user
 - `POST /v1/people-link/projection-events` (receivePeopleProjectionEvent): Receive a person, bank-details or identity event from Nemura
+- `POST /v1/people-link/session-events` (receivePeopleSessionEvent): Receive a sign-out or removal from Nemura
 - `POST /v1/people-link/unlink` (requestPeopleUnlink): Ask to end the link to the people platform
 - `GET /v1/periods` (listPeriods): List the periods
 - `GET /v1/periods/{period_id}` (getPeriod): Get a period

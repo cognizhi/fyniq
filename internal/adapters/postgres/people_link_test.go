@@ -224,6 +224,9 @@ func TestAttackOnlyTheLinkHoldsTheLinkScopes(t *testing.T) {
 	for _, x := range []struct{ what, stmt, state string }{
 		{"an integration client with a link scope", insert("integration", "integration", "ARRAY['people.projection.write']"), "23514"},
 		{"a personal token with a link scope", insert("personal", "agent", "ARRAY['payroll.journal.submit']"), "23514"},
+		{"an integration client with the scope that ends sessions", insert("integration", "integration", "ARRAY['identity.sessions.write']"), "23514"},
+		{"a personal token with the scope that ends sessions", insert("personal", "agent", "ARRAY['identity.sessions.write']"), "23514"},
+		{"the link's client with the scope that ends sessions beside an ordinary one", insert("link", "integration", "ARRAY['identity.sessions.write', 'fyniq.write.sales']"), "23514"},
 		{"the link's client with an ordinary scope", insert("link", "integration", "ARRAY['fyniq.read.accounting']"), "23514"},
 		{"the link's client with an ordinary scope beside a link scope", insert("link", "integration", "ARRAY['people.holds.write', 'fyniq.write.sales']"), "23514"},
 		{"the link's client with a scope nobody defined", insert("link", "integration", "ARRAY['people.everything']"), "23514"},
