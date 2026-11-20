@@ -40,6 +40,7 @@ import { AssistantSettings } from "./pages/AssistantSettings";
 import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
+import { Hiring } from "./pages/Hiring";
 import { OnboardingPlans } from "./components/OnboardingPlans";
 import { MyOnboarding } from "./components/MyOnboarding";
 import { Delegations } from "./components/Delegations";
@@ -1924,5 +1925,58 @@ describe("onboarding plans", () => {
     fireEvent.click(screen.getByRole("button", { name: "Done: Task t3" }));
     await waitFor(() => expect(bodies.get("POST /v1/onboarding/plan-tasks/t3/decision")).toEqual({ state: "done" }));
     expect(await violations(container)).toEqual([]);
+  });
+});
+
+// req: NM-REC-01, NM-REC-02, NM-REC-03, QA-UI-05
+describe("hiring", () => {
+  const post = (state: string, extra: object = {}) => ({ id: "jp", title: "Data scientist", body: "We want a young digital native.", state, offer_blocked: true, findings: [{ category: "age", phrase: "young" }], ...extra });
+  const req = (state: string, job_post?: object) => ({ id: "r1", title: "Data scientist", department: "Engineering", reason: "new", salary_min: "6500.00", salary_max: "8200.00", target_start: "2027-02-01", pass_needed: true, plan_status: "unknown", state, requested_by: "Rita", requested_at: "2026-10-01T10:00:00Z", job_post });
+
+  it("lets the Owner approve, the Recruiter ask and write a post whose flagged wording must be explained, and records the advert", async () => {
+    answer("GET /v1/requisitions", { status: 200, body: { requisitions: [req("approved", post("draft"))] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", name: "Ben Lim" }] } });
+    answer("POST /v1/requisitions", { status: 201, body: req("requested") });
+    answer("PUT /v1/requisitions/r1/job-post", { status: 200, body: req("approved", post("draft")) });
+    answer("POST /v1/fair-wording-check", { status: 200, body: { findings: [{ category: "age", phrase: "young" }] } });
+    answer("POST /v1/requisitions/r1/job-post/publication", { status: 200, body: req("approved", post("published")) });
+    answer("POST /v1/requisitions/r1/job-post/advert", { status: 200, body: req("approved", post("published")) });
+    const { container } = render(<Hiring roles={["recruiter", "owner"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    expect(await screen.findByText(/Data scientist, Engineering: Approved/)).toBeTruthy();
+    expect(screen.getByText(/not known yet/)).toBeTruthy();
+    expect(screen.getByText("No offer yet: record the advert date or an exemption")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Job post for Data scientist" }));
+    expect(await screen.findByText(/Age: young/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("The genuine occupational requirement"), { target: { value: "The role is about the Mandarin market." } });
+    fireEvent.click(screen.getByRole("button", { name: "Publish the post" }));
+    expect(await screen.findByText("The post is published.")).toBeTruthy();
+    expect(bodies.get("POST /v1/requisitions/r1/job-post/publication")).toEqual({ requirement_note: "The role is about the Mandarin market." });
+    fireEvent.change(screen.getByLabelText("The day the advert went up"), { target: { value: "2026-10-05" } });
+    fireEvent.click(screen.getByRole("button", { name: "Record the advert" }));
+    expect(await screen.findByText("The advert's date is recorded.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("The role"), { target: { value: "Designer" } });
+    fireEvent.change(screen.getByLabelText("The team"), { target: { value: "Product" } });
+    fireEvent.change(screen.getByLabelText("Salary from (S$ a month)"), { target: { value: "5000.00" } });
+    fireEvent.change(screen.getByLabelText("Salary to (S$ a month)"), { target: { value: "6000" } });
+    fireEvent.change(screen.getByLabelText("Start date aimed for"), { target: { value: "2027-03-01" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send the requisition" }));
+    expect(await screen.findByText("The requisition is sent to the Owner.")).toBeTruthy();
+    expect(bodies.get("POST /v1/requisitions")).toMatchObject({ title: "Designer", salary_min: "5000.00", salary_max: "6000", reason: "new", pass_needed: false });
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("shows the Owner an approval and a person without a hiring role nothing", async () => {
+    answer("GET /v1/requisitions", { status: 200, body: { requisitions: [req("requested")] } });
+    answer("POST /v1/requisitions/r1/decision", { status: 200, body: req("approved") });
+    render(<Hiring roles={["owner"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(await screen.findByRole("button", { name: "Approve Data scientist" }));
+    expect(await screen.findByText("Approved.")).toBeTruthy();
+    expect(bodies.get("POST /v1/requisitions/r1/decision")).toEqual({ approve: true });
+    expect(screen.queryByRole("button", { name: "Send the requisition" })).toBeNull();
+    cleanup();
+    render(<Hiring roles={["employee"]} />);
+    expect(await screen.findByText(/Only the Recruiter, the HR officer/)).toBeTruthy();
   });
 });

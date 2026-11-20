@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// MCPThirdPartyApp is an AI app of another publisher that an Administrator registered by hand (AI-46, rev 0.608): the organisation's record beside the installation's
+// MCPThirdPartyApp is an AI app of another publisher that an Administrator registered by hand (AI-46, rev 0.611): the organisation's record beside the installation's
 // registration of the client (MCPClients). Publisher and purpose are what the Administrator stated and Fyniq never fetched; InventoryEntry is the data inventory entry made
 // with it. The app cannot connect until an Owner adds it to the apps that may connect.
 type MCPThirdPartyApp struct {

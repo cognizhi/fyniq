@@ -1,4 +1,4 @@
--- Tasks made by integrations (PRD-001 FR-INT-24, rev 0.609; p2-api-third-parties task 2, design D5): what a ticketing system or another API client with the
+-- Tasks made by integrations (PRD-001 FR-INT-24, rev 0.610; p2-api-third-parties task 2, design D5): what a ticketing system or another API client with the
 -- scope fyniq.write.tasks asks a person to do. They are kept in a table of their own, not among the compliance tasks (AI-65): the statutory and agent tasks
 -- cannot be reached by a client by construction, and a client's role here is only the API's, limited by column. A client makes a task with a reference of its own
 -- (unique per client, so a retried create finds its task), updates only the tasks it made, and may finish one of them once: done or cancelled, for good. The
@@ -37,7 +37,7 @@ CREATE TABLE fyniq.integration_task (
 );
 CREATE INDEX integration_task_by_status ON fyniq.integration_task (organisation_id, status, id DESC);
 
--- What a task is, and who made it, never change; once finished it stays finished; each change is the next version, and only the API changes one (FYT01).
+-- What a task is, and who made it, never change; once finished it stays finished; each change is the next version, and only the API changes one (FYK01).
 -- +goose StatementBegin
 CREATE FUNCTION fyniq.integration_task_guard() RETURNS trigger
 LANGUAGE plpgsql
@@ -45,26 +45,26 @@ SET search_path = pg_catalog, fyniq, pg_temp
 AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    RAISE EXCEPTION 'A task made by an integration is kept: it is never deleted' USING ERRCODE = 'FYT01';
+    RAISE EXCEPTION 'A task made by an integration is kept: it is never deleted' USING ERRCODE = 'FYK01';
   END IF;
   IF TG_OP = 'INSERT' THEN
     IF NEW.status <> 'open' OR NEW.version <> 1 THEN
-      RAISE EXCEPTION 'A task made by an integration starts open, at version 1' USING ERRCODE = 'FYT01';
+      RAISE EXCEPTION 'A task made by an integration starts open, at version 1' USING ERRCODE = 'FYK01';
     END IF;
     RETURN NEW;
   END IF;
   IF (NEW.organisation_id, NEW.id, NEW.client_id, NEW.external_ref, NEW.created_by, NEW.created_at)
      IS DISTINCT FROM (OLD.organisation_id, OLD.id, OLD.client_id, OLD.external_ref, OLD.created_by, OLD.created_at) THEN
-    RAISE EXCEPTION 'What a task made by an integration is, and who made it, never changes' USING ERRCODE = 'FYT01';
+    RAISE EXCEPTION 'What a task made by an integration is, and who made it, never changes' USING ERRCODE = 'FYK01';
   END IF;
   IF OLD.status <> 'open' THEN
-    RAISE EXCEPTION 'A finished task made by an integration stays finished' USING ERRCODE = 'FYT01';
+    RAISE EXCEPTION 'A finished task made by an integration stays finished' USING ERRCODE = 'FYK01';
   END IF;
   IF NEW.version <> OLD.version + 1 THEN
-    RAISE EXCEPTION 'Each change of a task made by an integration is its next version' USING ERRCODE = 'FYT01';
+    RAISE EXCEPTION 'Each change of a task made by an integration is its next version' USING ERRCODE = 'FYK01';
   END IF;
   IF NOT pg_has_role(current_user, 'fyniq_api', 'MEMBER') THEN
-    RAISE EXCEPTION 'Only the API changes a task made by an integration' USING ERRCODE = 'FYT01';
+    RAISE EXCEPTION 'Only the API changes a task made by an integration' USING ERRCODE = 'FYK01';
   END IF;
   RETURN NEW;
 END
@@ -85,6 +85,6 @@ CREATE POLICY tenant_isolation ON fyniq.integration_task
   USING (organisation_id = fyniq.current_org()) WITH CHECK (organisation_id = fyniq.current_org());
 
 REVOKE ALL ON fyniq.integration_task FROM PUBLIC;
-GRANT SELECT ON fyniq.integration_task TO fyniq_api, fyniq_readonly;
+GRANT SELECT ON fyniq.integration_task TO fyniq_api, fyniq_worker, fyniq_readonly; -- the worker reads it for the full tenant export (FR-MIG-04)
 GRANT INSERT (client_id, external_ref, title, detail, due_on, link_url, created_by, created_at, updated_at) ON fyniq.integration_task TO fyniq_api;
 GRANT UPDATE (title, detail, due_on, link_url, status, closed_at, version, updated_at) ON fyniq.integration_task TO fyniq_api;

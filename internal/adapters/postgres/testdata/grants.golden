@@ -1393,6 +1393,7 @@ fyniq_worker    EXECUTE   installation_changes()
 fyniq_worker    EXECUTE   installation_connector_secrets()
 fyniq_worker    EXECUTE   installation_connectors()
 fyniq_worker    EXECUTE   installation_org()
+fyniq_worker    SELECT    integration_task
 fyniq_worker    SELECT    investor_update
 fyniq_worker    SELECT    investor_update_read
 fyniq_worker    SELECT    invoice_dispute
@@ -1430,6 +1431,7 @@ fyniq_worker    SELECT    mcp_call
 fyniq_worker    EXECUTE   mcp_clients_expire()
 fyniq_worker    EXECUTE   mcp_purge_calls()
 fyniq_worker    SELECT    mcp_seen
+fyniq_worker    SELECT    mcp_third_party_app
 fyniq_worker    SELECT    mcp_user_optin
 fyniq_worker    EXECUTE   member_activity()
 fyniq_worker    EXECUTE   member_emails()

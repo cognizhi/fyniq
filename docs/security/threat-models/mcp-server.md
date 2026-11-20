@@ -101,7 +101,7 @@ Residual: a person who is tricked into confirming it's you and signing their own
 page shows the platform's summary of the dry run and the app's rationale separately, as AI text; the proposal is small by catalogue
 (tier 1 means no money, no filing).
 
-## 7. Third-party apps registered by hand (AI-46; rev 0.610; the owner's decision of 21 Nov 2026)
+## 7. Third-party apps registered by hand (AI-46; rev 0.611; the owner's decision of 21 Nov 2026)
 
 An Administrator, stepped up, registers an AI app of another publisher (`POST /v1/connected-apps/third-party-apps`), once an Owner has turned on `features.mcp` and
 `mcp.third_party` with a second approver. The Client ID Metadata Document is not accepted: nothing the Administrator names is fetched.

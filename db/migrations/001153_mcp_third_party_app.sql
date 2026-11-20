@@ -1,4 +1,4 @@
--- Third-party AI apps registered by an Administrator (PRD-001 AI-46, rev 0.608; p2-api-third-parties task 5, design D6): the organisation's own record of each
+-- Third-party AI apps registered by an Administrator (PRD-001 AI-46, rev 0.611; p2-api-third-parties task 5, design D6): the organisation's own record of each
 -- AI app (an MCP client of another publisher) its Administrator registered by hand. The app itself is an agent-class public client with PKCE and the default read
 -- scope, recorded among the installation's registrations (mcp_client, AI-90) and unusable until an Owner adds it to the apps that may connect (mcp.clients, a dual
 -- controlled setting): this table adds what AI-46 asks for beyond that, who publishes it, what for, where it processes data, the redirect URIs an Administrator
@@ -73,7 +73,7 @@ CREATE POLICY tenant_isolation ON fyniq.mcp_third_party_app USING (organisation_
 
 REVOKE ALL ON FUNCTION fyniq.mcp_third_party_app_guard() FROM PUBLIC;
 REVOKE ALL ON fyniq.mcp_third_party_app FROM PUBLIC;
-GRANT SELECT ON fyniq.mcp_third_party_app TO fyniq_api, fyniq_readonly;
+GRANT SELECT ON fyniq.mcp_third_party_app TO fyniq_api, fyniq_worker, fyniq_readonly; -- the worker reads it for the full tenant export (FR-MIG-04)
 GRANT INSERT (id, client_id, name, publisher, publisher_url, redirect_uris, purpose, processing_location, outside_singapore, inventory_entry, registered_by, registered_at)
   ON fyniq.mcp_third_party_app TO fyniq_api;
 GRANT UPDATE (removed_at, removed_by) ON fyniq.mcp_third_party_app TO fyniq_api;

@@ -162,6 +162,7 @@ type API struct {
 	invoices     journal.Invoices
 	receipts     journal.CustomerReceipts
 	writeOffs    journal.WriteOffs
+	reliefClaims journal.ReliefClaims
 	payments     journal.BillPayments
 	bank         journal.BankTransactions
 	applications journal.CreditApplications
@@ -282,6 +283,7 @@ func Config(version string) huma.Config {
 		{Name: "Evidence", Description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."},
 		{Name: "Search", Description: "The global search: documents, contacts, accounts and items by reference, name, words or amount, in what the caller may see (FR-UX-02, SEC-34)."},
 		{Name: "Notifications", Description: "Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05)."},
+		{Name: "Tasks", Description: "Tasks API clients made for people to do (FR-INT-24): a ticketing system or another integration with the scope fyniq.write.tasks makes tasks of its own and updates only those. Never a compliance task, never a financial record, never the AI."},
 		{Name: "Connected apps", Description: "AI apps working for a person over MCP: the person's own opt-in, which is off until they choose, and the organisation's switch and allowlist (AI-35). Never reachable by an AI app or an integration: a person chooses (§9.6)."},
 		{Name: "Help", Description: "Each person's first-run tour state: the tour's only write (FR-UX-34, G4-104)."},
 		{Name: "Announcements", Description: "Banners under the header: those each person sees now, and the announcements the Owner and Administrator publish to their organisation (FR-NTF-03)."},
@@ -313,7 +315,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store, Clock: d.Clock},
 		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
-		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
+		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store}, reliefClaims: journal.ReliefClaims{Store: d.Store},
 		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
 		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, claims: journal.Claims{Store: d.Store}, reimbursements: journal.ClaimReimbursements{Store: d.Store}, advances: journal.CashAdvances{Store: d.Store}, preCosts: journal.PreCosts{Store: d.Store}, assets: journal.FixedAssets{Store: d.Store, Clock: d.Clock}, disposals: journal.AssetDisposals{Store: d.Store, Clock: d.Clock}, closing: closing.Service{Store: d.Store, Clock: d.Clock, More: checks.ForClose}}
 	a.downloadKey = d.DownloadKey
@@ -473,6 +475,8 @@ func New(mux humago.Mux, d Deps) *API {
 	registerGSTMonitor(a)
 	registerInvoiceNow(a)
 	registerTaxFilings(a)
+	registerReliefClaims(a)
+	registerTaxPapers(a)
 	registerCalendar(a)
 	registerForecasts(a)
 	registerBudgets(a)

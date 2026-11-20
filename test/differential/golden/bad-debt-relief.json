@@ -1,0 +1,349 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "bad-debt-relief",
+ "base_currency": "SGD",
+ "currencies": {
+  "SGD": 2,
+  "USD": 2
+ },
+ "as_of": "2026-06-30",
+ "settings": {
+  "accounts": {
+   "receivable": "1100",
+   "gst": "2200",
+   "deferred_revenue": "2400",
+   "fx": "7030",
+   "customer_deposits": "2410"
+  },
+  "money_accounts": {
+   "1010": "SGD",
+   "1021": "USD"
+  },
+  "gst": {
+   "registered_from": "2025-01-01",
+   "rates": [
+    {
+     "from": "2024-01-01",
+     "percent": "9"
+    }
+   ]
+  }
+ },
+ "accounts": [
+  {
+   "code": "1010",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1021",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1100",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2200",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2400",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2410",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4010",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6900",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7030",
+   "type": "expense",
+   "group": false,
+   "active": true
+  }
+ ],
+ "documents": [
+  {
+   "type": "invoice",
+   "id": "INV-0001",
+   "version": 1,
+   "date": "2026-03-05",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4010",
+     "amount": "1000.00",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "write_off",
+   "id": "WO-0001",
+   "version": 1,
+   "date": "2026-04-30",
+   "invoice": "INV-0001",
+   "amount": "1090.00",
+   "account": "6900"
+  },
+  {
+   "type": "bad_debt_relief",
+   "id": "BDR-0001",
+   "version": 1,
+   "date": "2026-05-31",
+   "write_off": "WO-0001"
+  },
+  {
+   "type": "invoice",
+   "id": "INV-0002",
+   "version": 1,
+   "date": "2026-03-05",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4010",
+     "amount": "1000.00",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "write_off",
+   "id": "WO-0002",
+   "version": 1,
+   "date": "2026-04-30",
+   "invoice": "INV-0002",
+   "amount": "545.00",
+   "account": "6900"
+  },
+  {
+   "type": "bad_debt_relief",
+   "id": "BDR-0002",
+   "version": 1,
+   "date": "2026-05-31",
+   "write_off": "WO-0002"
+  },
+  {
+   "type": "invoice",
+   "id": "INV-0003",
+   "version": 1,
+   "date": "2026-03-05",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4010",
+     "amount": "10.00",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "write_off",
+   "id": "WO-0003",
+   "version": 1,
+   "date": "2026-04-30",
+   "invoice": "INV-0003",
+   "amount": "10.00",
+   "account": "6900"
+  },
+  {
+   "type": "bad_debt_relief",
+   "id": "BDR-0003",
+   "version": 1,
+   "date": "2026-05-31",
+   "write_off": "WO-0003"
+  },
+  {
+   "type": "invoice",
+   "id": "INV-0004",
+   "version": 1,
+   "date": "2026-03-05",
+   "currency": "USD",
+   "lines": [
+    {
+     "account": "4010",
+     "amount": "100.00",
+     "gst_code": "SR"
+    }
+   ],
+   "fx_rate": "1.35",
+   "fx_rate_source": "document"
+  },
+  {
+   "type": "write_off",
+   "id": "WO-0004",
+   "version": 1,
+   "date": "2026-04-30",
+   "invoice": "INV-0004",
+   "amount": "54.50",
+   "account": "6900"
+  },
+  {
+   "type": "bad_debt_relief",
+   "id": "BDR-0004",
+   "version": 1,
+   "date": "2026-05-31",
+   "write_off": "WO-0004"
+  },
+  {
+   "type": "invoice",
+   "id": "INV-0005",
+   "version": 1,
+   "date": "2026-03-05",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4010",
+     "amount": "1.00",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "write_off",
+   "id": "WO-0005",
+   "version": 1,
+   "date": "2026-04-30",
+   "invoice": "INV-0005",
+   "amount": "0.30",
+   "account": "6900"
+  },
+  {
+   "type": "write_off",
+   "id": "WO-0006",
+   "version": 1,
+   "date": "2026-04-30",
+   "invoice": "INV-0005",
+   "amount": "0.30",
+   "account": "6900"
+  },
+  {
+   "type": "write_off",
+   "id": "WO-0007",
+   "version": 1,
+   "date": "2026-04-30",
+   "invoice": "INV-0005",
+   "amount": "0.49",
+   "account": "6900"
+  },
+  {
+   "type": "bad_debt_relief",
+   "id": "BDR-0005",
+   "version": 1,
+   "date": "2026-05-31",
+   "write_off": "WO-0005"
+  },
+  {
+   "type": "bad_debt_relief",
+   "id": "BDR-0006",
+   "version": 1,
+   "date": "2026-05-31",
+   "write_off": "WO-0006"
+  },
+  {
+   "type": "bad_debt_relief",
+   "id": "BDR-0007",
+   "version": 1,
+   "date": "2026-05-31",
+   "write_off": "WO-0007"
+  },
+  {
+   "type": "bad_debt_relief",
+   "id": "BDR-0008",
+   "version": 1,
+   "date": "2026-05-31",
+   "write_off": "WO-0001"
+  },
+  {
+   "type": "invoice",
+   "id": "INV-0006",
+   "version": 1,
+   "date": "2026-03-05",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4010",
+     "amount": "1000.00",
+     "gst_code": "ZR"
+    }
+   ]
+  },
+  {
+   "type": "write_off",
+   "id": "WO-0008",
+   "version": 1,
+   "date": "2026-04-30",
+   "invoice": "INV-0006",
+   "amount": "1000.00",
+   "account": "6900"
+  },
+  {
+   "type": "bad_debt_relief",
+   "id": "BDR-0009",
+   "version": 1,
+   "date": "2026-05-31",
+   "write_off": "WO-0008"
+  },
+  {
+   "type": "invoice",
+   "id": "INV-0007",
+   "version": 1,
+   "date": "2026-03-05",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4010",
+     "amount": "100.00",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "write_off",
+   "id": "WO-0009",
+   "version": 1,
+   "date": "2026-04-30",
+   "invoice": "INV-0007",
+   "amount": "0.01",
+   "account": "6900"
+  },
+  {
+   "type": "bad_debt_relief",
+   "id": "BDR-0010",
+   "version": 1,
+   "date": "2026-05-31",
+   "write_off": "WO-0009"
+  },
+  {
+   "type": "bad_debt_relief",
+   "id": "BDR-0011",
+   "version": 1,
+   "date": "2026-05-31",
+   "write_off": "WO-9999"
+  }
+ ],
+ "reversals": []
+}

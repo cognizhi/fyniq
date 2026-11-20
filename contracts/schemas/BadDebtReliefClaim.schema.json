@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "claim_by": {
+      "description": "The last day to claim.",
+      "examples": [
+        "2031-01-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "date": {
+      "description": "The day it was claimed.",
+      "examples": [
+        "2027-03-10"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "eligible_from": {
+      "description": "The first day a claim could be made.",
+      "examples": [
+        "2027-01-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "f5_period_end": {
+      "description": "The last day of the F5 period it goes in.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "gst": {
+      "$ref": "Money.schema.json",
+      "description": "The GST claimed, in the base currency: RND-BDR of the invoice's output tax in the part written off [accountant to confirm]."
+    },
+    "id": {
+      "description": "The claim's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8b01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "invoice_id": {
+      "description": "Its invoice.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "note": {
+      "description": "The note it was made with.",
+      "examples": [
+        "Three reminders and a letter of demand"
+      ],
+      "type": "string"
+    },
+    "pack": {
+      "description": "The sg-tax-filings version whose dates allowed it.",
+      "examples": [
+        "sg-tax-filings@2026.1"
+      ],
+      "type": "string"
+    },
+    "posted_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who claimed it."
+    },
+    "status": {
+      "description": "posted, or reversed by a void.",
+      "enum": [
+        "posted",
+        "reversed"
+      ],
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of its content (always 1: a claim is never edited); with the status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "write_off_id": {
+      "description": "The write-off claimed for.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "written_off": {
+      "$ref": "Money.schema.json",
+      "description": "What was written off, in the invoice's currency."
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "version",
+    "write_off_id",
+    "invoice_id",
+    "date",
+    "written_off",
+    "gst",
+    "pack",
+    "eligible_from",
+    "claim_by"
+  ],
+  "title": "BadDebtReliefClaim",
+  "type": "object"
+}

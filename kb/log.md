@@ -964,6 +964,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | docs/user-guide/nemura/verify-letter.md -> nemura.verify-letter (the file look-up, the disclosure link, the withdraw button)
 
+## [2026-11-20] compile | sales.bad-debts: how GST bad debt relief is claimed, posted and voided (FR-AR-11)
+
 ## [2026-11-20] compile | docs/user-guide/board-pack.md → reports.board-pack (the PDF kept as evidence on another person's approval, FR-RPT-06)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/grievances.md -> nemura.grievances (new: the confidential grievance channel)
@@ -975,3 +977,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.onboarding: onboarding plans (NM-ONB-01)
 
 ## [2026-11-20] compile | docs/user-guide/organisation-settings.md → settings.organisation: third-party AI apps registered by hand, the setting mcp.third_party (AI-46)
+
+## [2026-11-20] compile | nemura.hiring: requisitions and job posts (NM-REC-01 to 03)
+
+## [2026-11-20] compile | compliance.filing-packs: keep and record the tax working paper with its evidence (FR-TAX-06)

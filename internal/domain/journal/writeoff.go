@@ -38,6 +38,12 @@ type PostedWriteOff struct {
 	Allocation storage.Allocation
 }
 
+// writeOffRead is the invoice a write-off document names.
+func writeOffRead(doc storage.Document) (uuid.UUID, error) {
+	d, err := writeoff.Read(doc)
+	return d.InvoiceID, err
+}
+
 func isWriteOff(doc storage.Document) error {
 	if !writeoff.IsWriteOff(doc) {
 		return &writeoff.Error{Code: writeoff.CodeNotWriteOff, Message: fmt.Sprintf("document %s is a %s, not a write-off", doc.ID, doc.Type), Fix: "Open it with its own module"}

@@ -60,6 +60,7 @@ OPERATIONS = {
     "getAccountsTemplate": {"method": "GET", "path": "/v1/imports/accounts/template", "summary": "Get the template for accounts of the chart", "path_params": [], "query": ["format"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getAssetDisposal": {"method": "GET", "path": "/v1/asset-disposals/{disposal_id}", "summary": "Get a disposal of a fixed asset", "path_params": ["disposal_id"], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBadDebtRelief": {"method": "GET", "path": "/v1/tax/bad-debt-relief", "summary": "The GST bad debt relief queue", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.compliance"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
+    "getBadDebtReliefClaim": {"method": "GET", "path": "/v1/tax/bad-debt-relief/claims/{claim_id}", "summary": "Get a claim of GST bad debt relief", "path_params": ["claim_id"], "query": [], "body": False, "scopes": ["fyniq.read.compliance"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBankLine": {"method": "GET", "path": "/v1/bank-lines/{line_id}", "summary": "Get a bank line", "path_params": ["line_id"], "query": [], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBankReconciliation": {"method": "GET", "path": "/v1/money-accounts/{money_account_id}/reconciliations/{period_id}", "summary": "Get a money account's reconciliation for a period", "path_params": ["money_account_id", "period_id"], "query": [], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBankRule": {"method": "GET", "path": "/v1/bank-rules/{rule_id}", "summary": "Get a bank rule", "path_params": ["rule_id"], "query": [], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
@@ -162,6 +163,8 @@ OPERATIONS = {
     "getStatutoryValues": {"method": "GET", "path": "/v1/statutory-values", "summary": "Get the statutory values in force on a day", "path_params": [], "query": ["name", "on", "pack"], "body": False, "scopes": ["fyniq.read.compliance"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getSubscriptionContract": {"method": "GET", "path": "/v1/subscription-contracts/{contract_id}", "summary": "Read a subscription contract with its amendments and schedule", "path_params": ["contract_id"], "query": [], "body": False, "scopes": ["fyniq.read.sales", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getSupplierRefund": {"method": "GET", "path": "/v1/supplier-refunds/{refund_id}", "summary": "Get a refund from a supplier", "path_params": ["refund_id"], "query": [], "body": False, "scopes": ["fyniq.read.purchases", "fyniq.write.purchases"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
+    "getTaxWorkingPaper": {"method": "GET", "path": "/v1/tax/working-papers/{paper_id}", "summary": "Get a stored tax working paper", "path_params": ["paper_id"], "query": [], "body": False, "scopes": ["fyniq.read.compliance"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
+    "getTaxWorkingPaperEvidence": {"method": "GET", "path": "/v1/tax/working-papers/{paper_id}/evidence/{evidence_id}", "summary": "Get a tax working paper's file", "path_params": ["paper_id", "evidence_id"], "query": [], "body": False, "scopes": ["fyniq.read.compliance"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getTopExpenses": {"method": "GET", "path": "/v1/reports/top-expenses", "summary": "Get the top expenses", "path_params": [], "query": ["as_at_revision", "from", "to"], "body": False, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getWriteOff": {"method": "GET", "path": "/v1/write-offs/{write_off_id}", "summary": "Get a write-off", "path_params": ["write_off_id"], "query": [], "body": False, "scopes": ["fyniq.read.sales", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getYearEnd": {"method": "GET", "path": "/v1/periods/{period_id}/year-end", "summary": "Get the year end of a period's financial year", "path_params": ["period_id"], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
@@ -245,6 +248,8 @@ OPERATIONS = {
     "listStatutoryPacks": {"method": "GET", "path": "/v1/statutory-packs", "summary": "List the statutory pack versions", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.compliance"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listSubscriptionContractEvidence": {"method": "GET", "path": "/v1/subscription-contracts/{contract_id}/evidence", "summary": "List a subscription contract's files", "path_params": ["contract_id"], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.sales", "fyniq.write.sales"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listSubscriptionContracts": {"method": "GET", "path": "/v1/subscription-contracts", "summary": "List subscription contracts", "path_params": [], "query": ["contact_id", "cursor", "page_size"], "body": False, "scopes": ["fyniq.read.sales", "fyniq.write.sales"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
+    "listTaxWorkingPaperEvidence": {"method": "GET", "path": "/v1/tax/working-papers/{paper_id}/evidence", "summary": "List a tax working paper's files", "path_params": ["paper_id"], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.compliance"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
+    "listTaxWorkingPapers": {"method": "GET", "path": "/v1/tax/working-papers", "summary": "List the stored tax working papers", "path_params": [], "query": ["cursor", "financial_year_end", "page_size"], "body": False, "scopes": ["fyniq.read.compliance"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listUnregisteredAssetLines": {"method": "GET", "path": "/v1/fixed-assets/unregistered", "summary": "List purchases not in the register yet", "path_params": [], "query": ["cursor", "document_id", "page_size"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listWaitingReversals": {"method": "GET", "path": "/v1/journals/waiting-reversals", "summary": "List the automatic reversals that wait", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listWithholdingDecisions": {"method": "GET", "path": "/v1/contacts/{contact_id}/withholding-decisions", "summary": "List a supplier's withholding decisions", "path_params": ["contact_id"], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.purchases", "fyniq.write.purchases"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
@@ -581,6 +586,10 @@ class OperationsMixin:
     def get_bad_debt_relief(self, **options):
         """The GST bad debt relief queue (GET /v1/tax/bad-debt-relief; scopes fyniq.read.compliance)."""
         return self.call("getBadDebtRelief", [], None, **options)
+
+    def get_bad_debt_relief_claim(self, claim_id, **options):
+        """Get a claim of GST bad debt relief (GET /v1/tax/bad-debt-relief/claims/{claim_id}; scopes fyniq.read.compliance)."""
+        return self.call("getBadDebtReliefClaim", [claim_id], None, **options)
 
     def get_bank_line(self, line_id, **options):
         """Get a bank line (GET /v1/bank-lines/{line_id}; scopes fyniq.read.banking, fyniq.write.banking)."""
@@ -990,6 +999,14 @@ class OperationsMixin:
         """Get a refund from a supplier (GET /v1/supplier-refunds/{refund_id}; scopes fyniq.read.purchases, fyniq.write.purchases)."""
         return self.call("getSupplierRefund", [refund_id], None, **options)
 
+    def get_tax_working_paper(self, paper_id, **options):
+        """Get a stored tax working paper (GET /v1/tax/working-papers/{paper_id}; scopes fyniq.read.compliance)."""
+        return self.call("getTaxWorkingPaper", [paper_id], None, **options)
+
+    def get_tax_working_paper_evidence(self, paper_id, evidence_id, **options):
+        """Get a tax working paper's file (GET /v1/tax/working-papers/{paper_id}/evidence/{evidence_id}; scopes fyniq.read.compliance)."""
+        return self.call("getTaxWorkingPaperEvidence", [paper_id, evidence_id], None, **options)
+
     def get_top_expenses(self, **options):
         """Get the top expenses (GET /v1/reports/top-expenses; scopes fyniq.read.reports)."""
         return self.call("getTopExpenses", [], None, **options)
@@ -1321,6 +1338,14 @@ class OperationsMixin:
     def list_subscription_contracts(self, **options):
         """List subscription contracts (GET /v1/subscription-contracts; scopes fyniq.read.sales, fyniq.write.sales)."""
         return self.call("listSubscriptionContracts", [], None, **options)
+
+    def list_tax_working_paper_evidence(self, paper_id, **options):
+        """List a tax working paper's files (GET /v1/tax/working-papers/{paper_id}/evidence; scopes fyniq.read.compliance)."""
+        return self.call("listTaxWorkingPaperEvidence", [paper_id], None, **options)
+
+    def list_tax_working_papers(self, **options):
+        """List the stored tax working papers (GET /v1/tax/working-papers; scopes fyniq.read.compliance)."""
+        return self.call("listTaxWorkingPapers", [], None, **options)
 
     def list_unregistered_asset_lines(self, **options):
         """List purchases not in the register yet (GET /v1/fixed-assets/unregistered; scopes fyniq.read.accounting, fyniq.write.accounting)."""

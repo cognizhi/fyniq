@@ -319,6 +319,17 @@ def rnd_deposit(left_base: Decimal, used: Decimal, left: Decimal, minor_units: i
     return round_quotient(EXACT.multiply(left_base, used), left, minor_units)
 
 
+def rnd_bdr(output: Decimal, owed: Decimal, written_before: Decimal, written: Decimal, claimed_before: Decimal, minor_units: int) -> Decimal:
+    """``RND-BDR`` (§10.4, rev 0.609): the output tax of an invoice that a write-off of ``written`` of the ``owed`` brings into GST bad debt
+    relief = round(output × written ÷ owed), half away from zero, at most what is left of the output tax after the earlier claims
+    (``claimed_before``); a write-off that completes the debt (the earlier ``written_before`` and this one are all that was owed) takes all
+    that is left."""
+    left = EXACT.subtract(output, claimed_before)
+    if EXACT.add(written_before, written) == owed:
+        return left
+    return min(round_quotient(EXACT.multiply(output, written), owed, minor_units), left)
+
+
 def rnd_rate(paid_base: Decimal, amount: Decimal) -> Decimal:
     """``RND-RATE`` (§10.4) of the rate a base-currency payment implies: round(paid ÷ amount, 10)."""
     return round_quotient(paid_base, amount, RATE_DECIMALS)

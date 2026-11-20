@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// The states of a task made by an integration (FR-INT-24, rev 0.609): open, then finished for good.
+// The states of a task made by an integration (FR-INT-24, rev 0.610): open, then finished for good.
 const (
 	IntegrationTaskOpen      = "open"
 	IntegrationTaskDone      = "done"

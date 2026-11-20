@@ -18,7 +18,7 @@ func (f founders) taskClient(client, user string, class string, scopes ...string
 		Roles: []authz.Role{authz.Administrator}, Scopes: scopes, Scoped: true})
 }
 
-// FR-INT-24 (rev 0.609): an integration client with fyniq.write.tasks makes tasks of its own and updates only those, finishing one once; a retried create finds the task;
+// FR-INT-24 (rev 0.610): an integration client with fyniq.write.tasks makes tasks of its own and updates only those, finishing one once; a retried create finds the task;
 // another client sees and changes nothing of it; a person who may view the row reads every client's.
 // req: FR-INT-24
 // asvs: V4.1.1, V4.2.1
@@ -80,7 +80,7 @@ func TestAnIntegrationClientMakesAndUpdatesItsOwnTasks(t *testing.T) {
 	}
 }
 
-// The attack tests of FR-INT-24 (rev 0.609): the narrow scope is the only way in, a compliance task is out of reach however it is asked, and no person in the browser, agent,
+// The attack tests of FR-INT-24 (rev 0.610): the narrow scope is the only way in, a compliance task is out of reach however it is asked, and no person in the browser, agent,
 // the AI or the link's client makes or edits these tasks.
 // req: FR-INT-24
 // req: FR-INT-02
