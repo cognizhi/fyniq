@@ -8,6 +8,7 @@ import "./app.css";
 import { startAppearance } from "./appearance";
 import { installClipboard } from "./format/amount";
 import { installFreshness } from "./freshness";
+import { installSignOutCleanup, registerServiceWorker } from "./pwa/register";
 import { queryClient, router } from "./router";
 import { installFocusClear } from "./shell/focusClear";
 
@@ -15,6 +16,8 @@ startAppearance();
 installClipboard();
 installFreshness(queryClient);
 installFocusClear();
+installSignOutCleanup();
+registerServiceWorker();
 
 const root = document.getElementById("root");
 if (!root) throw new Error("index.html has no #root element");
