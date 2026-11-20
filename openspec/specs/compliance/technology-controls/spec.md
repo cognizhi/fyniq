@@ -652,3 +652,16 @@ Source: PRD-001 §F.9
 #### Scenario: Framework mapping
 - **WHEN** the control is listed in the control registry
 - **THEN** it is mapped to SOC2 PI1 and ISO 5.36
+
+### Requirement: CTL-CHG-12 Independent penetration test and findings
+An independent penetration test SHALL have been done within the last 12 months, before the first external customer is onboarded, with each Critical or High finding fixed and retested within its due date (SEC-25). The control is checked quarterly and on each assessment, with the register and the report's SHA-256 kept as evidence.
+
+Source: PRD-001 §F.4
+
+#### Scenario: Overdue, failing and not assessed
+- **WHEN** the register of security assessments is read
+- **THEN** the control is overdue 12 months after the last independent assessment ended, fails while a Critical or High finding is past its due date, and is not assessed while none is recorded
+
+#### Scenario: Framework mapping
+- **WHEN** the control is listed in the control registry
+- **THEN** it is mapped to ISO 8.8 and 8.29, SOC2 CC4.1 and CC7.1, and CT

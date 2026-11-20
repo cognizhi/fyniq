@@ -164,12 +164,16 @@ type Deps struct {
 	LinkOps LinkOps
 	// Erasure is the erasure of a former employee's personal data (NM-SEC-08); nil: the deployment has none.
 	Erasure ErasureOps
+	// DeletionReports is the reports of records due for deletion and their review (NM-SEC-05); nil: the deployment has none.
+	DeletionReports DeletionReports
 	// Performance is goals and KPIs (NM-PRF-01, NM-PRF-02); nil: the deployment has none.
 	Performance Performance
 	// Hiring is requisitions and job posts (NM-REC-01 to NM-REC-03); nil: the deployment has none.
 	Hiring Hiring
 	// Careers is the public careers page and its settings (NM-REC-02); nil: the deployment has none.
 	Careers Careers
+	// Pipeline is the candidates, interview kits and their consent (NM-REC-04, NM-REC-05); nil: the deployment has none.
+	Pipeline Pipeline
 	// Plans is onboarding plans (NM-ONB-01); nil: the deployment has none.
 	Plans Plans
 	// Grievances is the confidential grievance channel (NM-SEC-06); nil: the deployment has none.
@@ -217,6 +221,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerOnboarding()
 	a.registerPlans()
 	a.registerHiring()
+	a.registerDeletionReports()
 	a.registerCareers()
 	a.registerPerformance()
 	a.registerPayroll()

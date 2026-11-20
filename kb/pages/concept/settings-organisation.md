@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, InvoiceNow, cash buffer, numbering, features, AI, terms, banking, claims, thresholds, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:60fb4ca321ed09be14e60712bc7c88259bfc15831003b6533a577982acb9f79c
+  - docs/user-guide/organisation-settings.md sha256:d72de360943ea788a1976c23f0a4fead87cb67c382c609ac817b4995cabe58c0
 data_class: general
 taint: trusted
 status: draft
@@ -174,6 +174,14 @@ The calendar itself: [[compliance.calendar]].
 - **Webhooks and events** is off until an Owner turns it on with a second approver; switching it off takes effect at once and stops every delivery. See [[settings.webhooks]].
 
 (src: docs/user-guide/organisation-settings.md#features)
+
+## Approval reminders
+
+- **Remind approvers every** (24 hours recommended, 1 to 72) and **Escalate a waiting approval after** (72 hours recommended, 2 to 168) time the reminders of a waiting approval.
+- A reminder goes to those who may sign its current step, up to three times; the escalation tells the Owners and the person who asked and ends the reminders. Neither changes who may sign or when it expires ([[approvals.decide]]).
+- Either can be changed without a second approver.
+
+(src: docs/user-guide/organisation-settings.md#approval-reminders)
 
 ## Motion
 

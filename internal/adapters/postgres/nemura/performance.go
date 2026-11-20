@@ -432,6 +432,31 @@ func GoalsOfPerson(ctx context.Context, tx pgx.Tx, member uuid.UUID, held []auth
 	return goals, kpis, err
 }
 
+// rollupGoals gives each goal in the sets its aligned goals among those the sets hold, which are the goals the reader may read, and the roll-up of their progress with its own: a private personal goal never
+// shows through a number it was not meant to (NM-PRF-01).
+func rollupGoals(sets ...[]api.Goal) {
+	byParent := map[string][]int{}
+	alignedTo := map[string][]api.AlignedGoal{}
+	for _, set := range sets {
+		for _, g := range set {
+			if g.ParentID != "" {
+				byParent[g.ParentID] = append(byParent[g.ParentID], g.Progress)
+				alignedTo[g.ParentID] = append(alignedTo[g.ParentID], api.AlignedGoal{ID: g.ID, Title: g.Title, Person: g.Person, Progress: g.Progress})
+			}
+		}
+	}
+	for _, set := range sets {
+		for i := range set {
+			if kids := byParent[set[i].ID]; len(kids) > 0 {
+				set[i].Aligned = alignedTo[set[i].ID]
+				if p, ok := performance.Rollup(set[i].Progress, len(set[i].Measures) > 0, kids); ok {
+					set[i].Rollup = &p
+				}
+			}
+		}
+	}
+}
+
 // MyGoals reads the company's and the teams' goals and the caller's own goals and KPIs.
 func MyGoals(ctx context.Context, tx pgx.Tx, member uuid.UUID, today time.Time) (company, team, mine []api.Goal, kpis []api.Measure, err error) {
 	if company, err = goalViews(ctx, tx, `g.scope = 'company'`, nil, today); err != nil {
@@ -448,6 +473,7 @@ func MyGoals(ctx context.Context, tx pgx.Tx, member uuid.UUID, today time.Time) 
 		return
 	}
 	kpis, err = kpiViews(ctx, tx, p, today)
+	rollupGoals(company, team, mine)
 	return
 }
 

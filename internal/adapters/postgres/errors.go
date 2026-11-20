@@ -90,13 +90,16 @@ var fyCodes = map[string]string{
 	"FYP32": storage.CodeInvalid,
 	"FYP33": storage.CodeInvalid,
 	"FYP34": storage.CodeInvalid,
-	"FYT01": storage.CodeInvalid, // a claim of GST bad debt relief for a write-off that is not posted or is claimed already (001120)
-	"FYT02": storage.CodeInvalid, // a write-off with a live claim of relief reversed (001120)
-	"FYW01": storage.CodeInvalid, // a webhook endpoint changed beyond its rules, or a webhook record deleted (001151)
-	"FYW02": storage.CodeInvalid, // a webhook delivery changed beyond its rules (001151)
-	"FYM01": storage.CodeInvalid, // a third-party AI app changed beyond noting its removal, or deleted (001153)
-	"FYK01": storage.CodeInvalid, // a task made by an integration changed beyond its rules, or deleted (001152)
-	"FYW03": storage.CodeInvalid, // a recorded webhook attempt changed or deleted (001151)
+	"FYT01": storage.CodeInvalid,  // a claim of GST bad debt relief for a write-off that is not posted or is claimed already (001120)
+	"FYT02": storage.CodeInvalid,  // a write-off with a live claim of relief reversed (001120)
+	"FYW01": storage.CodeInvalid,  // a webhook endpoint changed beyond its rules, or a webhook record deleted (001151)
+	"FYW02": storage.CodeInvalid,  // a webhook delivery changed beyond its rules (001151)
+	"FYM01": storage.CodeInvalid,  // a third-party AI app changed beyond noting its removal, or deleted (001153)
+	"FYD01": storage.CodeApproval, // a delegation of approval authority changed beyond being ended, or deleted (001200)
+	"FYD02": storage.CodeApproval, // a signature on behalf of someone without a live delegation, or twice for one person (001200)
+	"FYD03": storage.CodeApproval, // a recorded approval reminder changed or deleted (001200)
+	"FYK01": storage.CodeInvalid,  // a task made by an integration changed beyond its rules, or deleted (001152)
+	"FYW03": storage.CodeInvalid,  // a recorded webhook attempt changed or deleted (001151)
 	"FY186": storage.CodeVersion,
 	"FY187": storage.CodeVersion,
 	"FY188": storage.CodeVersion,

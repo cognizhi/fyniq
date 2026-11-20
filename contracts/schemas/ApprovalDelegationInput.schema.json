@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "delegate": {
+      "description": "The member who may sign for you: an active member who holds an approval right themselves. A delegation lends no right.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ends_on": {
+      "description": "The last day, at most 90 days after the first.",
+      "examples": [
+        "2099-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why, such as the leave it covers.",
+      "examples": [
+        "Annual leave"
+      ],
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    },
+    "starts_on": {
+      "description": "The first day, in Singapore time.",
+      "examples": [
+        "2099-03-10"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "delegate",
+    "starts_on",
+    "ends_on",
+    "reason"
+  ],
+  "title": "ApprovalDelegationInput",
+  "type": "object"
+}

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, ClipboardCheck, ClockAlert, Inbox as InboxIcon, Keyboard, ListChecks, Stamp } from "lucide-react";
+import { ChevronRight, ClipboardCheck, ClockAlert, Inbox as InboxIcon, Keyboard, ListChecks, Stamp, UserRoundCheck } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 import { api } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
@@ -254,6 +254,16 @@ export function Inbox() {
           </Link>
         </section>
       )}
+      <Link className="fy-list__item" to="/delegations">
+        <span className="fy-list__icon">
+          <Icon of={UserRoundCheck} size={20} />
+        </span>
+        <span className="fy-list__main">
+          <span className="fy-list__title whitespace-normal">Away? Delegate your approvals</span>
+          <span className="fy-list__meta whitespace-normal">Another member who may approve signs for you, for the days you choose.</span>
+        </span>
+        <Icon of={ChevronRight} />
+      </Link>
       {all && decided.length > 0 && <Group id="decided" title="Decided" items={decided} mine={mine} empty="" />}
       <div>
         <button type="button" className="fy-btn fy-btn--ghost fy-btn--sm" onClick={() => setAll(!all)} aria-pressed={all}>

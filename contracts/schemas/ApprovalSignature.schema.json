@@ -25,6 +25,21 @@
       ],
       "type": "string"
     },
+    "on_behalf_of": {
+      "description": "For a signature by a delegate: the delegator whose step it signed under a live delegation (FR-APR-06). The signer holds the approval right themselves and signed with their own step-up.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "on_behalf_of_name": {
+      "description": "The delegator's name.",
+      "examples": [
+        "Ah Kow Lim"
+      ],
+      "type": "string"
+    },
     "passkey_id": {
       "description": "For a passkey signature: the passkey that signed the envelope's hash; its assertion is kept so it can be verified again (FR-APR-03).",
       "examples": [

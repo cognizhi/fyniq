@@ -84,3 +84,20 @@ func TestAMeasureIsOnTrackWhenItKeepsUpWithThePeriod(t *testing.T) {
 		}
 	}
 }
+
+// The roll-up is the whole-percentage average, rounded down, of a goal's own key results and its aligned goals; a goal with neither has none (NM-PRF-01).
+// req: NM-PRF-01
+func TestARollupAveragesTheOwnKeyResultsAndTheAlignedGoalsRoundedDown(t *testing.T) {
+	for _, tc := range []struct {
+		own     int
+		has     bool
+		aligned []int
+		want    int
+		ok      bool
+	}{{60, true, []int{40}, 50, true}, {0, false, []int{40, 41}, 40, true}, {66, true, []int{66, 67}, 66, true}, {0, false, nil, 0, false}, {100, true, nil, 100, true}} {
+		got, ok := performance.Rollup(tc.own, tc.has, tc.aligned)
+		if got != tc.want || ok != tc.ok {
+			t.Errorf("%+v: %d %v", tc, got, ok)
+		}
+	}
+}

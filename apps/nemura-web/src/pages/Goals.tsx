@@ -60,6 +60,12 @@ export function Goals({ roles }: { roles: readonly string[] }) {
       <h3 className="fy-h3">{g.title}</h3>
       <span className="fy-secondary">{t("goals.line", { progress: String(g.progress), due: g.due_on, state: t(`goals.state.${g.state}`) })}{g.team ? ` ${g.team}` : ""}</span>
       <ul className="fy-stack fy-stack--2">{g.measures.map((m) => measureLine(m, own && g.state === "open"))}</ul>
+      {g.rollup_progress !== undefined && g.aligned && (
+        <div className="fy-stack fy-stack--1">
+          <span className="fy-secondary">{t("goals.rollup", { pct: String(g.rollup_progress) })}</span>
+          <ul>{g.aligned.map((a) => <li key={a.id}>{t("goals.alignedGoal", { title: a.title, person: a.person ? ` (${a.person})` : "", pct: String(a.progress) })}</li>)}</ul>
+        </div>
+      )}
       {own && g.state === "open" && <button className="fy-btn fy-btn--secondary fy-btn--sm" type="button" onClick={async () => done((await api.POST("/v1/goals/{id}/closing", { params: { path: { id: g.id } }, body: { state: "done" } })).error, t("goals.closed"))}>{t("goals.markDone", { title: g.title })}</button>}
     </li>
   );

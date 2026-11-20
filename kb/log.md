@@ -996,8 +996,18 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | nemura payroll approval: the IR8A file of a year of more than 2,000 people is made in parts (NM-PAY-14)
 
+## [2026-11-20] compile | docs/user-guide/approvals.md, organisation-settings.md → approvals.decide, settings.organisation (delegation of approval authority, approval by email link, reminders and escalation, FR-APR-06/07/08, p2-mobile-approvals-automation)
+
 ## [2026-11-20] compile | nemura.hiring: new advert after a change, the 3-month rule and the careers page (NM-REC-02)
 
 ## [2026-11-20] compile | settings.sandbox: the sandbox organisation (FR-INT-18)
 
 ## [2026-11-20] compile | settings.connected-apps, settings.integrations: apps from other publishers and tasks from other systems
+
+## [2026-11-20] compile | nemura.hiring: candidates, the board, interview kits and retention (NM-REC-04, NM-REC-05)
+
+## [2026-11-20] compile | nemura.hiring: the hire, the person record and the pass application (NM-REC-06)
+
+## [2026-11-20] compile | nemura.erasure: the review of records due for deletion (NM-SEC-05)
+
+## [2026-11-20] compile | nemura.goals: a person's goals for the manager and the people team, and the roll-up (NM-PRF-01)

@@ -1,0 +1,17 @@
+# CTL-AUD-07: PRD-001 Appendix F (F.2). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AUD-07
+section: "F.2"
+control: "(rev 0.617) A legal hold keeps what it covers: the purge after retention skips held records, years and contacts, and the database refuses to delete a held audit event or ledger entry (AUD-11)"
+mapping: "ISO 5.33, 5.34; PDPA retention limitation; SOC2 C1.2"
+automated_check: "CI attack tests as the purge's own role; the nightly storage-hold reconcile"
+frequency: "CI, N"
+evidence: "Test report; reconcile log"
+owner: Owner
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "p2-security-certification"
+  - frequency: N
+    status: planned
+    arrives: "p2-security-certification"

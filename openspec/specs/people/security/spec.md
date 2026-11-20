@@ -10,6 +10,10 @@ Nemura SHALL apply PRD-001's security, audit and tenancy requirements with its o
 
 Source: PRD-002 §20 · Priority M · Phase P1
 
+#### Scenario: A person reviews the report (rev 0.73)
+- **WHEN** the nightly job has listed records due for deletion and an Owner or an HR administrator reviews the report
+- **THEN** the report shows the kind, how many are due and held and the review date, names no person, is reviewed once, and only then does the next nightly job delete what is still due
+
 #### Scenario: Tenancy
 - **WHEN** any Nemura table is created
 - **THEN** it has `organisation_id` and forced row-level security (PRD-001 §11.4)

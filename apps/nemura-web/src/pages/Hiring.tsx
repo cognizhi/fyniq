@@ -4,6 +4,7 @@ import type { components } from "../api/schema";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
 import { Shell, admin, team } from "./Shell";
+import { Pipeline } from "./Pipeline";
 
 type Requisition = components["schemas"]["Requisition"];
 type Finding = components["schemas"]["WordingFinding"];
@@ -151,6 +152,7 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
                           <button className="fy-btn fy-btn--secondary" type="submit">{t("hiring.recordExemption")}</button>
                         </form>
                       )}
+                      {r.state === "approved" && <Pipeline requisition={r.id} canWrite={recruiter} canHire={owner || roles.includes("hr_admin")} />}
                       {post(r)?.state === "published" && <button className="fy-btn fy-btn--secondary" type="button" onClick={async () => done((await api.POST("/v1/requisitions/{id}/job-post/closing", { params: { path: { id: r.id } } })).error, t("hiring.closed"))}>{t("hiring.close")}</button>}
                     </div>
                   )}

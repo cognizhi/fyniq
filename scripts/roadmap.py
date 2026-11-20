@@ -191,7 +191,7 @@ LATER = {
     "p2-api-third-parties": "FR-INT-04 FR-INT-12 FR-INT-15 FR-INT-18 AI-46 FR-INT-23 FR-INT-24 FR-NTF-04",
     "p2-mobile-approvals-automation": "FR-UX-16 FR-APR-06 FR-APR-07 FR-APR-08 FR-AUT-03 FR-AUT-04 FR-GL-09 FR-AP-10 FR-AP-21 FR-ADM-05 FR-UX-28 FR-UX-35 FR-TPL-06 FR-CS-07 CMP-04",
     "p2-ai-expansion": "AI-33 AI-59",
-    "p2-security-certification": "SEC-25 AUD-11",
+    "p2-security-certification": "SEC-25 AUD-11 CMP-08",
     "p2-nemura-people": "NM-REC-01 NM-REC-02 NM-REC-03 NM-REC-04 NM-REC-05 NM-REC-06 NM-PRF-01 NM-PRF-02 NM-PRF-03 NM-PRF-04 NM-PRF-05 NM-ONB-01 NM-LTR-05 NM-SEC-06 NM-EXT-04 NM-EXT-05 NM-AI-05 people.draft_job_post people.draft_interview_kit people.draft_review_summary",
     "p3-multi-entity": "FR-ENT-01 FR-ENT-02 FR-ENT-03 FR-GL-13 FR-RPT-12 FR-UX-18",
     "p3-saas-platform": "NFR-SCALE-02 FR-INT-05 FR-INT-19 FR-INT-28 AI-47 FR-NTF-06 FR-KPI-08 FR-ITM-02 DR-05 NFR-PORT-06",

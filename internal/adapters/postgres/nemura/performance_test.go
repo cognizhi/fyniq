@@ -71,6 +71,22 @@ func TestGoalsAreReadAndChangedOnlyByTheirPeopleAndProgressMovesByAppendedUpdate
 	if mine.Person != "Jon Joiner" || mine.ParentID != company.ID || len(mine.Measures) != 2 || !mine.Measures[1].Down {
 		t.Errorf("%+v", mine)
 	}
+	// The roll-up: Jon sees his goal under the company's with a roll-up of the two; Ola, who may not read his goal, sees no alignment and no roll-up, so a private goal never shows through a number.
+	var jonSees, olaSees []api.Goal
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
+		jonSees, _, _, _, err = nemura.MyGoals(ctx, tx, p.jon, today)
+		return
+	})
+	c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
+		olaSees, _, _, _, err = nemura.MyGoals(ctx, tx, p.other, today)
+		return
+	})
+	if len(jonSees) != 1 || len(jonSees[0].Aligned) != 1 || jonSees[0].Aligned[0].ID != mine.ID || jonSees[0].Rollup == nil || *jonSees[0].Rollup != (jonSees[0].Progress+mine.Progress)/2 {
+		t.Errorf("Jon's view of the company goal: %+v", jonSees)
+	}
+	if len(olaSees) != 1 || len(olaSees[0].Aligned) != 0 || olaSees[0].Rollup != nil {
+		t.Errorf("Ola's view of the company goal: %+v", olaSees)
+	}
 	forJon := pg
 	forJon.PersonID = p.pJon.String()
 	for name, who := range map[string]struct {

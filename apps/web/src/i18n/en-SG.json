@@ -251,6 +251,14 @@
       "label": "Review log",
       "tooltip": "Every high-risk action, for another founder to review once a week. Nobody reviews their own."
     },
+    "approvals.delegations": {
+      "label": "Delegations",
+      "tooltip": "Hand your approvals to another member for some days, for example during leave. They sign as themselves, and only what you could sign."
+    },
+    "approvals.delegate": {
+      "label": "Delegate my approvals",
+      "tooltip": "Lets a member who holds an approval right sign for you, from a first day to a last day, up to 90 days. It lends no right: you can end it at any time."
+    },
     "approvals.break-glass": {
       "label": "Break-glass",
       "tooltip": "When the other founder is unreachable, an Owner releases waiting payment batches alone for 24 hours, up to a cap. Reviewed afterwards."

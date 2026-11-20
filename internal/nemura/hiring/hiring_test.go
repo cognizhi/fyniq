@@ -129,3 +129,39 @@ func TestAnAdvertClosedOverThreeMonthsAgoCannotBeUsedAndARenewalNamesAChange(t *
 		}
 	}
 }
+
+// The board allows only the moves it names, a candidate not progressing carries the reason, a kit's questions are checked for fair wording like a post, and a score is 1 to 5 (NM-REC-03, NM-REC-04).
+// req: NM-REC-03, NM-REC-04
+func TestTheBoardAllowsOnlyItsMovesAndAKitIsCheckedForFairWording(t *testing.T) {
+	for _, tc := range []struct {
+		from, to, reason string
+		ok               bool
+	}{
+		{"applied", "screening", "", true}, {"applied", "offer", "", false}, {"screening", "interview", "", true}, {"interview", "offer", "", true}, {"offer", "interview", "", true},
+		{"offer", "hired", "", true}, {"hired", "screening", "", false}, {"screening", "not_progressing", "", false}, {"screening", "not_progressing", "No fit.", true},
+		{"not_progressing", "screening", "", true}, {"not_progressing", "offer", "", false},
+	} {
+		if got := hiring.CheckMove(tc.from, tc.to, tc.reason) == nil; got != tc.ok {
+			t.Errorf("%s to %s (%q): %v, want %v", tc.from, tc.to, tc.reason, got, tc.ok)
+		}
+	}
+	kit := hiring.Kit{Questions: []string{"Are you a young digital native?"}, Criteria: []string{"Skill"}}
+	if found, err := hiring.CheckKit(kit); err == nil || len(found) == 0 {
+		t.Errorf("a flagged question without the requirement: %v %v", found, err)
+	}
+	kit.RequirementNote = "The role is a youth-programme mentor."
+	if _, err := hiring.CheckKit(kit); err != nil {
+		t.Errorf("with the requirement recorded: %v", err)
+	}
+	if _, err := hiring.CheckKit(hiring.Kit{Questions: []string{"Why us?"}}); err == nil {
+		t.Error("a kit with no criterion")
+	}
+	for score, ok := range map[int]bool{0: false, 1: true, 5: true, 6: false} {
+		if (hiring.CheckScore(score, "") == nil) != ok {
+			t.Errorf("score %d", score)
+		}
+	}
+	if hiring.CheckCandidate("A", "a@b", "") == nil || hiring.CheckCandidate("A", "a@b.co", "") != nil {
+		t.Error("the email address")
+	}
+}

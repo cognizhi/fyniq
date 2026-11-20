@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/anomalyjob"
+	"github.com/cognizhi/fyniq/internal/approvalremind"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
@@ -288,6 +289,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"bank.releases": func(ctx context.Context) error {
 			_, err := journal.ReleaseBankTransactionsDueAll(ctx, k.Store, clock.Now())
+			return err
+		},
+		approvalremind.Job: func(ctx context.Context) error { // FR-APR-08: pending approvals reminded and escalated; it only notifies
+			_, err := approvalremind.Runner{Store: k.Store, Outbox: k.dispatcher(clock), Clock: clock}.RunAll(ctx)
 			return err
 		},
 		anomalyjob.Job: func(ctx context.Context) error { // FR-KPI-06: a closed month's category spend above its trend

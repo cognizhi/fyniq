@@ -73,6 +73,8 @@ export const routes = [
   { kind: "route", id: "ai-proposal", path: "/inbox/proposals/$proposalId", mode: "basic", signedIn: true, help: "ai-proposal.review", guide: "ai.proposals#review-a-proposal" },
   { kind: "route", id: "ai-tasks", path: "/inbox/ai-tasks", mode: "basic", signedIn: true, help: "ai-tasks.page", guide: "ai.proposals#the-ai-tasks-page" },
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
+  // Delegation of approval authority (FR-APR-06; p2-mobile-approvals-automation): an approver hands their approvals to another member for some days.
+  { kind: "route", id: "approval-delegations", path: "/delegations", mode: "basic", signedIn: true, help: "approvals.delegations", guide: "approvals.decide#delegate-your-approvals" },
   { kind: "route", id: "break-glass", path: "/break-glass", mode: "basic", signedIn: true, help: "approvals.break-glass", guide: "settings.team-mode#break-glass" },
   { kind: "route", id: "contacts", path: "/contacts", mode: "basic", signedIn: true, help: "contacts.overview", guide: "contacts.manage" },
   // Projects and time (FR-PRJ-01; p1-projects), off until the organisation switches them on (FR-ORG-06).
@@ -346,6 +348,7 @@ export const actions = [
   { kind: "action", id: "approval.withdraw", mode: "basic", help: "approval.withdraw", guide: "approvals.decide#withdraw-your-request" },
   { kind: "action", id: "approval.copy-hash", mode: "basic", help: "approval.copy-hash", guide: "approvals.decide#approve-or-reject" },
   { kind: "action", id: "review.mark", mode: "basic", help: "review.mark", guide: "approvals.decide#review-high-risk-actions" },
+  { kind: "action", id: "approvals.delegate", mode: "basic", help: "approvals.delegate", guide: "approvals.decide#delegate-your-approvals" },
   { kind: "action", id: "break-glass.start", mode: "basic", help: "break-glass.start", guide: "settings.team-mode#start-break-glass" },
   { kind: "action", id: "break-glass.end", mode: "basic", help: "break-glass.end", guide: "settings.team-mode#end-and-review-a-break-glass" },
   { kind: "action", id: "break-glass.review", mode: "basic", help: "break-glass.review", guide: "settings.team-mode#end-and-review-a-break-glass" },
