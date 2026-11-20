@@ -17,6 +17,8 @@ import { ReportSick } from "./pages/ReportSick";
 import { TeamLeave } from "./pages/TeamLeave";
 import { Packs } from "./pages/Packs";
 import { Policy } from "./pages/Policy";
+import { Careers } from "./pages/Careers";
+import { Pipeline } from "./pages/Pipeline";
 import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Join } from "./pages/Join";
@@ -2018,5 +2020,62 @@ describe("goals", () => {
     render(<Goals roles={["employee"]} />);
     expect(await screen.findByText(/Performance is switched off for this company/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Add the goal" })).toBeNull();
+  });
+});
+
+// req: NM-REC-02, QA-UI-05
+describe("careers page", () => {
+  it("lists a company's published posts with no sign-in and answers an unknown address alike", async () => {
+    answer("GET /v1/careers/acme-careers", { status: 200, body: { found: true, company: "Acme Pte. Ltd.", intro: "Come and work with us.", posts: [{ id: "p1", title: "Data scientist", department: "Engineering", body: "You will analyse data.", published_on: "2026-10-05" }] } });
+    const { container } = render(<Careers slug="acme-careers" />);
+    expect(await screen.findByText("Data scientist")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Acme Pte. Ltd.");
+    expect(screen.getByText(/Engineering/)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    cleanup();
+    answer("GET /v1/careers/nobody", { status: 200, body: { found: false, posts: [] } });
+    render(<Careers slug="nobody" />);
+    expect(await screen.findByText("There is no careers page at this address.")).toBeTruthy();
+  });
+});
+
+// req: NM-REC-04, NM-REC-05, QA-UI-05
+describe("pipeline", () => {
+  it("shows a requisition's candidates with their stage and consent, adds one, and moves one with the reason of a decision", async () => {
+    const cand = { id: "c1", requisition_id: "r1", name: "Chen Yu", email: "chen.yu@example.com", stage: "screening", stage_at: "2026-11-02T10:00:00Z", applied_via: "careers_page", applied_at: "2026-11-01T10:00:00Z", consent_future: true };
+    answer("GET /v1/requisitions/r1/candidates", { status: 200, body: { candidates: [cand] } });
+    answer("GET /v1/requisitions/r1/interview-kit", { status: 200, body: { exists: true, questions: ["Walk us through a forecast you built."], criteria: ["Analytical skill"], findings: [] } });
+    answer("POST /v1/candidates/c1/moves", { status: 200, body: { ...cand, stage: "interview" } });
+    answer("POST /v1/requisitions/r1/candidates", { status: 201, body: cand });
+    const { container } = render(<Pipeline requisition="r1" canWrite />);
+    expect(await screen.findByText("Chen Yu: Screening")).toBeTruthy();
+    expect(screen.getByText("Consented to be kept for future roles")).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Move Chen Yu to Interview" }));
+    expect(await screen.findByText("The candidate is moved.")).toBeTruthy();
+    expect(bodies.get("POST /v1/candidates/c1/moves")).toEqual({ to: "interview" });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Mei Tan" } });
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "mei.tan@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add the candidate" }));
+    expect(await screen.findByText("The candidate is added.")).toBeTruthy();
+    expect(bodies.get("POST /v1/requisitions/r1/candidates")).toMatchObject({ name: "Mei Tan", email: "mei.tan@example.com", consent_future: false });
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("hires a candidate at the offer stage with a start date, and offers no hire to someone who cannot", async () => {
+    const cand = { id: "c2", requisition_id: "r1", name: "Mei Tan", email: "mei.tan@example.com", stage: "offer", stage_at: "2026-11-02T10:00:00Z", applied_via: "recruiter", applied_at: "2026-11-01T10:00:00Z", consent_future: false };
+    answer("GET /v1/requisitions/r1/candidates", { status: 200, body: { candidates: [cand] } });
+    answer("GET /v1/requisitions/r1/interview-kit", { status: 200, body: { exists: false, questions: [], criteria: [], findings: [] } });
+    answer("POST /v1/candidates/c2/hire", { status: 201, body: { ...cand, stage: "hired", hire: { person_id: "p1", plan_id: "pl1", start_date: "2027-02-01", pass_needed: false } } });
+    render(<Pipeline requisition="r1" canWrite canHire={false} />);
+    expect(await screen.findByText("Mei Tan: Offer")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Hire Mei Tan" })).toBeNull();
+    cleanup();
+    render(<Pipeline requisition="r1" canWrite canHire />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(await screen.findByLabelText("First day of employment"), { target: { value: "2027-02-01" } });
+    fireEvent.click(screen.getByRole("button", { name: "Hire Mei Tan" }));
+    expect(await screen.findByText("The candidate is hired: their person record and onboarding plan are made.")).toBeTruthy();
+    expect(bodies.get("POST /v1/candidates/c2/hire")).toEqual({ start_date: "2027-02-01", employment_type: "full_time" });
   });
 });

@@ -619,7 +619,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Plans: fakePlans{err: requestsErr}, Hiring: fakeHiring{err: requestsErr}, Performance: fakePerformance{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LetterVerify: fakeLetterVerify{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, Grievances: fakeGrievances{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Plans: fakePlans{err: requestsErr}, Hiring: fakeHiring{err: requestsErr}, Careers: fakeCareers{err: requestsErr}, Pipeline: fakePipeline{err: requestsErr}, Performance: fakePerformance{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LetterVerify: fakeLetterVerify{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, Grievances: fakeGrievances{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -1466,7 +1466,10 @@ func (f fakeHiring) WritePost(context.Context, Session, uuid.UUID, string, strin
 func (f fakeHiring) Publish(context.Context, Session, uuid.UUID, string) (Requisition, error) {
 	return Requisition{}, f.err
 }
-func (f fakeHiring) RecordAdvert(context.Context, Session, uuid.UUID, string, string) (Requisition, error) {
+func (f fakeHiring) RecordAdvert(context.Context, Session, uuid.UUID, AdvertInput) (Requisition, error) {
+	return Requisition{}, f.err
+}
+func (f fakeHiring) RenewAdvert(context.Context, Session, uuid.UUID, AdvertInput) (Requisition, error) {
 	return Requisition{}, f.err
 }
 func (f fakeHiring) RecordExemption(context.Context, Session, uuid.UUID, string, string) (Requisition, error) {
@@ -1474,6 +1477,63 @@ func (f fakeHiring) RecordExemption(context.Context, Session, uuid.UUID, string,
 }
 func (f fakeHiring) ClosePost(context.Context, Session, uuid.UUID) (Requisition, error) {
 	return Requisition{}, f.err
+}
+
+type fakePipeline struct{ err error }
+
+func (f fakePipeline) Candidates(context.Context, Session, uuid.UUID) ([]Candidate, error) {
+	return []Candidate{}, f.err
+}
+func (f fakePipeline) Candidate(context.Context, Session, uuid.UUID) (Candidate, error) {
+	return Candidate{}, f.err
+}
+func (f fakePipeline) Add(context.Context, Session, uuid.UUID, CandidateInput) (Candidate, error) {
+	return Candidate{}, f.err
+}
+func (f fakePipeline) Move(context.Context, Session, uuid.UUID, string, string) (Candidate, error) {
+	return Candidate{}, f.err
+}
+func (f fakePipeline) Note(context.Context, Session, uuid.UUID, string) (Candidate, error) {
+	return Candidate{}, f.err
+}
+func (f fakePipeline) Assign(context.Context, Session, uuid.UUID, uuid.UUID) (Candidate, error) {
+	return Candidate{}, f.err
+}
+func (f fakePipeline) Score(context.Context, Session, uuid.UUID, string, int, string) (Candidate, error) {
+	return Candidate{}, f.err
+}
+func (f fakePipeline) Consent(context.Context, Session, uuid.UUID, bool) (Candidate, error) {
+	return Candidate{}, f.err
+}
+func (f fakePipeline) Hire(context.Context, Session, uuid.UUID, HireInput) (Candidate, error) {
+	return Candidate{}, f.err
+}
+func (f fakePipeline) PassApplication(context.Context, Session, uuid.UUID, string) (Candidate, error) {
+	return Candidate{}, f.err
+}
+func (f fakePipeline) Kit(context.Context, Session, uuid.UUID) (InterviewKit, error) {
+	return InterviewKit{}, f.err
+}
+func (f fakePipeline) SaveKit(context.Context, Session, uuid.UUID, InterviewKit) (InterviewKit, error) {
+	return InterviewKit{}, f.err
+}
+func (f fakePipeline) Apply(context.Context, string, uuid.UUID, CandidateInput) (bool, error) {
+	return true, f.err
+}
+
+type fakeCareers struct{ err error }
+
+func (f fakeCareers) Public(context.Context, string) (CareersView, error) {
+	return CareersView{Found: true, Company: "Acme", Posts: []CareersPost{}}, f.err
+}
+func (f fakeCareers) Settings(context.Context, Session) (CareersSettings, error) {
+	return CareersSettings{}, f.err
+}
+func (f fakeCareers) Save(context.Context, Session, CareersSettings) (CareersSettings, error) {
+	return CareersSettings{}, f.err
+}
+func (f fakeCareers) Allow(context.Context, string, string, time.Duration, int) (bool, error) {
+	return true, nil
 }
 
 type fakePlans struct{ err error }

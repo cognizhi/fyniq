@@ -15,11 +15,18 @@ import (
 func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 	const id = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01"
 	type op struct{ method, path, body string }
-	reads := []op{{"GET", "/v1/requisitions", ""}, {"POST", "/v1/fair-wording-check", `{"text":"We want a young digital native."}`}}
+	reads := []op{{"GET", "/v1/requisitions", ""}, {"GET", "/v1/careers-page", ""}, {"POST", "/v1/fair-wording-check", `{"text":"We want a young digital native."}`}}
 	writes := []op{{"POST", "/v1/requisitions", `{"title":"Data scientist","department":"Engineering","reason":"new","salary_min":"6500.00","salary_max":"8200.00","target_start":"2027-02-01"}`},
 		{"PUT", "/v1/requisitions/" + id + "/job-post", `{"title":"Data scientist","body":"You will analyse data."}`}, {"POST", "/v1/requisitions/" + id + "/job-post/publication", `{}`},
-		{"POST", "/v1/requisitions/" + id + "/job-post/advert", `{"posted_on":"2026-10-05"}`}, {"POST", "/v1/requisitions/" + id + "/job-post/exemption", `{"kind":"transferee","note":"Intra-company."}`},
+		{"POST", "/v1/requisitions/" + id + "/job-post/advert", `{"posted_on":"2026-10-05"}`}, {"POST", "/v1/requisitions/" + id + "/job-post/advert/renewal", `{"change":"salary","posted_on":"2026-11-02"}`}, {"PUT", "/v1/careers-page", `{"slug":"acme-careers","enabled":true,"company":"Acme"}`},
+		{"POST", "/v1/requisitions/" + id + "/candidates", `{"name":"Chen Yu","email":"chen.yu@example.com"}`}, {"POST", "/v1/candidates/" + id + "/moves", `{"to":"screening"}`}, {"POST", "/v1/candidates/" + id + "/notes", `{"body":"Strong."}`},
+		{"POST", "/v1/candidates/" + id + "/interviewers", `{"member_id":"` + id + `"}`}, {"POST", "/v1/candidates/" + id + "/future-consent", `{"given":true}`}, {"POST", "/v1/candidates/" + id + "/pass-application", `{"on":"2027-01-15"}`},
+		{"PUT", "/v1/requisitions/" + id + "/interview-kit", `{"questions":["Why us?"],"criteria":["Skill"]}`},
+		{"POST", "/v1/requisitions/" + id + "/job-post/exemption", `{"kind":"transferee","note":"Intra-company."}`},
 		{"POST", "/v1/requisitions/" + id + "/job-post/closing", ``}}
+	seen := []op{{"GET", "/v1/requisitions/" + id + "/candidates", ""}, {"GET", "/v1/candidates/" + id, ""}, {"GET", "/v1/requisitions/" + id + "/interview-kit", ""}} // the team and an interviewer
+	scores := []op{{"POST", "/v1/candidates/" + id + "/scores", `{"criterion":"Skill","score":4}`}}                                                                    // an interviewer alone
+	hires := []op{{"POST", "/v1/candidates/" + id + "/hire", `{"start_date":"2027-02-01","employment_type":"full_time"}`}}                                             // the HR administrator and the Owner alone
 	approves := []op{{"POST", "/v1/requisitions/" + id + "/decision", `{"approve":true}`}}
 	call := func(o op, cookie string) int {
 		_, mux := testAPI(t)
@@ -34,7 +41,7 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 	}
 	ok := func(c int) bool { return c == 200 || c == 201 || c == 204 }
 	defer func() { testRoles, featuresOff = []authz.Role{authz.HRAdmin}, false }()
-	for _, o := range append(append(reads, writes...), approves...) {
+	for _, o := range append(append(append(append(append(reads, writes...), approves...), seen...), scores...), hires...) {
 		if code := call(o, ""); code != 401 {
 			t.Errorf("%s %s with no session: %d", o.method, o.path, code)
 		}
@@ -57,7 +64,7 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 		for kind, set := range map[string]struct {
 			ops  []op
 			want bool
-		}{"read": {reads, tc.read}, "write": {writes, tc.write}, "approve": {approves, tc.approving}} {
+		}{"read": {reads, tc.read}, "write": {writes, tc.write}, "approve": {approves, tc.approving}, "seen": {seen, tc.read || tc.role == authz.Interviewer}, "score": {scores, tc.role == authz.Interviewer}, "hire": {hires, tc.role == authz.HRAdmin || tc.role == authz.Owner}} {
 			for _, o := range set.ops {
 				if got := ok(call(o, "nemura_session=good-token")); got != set.want {
 					t.Errorf("%s: %s %s %s: allowed %v, want %v", name, kind, o.method, o.path, got, set.want)
@@ -68,5 +75,26 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 	testRoles, featuresOff = []authz.Role{authz.Owner}, true
 	if code := call(reads[0], "nemura_session=good-token"); code != 409 {
 		t.Errorf("Hiring off: %d", code)
+	}
+}
+
+// The careers page is read by anyone with no sign-in (and is the one hiring route that is), counted against a limit; everything else about it follows the Hiring row (NM-REC-02).
+// req: NM-REC-02
+// asvs: V4.2.1, V2.1.1
+func TestTheCareersPageIsPublicAndSignedOutVisitorsReadNothingElseOfHiring(t *testing.T) {
+	_, mux := testAPI(t)
+	for path, want := range map[string]int{"/v1/careers/acme-careers": 200, "/v1/careers-page": 401, "/v1/requisitions": 401, "/v1/careers/Bad_Slug": 422, "/v1/careers/ab": 422} {
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		if rec.Code != want {
+			t.Errorf("GET %s: %d, want %d", path, rec.Code, want)
+		}
+	}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/v1/careers/acme-careers/applications", strings.NewReader(`{"post_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3b01","name":"Chen Yu","email":"chen.yu@example.com"}`))
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(rec, req)
+	if rec.Code != 201 {
+		t.Errorf("an application with no sign-in: %d %s", rec.Code, rec.Body.String())
 	}
 }

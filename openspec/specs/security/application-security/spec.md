@@ -177,6 +177,16 @@ Source: PRD-001 §13.3 · Priority S · Phase P2
 - **WHEN** staging is running
 - **THEN** DAST runs against it continuously
 
+#### Scenario: The register of assessments (rev 0.617)
+- **WHEN** an assessment is recorded in Compliance › Security assessments
+- **THEN** it holds who tested, whether they are independent, the scope, the dates and the report's SHA-256 and where it is kept, and each finding holds its severity, due date, fix and retest, or an Owner's acceptance with a reason
+- **AND** a finding is due in 7 days when Critical, 30 when High, 90 when Medium and 180 when Low
+
+#### Scenario: The control CTL-CHG-12 (rev 0.617)
+- **WHEN** the control is read
+- **THEN** it is overdue 12 months after the last independent assessment ended, fails while a Critical or High finding is past its due date, and is not assessed while none is recorded
+- **AND** it must pass before the first external customer is onboarded
+
 ### Requirement: SEC-26 Dependency hygiene
 Dependencies SHALL be kept current by automated update pull requests and pinned versions, with an SBOM generated per release.
 

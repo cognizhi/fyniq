@@ -1497,6 +1497,40 @@ Source: PRD-001 §D
 - **WHEN** a role acts on the PDPA registers
 - **THEN** the Administrator, the Finance controller, the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer and the AI assistant have no right over them (—)
 
+### Requirement: Permission matrix: Retention holds
+In Standard mode, each role SHALL hold only the rights over retention holds that the permission matrix gives it: placing and lifting a hold on a record, a contact or a financial year, and the holds in force (rev 0.617).
+
+Source: PRD-001 §D
+
+#### Scenario: Create and approve
+- **WHEN** a role acts on retention holds
+- **THEN** the Owner and the Compliance officer / DPO can place and lift a hold (C/A)
+
+#### Scenario: View
+- **WHEN** a role acts on retention holds
+- **THEN** the Finance controller and the Auditor can view the holds in force (V)
+
+#### Scenario: No access
+- **WHEN** a role acts on retention holds
+- **THEN** every other role and the AI assistant have no right over them (—)
+
+### Requirement: Permission matrix: Security assessments
+In Standard mode, each role SHALL hold only the rights over the register of security assessments that the permission matrix gives it: recording a penetration test, its findings, their fixes and retests, and an Owner's acceptance of a finding (rev 0.617).
+
+Source: PRD-001 §D
+
+#### Scenario: Create and approve
+- **WHEN** a role acts on the register
+- **THEN** the Owner can record, fix, retest and accept a finding (C/A)
+
+#### Scenario: View
+- **WHEN** a role acts on the register
+- **THEN** the Administrator, the Finance controller, the Auditor and the Compliance officer / DPO can view it (V)
+
+#### Scenario: No access
+- **WHEN** a role acts on the register
+- **THEN** every other role and the AI assistant have no right over it (—)
+
 ### Requirement: Permission matrix: Own personal-data requests
 In Standard mode, every member SHALL be able to ask for access to or correction of their own personal data, and the AI assistant SHALL NOT (rev 0.244).
 

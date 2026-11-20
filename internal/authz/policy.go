@@ -66,6 +66,8 @@ const (
 	ComplianceCenter    Capability = "Compliance Center"
 	PolicyLibrary       Capability = "Policy library: every member reads and acknowledges the published policies; C/A publishes a version (rev 0.240)"
 	DataProtection      Capability = "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
+	RetentionHolds      Capability = "Retention holds: place and lift a hold on a record, a contact or a financial year; the holds in force (rev 0.617)"
+	SecurityAssessments Capability = "Security assessments: record a penetration test, its findings, their fixes and retests, and an Owner's acceptance of a finding (rev 0.617)"
 	OwnDataRequests     Capability = "Own personal-data requests: ask for access to or correction of one's own personal data (rev 0.244)"
 	StatutoryCalendar   Capability = "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
 	ChecksHealth        Capability = "Checks and books health (rev 0.163)"
@@ -89,7 +91,7 @@ const (
 var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, ProjectCostRates, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection, ReportDefinitions, AuditEngagements, AuditRequests, IntegrationTasks}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, ProjectCostRates, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, RetentionHolds, SecurityAssessments, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection, ReportDefinitions, AuditEngagements, AuditRequests, IntegrationTasks}
 
 // The capabilities outside Appendix D.
 const (
@@ -265,6 +267,12 @@ var Grants = map[Capability]map[string]Cell{
 	},
 	DataProtection: {
 		"Owner": {"V", ""}, "Admin": {}, "Controller": {}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"CA", ""}, "AI": {},
+	},
+	RetentionHolds: {
+		"Owner": {"CA", ""}, "Admin": {}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"CA", ""}, "AI": {},
+	},
+	SecurityAssessments: {
+		"Owner": {"CA", ""}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
 	},
 	OwnDataRequests: {
 		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", ""}, "Releaser": {"C", ""}, "Approver": {"C", ""}, "Employee": {"C", ""}, "Auditor": {"C", ""}, "Tax agent": {"C", ""}, "Board": {"C", ""}, "DPO": {"C", ""}, "AI": {},

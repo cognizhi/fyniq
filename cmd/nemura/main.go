@@ -150,7 +150,11 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 			return a + b + c + d, err
 		}
 		_, r, err := store.RunGrievanceRetention(ctx, org, now) // decided grievances past five years: a report for review, then deletion once reviewed (NM-SEC-05)
-		return a + b + c + d + r, err
+		if err != nil {
+			return a + b + c + d + r, err
+		}
+		_, r2, err := store.RunCandidateRetention(ctx, org, now) // candidates not progressing, six months after the decision unless they consented to be kept (NM-REC-05)
+		return a + b + c + d + r + r2, err
 	}
 	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock, Raise: raise}
 	// The events for Fyniq (NM-INT-01): sent to the API and token endpoint the deployment names, and to no other host (design D12).
