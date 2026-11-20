@@ -62,6 +62,7 @@ func Config(v string) huma.Config {
 		{Name: "Onboarding", Description: "The task to invite new people to Fyniq, and a leaver's dates, checklist and leave settlement (NM-ONB-02, NM-ONB-03)."},
 		{Name: "Self-service", Description: "A person's own details and requests, and what waits for the people team (NM-ESS-03, NM-ESS-04)."},
 		{Name: "Letters", Description: "Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07)."},
+		{Name: "Grievances", Description: "The confidential grievance channel: filing, routing away from the people it is about, the inquiry record and the written outcome (NM-SEC-06)."},
 		{Name: "Privacy", Description: "Erasure of a former employee's personal data after its retention, by two people (NM-SEC-08)."},
 		{Name: "Link", Description: "The link to Fyniq: the events Fyniq sends back, signed and received once (NM-INT-10, NM-INT-03)."},
 		{Name: "Session", Description: "Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02)."},
@@ -161,6 +162,8 @@ type Deps struct {
 	LinkOps LinkOps
 	// Erasure is the erasure of a former employee's personal data (NM-SEC-08); nil: the deployment has none.
 	Erasure ErasureOps
+	// Grievances is the confidential grievance channel (NM-SEC-06); nil: the deployment has none.
+	Grievances Grievances
 	// LetterVerify is the public look-up of an issued letter and the employee's withdrawal of it (NM-LTR-05); nil: the deployment has none.
 	LetterVerify LetterVerify
 	// Idempotency stores the Idempotency-Keys of writes; nil turns the header off (a deployment with no database for it never runs).
@@ -208,6 +211,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerRunLink()
 	a.registerLinkOps()
 	a.registerErasure()
+	a.registerGrievances()
 	a.registerLetterVerify()
 	a.registerLinkHold()
 	a.registerLinkSync()

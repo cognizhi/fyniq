@@ -24,9 +24,11 @@ export function Shell({ children, directory, features, roles }: { children: Reac
             <a href="/me/details">{t("nav.details")}</a>
             <a href="/me/ask/hr">{t("nav.ask")}</a>
             <a href="/me/letters/new">{t("letters.ask")}</a>
+            <a href="/me/grievances">{t("nav.concerns")}</a>
             {directory && <a href="/people/requests">{t("nav.queue")}</a>}
             {directory && <a href="/people/onboarding">{t("nav.onboarding")}</a>}
             {payroll(roles ?? []) && <a href="/people/payroll">{t("nav.payroll")}</a>}
+            {handlesGrievances(roles ?? []) && <a href="/people/grievances">{t("nav.grievances")}</a>}
             {directory && <a href="/people/letters">{t("nav.letters")}</a>}
             {directory && <a href="/settings/letters">{t("nav.letterSettings")}</a>}
             {approver(roles ?? []) && <a href="/people/leave">{t("nav.teamLeave")}</a>}
@@ -73,3 +75,6 @@ export const payroll = (roles: readonly string[]): boolean => roles.some((r) => 
 
 // linkAdmin reports whether the roles see the link to Fyniq: an Owner or an Administrator. The API decides; this only shows the link.
 export const linkAdmin = (roles: readonly string[]): boolean => roles.some((r) => r === "owner" || r === "administrator");
+
+// handlesGrievances is who sees the grievances page: an HR administrator or the Owner (NM-SEC-06); the database decides which grievances they may read.
+const handlesGrievances = (roles: readonly string[]): boolean => roles.some((r) => r === "owner" || r === "hr_admin");

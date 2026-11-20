@@ -124,6 +124,8 @@ var Catalogue = []Code{
 	{"NM_ERASURE_NOT_APPROVED", http.StatusConflict, "The erasure is not approved", "A second Owner or HR administrator approves it first."},
 	{"NM_ERASURE_ALREADY", http.StatusConflict, "That erasure was decided or done already", "An erasure is asked for, decided and done once."},
 	{"NM_ERASURE_REGISTER", http.StatusConflict, "The register's entry does not verify", "Ask whoever runs the deployment: the register is checked before it is applied."},
+	{"NM_GRIEVANCE_STATE", http.StatusConflict, "That grievance has moved on", "A grievance is decided once, and an unrouted one is taken once: read it again to see where it is."},
+	{"NM_GRIEVANCE_NO_HANDLER", http.StatusConflict, "Nobody else can handle it", "Every HR administrator and the Owner is the complainant, is involved or is the one passing it on: it stays with its handler."},
 	{"NM_ERASURE_ACCESS_REQUEST", http.StatusConflict, "The person has an access request to answer", "Answer the person's request for their own data first (NM-SEC-07)."},
 	{"NM_RATE_LIMITED", http.StatusTooManyRequests, "Too many tries", "Wait a while and try again with the reference and the code exactly as printed on the letter."},
 	{CodeUnavailable, http.StatusServiceUnavailable, "Not available here", "This deployment has not set it up: ask whoever runs Nemura."},

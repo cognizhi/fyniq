@@ -26,6 +26,8 @@ import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
 import { Erasures } from "./pages/Erasures";
 import { VerifyLetter } from "./pages/VerifyLetter";
+import { Concerns } from "./pages/Concerns";
+import { Grievances } from "./pages/Grievances";
 import { FyniqLink } from "./pages/FyniqLink";
 import { Shell } from "./pages/Shell";
 import { rememberPage, switchProvider, switchedIn } from "./workspace";
@@ -1825,5 +1827,54 @@ describe("verifying a letter", () => {
     render(<VerifyLetter />);
     await waitFor(() => expect(screen.getByText(/This link does not work/)).toBeTruthy());
     window.location.hash = "";
+  });
+});
+
+// part of NM-SEC-06
+describe("raising and handling a concern", () => {
+  const g = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1";
+  it("files in confidence, naming who it is about, and shows the outcome but never the inquiry", async () => {
+    answer("GET /v1/me/grievances", { status: 200, body: { items: [{ id: g, filed_at: "2026-11-20T10:00:00Z", state: "decided", handler: "Sarah Koh", finding: "partly_substantiated", outcome: "The inquiry found that the remark was made.", decided_at: "2026-12-04T10:00:00Z" }] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", name: "Ben Lim" }] } });
+    answer("POST /v1/me/grievances", { status: 201, body: { id: g, state: "open", handler: "Sarah Koh" } });
+    const { container } = render(<Concerns roles={["employee"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    expect(await screen.findByText(/Partly substantiated\. The inquiry found that the remark was made\./)).toBeTruthy();
+    expect(screen.queryByText(/Interview/)).toBeNull();
+    await screen.findByRole("option", { name: "Ben Lim" });
+    fireEvent.change(screen.getByLabelText(/What happened, when and who was there/), { target: { value: "On the twelfth, in the meeting room, a remark was made that I found demeaning." } });
+    fireEvent.change(screen.getByLabelText(/Who it is about/), { target: { value: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send in confidence" }));
+    expect(await screen.findByText("Sent. Sarah Koh is looking into it.")).toBeTruthy();
+    expect((bodies.get("POST /v1/me/grievances") as { about?: string[] }).about).toEqual(["0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"]);
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("shows a handler the inquiry and lets them record, decide and pass on, and shows nothing to anyone else", async () => {
+    answer("GET /v1/grievances", { status: 200, body: { assigned: [{ id: g, filed_at: "2026-11-20T10:00:00Z", state: "open" }], unrouted: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9", filed_at: "2026-11-21T10:00:00Z", state: "unrouted" }] } });
+    answer(`GET /v1/grievances/${g}`, { status: 200, body: { id: g, filed_at: "2026-11-20T10:00:00Z", state: "open", complainant: "Nurul Aziz", summary: "A remark was made.", about: [{ person_id: "p", name: "Sam Seah" }], entries: [{ id: "e1", kind: "routing", body: "Filed and routed.", by: "Nurul Aziz", at: "2026-11-20T10:00:00Z" }] } });
+    answer(`POST /v1/grievances/${g}/entries`, { status: 201, body: { done: true } });
+    answer(`POST /v1/grievances/${g}/outcome`, { status: 200, body: { done: true } });
+    answer("POST /v1/grievances/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9/taking", { status: 200, body: { done: true } });
+    answer("GET /v1/grievances/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9", { status: 200, body: { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9", filed_at: "2026-11-21T10:00:00Z", state: "open", complainant: "Dev Rao", summary: "Waiting one.", about: [], entries: [] } });
+    const { container } = render(<Grievances roles={["hr_admin"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(await screen.findByRole("button", { name: "Open" }));
+    expect(await screen.findByText("Nurul Aziz")).toBeTruthy();
+    expect(screen.getByText(/Sam Seah/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("What to record"), { target: { value: "Spoke with the complainant." } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(await screen.findByText("Recorded.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/grievances/${g}/entries`)).toEqual({ kind: "note", note: "Spoke with the complainant." });
+    fireEvent.change(screen.getByLabelText(/The outcome, which the person who raised it reads/), { target: { value: "The inquiry found that the remark was made and it was dealt with." } });
+    fireEvent.click(screen.getByRole("button", { name: "Write the outcome" }));
+    expect(await screen.findByText(/The outcome is written/)).toBeTruthy();
+    expect((bodies.get(`POST /v1/grievances/${g}/outcome`) as { finding: string }).finding).toBe("not_substantiated");
+    fireEvent.click(screen.getByRole("button", { name: "Take it" }));
+    expect(await screen.findByText("It is yours now.")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    cleanup();
+    render(<Grievances roles={["employee"]} />);
+    expect(await screen.findByText("Only an HR administrator or the Owner handles grievances.")).toBeTruthy();
   });
 });
