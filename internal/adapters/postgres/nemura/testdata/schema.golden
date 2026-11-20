@@ -38,6 +38,7 @@ leave_ledger | nemura_migrator | true | true
 leave_request | nemura_migrator | true | true
 legal_hold | nemura_migrator | true | true
 letter_delegation | nemura_migrator | true | true
+letter_disclosure | nemura_migrator | true | true
 letter_issued | nemura_migrator | true | true
 letter_link | nemura_migrator | true | true
 letter_request | nemura_migrator | true | true
@@ -89,6 +90,7 @@ person_pay_item | nemura_migrator | true | true
 person_secret | nemura_migrator | true | true
 person_terms | nemura_migrator | true | true
 pr_election | nemura_migrator | true | true
+public_rate | nemura_migrator | false | false
 reporting_line | nemura_migrator | true | true
 role_assignment | nemura_migrator | true | true
 session | nemura_migrator | true | true
@@ -494,6 +496,14 @@ letter_delegation | created_at | timestamp with time zone | true |
 letter_delegation | revoked_at | timestamp with time zone | false | 
 letter_delegation | revoked_by | uuid | false | 
 letter_delegation | revoked_reason | text | false | 
+letter_disclosure | organisation_id | uuid | true | nemura.current_org()
+letter_disclosure | id | uuid | true | uuidv7()
+letter_disclosure | issued_id | uuid | true | 
+letter_disclosure | token_hash | bytea | true | 
+letter_disclosure | expires_at | timestamp with time zone | true | 
+letter_disclosure | created_by | uuid | true | 
+letter_disclosure | created_at | timestamp with time zone | true | 
+letter_disclosure | revoked_at | timestamp with time zone | false | 
 letter_issued | organisation_id | uuid | true | nemura.current_org()
 letter_issued | id | uuid | true | uuidv7()
 letter_issued | request_id | uuid | true | 
@@ -567,6 +577,7 @@ letter_verification | issued_on | date | false |
 letter_verification | company | text | false | 
 letter_verification | state | text | true | 'pending'::text
 letter_verification | state_at | timestamp with time zone | true | now()
+letter_verification | content_hash | bytea | false | 
 link_client_route | peer_client_id | text | true | 
 link_client_route | organisation_id | uuid | true | 
 link_client_route | link_id | uuid | true | 
@@ -1043,6 +1054,10 @@ pr_election | evidence_id | uuid | true |
 pr_election | created_by | uuid | true | 
 pr_election | created_at | timestamp with time zone | true | 
 pr_election | kind | text | true | 'fg'::text
+public_rate | scope | text | true | 
+public_rate | key_hash | bytea | true | 
+public_rate | window_start | timestamp with time zone | true | 
+public_rate | hits | integer | true | 
 reporting_line | organisation_id | uuid | true | nemura.current_org()
 reporting_line | id | uuid | true | uuidv7()
 reporting_line | report_id | uuid | true | 
@@ -1749,6 +1764,20 @@ letter_delegation | letter_delegation_type_key_not_null | NOT NULL type_key
 letter_delegation | letter_delegation_who_known | CHECK ((who = 'active_employees'::text))
 letter_delegation | letter_delegation_who_not_null | NOT NULL who
 letter_delegation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+letter_disclosure | letter_disclosure_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+letter_disclosure | letter_disclosure_created_at_not_null | NOT NULL created_at
+letter_disclosure | letter_disclosure_created_by_not_null | NOT NULL created_by
+letter_disclosure | letter_disclosure_expires_at_not_null | NOT NULL expires_at
+letter_disclosure | letter_disclosure_expiry | CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '30 days'::interval))))
+letter_disclosure | letter_disclosure_id_not_null | NOT NULL id
+letter_disclosure | letter_disclosure_issued_fkey | FOREIGN KEY (organisation_id, issued_id) REFERENCES nemura.letter_issued(organisation_id, id)
+letter_disclosure | letter_disclosure_issued_id_not_null | NOT NULL issued_id
+letter_disclosure | letter_disclosure_organisation_id_not_null | NOT NULL organisation_id
+letter_disclosure | letter_disclosure_pkey | PRIMARY KEY (organisation_id, id)
+letter_disclosure | letter_disclosure_token | CHECK ((octet_length(token_hash) = 32))
+letter_disclosure | letter_disclosure_token_hash_not_null | NOT NULL token_hash
+letter_disclosure | letter_disclosure_token_once | UNIQUE (token_hash)
+letter_disclosure | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 letter_issued | letter_issued_authority_not_null | NOT NULL authority
 letter_issued | letter_issued_blob_key_not_null | NOT NULL blob_key
 letter_issued | letter_issued_data_not_null | NOT NULL data
@@ -2560,6 +2589,11 @@ pr_election | pr_election_person_fkey | FOREIGN KEY (organisation_id, person_id)
 pr_election | pr_election_person_id_not_null | NOT NULL person_id
 pr_election | pr_election_pkey | PRIMARY KEY (organisation_id, id)
 pr_election | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+public_rate | public_rate_hits_not_null | NOT NULL hits
+public_rate | public_rate_key_hash_not_null | NOT NULL key_hash
+public_rate | public_rate_pkey | PRIMARY KEY (scope, key_hash, window_start)
+public_rate | public_rate_scope_not_null | NOT NULL scope
+public_rate | public_rate_window_start_not_null | NOT NULL window_start
 reporting_line | reporting_line_created_at_not_null | NOT NULL created_at
 reporting_line | reporting_line_dates | CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))
 reporting_line | reporting_line_effective_from_not_null | NOT NULL effective_from
@@ -2785,6 +2819,8 @@ CREATE INDEX leave_request_state_idx ON nemura.leave_request USING btree (organi
 CREATE UNIQUE INDEX legal_hold_pkey ON nemura.legal_hold USING btree (organisation_id, id)
 CREATE UNIQUE INDEX letter_delegation_pkey ON nemura.letter_delegation USING btree (organisation_id, id)
 CREATE INDEX letter_delegation_type_idx ON nemura.letter_delegation USING btree (organisation_id, type_key, ends_on) WHERE (revoked_at IS NULL)
+CREATE UNIQUE INDEX letter_disclosure_pkey ON nemura.letter_disclosure USING btree (organisation_id, id)
+CREATE UNIQUE INDEX letter_disclosure_token_once ON nemura.letter_disclosure USING btree (token_hash)
 CREATE UNIQUE INDEX letter_issued_pkey ON nemura.letter_issued USING btree (organisation_id, id)
 CREATE UNIQUE INDEX letter_issued_reference_once ON nemura.letter_issued USING btree (organisation_id, reference)
 CREATE UNIQUE INDEX letter_issued_request_once ON nemura.letter_issued USING btree (organisation_id, request_id)
@@ -2799,6 +2835,7 @@ CREATE UNIQUE INDEX letter_template_version_numbered ON nemura.letter_template_v
 CREATE UNIQUE INDEX letter_template_version_pkey ON nemura.letter_template_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX letter_type_once ON nemura.letter_type USING btree (organisation_id, type_key)
 CREATE UNIQUE INDEX letter_type_pkey ON nemura.letter_type USING btree (organisation_id, id)
+CREATE UNIQUE INDEX letter_verification_content_key ON nemura.letter_verification USING btree (content_hash) WHERE (content_hash IS NOT NULL)
 CREATE UNIQUE INDEX letter_verification_pkey ON nemura.letter_verification USING btree (lookup_hash)
 CREATE UNIQUE INDEX letter_verification_request_key ON nemura.letter_verification USING btree (organisation_id, request_id)
 CREATE UNIQUE INDEX link_client_route_pkey ON nemura.link_client_route USING btree (peer_client_id)
@@ -2892,6 +2929,8 @@ CREATE UNIQUE INDEX person_secret_pkey ON nemura.person_secret USING btree (orga
 CREATE INDEX person_terms_person_idx ON nemura.person_terms USING btree (organisation_id, person_id, effective_from)
 CREATE UNIQUE INDEX person_terms_pkey ON nemura.person_terms USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pr_election_pkey ON nemura.pr_election USING btree (organisation_id, id)
+CREATE UNIQUE INDEX public_rate_pkey ON nemura.public_rate USING btree (scope, key_hash, window_start)
+CREATE INDEX public_rate_window ON nemura.public_rate USING btree (window_start)
 CREATE INDEX reporting_line_manager_idx ON nemura.reporting_line USING btree (organisation_id, manager_id, effective_from)
 CREATE UNIQUE INDEX reporting_line_once ON nemura.reporting_line USING btree (organisation_id, report_id, manager_id, effective_from)
 CREATE UNIQUE INDEX reporting_line_pkey ON nemura.reporting_line USING btree (organisation_id, id)
@@ -2977,6 +3016,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_r
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.legal_hold DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('legal_hold', 'id')
 CREATE TRIGGER letter_delegation_guard BEFORE DELETE OR UPDATE ON nemura.letter_delegation FOR EACH ROW EXECUTE FUNCTION nemura.letter_delegation_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_delegation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_delegation', 'id')
+CREATE TRIGGER letter_disclosure_guard BEFORE DELETE OR UPDATE ON nemura.letter_disclosure FOR EACH ROW EXECUTE FUNCTION nemura.letter_disclosure_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_disclosure DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_disclosure', 'id')
 CREATE TRIGGER letter_issued_append_only BEFORE DELETE OR UPDATE ON nemura.letter_issued FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('An issued letter')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.letter_issued DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_issued', 'id')
 CREATE TRIGGER letter_link_append_only BEFORE DELETE OR UPDATE ON nemura.letter_link FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('A letter link')
@@ -3114,6 +3155,7 @@ leave_ledger | tenant_isolation | (organisation_id = nemura.current_org()) | (or
 leave_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 legal_hold | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_delegation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+letter_disclosure | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_issued | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_link | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3774,6 +3816,25 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.letter_disclosure_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'A disclosure link is kept: it is revoked, never deleted' USING ERRCODE = 'NM207';
+  END IF;
+  -- Only the revocation changes, and once.
+  IF OLD.revoked_at IS NOT NULL OR NEW.revoked_at IS NULL
+     OR (NEW.organisation_id, NEW.id, NEW.issued_id, NEW.token_hash, NEW.expires_at, NEW.created_by, NEW.created_at) IS DISTINCT FROM
+        (OLD.organisation_id, OLD.id, OLD.issued_id, OLD.token_hash, OLD.expires_at, OLD.created_by, OLD.created_at) THEN
+    RAISE EXCEPTION 'A disclosure link changes only by being revoked, once' USING ERRCODE = 'NM207';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.letter_request_guard()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -3838,7 +3899,7 @@ BEGIN
 END
 $function$
 
-CREATE OR REPLACE FUNCTION nemura.letter_verification_issue(p_org uuid, p_request uuid, p_letter uuid, p_on date, p_company text)
+CREATE OR REPLACE FUNCTION nemura.letter_verification_issue(p_org uuid, p_request uuid, p_letter uuid, p_on date, p_company text, p_content bytea)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -3848,7 +3909,10 @@ BEGIN
   IF p_org IS DISTINCT FROM nemura.current_org() THEN
     RAISE EXCEPTION 'A verification is issued for the caller''s own organisation only' USING ERRCODE = 'NM206';
   END IF;
-  UPDATE nemura.letter_verification SET state = 'valid', letter_id = p_letter, issued_on = p_on, company = p_company, state_at = now()
+  IF p_content IS NULL OR octet_length(p_content) <> 32 THEN
+    RAISE EXCEPTION 'A verification keeps the SHA-256 of the letter issued' USING ERRCODE = 'NM206';
+  END IF;
+  UPDATE nemura.letter_verification SET state = 'valid', letter_id = p_letter, issued_on = p_on, company = p_company, content_hash = p_content, state_at = now()
    WHERE organisation_id = p_org AND request_id = p_request AND state = 'pending';
 END
 $function$
@@ -3862,6 +3926,15 @@ AS $function$
   SELECT v.organisation_id, v.letter_id, v.state, v.type_key, v.issued_on, v.company FROM nemura.letter_verification v WHERE v.lookup_hash = p_lookup AND v.state IN ('valid', 'withdrawn')
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.letter_verification_lookup_content(p_content bytea)
+ RETURNS TABLE(organisation_id uuid, letter_id uuid, state text, type_key text, issued_on date, company text)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT v.organisation_id, v.letter_id, v.state, v.type_key, v.issued_on, v.company FROM nemura.letter_verification v WHERE v.content_hash = p_content AND v.state IN ('valid', 'withdrawn')
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.letter_verification_register(p_org uuid, p_request uuid, p_type text, p_lookup bytea)
  RETURNS void
  LANGUAGE plpgsql
@@ -3873,6 +3946,22 @@ BEGIN
     RAISE EXCEPTION 'A verification is registered for the caller''s own organisation only' USING ERRCODE = 'NM206';
   END IF;
   INSERT INTO nemura.letter_verification (lookup_hash, organisation_id, request_id, type_key) VALUES (p_lookup, p_org, p_request, p_type);
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.letter_verification_state(p_org uuid, p_letter uuid)
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE s text;
+BEGIN
+  IF p_org IS DISTINCT FROM nemura.current_org() THEN
+    RAISE EXCEPTION 'A verification is read for the caller''s own organisation only' USING ERRCODE = 'NM206';
+  END IF;
+  SELECT v.state INTO s FROM nemura.letter_verification v WHERE v.organisation_id = p_org AND v.letter_id = p_letter;
+  RETURN s;
 END
 $function$
 
@@ -4479,6 +4568,27 @@ BEGIN
     RAISE EXCEPTION 'An election is history: it can only be ended, once' USING ERRCODE = 'NM171';
   END IF;
   RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.public_rate_hit(p_scope text, p_key bytea, p_window_seconds integer, p_limit integer, p_now timestamp with time zone)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  w timestamptz;
+  n integer;
+BEGIN
+  IF p_window_seconds NOT BETWEEN 1 AND 86400 OR p_limit < 1 OR octet_length(p_key) <> 32 OR p_scope !~ '^[a-z][a-z0-9_.-]{0,40}$' THEN
+    RAISE EXCEPTION 'A rate window is 1 second to a day, a limit is at least 1, a key is a SHA-256 and a scope a short name' USING ERRCODE = 'NM208';
+  END IF;
+  w := to_timestamp(floor(extract(epoch FROM p_now) / p_window_seconds) * p_window_seconds);
+  DELETE FROM nemura.public_rate WHERE window_start < p_now - interval '2 hours' AND scope = p_scope;
+  INSERT INTO nemura.public_rate AS r (scope, key_hash, window_start, hits) VALUES (p_scope, p_key, w, 1)
+    ON CONFLICT (scope, key_hash, window_start) DO UPDATE SET hits = r.hits + 1 RETURNING r.hits INTO n;
+  RETURN n <= p_limit;
 END
 $function$
 

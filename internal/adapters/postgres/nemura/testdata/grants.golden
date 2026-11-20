@@ -314,6 +314,13 @@ nemura_api | column nemura.letter_delegation.revoked_reason | UPDATE
 nemura_api | column nemura.letter_delegation.template_id | INSERT
 nemura_api | column nemura.letter_delegation.type_key | INSERT
 nemura_api | column nemura.letter_delegation.who | INSERT
+nemura_api | column nemura.letter_disclosure.created_at | INSERT
+nemura_api | column nemura.letter_disclosure.created_by | INSERT
+nemura_api | column nemura.letter_disclosure.expires_at | INSERT
+nemura_api | column nemura.letter_disclosure.id | INSERT
+nemura_api | column nemura.letter_disclosure.issued_id | INSERT
+nemura_api | column nemura.letter_disclosure.revoked_at | UPDATE
+nemura_api | column nemura.letter_disclosure.token_hash | INSERT
 nemura_api | column nemura.letter_issued.authority | INSERT
 nemura_api | column nemura.letter_issued.blob_key | INSERT
 nemura_api | column nemura.letter_issued.data | INSERT
@@ -893,7 +900,9 @@ nemura_api | function nemura.has_role | EXECUTE
 nemura_api | function nemura.is_manager_of | EXECUTE
 nemura_api | function nemura.letter_verification_issue | EXECUTE
 nemura_api | function nemura.letter_verification_lookup | EXECUTE
+nemura_api | function nemura.letter_verification_lookup_content | EXECUTE
 nemura_api | function nemura.letter_verification_register | EXECUTE
+nemura_api | function nemura.letter_verification_state | EXECUTE
 nemura_api | function nemura.letter_verification_withdraw | EXECUTE
 nemura_api | function nemura.link_client_route | EXECUTE
 nemura_api | function nemura.link_identity | EXECUTE
@@ -902,6 +911,7 @@ nemura_api | function nemura.member_identities | EXECUTE
 nemura_api | function nemura.member_identity | EXECUTE
 nemura_api | function nemura.members_for_identity | EXECUTE
 nemura_api | function nemura.person_has_leave | EXECUTE
+nemura_api | function nemura.public_rate_hit | EXECUTE
 nemura_api | function nemura.replace_member_identities | EXECUTE
 nemura_api | function nemura.revoke_sessions_of_identity | EXECUTE
 nemura_api | function nemura.setup_done | EXECUTE
@@ -942,6 +952,7 @@ nemura_api | table nemura.leave_ledger | SELECT
 nemura_api | table nemura.leave_request | SELECT
 nemura_api | table nemura.legal_hold | SELECT
 nemura_api | table nemura.letter_delegation | SELECT
+nemura_api | table nemura.letter_disclosure | SELECT
 nemura_api | table nemura.letter_issued | SELECT
 nemura_api | table nemura.letter_link | SELECT
 nemura_api | table nemura.letter_request | SELECT
@@ -1102,6 +1113,7 @@ nemura_readonly | table nemura.leave_ledger | SELECT
 nemura_readonly | table nemura.leave_request | SELECT
 nemura_readonly | table nemura.legal_hold | SELECT
 nemura_readonly | table nemura.letter_delegation | SELECT
+nemura_readonly | table nemura.letter_disclosure | SELECT
 nemura_readonly | table nemura.letter_issued | SELECT
 nemura_readonly | table nemura.letter_link | SELECT
 nemura_readonly | table nemura.letter_request | SELECT
@@ -1281,6 +1293,7 @@ nemura_worker | table nemura.leave_ledger | SELECT
 nemura_worker | table nemura.leave_request | SELECT
 nemura_worker | table nemura.legal_hold | SELECT
 nemura_worker | table nemura.letter_delegation | SELECT
+nemura_worker | table nemura.letter_disclosure | SELECT
 nemura_worker | table nemura.letter_issued | SELECT
 nemura_worker | table nemura.letter_link | SELECT
 nemura_worker | table nemura.letter_request | SELECT

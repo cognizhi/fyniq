@@ -853,7 +853,7 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		"NM_RATE_LIMITED": {method: "POST", path: "/v1/letter-verification", body: `{"reference":"RL-2026-0001","code":"AAAA-AAAA-AAAA-AAAA"}`, before: func() {
 			verifyLimiter = verifyLimit{}
 			for i := 0; i < 10; i++ {
-				verifyLimiter.allow("RL-2026-0001", testNow)
+				verifyLimiter.hit("letter-ref", "RL-2026-0001", rateRef)
 			}
 		}},
 		CodeClientExists: {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
@@ -1421,4 +1421,27 @@ func (f fakeLetterVerify) Verify(_ context.Context, reference, code string) (Let
 	}
 	return LetterVerificationView{}, f.err
 }
+func (f fakeLetterVerify) VerifyFile(_ context.Context, sha string) (LetterVerificationView, error) {
+	if sha == strings.Repeat("ab", 32) {
+		s, ty, on, co := "valid", "employment_confirmation", "2026-11-20", "Acme Pte. Ltd."
+		return LetterVerificationView{Found: true, Status: &s, Type: &ty, IssuedOn: &on, Company: &co}, f.err
+	}
+	return LetterVerificationView{}, f.err
+}
 func (f fakeLetterVerify) Withdraw(context.Context, Session, uuid.UUID) error { return f.err }
+func (f fakeLetterVerify) Allow(_ context.Context, scope, key string, _ time.Duration, limit int) (bool, error) {
+	return verifyLimiter.hit(scope, key, limit), nil
+}
+func (f fakeLetterVerify) Share(context.Context, Session, uuid.UUID, int) (string, string, string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e91", testDisclosure, "2096-01-09T09:00:00Z", f.err
+}
+func (f fakeLetterVerify) Shares(context.Context, Session, uuid.UUID) ([]LetterShare, error) {
+	return []LetterShare{}, f.err
+}
+func (f fakeLetterVerify) Unshare(context.Context, Session, uuid.UUID) error { return f.err }
+func (f fakeLetterVerify) Disclose(_ context.Context, token string) (LetterDisclosureView, error) {
+	if token == testDisclosure {
+		return LetterDisclosureView{Found: true, Status: "valid", Type: "employment_confirmation", IssuedOn: "2026-11-20", Company: "Acme Pte. Ltd.", ExpiresAt: "2096-01-09T09:00:00Z", Facts: []LetterFact{{Label: "Job title", Value: "Designer"}}}, f.err
+	}
+	return LetterDisclosureView{}, f.err
+}
