@@ -1171,6 +1171,14 @@
       "label": "Add a passkey to approve pay runs in Nemura",
       "tooltip": "Nemura signs a pay run's approval with a passkey enrolled here. This reminder goes when you add one, and it gives you no role in Fyniq."
     },
+    "people.link": {
+      "label": "Ask to link Nemura",
+      "tooltip": "Asks to link this organisation to Nemura with what Nemura's link page shows. The Owner and a second approver approve it, and Nemura approves its own half."
+    },
+    "people.unlink": {
+      "label": "Ask to unlink Nemura",
+      "tooltip": "Asks to end the link. The Owner and a second approver approve it; work in flight settles first, then the link ends and both sides keep their data."
+    },
     "people.health": {
       "label": "Link health",
       "tooltip": "How the link to Nemura stands: events waiting, failing or refused, and any run of events Nemura says it delivered that Fyniq never received, which it can send again."

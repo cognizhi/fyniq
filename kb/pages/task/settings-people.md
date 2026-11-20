@@ -4,7 +4,7 @@ type: task
 title: People and HR: where payroll lives and how its outputs are met
 summary: See where payroll lives, the Nemura link's state, how a month's statutory outputs are met, and how a provider's payroll journal becomes a draft
 sources:
-  - docs/user-guide/settings-people.md sha256:e89f52885e311bf182f0773dcc07b4fc5274884afa4688263aa7b86b9370e22d
+  - docs/user-guide/settings-people.md sha256:5370b81be4d4d17cd8147d781b383b81e6f3d87b9725dee2bf8d60dec7295db4
 data_class: general
 taint: trusted
 status: draft
@@ -40,6 +40,13 @@ aliases:
 - While payroll lives in Nemura a provider's payroll journal or a file import is not taken: the pay run posts through the link, so it is never posted from two sources.
 
 (src: docs/user-guide/settings-people.md#where-each-feature-lives)
+
+## Link or unlink Nemura
+
+- **Link Nemura** asks to link with what Nemura's link page shows once an Owner there has proposed the link: its organisation ID and web address, the two client IDs, its link key and client key, and an expiry within a year. Nothing is linked by asking: the Owner and a second approver approve it here and another Owner or Administrator approves Nemura's half there.
+- **Ask to unlink Nemura** needs a reason and the same two approvers. Work in flight settles first: salary payments not yet settled, payments with an unknown outcome and events waiting for Nemura. While any is left the link stays unlinking and the page counts them; **Finish unlinking** ends it when nothing is left. Both sides keep their data, and a later link starts at a higher epoch.
+
+(src: docs/user-guide/settings-people.md#link-or-unlink-nemura)
 
 ## Link health
 
