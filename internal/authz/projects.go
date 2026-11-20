@@ -66,7 +66,11 @@ var (
 // Milestones and retainer periods (FR-PRJ-10): read with the project reports; entered and accepted by those who create invoices, because an
 // accepted milestone is what an invoice bills.
 var (
-	ListProjectMilestones  = Policy{Operation: "listProjectMilestones", Capability: ProjectReports, Need: View}
-	CreateProjectMilestone = Policy{Operation: "createProjectMilestone", Capability: Invoices, Need: Create, Parent: ProjectReports}
-	AcceptProjectMilestone = Policy{Operation: "acceptProjectMilestone", Capability: Invoices, Need: Create, Parent: ProjectReports}
+	// Revenue over time for fixed-fee projects (FR-PRJ-11): read with the project reports, elected by those who post journals, and the month's journal proposed as a draft journal.
+	GetProjectRevenue            = Policy{Operation: "getProjectRevenue", Capability: ProjectReports, Need: View}
+	SetProjectRevenueElection    = Policy{Operation: "setProjectRevenueElection", Capability: Journals, Need: Post, Parent: ProjectReports}
+	ProposeProjectRevenueJournal = Policy{Operation: "proposeProjectRevenueJournal", Capability: Journals, Need: Create, Parent: ProjectReports}
+	ListProjectMilestones        = Policy{Operation: "listProjectMilestones", Capability: ProjectReports, Need: View}
+	CreateProjectMilestone       = Policy{Operation: "createProjectMilestone", Capability: Invoices, Need: Create, Parent: ProjectReports}
+	AcceptProjectMilestone       = Policy{Operation: "acceptProjectMilestone", Capability: Invoices, Need: Create, Parent: ProjectReports}
 )

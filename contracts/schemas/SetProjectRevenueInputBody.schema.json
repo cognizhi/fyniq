@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "estimated_cost": {
+      "description": "The estimated total cost in the project's currency, above nothing; needed for over_time.",
+      "examples": [
+        "6000.00"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,15})(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "method": {
+      "description": "How the project recognises its revenue.",
+      "enum": [
+        "milestone",
+        "over_time"
+      ],
+      "examples": [
+        "over_time"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "method"
+  ],
+  "title": "SetProjectRevenueInputBody",
+  "type": "object"
+}

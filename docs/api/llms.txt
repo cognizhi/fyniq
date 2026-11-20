@@ -966,6 +966,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/projects/{project_id}` (replaceProject): Change a project, or set up a value of the Project dimension as one
 - `GET /v1/projects/{project_id}/billing-rates` (listBillingRates): List a project's billing rates
 - `GET /v1/projects/{project_id}/milestones` (listProjectMilestones): A project's milestones or retainer periods
+- `GET /v1/projects/{project_id}/revenue` (getProjectRevenue): Read a fixed-fee project's revenue over time for a month
+- `PUT /v1/projects/{project_id}/revenue-election` (setProjectRevenueElection): Elect a fixed-fee project's revenue over time, or back to milestones
+- `POST /v1/projects/{project_id}/revenue-journals` (proposeProjectRevenueJournal): Propose a month's revenue journal for a project elected for revenue over time
 - `GET /v1/projects/{project_id}/tasks` (listProjectTasks): List a project's tasks
 - `GET /v1/projects/{project_id}/time-cost` (getProjectTimeCost): Read a project's approved time and what it costs
 - `GET /v1/projects/{project_id}/time-entries` (listProjectTimeEntries): The approved time entries behind a project's figures

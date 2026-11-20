@@ -883,3 +883,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | claims.my-claims: receipt suggestions come from the holder's own capture address (FR-AP-08)
 
 ## [2026-11-20] compile | compliance.invoicenow: the exclusion form and the contingency approval button
+
+## [2026-11-20] compile | projects.billing, settings.organisation: revenue over time (FR-PRJ-11)

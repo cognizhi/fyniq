@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cognizhi/fyniq/internal/domain/comment"
+	"github.com/cognizhi/fyniq/internal/domain/dashboard"
 	"github.com/cognizhi/fyniq/internal/domain/payrollimport"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/preference"
-	"github.com/cognizhi/fyniq/internal/domain/dashboard"
 	"github.com/cognizhi/fyniq/internal/domain/reportdef"
 	"github.com/cognizhi/fyniq/internal/domain/salarybatch"
 	"github.com/cognizhi/fyniq/internal/domain/saveditem"
@@ -59,7 +59,6 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/dimension"
 	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/disputes"
-	"github.com/cognizhi/fyniq/internal/domain/subscription"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
@@ -85,6 +84,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/portal"
 	"github.com/cognizhi/fyniq/internal/domain/project"
 	"github.com/cognizhi/fyniq/internal/domain/projectbilling"
+	"github.com/cognizhi/fyniq/internal/domain/projectrevenue"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
@@ -92,6 +92,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/statement"
+	"github.com/cognizhi/fyniq/internal/domain/subscription"
 	"github.com/cognizhi/fyniq/internal/domain/succession"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/domain/timesheet"
@@ -963,33 +964,38 @@ var codeFacts = map[string]struct {
 	banking.CodeDecided:     {403, "You recorded the bank transactions this sign-off covers (SOD-5)"},
 
 	// A money account's payment file (FR-BNK-12, rev 0.157).
-	paymentfile.CodeProvider:  {422, "The payment file is not one the account's bank takes"},
-	paymentfile.CodeNotBuilt:  {422, "The payment file is not available yet"},
-	CodePSPNotProvider:        {422, "The money account is not a payment provider's"},
-	CodePSPPayout:             {422, "The account payouts land in cannot take them"},
-	CodePSPFee:                {422, "The account fees post to cannot take them"},
-	CodePSPDisputes:           {422, "The account a dispute waits in cannot hold it"},
-	CodePSPDisputeState:       {409, "The dispute cannot be written off now"},
-	CodePSPDisputeLimit:       {422, "The dispute is above the expense limit"},
-	CodePSPEventState:         {409, "The event is not waiting for a person"},
-	CodePSPCredit:             {422, "The credit cannot settle the dispute"},
-	paymentlink.CodeNotIssued: {422, "A payment link is for an issued invoice with something open"},
-	paymentlink.CodeNoAccount: {422, "No provider account collects the invoice's currency"},
-	paymentlink.CodeLive:      {409, "The invoice has a payment link already"},
-	CodeLinkConnector:         {422, "No payment-link connector is enabled"},
-	CodeLinkClosed:            {409, "The payment link is not live"},
-	portal.CodeLink:           {404, "This link does not open anything"},
-	disputes.CodeNotOpen:      {422, "A dispute or promise is for an invoice with something open"},
-	disputes.CodeAmount:       {422, "The disputed amount is not valid"},
-	disputes.CodeDate:         {422, "The promised day is not valid"},
-	disputes.CodeOpen:         {409, "The invoice has an open record of that kind"},
-	disputes.CodeWords:        {422, "A reason or resolution is needed"},
-	subscription.CodeContact:  {422, "A subscription is for an active customer"},
-	subscription.CodeTerms:    {422, "The subscription's terms are not valid"},
-	subscription.CodeKind:     {422, "The amendment does not fit what the contract is that day"},
-	subscription.CodeDate:     {422, "The amendment's day is not valid"},
-	subscription.CodeAmount:   {422, "The amendment's monthly value is not valid"},
-	subscription.CodeReason:   {422, "An amendment needs its reason"},
+	paymentfile.CodeProvider:    {422, "The payment file is not one the account's bank takes"},
+	paymentfile.CodeNotBuilt:    {422, "The payment file is not available yet"},
+	CodePSPNotProvider:          {422, "The money account is not a payment provider's"},
+	CodePSPPayout:               {422, "The account payouts land in cannot take them"},
+	CodePSPFee:                  {422, "The account fees post to cannot take them"},
+	CodePSPDisputes:             {422, "The account a dispute waits in cannot hold it"},
+	CodePSPDisputeState:         {409, "The dispute cannot be written off now"},
+	CodePSPDisputeLimit:         {422, "The dispute is above the expense limit"},
+	CodePSPEventState:           {409, "The event is not waiting for a person"},
+	CodePSPCredit:               {422, "The credit cannot settle the dispute"},
+	paymentlink.CodeNotIssued:   {422, "A payment link is for an issued invoice with something open"},
+	paymentlink.CodeNoAccount:   {422, "No provider account collects the invoice's currency"},
+	paymentlink.CodeLive:        {409, "The invoice has a payment link already"},
+	CodeLinkConnector:           {422, "No payment-link connector is enabled"},
+	CodeLinkClosed:              {409, "The payment link is not live"},
+	portal.CodeLink:             {404, "This link does not open anything"},
+	disputes.CodeNotOpen:        {422, "A dispute or promise is for an invoice with something open"},
+	disputes.CodeAmount:         {422, "The disputed amount is not valid"},
+	disputes.CodeDate:           {422, "The promised day is not valid"},
+	disputes.CodeOpen:           {409, "The invoice has an open record of that kind"},
+	disputes.CodeWords:          {422, "A reason or resolution is needed"},
+	projectrevenue.CodeProject:  {422, "Revenue over time is for an elected fixed-fee project"},
+	projectrevenue.CodeEstimate: {422, "The fee or the estimate is not usable"},
+	projectrevenue.CodeMonth:    {422, "That month cannot be proposed now"},
+	projectrevenue.CodeAccounts: {422, "The accounts for revenue over time are not set up"},
+	projectrevenue.CodeNothing:  {422, "The journal would move nothing"},
+	subscription.CodeContact:    {422, "A subscription is for an active customer"},
+	subscription.CodeTerms:      {422, "The subscription's terms are not valid"},
+	subscription.CodeKind:       {422, "The amendment does not fit what the contract is that day"},
+	subscription.CodeDate:       {422, "The amendment's day is not valid"},
+	subscription.CodeAmount:     {422, "The amendment's monthly value is not valid"},
+	subscription.CodeReason:     {422, "An amendment needs its reason"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},
@@ -1271,33 +1277,33 @@ var codeFacts = map[string]struct {
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
 var storageFixes = map[string]string{
-	storage.CodeCapTableGrant: "A grant ends once; grant it again to open the cap table again",
+	storage.CodeCapTableGrant:     "A grant ends once; grant it again to open the cap table again",
 	storage.CodeCapTableGrantLive: "Revoke that person's grant first",
-	storage.CodeDashboardLayout: "Read the layout again and save the change as its next version",
-	storage.CodeKPIAlert: "The next month is its own alert",
-	storage.CodeBoardPack:      "Read the draft again and save the change as its next edit, or publish a corrected version",
-	storage.CodeBoardPackDraft: "Open the month's draft and edit it, or publish it first",
-	storage.CodeInvestorUpdate: "Read the draft again and save the change as its next edit, or send a new update",
-	storage.CodeInvestorRead:   "Only a person the update was sent to opens it as read",
+	storage.CodeDashboardLayout:   "Read the layout again and save the change as its next version",
+	storage.CodeKPIAlert:          "The next month is its own alert",
+	storage.CodeBoardPack:         "Read the draft again and save the change as its next edit, or publish a corrected version",
+	storage.CodeBoardPackDraft:    "Open the month's draft and edit it, or publish it first",
+	storage.CodeInvestorUpdate:    "Read the draft again and save the change as its next edit, or send a new update",
+	storage.CodeInvestorRead:      "Only a person the update was sent to opens it as read",
 	storage.CodeReportName:        "Give the report another name, or archive the one that has it",
 	storage.CodeReportDefinition:  "Read the definition again and save the change as its next version",
 	storage.CodeReportSchedule:    "Read the schedule again and save the change as its next version",
 	storage.CodeReportScheduleRun: "A run is recorded once; the next run is its own record",
-	storage.CodeOverlap:       "Change the dates so they neither overlap another version nor end before they start",
-	storage.CodeOrganisation:  "Correct the value the message names and send the change again",
-	storage.CodeVersion:       "Read the record again, check what changed, and send your change with its new ETag",
-	storage.CodeMembership:    "Check the member's roles: the organisation keeps an Owner, and each role is held once",
-	storage.CodeSequence:      "Move the next number forward, or use another prefix; a number is never issued twice",
-	storage.CodeDuplicate:     "Check whether it was done already; for a new record, use a code or key not in use",
-	storage.CodeInvalid:       "Correct the value the message names and send it again",
-	storage.CodeApproval:      "Read the request again: it is signed once, by someone other than its requester, with a second factor, while it is pending",
-	storage.CodeEvidence:      "Files can be removed only while the record is a draft; add a newer file instead",
-	storage.CodeAccounting:    "Record a new version instead; another member who holds the Accountant role confirms or approves it",
-	storage.CodeVariance:      "Explain an income or expense account's variance while its period is open; a new explanation replaces the earlier one",
-	storage.CodeChecklist:     "Mark checklist tasks while the period is open; save a new template version rather than changing one",
-	storage.CodeFXRate:        "Enter rates of currencies other than the base, a monthly rate on its month's first day; withdraw a rate and enter another rather than changing one",
-	storage.CodeFXRevaluation: "Revalue the period while it is open, from its own last day; the scheduler saves only the revaluation the application worked out",
-	storage.CodeTemplate:      "Publish a new version, or roll back to an earlier one: a published version never changes and a template is never deleted",
+	storage.CodeOverlap:           "Change the dates so they neither overlap another version nor end before they start",
+	storage.CodeOrganisation:      "Correct the value the message names and send the change again",
+	storage.CodeVersion:           "Read the record again, check what changed, and send your change with its new ETag",
+	storage.CodeMembership:        "Check the member's roles: the organisation keeps an Owner, and each role is held once",
+	storage.CodeSequence:          "Move the next number forward, or use another prefix; a number is never issued twice",
+	storage.CodeDuplicate:         "Check whether it was done already; for a new record, use a code or key not in use",
+	storage.CodeInvalid:           "Correct the value the message names and send it again",
+	storage.CodeApproval:          "Read the request again: it is signed once, by someone other than its requester, with a second factor, while it is pending",
+	storage.CodeEvidence:          "Files can be removed only while the record is a draft; add a newer file instead",
+	storage.CodeAccounting:        "Record a new version instead; another member who holds the Accountant role confirms or approves it",
+	storage.CodeVariance:          "Explain an income or expense account's variance while its period is open; a new explanation replaces the earlier one",
+	storage.CodeChecklist:         "Mark checklist tasks while the period is open; save a new template version rather than changing one",
+	storage.CodeFXRate:            "Enter rates of currencies other than the base, a monthly rate on its month's first day; withdraw a rate and enter another rather than changing one",
+	storage.CodeFXRevaluation:     "Revalue the period while it is open, from its own last day; the scheduler saves only the revaluation the application worked out",
+	storage.CodeTemplate:          "Publish a new version, or roll back to an earlier one: a published version never changes and a template is never deleted",
 
 	storage.CodeSend: "Send the issued invoice or sent quote as it stands now",
 	storage.CodeLink: "Email the document again for a new link",
@@ -1509,6 +1515,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		plk *paymentlink.Error
 		dsp *disputes.Error
 		sub *subscription.Error
+		prv *projectrevenue.Error
 		pfe *paymentfile.Error
 		cle *claim.Error
 		dre *director.Error
@@ -1611,6 +1618,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return payeeProblems(pyp).(*Problem)
 	case errors.As(err, &dsp):
 		return problem(dsp.Code, sentence(dsp.Message), sentence(dsp.Fix))
+	case errors.As(err, &prv):
+		return problem(prv.Code, sentence(prv.Message), sentence(prv.Fix))
 	case errors.As(err, &sub):
 		return problem(sub.Code, sentence(sub.Message), sentence(sub.Fix))
 	case errors.As(err, &plk):

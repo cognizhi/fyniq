@@ -680,6 +680,7 @@ export const actions = [
   { kind: "action", id: "invoice.ask-approval", mode: "basic", help: "invoice.ask-approval", guide: "sales.invoices#invoices-above-the-self-approval-threshold" },
   { kind: "action", id: "contact.portal-link", mode: "basic", help: "contact.portal-link", guide: "contacts.manage#the-customer-portal" },
   { kind: "action", id: "contact.portal-revoke", mode: "basic", help: "contact.portal-revoke", guide: "contacts.manage#the-customer-portal" },
+  { kind: "action", id: "project.revenue-over-time", mode: "expert", help: "project.revenue-over-time", guide: "projects.billing#revenue-over-time" },
   { kind: "action", id: "subscription.contract", mode: "expert", help: "subscription.contract", guide: "sales.invoices#subscription-contracts" },
   { kind: "action", id: "subscription.amend", mode: "expert", help: "subscription.amend", guide: "sales.invoices#subscription-contracts" },
   { kind: "action", id: "psp.post-invoices", mode: "expert", help: "psp.post-invoices", guide: "sales.invoices#subscriptions-a-provider-bills" },

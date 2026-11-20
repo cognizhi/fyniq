@@ -3315,6 +3315,28 @@ type FyniqProjectMilestone struct {
 	ChangedAt      time.Time
 }
 
+type FyniqProjectRevenueElection struct {
+	OrganisationID uuid.UUID
+	ProjectID      uuid.UUID
+	Method         string
+	EstimatedCost  *string
+	Version        int32
+	SetBy          string
+	SetAt          time.Time
+}
+
+type FyniqProjectRevenueRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Month          time.Time
+	JournalID      uuid.UUID
+	Adjustment     string
+	Earned         string
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
 type FyniqProjectTask struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -433,6 +433,12 @@ one, so these are the company's own policy: Fyniq recommends **S$0.60** a km for
 - A mileage line claims no GST.
 - A change needs a second approver, as the other money settings do.
 
+## Project revenue over time
+
+Three accounts take the journal of a fixed-fee project elected for **revenue over time**: **Contract asset account** (1150 unless changed) for what is earned and
+not yet invoiced, **Contract liability account** (2400 Deferred revenue) for what is invoiced ahead of the work, and **Revenue over time account** (4030). Each
+must be an active account that takes postings, and changing one needs a second person's approval. See [Project billing](projects-billing.md).
+
 ## Capitalisation threshold
 
 - A purchase of S$1,000 or more is offered as a fixed asset; a smaller one is an expense.

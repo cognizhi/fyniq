@@ -254,6 +254,12 @@ Source: PRD-001 §8.10 · Priority S · Phase P2
 - **THEN** progress is 50.0%, the revenue earned to date is 5,000.00, the adjustment is minus 1,500.00 and the contract asset is 1,000.00 after the journal
 - **AND** a project invoiced ahead of its progress shows a contract liability instead, and the asset's change less the liability's change is the adjustment
 
+#### Scenario: The month's journal is proposed as a draft for approval (rev 0.572)
+- **GIVEN** a fixed-fee project elected for revenue over time with the figures above and the three accounts set up
+- **WHEN** the accountant proposes the month's journal
+- **THEN** a draft journal is made dated the month's last day, debiting the contract asset by 100.00 and crediting revenue by 100.00, every line carrying the project, and nothing is posted
+- **AND** a second proposal for the month, a month before an earlier proposal, or a month while an earlier month's journal is not posted is refused in plain words
+
 ### Requirement: FR-PRJ-12 Project reports
 The system SHALL report profitability per project, customer and person (revenue − time at cost − direct costs), utilisation, realisation, unbilled work and budget burn, with drill to time entries and costs; time at cost is a management view.
 
