@@ -9,13 +9,14 @@ import { adopt } from "./preferences";
 import { helpText } from "./i18n";
 import { setMode, useMode } from "./mode";
 import { nav, routes, type Mode } from "./registry";
-import { go } from "./route";
+import { go, signInURL, switchProvider } from "./route";
 import { AppFrame } from "./shell/AppFrame";
 import { mayOpen, personalOnly } from "./shell/navigation";
 import { NotPartOfAccess } from "./shell/NotPartOfAccess";
 import { CoolingOff, RecoverAccount } from "./screens/Recovery";
 import { CompanyLogo } from "./screens/settings/Brand";
 import { Banners } from "./shell/Banners";
+import { NemuraPasskeyReminder } from "./shell/NemuraPasskeyReminder";
 import { PracticeBanner } from "./shell/PracticeBanner";
 import { NotificationBell } from "./shell/NotificationBell";
 import { OperationsTray } from "./shell/OperationsTray";
@@ -36,6 +37,9 @@ export async function whereTo(): Promise<Shell> {
   if (setup && !setup.done) return { kind: "install" };
   if (!session) {
     if (response.status !== 401) return { kind: "down" };
+    // Crossing from Nemura with the provider the person signed in with: ask that provider at once, so the sign-in page is not shown again (one sign-in across the apps). A refused one comes back to /sign-in with its code.
+    const via = window.location.pathname === "/" && new URLSearchParams(window.location.search).get("switch") === "1" ? switchProvider(window.location.search) : null;
+    if (via) return { kind: "sign-in", to: signInURL(via, "/?switch=1") };
     const keep = new URLSearchParams();
     const params = new URLSearchParams(window.location.search);
     for (const k of ["signin_error", "return_to"]) {
@@ -175,6 +179,7 @@ export function SignedIn() {
         <AppFrame session={state.session} title={title} mode={mode} operations={<OperationsTray />} bell={<NotificationBell />} banners={
           <>
             <PracticeBanner practice={state.organisation?.practice} />
+            <NemuraPasskeyReminder needed={state.session.nemura_passkey_needed} />
             <Banners />
           </>
         } logo={<CompanyLogo name={state.organisation?.name} />}>

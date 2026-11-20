@@ -381,6 +381,16 @@ nemura_api | column nemura.link_event.object_version | INSERT
 nemura_api | column nemura.link_event.queued_at | INSERT
 nemura_api | column nemura.link_event.sequence | INSERT
 nemura_api | column nemura.link_event.type | INSERT
+nemura_api | column nemura.link_identity_access.finance | INSERT
+nemura_api | column nemura.link_identity_access.finance | UPDATE
+nemura_api | column nemura.link_identity_access.issuer | INSERT
+nemura_api | column nemura.link_identity_access.passkey | INSERT
+nemura_api | column nemura.link_identity_access.passkey | UPDATE
+nemura_api | column nemura.link_identity_access.received_at | INSERT
+nemura_api | column nemura.link_identity_access.received_at | UPDATE
+nemura_api | column nemura.link_identity_access.subject | INSERT
+nemura_api | column nemura.link_identity_access.version | INSERT
+nemura_api | column nemura.link_identity_access.version | UPDATE
 nemura_api | column nemura.link_inbox.code | INSERT
 nemura_api | column nemura.link_inbox.epoch | INSERT
 nemura_api | column nemura.link_inbox.event_id | INSERT
@@ -791,9 +801,12 @@ nemura_api | column nemura.role_assignment.member_id | INSERT
 nemura_api | column nemura.role_assignment.role | INSERT
 nemura_api | column nemura.session.expires_at | INSERT
 nemura_api | column nemura.session.id | INSERT
+nemura_api | column nemura.session.issuer | INSERT
 nemura_api | column nemura.session.member_id | INSERT
+nemura_api | column nemura.session.provider | INSERT
 nemura_api | column nemura.session.revoked_at | UPDATE
 nemura_api | column nemura.session.step_up_at | UPDATE
+nemura_api | column nemura.session.subject | INSERT
 nemura_api | column nemura.session.token_hash | INSERT
 nemura_api | column nemura.sick_notification.certificate_added_at | UPDATE
 nemura_api | column nemura.sick_notification.certificate_id | UPDATE
@@ -855,6 +868,7 @@ nemura_api | function nemura.is_manager_of | EXECUTE
 nemura_api | function nemura.link_client_route | EXECUTE
 nemura_api | function nemura.link_identity | EXECUTE
 nemura_api | function nemura.lock_leave_head | EXECUTE
+nemura_api | function nemura.member_identities | EXECUTE
 nemura_api | function nemura.member_identity | EXECUTE
 nemura_api | function nemura.members_for_identity | EXECUTE
 nemura_api | function nemura.person_has_leave | EXECUTE
@@ -903,6 +917,7 @@ nemura_api | table nemura.letter_template_version | SELECT
 nemura_api | table nemura.letter_type | SELECT
 nemura_api | table nemura.link_department | SELECT
 nemura_api | table nemura.link_event | SELECT
+nemura_api | table nemura.link_identity_access | SELECT
 nemura_api | table nemura.link_inbox | SELECT
 nemura_api | table nemura.link_mapping | SELECT
 nemura_api | table nemura.link_object_version | SELECT
@@ -1058,6 +1073,7 @@ nemura_readonly | table nemura.letter_template_version | SELECT
 nemura_readonly | table nemura.letter_type | SELECT
 nemura_readonly | table nemura.link_department | SELECT
 nemura_readonly | table nemura.link_event | SELECT
+nemura_readonly | table nemura.link_identity_access | SELECT
 nemura_readonly | table nemura.link_inbox | SELECT
 nemura_readonly | table nemura.link_mapping | SELECT
 nemura_readonly | table nemura.link_object_version | SELECT
@@ -1166,15 +1182,19 @@ nemura_worker | column nemura.outbox.task_name | UPDATE
 nemura_worker | column nemura.outbox.worker_class | INSERT
 nemura_worker | column nemura.session.expires_at | INSERT
 nemura_worker | column nemura.session.id | INSERT
+nemura_worker | column nemura.session.issuer | INSERT
 nemura_worker | column nemura.session.member_id | INSERT
+nemura_worker | column nemura.session.provider | INSERT
 nemura_worker | column nemura.session.revoked_at | UPDATE
 nemura_worker | column nemura.session.step_up_at | UPDATE
+nemura_worker | column nemura.session.subject | INSERT
 nemura_worker | column nemura.session.token_hash | INSERT
 nemura_worker | database | CONNECT
 nemura_worker | function nemura.current_org | EXECUTE
 nemura_worker | function nemura.current_person | EXECUTE
 nemura_worker | function nemura.has_role | EXECUTE
 nemura_worker | function nemura.is_manager_of | EXECUTE
+nemura_worker | function nemura.member_identities | EXECUTE
 nemura_worker | schema nemura | USAGE
 nemura_worker | table nemura.access_request | SELECT
 nemura_worker | table nemura.access_request_item | SELECT
@@ -1217,6 +1237,7 @@ nemura_worker | table nemura.letter_template_version | SELECT
 nemura_worker | table nemura.letter_type | SELECT
 nemura_worker | table nemura.link_department | SELECT
 nemura_worker | table nemura.link_event | SELECT
+nemura_worker | table nemura.link_identity_access | SELECT
 nemura_worker | table nemura.link_inbox | SELECT
 nemura_worker | table nemura.link_mapping | SELECT
 nemura_worker | table nemura.link_object_version | SELECT

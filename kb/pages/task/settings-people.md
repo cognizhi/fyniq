@@ -4,7 +4,7 @@ type: task
 title: People and HR: where payroll lives and how its outputs are met
 summary: See where payroll lives, the Nemura link's state, how a month's statutory outputs are met, and how a provider's payroll journal becomes a draft
 sources:
-  - docs/user-guide/settings-people.md sha256:a058b2798ad9942175200adfbf585aab07921292e4ca23fb75937f61347a4f09
+  - docs/user-guide/settings-people.md sha256:7a88c19f406040086ac4ceab16fc41769063aee7c6c7a7dc2d37c95c004b3d91
 data_class: general
 taint: trusted
 status: draft
@@ -19,6 +19,8 @@ aliases:
   - provider payroll journal
   - payroll import
   - nemura link
+  - add a passkey to approve pay runs in nemura
+  - finance people switch
 ---
 
 # People and HR: where payroll lives and how its outputs are met
@@ -36,6 +38,15 @@ aliases:
 - While payroll lives in Nemura a provider's payroll journal or a file import is not taken: the pay run posts through the link, so it is never posted from two sources.
 
 (src: docs/user-guide/settings-people.md#where-each-feature-lives)
+
+## People who approve pay runs in Nemura
+
+- A pay run approved in Nemura while the apps are linked is signed with a passkey enrolled in Fyniq. Nemura tells Fyniq, signed, which sign-in accounts approve pay runs there: an account and a yes or no, never a role name or an email.
+- A person Nemura says approves pay runs, with no passkey in Fyniq, sees a reminder at the top of every page: **Add a passkey to approve pay runs in Nemura**. It gives them no role in Fyniq. A person with no sign-in in Fyniq at all needs an invitation first.
+- Fyniq also tells Nemura, for each sign-in account, whether it holds a role in the finance workspace and whether it has a passkey, so Nemura's **Finance | People** switch and its warning before an approval are right. Both are hints, never grants.
+- The **Finance | People** switch in Fyniq's header shows only to a person who holds a role in the finance workspace and whom Nemura says is an active member there. It opens Nemura with the sign-in provider the person used.
+
+(src: docs/user-guide/settings-people.md#people-who-approve-pay-runs-in-nemura)
 
 ## How the month's payroll outputs are met
 

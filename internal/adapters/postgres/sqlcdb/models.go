@@ -2786,6 +2786,17 @@ type FyniqPeopleLink struct {
 	NemuraOrigin         string
 }
 
+type FyniqPeopleLinkAccess struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Issuer          string
+	Subject         string
+	PeopleAccess    bool
+	PayrollApprover bool
+	Version         int64
+	ReceivedAt      time.Time
+}
+
 type FyniqPeopleLinkAskKey struct {
 	OrganisationID    uuid.UUID
 	ID                uuid.UUID

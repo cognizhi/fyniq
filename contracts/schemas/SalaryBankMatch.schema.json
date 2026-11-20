@@ -18,6 +18,9 @@
         ]
       ],
       "items": {
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c11"
+        ],
         "type": "string"
       },
       "maxItems": 500,

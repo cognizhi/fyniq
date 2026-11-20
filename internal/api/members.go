@@ -348,6 +348,9 @@ func (a *API) assignRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.U
 	if err := a.notifyOwners(ctx, u, m, role, m.DisplayName+" became an Owner"); err != nil {
 		return Member{}, err
 	}
+	if err := a.tellNemuraAccess(ctx, u, m.UserID); err != nil { // a linked Nemura learns whether the person now reaches the finance workspace
+		return Member{}, err
+	}
 	m, err = findMember(ctx, u, id, now)
 	return memberOf(m), err
 }
@@ -376,6 +379,9 @@ func (a *API) revokeRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.U
 		return Member{}, err
 	}
 	if err := a.notifyOwners(ctx, u, m, role, m.DisplayName+" is no longer an Owner"); err != nil {
+		return Member{}, err
+	}
+	if err := a.tellNemuraAccess(ctx, u, m.UserID); err != nil {
 		return Member{}, err
 	}
 	m, err = findMember(ctx, u, id, now)
@@ -420,6 +426,9 @@ func (a *API) removeMemberNow(ctx context.Context, u storage.UnitOfWork, id uuid
 		return Member{}, err
 	}
 	if err := a.signOutOfNemura(ctx, u, m.UserID, "removed"); err != nil {
+		return Member{}, err
+	}
+	if err := a.tellNemuraAccess(ctx, u, m.UserID); err != nil { // no longer a member: the finance workspace is closed to the identity
 		return Member{}, err
 	}
 	out := memberOf(m)
@@ -860,6 +869,10 @@ func registerMembers(a *API) {
 			}
 			if err != nil {
 				return nil, err
+			}
+			// A linked Nemura learns that the identity now reaches Fyniq. The join was one transaction of its own in the installation's store; a failure here never undoes it (the link's repair and the next change tell Nemura again).
+			if err := a.deps.Store.Do(ctx, j.OrganisationID, func(ctx context.Context, u storage.UnitOfWork) error { return a.tellNemuraAccess(ctx, u, j.UserID) }); err != nil {
+				a.deps.Log.Warn("api.member.nemura_access_not_queued", "request_id", requestID(ctx))
 			}
 			out := Joined{OrganisationID: j.OrganisationID.String(), UserID: j.UserID.String(), MemberID: j.MembershipID.String(), Roles: []RoleName{}}
 			for _, r := range j.Roles {

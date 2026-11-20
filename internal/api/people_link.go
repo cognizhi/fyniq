@@ -497,8 +497,8 @@ func registerPeopleLink(a *API) {
 	}
 	register(a, authz.ReceivePeopleProjectionEvent, byID(huma.Operation{
 		OperationID: "receivePeopleProjectionEvent", Method: http.MethodPost, Path: "/v1/people-link/projection-events", Tags: []string{"People"},
-		Summary: "Receive a person or bank-details event from Nemura",
-		Description: "Nemura's `people.person.upserted` and `people.bank_details.changed` (PRD-002 Appendix E): an envelope (NM-INT-10) whose header the link " +
+		Summary: "Receive a person, bank-details or identity event from Nemura",
+		Description: "Nemura's `people.person.upserted`, `people.bank_details.changed` and `identity.access.changed` (PRD-002 Appendix E; the last says whether a sign-in identity is an active member there and approves pay runs, by issuer and subject and two yes or no answers: a door and a hint, never a grant, with the version the sending event's sequence): an envelope (NM-INT-10) whose header the link " +
 			"key signed, with the payload's canonical SHA-256 in it. It needs the link's client and the scope people.projection.write, and the " +
 			"envelope is checked against the link as Fyniq holds it: its organisations, its epoch, a signing time within 5 minutes, its signature " +
 			"and its digest; nothing the message carries decides who may send it. An event received before does nothing (duplicate); a version " +
@@ -507,7 +507,7 @@ func registerPeopleLink(a *API) {
 			"never by value, and the inbox row (identities and a digest, never the payload). Pay and bank details are never logged. Only the " +
 			"link's client may call it; on the never-list for the AI and MCP (§9.6).",
 	}), eventCodes, func(ctx context.Context, in *peopleEventInput) (*peopleEventOutput, error) {
-		return a.receivePeopleEvent(ctx, in, peoplelink.TypePersonUpserted, peoplelink.TypeBankDetailsChange)
+		return a.receivePeopleEvent(ctx, in, peoplelink.TypePersonUpserted, peoplelink.TypeBankDetailsChange, peoplelink.TypeAccessChanged)
 	})
 	register(a, authz.ReceivePeopleHoldEvent, byID(huma.Operation{
 		OperationID: "receivePeopleHoldEvent", Method: http.MethodPost, Path: "/v1/people-link/hold-events", Tags: []string{"People"},
@@ -561,7 +561,15 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 		}
 		entry := storage.InboxEntry{EventID: eventID, LinkID: l.ID, Epoch: env.Header.Epoch, Sequence: env.Header.Sequence, Type: env.Header.Type,
 			ObjectType: env.Header.ObjectType, ObjectID: env.Header.ObjectID, ObjectVersion: env.Header.ObjectVersion, PayloadSHA256: env.Header.PayloadSHA256, ReceivedAt: now}
-		next, ignored, perr := a.applyPeopleEvent(ctx, u, env, now)
+		var next peoplelink.Person
+		var access *storage.PeopleAccess
+		var ignored bool
+		var perr error
+		if env.Header.Type == peoplelink.TypeAccessChanged {
+			access, ignored, perr = a.accessOf(ctx, u, env, now)
+		} else {
+			next, ignored, perr = a.applyPeopleEvent(ctx, u, env, now)
+		}
 		switch {
 		case perr != nil:
 			var r *peoplelink.Refusal
@@ -588,10 +596,14 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 			receipt.Outcome = "duplicate" // nothing was saved yet: the person is written only below
 			return nil
 		}
-		if !ignored {
-			return u.PeopleLinks().SavePerson(ctx, next)
+		if ignored {
+			return nil
 		}
-		return nil
+		if access != nil {
+			_, err := u.PeopleLinks().SaveAccess(ctx, *access)
+			return err
+		}
+		return u.PeopleLinks().SavePerson(ctx, next)
 	})
 	if err != nil {
 		return nil, err
@@ -600,6 +612,23 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 		return nil, refused
 	}
 	return &peopleEventOutput{Body: receipt}, nil
+}
+
+// accessOf reads Nemura's word on an identity (identity.access.changed) strictly, and says whether it is older than the one held: its version is the sending event's sequence. Nothing but the issuer, the subject
+// and the two answers is accepted, so no role name and no email can arrive in it.
+func (a *API) accessOf(ctx context.Context, u storage.UnitOfWork, env peoplelink.Envelope, now time.Time) (*storage.PeopleAccess, bool, error) {
+	var ev peoplelink.AccessChanged
+	d := json.NewDecoder(bytes.NewReader(env.Payload))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&ev); err != nil || ev.Issuer == "" || ev.Subject == "" || len(ev.Issuer) > 500 || len(ev.Subject) > 500 || env.Header.ObjectVersion < 1 {
+		return nil, false, &peoplelink.Refusal{Code: CodeLinkMinimum, Message: "the payload has a field, or a value, that PRD-002 Appendix E does not list for " + env.Header.Type}
+	}
+	held, err := u.PeopleLinks().Access(ctx, ev.Issuer, ev.Subject)
+	if err != nil && !errors.Is(err, ports.ErrNotFound) {
+		return nil, false, err
+	}
+	version := int64(env.Header.ObjectVersion)
+	return &storage.PeopleAccess{Issuer: ev.Issuer, Subject: ev.Subject, PeopleAccess: ev.PeopleAccess, PayrollApprover: ev.PayrollApprover, Version: version, ReceivedAt: now}, err == nil && held.Version >= version, nil
 }
 
 // linkedEnvelope checks an event against the link as Fyniq holds it: the link is active, the call came through the link's own client, and the envelope's
@@ -771,7 +800,7 @@ func (a *API) executePeopleLink(ctx context.Context, u storage.UnitOfWork, r sto
 		} else if !errors.Is(err, ports.ErrNotFound) {
 			return err
 		}
-		return nil
+		return a.tellNemuraEveryone(ctx, u) // what each identity may enter, so the switch and the passkey warning are right from the first day
 	case approval.OpPeopleUnlink:
 		l, err := u.PeopleLinks().Live(ctx)
 		if err != nil {

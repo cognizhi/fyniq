@@ -26,6 +26,11 @@ const (
 // Identity is the provider's name for a person: the issuer, the subject and the tenant. Email is never part of it.
 type Identity struct{ Issuer, Subject, Tenant string }
 
+// Via is how a session was signed in: the provider the person used and the identity it proved (issuer and subject). The provider is what the switch to Fyniq asks for, so the person is not shown a
+// sign-in page again; the identity is what a pay run's approver is named by, because a member can be linked to one identity per issuer and the one that signs is the one that matters. A session made
+// before this was recorded has none (the zero value).
+type Via struct{ Provider, Issuer, Subject string }
+
 // Valid reports whether the identity names a person.
 func (i Identity) Valid() bool { return i.Issuer != "" && i.Subject != "" && i.Tenant != "" }
 
