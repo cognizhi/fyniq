@@ -873,3 +873,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | claims.my-claims: receipt suggestions and the receipt reminder (FR-AP-08)
 
 ## [2026-11-20] compile | payroll-salary-payments.md -> kb (match a bank debit)
+
+## [2026-11-20] compile | nemura.payroll-approval: the IR8A file and the CPF and IR8A buttons (p2-payroll-outputs)

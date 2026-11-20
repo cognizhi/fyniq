@@ -4,7 +4,7 @@ type: task
 title: Read and approve a pay run in Nemura
 summary: Who approves a pay run and why not its preparer, what the approver reads and signs (with proof for Fyniq when linked) and what approving does
 sources:
-  - docs/user-guide/nemura/payroll-approval.md sha256:03d9d68334b3734f2d0d8eb830eeebcbc31084818c8563c9001124ac710acb76
+  - docs/user-guide/nemura/payroll-approval.md sha256:7dcbdcf804a9744a75568925fa058bf9f1a9823f649df27fceb976dcbc5e37a0
 data_class: personal
 taint: trusted
 status: published
@@ -45,6 +45,12 @@ aliases:
 
 - The approval is written once with what the passkey confirmed; a correction of an approved month is a new version with a reason, and once approved it supersedes the one before.
 - The one-off items, unpaid leave and overtime the version used are marked used by the run. Under **Payments** each person owed money shows the state of their payment (scheduled, released, sent to the bank, accepted by the bank, paid, rejected, returned or outcome unknown); standalone you record an outcome with the amount, the date and a document of the person as evidence, and "paid" is never accepted without evidence. An unknown outcome blocks a new payment of that person until it is resolved, and a rejected, returned or unknown payment shows on Checks. Under **Files for the books and the bank**, make the journal file or, with your passkey, the bank payment file of the approved version as CSV: only the manifest (run, version, totals and the SHA-256 of the file) is kept, people left out are listed with why, and a file is never proof of payment. The same approved version makes the CPF EZPay file in the CPF Board's own layout (effective 16 January 2025), through the API for now with kind cpf: it needs the payment type, serial number and advice code of the employer's CPF Submission Number, the company's UEN and each person's NRIC, so it asks for a passkey; a person with no NRIC, or one that is not an S or T number, is left out and listed with why, and the file is not proof that CPF was submitted or paid. Select **Publish the payslips** on an approved version to put each person's itemised payslip in their My pay (see [[nemura.my-pay]]; a leaver's final pay: [[nemura.payroll-final-pay]]); a version is published once and the employer's name is the letterhead's. Nothing is posted or paid by approving. (src: docs/user-guide/nemura/payroll-approval.md#what-happens-next)
+
+## Files for CPF and IRAS
+
+Under **Files for CPF and IRAS** an approved version makes the **CPF EZPay file** (it needs your CPF Submission Number's payment type and serial number and an advice code, which only you know) and the **IR8A file** for IRAS's Auto-Inclusion Scheme: the IR8A payload of the income year the run is paid in, from every approved run paid in that year, with each person's pay items in the IR8A's boxes (the accountant confirms the mapping) and the year's employee CPF. The IR8A file also needs the person authorised to file, their contact number and email, and each person's NRIC or FIN and the sex and address set on the person by the HR officer or the HR administrator. Each asks for your passkey. A person without the details is left out and listed with why, and a detail that breaks one of IRAS's rules is refused with the rule named. Neither file is proof that anything was submitted.
+
+(src: docs/user-guide/nemura/payroll-approval.md#steps)
 
 ## When it looks wrong
 

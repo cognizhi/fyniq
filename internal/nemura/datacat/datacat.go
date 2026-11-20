@@ -52,11 +52,11 @@ var Categories = []Category{
 		Columns:    []string{"person_classification.birth_date", "person_classification.pr_start_date"},
 	},
 	{
-		Key: "restricted-identifiers", What: "A person's NRIC or FIN and salary bank account, each sealed by the key service and kept with a masked form and a keyed fingerprint",
+		Key: "restricted-identifiers", What: "A person's NRIC or FIN and salary bank account, each sealed by the key service and kept with a masked form and a keyed fingerprint, and the particulars the IR8A asks of them (sex, address and the designation of a non-resident director or seaman), sealed as one document",
 		Purpose:    "To file with the authorities (CPF, IRAS, MOM) and to pay salary: NRIC only for statutory filings, never to sign in",
 		Capability: "NRIC or FIN",
 		Retention:  Rule{MinMonths: 60, After: "the end of the year it was last used for filing", Reason: "Statutory filings are kept 5 years; the identifier goes with them"},
-		Columns:    []string{"person_secret.nric_sealed", "person_secret.nric_masked", "person_secret.nric_fingerprint", "person_secret.bank_sealed", "person_secret.bank_masked", "person_secret.bank_fingerprint"},
+		Columns:    []string{"person_secret.nric_sealed", "person_secret.nric_masked", "person_secret.nric_fingerprint", "person_secret.bank_sealed", "person_secret.bank_masked", "person_secret.bank_fingerprint", "person_secret.ir8a_sealed"},
 	},
 	{
 		Key: "dependants", What: "A dependant's date of birth for family leave: relationship, citizenship and the employee's declaration",

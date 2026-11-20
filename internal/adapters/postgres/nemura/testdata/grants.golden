@@ -757,6 +757,8 @@ nemura_api | column nemura.person_secret.bank_masked | INSERT
 nemura_api | column nemura.person_secret.bank_masked | UPDATE
 nemura_api | column nemura.person_secret.bank_sealed | INSERT
 nemura_api | column nemura.person_secret.bank_sealed | UPDATE
+nemura_api | column nemura.person_secret.ir8a_sealed | INSERT
+nemura_api | column nemura.person_secret.ir8a_sealed | UPDATE
 nemura_api | column nemura.person_secret.nric_fingerprint | INSERT
 nemura_api | column nemura.person_secret.nric_fingerprint | UPDATE
 nemura_api | column nemura.person_secret.nric_masked | INSERT

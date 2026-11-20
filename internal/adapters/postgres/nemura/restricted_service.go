@@ -285,3 +285,13 @@ func (r RestrictedService) Bank(ctx context.Context, s api.Session, change uuid.
 	})
 	return out, err
 }
+
+// SetIR8AParticulars seals a person's IR8A particulars (NM-PAY-14).
+func (r RestrictedService) SetIR8AParticulars(ctx context.Context, s api.Session, id uuid.UUID, p api.IR8AParticulars) error {
+	if r.Cipher == nil {
+		return api.ErrUnavailable
+	}
+	return r.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		return SetIR8AParticulars(ctx, tx, r.Cipher, s.Organisation, r.Clock.Now(), s.Member, id, IR8AParticulars(p))
+	})
+}
