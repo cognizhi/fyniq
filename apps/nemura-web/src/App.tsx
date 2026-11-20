@@ -17,7 +17,7 @@ import { AskAssistant } from "./pages/AskAssistant";
 import { AssistantSettings } from "./pages/AssistantSettings";
 import { MyPay, Payslip } from "./pages/MyPay";
 import { FyniqLink } from "./pages/FyniqLink";
-import { rememberPage, switchedIn } from "./workspace";
+import { rememberPage, switchProvider, switchedIn } from "./workspace";
 import { PayRunApproval } from "./pages/PayRunApproval";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleRequests } from "./pages/PeopleRequests";
@@ -30,7 +30,7 @@ import { TeamLeave } from "./pages/TeamLeave";
 import { MyLeave } from "./pages/MyLeave";
 import { NotFound } from "./pages/NotFound";
 import { Person } from "./pages/Person";
-import { SignIn } from "./pages/SignIn";
+import { SignIn, signInURL } from "./pages/SignIn";
 import { navigate } from "./route";
 import { matchRoute } from "./registry";
 import { useSession } from "./session";
@@ -65,7 +65,11 @@ export function App() {
   }, [path, route, state.status]);
   useEffect(() => {
     if (state.status === "loading") return;
-    if (path === "/") navigate((state.status === "in" && switchedIn(window.location.search)) || landing, true);
+    // Crossing from Fyniq with the provider the person signed in with: ask that provider at once, so the sign-in page is not shown again (one sign-in across the apps). A refused one comes back to /sign-in with its code.
+    const atRoot = (path === "/");
+    const via = atRoot && state.status === "none" && new URLSearchParams(window.location.search).get("switch") === "1" ? switchProvider(window.location.search) : null;
+    if (via) window.location.replace(signInURL(via, "/?switch=1"));
+    else if (atRoot) navigate((state.status === "in" && switchedIn(window.location.search)) || landing, true);
     else if (route?.signedIn && signedOut) navigate("/sign-in", true);
     else if ((route?.id === "sign-in" || route?.id === "join") && state.status === "in") navigate(landing, true);
   }, [path, route, state.status, landing, signedOut]);

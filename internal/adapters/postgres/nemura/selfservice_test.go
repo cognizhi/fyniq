@@ -5,6 +5,7 @@ package nemura_test
 import (
 	"context"
 	"errors"
+	"github.com/cognizhi/fyniq/internal/nemura/identity"
 	"strings"
 	"testing"
 	"time"
@@ -238,7 +239,7 @@ func TestALeaversAccountHoldsNoRoleAndEndsWithTheRecordKeepingPeriod(t *testing.
 		var token string
 		lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
 			var err error
-			token, err = nemura.StartSession(ctx, tx, lt.c.org, moment, lt.c.hr)
+			token, err = nemura.StartSession(ctx, tx, lt.c.org, moment, lt.c.hr, identity.Via{})
 			return err
 		})
 		s, err := api.Authenticate(ctx, token, moment)
@@ -266,7 +267,7 @@ func TestALeaversAccountHoldsNoRoleAndEndsWithTheRecordKeepingPeriod(t *testing.
 	var token string
 	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
 		var err error
-		token, err = nemura.StartSession(ctx, tx, lt.c.org, d("2099-12-16").Add(9*time.Hour), lt.c.owner)
+		token, err = nemura.StartSession(ctx, tx, lt.c.org, d("2099-12-16").Add(9*time.Hour), lt.c.owner, identity.Via{})
 		return err
 	})
 	if s, err := api.Authenticate(ctx, token, d("2099-12-16").Add(9*time.Hour)); err != nil || s.Leaver {

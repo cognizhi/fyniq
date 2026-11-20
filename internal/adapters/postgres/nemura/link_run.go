@@ -49,9 +49,10 @@ func MemberIdentity(ctx context.Context, tx pgx.Tx, member uuid.UUID) (link.Part
 
 // RunEnvelopeOf makes the approval envelope for a version of a run, for an approver, from the run's own rows: gross pay by Fyniq's department (found by the department's name in the departments Fyniq last
 // told Nemura of, never a department Nemura invented), the month's CPF, SDL and SHG, the deductions by kind and the reimbursements, the packs it was calculated under, Fyniq's current mapping version,
-// and the preparer and approver as issuer and subject. It returns the envelope, its canonical bytes and SHA-256, and the reasons it cannot be made yet, in plain words; with reasons the figures
+// and the preparer and approver as issuer and subject (the approver is the identity of the session that signs, approvedAs, because a member can have one identity per issuer and the passkey is enrolled
+// in Fyniq against one of them; the preparer, who is not signing, is the member's earliest-linked). It returns the envelope, its canonical bytes and SHA-256, and the reasons it cannot be made yet, in plain words; with reasons the figures
 // are not final and nothing may be signed.
-func RunEnvelopeOf(ctx context.Context, tx pgx.Tx, org, runID uuid.UUID, number int, approver uuid.UUID) (env link.RunEnvelope, canonical []byte, sha string, issues []string, err error) {
+func RunEnvelopeOf(ctx context.Context, tx pgx.Tx, org, runID uuid.UUID, number int, approver uuid.UUID, approvedAs link.Party) (env link.RunEnvelope, canonical []byte, sha string, issues []string, err error) {
 	r, versions, err := RunOf(ctx, tx, runID)
 	if err != nil {
 		return env, nil, "", nil, err
@@ -184,7 +185,10 @@ func RunEnvelopeOf(ctx context.Context, tx pgx.Tx, org, runID uuid.UUID, number 
 		}
 		return p
 	}
-	env.Preparer, env.Approver = who(v.PreparedBy, "preparer"), who(approver, "approver")
+	env.Preparer, env.Approver = who(v.PreparedBy, "preparer"), approvedAs
+	if env.Approver.Issuer == "" || env.Approver.Subject == "" { // a session made before its way in was recorded: the member's earliest-linked identity
+		env.Approver = who(approver, "approver")
+	}
 	if err != nil {
 		return env, nil, "", nil, err
 	}
@@ -241,7 +245,7 @@ func envelopeView(e link.RunEnvelope, sha string) api.RunEnvelopeView {
 
 // Envelope is what the approver reads and signs: the figures that will be posted, by department, with the digest their passkey signs. While the apps are not linked it says so and the plain approval applies.
 func (c RunLinkService) Envelope(ctx context.Context, s api.Session, run uuid.UUID, version int) (api.RunApprovalEnvelope, error) {
-	out := api.RunApprovalEnvelope{Issues: []string{}, RPID: c.RPID, Origin: c.Origin}
+	out := api.RunApprovalEnvelope{Issues: []string{}, RPID: c.RPID, Origin: c.Origin, FyniqPasskey: "unknown"}
 	err := c.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
 		state, err := runLinkState(ctx, tx)
 		if err != nil {
@@ -251,7 +255,14 @@ func (c RunLinkService) Envelope(ctx context.Context, s api.Session, run uuid.UU
 		if state == "" {
 			return nil
 		}
-		env, _, sha, issues, err := RunEnvelopeOf(ctx, tx, s.Organisation, run, version, s.Member)
+		if s.Issuer != "" {
+			if _, passkey, known, err := FyniqAccessOf(ctx, tx, s.Issuer, s.Subject); err != nil {
+				return err
+			} else if known {
+				out.FyniqPasskey = map[bool]string{true: "enrolled", false: "missing"}[passkey]
+			}
+		}
+		env, _, sha, issues, err := RunEnvelopeOf(ctx, tx, s.Organisation, run, version, s.Member, link.Party{Issuer: s.Issuer, Subject: s.Subject})
 		if err != nil {
 			return err
 		}
@@ -297,7 +308,7 @@ func (c RunLinkService) Approve(ctx context.Context, s api.Session, run uuid.UUI
 		if state != "active" {
 			return &payroll.Refusal{Code: CodeLinkState, Message: "The link to Fyniq is " + state + ": a run is approved once it is active again."}
 		}
-		env, canonical, sha, issues, err := RunEnvelopeOf(ctx, tx, s.Organisation, run, in.Version, s.Member)
+		env, canonical, sha, issues, err := RunEnvelopeOf(ctx, tx, s.Organisation, run, in.Version, s.Member, link.Party{Issuer: s.Issuer, Subject: s.Subject})
 		if err != nil {
 			return err
 		}

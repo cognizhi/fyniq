@@ -53,6 +53,7 @@ type RunApprovalEnvelope struct {
 	Challenge      string          `json:"challenge,omitempty" doc:"The WebAuthn challenge: the digest's 32 raw bytes, base64url without padding. Sign exactly this, with a passkey enrolled in Fyniq, and no other." example:"n4bQgYhMfWWaL-qgxVrQFaO_TxsrC4Is0V1sFbDwCgg"`
 	RPID           string          `json:"rp_id" doc:"The relying party the two apps share: pass it as rpId, so one authenticator works in both." example:"example.test"`
 	Origin         string          `json:"origin" doc:"Nemura's own origin, where the passkey answers; Fyniq checks it against the link." example:"https://people.example.test"`
+	FyniqPasskey   string          `json:"fyniq_passkey" enum:"enrolled,missing,unknown" doc:"What Fyniq last said of the identity you are signed in with: enrolled (a passkey is enrolled in Fyniq: you can sign), missing (Fyniq knows you and has none: sign in to Fyniq and add one first) or unknown (Fyniq has not said: you may have no sign-in in Fyniq yet, or this session was made before the answer was kept). A hint before you sign; Fyniq's own check after it decides (PPL-19)." example:"enrolled"`
 }
 
 // RunProof is the approver's passkey assertion over the envelope's digest, each part base64url without padding.

@@ -24,3 +24,10 @@ export function switchedIn(search: string): string | undefined {
     return undefined;
   }
 }
+
+// switchProvider is the sign-in provider the other app named when it sent the person across (the Finance | People switch): only an ID of the shape a provider has, so it is a hint and never a way to put anything
+// else in the address. The sign-in endpoint checks it again against the providers it offers.
+export function switchProvider(search: string): string | null {
+  const p = new URLSearchParams(search).get("provider");
+  return p !== null && /^[a-z0-9][a-z0-9-]{0,62}$/.test(p) ? p : null;
+}

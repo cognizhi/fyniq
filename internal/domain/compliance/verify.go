@@ -29,7 +29,7 @@ const Sample = 1000
 // other (TestEveryAuditedReadIsReconciled).
 var AuditedReads = []string{"access_review.exported", "corporate_document.pdf_downloaded", "document.bank_account_revealed", "document_template_bundle.exported",
 	"evidence.download_linked", "evidence.opened", "payment_batch.file_downloaded", "personal_data.exported", "report.exported", "report_export.downloaded", "report_export.requested",
-	"tenant_export.download_linked"}
+	"salary_batch.file_downloaded", "tenant_export.download_linked"}
 
 // Finding is one thing a verification found, as the run records it and the Compliance Center lists it.
 type Finding struct {

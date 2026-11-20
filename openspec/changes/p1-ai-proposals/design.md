@@ -88,6 +88,21 @@ The owner is away: the decisions below are on the recommended option, owner to c
 - Each task type adds a `proposal` suite (cases in replay mode through the real orchestrator) and red-team cases; a
   suite's recordings are `[live-verify]` for real models.
 
+**D14. The undo's pre-image (21 Nov 2026, built with `ct.update_contact`; owner to confirm).**
+- `Execution.Undo` is what a command's own `Undo` needs, written as it executes: the values it replaced and the version it left a record at. It is kept in
+  the proposal's execution record, never shown on a review (`getAIProposal` strips it), and read only by the undo.
+- A command that would have to keep a person's personal data there refuses instead: `ct.update_contact` never changes the contact of an individual, a
+  director, a shareholder, an investor or a linked member, whose values are sealed in the audit trail. A company contact's six details, a bank rule's
+  conditions and a recurring journal's version are not personal data.
+- The undo runs as the person with the command's right, under the API's role, through the same narrow query or domain function, once, only while the record is
+  at the version the execution left it (`ErrStale`, AI-UNDO-04). A draft (`plan.propose_budget`) is not undoable; a recurring journal's undo is a pause; a bank
+  rule's, switching it off or restoring it.
+
+**D15. Approvers are those who hold the command's own right (21 Nov 2026).** `proposal.Approves` needs the approver to hold the command's policy, so a role
+with only an A cell on the capability (the Controller on journals and budgets) cannot approve what it could not do itself, and the catalogue names only roles
+that can: Appendix E's "Controller" for `recur.create_template` and `plan.propose_budget` is the owner's to decide (a policy that lets the Controller approve a
+draft they could not make). A tier-2 proposal's approver is never the requester (AI-10).
+
 ## Risks / Trade-offs
 
 - [Posting types widen the executor's grants] -> last, per type, never broader; their attack tests prove the executor

@@ -43,7 +43,7 @@ func TestAPersonSignedOutOfFyniqIsSignedOutOfNemuraAndNoOneElse(t *testing.T) {
 	open := func(c *company, member uuid.UUID) string {
 		var tok string
 		c.must(func(ctx context.Context, tx pgx.Tx) (err error) {
-			tok, err = nemura.StartSession(ctx, tx, c.org, now, member)
+			tok, err = nemura.StartSession(ctx, tx, c.org, now, member, identity.Via{})
 			return err
 		})
 		return tok

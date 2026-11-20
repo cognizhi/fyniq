@@ -57,7 +57,7 @@ func (s *fakeStore) MembershipsOf(_ context.Context, who identity.Identity) ([]M
 	s.got = who
 	return s.memberships, nil
 }
-func (s *fakeStore) StartSession(_ context.Context, _, _ uuid.UUID, _ time.Time) (string, error) {
+func (s *fakeStore) StartSession(_ context.Context, _, _ uuid.UUID, _ time.Time, _ identity.Via) (string, error) {
 	s.started++
 	return "tok-" + uuid.NewString(), s.startErr
 }

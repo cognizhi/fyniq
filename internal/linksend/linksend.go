@@ -41,13 +41,16 @@ const (
 	TypeDepartmentChanged = "people.department.changed"
 	// TypeSessionRevoked tells Nemura a person was signed out of, or removed from, Fyniq, by the identity the shared sign-in knows them by, so Nemura ends their sessions too (NM-INT-12, FR-PPL-18).
 	TypeSessionRevoked = "identity.session.revoked"
+	// TypeIdentityAccess tells Nemura what an identity may enter in Fyniq (one sign-in across the apps, design D7): whether it holds a role in the finance workspace and whether a passkey is enrolled, by issuer and
+	// subject and never an email or a role name. A door and a hint, never a grant: Nemura shows or hides its switch with it and warns an approver whose passkey is missing. Its object version is the event's sequence.
+	TypeIdentityAccess = "identity.access.changed"
 )
 
 // Scope of Nemura's own OAuth server that the link's client holds: it reaches Nemura's event inbox and nothing else.
 const Scope = "link.events.write"
 
 // path is where each event type goes on Nemura's API.
-var path = map[string]string{TypeRunPosted: "/v1/link/events", TypePaymentsStatus: "/v1/link/events", TypeDepartmentChanged: "/v1/link/events", TypeSessionRevoked: "/v1/link/events"}
+var path = map[string]string{TypeRunPosted: "/v1/link/events", TypePaymentsStatus: "/v1/link/events", TypeDepartmentChanged: "/v1/link/events", TypeSessionRevoked: "/v1/link/events", TypeIdentityAccess: "/v1/link/events"}
 
 // Queued is what the outbox row keeps of an event. Only an event whose payload carries no pay or bank figure may keep it here (payroll.run.posted: a run's ID, its version, the posting's reference or
 // the refusal's stable code and plain message): a type with figures is built from its source when it is sent, never kept in a row (design D5).
@@ -92,10 +95,18 @@ type SessionRevoked struct {
 	Reason  string `json:"reason"` // signed_out or removed
 }
 
+// IdentityAccess is the payload of identity.access.changed, and the whole of it.
+type IdentityAccess struct {
+	Issuer  string `json:"issuer"`
+	Subject string `json:"subject"`
+	Finance bool   `json:"finance"` // the identity holds a role in Fyniq's finance workspace in this organisation
+	Passkey bool   `json:"passkey"` // the identity has a passkey enrolled in Fyniq (what a pay run's approval is signed with)
+}
+
 // Queue queues an event about an object for Nemura in the unit of work that changed the object, when the organisation's link is active and has keys, and returns its event ID; otherwise it does
 // nothing and returns "". The sequence is the link's next number, taken under the row's lock, so events leave in the order they were committed. The row's business key is "link:" and the event ID.
 func Queue(ctx context.Context, u storage.UnitOfWork, typ, objectType, objectID string, version int, payload any) (string, error) {
-	if typ != TypeRunPosted && typ != TypeDepartmentChanged && typ != TypeSessionRevoked {
+	if typ != TypeRunPosted && typ != TypeDepartmentChanged && typ != TypeSessionRevoked && typ != TypeIdentityAccess {
 		return "", fmt.Errorf("Fyniq does not queue %s with a payload: build it from its source when it is sent", typ)
 	}
 	return queue(ctx, u, typ, objectType, objectID, version, payload)
@@ -133,6 +144,9 @@ func queue(ctx context.Context, u storage.UnitOfWork, typ, objectType, objectID 
 	raw, err := json.Marshal(payload)
 	if err != nil {
 		return "", err
+	}
+	if version <= 0 {
+		version = int(seq) // an identity's access is versioned by the event's own sequence, which rises with every event of the link
 	}
 	q := Queued{EventID: uuid.NewString(), Sequence: seq, Type: typ, ObjectType: objectType, ObjectID: objectID, ObjectVersion: version, CorrelationID: uuid.NewString(), Payload: raw}
 	row, err := json.Marshal(q)

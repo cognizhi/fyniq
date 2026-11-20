@@ -53,8 +53,14 @@
   forecast whose inputs (a cash projection's assumptions) the proposal would have to carry in full; `ar.draft_reminders` waits for the
   sales reminder drafts to be a record a person approves. Each needs its record first.
 - [ ] 3.2 `bank.categorise_lines`, `bank.match_payments`, `bank.rule_upsert` (design D7, D8).
-  **Left:** these post to the ledger (bank categorisation and matching, Appendix B.1), so they widen the executor's ledger grants and need
-  their undo (a reversing entry) with their attack tests; they are built together with the tier-2 posting types in a slice of their own.
+  **Built (rev 0.463):** `bank.rule_upsert` (migration 000963, **needs human review**: the API's columns minus the two auto-apply ones, SELECT on `bank_rule` only, a trigger that marks the executor's rules as an AI proposal's; its undo switches a created rule off or restores a changed one; suites `bank-rule-upsert` and `bank-rule-redteam`).
+  **Left:** `bank.categorise_lines` and `bank.match_payments` post to the ledger (Appendix B.1). Measured, not assumed: the executor already holds INSERT on
+  `journal_entry` and `journal_line` (000004), the documents' insert and status columns (000005, 000052) and the document numbers (000021), so the grants
+  are not the obstacle. What is: (a) `BankTransactions.categorise`, `matched` and `matchRecorded` are unexported inners of a service that opens its own unit of
+  work, so each needs an exported `...In` that runs in the executor's (a pure refactor, as `CreateRecurringIn` and `PauseRecurringIn` were); (b) the executor
+  needs UPDATE on `bank_line`'s status columns and INSERT on `bank_match`, each column-limited and with an attack test; (c) the undo is `Undo` and `Unmatch`
+  (`reverse`), which must refuse a closed period and, in Founder mode, as the API's void gate does; (d) the limits (100 lines, S$10,000 each, S$50,000 in all)
+  are in the file already. Built as the first posting slice, with `gl.post_journal`.
 
 ## 4. Tier 2
 
@@ -66,14 +72,35 @@
   shareholders, investors and linked members are refused (their values are sealed in the audit trail).
   **Built (rev 0.462):** `recur.create_template` (recurring journals only; migration 000961, **needs human review**: INSERT on the API's insert columns of `recurring_journal` and its version, no update; its undo is a pause) and `plan.propose_budget` (a whole-company draft; migration 000962, **needs human review**: EXECUTE on the two pure validators the budget guard calls, and a trigger that refuses the executor any change of a budget document; a draft is not undoable, design D4). Both tier 2 with the Accountant as the only role that can approve them (Appendix D gives the Controller and Owner no create right on journals or budgets: Appendix E's "Controller" is the owner's to decide, see the report). Their proposal suites need an asker with the right: `evalsuite.Suite.Asker` makes one. `ct.update_contact` went to version 2 (its approvers named roles that cannot approve).
 - [ ] 4.2 `gl.post_journal`, `ar.post_invoice`, `ap.post_bill` (design D2, D3, D7).
-  **Left (the riskiest, last by design D2):** they post to the ledger as the approving person, so each widens the executor's ledger grants,
-  carries its limit and its undo, and its attack tests; not started while the owner is away.
+  **Left (the riskiest, last by design D2; measured 21 Nov 2026):** they post to the ledger as the approving person. The executor's ledger grants are already
+  there (000004, 000005, 000021, 000052), so no ledger-wide grant is added; what each needs, in order of size:
+  - `gl.post_journal`: `Service.Post` and `Reverse` open their own unit of work, so they need `PostIn` and `ReverseIn` (a refactor; the entry is read from what
+    `PostIn` returns for the dry run's impact, in the rolled-back unit); the API's gates (`gatePosting`'s self-approval threshold and Founder mode,
+    `requireJournalEvidence`'s evidence rule, `logSelfApproval`) live in `internal/api` and must move to a shared domain function that both call, since a command
+    that calls the domain function alone would bypass them (AI-10, AI-11); the proposal's own approval (another person who holds Post, who is not the requester)
+    is the journal's approval, so the evidence rule is met by refusing, in the dry run, a journal above the evidence threshold; the lines already keep to
+    ordinary accounts (`proposal.JournalLinesOf`); the undo is a reversing entry through `ReverseIn`, in an open period, refused in Founder mode.
+  - `ap.post_bill` and `ar.post_invoice`: the same, plus the document's number, its evidence rule (FR-DOC-06), SOD-3 (the preparer never approves its post) and
+    `gateBillPost`/`gateInvoicePost`'s thresholds, and `Bills.Post`'s `releaseNow` (the schedule of a spread bill, made after the commit).
+  Each is its own slice with its attack tests (the executor cannot post to a closed period, cannot post what it did not draft, the undo cannot be run by someone
+  without the right) and its `// req:` tags. The never-list tests already pass over all nine IDs and commands (`TestTheAppendixETaskTypesAreNotOnTheNeverList`).
 
 ## 5. The finish
 
 - [ ] 5.1 The threat model's additions, the guide for what each task type does, the knowledge base, `make evals`.
 
-## Needs human review (owner, before any of this is built)
+## Needs human review
+
+**Executor grant migrations built so far, each its own commit labelled needs-human-review** (the list for the single pull request):
+
+| Commit | Migration | Grant |
+|---|---|---|
+| `8ee1edfae` | 000960 | UPDATE on six columns and `version` of `contact`; a trigger refusing the executor a person's or an inactive contact |
+| `311ad639b` | 000961 | INSERT on the API's insert columns of `recurring_journal` and `recurring_journal_version`; no update |
+| `311ad639b` | 000962 | EXECUTE on the two pure budget validators; a trigger refusing the executor any change of a budget document |
+| `0ba0f9544` | 000963 | SELECT on `bank_rule`; INSERT and UPDATE on the API's columns minus `auto_apply` and its approval; a trigger marking the executor's rules as an AI proposal's |
+
+The original review note, which the above carries out:
 
 - **Tier-2 and bank task types** (`bank.categorise_lines`, `bank.match_payments`, `bank.rule_upsert`, `ct.update_contact`, `recur.create_template`,
   `plan.propose_budget`, `gl.post_journal`, `ar.post_invoice`, `ap.post_bill`) each need executor grants the executor does not hold. The tightest

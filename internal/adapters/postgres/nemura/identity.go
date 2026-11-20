@@ -76,8 +76,12 @@ func LinkIdentity(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, b
 	if _, err := tx.Exec(ctx, "SELECT nemura.link_identity($1, $2, $3, $4)", who.Issuer, who.Subject, who.Tenant, member); err != nil {
 		return err
 	}
-	return Audit(ctx, tx, org, at, by, "nemura.member.identity_linked", audit.Object{Type: "member", ID: member},
-		map[string]audit.Change{"issuer": {nil, who.Issuer}, "tenant": {nil, who.Tenant}}, "")
+	if err := Audit(ctx, tx, org, at, by, "nemura.member.identity_linked", audit.Object{Type: "member", ID: member},
+		map[string]audit.Change{"issuer": {nil, who.Issuer}, "tenant": {nil, who.Tenant}}, ""); err != nil {
+		return err
+	}
+	_, err := QueueAccessEvents(ctx, tx, org, at, member) // an active link tells Fyniq this identity may now enter Nemura
+	return err
 }
 
 // Membership is one organisation a person belongs to.
@@ -146,7 +150,7 @@ func (s *Store) AcceptInvitation(ctx context.Context, code string, at time.Time,
 
 // StartSession opens a session for a member of the organisation and returns its token, valid for 12 hours; only its hash is kept.
 // A deactivated member gets none.
-func StartSession(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, member uuid.UUID) (string, error) {
+func StartSession(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, member uuid.UUID, via identity.Via) (string, error) {
 	var deactivated *time.Time
 	if err := tx.QueryRow(ctx, "SELECT deactivated_at FROM nemura.member WHERE id = $1", member).Scan(&deactivated); err != nil {
 		return "", identity.Refused()
@@ -156,7 +160,12 @@ func StartSession(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, m
 	}
 	token, hash := identity.New(org)
 	id := uuid.Must(uuid.NewV7())
-	if _, err := tx.Exec(ctx, "INSERT INTO nemura.session (id, member_id, token_hash, expires_at) VALUES ($1, $2, $3, $4)", id, member, hash, at.Add(identity.SessionTTL)); err != nil {
+	var provider, issuer, subject *string // a session with no recorded way in keeps all three empty
+	if via.Issuer != "" {
+		provider, issuer, subject = &via.Provider, &via.Issuer, &via.Subject
+	}
+	if _, err := tx.Exec(ctx, "INSERT INTO nemura.session (id, member_id, token_hash, expires_at, provider, issuer, subject) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+		id, member, hash, at.Add(identity.SessionTTL), provider, issuer, subject); err != nil {
 		return "", err
 	}
 	return token, Audit(ctx, tx, org, at, user(member), "nemura.session.started", audit.Object{Type: "session", ID: id}, nil, "")
@@ -166,9 +175,10 @@ func StartSession(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, m
 type Session struct {
 	ID, Organisation, Member uuid.UUID
 	StepUpAt                 *time.Time
-	Leaver                   bool       // the person's last day has passed (NM-ESS-06)
-	LeaverUntil              *time.Time // the day the leaver's account ends
-	Person                   uuid.UUID  // the person record the login is linked to, when there is one
+	Leaver                   bool         // the person's last day has passed (NM-ESS-06)
+	LeaverUntil              *time.Time   // the day the leaver's account ends
+	Person                   uuid.UUID    // the person record the login is linked to, when there is one
+	Via                      identity.Via // how the session was signed in; empty for one made before it was recorded
 }
 
 // Authenticate finds the session a token opens on a moment: not expired, not revoked, and its member not deactivated. Every failure is
@@ -182,10 +192,11 @@ func (s *Store) Authenticate(ctx context.Context, token string, now time.Time) (
 	err = s.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
 		var last *time.Time
 		var person *uuid.UUID
-		err := tx.QueryRow(ctx, `SELECT s.id, s.organisation_id, s.member_id, s.step_up_at, p.leaving_date, p.id
+		var provider, issuer, subject *string
+		err := tx.QueryRow(ctx, `SELECT s.id, s.organisation_id, s.member_id, s.step_up_at, p.leaving_date, p.id, s.provider, s.issuer, s.subject
 FROM nemura.session s JOIN nemura.member m ON m.organisation_id = s.organisation_id AND m.id = s.member_id
 LEFT JOIN nemura.person p ON p.organisation_id = s.organisation_id AND p.member_id = s.member_id
-WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > $2 AND m.deactivated_at IS NULL`, hash, now).Scan(&out.ID, &out.Organisation, &out.Member, &out.StepUpAt, &last, &person)
+WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > $2 AND m.deactivated_at IS NULL`, hash, now).Scan(&out.ID, &out.Organisation, &out.Member, &out.StepUpAt, &last, &person, &provider, &issuer, &subject)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return identity.Refused()
 		}
@@ -194,6 +205,9 @@ WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > $2 AND m.dea
 		}
 		if person != nil {
 			out.Person = *person
+		}
+		if issuer != nil && subject != nil && provider != nil {
+			out.Via = identity.Via{Provider: *provider, Issuer: *issuer, Subject: *subject}
 		}
 		// After the last day the account is a leaver's: narrow, for their own documents, and it ends with the record-keeping period.
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
@@ -298,16 +312,20 @@ func DeactivateMember(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Tim
 			return err
 		}
 	}
-	return Audit(ctx, tx, org, at, user(by), "nemura.member.deactivated", audit.Object{Type: "member", ID: member},
-		map[string]audit.Change{"deactivated_at": {nil, at.UTC().Format(time.RFC3339)}}, "")
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.member.deactivated", audit.Object{Type: "member", ID: member},
+		map[string]audit.Change{"deactivated_at": {nil, at.UTC().Format(time.RFC3339)}}, ""); err != nil {
+		return err
+	}
+	_, err = QueueAccessEvents(ctx, tx, org, at, member) // Fyniq is told the identity no longer enters Nemura
+	return err
 }
 
 // OpenSession starts a session for a member of the organisation in a transaction of its own and returns its token.
-func (s *Store) OpenSession(ctx context.Context, org, member uuid.UUID, now time.Time) (string, error) {
+func (s *Store) OpenSession(ctx context.Context, org, member uuid.UUID, now time.Time, via identity.Via) (string, error) {
 	var token string
 	err := s.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
 		var err error
-		token, err = StartSession(ctx, tx, org, now, member)
+		token, err = StartSession(ctx, tx, org, now, member, via)
 		return err
 	})
 	return token, err

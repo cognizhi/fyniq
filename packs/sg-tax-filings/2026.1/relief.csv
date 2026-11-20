@@ -1,0 +1,4 @@
+rule,value,effective_from,effective_to,source
+months_after_supply,12,1900-01-01,,iras-bdr
+claim_years,7,1900-01-01,2006-12-31,iras-bdr-checklist
+claim_years,5,2007-01-01,,iras-bdr-checklist

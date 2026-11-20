@@ -127,6 +127,40 @@ func TestAPayRunApprovedWhileLinkedCarriesItsProofAndWaitsOnFyniqsAnswer(t *test
 	if err != nil || !env.Ready || len(env.Issues) != 0 || len(env.EnvelopeSHA256) != 64 || env.RPID != testRPID || env.Origin != testOrigin {
 		t.Fatalf("the envelope: %+v %v", env, err)
 	}
+	// The approver is named by the identity of the session that signs (a member can have one identity per issuer), not by the earliest one: the same run for the same person signed in with another identity is another envelope,
+	// and Fyniq's last word on that identity's passkey is shown before they sign (a hint: Fyniq's own check after it decides).
+	if env.FyniqPasskey != "unknown" {
+		t.Errorf("a session with no recorded identity has no word from Fyniq: %q", env.FyniqPasskey)
+	}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.LinkIdentity(ctx, tx, lt.c.org, now, audit.Actor{Type: "user", ID: lt.c.owner.String()}, lt.c.owner, identity.Identity{Issuer: "https://idp-b.example.test", Subject: "approver-sub-b", Tenant: "t"})
+	})
+	viaB := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now, Provider: "zoho", Issuer: "https://idp-b.example.test", Subject: "approver-sub-b"}
+	envB, err := rl.Envelope(ctx, viaB, runID, 1)
+	if err != nil || !envB.Ready || envB.EnvelopeSHA256 == env.EnvelopeSHA256 || envB.FyniqPasskey != "unknown" {
+		t.Fatalf("the envelope of the session signed in with the second identity: %+v %v", envB, err)
+	}
+	viaA := approver
+	viaA.Provider, viaA.Issuer, viaA.Subject = "google", "https://idp.example.test", "approver-sub"
+	if envA, err := rl.Envelope(ctx, viaA, runID, 1); err != nil || envA.EnvelopeSHA256 != env.EnvelopeSHA256 {
+		t.Errorf("the session signed in with the first identity is the member's earliest-linked one: %v", err)
+	}
+	for i, passkey := range []bool{true, false} {
+		raw, _ := json.Marshal(map[string]any{"issuer": "https://idp-b.example.test", "subject": "approver-sub-b", "finance": false, "passkey": passkey})
+		at := now.UTC().Format(time.RFC3339)
+		ev, err := link.Sign(fyniqPriv, link.Header{EventID: uuid.NewString(), Type: nemura.TypeIdentityAccess, SchemaVersion: 1, SourceSystem: "fyniq", SourceOrganisation: fyniqOrg.String(),
+			TargetOrganisation: lt.c.org.String(), Epoch: 1, Sequence: int64(60 + i), ObjectType: "identity", ObjectID: "u", ObjectVersion: 60 + i, EffectiveAt: at, RecordedAt: at, SignedAt: at, CorrelationID: uuid.NewString()}, raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if out, err := lt.receive(t, ev, now); err != nil || out != "applied" {
+			t.Fatalf("Fyniq's word on the passkey: %q %v", out, err)
+		}
+		want := map[bool]string{true: "enrolled", false: "missing"}[passkey]
+		if envB, err = rl.Envelope(ctx, viaB, runID, 1); err != nil || envB.FyniqPasskey != want {
+			t.Errorf("Fyniq said passkey=%v: the approver is shown %q (%v)", passkey, envB.FyniqPasskey, err)
+		}
+	}
 	e := env.Envelope
 	if e.MappingVersion != 3 || e.Version != 1 || e.Supersedes != 0 || e.WageMonth != "2026-06" || e.ApproverRight != "payroll.approve" || len(e.Departments) != 1 || e.Departments[0].DepartmentID != engineering.String() ||
 		e.Departments[0].Gross != run.Latest.Totals.Gross || e.EmployeeCPF != run.Latest.Totals.CPFEmployee || e.EmployerCPF != run.Latest.Totals.CPFEmployer || e.SDL != run.Latest.Totals.SDLPayable || e.SHG != run.Latest.Totals.SHG {

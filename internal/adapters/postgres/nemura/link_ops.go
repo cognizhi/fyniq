@@ -2,7 +2,7 @@ package nemura
 
 import (
 	"context"
-	"slices"
+	"net/url"
 	"strings"
 	"time"
 
@@ -180,9 +180,10 @@ func (c LinkOpsService) Receipt(ctx context.Context, s api.Session, run uuid.UUI
 	return out, err
 }
 
-// WorkspaceService answers whether the Finance | People switch shows in Nemura's header (PRD-002 NM-UX-03): while the link is active, for the roles that reach the books (the Owner, an Administrator and the
-// Payroll administrator), when the deployment names where Fyniq's web app is (NEMURA_FYNIQ_WEB_ORIGIN). Nemura cannot read the person's rights in Fyniq, so this is a door and not a grant: Fyniq's own
-// sign-in and roles decide what is behind it, and an employee who only claims has no door here (design D7 asks for Fyniq's answer too: owner to confirm).
+// WorkspaceService answers whether the Finance | People switch shows in Nemura's header (PRD-002 NM-UX-03, design D7): while the link is active and the deployment names where Fyniq's web app is
+// (NEMURA_FYNIQ_WEB_ORIGIN), when Fyniq has said that the identity this session was signed in with holds a role in its finance workspace (identity.access.changed, signed with the link's key, an answer and
+// no role name). A person whose rights are in Nemura alone has no door, and neither has one Fyniq has not said anything of. It is a door and never a grant: Fyniq's own sign-in and roles decide what is
+// behind it. The link carries the provider the session used, so Fyniq asks the same one and the person is not shown a sign-in page again.
 type WorkspaceService struct {
 	Store         *Store
 	FinanceOrigin string
@@ -191,17 +192,25 @@ type WorkspaceService struct {
 var _ api.WorkspaceSource = WorkspaceService{}
 
 // FinanceURL is where the switch leads, or "" when it does not show.
-func (w WorkspaceService) FinanceURL(ctx context.Context, org uuid.UUID, roles []authz.Role) (string, error) {
-	if w.FinanceOrigin == "" || !(slices.Contains(roles, authz.Owner) || slices.Contains(roles, authz.Administrator) || slices.Contains(roles, authz.PayrollAdmin)) {
+func (w WorkspaceService) FinanceURL(ctx context.Context, s api.Session, _ []authz.Role) (string, error) {
+	if w.FinanceOrigin == "" || s.Issuer == "" || s.Subject == "" { // a session made before its way in was recorded has no identity to ask about
 		return "", nil
 	}
-	active := false
-	err := w.Store.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
-		active = linkActive(ctx, tx)
-		return nil
+	finance := false
+	err := w.Store.InOrg(ctx, s.Organisation, func(ctx context.Context, tx pgx.Tx) error {
+		if !linkActive(ctx, tx) {
+			return nil
+		}
+		var err error
+		finance, _, _, err = FyniqAccessOf(ctx, tx, s.Issuer, s.Subject)
+		return err
 	})
-	if err != nil || !active {
+	if err != nil || !finance {
 		return "", err
 	}
-	return strings.TrimSuffix(w.FinanceOrigin, "/") + "/?switch=1", nil
+	u := strings.TrimSuffix(w.FinanceOrigin, "/") + "/?switch=1"
+	if s.Provider != "" {
+		u += "&provider=" + url.QueryEscape(s.Provider)
+	}
+	return u, nil
 }

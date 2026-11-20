@@ -26,7 +26,7 @@ import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
 import { FyniqLink } from "./pages/FyniqLink";
 import { Shell } from "./pages/Shell";
-import { rememberPage, switchedIn } from "./workspace";
+import { rememberPage, switchProvider, switchedIn } from "./workspace";
 import { PayRunApproval } from "./pages/PayRunApproval";
 import { MyPay, Payslip } from "./pages/MyPay";
 import { FlexReplies } from "./components/FlexReplies";
@@ -1590,6 +1590,19 @@ describe("approving a pay run while linked to Fyniq", () => {
     expect(bodies.get(`POST /v1/payroll/runs/${rid}/linked-approval`)).toMatchObject({ version: 2, digest, envelope_sha256: sha, approval: { authenticator_data: "QQ", client_data: "Qg", signature: "Qw" } });
   });
 
+  it("warns the approver before they sign when Fyniq says they have no passkey there, and says so softly when Fyniq has said nothing", async () => {
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: run });
+    answer(`GET /v1/payroll/runs/${rid}/approval-envelope`, { status: 200, body: { ...ready, fyniq_passkey: "missing" } });
+    answer(`GET /v1/payroll/runs/${rid}/submission`, { status: 200, body: { linked: true, version: 0, state: "none", retryable: false } });
+    const first = render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/no passkey enrolled there/);
+    first.unmount();
+    answer(`GET /v1/payroll/runs/${rid}/approval-envelope`, { status: 200, body: { ...ready, fyniq_passkey: "unknown" } });
+    render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    expect(await screen.findByText(/Fyniq has not said whether you have a passkey/)).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("lists what stops the envelope being signed and disables the button; a passkey that did not sign says so", async () => {
     answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: run });
     answer(`GET /v1/payroll/runs/${rid}/approval-envelope`, { status: 200, body: { ...ready, ready: false, issues: ["Fyniq has no department named Sales."], envelope_sha256: undefined, challenge: undefined } });
@@ -1707,5 +1720,11 @@ describe("the Finance | People switch", () => {
     expect(switchedIn("?switch=1")).toBeUndefined();
     window.localStorage.setItem("nemura.lastPage", "/people/payroll\\..\\x");
     expect(switchedIn("?switch=1")).toBeUndefined();
+  });
+
+  // part of FR-PPL-03 (the provider the other app named is only a hint of the shape a provider has)
+  it("takes the provider Fyniq named only if it has the shape of one", () => {
+    expect(switchProvider("?switch=1&provider=google")).toBe("google");
+    for (const bad of ["", "?switch=1", "?provider=", "?provider=Google", "?provider=a%2Fb", "?provider=%2F%2Fevil.example", "?provider=" + "a".repeat(64)]) expect(switchProvider(bad)).toBeNull();
   });
 });

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	neturl "net/url"
 	"slices"
 	"strings"
 	"time"
@@ -36,19 +37,20 @@ type signInProvidersInput struct {
 
 // SessionInfo is the caller's own session.
 type SessionInfo struct {
-	Provider        string         `json:"provider,omitempty" doc:"The sign-in provider of a browser session (FR-ADM-08); absent for a local dev token." example:"google"`
-	UserID          string         `json:"user_id,omitempty" format:"uuid" doc:"Your Fyniq user; absent until you have one (a new installation before setup, or before you accept an invitation)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
-	OrganisationID  string         `json:"organisation_id,omitempty" format:"uuid" doc:"The organisation your session is in; absent when you are a member of none." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"`
-	Roles           []RoleName     `json:"roles" doc:"Your roles in that organisation (PRD-001 §7.1); they are read on every request, so a change applies at once."`
-	SuperAdmin      bool           `json:"super_admin" doc:"Whether you are a Super admin of this installation (FR-ADM-07)." example:"false"`
-	SteppedUpUntil  *time.Time     `json:"stepped_up_until,omitempty" doc:"Until when your last step-up (a second factor at sign-in, or a passkey) counts for the actions that need one; absent when it does not." example:"2026-10-15T09:05:00Z"`
-	StepUpMethod    string         `json:"step_up_method,omitempty" enum:"sign_in,passkey,recovery" doc:"How your session last passed a second factor: at sign-in (your authenticator app), with a passkey, or by recovering your account (SEC-35); absent when it passed none, which leaves it only reading itself, stepping up and recovering (SEC-01, rev 0.43)." example:"sign_in"`
-	CoolingOffUntil *time.Time     `json:"cooling_off_until,omitempty" doc:"Until when your account cools off after its recovery (SEC-35): approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait until then. Absent when it does not." example:"2026-11-08T09:00:00Z"`
-	Features        *Features      `json:"features,omitempty" doc:"The organisation's feature switches today (FR-ORG-06); absent when you are a member of none."`
-	Motion          string         `json:"motion,omitempty" enum:"on,off" doc:"The organisation's motion (FR-UX-38): off shows every screen's final state at once for everyone, whatever each person chose; absent when you are a member of none." example:"on"`
-	TimeZone        string         `json:"time_zone,omitempty" doc:"The IANA time zone the organisation's days are counted in, which the web app writes dates and times in (NFR-L10N-01); absent when you are a member of none." example:"Asia/Singapore"`
-	Workspace       *Workspace     `json:"workspace,omitempty" doc:"Present when you may cross to Nemura: the Finance | People switch shows (FR-PPL-02). Absent when the apps are not linked or your roles are personal only (an employee who only claims has no switch: Nemura's Claims tile opens the personal workspace)." `
-	Preferences     *MyPreferences `json:"preferences,omitempty" doc:"Your own preferences in that organisation, with the mode you start in (FR-UX-23, FR-UX-27), so the web app draws the first page the way you chose; absent when you are a member of none."`
+	Provider            string         `json:"provider,omitempty" doc:"The sign-in provider of a browser session (FR-ADM-08); absent for a local dev token." example:"google"`
+	UserID              string         `json:"user_id,omitempty" format:"uuid" doc:"Your Fyniq user; absent until you have one (a new installation before setup, or before you accept an invitation)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
+	OrganisationID      string         `json:"organisation_id,omitempty" format:"uuid" doc:"The organisation your session is in; absent when you are a member of none." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"`
+	Roles               []RoleName     `json:"roles" doc:"Your roles in that organisation (PRD-001 §7.1); they are read on every request, so a change applies at once."`
+	SuperAdmin          bool           `json:"super_admin" doc:"Whether you are a Super admin of this installation (FR-ADM-07)." example:"false"`
+	SteppedUpUntil      *time.Time     `json:"stepped_up_until,omitempty" doc:"Until when your last step-up (a second factor at sign-in, or a passkey) counts for the actions that need one; absent when it does not." example:"2026-10-15T09:05:00Z"`
+	StepUpMethod        string         `json:"step_up_method,omitempty" enum:"sign_in,passkey,recovery" doc:"How your session last passed a second factor: at sign-in (your authenticator app), with a passkey, or by recovering your account (SEC-35); absent when it passed none, which leaves it only reading itself, stepping up and recovering (SEC-01, rev 0.43)." example:"sign_in"`
+	CoolingOffUntil     *time.Time     `json:"cooling_off_until,omitempty" doc:"Until when your account cools off after its recovery (SEC-35): approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait until then. Absent when it does not." example:"2026-11-08T09:00:00Z"`
+	Features            *Features      `json:"features,omitempty" doc:"The organisation's feature switches today (FR-ORG-06); absent when you are a member of none."`
+	Motion              string         `json:"motion,omitempty" enum:"on,off" doc:"The organisation's motion (FR-UX-38): off shows every screen's final state at once for everyone, whatever each person chose; absent when you are a member of none." example:"on"`
+	TimeZone            string         `json:"time_zone,omitempty" doc:"The IANA time zone the organisation's days are counted in, which the web app writes dates and times in (NFR-L10N-01); absent when you are a member of none." example:"Asia/Singapore"`
+	Workspace           *Workspace     `json:"workspace,omitempty" doc:"Present when you may cross to Nemura: the Finance | People switch shows (FR-PPL-02). It shows while the apps are linked, you hold a role that reaches the finance workspace here, and Nemura has said that the sign-in identity you are signed in with is an active member there; it names the provider you signed in with, so Nemura does not show you its sign-in page again. Absent otherwise (an employee who only claims has no switch: Nemura's Claims tile opens the personal workspace)." `
+	NemuraPasskeyNeeded bool           `json:"nemura_passkey_needed,omitempty" doc:"True when Nemura has said you approve pay runs there and you have no passkey enrolled here: its approval is signed with a passkey enrolled in Fyniq (PPL-19), so add one in your security settings. A reminder, never a grant." example:"true"`
+	Preferences         *MyPreferences `json:"preferences,omitempty" doc:"Your own preferences in that organisation, with the mode you start in (FR-UX-23, FR-UX-27), so the web app draws the first page the way you chose; absent when you are a member of none."`
 }
 
 // Workspace is the other app's door in the Finance | People switch (PRD-001 FR-PPL-02, PRD-002 NM-UX-03). It is only a way to cross: Nemura decides what the person may do there, and a role held in one app grants nothing in the other.
@@ -187,8 +189,26 @@ func registerSession(a *API) {
 				} else if o.Profile.TimeZone != "" {
 					out.TimeZone = o.Profile.TimeZone
 				}
-				if l, err := u.PeopleLinks().Live(ctx); err == nil && l.State == storage.LinkActive && l.NemuraOrigin != "" && p.Class == authn.ClassUser && financeWorkspace(p.Roles) {
-					out.Workspace = &Workspace{PeopleURL: strings.TrimSuffix(l.NemuraOrigin, "/") + "/?switch=1"}
+				if l, err := u.PeopleLinks().Live(ctx); err == nil && l.State == storage.LinkActive && p.Class == authn.ClassUser {
+					// What Nemura last said of this sign-in identity (identity.access.changed): a door and a hint, never a grant (design D7).
+					access, aerr := u.PeopleLinks().Access(ctx, p.Issuer, p.Subject)
+					if aerr != nil && !errors.Is(aerr, ports.ErrNotFound) {
+						return aerr
+					}
+					if aerr == nil && access.PeopleAccess && l.NemuraOrigin != "" && financeWorkspace(p.Roles) {
+						url := strings.TrimSuffix(l.NemuraOrigin, "/") + "/?switch=1"
+						if p.Provider != "" {
+							url += "&provider=" + neturl.QueryEscape(p.Provider)
+						}
+						out.Workspace = &Workspace{PeopleURL: url}
+					}
+					if aerr == nil && access.PayrollApprover && p.UserID != uuid.Nil {
+						keys, kerr := u.Passkeys().List(ctx, p.UserID, false)
+						if kerr != nil {
+							return kerr
+						}
+						out.NemuraPasskeyNeeded = len(keys) == 0
+					}
 				} else if err != nil && !errors.Is(err, ports.ErrNotFound) {
 					return err
 				}

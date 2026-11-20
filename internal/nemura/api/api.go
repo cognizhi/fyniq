@@ -76,6 +76,9 @@ type Session struct {
 	Leaver      bool
 	LeaverUntil *time.Time
 	Person      uuid.UUID // the person record the login is linked to, or the zero value
+	// Provider, Issuer and Subject are how the session was signed in: the sign-in provider (the switch asks Fyniq's page for the same one) and the identity it proved, by which a pay run's approver is named
+	// to Fyniq. A session made before they were recorded has none.
+	Provider, Issuer, Subject string
 }
 
 // StepUpWindow is how long a passkey confirmation stays fresh.
@@ -294,7 +297,7 @@ type Workspace struct {
 
 // WorkspaceSource says where the switch leads for a person, or "" when it does not show.
 type WorkspaceSource interface {
-	FinanceURL(ctx context.Context, org uuid.UUID, roles []authz.Role) (string, error)
+	FinanceURL(ctx context.Context, s Session, roles []authz.Role) (string, error)
 }
 
 func (a *API) cookie(header string) string {
@@ -337,7 +340,7 @@ func (a *API) registerSession() {
 			out.Body.Roles[i] = string(r)
 		}
 		if a.d.Workspace != nil && !s.Leaver {
-			url, err := a.d.Workspace.FinanceURL(ctx, s.Organisation, roles)
+			url, err := a.d.Workspace.FinanceURL(ctx, s, roles)
 			if err != nil {
 				return nil, huma.Error500InternalServerError("The workspace could not be read.")
 			}
