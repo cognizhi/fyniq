@@ -411,6 +411,9 @@ fyniq_api       EXECUTE   mcp_clients_pending()
 fyniq_api       EXECUTE   mcp_registration_open()
 fyniq_api       INSERT    mcp_seen (first_seen, kind, user_id, value)
 fyniq_api       SELECT    mcp_seen
+fyniq_api       INSERT    mcp_third_party_app (client_id, id, inventory_entry, name, outside_singapore, processing_location, publisher, publisher_url, purpose, redirect_uris, registered_at, registered_by)
+fyniq_api       SELECT    mcp_third_party_app
+fyniq_api       UPDATE    mcp_third_party_app (removed_at, removed_by)
 fyniq_api       INSERT    mcp_user_optin (opted_in, set_at, user_id)
 fyniq_api       SELECT    mcp_user_optin
 fyniq_api       EXECUTE   member_activity()
@@ -1049,6 +1052,7 @@ fyniq_readonly  SELECT    ledger_purged_entry
 fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    mcp_call
 fyniq_readonly  SELECT    mcp_seen
+fyniq_readonly  SELECT    mcp_third_party_app
 fyniq_readonly  SELECT    mcp_user_optin
 fyniq_readonly  SELECT    member_invitation
 fyniq_readonly  SELECT    migration_archive
@@ -1427,6 +1431,7 @@ fyniq_worker    SELECT    mcp_call
 fyniq_worker    EXECUTE   mcp_clients_expire()
 fyniq_worker    EXECUTE   mcp_purge_calls()
 fyniq_worker    SELECT    mcp_seen
+fyniq_worker    SELECT    mcp_third_party_app
 fyniq_worker    SELECT    mcp_user_optin
 fyniq_worker    EXECUTE   member_activity()
 fyniq_worker    EXECUTE   member_emails()

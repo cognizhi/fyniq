@@ -72,6 +72,17 @@ type AccessReviewClient struct {
 	Status    string      `json:"status" enum:"live,expired" doc:"live while it works; expired once its end date has passed and nobody revoked it." example:"live"`
 }
 
+// AccessReviewAIApp is a third-party AI app an Administrator registered by hand (AI-46): a processing path to review each quarter (FR-CTL-06).
+type AccessReviewAIApp struct {
+	ClientID         string    `json:"client_id" doc:"Its OAuth client ID." example:"mcp-0123456789abcdef0123"`
+	Name             string    `json:"name" doc:"Its name." example:"Acme Books Assistant"`
+	Publisher        string    `json:"publisher" doc:"Who publishes it, as the Administrator stated it: not verified." example:"Acme Software Pte Ltd"`
+	Purpose          string    `json:"purpose" doc:"What it is used for." example:"Ask questions about the management accounts"`
+	OutsideSingapore bool      `json:"outside_singapore" doc:"Whether it processes outside Singapore: a transfer to assess (CMP-PD-06)." example:"true"`
+	Status           string    `json:"status" enum:"pending,approved,denied,expired" doc:"Where its approval stands: an Owner adds an approved app to the apps that may connect." example:"approved"`
+	RegisteredAt     time.Time `json:"registered_at" doc:"When it was registered." example:"2026-11-21T09:30:00Z"`
+}
+
 // AccessReviewQuarter is a calendar quarter of the review.
 type AccessReviewQuarter struct {
 	Quarter string `json:"quarter" format:"date" doc:"Its first day." example:"2026-07-01"`
@@ -97,6 +108,7 @@ type AccessReview struct {
 	Invitations  []MemberInvitation        `json:"invitations" doc:"The pending invitations: who will join, with which roles."`
 	Connectors   []AccessReviewConnector   `json:"connectors" doc:"The organisation's installed connectors."`
 	Clients      []AccessReviewClient      `json:"integration_clients" doc:"The organisation's integration clients that are not revoked, each with its owner, class, scopes and end date (CTL-API-02)."`
+	AIApps       []AccessReviewAIApp       `json:"ai_apps" doc:"The third-party AI apps an Administrator registered by hand that are not removed, each a processing path to review (AI-46)."`
 	ToAttest     *AccessReviewQuarter      `json:"to_attest,omitempty" doc:"The latest calendar quarter that has ended, while it is not attested; absent when it is, or no quarter has ended since the organisation began."`
 	Overdue      *AccessReviewQuarter      `json:"overdue,omitempty" doc:"A quarter whose review is past its due date with neither its attestation nor a later one (C.2 #7)."`
 	Attestations []AccessReviewAttestation `json:"attestations" doc:"The quarters attested, latest first."`
@@ -169,7 +181,7 @@ func (a *API) accessReviewOf(ctx context.Context, u storage.UnitOfWork) (AccessR
 		return AccessReview{}, "", err
 	}
 	out := AccessReview{AsAt: now.UTC(), TeamMode: mode, Members: []AccessReviewMember{}, Invitations: []MemberInvitation{},
-		Connectors: []AccessReviewConnector{}, Clients: []AccessReviewClient{}, Attestations: []AccessReviewAttestation{}}
+		Connectors: []AccessReviewConnector{}, Clients: []AccessReviewClient{}, AIApps: []AccessReviewAIApp{}, Attestations: []AccessReviewAttestation{}}
 	names := map[uuid.UUID]string{}
 	since := today
 	for _, m := range ms {
@@ -217,6 +229,18 @@ func (a *API) accessReviewOf(ctx context.Context, u storage.UnitOfWork) (AccessR
 		}
 		out.Clients = append(out.Clients, AccessReviewClient{ClientID: c.ClientID, Name: c.Name, Class: c.Class, Owner: names[c.OwnerID], Scopes: named(c.Scopes, asScopeName),
 			ExpiresAt: c.ExpiresAt.UTC(), Status: status})
+	}
+	apps, err := u.MCPThirdPartyApps().List(ctx)
+	if err != nil {
+		return AccessReview{}, "", err
+	}
+	for _, h := range apps {
+		if h.RemovedAt != nil {
+			continue
+		}
+		app := a.thirdPartyAppOf(ctx, h)
+		out.AIApps = append(out.AIApps, AccessReviewAIApp{ClientID: h.ClientID, Name: h.Name, Publisher: h.Publisher, Purpose: h.Purpose, OutsideSingapore: h.OutsideSingapore,
+			Status: app.Status, RegisteredAt: h.RegisteredAt.UTC()})
 	}
 	var quarters []time.Time
 	for _, x := range slices.Backward(attested) {
@@ -354,6 +378,11 @@ func accessReviewSheet(r AccessReview) sheet.Sheet {
 			sheet.Text(""), sheet.Text(""), sheet.Text(c.ExpiresAt.Format(time.RFC3339)), sheet.Text(""), sheet.Text(""), sheet.Text(""),
 			sheet.Text(""), sheet.Text(c.Class + ", owner " + c.Owner + ", " + c.Status)}})
 	}
+	for _, c := range r.AIApps {
+		s.Rows = append(s.Rows, sheet.Row{Cells: []sheet.Cell{sheet.Text("AI app"), sheet.Text(c.Name), sheet.Text(""), sheet.Text(""), sheet.Text(""),
+			sheet.Text(c.RegisteredAt.Format(time.RFC3339)), sheet.Text(""), sheet.Text(""), sheet.Text(""), sheet.Text(""),
+			sheet.Text(c.Publisher + ", " + c.Status + ", " + map[bool]string{true: "outside Singapore", false: "in Singapore"}[c.OutsideSingapore])}})
+	}
 	return s
 }
 
@@ -473,7 +502,7 @@ func registerAccessReview(a *API) {
 			return nil, err
 		}
 		sum := sha256.Sum256(data)
-		rows := len(r.Members) + len(r.Invitations) + len(r.Connectors) + len(r.Clients)
+		rows := len(r.Members) + len(r.Invitations) + len(r.Connectors) + len(r.Clients) + len(r.AIApps)
 		return &accessReviewFileOutput{Body: ReportFile{ExportID: id.String(), FileName: "access-review-" + r.AsAt.Format(time.DateOnly) + ".csv",
 			MediaType: mediaCSV, SHA256: hex.EncodeToString(sum[:]), Size: len(data), Rows: rows, Content: base64.StdEncoding.EncodeToString(data)}}, nil
 	})

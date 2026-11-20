@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, InvoiceNow, cash buffer, numbering, features, AI, terms, banking, claims, thresholds, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:d1bef2b4603479aef774ba786605f4478f0e371f7fe60ba6c154091851bc1d95
+  - docs/user-guide/organisation-settings.md sha256:60fb4ca321ed09be14e60712bc7c88259bfc15831003b6533a577982acb9f79c
 data_class: general
 taint: trusted
 status: draft
@@ -233,6 +233,7 @@ The calendar itself: [[compliance.calendar]].
 - **AI apps through MCP**: off unless changed. Turning it on needs a second approver; turning it off takes effect at once and cuts every AI app off.
 - **AI apps that may connect**: none unless changed. Enter the apps to allow, such as `claude-code`, separated by commas; you can list the apps the release has registered, and an app that registered itself by the ID shown when it asked, and an app that is not listed cannot connect. Adding an app needs a second approver; taking one off takes effect at once, with no second approver, and cuts that app off.
 - **AI apps may register themselves**: off unless changed. An AI app can ask to be registered, on its own, only while an Owner has turned this on with a second approver. A registered app is limited to the default read access, is not verified, and cannot connect until an Owner adds it to the apps that may connect. A registration nobody approves expires after 7 days, and an approved app nobody uses after 30. Turning it off takes effect at once.
+- **An Administrator may register an AI app of another publisher**: off unless changed. An Owner turns it on with a second approver, with **AI apps through MCP** on too. An Administrator, with a second factor, then registers an app by hand under **Settings › Connected apps**: its name, who publishes it, what you use it for, where it processes data (and whether that is outside Singapore) and the exact addresses it signs people in on. Fyniq fetches nothing the Administrator names and does not check the publisher: the Owner decides. The app is limited to the default read access and cannot connect until an Owner adds it to the apps that may connect. The registration makes an entry in your personal-data inventory, a transfer to assess when the app is outside Singapore, and the app is in the quarterly access review. An Administrator or an Owner can remove it at once. Turning it off takes effect at once.
 - Each person also has to opt in before an app can act for them, and sees what the app may read when they allow it.
 - The release only holds these settings: no AI app can connect until the MCP server is opened for the deployment, separately, after a security review. Each person connects and disconnects apps under **Connected apps** ([[settings.connected-apps]]).
 

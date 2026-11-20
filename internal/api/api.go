@@ -449,6 +449,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerComplianceTasks(a)
 	registerWebhooks(a)
 	registerIntegrationTasks(a)
+	registerThirdPartyApps(a)
 	registerCompanySecretary(a)
 	registerTeamMode(a)
 	registerPasskeys(a)

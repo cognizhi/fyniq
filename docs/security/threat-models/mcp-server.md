@@ -100,3 +100,21 @@ Option A (the token counts as live authentication) and option C (reads only) wer
 Residual: a person who is tricked into confirming it's you and signing their own proposal approves what the app proposed. The approval
 page shows the platform's summary of the dry run and the app's rationale separately, as AI text; the proposal is small by catalogue
 (tier 1 means no money, no filing).
+
+## 7. Third-party apps registered by hand (AI-46; rev 0.611; the owner's decision of 21 Nov 2026)
+
+An Administrator, stepped up, registers an AI app of another publisher (`POST /v1/connected-apps/third-party-apps`), once an Owner has turned on `features.mcp` and
+`mcp.third_party` with a second approver. The Client ID Metadata Document is not accepted: nothing the Administrator names is fetched.
+
+| # | Threat | Control | Test |
+|---|---|---|---|
+| T1 | An app registers itself through this door, or a stranger does | Needs a person's session with step-up and the Administrator's C on Connected apps; the Owner holds A only, the AI, an agent-class client and an integration client with every scope are refused | `TestAnAdministratorRegistersAThirdPartyAIAppByHandAndAnOwnerApprovesIt`, the matrix rows |
+| T2 | A look-alike app: Fyniq's name, a known brand, a wildcard or tunnel redirect, an http redirect | The same policy as AI-90 (`mcpregister.Check`): exact https or loopback redirects, no wildcard, fragment or tunnel host, a name that cannot pass for Fyniq or a brand | the same test |
+| T3 | The registration makes Fyniq fetch something (a metadata document, a key set, a logo) | The body has fixed fields and refuses any other; the publisher's address is shown, never fetched | the same test |
+| T4 | The app is usable at once, or with more than reads | Agent-class public client, PKCE, the default read scope alone; unusable until an Owner adds it to `mcp.clients` (a second approver's setting); the introspection of AI-37 and the delegated tokens limit it further | the same test (the OAuth server's record) |
+| T5 | The publisher is trusted because an Administrator said so | The record says "as stated, not verified"; the Owner sees the publisher, purpose and location beside the registration and decides; `[verify]` a way to check a publisher | the same test |
+| T6 | Personal data leaves without anyone noticing | A data inventory entry is made with the registration (CMP-PD-02), a transfer to assess and a DPIA flag where it is outside Singapore (CMP-PD-06); the app is a row of the quarterly access review (FR-CTL-06) | the same test |
+| T7 | A removed app keeps working, or its record is rewritten | Removal denies a waiting registration and deletes the client at the OAuth server at once; the record is changed by no role but to note its removal once, never deleted (FYM01) | the same test, `TestAThirdPartyAIAppsRecordKeepsWhatWasRegistered` |
+| T8 | Registrations flood the installation | The organisation's own counts (5 an hour, 20 a day) and the installation's waiting cap, as AI-90's | `TestAnAIAppRegistersOnlyThroughTheClosedPolicyCheckedEndpoint` (the counting) |
+
+Left: the web form on Connected apps (the API is built); the Client ID Metadata Document (`[verify]` the MCP authorization specification of 2026-07-28 and the SSRF controls it needs).

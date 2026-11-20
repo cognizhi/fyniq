@@ -29,7 +29,8 @@ Decisions are in design.md. Cloud and real-account checks are tagged `[live-veri
 
 ## 5. Third-party MCP clients (AI-46)
 
-- [ ] 5.1 Registration, dual-controlled approval, Hydra registration, access review and data inventory entries.
+- [x] 5.1 Registration, dual-controlled approval, Hydra registration, access review and data inventory entries.
+  - Built (rev 0.611; the owner's decision of 21 Nov 2026, design D6 amended: manual registration only, the approval is AI-90's allowlist setting, not a new approval object): migration 001153 (`mcp_third_party_app`), the setting `mcp.third_party` (Owner, second approver, off at once), `registerMCPThirdPartyApp`, `listMCPThirdPartyApps`, `removeMCPThirdPartyApp`, the Owner's waiting list showing publisher, purpose and location, the data inventory entry, the access review's `ai_apps`, `TestAnAdministratorRegistersAThirdPartyAIAppByHandAndAnOwnerApprovesIt`, `TestAThirdPartyAIAppsRecordKeepsWhatWasRegistered`, the matrix rows, the threat model's section 7, the grants for human review. **Left:** the registration form on Connected apps (the API is built); the Client ID Metadata Document `[verify]`, not built by the owner's decision.
 
 ## 6. Sandbox (FR-INT-18)
 

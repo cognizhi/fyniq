@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "apps": {
+      "description": "Newest first, removed ones included, for the access review.",
+      "items": {
+        "$ref": "ThirdPartyApp.schema.json"
+      },
+      "maxItems": 200,
+      "type": "array"
+    }
+  },
+  "required": [
+    "apps"
+  ],
+  "title": "ThirdPartyApps",
+  "type": "object"
+}

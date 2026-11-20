@@ -5348,6 +5348,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/connected-apps/third-party-apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the third-party AI apps an Administrator registered
+         * @description The AI apps of other publishers registered by hand (AI-46), newest first, each with who publishes it as the Administrator stated it, what it is for, where it processes data, its redirect addresses and whether an Owner has approved it. Read-only; no side effects.
+         */
+        get: operations["listMCPThirdPartyApps"];
+        put?: never;
+        /**
+         * Register a third-party AI app by hand
+         * @description An Administrator, signed in and stepped up, registers an AI app of another publisher (AI-46): never automatic, never from a metadata document, nothing fetched. The name and redirect addresses pass the policy that checks a self-registering app (AI-90): a public client with PKCE, exact https or loopback redirects, a name that cannot pass for Fyniq or a known brand. The app is created as an agent with the default read scope alone and cannot connect until an Owner adds it to the apps that may connect. Refused (MCP-REG-05) until an Owner turns on both "AI apps through MCP" and "An Administrator may register an AI app of another publisher", each with a second approver. It makes a data inventory entry. Side effects: the client at the OAuth server, its registration, the app's record, the inventory entry and their audit events. Not idempotent: each call is a new client. Never on the AI's or MCP's tool list.
+         */
+        post: operations["registerMCPThirdPartyApp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connected-apps/third-party-apps/{client_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a third-party AI app
+         * @description Removes a registered app at once (AI-46): it is taken out of the OAuth server, so it can sign no one in and its tokens stop, and a waiting registration is denied. It narrows, so no second person is needed; the record and its inventory entry stay for the access review. Side effects: the client at the OAuth server, the registration's status and the record's audit event. Never on the AI's or MCP's tool list.
+         */
+        delete: operations["removeMCPThirdPartyApp"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connector-catalogue": {
         parameters: {
             query?: never;
@@ -22705,6 +22749,8 @@ export interface components {
             name: string;
         };
         AccessReview: {
+            /** @description The third-party AI apps an Administrator registered by hand that are not removed, each a processing path to review (AI-46). */
+            ai_apps: components["schemas"]["AccessReviewAIApp"][] | null;
             /**
              * Format: date-time
              * @description When it was read.
@@ -22731,6 +22777,45 @@ export interface components {
             team_mode: "founder" | "standard" | "enterprise";
             /** @description The latest calendar quarter that has ended, while it is not attested; absent when it is, or no quarter has ended since the organisation began. */
             to_attest?: components["schemas"]["AccessReviewQuarter"];
+        };
+        AccessReviewAIApp: {
+            /**
+             * @description Its OAuth client ID.
+             * @example mcp-0123456789abcdef0123
+             */
+            client_id: string;
+            /**
+             * @description Its name.
+             * @example Acme Books Assistant
+             */
+            name: string;
+            /**
+             * @description Whether it processes outside Singapore: a transfer to assess (CMP-PD-06).
+             * @example true
+             */
+            outside_singapore: boolean;
+            /**
+             * @description Who publishes it, as the Administrator stated it: not verified.
+             * @example Acme Software Pte Ltd
+             */
+            publisher: string;
+            /**
+             * @description What it is used for.
+             * @example Ask questions about the management accounts
+             */
+            purpose: string;
+            /**
+             * Format: date-time
+             * @description When it was registered.
+             * @example 2026-11-21T09:30:00Z
+             */
+            registered_at: string;
+            /**
+             * @description Where its approval stands: an Owner adds an approved app to the apps that may connect.
+             * @example approved
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "denied" | "expired";
         };
         AccessReviewAttestation: {
             /**
@@ -46474,6 +46559,26 @@ export interface components {
              * @example Acme Books Assistant
              */
             name: string;
+            /**
+             * @description A transfer to assess under the PDPA before you allow it (CMP-PD-06).
+             * @example true
+             */
+            outside_singapore?: boolean;
+            /**
+             * @description Where the publisher processes what it reads.
+             * @example United States
+             */
+            processing_location?: string;
+            /**
+             * @description Who publishes it, as the Administrator who registered it stated: not verified.
+             * @example Acme Software Pte Ltd
+             */
+            publisher?: string;
+            /**
+             * @description What the organisation uses it for.
+             * @example Ask questions about the management accounts
+             */
+            purpose?: string;
             /** @description Where it sends you to sign in: check this before you allow it. */
             redirect_uris: string[];
             /**
@@ -63571,6 +63676,95 @@ export interface components {
              * @example Acme Software Pte. Ltd.
              */
             value: string | null;
+        };
+        ThirdPartyApp: {
+            /**
+             * @description Its client ID at Fyniq's OAuth server.
+             * @example mcp-0123456789abcdef0123
+             */
+            client_id: string;
+            /**
+             * Format: uuid
+             * @description The data inventory entry made with the registration.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c31
+             */
+            inventory_entry: string;
+            /** @example Acme Books Assistant */
+            name: string;
+            /** @example true */
+            outside_singapore: boolean;
+            /** @example United States */
+            processing_location: string;
+            /**
+             * @description As the Administrator stated it: Fyniq has not verified it.
+             * @example Acme Software Pte Ltd
+             */
+            publisher: string;
+            /** @example https://acme.example */
+            publisher_url?: string;
+            /** @example Ask questions about the management accounts */
+            purpose: string;
+            redirect_uris: string[];
+            /**
+             * Format: date-time
+             * @example 2026-11-21T09:30:00Z
+             */
+            registered_at: string;
+            /**
+             * Format: uuid
+             * @description The Administrator who registered it.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+             */
+            registered_by: string;
+            /**
+             * Format: date-time
+             * @example 2026-12-01T09:30:00Z
+             */
+            removed_at?: string;
+            /**
+             * @description pending until an Owner adds it to the apps that may connect; removed once an Administrator took it away.
+             * @example pending
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "denied" | "expired" | "removed";
+        };
+        ThirdPartyAppRegister: {
+            /**
+             * @description The name it is known by, in plain letters and digits; it cannot pass for Fyniq or a known brand.
+             * @example Acme Books Assistant
+             */
+            name: string;
+            /**
+             * @description True when it processes outside Singapore: a transfer to assess under the PDPA before an Owner allows it (CMP-PD-06).
+             * @example true
+             */
+            outside_singapore: boolean;
+            /**
+             * @description Where the publisher processes what it reads.
+             * @example United States
+             */
+            processing_location: string;
+            /**
+             * @description Who publishes it, as you have verified it yourself: Fyniq does not fetch or check it.
+             * @example Acme Software Pte Ltd
+             */
+            publisher: string;
+            /**
+             * @description The publisher's own https address, shown to the Owner; never fetched.
+             * @example https://acme.example
+             */
+            publisher_url?: string;
+            /**
+             * @description What the organisation uses it for, for the data inventory.
+             * @example Ask questions about the management accounts from an AI assistant
+             */
+            purpose: string;
+            /** @description The exact https (or loopback) addresses it signs people in on: no wildcard, query or fragment. */
+            redirect_uris: string[] | null;
+        };
+        ThirdPartyApps: {
+            /** @description Newest first, removed ones included, for the access review. */
+            apps: components["schemas"]["ThirdPartyApp"][];
         };
         TimeCost: {
             /**
@@ -105165,6 +105359,344 @@ export interface operations {
                 };
             };
             /** @description Not Found: `MCP-APPS-02` No registration is waiting under that ID. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMCPThirdPartyApps: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThirdPartyApps"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    registerMCPThirdPartyApp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThirdPartyAppRegister"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThirdPartyApp"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read; `MCP-REG-02` The registration breaks the policy. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `MCP-REG-01` AI apps cannot register here; `MCP-REG-05` Third-party AI apps are off for this organisation. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `MCP-REG-06` No such registered AI app. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `MCP-REG-07` A field of the registration is not acceptable. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests; `MCP-REG-03` Too many registrations. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Bad Gateway: `MCP-REG-04` The sign-in service did not take the registration. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    removeMCPThirdPartyApp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The app's client ID. */
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `MCP-REG-06` No such registered AI app. */
             404: {
                 headers: {
                     [name: string]: unknown;

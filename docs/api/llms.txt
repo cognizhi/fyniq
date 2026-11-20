@@ -329,6 +329,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/connected-apps/people/{user_id}/connections/{client_id}` (revokeMemberConnection): Disconnect a person's AI app
 - `GET /v1/connected-apps/registrations` (listMCPRegistrations): See the AI apps waiting for an Owner
 - `POST /v1/connected-apps/registrations/{client_id}/deny` (denyMCPRegistration): Deny a registered AI app
+- `GET /v1/connected-apps/third-party-apps` (listMCPThirdPartyApps): List the third-party AI apps an Administrator registered
+- `POST /v1/connected-apps/third-party-apps` (registerMCPThirdPartyApp): Register a third-party AI app by hand
+- `DELETE /v1/connected-apps/third-party-apps/{client_id}` (removeMCPThirdPartyApp): Remove a third-party AI app
 - `GET /v1/connector-catalogue` (listConnectorCatalogue): List the connectors of this release
 - `GET /v1/contacts` (listContacts): List the contacts
 - `POST /v1/contacts` (createContact): Add a contact

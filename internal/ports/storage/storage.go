@@ -222,6 +222,8 @@ type UnitOfWork interface {
 	ComplianceTasks() ComplianceTasks
 	// IntegrationTasks are the tasks API clients made with the scope fyniq.write.tasks: a table of their own, apart from the compliance tasks (FR-INT-24).
 	IntegrationTasks() IntegrationTasks
+	// MCPThirdPartyApps are the AI apps of other publishers an Administrator registered by hand (AI-46).
+	MCPThirdPartyApps() MCPThirdPartyApps
 	// TenantData reads the organisation whole, for the full tenant export (FR-MIG-04).
 	TenantData() TenantData
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).
