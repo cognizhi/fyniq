@@ -4,7 +4,7 @@ type: task
 title: People and HR: where payroll lives and how its outputs are met
 summary: See where payroll lives, the Nemura link's state, how a month's statutory outputs are met, and how a provider's payroll journal becomes a draft
 sources:
-  - docs/user-guide/settings-people.md sha256:580701b5cb05d5eaa9c1928b91a851a8ac9e96ee2d49c1b2402ae3995caf02c0
+  - docs/user-guide/settings-people.md sha256:e89f52885e311bf182f0773dcc07b4fc5274884afa4688263aa7b86b9370e22d
 data_class: general
 taint: trusted
 status: draft
@@ -44,7 +44,7 @@ aliases:
 ## Link health
 
 - While the link is active, **Link health** shows how it stands, by identity only: how many events Nemura has queued for Fyniq, the highest number Fyniq's inbox holds, and how many events wait to be delivered, fail or were refused. Nothing in it is a payload, a name or a figure.
-- A gap is a run of event numbers that Nemura says it delivered and Fyniq never received. The page names the runs and offers **Ask Nemura to send them again**: Nemura sends the current state of what those events were about, never an old payload, and Fyniq applies what it missed and ignores what it holds.
+- A gap is a run of event numbers that Nemura says it delivered and Fyniq never received. The page names the runs and offers **Ask Nemura to send them again**: Nemura sends the current state of what those events were about, never an old payload, and Fyniq applies what it missed and ignores what it holds. Nemura answers at new event numbers, so the numbers asked for never arrive: the page then says they were asked for in the last day and does not ask again; after a day they show as missing again. If Nemura's log is longer than one look reads, the newest part is read and the page says the oldest was left out.
 - If Nemura's log cannot be read, the page says why and shows no number it does not know; **Check again** looks once more. It needs People and HR's right.
 
 (src: docs/user-guide/settings-people.md#link-health)

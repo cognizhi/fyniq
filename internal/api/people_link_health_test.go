@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -36,6 +37,21 @@ func (f *fakeLog) Sync(context.Context, storage.PeopleLinkAskKey, string) (links
 		highest = max(highest, e.Sequence)
 	}
 	return linksend.SyncPage{Epoch: f.epoch, HighestSequence: highest, Events: f.events}, nil
+}
+
+// longLog is a log of sent events numbered 1 to highest, served in pages of 500 after a cursor.
+type longLog struct{ highest int64 }
+
+func (f longLog) Sync(_ context.Context, _ storage.PeopleLinkAskKey, cursor string) (linksend.SyncPage, error) {
+	after, _ := strconv.ParseInt(cursor, 10, 64)
+	page := linksend.SyncPage{Epoch: 1, HighestSequence: f.highest}
+	for n := after + 1; n <= f.highest && len(page.Events) < 500; n++ {
+		page.Events = append(page.Events, linksend.SyncEvent{Sequence: n, EventID: uuid.NewString(), Type: "people.person.upserted", ObjectType: "person", ObjectID: uuid.NewString(), ObjectVersion: 1, State: "sent"})
+	}
+	if n := len(page.Events); n == 500 && page.Events[n-1].Sequence < f.highest {
+		page.NextCursor = strconv.FormatInt(page.Events[n-1].Sequence, 10)
+	}
+	return page, nil
 }
 
 // The link's health and its repair (PRD-001 FR-PPL-08, FR-PPL-15; PRD-002 NM-INT-04, NM-INT-10; owner's decision of 21 Nov 2026: link.sync.read): Fyniq sets Nemura's log by identity against its inbox and says what
@@ -120,6 +136,17 @@ func TestTheLinksHealthFindsAGapAndRepairingAsksNemuraForEachRunOnce(t *testing.
 	if again := e.call(http.MethodPost, "/v1/people-link/repair", admin, nil, "Idempotency-Key", key); again.Status != http.StatusOK || again.Header.Get("Idempotent-Replayed") != "true" || len(asked()) != 2 {
 		t.Errorf("the same key again: %d %s (asked %d)", again.Status, again.Raw, len(asked()))
 	}
+	// Nemura answers a replay at new sequence numbers, so the numbers asked for never arrive: the health says they were asked for and not missing, and a second repair asks for nothing; after a day they are missing again.
+	if after := health(admin); after.Status != http.StatusOK || len(after.Body["missing"].([]any)) != 0 || len(after.Body["requested"].([]any)) != 2 {
+		t.Errorf("the health after the repair: %s", after.Raw)
+	}
+	if again := e.call(http.MethodPost, "/v1/people-link/repair", admin, nil, "Idempotency-Key", uuid.NewString()); again.Status != http.StatusOK || len(again.Body["requested"].([]any)) != 0 || len(asked()) != 2 {
+		t.Errorf("a second repair of what was asked for: %d %s (asked %d)", again.Status, again.Raw, len(asked()))
+	}
+	e.clock.Set(e.clock.Now().Add(25 * time.Hour))
+	if later := health(admin); len(later.Body["missing"].([]any)) != 2 || len(later.Body["requested"].([]any)) != 0 {
+		t.Errorf("the health a day later: %s", later.Raw)
+	}
 	// Whatever cannot be read is said and never guessed, and asks for nothing.
 	log.err = errors.New("down")
 	if h := health(admin); h.Body["reachable"] != false || h.str("note") == "" {
@@ -149,6 +176,33 @@ func TestTheLinksHealthFindsAGapAndRepairingAsksNemuraForEachRunOnce(t *testing.
 	// A link's client reaches neither.
 	if r := health(w.tok); r.Status != http.StatusForbidden && r.Status != http.StatusUnauthorized {
 		t.Errorf("the link's client read the health: %d", r.Status)
+	}
+}
+
+// A log longer than one look reads is read from a watermark, and the oldest part is the part left out (the health says truncated and the runs start after it).
+// part of NM-INT-10
+func TestAHealthLookReadsTheNewestPartOfALongLog(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	if err := e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		l, err := u.PeopleLinks().Live(ctx)
+		if err != nil {
+			return err
+		}
+		k, err := newAskKey(l.ID, "fyniq-ask-test")
+		if err != nil {
+			return err
+		}
+		return u.PeopleLinks().SaveAskKey(ctx, k)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	e.api.deps.LinkLog = longLog{highest: 25000}
+	admin := e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{authz.Administrator}})
+	r := e.call(http.MethodGet, "/v1/people-link/health", admin, nil)
+	var got PeopleLinkHealth
+	if err := json.Unmarshal([]byte(r.Raw), &got); err != nil || !got.Reachable || !got.Truncated || got.NemuraHighestSequence != 25000 || len(got.Missing) != 2 || got.Missing[0].From != 5001 || got.Missing[1].To != 25000 {
+		t.Errorf("the health of a long log: %d %+v", r.Status, got)
 	}
 }
 

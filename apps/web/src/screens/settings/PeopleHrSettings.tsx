@@ -166,10 +166,17 @@ function LinkHealth({ onDone }: { onDone: (what: string) => void }) {
               {d.waiting} waiting to be delivered, {d.failing} failing, {d.refused} refused.
             </li>
           </ul>
-          {d.missing.length === 0 ? (
+          {d.requested.length > 0 && (
             <p className="fy-secondary">
-              <Icon of={CircleCheck} /> Nothing is missing: every event Nemura says it delivered reached Fyniq.
+              <Icon of={Hourglass} /> Asked Nemura to send these again in the last day: {d.requested.map((m) => (m.from === m.to ? `${m.from}` : `${m.from} to ${m.to}`)).join(", ")}. Nemura sends the current state at new numbers, so these numbers do not arrive; they show as missing again after a day.
             </p>
+          )}
+          {d.missing.length === 0 ? (
+            d.requested.length === 0 && (
+              <p className="fy-secondary">
+                <Icon of={CircleCheck} /> Nothing is missing: every event Nemura says it delivered reached Fyniq.
+              </p>
+            )
           ) : (
             <div className="fy-banner fy-banner--warning" role="note">
               <Icon of={CircleX} size={20} />

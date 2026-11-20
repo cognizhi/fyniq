@@ -835,3 +835,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura/sign-in.md -> kb (a Nemura sign-out or removal ends the mapped person's Fyniq sessions)
 
 ## [2026-11-20] compile | settings-people.md -> kb (link health and its repair)
+
+## [2026-11-20] compile | settings-people.md -> kb (a repair asked for, not missing; the oldest part of a long log)

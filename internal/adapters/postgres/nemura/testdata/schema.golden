@@ -555,6 +555,7 @@ link_identity_access | finance | boolean | true |
 link_identity_access | passkey | boolean | true | 
 link_identity_access | version | bigint | true | 
 link_identity_access | received_at | timestamp with time zone | true | 
+link_identity_access | epoch | integer | true | 1
 link_inbox | organisation_id | uuid | true | nemura.current_org()
 link_inbox | id | uuid | true | uuidv7()
 link_inbox | event_id | uuid | true | 
@@ -1787,6 +1788,7 @@ link_event | link_event_settled_with_state | CHECK (((state = ANY (ARRAY['sent':
 link_event | link_event_state_known | CHECK ((state = ANY (ARRAY['queued'::text, 'sent'::text, 'failed'::text, 'refused'::text])))
 link_event | link_event_state_not_null | NOT NULL state
 link_event | link_event_type_not_null | NOT NULL type
+link_identity_access | link_identity_access_epoch_not_null | NOT NULL epoch
 link_identity_access | link_identity_access_finance_not_null | NOT NULL finance
 link_identity_access | link_identity_access_issuer | CHECK (((char_length(issuer) >= 1) AND (char_length(issuer) <= 500)))
 link_identity_access | link_identity_access_issuer_not_null | NOT NULL issuer
@@ -3692,8 +3694,8 @@ CREATE OR REPLACE FUNCTION nemura.link_identity_access_guard()
  SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
 AS $function$
 BEGIN
-  IF TG_OP = 'DELETE' OR NEW.issuer IS DISTINCT FROM OLD.issuer OR NEW.subject IS DISTINCT FROM OLD.subject OR NEW.version <= OLD.version THEN
-    RAISE EXCEPTION 'What Fyniq says of an identity is replaced by a newer version, never changed back or deleted' USING ERRCODE = 'NM193';
+  IF TG_OP = 'DELETE' OR NEW.issuer IS DISTINCT FROM OLD.issuer OR NEW.subject IS DISTINCT FROM OLD.subject OR (NEW.epoch, NEW.version) <= (OLD.epoch, OLD.version) THEN
+    RAISE EXCEPTION 'What Fyniq says of an identity is replaced by a newer version of a newer or the same epoch, never changed back or deleted' USING ERRCODE = 'NM193';
   END IF;
   RETURN NEW;
 END

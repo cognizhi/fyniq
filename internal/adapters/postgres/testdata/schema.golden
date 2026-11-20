@@ -2214,6 +2214,7 @@ people_link_access | people_access | boolean | not null |
 people_link_access | payroll_approver | boolean | not null | 
 people_link_access | version | bigint | not null | 
 people_link_access | received_at | timestamp with time zone | not null | 
+people_link_access | epoch | integer | not null | 1
 people_link_ask_key | organisation_id | uuid | not null | current_org()
 people_link_ask_key | id | uuid | not null | uuidv7()
 people_link_ask_key | link_id | uuid | not null | 
@@ -2241,6 +2242,12 @@ people_link_key | nemura_client_id | text | not null |
 people_link_key | link_public | bytea | not null | 
 people_link_key | client_public | jsonb | not null | 
 people_link_key | sequence | bigint | not null | 0
+people_link_replay | organisation_id | uuid | not null | current_org()
+people_link_replay | id | uuid | not null | uuidv7()
+people_link_replay | link_id | uuid | not null | 
+people_link_replay | from_sequence | bigint | not null | 
+people_link_replay | to_sequence | bigint | not null | 
+people_link_replay | asked_at | timestamp with time zone | not null | 
 people_link_secret | organisation_id | uuid | not null | current_org()
 people_link_secret | id | uuid | not null | uuidv7()
 people_link_secret | link_id | uuid | not null | 
@@ -6538,6 +6545,7 @@ people_link | people_link_unlinked_no_client | CHECK (((state <> 'unlinked'::tex
 people_link | people_link_version_not_null | NOT NULL version
 people_link | people_link_version_positive | CHECK ((version >= 1))
 people_link | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+people_link_access | people_link_access_epoch_not_null | NOT NULL epoch
 people_link_access | people_link_access_id_not_null | NOT NULL id
 people_link_access | people_link_access_identity_key | UNIQUE (organisation_id, issuer, subject)
 people_link_access | people_link_access_issuer | CHECK (((char_length(issuer) >= 1) AND (char_length(issuer) <= 500)))
@@ -6601,6 +6609,16 @@ people_link_key | people_link_key_public_size | CHECK ((octet_length(link_public
 people_link_key | people_link_key_sequence | CHECK ((sequence >= 0))
 people_link_key | people_link_key_sequence_not_null | NOT NULL sequence
 people_link_key | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+people_link_replay | people_link_replay_asked_at_not_null | NOT NULL asked_at
+people_link_replay | people_link_replay_from_sequence_not_null | NOT NULL from_sequence
+people_link_replay | people_link_replay_id_not_null | NOT NULL id
+people_link_replay | people_link_replay_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES people_link(organisation_id, id)
+people_link_replay | people_link_replay_link_id_not_null | NOT NULL link_id
+people_link_replay | people_link_replay_organisation_id_not_null | NOT NULL organisation_id
+people_link_replay | people_link_replay_pkey | PRIMARY KEY (organisation_id, id)
+people_link_replay | people_link_replay_range | CHECK (((from_sequence >= 1) AND (to_sequence >= from_sequence) AND ((to_sequence - from_sequence) < 10000)))
+people_link_replay | people_link_replay_to_sequence_not_null | NOT NULL to_sequence
+people_link_replay | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 people_link_secret | people_link_secret_client_private_not_null | NOT NULL client_private
 people_link_secret | people_link_secret_id_key | UNIQUE (organisation_id, id)
 people_link_secret | people_link_secret_id_not_null | NOT NULL id
@@ -8074,6 +8092,7 @@ CREATE INDEX pd_anonymisation_contact ON fyniq.pd_anonymisation USING btree (org
 CREATE INDEX pd_breach_step_breach ON fyniq.pd_breach_step USING btree (organisation_id, breach_id, at)
 CREATE INDEX pd_request_step_request ON fyniq.pd_request_step USING btree (organisation_id, request_id, at)
 CREATE INDEX people_link_inbox_object ON fyniq.people_link_inbox USING btree (organisation_id, object_type, object_id, object_version)
+CREATE INDEX people_link_replay_link ON fyniq.people_link_replay USING btree (organisation_id, link_id, asked_at)
 CREATE INDEX people_source_latest ON fyniq.people_source USING btree (organisation_id, feature, set_at)
 CREATE INDEX period_close_check_period ON fyniq.period_close_check USING btree (organisation_id, period_id, checked_at)
 CREATE INDEX period_close_period ON fyniq.period_close USING btree (organisation_id, period_id, attested_at)
@@ -8470,6 +8489,7 @@ CREATE UNIQUE INDEX people_link_key_id_key ON fyniq.people_link_key USING btree 
 CREATE UNIQUE INDEX people_link_key_pkey ON fyniq.people_link_key USING btree (organisation_id, link_id)
 CREATE UNIQUE INDEX people_link_one_live ON fyniq.people_link USING btree (organisation_id) WHERE (state <> 'unlinked'::text)
 CREATE UNIQUE INDEX people_link_pkey ON fyniq.people_link USING btree (organisation_id, id)
+CREATE UNIQUE INDEX people_link_replay_pkey ON fyniq.people_link_replay USING btree (organisation_id, id)
 CREATE UNIQUE INDEX people_link_secret_id_key ON fyniq.people_link_secret USING btree (organisation_id, id)
 CREATE UNIQUE INDEX people_link_secret_pkey ON fyniq.people_link_secret USING btree (organisation_id, link_id)
 CREATE UNIQUE INDEX people_source_pkey ON fyniq.people_source USING btree (organisation_id, id)
@@ -8700,6 +8720,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_request_step DE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_transfer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_transfer', 'transfer_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.people_link_ask_key DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link_ask_key', 'link_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.people_link_key DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link_key', 'link_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.people_link_replay DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link_replay', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.people_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_source', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
@@ -9209,6 +9230,8 @@ CREATE TRIGGER people_link_inbox_no_truncate BEFORE TRUNCATE ON fyniq.people_lin
 CREATE TRIGGER people_link_key_guard BEFORE DELETE OR UPDATE ON fyniq.people_link_key FOR EACH ROW EXECUTE FUNCTION people_link_key_guard()
 CREATE TRIGGER people_link_key_no_truncate BEFORE TRUNCATE ON fyniq.people_link_key FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER people_link_no_truncate BEFORE TRUNCATE ON fyniq.people_link FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER people_link_replay_guard BEFORE DELETE OR UPDATE ON fyniq.people_link_replay FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER people_link_replay_no_truncate BEFORE TRUNCATE ON fyniq.people_link_replay FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER people_link_secret_guard BEFORE DELETE OR UPDATE ON fyniq.people_link_secret FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER people_link_secret_no_truncate BEFORE TRUNCATE ON fyniq.people_link_secret FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER people_source_guard BEFORE DELETE OR UPDATE ON fyniq.people_source FOR EACH ROW EXECUTE FUNCTION notification_append_only()
@@ -9513,6 +9536,7 @@ people_link_access | tenant_isolation | * | (organisation_id = current_org()) | 
 people_link_ask_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link_inbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+people_link_replay | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link_secret | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_source | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9778,6 +9802,7 @@ people_link_access | enabled | forced
 people_link_ask_key | enabled | forced
 people_link_inbox | enabled | forced
 people_link_key | enabled | forced
+people_link_replay | enabled | forced
 people_link_secret | enabled | forced
 people_source | enabled | forced
 period | enabled | forced
@@ -10161,7 +10186,7 @@ pd_breach_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
 pd_shredding_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78959af9821f7e3f1ccf60b99d41b64
 pd_transfer_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1805c27109679636b897845585e6cb59
-people_link_access_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ab986c64b5fc11ef7075491920dff708
+people_link_access_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cb7c1862cac32e3b301d2e2b8eb18df4
 people_link_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7ec37301f4fcf16ab03af14e16925399
 people_link_key_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 894d3d12ea6de23ec5bbc93b954b6124
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d

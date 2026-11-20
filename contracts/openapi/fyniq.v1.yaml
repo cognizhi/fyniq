@@ -43511,7 +43511,7 @@ components:
           format: int64
           type: integer
         missing:
-          description: "The runs of sequence numbers Nemura says it delivered and Fyniq's inbox never received: a gap. Ask Nemura to send them again with repairPeopleLink."
+          description: "The runs of sequence numbers Nemura says it delivered and Fyniq's inbox never received, and Fyniq has not asked Nemura to send again in the last day: a gap. Ask Nemura to send them again with repairPeopleLink."
           items:
             $ref: "#/components/schemas/SequenceRange"
           type: array
@@ -43543,6 +43543,11 @@ components:
             - 0
           format: int64
           type: integer
+        requested:
+          description: "The runs of that kind Fyniq asked Nemura to send again in the last day. Nemura answers with the current state at new sequence numbers, so these numbers never arrive: they are asked for, not missing, and show as missing again after a day."
+          items:
+            $ref: "#/components/schemas/SequenceRange"
+          type: array
         state:
           description: The link's state.
           enum:
@@ -43575,6 +43580,7 @@ components:
         - failing
         - refused
         - missing
+        - requested
       type: object
     PeopleLinkInbox:
       additionalProperties: false

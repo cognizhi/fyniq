@@ -2826,6 +2826,7 @@ type FyniqPeopleLinkAccess struct {
 	PayrollApprover bool
 	Version         int64
 	ReceivedAt      time.Time
+	Epoch           int32
 }
 
 type FyniqPeopleLinkAskKey struct {
@@ -2862,6 +2863,15 @@ type FyniqPeopleLinkKey struct {
 	LinkPublic     []byte
 	ClientPublic   []byte
 	Sequence       int64
+}
+
+type FyniqPeopleLinkReplay struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	LinkID         uuid.UUID
+	FromSequence   int64
+	ToSequence     int64
+	AskedAt        time.Time
 }
 
 type FyniqPeopleLinkSecret struct {

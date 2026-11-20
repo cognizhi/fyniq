@@ -47965,7 +47965,7 @@ export interface components {
              * @example 0
              */
             failing: number;
-            /** @description The runs of sequence numbers Nemura says it delivered and Fyniq's inbox never received: a gap. Ask Nemura to send them again with repairPeopleLink. */
+            /** @description The runs of sequence numbers Nemura says it delivered and Fyniq's inbox never received, and Fyniq has not asked Nemura to send again in the last day: a gap. Ask Nemura to send them again with repairPeopleLink. */
             missing: components["schemas"]["SequenceRange"][];
             /**
              * Format: int64
@@ -47995,6 +47995,8 @@ export interface components {
              * @example 0
              */
             refused: number;
+            /** @description The runs of that kind Fyniq asked Nemura to send again in the last day. Nemura answers with the current state at new sequence numbers, so these numbers never arrive: they are asked for, not missing, and show as missing again after a day. */
+            requested: components["schemas"]["SequenceRange"][];
             /**
              * @description The link's state.
              * @example active

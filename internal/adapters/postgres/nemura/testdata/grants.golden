@@ -381,6 +381,8 @@ nemura_api | column nemura.link_event.object_version | INSERT
 nemura_api | column nemura.link_event.queued_at | INSERT
 nemura_api | column nemura.link_event.sequence | INSERT
 nemura_api | column nemura.link_event.type | INSERT
+nemura_api | column nemura.link_identity_access.epoch | INSERT
+nemura_api | column nemura.link_identity_access.epoch | UPDATE
 nemura_api | column nemura.link_identity_access.finance | INSERT
 nemura_api | column nemura.link_identity_access.finance | UPDATE
 nemura_api | column nemura.link_identity_access.issuer | INSERT

@@ -645,8 +645,9 @@ func (a *API) accessOf(ctx context.Context, u storage.UnitOfWork, env peoplelink
 	if err != nil && !errors.Is(err, ports.ErrNotFound) {
 		return nil, false, err
 	}
-	version := int64(env.Header.ObjectVersion)
-	return &storage.PeopleAccess{Issuer: ev.Issuer, Subject: ev.Subject, PeopleAccess: ev.PeopleAccess, PayrollApprover: ev.PayrollApprover, Version: version, ReceivedAt: now}, err == nil && held.Version >= version, nil
+	version, epoch := int64(env.Header.ObjectVersion), env.Header.Epoch // a sequence starts again with each link: the answer is kept with its epoch, and the newest (epoch, version) wins
+	older := err == nil && (held.Epoch > epoch || (held.Epoch == epoch && held.Version >= version))
+	return &storage.PeopleAccess{Issuer: ev.Issuer, Subject: ev.Subject, PeopleAccess: ev.PeopleAccess, PayrollApprover: ev.PayrollApprover, Version: version, Epoch: epoch, ReceivedAt: now}, older, nil
 }
 
 // linkedEnvelope checks an event against the link as Fyniq holds it: the link is active, the call came through the link's own client, and the envelope's

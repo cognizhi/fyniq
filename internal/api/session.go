@@ -195,6 +195,9 @@ func registerSession(a *API) {
 					if aerr != nil && !errors.Is(aerr, ports.ErrNotFound) {
 						return aerr
 					}
+					if aerr == nil && access.Epoch != l.Epoch {
+						aerr = ports.ErrNotFound // what an ended link's Nemura said decides nothing for this one
+					}
 					if aerr == nil && access.PeopleAccess && l.NemuraOrigin != "" && financeWorkspace(p.Roles) {
 						url := strings.TrimSuffix(l.NemuraOrigin, "/") + "/?switch=1"
 						if p.Provider != "" {

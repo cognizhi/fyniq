@@ -417,3 +417,43 @@ func (w *runWorld) auditBodies(t *testing.T, action string) []string {
 	}
 	return out
 }
+
+// An answer of an ended link decides nothing for the link that follows it (design D16, D17): a sequence starts again at 1 with each link, so Nemura's word is kept with its epoch and the newest (epoch, version)
+// wins; an answer of an earlier epoch is ignored when it arrives late and decides no switch and no reminder for the live link.
+// part of FR-PPL-02
+// asvs: V8.2.1, V4.2.1
+func TestAnAnswerOfAnEndedLinkDecidesNothingForTheLinkThatFollowsInFyniq(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	ctx := context.Background()
+	save := func(epoch int, version int64, access bool) bool {
+		t.Helper()
+		var saved bool
+		if err := e.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			saved, err = u.PeopleLinks().SaveAccess(ctx, storage.PeopleAccess{Issuer: w.approver.Issuer, Subject: w.approver.Subject, PeopleAccess: access, PayrollApprover: true, Version: version, Epoch: epoch, ReceivedAt: e.clock.Now()})
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return saved
+	}
+	session := func() map[string]any {
+		return e.call(http.MethodGet, "/v1/session", w.person(w.approver, w.approverUser, "zoho", authz.Owner), nil).Body
+	}
+	if !save(1, 700, true) || session()["workspace"] == nil {
+		t.Fatal("the live link's answer shows the switch")
+	}
+	// The link is made again later at epoch 2 (the world's link is epoch 1: what epoch 2 says is what a later link will have said).
+	if !save(2, 1, true) {
+		t.Error("the next link's first answer (version 1) did not replace an old one with version 700")
+	}
+	if session()["workspace"] != nil || session()["nemura_passkey_needed"] != nil {
+		t.Errorf("an answer of another epoch decides the live link's switch: %v", session())
+	}
+	if save(1, 900, true) {
+		t.Error("an answer of the earlier epoch, arriving late, replaced the newer epoch's")
+	}
+	if save(2, 1, false) {
+		t.Error("the same epoch and version again replaced it")
+	}
+}

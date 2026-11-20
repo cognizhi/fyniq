@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -40,7 +41,8 @@ type PeopleLinkHealth struct {
 	Waiting                 int             `json:"waiting" doc:"Events Nemura queued and has not delivered yet: not a gap, they are on their way." example:"2"`
 	Failing                 int             `json:"failing" doc:"Events Nemura tried and could not deliver: it tries again." example:"0"`
 	Refused                 int             `json:"refused" doc:"Events Fyniq refused for good, with the code on Nemura's page." example:"0"`
-	Missing                 []SequenceRange `json:"missing" nullable:"false" doc:"The runs of sequence numbers Nemura says it delivered and Fyniq's inbox never received: a gap. Ask Nemura to send them again with repairPeopleLink."`
+	Missing                 []SequenceRange `json:"missing" nullable:"false" doc:"The runs of sequence numbers Nemura says it delivered and Fyniq's inbox never received, and Fyniq has not asked Nemura to send again in the last day: a gap. Ask Nemura to send them again with repairPeopleLink."`
+	Requested               []SequenceRange `json:"requested" nullable:"false" doc:"The runs of that kind Fyniq asked Nemura to send again in the last day. Nemura answers with the current state at new sequence numbers, so these numbers never arrive: they are asked for, not missing, and show as missing again after a day."`
 	Truncated               bool            `json:"truncated,omitempty" doc:"True when Nemura's log is longer than one look reads; the oldest part was left out." example:"false"`
 }
 
@@ -49,7 +51,7 @@ const logPages = 40
 
 // linkHealth works out how the link stands: it reads Nemura's log by identity (outside any transaction) and sets it against Fyniq's inbox. Whatever it cannot read it says so and never guesses.
 func (a *API) linkHealth(ctx context.Context, org authn.Principal) (PeopleLinkHealth, storage.PeopleLinkRow, error) {
-	out := PeopleLinkHealth{State: "none", Missing: []SequenceRange{}, CheckedAt: a.deps.Clock.Now()}
+	out := PeopleLinkHealth{State: "none", Missing: []SequenceRange{}, Requested: []SequenceRange{}, CheckedAt: a.deps.Clock.Now()}
 	var l storage.PeopleLinkRow
 	var ask storage.PeopleLinkAskKey
 	var haveAsk bool
@@ -81,27 +83,39 @@ func (a *API) linkHealth(ctx context.Context, org authn.Principal) (PeopleLinkHe
 		out.Note = "This deployment cannot read Nemura's log: it is not told where Nemura is, or the link was made before the log could be read (approve the link again)."
 		return out, l, nil
 	}
+	// One look reads the newest logPages pages: when Nemura's log is longer, it starts at a watermark and the oldest part is left out.
 	var events []linksend.SyncEvent
-	cursor := ""
-	for i := 0; i < logPages; i++ {
-		page, err := a.deps.LinkLog.Sync(ctx, ask, cursor)
-		if err != nil {
+	first, err := a.deps.LinkLog.Sync(ctx, ask, "")
+	if err != nil {
+		out.Note = "Nemura did not answer: try again in a minute."
+		return out, l, nil
+	}
+	if first.Epoch != l.Epoch {
+		out.Note = "Nemura answered for another epoch of the link: it is not the link this organisation has."
+		return out, l, nil
+	}
+	out.NemuraHighestSequence = first.HighestSequence
+	page, cursor, from := first, "", int64(1)
+	if span := int64(logPages * 500); first.HighestSequence > span {
+		from = first.HighestSequence - span + 1
+		cursor = strconv.FormatInt(from-1, 10)
+		page, out.Truncated = linksend.SyncPage{}, true
+		if page, err = a.deps.LinkLog.Sync(ctx, ask, cursor); err != nil {
 			out.Note = "Nemura did not answer: try again in a minute."
 			return out, l, nil
 		}
-		if page.Epoch != l.Epoch {
-			out.Note = "Nemura answered for another epoch of the link: it is not the link this organisation has."
-			return out, l, nil
-		}
-		out.NemuraHighestSequence = page.HighestSequence
+	}
+	for i := 0; ; i++ {
 		events = append(events, page.Events...)
-		if page.NextCursor == "" {
-			cursor = ""
+		if page.NextCursor == "" || i+1 >= logPages {
 			break
 		}
-		cursor = page.NextCursor
+		if page, err = a.deps.LinkLog.Sync(ctx, ask, page.NextCursor); err != nil {
+			out.Note = "Nemura did not answer: try again in a minute."
+			return out, l, nil
+		}
 	}
-	out.Reachable, out.Truncated = true, cursor != ""
+	out.Reachable = true
 	var sent []int64
 	for _, e := range events {
 		switch e.State {
@@ -116,14 +130,26 @@ func (a *API) linkHealth(ctx context.Context, org authn.Principal) (PeopleLinkHe
 		}
 	}
 	if err := a.deps.Store.Do(ctx, org.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-		have, err := u.PeopleLinks().InboxSequences(ctx, l.ID, 1, max(out.NemuraHighestSequence, 1))
+		have, err := u.PeopleLinks().InboxSequences(ctx, l.ID, from, max(out.NemuraHighestSequence, from))
 		if err != nil {
 			return err
 		}
 		if len(have) > 0 {
 			out.ReceivedHighestSequence = have[len(have)-1]
 		}
-		out.Missing = missingRuns(sent, have)
+		asked, err := u.PeopleLinks().ReplaysSince(ctx, l.ID, a.deps.Clock.Now().Add(-24*time.Hour))
+		if err != nil {
+			return err
+		}
+		var open, waiting []int64
+		for _, s := range unreceived(sent, have) {
+			if slices.ContainsFunc(asked, func(r [2]int64) bool { return s >= r[0] && s <= r[1] }) {
+				waiting = append(waiting, s)
+			} else {
+				open = append(open, s)
+			}
+		}
+		out.Missing, out.Requested = runsOf(open), runsOf(waiting)
 		return nil
 	}); err != nil {
 		return out, l, err
@@ -131,13 +157,21 @@ func (a *API) linkHealth(ctx context.Context, org authn.Principal) (PeopleLinkHe
 	return out, l, nil
 }
 
-// missingRuns are the runs of the sequence numbers Nemura says it sent that the inbox does not hold, no run wider than a replay request may ask for.
-func missingRuns(sent, have []int64) []SequenceRange {
-	out := []SequenceRange{}
+// unreceived are the sequence numbers Nemura says it sent that the inbox does not hold, in order (have is in order).
+func unreceived(sent, have []int64) []int64 {
+	var out []int64
 	for _, s := range sent {
-		if _, found := slices.BinarySearch(have, s); found {
-			continue
+		if _, found := slices.BinarySearch(have, s); !found {
+			out = append(out, s)
 		}
+	}
+	return out
+}
+
+// runsOf are the runs of consecutive sequence numbers, no run wider than a replay request may ask for.
+func runsOf(seqs []int64) []SequenceRange {
+	out := []SequenceRange{}
+	for _, s := range seqs {
 		if n := len(out); n > 0 && out[n-1].To == s-1 && s-out[n-1].From < linksend.MaxReplaySpan {
 			out[n-1].To = s
 			continue
@@ -146,6 +180,9 @@ func missingRuns(sent, have []int64) []SequenceRange {
 	}
 	return out
 }
+
+// missingRuns are only what Nemura says it sent and the inbox lacks, in runs no wider than a replay request may ask for.
+func missingRuns(sent, have []int64) []SequenceRange { return runsOf(unreceived(sent, have)) }
 
 type (
 	peopleLinkHealthOutput struct{ Body PeopleLinkHealth }
@@ -200,14 +237,18 @@ func registerPeopleLinkHealth(a *API) {
 			if !health.Reachable {
 				return out, nil // nothing known to ask for: the health says why
 			}
-			for _, r := range health.Missing {
+			for _, r := range health.Missing { // only what has not been asked for in the last day: Nemura answers at new sequence numbers, so what was asked never arrives
 				id, err := linksend.Queue(ctx, u, linksend.TypeReplayRequested, "link", link.ID.String(), 0, linksend.ReplayRequested{FromSequence: r.From, ToSequence: r.To})
 				if err != nil {
 					return out, err
 				}
-				if id != "" {
-					out.Requested = append(out.Requested, r)
+				if id == "" {
+					continue
 				}
+				if err := u.PeopleLinks().RecordReplay(ctx, link.ID, r.From, r.To, a.deps.Clock.Now()); err != nil {
+					return out, err
+				}
+				out.Requested = append(out.Requested, r)
 			}
 			return out, nil
 		})

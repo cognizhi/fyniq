@@ -45,6 +45,7 @@ var Excluded = map[string]string{
 	"people_link_ask_key":           "the private key of the link's read-only client for the ask at release: a secret of the connection, never exported (FR-PPL-13, SEC-15)",
 	"people_link_secret":            "the link's private keys: a secret of the connection, never exported (FR-PPL-15, SEC-15)",
 	"people_link_inbox":             "the events the link received: identities and digests of another system's messages, kept to dedupe them, not the organisation's records (FR-PPL-15)",
+	"people_link_replay":            "the runs of Nemura's sequence numbers Fyniq asked it to send again, with when: a record of the connection's repair, not the organisation's records (FR-PPL-08)",
 	"people_link_access":            "what Nemura last said of each sign-in identity (an active member there, an approver of pay runs): a hint from another system that decides a switch and a reminder, never the organisation's records or a grant (FR-PPL-02)",
 	"salary_batch_line":             "each person's payment line of a salary batch (their pay and, sealed, their account): need-to-know under FR-PPL-17, and Nemura, the payroll's system of record, holds it; the export carries the batch's header",
 	"salary_line_event":             "the states of each salary payment by person: need-to-know under FR-PPL-17; Nemura holds the payment states (FR-PPL-12)",

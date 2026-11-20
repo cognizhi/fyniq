@@ -377,7 +377,7 @@ func ReceiveLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Ti
 		var ev identityAccessEvent
 		if applyErr = strict(&ev); applyErr == nil {
 			var o string
-			if o, applyErr = applyIdentityAccess(ctx, sp, org, now, ev, env.Header.ObjectVersion); applyErr == nil {
+			if o, applyErr = applyIdentityAccess(ctx, sp, org, now, ev, env.Header.ObjectVersion, env.Header.Epoch); applyErr == nil {
 				outcome = o
 			}
 		}

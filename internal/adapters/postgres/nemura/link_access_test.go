@@ -4,6 +4,8 @@ package nemura_test
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"slices"
@@ -21,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/apiclient"
 	"github.com/cognizhi/fyniq/internal/nemura/identity"
+	"github.com/cognizhi/fyniq/internal/nemura/link"
 	"github.com/cognizhi/fyniq/internal/nemura/linkauth"
 	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 )
@@ -437,5 +440,69 @@ func TestAReplayTellsFyniqAgainWhatAnIdentityMayEnterAsItStandsNow(t *testing.T)
 	}
 	if count() != before+1 {
 		t.Errorf("the replay told Fyniq again of the identity: %d then %d", before, count())
+	}
+}
+
+// An answer of an ended link decides nothing for the link that follows it (design D16): a sequence starts again at 1 with each link, so Fyniq's word is kept with its epoch and the newest (epoch, version) wins:
+// after the link is made again, the first answer of the new epoch replaces an old one with a higher version, an old epoch's answer arriving late is ignored, and an answer of the earlier epoch decides no switch.
+// part of NM-INT-02
+// asvs: V8.2.1, V4.2.1
+func TestAnAnswerOfAnEndedLinkDecidesNothingForTheLinkThatFollows(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := today.Add(10 * time.Hour)
+	idp := "https://idp.example.test"
+	by := audit.Actor{Type: "user", ID: lt.c.owner.String()}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.LinkIdentity(ctx, tx, lt.c.org, now, by, lt.c.owner, identity.Identity{Issuer: idp, Subject: "owner-a", Tenant: "t"})
+	})
+	_, priv1, fyniqOrg1 := linked(t, lt, now, &fakeOAuth{})
+	ws := nemura.WorkspaceService{Store: store(t, "nemura_api"), FinanceOrigin: "https://app.example.test"}
+	session := api.Session{Organisation: lt.c.org, Member: lt.c.owner, Issuer: idp, Subject: "owner-a", Provider: "zoho"}
+	if out, err := lt.receive(t, fyniqSays(t, priv1, lt, fyniqOrg1, now, nemura.TypeIdentityAccess, "identity", "u", 700, 700, map[string]any{"issuer": idp, "subject": "owner-a", "finance": true, "passkey": true}), now); err != nil || out != "applied" {
+		t.Fatalf("an answer of the first link: %q %v", out, err)
+	}
+	if u, _ := ws.FinanceURL(ctx, session, nil); u == "" {
+		t.Fatal("the first link's answer shows the switch")
+	}
+	// The link ends and is made again at the next epoch.
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error { return nemura.EndLink(ctx, tx, lt.c.org, now, by) })
+	svc := nemura.LinkService{Store: store(t, "nemura_api"), OAuth: &fakeOAuth{}, Clock: clock.NewFrozen(now)}
+	pub2, priv2, _ := ed25519.GenerateKey(rand.Reader)
+	fyniqOrg2 := uuid.New()
+	if _, err := svc.Propose(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}, fyniqOrg2); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Activate(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr, StepUpAt: &now}, pub2, "fyniq-client-2", json.RawMessage(jwk), json.RawMessage(jwk)); err != nil {
+		t.Fatal(err)
+	}
+	if u, _ := ws.FinanceURL(ctx, session, nil); u != "" {
+		t.Errorf("an answer of the ended link shows the switch of the new one: %q", u)
+	}
+	say := func(epoch, version int, finance bool) (string, error) {
+		raw, _ := json.Marshal(map[string]any{"issuer": idp, "subject": "owner-a", "finance": finance, "passkey": false})
+		at := now.UTC().Format(time.RFC3339)
+		e, err := link.Sign(priv2, link.Header{EventID: uuid.NewString(), Type: nemura.TypeIdentityAccess, SchemaVersion: 1, SourceSystem: "fyniq", SourceOrganisation: fyniqOrg2.String(), TargetOrganisation: lt.c.org.String(),
+			Epoch: epoch, Sequence: int64(version), ObjectType: "identity", ObjectID: "u", ObjectVersion: version, EffectiveAt: at, RecordedAt: at, SignedAt: at, CorrelationID: uuid.NewString()}, raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return lt.receive(t, e, now)
+	}
+	// The new link's first answer (version 1) replaces the old one (version 700); a late answer of the first epoch is refused by the envelope's epoch check.
+	if out, err := say(2, 1, true); err != nil || out != "applied" {
+		t.Fatalf("the new link's first answer: %q %v", out, err)
+	}
+	if u, _ := ws.FinanceURL(ctx, session, nil); u == "" {
+		t.Error("the new link's answer does not show the switch")
+	}
+	if out, err := say(2, 2, false); err != nil || out != "applied" {
+		t.Fatalf("the new link's second answer: %q %v", out, err)
+	}
+	if u, _ := ws.FinanceURL(ctx, session, nil); u != "" {
+		t.Errorf("the new link's later answer, that the role ended: %q", u)
+	}
+	if out, err := say(1, 900, true); err == nil && out == "applied" {
+		t.Errorf("an answer of the first epoch after the link was made again: %q", out)
 	}
 }
