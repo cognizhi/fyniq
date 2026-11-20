@@ -899,3 +899,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | contacts.and-items: emailing the portal link (FR-AR-14)
 
 ## [2026-11-20] compile | banking.accounts: SFTP statement files (FR-BNK-17)
+
+## [2026-11-20] compile | sales.invoices: the contracted MRR in the base currency (FR-AR-15)

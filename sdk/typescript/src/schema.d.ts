@@ -18442,7 +18442,7 @@ export interface paths {
         };
         /**
          * Read the contracted MRR on a day
-         * @description The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Nothing is converted. Read-only.
+         * @description The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Each currency stays as it is; in_base is a separate figure, the totals converted into the base currency at the rates of the day (each total converted once, RND-FX) and labelled with each rate and its date, and any currency with no rate named in missing. Read-only.
          */
         get: operations["getContractedMRR"];
         put?: never;
@@ -31389,6 +31389,19 @@ export interface components {
             /** @description The monthly value of the contracts active that day. */
             mrr: components["schemas"]["Money"];
         };
+        ContractedMRRInBase: {
+            /**
+             * @description Currencies with no rate for the day, left out of mrr: while there are any, mrr is not the whole.
+             * @example [
+             *       "JPY"
+             *     ]
+             */
+            missing: string[];
+            /** @description The sum of each currency's total converted once into the base currency (RND-FX); only the currencies that have a rate. */
+            mrr: components["schemas"]["Money"];
+            /** @description The rate each currency was converted at, with its date: the rate of the day or the nearest the rate cascade found. */
+            rates: components["schemas"]["ContractedMRRRate"][];
+        };
         ContractedMRROutputBody: {
             /**
              * Format: date
@@ -31396,8 +31409,33 @@ export interface components {
              * @example 2026-10-31
              */
             as_at: string;
+            /** @description The totals converted into the base currency at the rates of the day, as a separate figure; absent when no contract is active. */
+            in_base?: components["schemas"]["ContractedMRRInBase"];
             /** @description The monthly value of the contracts active that day, by currency (contracted MRR, FR-KPI-02); nothing is converted. */
             totals: components["schemas"]["ContractedMRR"][];
+        };
+        ContractedMRRRate: {
+            /**
+             * @description The currency converted.
+             * @example USD
+             */
+            currency: string;
+            /**
+             * @description Base currency per one unit of the currency.
+             * @example 1.3472
+             */
+            rate: string;
+            /**
+             * Format: date
+             * @description The date the rate is of.
+             * @example 2026-10-30
+             */
+            rate_date: string;
+            /**
+             * @description Where the rate came from.
+             * @example MAS daily feed of 2026-10-30
+             */
+            source: string;
         };
         Control: {
             /**

@@ -8402,7 +8402,7 @@ Records a dated amendment (FR-AR-15): an upgrade or downgrade sets a new monthly
 
 **Read the contracted MRR on a day** (`getContractedMRR`)
 
-The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Nothing is converted. Read-only.
+The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Each currency stays as it is; in_base is a separate figure, the totals converted into the base currency at the rates of the day (each total converted once, RND-FX) and labelled with each rate and its date, and any currency with no rate named in missing. Read-only.
 
 - **Permission:** View on Invoices, credit notes
 - **Parameters:**

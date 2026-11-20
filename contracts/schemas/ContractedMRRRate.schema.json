@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The currency converted.",
+      "examples": [
+        "USD"
+      ],
+      "type": "string"
+    },
+    "rate": {
+      "description": "Base currency per one unit of the currency.",
+      "examples": [
+        "1.3472"
+      ],
+      "type": "string"
+    },
+    "rate_date": {
+      "description": "The date the rate is of.",
+      "examples": [
+        "2026-10-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "source": {
+      "description": "Where the rate came from.",
+      "examples": [
+        "MAS daily feed of 2026-10-30"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "rate",
+    "rate_date",
+    "source"
+  ],
+  "title": "ContractedMRRRate",
+  "type": "object"
+}

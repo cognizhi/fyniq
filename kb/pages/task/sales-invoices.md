@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:e40a942884e60bf5bc649ef65a2a8e724f4008879330cae46f09bdfbdc1a1706
+  - docs/user-guide/invoices.md sha256:440fbb762ebab3010637a46350c91d023ded819aa9dec5b7f5f3aaa223997eb8
 data_class: general
 taint: trusted
 status: draft
@@ -146,7 +146,7 @@ aliases:
 
 - Under **Sales › Subscriptions** (Expert mode), **Your subscription contracts** records a customer's subscription: a name, the currency, the monthly value, the start day and an optional agreed end (an Accountant or AR specialist).
 - **Amend** records an upgrade or downgrade (a new monthly value from a day), a cancellation or a renewal after it ended; each day is on or after the start, after the last amendment and in an open month (a closed month is never rewritten).
-- The page shows each contract's status and monthly value today and the contracted MRR by currency (the contracts in force, not converted), which is not the revenue booked in the ledger. Contracts and amendments are records, not postings.
+- The page shows each contract's status and monthly value today and the contracted MRR by currency (the contracts in force, not converted), which is not the revenue booked in the ledger. Contracts and amendments are records, not postings. A separate "Converted into" figure adds the totals in the base currency, each currency converted once at the day's rate, shown with each rate and its date; a currency with no rate is named and left out.
 
 (src: docs/user-guide/invoices.md#subscription-contracts)
 

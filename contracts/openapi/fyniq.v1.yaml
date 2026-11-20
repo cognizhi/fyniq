@@ -18375,6 +18375,29 @@ components:
         - mrr
         - active
       type: object
+    ContractedMRRInBase:
+      additionalProperties: false
+      properties:
+        missing:
+          description: "Currencies with no rate for the day, left out of mrr: while there are any, mrr is not the whole."
+          examples:
+            - - JPY
+          items:
+            type: string
+          type: array
+        mrr:
+          $ref: "#/components/schemas/Money"
+          description: The sum of each currency's total converted once into the base currency (RND-FX); only the currencies that have a rate.
+        rates:
+          description: "The rate each currency was converted at, with its date: the rate of the day or the nearest the rate cascade found."
+          items:
+            $ref: "#/components/schemas/ContractedMRRRate"
+          type: array
+      required:
+        - mrr
+        - rates
+        - missing
+      type: object
     ContractedMRROutputBody:
       additionalProperties: false
       properties:
@@ -18384,6 +18407,9 @@ components:
             - "2026-10-31"
           format: date
           type: string
+        in_base:
+          $ref: "#/components/schemas/ContractedMRRInBase"
+          description: The totals converted into the base currency at the rates of the day, as a separate figure; absent when no contract is active.
         totals:
           description: The monthly value of the contracts active that day, by currency (contracted MRR, FR-KPI-02); nothing is converted.
           items:
@@ -18392,6 +18418,36 @@ components:
       required:
         - as_at
         - totals
+      type: object
+    ContractedMRRRate:
+      additionalProperties: false
+      properties:
+        currency:
+          description: The currency converted.
+          examples:
+            - USD
+          type: string
+        rate:
+          description: Base currency per one unit of the currency.
+          examples:
+            - "1.3472"
+          type: string
+        rate_date:
+          description: The date the rate is of.
+          examples:
+            - "2026-10-30"
+          format: date
+          type: string
+        source:
+          description: Where the rate came from.
+          examples:
+            - MAS daily feed of 2026-10-30
+          type: string
+      required:
+        - currency
+        - rate
+        - rate_date
+        - source
       type: object
     Control:
       additionalProperties: false
@@ -249668,7 +249724,7 @@ paths:
         right: P
   /v1/subscription-mrr:
     get:
-      description: The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Nothing is converted. Read-only.
+      description: The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Each currency stays as it is; in_base is a separate figure, the totals converted into the base currency at the rates of the day (each total converted once, RND-FX) and labelled with each rate and its date, and any currency with no rate named in missing. Read-only.
       operationId: getContractedMRR
       parameters:
         - description: The day; today when left out.

@@ -145,7 +145,9 @@ the monthly value, the day it starts and, if agreed, the day it ends. An Account
   its last amendment, and in a month that is still open. A closed month is never rewritten.
 - The page shows each contract's status and monthly value today, and the **contracted MRR**: the monthly value of the contracts in force,
   by currency, not converted. It differs from the revenue booked in the ledger by mid-month starts, credits, unpaid or failed invoices and
-  exchange rates, so each is named wherever it is shown.
+  exchange rates, so each is named wherever it is shown. Beside it, **Converted into SGD** adds the totals up in the base currency as a figure of its
+  own: each currency's total is converted once at the rate of the day (the organisation's rate, else the daily feed's, else the month's), the rate and
+  its date are shown, and a currency with no rate for the day is named and left out, so the figure is then not the whole.
 - A contract and its amendments are records, not postings: issue the invoices and credit notes as you do, and the revenue follows your
   revenue policy. Evidence for an amendment and the schedule's day-weighted revenue are not built yet.
 
