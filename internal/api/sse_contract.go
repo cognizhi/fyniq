@@ -85,4 +85,6 @@ func messagePurposesAreExtensible(api huma.API) {
 	extensible("activity", any("tax_paper"))
 	extensible("activities", any("tax_paper"))
 	extensible("obligation", any("investor_information"))
+	// What raised a compliance task grows with the modules that raise them (a run, a proposal, the platform itself): a client is told to handle a source it has not seen.
+	extensible("source", any("system"))
 }

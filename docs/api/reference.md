@@ -16499,6 +16499,176 @@ Asks another person to approve a drafted share class version at the version read
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-02`, `EQUITY-03`, `EQUITY-04`, `EQUITY-05`, `EQUITY-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-03`
 
+### `GET /v1/share-grant-months`
+
+**List a grant's months proposed** (`listShareGrantMonths`)
+
+The months of a grant's expense proposed so far, earliest first, a page at a time (FR-EQ-13). A reader who holds only the masked view gets the figures and names masked. Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `grant_id` (query, required): The grant whose months are listed.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`ShareGrantMonthPage`](../../contracts/schemas/ShareGrantMonthPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/share-grant-months`
+
+**Propose a month of a grant's expense as a draft journal** (`proposeShareGrantMonth`)
+
+Makes the month's expense as a draft journal for an approver (FR-EQ-13): Dr the grant's expense account and Cr its reserve with the tranches' parts for the month. The month is one the schedule runs over that has begun, and each month is proposed once (SBP-05). The month is recorded, never changed and never reversed (FYR14). Side effects: the draft journal, the recorded month and their audit events. Nothing is posted. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ShareGrantMonthInput`](../../contracts/schemas/ShareGrantMonthInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ShareGrantMonth`](../../contracts/schemas/ShareGrantMonth.schema.json)
+  - `201` Created [`ShareGrantMonth`](../../contracts/schemas/ShareGrantMonth.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SBP-05` The month's expense is proposed already; `SBP-06` The grant is archived; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SBP-01` The grant does not fit; `SBP-02` A tranche does not fit; `SBP-03` The grant's accounts do not fit; `SBP-04` The month does not fit the grant.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `SBP-01`, `SBP-02`, `SBP-03`, `SBP-04`, `SBP-05`, `SBP-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/share-grants`
+
+**List the grants of shares for services** (`listShareGrants`)
+
+Every grant, the latest first, a page at a time (FR-EQ-13). A reader who holds only the masked view gets the figures and names masked. Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`ShareGrantPage`](../../contracts/schemas/ShareGrantPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/share-grants`
+
+**Record a grant of shares for services** (`createShareGrant`)
+
+Records a grant (FR-EQ-13): the fair value per share at the grant date, the service start, the tranches and the two accounts its monthly journal posts to (an expense account and an equity account that is not share capital). It posts nothing: getShareGrantSchedule shows its expense and proposeShareGrantMonth proposes each month as a draft journal. Every problem comes back together. Side effects: the grant and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ShareGrantInput`](../../contracts/schemas/ShareGrantInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ShareGrant`](../../contracts/schemas/ShareGrant.schema.json)
+  - `201` Created [`ShareGrant`](../../contracts/schemas/ShareGrant.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SBP-05` The month's expense is proposed already; `SBP-06` The grant is archived; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SBP-01` The grant does not fit; `SBP-02` A tranche does not fit; `SBP-03` The grant's accounts do not fit; `SBP-04` The month does not fit the grant.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `SBP-01`, `SBP-02`, `SBP-03`, `SBP-04`, `SBP-05`, `SBP-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/share-grants/{grant_id}`
+
+**Get a grant of shares for services** (`getShareGrant`)
+
+A grant as recorded, with its ETag (FR-EQ-13). A reader who holds only the masked view gets the figures and names masked. Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `grant_id` (path, required): The grant.
+- **Responses:**
+  - `200` OK [`ShareGrant`](../../contracts/schemas/ShareGrant.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PUT /v1/share-grants/{grant_id}`
+
+**Change a grant of shares for services** (`replaceShareGrant`)
+
+Saves the grant's next version (FR-EQ-13). Once a month of its expense is proposed its figures stay as they were: only the recipient, the valuation note and archiving can change (SBP-04). Needs If-Match with its ETag. Side effects: the new version and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `grant_id` (path, required): The grant.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ShareGrantInput`](../../contracts/schemas/ShareGrantInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ShareGrant`](../../contracts/schemas/ShareGrant.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SBP-05` The month's expense is proposed already; `SBP-06` The grant is archived; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SBP-01` The grant does not fit; `SBP-02` A tranche does not fit; `SBP-03` The grant's accounts do not fit; `SBP-04` The month does not fit the grant.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `SBP-01`, `SBP-02`, `SBP-03`, `SBP-04`, `SBP-05`, `SBP-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/share-grants/{grant_id}/schedule`
+
+**Work a grant's expense out** (`getShareGrantSchedule`)
+
+Each tranche's total (its shares times the fair value, rounded once) and its part of each service month by ALLOC-EVEN, and each month's expense with the journal proposed for it (FR-EQ-13). Worked out on every read in exact decimals. A reader who holds only the masked view gets the figures and names masked. Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `grant_id` (path, required): The grant.
+- **Responses:**
+  - `200` OK [`ShareGrantSchedule`](../../contracts/schemas/ShareGrantSchedule.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `SBP-05` The month's expense is proposed already; `SBP-06` The grant is archived; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `SBP-01` The grant does not fit; `SBP-02` A tranche does not fit; `SBP-03` The grant's accounts do not fit; `SBP-04` The month does not fit the grant.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `SBP-01`, `SBP-02`, `SBP-03`, `SBP-04`, `SBP-05`, `SBP-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Corporate profile
 
 The corporate profile (§9.12): the company's name, registered office and SSIC code from a day, and its officers (directors, the secretary, the CEO and auditors) with their days and lodgements, each recorded on another person's approval with its evidence (FR-CS-01, FR-CS-06).

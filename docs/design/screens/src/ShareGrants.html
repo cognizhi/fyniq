@@ -1,0 +1,48 @@
+<!-- fyniq-screen {"nav": "equity", "title": "Shares for services", "mode": "expert", "heights": {"compact": 2400, "medium": 1800, "expanded": 1350}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#equity">Equity</a><i data-icon="chevron-right"></i><span>Shares for services</span></nav>
+      <h1 class="fy-h1">Shares for services</h1>
+      <p class="fy-secondary">A grant is expensed over its service months: its fair value at the grant date, spread by whole months, proposed month by month as a draft journal an approver posts.</p>
+    </div>
+  </div>
+  <div class="fy-card fy-card--pad fy-row fy-row--wrap gap-3">
+    <div class="fy-field"><label class="fy-label" for="sg-open">Open a grant</label><select class="fy-select" id="sg-open"><option>Wei Jie Ong, from 2026-01-01</option><option>A new grant</option></select></div>
+  </div>
+  <div class="fy-split">
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="sg-grant">
+      <h2 class="fy-h3" id="sg-grant">The grant</h2>
+      <div class="fy-field"><label class="fy-label" for="sg-who">Recipient</label><input class="fy-input" id="sg-who" value="Wei Jie Ong" /></div>
+      <div class="fy-row fy-row--wrap gap-3">
+        <div class="fy-field"><label class="fy-label" for="sg-fv">Fair value of a share at the grant date</label><input class="fy-input" id="sg-fv" value="0.50" /></div>
+        <div class="fy-field"><label class="fy-label" for="sg-start">Service starts (the first of a month)</label><input class="fy-input" id="sg-start" value="2026-01-01" /></div>
+      </div>
+      <div class="fy-field"><label class="fy-label" for="sg-val">Where the fair value comes from (the valuation)</label><input class="fy-input" id="sg-val" value="Independent valuation of 30 Sep 2025" /></div>
+      <h3 class="fy-h3">Tranches</h3>
+      <div class="fy-row fy-row--wrap gap-3">
+        <div class="fy-field"><label class="fy-label" for="sg-s1">Shares in tranche 1</label><input class="fy-input" id="sg-s1" value="12,000" /></div>
+        <div class="fy-field"><label class="fy-label" for="sg-v1">They vest on</label><input class="fy-input" id="sg-v1" value="2026-12-31" /></div>
+      </div>
+      <div class="fy-row fy-row--wrap gap-3">
+        <div class="fy-field"><label class="fy-label" for="sg-exp">Expense account</label><select class="fy-select" id="sg-exp"><option>6010 Salaries</option></select></div>
+        <div class="fy-field"><label class="fy-label" for="sg-res">Share-based payment reserve (equity)</label><select class="fy-select" id="sg-res"><option>3300 Capital contribution</option></select></div>
+      </div>
+      <div class="fy-row gap-3"><button class="fy-btn fy-btn--secondary" type="button"><i data-icon="plus"></i>Add a tranche</button><button class="fy-btn fy-btn--primary" type="button"><i data-icon="save"></i>Save the next version</button></div>
+    </section>
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="sg-sched">
+      <h2 class="fy-h3" id="sg-sched">Expense over the service months: 6,000.00</h2>
+      <div class="fy-tablewrap">
+        <table class="fy-table">
+          <caption class="fy-sr">The grant's expense by month and the draft journal proposed for it</caption>
+          <thead><tr><th scope="col">Month</th><th scope="col" class="fy-num">Expense</th><th scope="col">Journal</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">2026-01</th><td class="fy-num">500.00</td><td><a href="#accounting/journals">Open the draft</a></td></tr>
+            <tr><th scope="row">2026-02</th><td class="fy-num">500.00</td><td><button class="fy-btn fy-btn--secondary" type="button"><i data-icon="file-plus"></i>Propose 2026-02</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fy-small fy-muted">No tax deduction is claimed for newly issued shares; the reserve moves to share capital when the shares are issued (an equity transaction).</p>
+    </section>
+  </div>
+</div>

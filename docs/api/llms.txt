@@ -1137,6 +1137,13 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/share-classes/{version_id}/evidence` (addShareClassEvidence): Attach a share class's documents
 - `GET /v1/share-classes/{version_id}/evidence/{evidence_id}` (getShareClassEvidence): Get a share class version's file
 - `DELETE /v1/share-classes/{version_id}/evidence/{evidence_id}` (removeShareClassEvidence): Remove a file from a drafted share class version
+- `GET /v1/share-grant-months` (listShareGrantMonths): List a grant's months proposed
+- `POST /v1/share-grant-months` (proposeShareGrantMonth): Propose a month of a grant's expense as a draft journal
+- `GET /v1/share-grants` (listShareGrants): List the grants of shares for services
+- `POST /v1/share-grants` (createShareGrant): Record a grant of shares for services
+- `GET /v1/share-grants/{grant_id}` (getShareGrant): Get a grant of shares for services
+- `PUT /v1/share-grants/{grant_id}` (replaceShareGrant): Change a grant of shares for services
+- `GET /v1/share-grants/{grant_id}/schedule` (getShareGrantSchedule): Work a grant's expense out
 - `GET /v1/share-issues` (listShareIssues): List the register of share issues
 - `POST /v1/share-issues` (recordShareIssueBeforeBooks): Record shares issued before the books start
 - `GET /v1/sign-in-providers` (listSignInProviders): List the sign-in providers

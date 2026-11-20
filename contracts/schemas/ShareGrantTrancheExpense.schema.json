@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "months": {
+      "description": "Its service months.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "parts": {
+      "description": "Each month's part, by ALLOC-EVEN: they add to the total.",
+      "items": {
+        "examples": [
+          "500.00"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "total": {
+      "description": "Its shares times the fair value, rounded once (RND-LINE).",
+      "examples": [
+        "6000.00"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "months",
+    "total",
+    "parts"
+  ],
+  "title": "ShareGrantTrancheExpense",
+  "type": "object"
+}
