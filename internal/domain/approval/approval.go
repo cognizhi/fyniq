@@ -212,6 +212,9 @@ const (
 	// ObjectCorporateDocument is a corporate document with its signed copy, to record in the minute book (FR-CS-05):
 	// another person who holds A on the corporate profile approves; its key is the document's ID.
 	ObjectCorporateDocument = "corporate_document"
+	// ObjectBoardPackPDF is the PDF of a published board pack, to keep as evidence (FR-RPT-06, FR-DOC-05, rev 0.607): another person who holds A on "Report definitions and schedules"
+	// approves, in every team mode (in Founder mode the other founder; a requester never signs their own request, FM-1); its key is the kept file's document ID.
+	ObjectBoardPackPDF = "board_pack_pdf"
 )
 
 // AIDataPolicyKey is the object key of the data-class policy: the organisation has one.
@@ -344,6 +347,8 @@ const (
 	// OpKBPublish makes the next snapshot of the organisation's knowledge base: the page versions it names become what the
 	// assistant reads (AI-56, FR-APR-01).
 	OpKBPublish = "kb_publication.publish"
+	// OpBoardPackPDFKeep keeps a published board pack's PDF as evidence: the document posts and its file is committed append-only (FR-RPT-06).
+	OpBoardPackPDFKeep = "board_pack_pdf.keep"
 	// OpAPIClientCreate registers an integration client with the OAuth server and records it (FR-INT-02).
 	OpAPIClientCreate = "api_client.create"
 	// OpPeopleLink links the organisation to a Nemura organisation: the link's client registered with the OAuth server, then the link
@@ -424,6 +429,7 @@ var Operations = map[string]string{
 	OpAIConnectionPrice:        ObjectAIConnection,
 	OpAIRouteChange:            ObjectAIRoute,
 	OpKBPublish:                ObjectKBPublication,
+	OpBoardPackPDFKeep:         ObjectBoardPackPDF,
 	OpAPIClientCreate:          ObjectAPIClient,
 	OpPeopleLink:               ObjectPeopleLink,
 	OpPeopleUnlink:             ObjectPeopleLink,
@@ -556,6 +562,8 @@ var Dependencies = map[string][]string{
 	ObjectAIRoute: {"version"},
 	// the pages and versions to publish with each page's digest, and the snapshot they replace: a change to any voids the request
 	ObjectKBPublication: {"pages", "snapshot"},
+	// the kept file's document version and status, the pack and its version, and the file's SHA-256: what is kept, exactly
+	ObjectBoardPackPDF: {"status", "pack", "pack_version", "sha256"},
 	// the client's version and whether it is live ("new" before it exists): what is registered or reclassed
 	ObjectAPIClient: {"status"},
 	// the link's state and epoch: what is linked or unlinked
@@ -636,6 +644,7 @@ var Rows = map[string]string{
 	ObjectAIDataPolicy:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAIRoute:             "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectKBPublication:       "Knowledge base: compiled pages and index (rev 0.4)",
+	ObjectBoardPackPDF:        "Report definitions and schedules: save, share and schedule a report (rev 0.560)",
 	ObjectAPIClient:           "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)",
 	ObjectPeopleLink:          "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals",
 	ObjectSalaryBatch:         "Pay runs, employee data",
@@ -742,6 +751,7 @@ var Policies = map[string]Policy{
 	ObjectPeopleLink:          {ObjectType: ObjectPeopleLink, Version: "founder/people_link@2026-11-20.1", Steps: []Step{{Quorum: 1}}},
 	ObjectSalaryBatch:         {ObjectType: ObjectSalaryBatch, Version: "founder/salary_batch@2026-11-21.1", Steps: []Step{{Quorum: 1}}},
 	ObjectKBPublication:       {ObjectType: ObjectKBPublication, Version: "founder/kb_publication@2026-11-19.1", Steps: []Step{{Quorum: 1}}},
+	ObjectBoardPackPDF:        {ObjectType: ObjectBoardPackPDF, Version: "founder/board_pack_pdf@2026-11-21.1", Steps: []Step{{Quorum: 1}}},
 	// Fixed: no policy removes a proposal's step or automates it, in any team mode (AI-P4, AI-06, CTL-AI-03); the request
 	// narrows its step to the task type's approver roles.
 	ObjectAIProposal:         {ObjectType: ObjectAIProposal, Version: "founder/ai_proposal@2026-11-15.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
