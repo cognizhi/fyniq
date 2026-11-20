@@ -322,7 +322,24 @@ func (s *LinkSender) Work() outbox.Work {
 			}
 			return s.failed(ctx, org, q, p.Code, e)
 		}
-		return s.settle(ctx, org, q, "sent", "", nil)
+		// Fyniq's answer to a bank-details event it ignored says what it holds: if that is not what Nemura has at that version, a restore lost a change (NM-INT-13).
+		var receipt struct {
+			Outcome          string `json:"outcome"`
+			HeldBankVersion  int    `json:"held_bank_version"`
+			HeldBankDetailID string `json:"held_bank_detail_id"`
+		}
+		var within func(context.Context, pgx.Tx) error
+		if json.Unmarshal(answer, &receipt) == nil && q.Type == TypeBankDetailsChanged && receipt.Outcome == "ignored_older" && receipt.HeldBankVersion > 0 {
+			person, perr := uuid.Parse(q.ObjectID)
+			held, herr := uuid.Parse(receipt.HeldBankDetailID)
+			if perr == nil && herr == nil {
+				within = func(ctx context.Context, tx pgx.Tx) error {
+					_, err := NoteBankReceipt(ctx, tx, org, s.Clock.Now(), person, receipt.HeldBankVersion, held)
+					return err
+				}
+			}
+		}
+		return s.settleWith(ctx, org, q, "sent", "", nil, within)
 	}
 }
 
@@ -350,6 +367,11 @@ func (s *LinkSender) failed(ctx context.Context, org uuid.UUID, q QueuedEvent, c
 
 // settle ends an event's life in the log: sent, or refused for good, with the audit event that names the type and the number and never the payload.
 func (s *LinkSender) settle(ctx context.Context, org uuid.UUID, q QueuedEvent, state, code string, cause error) error {
+	return s.settleWith(ctx, org, q, state, code, cause, nil)
+}
+
+// settleWith settles an event and, in the same transaction, runs what Fyniq's answer asks for (within), so an answer is never lost between the two: a retry after a failure meets a duplicate with no held version.
+func (s *LinkSender) settleWith(ctx context.Context, org uuid.UUID, q QueuedEvent, state, code string, cause error, within func(context.Context, pgx.Tx) error) error {
 	now := s.Clock.Now()
 	err := s.Store.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
 		var c *string
@@ -362,6 +384,11 @@ func (s *LinkSender) settle(ctx context.Context, org uuid.UUID, q QueuedEvent, s
 		}
 		if tag.RowsAffected() == 0 {
 			return nil // settled already: a retry after a lost answer
+		}
+		if within != nil {
+			if err := within(ctx, tx); err != nil {
+				return err
+			}
 		}
 		var l LinkRow
 		if l, err = LiveLink(ctx, tx); err != nil {

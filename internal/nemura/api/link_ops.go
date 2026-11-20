@@ -49,21 +49,30 @@ type LinkRestoreView struct {
 
 // LinkHealthView is the link's health (NM-INT-04).
 type LinkHealthView struct {
-	State              string           `json:"state" enum:"none,proposed,active,suspended,unlinking" doc:"The link's state." example:"active"`
-	Epoch              int              `json:"epoch,omitempty" doc:"The link's epoch." example:"1"`
-	Queued             int              `json:"queued" doc:"Events waiting to be sent." example:"0"`
-	Failed             int              `json:"failed" doc:"Events not delivered yet, tried again." example:"0"`
-	Sent               int              `json:"sent" doc:"Events Fyniq took." example:"120"`
-	Refused            int              `json:"refused" doc:"Events Fyniq refused for good." example:"0"`
-	OldestWaiting      *string          `json:"oldest_waiting,omitempty" format:"date-time" doc:"When the oldest event not yet sent was queued." example:"2026-11-25T09:00:00Z"`
-	LastSent           *string          `json:"last_sent,omitempty" format:"date-time" doc:"When an event was last sent." example:"2026-11-25T09:00:01Z"`
-	FailingSince       *string          `json:"failing_since,omitempty" format:"date-time" doc:"When the sync began failing: the oldest waiting event, when nothing was sent since." example:"2026-11-24T09:00:00Z"`
-	FailingOver24Hours bool             `json:"failing_over_24_hours" doc:"True when the sync has failed for 24 hours (a warning on Checks, N.1 #7)." example:"false"`
-	LastSequenceQueued int64            `json:"last_sequence_queued" doc:"The checkpoint: the highest sequence number queued." example:"41"`
-	LastSequenceSent   int64            `json:"last_sequence_sent" doc:"The highest sent." example:"41"`
-	LastFyniqSequence  int64            `json:"last_fyniq_sequence" doc:"The highest Fyniq sequence number received." example:"12"`
-	Undelivered        []LinkEventView  `json:"undelivered" doc:"The newest events that failed or were refused, at most 50."`
-	Restore            *LinkRestoreView `json:"restore,omitempty" doc:"A restore not reconciled yet: the link is held."`
+	State              string              `json:"state" enum:"none,proposed,active,suspended,unlinking" doc:"The link's state." example:"active"`
+	Epoch              int                 `json:"epoch,omitempty" doc:"The link's epoch." example:"1"`
+	Queued             int                 `json:"queued" doc:"Events waiting to be sent." example:"0"`
+	Failed             int                 `json:"failed" doc:"Events not delivered yet, tried again." example:"0"`
+	Sent               int                 `json:"sent" doc:"Events Fyniq took." example:"120"`
+	Refused            int                 `json:"refused" doc:"Events Fyniq refused for good." example:"0"`
+	OldestWaiting      *string             `json:"oldest_waiting,omitempty" format:"date-time" doc:"When the oldest event not yet sent was queued." example:"2026-11-25T09:00:00Z"`
+	LastSent           *string             `json:"last_sent,omitempty" format:"date-time" doc:"When an event was last sent." example:"2026-11-25T09:00:01Z"`
+	FailingSince       *string             `json:"failing_since,omitempty" format:"date-time" doc:"When the sync began failing: the oldest waiting event, when nothing was sent since." example:"2026-11-24T09:00:00Z"`
+	FailingOver24Hours bool                `json:"failing_over_24_hours" doc:"True when the sync has failed for 24 hours (a warning on Checks, N.1 #7)." example:"false"`
+	LastSequenceQueued int64               `json:"last_sequence_queued" doc:"The checkpoint: the highest sequence number queued." example:"41"`
+	LastSequenceSent   int64               `json:"last_sequence_sent" doc:"The highest sent." example:"41"`
+	LastFyniqSequence  int64               `json:"last_fyniq_sequence" doc:"The highest Fyniq sequence number received." example:"12"`
+	Undelivered        []LinkEventView     `json:"undelivered" doc:"The newest events that failed or were refused, at most 50."`
+	Restore            *LinkRestoreView    `json:"restore,omitempty" doc:"A restore not reconciled yet: the link is held."`
+	BankReconfirm      []BankReconfirmView `json:"bank_reconfirm" nullable:"false" doc:"People whose bank details wait to be re-confirmed after a restore: Fyniq holds a bank-detail version this database lost. No payment is made to them until their bank account is changed and confirmed again (the ordinary change). By identity: never the account."`
+}
+
+// BankReconfirmView is a person whose bank details wait for the people team after a restore (NM-INT-13).
+type BankReconfirmView struct {
+	PersonID      string `json:"person_id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	HeldVersion   int    `json:"held_version" doc:"The bank-detail version Fyniq holds." example:"2"`
+	NemuraVersion int    `json:"nemura_version" doc:"Nemura's own version when this was found." example:"1"`
+	FoundAt       string `json:"found_at" format:"date-time" doc:"When Fyniq's answer showed it." example:"2026-11-25T09:00:00Z"`
 }
 
 // ReceiptApproval is the proof kept for a version of a run.

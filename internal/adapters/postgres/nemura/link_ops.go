@@ -50,7 +50,7 @@ func restoreView(r *RestoreRow) *api.LinkRestoreView {
 
 // Health is the link's health.
 func (c LinkOpsService) Health(ctx context.Context, s api.Session) (api.LinkHealthView, error) {
-	out := api.LinkHealthView{Undelivered: []api.LinkEventView{}}
+	out := api.LinkHealthView{Undelivered: []api.LinkEventView{}, BankReconfirm: []api.BankReconfirmView{}}
 	err := c.Store.InOrg(ctx, s.Organisation, func(ctx context.Context, tx pgx.Tx) error {
 		h, ok, err := LinkHealth(ctx, tx, c.Clock.Now())
 		if err != nil || !ok {
@@ -64,6 +64,9 @@ func (c LinkOpsService) Health(ctx context.Context, s api.Session) (api.LinkHeal
 			out.Undelivered = append(out.Undelivered, eventView(e))
 		}
 		out.Restore = restoreView(h.OpenRestore)
+		for _, r := range h.BankReconfirm {
+			out.BankReconfirm = append(out.BankReconfirm, api.BankReconfirmView{PersonID: r.Person.String(), HeldVersion: r.HeldVersion, NemuraVersion: r.NemuraVersion, FoundAt: rfc(r.FoundAt)})
+		}
 		return nil
 	})
 	return out, err

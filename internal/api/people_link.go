@@ -159,6 +159,9 @@ type PeopleLinkEvent struct {
 type PeopleLinkReceipt struct {
 	EventID string `json:"event_id" format:"uuid" doc:"The event's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
 	Outcome string `json:"outcome" enum:"applied,ignored_older,duplicate" doc:"applied; ignored_older: a version no newer than the one applied, recorded and changing nothing; duplicate: the event ID was received before." example:"applied"`
+	// For a bank-details event whose answer is ignored_older, what Fyniq holds: Nemura compares it with its own record at that version, so a restore of Nemura that lost a confirmed change is told apart from a late or repeated one (FR-PPL-19, NM-INT-13).
+	HeldBankVersion  int    `json:"held_bank_version,omitempty" doc:"On ignored_older for a people.bank_details.changed event: the bank-detail version Fyniq holds for the person." example:"2"`
+	HeldBankDetailID string `json:"held_bank_detail_id,omitempty" format:"uuid" doc:"On ignored_older for a people.bank_details.changed event: the bank-detail record Fyniq holds for the person (an ID, never the account)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
 }
 
 type (
@@ -795,6 +798,9 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 			return err
 		}
 		receipt = PeopleLinkReceipt{EventID: env.Header.EventID, Outcome: entry.Outcome}
+		if ignored && env.Header.Type == peoplelink.TypeBankDetailsChange && next.BankVersion > 0 && next.BankRecordID != uuid.Nil {
+			receipt.HeldBankVersion, receipt.HeldBankDetailID = next.BankVersion, next.BankRecordID.String() // an ignored change returns the held record: Nemura checks it against its own
+		}
 		if !fresh {
 			receipt.Outcome = "duplicate" // nothing was saved yet: the person is written only below
 			return nil

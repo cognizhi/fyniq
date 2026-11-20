@@ -51753,6 +51753,18 @@ export interface components {
              */
             event_id: string;
             /**
+             * Format: uuid
+             * @description On ignored_older for a people.bank_details.changed event: the bank-detail record Fyniq holds for the person (an ID, never the account).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            held_bank_detail_id?: string;
+            /**
+             * Format: int64
+             * @description On ignored_older for a people.bank_details.changed event: the bank-detail version Fyniq holds for the person.
+             * @example 2
+             */
+            held_bank_version?: number;
+            /**
              * @description applied; ignored_older: a version no newer than the one applied, recorded and changing nothing; duplicate: the event ID was received before.
              * @example applied
              * @enum {string}

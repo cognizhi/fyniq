@@ -934,6 +934,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | founders-pay-choice, founders-balance, founders-settle-balance: deferred director pay is a recorded choice only (PRD-001 rev 0.591)
 
+## [2026-11-20] compile | nemura-fyniq-link: bank details to confirm again after a restore (NM-INT-13)
+
 ## [2026-11-20] compile | docs/user-guide/board-pack.md → reports.board-pack (the PDF of a published pack, FR-RPT-06)
 
 ## [2026-11-20] compile | invoices, organisation-settings: the payment link on the invoice PDF and by every issuing path (FR-AR-13, rev 0.597)

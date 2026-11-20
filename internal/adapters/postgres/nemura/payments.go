@@ -196,8 +196,11 @@ func PaymentsOf(ctx context.Context, tx pgx.Tx, run uuid.UUID) (PaymentsRow, err
 	return out, nil
 }
 
-// PaymentBlocked says whether a person's payment in a run has an unknown outcome, which blocks any new payment of it, by file or by Fyniq, until it is resolved (NM-PAY-10).
+// PaymentBlocked says whether a person's payment in a run has an unknown outcome, which blocks any new payment of it, by file or by Fyniq, until it is resolved (NM-PAY-10); a person whose bank details wait to be re-confirmed after a restore is blocked too (NM-INT-13).
 func PaymentBlocked(ctx context.Context, tx pgx.Tx, run, person uuid.UUID) (bool, error) {
+	if wait, err := bankNeedsReconfirm(ctx, tx, person); err != nil || wait { // bank details to re-confirm after a restore (NM-INT-13)
+		return wait, err
+	}
 	var state string
 	err := tx.QueryRow(ctx, "SELECT state FROM nemura.pay_payment_event WHERE run_id = $1 AND person_id = $2 ORDER BY seq DESC LIMIT 1", run, person).Scan(&state)
 	if errors.Is(err, pgx.ErrNoRows) {

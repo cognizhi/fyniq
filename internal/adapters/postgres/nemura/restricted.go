@@ -449,7 +449,11 @@ ON CONFLICT (organisation_id, person_id) DO UPDATE SET bank_sealed = EXCLUDED.ba
 	if err := Audit(ctx, tx, org, at, user(by), "nemura.person.bank_account_set", audit.Object{Type: "person_secret", ID: person}, map[string]audit.Change{"field": {nil, "bank"}}, ""); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(ctx, "UPDATE nemura.bank_account_change SET state = 'confirmed', confirmed_at = $2 WHERE id = $1", change, at); err != nil {
+	version, err := nextBankVersion(ctx, tx, person)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, "UPDATE nemura.bank_account_change SET state = 'confirmed', confirmed_at = $2, bank_version = $3 WHERE id = $1", change, at, version); err != nil {
 		return err
 	}
 	if _, err := Enqueue(ctx, tx, outbox.NewItem{Class: outbox.ClassWorker, Kind: "people.notice", BusinessKey: "bank:" + change.String(),
@@ -457,6 +461,10 @@ ON CONFLICT (organisation_id, person_id) DO UPDATE SET bank_sealed = EXCLUDED.ba
 		return err
 	}
 	if err := Audit(ctx, tx, org, at, user(by), "nemura.bank_account.change_confirmed", audit.Object{Type: "bank_account_change", ID: change}, nil, ""); err != nil {
+		return err
+	}
+	// A person whose bank details waited to be re-confirmed after a restore is released by this change, numbered above the version Fyniq held (NM-INT-13).
+	if err := ResolveBankReconfirm(ctx, tx, org, at, by, person, change); err != nil {
 		return err
 	}
 	// A linked organisation tells Fyniq the new version of the details, never the account, in the same transaction (NM-INT-09).

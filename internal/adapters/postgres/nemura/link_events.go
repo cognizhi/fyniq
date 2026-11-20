@@ -165,12 +165,25 @@ func linkActive(ctx context.Context, tx pgx.Tx) bool {
 	return err == nil && l.State == "active"
 }
 
-// bankVersionOf is a person's bank-detail version: how many changes of their salary account have been confirmed. The details' record is the latest confirmed change, so the number never
+// confirmedBankVersions is each confirmed change of a person's salary account with the version it made: the version it was confirmed with, or for one confirmed before versions were kept, its ordinal
+// among the confirmed changes (those come first, so their ordinals are what they always were).
+const confirmedBankVersions = `SELECT id, new_fingerprint, new_bank_code, coalesce(bank_version, row_number() OVER (ORDER BY confirmed_at, id)::int) AS v
+FROM nemura.bank_account_change WHERE person_id = $1 AND state = 'confirmed'`
+
+// bankVersionOf is a person's bank-detail version: the version of their latest confirmed change of salary account (0 with none). The details' record is that change, so the number never
 // leaves Nemura and no column holds a second copy of what the changes already say (NM-INT-09).
 func bankVersionOf(ctx context.Context, tx pgx.Tx, person uuid.UUID) (int, error) {
-	var n int
-	err := tx.QueryRow(ctx, `SELECT count(*) FROM nemura.bank_account_change WHERE person_id = $1 AND state = 'confirmed'`, person).Scan(&n)
-	return n, err
+	var v int
+	err := tx.QueryRow(ctx, `SELECT coalesce(max(v), 0) FROM (`+confirmedBankVersions+`) c`, person).Scan(&v)
+	return v, err
+}
+
+// nextBankVersion is the version the next confirmed change of a person's account takes: above the one they have and above the floor a restore put on it (bank_version_floor, which only rises), so it
+// is numbered above what Fyniq holds (NM-INT-13).
+func nextBankVersion(ctx context.Context, tx pgx.Tx, person uuid.UUID) (int, error) {
+	var v int
+	err := tx.QueryRow(ctx, `SELECT greatest((SELECT coalesce(max(v), 0) FROM (`+confirmedBankVersions+`) c), coalesce((SELECT floor FROM nemura.bank_version_floor WHERE person_id = $1), 0)) + 1`, person).Scan(&v)
+	return v, err
 }
 
 // QueueBankEvent queues the version of a person's bank details that was just confirmed, when the link is active. It carries the record's ID and the version, never the account (NM-INT-09).
@@ -185,14 +198,30 @@ func QueueBankEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time,
 	return QueueLinkEvent(ctx, tx, org, at, TypeBankDetailsChanged, "bank_details", person.String(), v)
 }
 
+// bankChange is a confirmed change of a person's salary account, as the version it made is read: the record, its fingerprint and the bank code it approved.
+type bankChange struct {
+	ID          uuid.UUID
+	Fingerprint []byte
+	Code        *string
+}
+
+// bankChangeAt reads the confirmed change that made a version of a person's bank details. A version a restore skipped, or beyond the changes there are, has none.
+func bankChangeAt(ctx context.Context, tx pgx.Tx, person uuid.UUID, version int) (bankChange, bool, error) {
+	var c bankChange
+	err := tx.QueryRow(ctx, `SELECT id, new_fingerprint, new_bank_code FROM (`+confirmedBankVersions+`) c WHERE v = $2`, person, version).Scan(&c.ID, &c.Fingerprint, &c.Code)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return bankChange{}, false, nil
+	}
+	return c, err == nil, err
+}
+
 // bankEventAt reads the payload for a version of a person's bank details: the record of the confirmed change that made that version, and nothing of the account.
 func bankEventAt(ctx context.Context, tx pgx.Tx, person uuid.UUID, version int) (BankDetailsEvent, bool, error) {
-	var id uuid.UUID
-	err := tx.QueryRow(ctx, `SELECT id FROM nemura.bank_account_change WHERE person_id = $1 AND state = 'confirmed' ORDER BY confirmed_at, id OFFSET $2 LIMIT 1`, person, version-1).Scan(&id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return BankDetailsEvent{}, false, nil
+	c, ok, err := bankChangeAt(ctx, tx, person, version)
+	if !ok || err != nil {
+		return BankDetailsEvent{}, false, err
 	}
-	return BankDetailsEvent{PersonID: person, BankDetailID: id}, err == nil, err
+	return BankDetailsEvent{PersonID: person, BankDetailID: c.ID}, true, nil
 }
 
 // SnapshotLinkEvents queues what Nemura already knows when the link becomes active, so a person, a bank-detail version or a hold that existed before the link reaches Fyniq: every person, every
