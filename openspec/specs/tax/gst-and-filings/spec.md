@@ -227,7 +227,7 @@ Source: PRD-001 §8.11 · Priority M before GST registration; else S · Phase As
 - **THEN** the gate is blocked and lists it
 - **AND** only a contingency requested by one person and approved by another (with the create and the approve right of the GST return), with the outage evidence, lets the return be filed
 
-#### Scenario: The F5 filing is held to the gate (rev 0.544)
+#### Scenario: The F5 filing is held to the gate (rev 0.547)
 - **GIVEN** a document of the return's period with no acknowledgement ID and no exclusion
 - **WHEN** the GST F5 is recorded as filed
 - **THEN** it is refused until the document is acknowledged or left out, or a contingency approved by someone else covers the period
