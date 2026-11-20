@@ -72,8 +72,8 @@ func (b bin) eval(env func(string) *apd.Decimal) *apd.Decimal {
 			return nil
 		}
 		// A quotient is worked to 60 digits beyond its operands before the one rounding the format makes.
-		digits := uint32(l.NumDigits()) + uint32(max(0, l.Exponent)) + uint32(r.NumDigits()) + 60
-		_, err = apd.BaseContext.WithPrecision(digits).Quo(&o, l, r)
+		digits := min(l.NumDigits()+int64(max(0, l.Exponent))+r.NumDigits()+60, 2000)
+		_, err = apd.BaseContext.WithPrecision(uint32(digits)).Quo(&o, l, r) // #nosec G115 -- bounded to 2,000 above
 	}
 	if err != nil {
 		return nil

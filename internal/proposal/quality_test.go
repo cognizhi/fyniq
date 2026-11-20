@@ -49,7 +49,7 @@ func TestTheMonthsApprovalQualityIsMeasuredFromTheProposals(t *testing.T) {
 	}
 }
 
-// The edit-before-approve rate, the reversals after approval and the breakdown per task type and approver (PRD-001 AI-33, rev 0.544; p2-ai-expansion):
+// The edit-before-approve rate, the reversals after approval and the breakdown per task type and approver (PRD-001 AI-33, rev 0.549; p2-ai-expansion):
 // Ann approves three bills (one edited, one undone) and a task whole; Bob approves a bill whole and edits a task; one bill is rejected. So of 6
 // approvals two were edited (a third) and one was undone (a sixth); the bills' median decision is that of their five decisions.
 // req: AI-33

@@ -12391,7 +12391,7 @@ The monthly board packs, latest month first, a page at a time, without their fig
 
 Makes the draft of a month's pack (FR-RPT-06): version 1, or the next version of a month already published, which it supersedes. A month has one draft at a time. The books must have a period for the month. Only the Owner, Controller and Accountant build a pack (BPACK-01). Side effects: the draft and its audit event. Idempotent with Idempotency-Key.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
   - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
@@ -12439,7 +12439,7 @@ A board pack with its texts and figures (FR-RPT-06): the statements (profit and 
 
 Saves a draft's texts as its next edit (FR-RPT-06): what a person writes or accepts from an AI draft and edits; the pack never needs the AI. A published pack never changes (BPACK-02): a correction is a new version. Needs If-Match with the draft's ETag. Only the Owner, Controller and Accountant (BPACK-01). Side effects: the next edit and its audit event, with the texts before and after.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `id` (path, required): The pack's ID.
   - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
@@ -12468,7 +12468,7 @@ Saves a draft's texts as its next edit (FR-RPT-06): what a person writes or acce
 
 Freezes a draft (FR-RPT-06): the statements and KPIs of its month are read at the ledger's revision now and kept with the texts, so the pack a board read is the pack it keeps reading; a month that is not closed is published all the same and says so (period_status). Only the Owner and Controller publish (BPACK-01). Needs If-Match with the draft's ETag. Side effects: the published pack and its audit event. Idempotent with Idempotency-Key.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `id` (path, required): The pack's ID.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
@@ -12584,7 +12584,7 @@ The layout an Owner or Administrator set for a role (FR-KPI-05), with its versio
 
 Saves the layout shown to the people who hold a role and have arranged none of their own (FR-KPI-05, FR-VIZ-09). Only an Owner or Administrator (DASH-04). The role must be one Fyniq knows. Needs If-Match ("0" before the first save). Side effects: the layout at its next version and its audit event. Prefer: return=preview checks it and saves nothing.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `role` (path, required): The role, as a role is named in Fyniq.
   - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
@@ -12634,7 +12634,7 @@ The investor updates, newest first, a page at a time (FR-EQ-23). A reader whose 
 
 Makes the draft of an update from a published board pack (FR-EQ-23, BPACK-03): the pack's KPIs, cash, runway and statements are the update's figures, with its own highlights and asks. Only the Owner and Controller (BPACK-01). Side effects: the draft and its audit event. Idempotent with Idempotency-Key.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
   - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
@@ -12682,7 +12682,7 @@ An update with the published pack it is built from (FR-EQ-23). A recipient who o
 
 Saves a draft's title, highlights and asks as its next edit (FR-EQ-23); a sent update never changes (BPACK-05). Needs If-Match. Only the Owner and Controller (BPACK-01). Side effects: the next edit and its audit event.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `id` (path, required): The update's ID.
   - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
@@ -12711,7 +12711,7 @@ Saves a draft's title, highlights and asks as its next edit (FR-EQ-23); a sent u
 
 Sends a draft once, to the members named (FR-EQ-23): each must be an active member who may read the board pack, such as a Board viewer (BPACK-04). Each is told by a notification that links to the signed-in update: it carries no figure and no file. The recipients are fixed and the update never changes again; each recipient's first open is recorded. Only the Owner and Controller (BPACK-01). Needs If-Match. Side effects: the sent update, a notification per recipient and the audit event. Idempotent with Idempotency-Key.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `id` (path, required): The update's ID.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
@@ -12914,7 +12914,7 @@ The reports the caller may open: their own and the shared ones, by name, a page 
 
 Saves a report definition (FR-RPT-04): rows of accounts, report groups and calculated rows, columns of periods and comparatives, and filters, checked against fyniq-report@1 (RDEF-01 to RDEF-08). It is private to its caller or shared with everyone who may read the whole ledger's reports; running it always checks the runner's own rights. A name is used once among the live reports. Side effects: the report at version 1 and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
   - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
@@ -12962,7 +12962,7 @@ A report the caller may open: its definition, visibility, owner and version (the
 
 Saves a change to a report as its next version (FR-RPT-04); only its owner, or an Owner or Administrator for a shared one, changes it (RDEF-09). Needs If-Match with the report's ETag. Side effects: the next version and its audit event, with the definition before and after. Prefer: return=preview checks it and saves nothing.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `id` (path, required): The report's ID.
   - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
@@ -12991,7 +12991,7 @@ Saves a change to a report as its next version (FR-RPT-04); only its owner, or a
 
 Ends a report (FR-RPT-04): it is never deleted, so a schedule or a board pack that named it keeps naming it, and its schedules stop. Only its owner, or an Owner or Administrator for a shared one, archives it (RDEF-09). Needs If-Match. Side effects: the next version and its audit event.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `id` (path, required): The report's ID.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
@@ -13151,7 +13151,7 @@ The schedules of a report the caller may open, oldest first, a page at a time (F
 
 Sends a report on a schedule (FR-RPT-07): weekly on a weekday or monthly on a day (1 to 28), for the latest closed month or the month so far. Each recipient must be an active member who may read the whole ledger's reports, and the owner alone for a private report (RDEF-11). At send time each recipient's right is checked again and one who lost it is skipped. The email is a notification that links to the signed-in report: it carries no figure and attaches no file. Only an Owner, Administrator, Controller or Accountant schedules a report (RDEF-10). Side effects: the schedule and its audit event. Idempotent with Idempotency-Key.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
   - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
@@ -13178,7 +13178,7 @@ Sends a report on a schedule (FR-RPT-07): weekly on a weekday or monthly on a da
 
 Saves a change to a schedule as its next version (FR-RPT-07), with the same checks as making one; its report never changes. Switching it off is active=false. Needs If-Match. Only an Owner, Administrator, Controller or Accountant (RDEF-10). Side effects: the next version and its audit event.
 
-- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.541)
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.546)
 - **Parameters:**
   - `id` (path, required): The schedule's ID.
   - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).

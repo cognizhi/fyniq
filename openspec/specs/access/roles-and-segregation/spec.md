@@ -1712,7 +1712,7 @@ Source: PRD-001 §D
 - **THEN** the Employee, the Auditor, the Board viewer and the AI assistant have no right over it (—)
 
 ### Requirement: Permission matrix: Report definitions and schedules
-In Standard mode, each role SHALL hold only the rights over saving, sharing and scheduling a report that the permission matrix gives it (rev 0.541): reading and running a report is the Reports row's.
+In Standard mode, each role SHALL hold only the rights over saving, sharing and scheduling a report that the permission matrix gives it (rev 0.546): reading and running a report is the Reports row's.
 
 Source: PRD-001 §D
 

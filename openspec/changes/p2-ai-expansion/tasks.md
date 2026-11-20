@@ -1,7 +1,7 @@
 # Tasks
 
 ## 1. Decisions and specs
-- [x] 1.1 PRD-001 rev 0.544 records AI-33's built fields and AI-59's design `[owner to confirm]`. `// req: AI-33`, `// req: AI-59`
+- [x] 1.1 PRD-001 rev 0.549 records AI-33's built fields and AI-59's design `[owner to confirm]`. `// req: AI-33`, `// req: AI-59`
 
 ## 2. Approval-quality metrics (AI-33)
 - [x] 2.1 `MeasureQuality` gains the edited and reversed counts and the per-task-type and per-approver breakdown (D1); the read query joins the undo. `// req: AI-33`
