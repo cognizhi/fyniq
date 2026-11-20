@@ -1197,6 +1197,27 @@ Asks to end the link (FR-PPL-16, PRD-002 NM-INT-11). It is dual controlled like 
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `PPL-07`, `STORAGE-LOCK-01`, `STORAGE-PEOPLE-LINK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/people-link/unlink/finish`
+
+**Finish unlinking from the people platform** (`finishPeopleUnlink`)
+
+An approved unlink settles work in flight first (FR-PPL-16): salary payments not yet paid, rejected or returned, payments with an unknown outcome and events for Nemura waiting hold the link in unlinking. When nothing is left this ends the link: its client is revoked, its state is unlinked and a later link starts at a higher epoch. While anything is in flight it refuses with PPL-31 and the counts, and changes nothing. Needs People and HR's right. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PeopleLink`](../../contracts/schemas/PeopleLink.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PPL-31` Work is still in flight, so the link cannot end yet; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PEOPLE-LINK-01` The link or a person of the projection moved against its course.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `PPL-31`, `STORAGE-LOCK-01`, `STORAGE-PEOPLE-LINK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/salary-batches`
 
 **List salary batches** (`listSalaryBatches`)

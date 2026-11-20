@@ -14649,6 +14649,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people-link/unlink/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish unlinking from the people platform
+         * @description An approved unlink settles work in flight first (FR-PPL-16): salary payments not yet paid, rejected or returned, payments with an unknown outcome and events for Nemura waiting hold the link in unlinking. When nothing is left this ends the link: its client is revoked, its state is unlinked and a later link starts at a higher epoch. While anything is in flight it refuses with PPL-31 and the counts, and changes nothing. Needs People and HR's right. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["finishPeopleUnlink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/periods": {
         parameters: {
             query?: never;
@@ -49000,6 +49020,8 @@ export interface components {
              * @example EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE
              */
             fyniq_link_key?: string;
+            /** @description While the link is unlinking: the work it must settle before it ends (FR-PPL-16). */
+            in_flight?: components["schemas"]["PeopleLinkInFlight"];
             /** @description The events received, by outcome. */
             inbox: components["schemas"]["PeopleLinkInbox"][];
             /**
@@ -49212,6 +49234,26 @@ export interface components {
              * @example 2
              */
             waiting: number;
+        };
+        PeopleLinkInFlight: {
+            /**
+             * Format: int64
+             * @description 1 when events for Nemura wait to be delivered, else 0: the link keeps delivering them while it is unlinking.
+             * @example 0
+             */
+            events_waiting: number;
+            /**
+             * Format: int64
+             * @description Salary batches not cancelled with a payment not yet paid, rejected or returned.
+             * @example 1
+             */
+            salary_batches: number;
+            /**
+             * Format: int64
+             * @description Payments whose outcome is unknown: record whether each was paid, rejected or returned.
+             * @example 0
+             */
+            unknown_outcomes: number;
         };
         PeopleLinkInbox: {
             /**
@@ -173664,6 +173706,107 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    finishPeopleUnlink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleLink"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PPL-31` Work is still in flight, so the link cannot end yet; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PEOPLE-LINK-01` The link or a person of the projection moved against its course. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

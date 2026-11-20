@@ -858,6 +858,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | nemura/fyniq-link.md -> kb (alerts for events stuck for an hour near pay day and for 24 hours)
 
+## [2026-11-20] compile | settings-people.md -> kb (link and unlink forms, unlinking settles work in flight)
+
 ## [2026-11-20] compile | settings.organisation: card receipt reminders (FR-AP-08)
 
 ## [2026-11-20] compile | claims.my-claims: receipt suggestions and the receipt reminder (FR-AP-08)

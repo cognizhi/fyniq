@@ -294,6 +294,7 @@ var codeFacts = map[string]struct {
 	peoplelink.CodePayRelease:     {409, "A released line is not changed, and a cancelled batch takes no line"},
 	peoplelink.CodePayBlocked:     {409, "An unknown outcome blocks a new instruction for the person in this run"},
 	peoplelink.CodeInNemura:       {409, "Payroll lives in Nemura, so a provider's journal or a file import is not taken"},
+	CodeLinkInFlight:              {409, "Work is still in flight, so the link cannot end yet"},
 	peoplelink.CodeGate:           {409, "How the month's statutory payroll outputs are met is not recorded, so a pay run is not approved for payment"},
 	payrollimport.CodeFile:        {422, "The payroll file is not a readable CSV"},
 	payrollimport.CodeColumn:      {422, "A column the mapping names is not in the file"},
