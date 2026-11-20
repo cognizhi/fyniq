@@ -1084,6 +1084,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/allocation-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Work an allocation out without saving it
+         * @description Runs a rule over whole months and shows what it would do (FR-DIM-03): each source account's cost with no dimension value (read through the balance service), the key's weights, the split by ALLOC-PRORATA with what the key cannot place left unallocated, and the journal's lines. A usage file must add up to its stated total and equal the supplier's bill it explains, or it is refused (ALLOC-06). Nothing is saved or posted. Read-only; no side effects.
+         */
+        post: operations["previewAllocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/allocation-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the allocation rules
+         * @description Every allocation rule, the latest first, a page at a time (FR-DIM-03). Read-only; no side effects.
+         */
+        get: operations["listAllocationRules"];
+        put?: never;
+        /**
+         * Save an allocation rule
+         * @description Saves a rule (FR-DIM-03): the expense accounts whose cost with no dimension value is split, the key and the targets. The rule posts nothing; running it proposes a draft journal. Every problem comes back together. Side effects: the rule and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["createAllocationRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/allocation-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an allocation rule
+         * @description A rule as saved, with its ETag (FR-DIM-03). Read-only; no side effects.
+         */
+        get: operations["getAllocationRule"];
+        /**
+         * Change an allocation rule
+         * @description Saves the rule's next version (FR-DIM-03); runs already recorded keep the version they ran. archived: true puts it out of use. Needs If-Match with its ETag. Side effects: the new version and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        put: operations["replaceAllocationRule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/allocation-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a rule's runs
+         * @description The runs recorded for a rule, earliest first, a page at a time (FR-DIM-03). Read-only; no side effects.
+         */
+        get: operations["listAllocationRuns"];
+        put?: never;
+        /**
+         * Run an allocation rule into a draft journal
+         * @description Runs a rule over whole months (previewAllocation shows what it does) and makes the journal as a draft for an approver (FR-DIM-03): each part debited to its account with the target's dimension values, what was placed credited with none, so what the key cannot place stays on the account. A rule runs once for a month (ALLOC-07). The run is recorded, never changed and never reversed (FYR14). Side effects: the draft journal, the recorded run and their audit events. Nothing is posted. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["proposeAllocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/announcements": {
         parameters: {
             query?: never;
@@ -24243,6 +24335,326 @@ export interface components {
              */
             tool_calls: number;
         };
+        AllocationLine: {
+            /**
+             * Format: uuid
+             * @description The account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01
+             */
+            account_id: string;
+            /**
+             * @description Debit positive, credit negative, in the base currency.
+             * @example 400.00
+             */
+            amount: string;
+            /**
+             * @description What the line says.
+             * @example Engineering
+             */
+            description: string;
+            /** @description The dimension values the line carries. */
+            values: string[];
+        };
+        AllocationPart: {
+            /**
+             * @description Its part, in the base currency.
+             * @example 400.00
+             */
+            amount: string;
+            /**
+             * @description The target's label.
+             * @example Engineering
+             */
+            target: string;
+        };
+        AllocationReport: {
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-03-01
+             */
+            from: string;
+            /**
+             * Format: uuid
+             * @description The draft journal, once proposed.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a01
+             */
+            journal_id?: string;
+            /**
+             * @description The key it ran with.
+             * @example fixed
+             * @enum {string}
+             */
+            key: "fixed" | "headcount" | "usage";
+            /** @description The journal's lines: each part debited with its target's values, what was placed credited with none. */
+            lines: components["schemas"]["AllocationLine"][];
+            /**
+             * @description What it is.
+             * @example Nothing is posted: the journal is a draft for an approver.
+             */
+            note: string;
+            /**
+             * @description true once the draft journal is made.
+             * @example false
+             */
+            proposed: boolean;
+            /**
+             * Format: uuid
+             * @description The rule.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
+             */
+            rule_id: string;
+            /**
+             * Format: uuid
+             * @description The recorded run, once proposed.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a02
+             */
+            run_id?: string;
+            /** @description Each source account that held cost. */
+            splits: components["schemas"]["AllocationSplit"][];
+            /**
+             * Format: date
+             * @description The last day.
+             * @example 2026-03-31
+             */
+            to: string;
+            /**
+             * Format: int64
+             * @description The weight the key could not place, in the same unit.
+             * @example 2500
+             */
+            unplaced_weight: number;
+            /** @description What the key weighed each target at. */
+            weights: components["schemas"]["AllocationWeight"][];
+        };
+        AllocationRule: {
+            /** @description The expense accounts whose cost, with no dimension value, is split (IDs of accounts). */
+            accounts: string[];
+            /**
+             * @description true to put the rule out of use: it is not run again and its runs stay.
+             * @example false
+             */
+            archived?: boolean;
+            /**
+             * Format: uuid
+             * @description The rule's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
+             */
+            id: string;
+            /**
+             * @description fixed: percentages on the targets; headcount: the people of each target's department in the people projection, those with no department being what it cannot place; usage: a usage file's quantities per code, the rows naming no target being what it cannot place.
+             * @example fixed
+             * @enum {string}
+             */
+            key: "fixed" | "headcount" | "usage";
+            /**
+             * @description The rule's name.
+             * @example Cloud hosting by department
+             */
+            name: string;
+            /** @description Where the cost goes. */
+            targets: components["schemas"]["AllocationTarget"][];
+            /**
+             * Format: int64
+             * @description The version of its content; it makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        AllocationRuleInput: {
+            /** @description The expense accounts whose cost, with no dimension value, is split (IDs of accounts). */
+            accounts: string[];
+            /**
+             * @description true to put the rule out of use: it is not run again and its runs stay.
+             * @example false
+             */
+            archived?: boolean;
+            /**
+             * @description fixed: percentages on the targets; headcount: the people of each target's department in the people projection, those with no department being what it cannot place; usage: a usage file's quantities per code, the rows naming no target being what it cannot place.
+             * @example fixed
+             * @enum {string}
+             */
+            key: "fixed" | "headcount" | "usage";
+            /**
+             * @description The rule's name.
+             * @example Cloud hosting by department
+             */
+            name: string;
+            /** @description Where the cost goes. */
+            targets: components["schemas"]["AllocationTarget"][];
+        };
+        AllocationRulePage: {
+            /** @description The rules, latest first. */
+            items: components["schemas"]["AllocationRule"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjEifQ
+             */
+            next_cursor?: string;
+        };
+        AllocationRunInput: {
+            /**
+             * Format: date
+             * @description The first day of the first month.
+             * @example 2026-03-01
+             */
+            from: string;
+            /**
+             * Format: uuid
+             * @description The rule to run.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
+             */
+            rule_id: string;
+            /**
+             * Format: date
+             * @description The last day of the last month (the same month or a later one, at most a year in all).
+             * @example 2026-03-31
+             */
+            to: string;
+            /** @description With the usage key: the usage file. */
+            usage?: components["schemas"]["AllocationUsage"];
+        };
+        AllocationRunPage: {
+            /** @description The runs, earliest first. */
+            items: components["schemas"]["AllocationRunRecord"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjEifQ
+             */
+            next_cursor?: string;
+        };
+        AllocationRunRecord: {
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-03-01
+             */
+            from: string;
+            /**
+             * Format: uuid
+             * @description The run.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a02
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description The journal it proposed.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a01
+             */
+            journal_id: string;
+            /**
+             * @description The key.
+             * @example fixed
+             * @enum {string}
+             */
+            key: "fixed" | "headcount" | "usage";
+            /**
+             * Format: int64
+             * @description The version of the rule it ran.
+             * @example 1
+             */
+            rule_version: number;
+            /**
+             * Format: date
+             * @description The last day.
+             * @example 2026-03-31
+             */
+            to: string;
+        };
+        AllocationSplit: {
+            /**
+             * @description Its code.
+             * @example 6200
+             */
+            account_code: string;
+            /**
+             * Format: uuid
+             * @description The account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01
+             */
+            account_id: string;
+            /**
+             * @description Its name.
+             * @example Cloud hosting
+             */
+            account_name: string;
+            /** @description Each target's part, by ALLOC-PRORATA. */
+            parts: components["schemas"]["AllocationPart"][];
+            /**
+             * @description Its cost in the months with no dimension value, in the base currency.
+             * @example 1000.00
+             */
+            source: string;
+            /**
+             * @description What the key could not place: it stays on the account with no dimension value.
+             * @example 250.00
+             */
+            unallocated: string;
+        };
+        AllocationTarget: {
+            /**
+             * @description With the usage key: the code the usage file names this target by.
+             * @example customer-acme
+             */
+            code?: string;
+            /**
+             * @description What the target is called.
+             * @example Engineering
+             */
+            label: string;
+            /**
+             * @description With the fixed key: this target's percentage, above nothing, at most two decimals; together at most 100, the rest stays unallocated.
+             * @example 40
+             */
+            percent?: string;
+            /** @description The dimension values the allocated lines carry, one of each dimension at most (the department, the project, a customer or a product). */
+            values: string[];
+        };
+        AllocationUsage: {
+            /**
+             * Format: uuid
+             * @description The supplier's bill the file explains.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b01
+             */
+            bill_id: string;
+            /**
+             * @description What the file says was billed in all: it must equal the bill's total and the rows' sum, or the file is refused.
+             * @example 1250.00
+             */
+            billed_total: string;
+            /** @description The file's rows. */
+            rows: components["schemas"]["AllocationUsageRow"][];
+        };
+        AllocationUsageRow: {
+            /**
+             * @description What the row was billed, in the base currency.
+             * @example 312.40
+             */
+            billed: string;
+            /**
+             * @description The target code, or any other code the key cannot place.
+             * @example customer-acme
+             */
+            code: string;
+            /**
+             * @description The usage, zero or more with at most six decimals.
+             * @example 1250.5
+             */
+            quantity: string;
+        };
+        AllocationWeight: {
+            /**
+             * @description The target's label.
+             * @example Engineering
+             */
+            target: string;
+            /**
+             * Format: int64
+             * @description In the key's unit: hundredths of a percent, people, or millionths of a unit of usage.
+             * @example 4000
+             */
+            weight: number;
+        };
         AmendSubscriptionInputBody: {
             /**
              * Format: date
@@ -31812,11 +32224,11 @@ export interface components {
              */
             run_id?: string;
             /**
-             * @description What raised it: a run's finding, or an approved proposal.
+             * @description What raised it: a run's finding, an approved proposal, or the platform itself (a statutory pack update waiting).
              * @example agent_run
              * @enum {string}
              */
-            source: "agent_run" | "ai_proposal";
+            source: "agent_run" | "ai_proposal" | "system";
             /**
              * @description open; done or dismissed by a person; cleared when its finding cleared.
              * @example open
@@ -50511,6 +50923,11 @@ export interface components {
              */
             available: string;
             changes: components["schemas"]["PackChange"][];
+            /**
+             * @description true when the available version takes effect on the same day as the current one (or earlier): it corrects the period the current one already covers, and the platform raises a task to assess the documents dated in it (ENG-33).
+             * @example false
+             */
+            correction: boolean;
             /**
              * @description The version the organisation has active.
              * @example sg-gst@2026.2
@@ -72961,6 +73378,901 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    previewAllocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllocationRunInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationReport"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `ALLOC-07` The rule allocated those months already; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAllocationRules: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationRulePage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createAllocationRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllocationRuleInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationRule"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationRule"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `ALLOC-07` The rule allocated those months already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAllocationRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The rule. */
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationRule"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceAllocationRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The rule. */
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllocationRuleInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationRule"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `ALLOC-07` The rule allocated those months already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAllocationRuns: {
+        parameters: {
+            query: {
+                /** @description The rule whose runs are listed. */
+                rule_id: string;
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationRunPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    proposeAllocation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllocationRunInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationReport"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllocationReport"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `ALLOC-07` The rule allocated those months already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

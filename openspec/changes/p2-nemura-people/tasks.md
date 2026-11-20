@@ -32,6 +32,7 @@ Nemura's migrations are in `db/nemura/migrations` (continue from the highest num
 
 ## 5. Performance (NM-PRF-01 to 05)
 - [ ] 5.1 Goals and KPIs. `// req: NM-PRF-01, NM-PRF-02`
+  (Built in part, 21 Nov 2026, PRD-002 rev 0.67: migration 000067, `internal/nemura/performance`, `performance.go` in the adapter, `/v1/me/goals` and the goal operations, the page My goals; `TestAMeasureIsWholeAndItsProgressIsExactAndRoundedDown`, `TestGoalsAreReadAndChangedOnlyByTheirPeople…`. **Left:** a manager's and HR's page of a person's goals (the operation exists), the roll-up of aligned goals' progress, KPIs read from Fyniq's metrics and a company financial KPI's status-only display `[live-verify]` (needs the link).)
 - [ ] 5.2 Check-ins. `// req: NM-PRF-03`
 - [ ] 5.3 Review cycles and `people.draft_review_summary`. `// req: NM-PRF-04`
 - [ ] 5.4 Pay outcomes through the pay path. `// req: NM-PRF-05`
@@ -47,5 +48,5 @@ Nemura's migrations are in `db/nemura/migrations` (continue from the highest num
 | NM-SEC-06 | 2 | planned |
 | NM-ONB-01 | 3 | built |
 | NM-REC-01…06, NM-AI-05 | 4 | 4.1 built, 4.2 in part |
-| NM-PRF-01…05 | 5 | planned |
+| NM-PRF-01…05 | 5 | 5.1 in part |
 | NM-EXT-04, NM-EXT-05 | 6 | planned |

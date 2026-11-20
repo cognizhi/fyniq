@@ -396,6 +396,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBoardPacks(a)
 	registerBoardPackPDF(a)
 	registerBoardPackKeeping(a)
+	registerAllocations(a)
 	registerKPIAlerts(a)
 	registerCapTableGrants(a)
 	registerExitWaterfall(a)

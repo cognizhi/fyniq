@@ -121,6 +121,12 @@ Source: PRD-001 §10.6 · Priority S / M (update marking) · Phase P2 / P1 (upda
 - **WHEN** sg-gst@2026.3 is compared with 2026.2
 - **THEN** the only difference is the registration threshold added to the limits table
 
+#### Scenario: The platform raises the tasks (rev 0.614)
+- **GIVEN** an organisation with sg-gst@2026.1 activated and sg-gst@2026.3, which corrects it, in force and not activated
+- **WHEN** the daily job runs
+- **THEN** it raises a task "Statutory pack update waiting" with how many rows the version adds, removes and changes, and a task "Assess a pack correction" counting the posted documents dated in the period, owned by the Finance controller
+- **AND** a second run raises nothing twice, activating the version clears both, and nothing is re-posted
+
 #### Scenario: The update view (rev 0.546)
 - **GIVEN** an activated pack with a newer version in force that is not activated
 - **WHEN** the updates are read

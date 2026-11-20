@@ -130,6 +130,15 @@ classes:
     protection: "Row-level security; a request, a checked letter and an issued letter are evidence that never change; the PDF's SHA-256 is checked whenever it is read; a link's token is kept as a hash; the audit event carries the reference and the hash, never the letter's text"
     transfers: "None"
     columns: [letter_request.purpose, letter_request.data, letter_request.decision_reason, letter_issued.data, letter_template_version.note, letter_delegation.revoked_reason]
+  - key: performance-goals
+    what: "A person's goals and role KPIs with their key results, and each value given for one with the note that came with it"
+    why: "To agree what a person works towards, to see how far they have got and to talk about it fairly (NM-PRF-01, NM-PRF-02)"
+    where: "Nemura's database, in Singapore"
+    who: "The person, their line manager and the people team (Appendix B: Performance); the company's and the teams' goals are read by every member; not the assistant, the worker or the read-only role beyond reports"
+    retention: "Kept with the employment record, as MOM requires employment records for 1 year after the person leaves; the company may keep them longer [owner to confirm]"
+    protection: "Row-level security by organisation, and the service shows a personal goal only to those who may read it; goals and updates are append-only; the audit events carry identities, scopes and states, never a title or a value"
+    transfers: "None"
+    columns: [measure_update.note]
   - key: grievances
     what: "A concern a member raised in confidence: what happened in their words, the people it is about (by person), who handles it, the inquiry record (notes, interviews, findings and hand-overs) and the written outcome with what it concludes"
     why: "To look into a workplace concern fairly and in confidence, to give the person who raised it a written outcome and to show the company handled it (Workplace Fairness Act and the Tripartite Guidelines, NM-SEC-06)"

@@ -1091,6 +1091,10 @@
       "label": "Accounting",
       "tooltip": "Journals, the periods they post in, and the chart of accounts."
     },
+    "accounting.allocations": {
+      "label": "Allocations",
+      "tooltip": "Move a shared cost between departments, projects or customers by a rule: fixed percentages, headcount or a supplier's usage file. Each month is worked out exactly, what the key cannot place stays unallocated, and the journal is a draft an approver posts."
+    },
     "accounting.chart": {
       "label": "Chart of accounts",
       "tooltip": "Every account the books post to, by type, with its report group, function, GST code and flags."

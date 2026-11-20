@@ -69,6 +69,104 @@ _AccountingYearOptional = TypedDict("_AccountingYearOptional", {"framework": "Ac
 class AccountingYear(_AccountingYearRequired, _AccountingYearOptional):
     """AccountingYear is a schema of the contract."""
 
+_AllocationLineRequired = TypedDict("_AllocationLineRequired", {"account_id": "str", "amount": "str", "description": "str", "values": "list[str]"})
+_AllocationLineOptional = TypedDict("_AllocationLineOptional", {}, total=False)
+
+
+class AllocationLine(_AllocationLineRequired, _AllocationLineOptional):
+    """AllocationLine is a schema of the contract."""
+
+_AllocationPartRequired = TypedDict("_AllocationPartRequired", {"amount": "str", "target": "str"})
+_AllocationPartOptional = TypedDict("_AllocationPartOptional", {}, total=False)
+
+
+class AllocationPart(_AllocationPartRequired, _AllocationPartOptional):
+    """AllocationPart is a schema of the contract."""
+
+_AllocationReportRequired = TypedDict("_AllocationReportRequired", {"from": "str", "key": "str", "lines": "list[AllocationLine]", "note": "str", "proposed": "bool", "rule_id": "str", "splits": "list[AllocationSplit]", "to": "str", "unplaced_weight": "int", "weights": "list[AllocationWeight]"})
+_AllocationReportOptional = TypedDict("_AllocationReportOptional", {"journal_id": "str", "run_id": "str"}, total=False)
+
+
+class AllocationReport(_AllocationReportRequired, _AllocationReportOptional):
+    """AllocationReport is a schema of the contract."""
+
+_AllocationRuleRequired = TypedDict("_AllocationRuleRequired", {"accounts": "list[str]", "id": "str", "key": "str", "name": "str", "targets": "list[AllocationTarget]", "version": "int"})
+_AllocationRuleOptional = TypedDict("_AllocationRuleOptional", {"archived": "bool"}, total=False)
+
+
+class AllocationRule(_AllocationRuleRequired, _AllocationRuleOptional):
+    """AllocationRule is a schema of the contract."""
+
+_AllocationRuleInputRequired = TypedDict("_AllocationRuleInputRequired", {"accounts": "list[str]", "key": "str", "name": "str", "targets": "list[AllocationTarget]"})
+_AllocationRuleInputOptional = TypedDict("_AllocationRuleInputOptional", {"archived": "bool"}, total=False)
+
+
+class AllocationRuleInput(_AllocationRuleInputRequired, _AllocationRuleInputOptional):
+    """AllocationRuleInput is a schema of the contract."""
+
+_AllocationRulePageRequired = TypedDict("_AllocationRulePageRequired", {"items": "list[AllocationRule]"})
+_AllocationRulePageOptional = TypedDict("_AllocationRulePageOptional", {"next_cursor": "str"}, total=False)
+
+
+class AllocationRulePage(_AllocationRulePageRequired, _AllocationRulePageOptional):
+    """AllocationRulePage is a schema of the contract."""
+
+_AllocationRunInputRequired = TypedDict("_AllocationRunInputRequired", {"from": "str", "rule_id": "str", "to": "str"})
+_AllocationRunInputOptional = TypedDict("_AllocationRunInputOptional", {"usage": "AllocationUsage"}, total=False)
+
+
+class AllocationRunInput(_AllocationRunInputRequired, _AllocationRunInputOptional):
+    """AllocationRunInput is a schema of the contract."""
+
+_AllocationRunPageRequired = TypedDict("_AllocationRunPageRequired", {"items": "list[AllocationRunRecord]"})
+_AllocationRunPageOptional = TypedDict("_AllocationRunPageOptional", {"next_cursor": "str"}, total=False)
+
+
+class AllocationRunPage(_AllocationRunPageRequired, _AllocationRunPageOptional):
+    """AllocationRunPage is a schema of the contract."""
+
+_AllocationRunRecordRequired = TypedDict("_AllocationRunRecordRequired", {"from": "str", "id": "str", "journal_id": "str", "key": "str", "rule_version": "int", "to": "str"})
+_AllocationRunRecordOptional = TypedDict("_AllocationRunRecordOptional", {}, total=False)
+
+
+class AllocationRunRecord(_AllocationRunRecordRequired, _AllocationRunRecordOptional):
+    """AllocationRunRecord is a schema of the contract."""
+
+_AllocationSplitRequired = TypedDict("_AllocationSplitRequired", {"account_code": "str", "account_id": "str", "account_name": "str", "parts": "list[AllocationPart]", "source": "str", "unallocated": "str"})
+_AllocationSplitOptional = TypedDict("_AllocationSplitOptional", {}, total=False)
+
+
+class AllocationSplit(_AllocationSplitRequired, _AllocationSplitOptional):
+    """AllocationSplit is a schema of the contract."""
+
+_AllocationTargetRequired = TypedDict("_AllocationTargetRequired", {"label": "str", "values": "list[str]"})
+_AllocationTargetOptional = TypedDict("_AllocationTargetOptional", {"code": "str", "percent": "str"}, total=False)
+
+
+class AllocationTarget(_AllocationTargetRequired, _AllocationTargetOptional):
+    """AllocationTarget is a schema of the contract."""
+
+_AllocationUsageRequired = TypedDict("_AllocationUsageRequired", {"bill_id": "str", "billed_total": "str", "rows": "list[AllocationUsageRow]"})
+_AllocationUsageOptional = TypedDict("_AllocationUsageOptional", {}, total=False)
+
+
+class AllocationUsage(_AllocationUsageRequired, _AllocationUsageOptional):
+    """AllocationUsage is a schema of the contract."""
+
+_AllocationUsageRowRequired = TypedDict("_AllocationUsageRowRequired", {"billed": "str", "code": "str", "quantity": "str"})
+_AllocationUsageRowOptional = TypedDict("_AllocationUsageRowOptional", {}, total=False)
+
+
+class AllocationUsageRow(_AllocationUsageRowRequired, _AllocationUsageRowOptional):
+    """AllocationUsageRow is a schema of the contract."""
+
+_AllocationWeightRequired = TypedDict("_AllocationWeightRequired", {"target": "str", "weight": "int"})
+_AllocationWeightOptional = TypedDict("_AllocationWeightOptional", {}, total=False)
+
+
+class AllocationWeight(_AllocationWeightRequired, _AllocationWeightOptional):
+    """AllocationWeight is a schema of the contract."""
+
 _AmendSubscriptionInputBodyRequired = TypedDict("_AmendSubscriptionInputBodyRequired", {"effective_on": "str", "kind": "str", "reason": "str"})
 _AmendSubscriptionInputBodyOptional = TypedDict("_AmendSubscriptionInputBodyOptional", {"mrr": "str"}, total=False)
 
@@ -2540,7 +2638,7 @@ _PackSourceOptional = TypedDict("_PackSourceOptional", {}, total=False)
 class PackSource(_PackSourceRequired, _PackSourceOptional):
     """PackSource is a schema of the contract."""
 
-_PackUpdateRequired = TypedDict("_PackUpdateRequired", {"available": "str", "changes": "list[PackChange]", "current": "str", "pack": "str"})
+_PackUpdateRequired = TypedDict("_PackUpdateRequired", {"available": "str", "changes": "list[PackChange]", "correction": "bool", "current": "str", "pack": "str"})
 _PackUpdateOptional = TypedDict("_PackUpdateOptional", {}, total=False)
 
 

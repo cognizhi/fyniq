@@ -15,6 +15,13 @@
       },
       "type": "array"
     },
+    "correction": {
+      "description": "true when the available version takes effect on the same day as the current one (or earlier): it corrects the period the current one already covers, and the platform raises a task to assess the documents dated in it (ENG-33).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "current": {
       "description": "The version the organisation has active.",
       "examples": [
@@ -33,6 +40,7 @@
     "pack",
     "current",
     "available",
+    "correction",
     "changes"
   ],
   "title": "PackUpdate",

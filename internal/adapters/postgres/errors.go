@@ -295,6 +295,7 @@ var fyCodes = map[string]string{
 	"FYR07": storage.CodeKPIAlert,           // a raised KPI alert changed or deleted (001102)
 	"FYR08": storage.CodeDashboardLayout,    // a dashboard layout changed other than as its next version, or deleted (001103)
 	"FYR09": storage.CodeCapTableGrant,      // a cap table grant changed other than by one revocation, or deleted (001104)
+	"FYR14": storage.CodeProposalRun,        // a recorded run of an allocation rule, or a month of a share grant's expense, reversed or changed (001145)
 	"FYR12": storage.CodeBoardPackPDF,       // a board pack's PDF kept without another person's approval, or reversed (001110)
 	"FYR13": storage.CodeBoardPackPDFKept,   // a second PDF kept for a board pack (001110)
 	"FYR11": storage.CodeCashSnapshot,       // a cash snapshot changed or deleted (001107)

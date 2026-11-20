@@ -40,6 +40,7 @@ import { AssistantSettings } from "./pages/AssistantSettings";
 import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
+import { Goals } from "./pages/Goals";
 import { Hiring } from "./pages/Hiring";
 import { OnboardingPlans } from "./components/OnboardingPlans";
 import { MyOnboarding } from "./components/MyOnboarding";
@@ -1978,5 +1979,40 @@ describe("hiring", () => {
     cleanup();
     render(<Hiring roles={["employee"]} />);
     expect(await screen.findByText(/Only the Recruiter, the HR officer/)).toBeTruthy();
+  });
+});
+
+// req: NM-PRF-01, NM-PRF-02, QA-UI-05
+describe("goals", () => {
+  const measure = (id: string, extra: object = {}) => ({ id, title: "Pilot customers live", unit: "customers", start_value: "0", target: "3", current: "2", lower_is_better: false, progress: 66, status: "on_track", ...extra });
+  const goal = (id: string, scope: string, title: string, measures: object[], extra: object = {}) => ({ id, scope, title, starts_on: "2026-07-01", due_on: "2026-12-31", state: "open", progress: 66, measures, ...extra });
+
+  it("shows the company's goal, the person's own goals with exact progress, updates a key result and adds a goal aligned with the company's", async () => {
+    answer("GET /v1/me/goals", { status: 200, body: { company: [goal("c1", "company", "3 pilot customers live by 31 December", [measure("m0")])], team: [], mine: [goal("g1", "personal", "Bank sync in beta", [measure("m1", { title: "Sandbox tests passing", current: "8", target: "13", progress: 61 })])], kpis: [measure("k1", { title: "Tickets closed a week", progress: 40, status: "not_yet" })] } });
+    answer("POST /v1/measures/m1/updates", { status: 201, body: measure("m1") });
+    answer("POST /v1/goals", { status: 201, body: goal("g2", "personal", "Learn Go", []) });
+    const { container } = render(<Goals roles={["employee"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    expect(await screen.findByRole("heading", { name: "3 pilot customers live by 31 December" })).toBeTruthy();
+    expect(container.textContent).toContain("Sandbox tests passing: 8 of 13 customers (61%)");
+    expect(screen.getByText("Not yet")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Value now for Sandbox tests passing"), { target: { value: "9" } });
+    fireEvent.click(screen.getByRole("button", { name: "Update Sandbox tests passing" }));
+    expect(await screen.findByText("Updated.")).toBeTruthy();
+    expect(bodies.get("POST /v1/measures/m1/updates")).toEqual({ value: "9" });
+    fireEvent.change(screen.getByLabelText("The goal"), { target: { value: "Learn Go" } });
+    fireEvent.change(screen.getByLabelText("Due"), { target: { value: "2026-12-31" } });
+    fireEvent.change(screen.getByLabelText("Aligns with"), { target: { value: "c1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add the goal" }));
+    expect(await screen.findByText("The goal is added.")).toBeTruthy();
+    expect(bodies.get("POST /v1/goals")).toEqual({ scope: "personal", title: "Learn Go", due_on: "2026-12-31", parent_id: "c1" });
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("tells a person when Performance is off", async () => {
+    answer("GET /v1/me/goals", { status: 409, body: { code: "NM_FEATURE_OFF", detail: "Performance is switched off." } });
+    render(<Goals roles={["employee"]} />);
+    expect(await screen.findByText(/Performance is switched off for this company/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Add the goal" })).toBeNull();
   });
 });

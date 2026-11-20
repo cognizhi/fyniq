@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billed": {
+      "description": "What the row was billed, in the base currency.",
+      "examples": [
+        "312.40"
+      ],
+      "type": "string"
+    },
+    "code": {
+      "description": "The target code, or any other code the key cannot place.",
+      "examples": [
+        "customer-acme"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    },
+    "quantity": {
+      "description": "The usage, zero or more with at most six decimals.",
+      "examples": [
+        "1250.5"
+      ],
+      "pattern": "^[0-9]+(\\.[0-9]{1,6})?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "quantity",
+    "billed"
+  ],
+  "title": "AllocationUsageRow",
+  "type": "object"
+}

@@ -1,0 +1,53 @@
+<!-- fyniq-screen {"nav": "accounting", "title": "Allocations", "mode": "expert", "heights": {"compact": 2300, "medium": 1700, "expanded": 1300}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#accounting">Accounting</a><i data-icon="chevron-right"></i><span>Allocations</span></nav>
+      <h1 class="fy-h1">Allocations</h1>
+      <p class="fy-secondary">Move a shared cost between departments, projects or customers. Each month is worked out exactly; what the key cannot place stays unallocated; the journal is a draft an approver posts.</p>
+    </div>
+  </div>
+  <div class="fy-card fy-card--pad fy-row fy-row--wrap gap-3">
+    <div class="fy-field"><label class="fy-label" for="al-open">Open a rule</label><select class="fy-select" id="al-open"><option>Cloud hosting by department</option><option>A new rule</option></select></div>
+  </div>
+  <div class="fy-split">
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="al-rule">
+      <h2 class="fy-h3" id="al-rule">The rule</h2>
+      <div class="fy-field"><label class="fy-label" for="al-name">Name</label><input class="fy-input" id="al-name" value="Cloud hosting by department" /></div>
+      <fieldset class="fy-field"><legend class="fy-label">Expense accounts whose cost is shared</legend>
+        <label class="fy-check"><input type="checkbox" />5010 Cloud hosting</label>
+        <label class="fy-check"><input type="checkbox" />6210 Utilities</label>
+      </fieldset>
+      <div class="fy-field"><label class="fy-label" for="al-key">Key</label><select class="fy-select" id="al-key"><option>Fixed percentages</option><option>Headcount of each department</option><option>Usage from a supplier's file</option></select></div>
+      <h3 class="fy-h3">Targets</h3>
+      <div class="fy-row fy-row--wrap gap-3">
+        <div class="fy-field"><label class="fy-label" for="al-t1">Target 1</label><input class="fy-input" id="al-t1" value="Engineering" /></div>
+        <div class="fy-field"><label class="fy-label" for="al-v1">Department, project or other value</label><select class="fy-select" id="al-v1"><option>Department: Engineering</option></select></div>
+        <div class="fy-field"><label class="fy-label" for="al-p1">Percent</label><input class="fy-input" id="al-p1" value="40" /></div>
+      </div>
+      <div class="fy-row fy-row--wrap gap-3">
+        <div class="fy-field"><label class="fy-label" for="al-t2">Target 2</label><input class="fy-input" id="al-t2" value="Sales" /></div>
+        <div class="fy-field"><label class="fy-label" for="al-v2">Department, project or other value</label><select class="fy-select" id="al-v2"><option>Department: Sales</option></select></div>
+        <div class="fy-field"><label class="fy-label" for="al-p2">Percent</label><input class="fy-input" id="al-p2" value="35" /></div>
+      </div>
+      <div class="fy-row gap-3"><button class="fy-btn fy-btn--secondary" type="button"><i data-icon="plus"></i>Add a target</button><button class="fy-btn fy-btn--primary" type="button"><i data-icon="save"></i>Save the next version</button></div>
+    </section>
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="al-run">
+      <h2 class="fy-h3" id="al-run">Run it</h2>
+      <div class="fy-field"><label class="fy-label" for="al-month">Month</label><select class="fy-select" id="al-month"><option>2026-03</option></select></div>
+      <div class="fy-row gap-3"><button class="fy-btn fy-btn--secondary" type="button"><i data-icon="eye"></i>Preview</button><button class="fy-btn fy-btn--primary" type="button"><i data-icon="file-plus"></i>Propose the journal</button></div>
+      <div class="fy-tablewrap">
+        <table class="fy-table">
+          <caption>5010 Cloud hosting: 1,000.00 with no department or value</caption>
+          <thead><tr><th scope="col">Target</th><th scope="col" class="fy-num">Part</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Engineering</th><td class="fy-num">400.00</td></tr>
+            <tr><th scope="row">Sales</th><td class="fy-num">350.00</td></tr>
+            <tr><th scope="row">Unallocated (stays on the account)</th><td class="fy-num">250.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fy-small fy-muted">3 lines: each part debited with its department, what was placed credited with none. Nothing is posted: the journal is a draft that an approver posts like any other.</p>
+    </section>
+  </div>
+</div>

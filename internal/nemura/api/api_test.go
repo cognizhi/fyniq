@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"github.com/cognizhi/fyniq/internal/nemura/hiring"
+	"github.com/cognizhi/fyniq/internal/nemura/performance"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -148,10 +149,11 @@ func (f fakeFeatures) List(context.Context, Session) (features.Switches, error) 
 		return features.Switches{}, nil
 	}
 	var h *hiring.Refusal
-	if errors.As(f.err, &l) || errors.As(f.err, &h) { // a refusal of the leave or hiring service is not the feature switches'
-		return features.Switches{"leave": {State: features.On}, "onboarding": {State: features.On}, "hiring": {State: features.On}}, nil
+	var pf *performance.Refusal
+	if errors.As(f.err, &l) || errors.As(f.err, &h) || errors.As(f.err, &pf) { // a refusal of the leave or hiring service is not the feature switches'
+		return features.Switches{"leave": {State: features.On}, "onboarding": {State: features.On}, "hiring": {State: features.On}, "performance": {State: features.On}}, nil
 	}
-	return features.Switches{"leave": {State: features.On}, "onboarding": {State: features.On}, "hiring": {State: features.On}}, f.err
+	return features.Switches{"leave": {State: features.On}, "onboarding": {State: features.On}, "hiring": {State: features.On}, "performance": {State: features.On}}, f.err
 }
 func (f fakeFeatures) Set(context.Context, Session, string, string, string, []features.Arrangement) error {
 	return f.err
@@ -617,7 +619,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Plans: fakePlans{err: requestsErr}, Hiring: fakeHiring{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LetterVerify: fakeLetterVerify{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, Grievances: fakeGrievances{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Plans: fakePlans{err: requestsErr}, Hiring: fakeHiring{err: requestsErr}, Performance: fakePerformance{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LetterVerify: fakeLetterVerify{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, Grievances: fakeGrievances{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -856,6 +858,8 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		hiring.CodeInvalid:          {method: "POST", path: "/v1/requisitions", body: `{"title":"Data scientist","department":"Engineering","reason":"new","salary_min":"6500.00","salary_max":"8200.00","target_start":"2027-02-01"}`, signedIn: true, hiringRecruiter: true, err: &hiring.Refusal{Code: hiring.CodeInvalid, Message: "x."}},
 		hiring.CodeConflict:         {method: "POST", path: "/v1/requisitions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01/job-post/closing", signedIn: true, hiringRecruiter: true, err: &hiring.Refusal{Code: hiring.CodeConflict, Message: "x."}},
 		hiring.CodeWording:          {method: "POST", path: "/v1/requisitions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01/job-post/publication", body: `{}`, signedIn: true, hiringRecruiter: true, err: &hiring.Refusal{Code: hiring.CodeWording, Message: "x."}},
+		performance.CodeInvalid:     {method: "POST", path: "/v1/goals", body: `{"scope":"personal","title":"x","due_on":"2099-12-31"}`, signedIn: true, err: &performance.Refusal{Code: performance.CodeInvalid, Message: "x."}},
+		performance.CodeConflict:    {method: "POST", path: "/v1/goals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01/closing", body: `{"state":"done"}`, signedIn: true, err: &performance.Refusal{Code: performance.CodeConflict, Message: "x."}},
 		"NM_GRIEVANCE_STATE":        {method: "POST", path: "/v1/grievances/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1/outcome", body: `{"finding":"substantiated","outcome":"The inquiry found that the remark was made."}`, signedIn: true, owner: true, err: &grievance.Refusal{Code: grievance.CodeState, Message: "x."}},
 		"NM_GRIEVANCE_NO_HANDLER":   {method: "POST", path: "/v1/grievances/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1/handover", body: `{"reason":"x"}`, signedIn: true, owner: true, err: &grievance.Refusal{Code: grievance.CodeNoHandler, Message: "x."}},
 		"NM_ERASURE_ACCESS_REQUEST": {method: "POST", path: "/v1/erasures", body: `{"person_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","reason":"x"}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeOpenAccessReq, Message: "x."}},
@@ -1422,6 +1426,27 @@ func (f fakeErasure) Decide(context.Context, Session, []authz.Role, uuid.UUID, b
 }
 func (f fakeErasure) List(context.Context, Session) ([]ErasureOrderView, error) {
 	return []ErasureOrderView{}, f.err
+}
+
+type fakePerformance struct{ err error }
+
+func (f fakePerformance) Mine(context.Context, Session) ([]Goal, []Goal, []Goal, []Measure, error) {
+	return []Goal{}, []Goal{}, []Goal{}, []Measure{}, f.err
+}
+func (f fakePerformance) OfPerson(context.Context, Session, []authz.Role, uuid.UUID) ([]Goal, []Measure, error) {
+	return []Goal{}, []Measure{}, f.err
+}
+func (f fakePerformance) SetGoal(context.Context, Session, []authz.Role, GoalInput) (Goal, error) {
+	return Goal{Measures: []Measure{}}, f.err
+}
+func (f fakePerformance) CloseGoal(context.Context, Session, []authz.Role, uuid.UUID, string) error {
+	return f.err
+}
+func (f fakePerformance) Update(context.Context, Session, []authz.Role, uuid.UUID, string, string) (Measure, error) {
+	return Measure{}, f.err
+}
+func (f fakePerformance) SetKPI(context.Context, Session, []authz.Role, uuid.UUID, MeasureInput) (Measure, error) {
+	return Measure{}, f.err
 }
 
 type fakeHiring struct{ err error }

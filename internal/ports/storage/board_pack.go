@@ -19,6 +19,9 @@ const CodeBoardPackPDF = "STORAGE-BPACK-03"
 // CodeBoardPackPDFKept is the refusal of a second kept PDF for a pack (FYR13).
 const CodeBoardPackPDFKept = "STORAGE-BPACK-04"
 
+// CodeProposalRun is the database's refusal of a recorded run of an allocation rule, or a month of a share grant's expense, reversed or changed (FYR14).
+const CodeProposalRun = "STORAGE-RUN-01"
+
 // CodeInvestorUpdate is the database's refusal of a sent update changed or any update deleted, or one sent from an unpublished pack (FYR05).
 const CodeInvestorUpdate = "STORAGE-IUPD-01"
 

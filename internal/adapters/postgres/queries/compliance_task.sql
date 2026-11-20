@@ -40,3 +40,9 @@ UPDATE fyniq.compliance_task SET status = sqlc.arg(status), reason = sqlc.arg(re
   closed_by = sqlc.arg(closed_by), version = version + 1
 WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
 RETURNING *;
+
+-- name: RaiseSystemTask :one
+INSERT INTO fyniq.compliance_task (finding_key, title, detail, owner_role, owner_user, due_on, escalated, source, created_at)
+VALUES (sqlc.arg(finding_key), sqlc.arg(title), sqlc.arg(detail), sqlc.narg(owner_role), sqlc.narg(owner_user), sqlc.narg(due_on),
+  sqlc.arg(escalated), 'system', sqlc.arg(created_at))
+RETURNING *;

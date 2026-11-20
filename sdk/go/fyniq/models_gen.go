@@ -117,6 +117,124 @@ type AccountingYear struct {
 	Status               string                 `json:"status"`
 }
 
+// AllocationLine is a schema of the contract.
+type AllocationLine struct {
+	AccountID   string   `json:"account_id"`
+	Amount      string   `json:"amount"`
+	Description string   `json:"description"`
+	Values      []string `json:"values"`
+}
+
+// AllocationPart is a schema of the contract.
+type AllocationPart struct {
+	Amount string `json:"amount"`
+	Target string `json:"target"`
+}
+
+// AllocationReport is a schema of the contract.
+type AllocationReport struct {
+	From           string             `json:"from"`
+	JournalID      *string            `json:"journal_id,omitempty"`
+	Key            string             `json:"key"`
+	Lines          []AllocationLine   `json:"lines"`
+	Note           string             `json:"note"`
+	Proposed       bool               `json:"proposed"`
+	RuleID         string             `json:"rule_id"`
+	RunID          *string            `json:"run_id,omitempty"`
+	Splits         []AllocationSplit  `json:"splits"`
+	To             string             `json:"to"`
+	UnplacedWeight int64              `json:"unplaced_weight"`
+	Weights        []AllocationWeight `json:"weights"`
+}
+
+// AllocationRule is a schema of the contract.
+type AllocationRule struct {
+	Accounts []string           `json:"accounts"`
+	Archived *bool              `json:"archived,omitempty"`
+	ID       string             `json:"id"`
+	Key      string             `json:"key"`
+	Name     string             `json:"name"`
+	Targets  []AllocationTarget `json:"targets"`
+	Version  int64              `json:"version"`
+}
+
+// AllocationRuleInput is a schema of the contract.
+type AllocationRuleInput struct {
+	Accounts []string           `json:"accounts"`
+	Archived *bool              `json:"archived,omitempty"`
+	Key      string             `json:"key"`
+	Name     string             `json:"name"`
+	Targets  []AllocationTarget `json:"targets"`
+}
+
+// AllocationRulePage is a schema of the contract.
+type AllocationRulePage struct {
+	Items      []AllocationRule `json:"items"`
+	NextCursor *string          `json:"next_cursor,omitempty"`
+}
+
+// AllocationRunInput is a schema of the contract.
+type AllocationRunInput struct {
+	From   string           `json:"from"`
+	RuleID string           `json:"rule_id"`
+	To     string           `json:"to"`
+	Usage  *AllocationUsage `json:"usage,omitempty"`
+}
+
+// AllocationRunPage is a schema of the contract.
+type AllocationRunPage struct {
+	Items      []AllocationRunRecord `json:"items"`
+	NextCursor *string               `json:"next_cursor,omitempty"`
+}
+
+// AllocationRunRecord is a schema of the contract.
+type AllocationRunRecord struct {
+	From        string `json:"from"`
+	ID          string `json:"id"`
+	JournalID   string `json:"journal_id"`
+	Key         string `json:"key"`
+	RuleVersion int64  `json:"rule_version"`
+	To          string `json:"to"`
+}
+
+// AllocationSplit is a schema of the contract.
+type AllocationSplit struct {
+	AccountCode string           `json:"account_code"`
+	AccountID   string           `json:"account_id"`
+	AccountName string           `json:"account_name"`
+	Parts       []AllocationPart `json:"parts"`
+	Source      string           `json:"source"`
+	Unallocated string           `json:"unallocated"`
+}
+
+// AllocationTarget is a schema of the contract.
+type AllocationTarget struct {
+	Code    *string  `json:"code,omitempty"`
+	Label   string   `json:"label"`
+	Percent *string  `json:"percent,omitempty"`
+	Values  []string `json:"values"`
+}
+
+// AllocationUsage is a schema of the contract.
+type AllocationUsage struct {
+	BillID      string               `json:"bill_id"`
+	BilledTotal string               `json:"billed_total"`
+	Rows        []AllocationUsageRow `json:"rows"`
+}
+
+// AllocationUsageRow is a schema of the contract.
+type AllocationUsageRow struct {
+	Billed   string `json:"billed"`
+	Code     string `json:"code"`
+	Quantity string `json:"quantity"`
+}
+
+// AllocationWeight is a schema of the contract.
+type AllocationWeight struct {
+	Target string `json:"target"`
+	Weight int64  `json:"weight"`
+}
+
 // AmendSubscriptionInputBody is a schema of the contract.
 type AmendSubscriptionInputBody struct {
 	EffectiveOn string  `json:"effective_on"`
@@ -3888,10 +4006,11 @@ type PackSource struct {
 
 // PackUpdate is a schema of the contract.
 type PackUpdate struct {
-	Available string       `json:"available"`
-	Changes   []PackChange `json:"changes"`
-	Current   string       `json:"current"`
-	Pack      string       `json:"pack"`
+	Available  string       `json:"available"`
+	Changes    []PackChange `json:"changes"`
+	Correction bool         `json:"correction"`
+	Current    string       `json:"current"`
+	Pack       string       `json:"pack"`
 }
 
 // PackUpdates is a schema of the contract.
