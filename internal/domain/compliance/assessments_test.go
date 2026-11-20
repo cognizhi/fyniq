@@ -12,6 +12,7 @@ func ymd(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0,
 // A finding is due by its severity's days from the day it was found: Critical 7, High 30 (CTL-RES-04's SLA), Medium 90, Low 180; an
 // informational one has no day.
 // req: SEC-25
+// asvs: V15.1.1
 func TestAFindingIsDueBySeverity(t *testing.T) {
 	found := ymd(2026, 11, 2)
 	for sev, want := range map[string]time.Time{"critical": ymd(2026, 11, 9), "high": ymd(2026, 12, 2), "medium": ymd(2027, 1, 31), "low": ymd(2027, 5, 1)} {
@@ -29,6 +30,7 @@ func TestAFindingIsDueBySeverity(t *testing.T) {
 // overdue, and its fix without a retest waits 30 days; an accepted or retested one waits for nothing; Medium findings never make it overdue.
 // req: SEC-25
 // req: CTL-CHG-12
+// asvs: V15.1.1
 func TestTheSecurityAssessmentsReview(t *testing.T) {
 	today := ymd(2026, 11, 20)
 	by, at := "user:u-1", ymd(2026, 11, 1)
