@@ -1,0 +1,10274 @@
+[
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 4597956
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 319254
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1663813.00",
+      "shares": 306094
+     },
+     {
+      "id": "p0b",
+      "invested": "857117.00",
+      "shares": 157686
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "35905.00",
+      "shares": 32992
+     },
+     {
+      "id": "p1b",
+      "invested": "220560.00",
+      "shares": 202668
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "5739199.63",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4698278.76"
+      },
+      {
+       "id": "f2",
+       "total": "326219.80"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "5024498.56",
+     "total": "5024498.56"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "312772.66"
+      },
+      {
+       "id": "p0b",
+       "total": "161126.55"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "473899.21",
+     "total": "473899.21"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "33711.85"
+      },
+      {
+       "id": "p1b",
+       "total": "207090.01"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "240801.86",
+     "total": "240801.86"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "412250.47"
+      },
+      {
+       "id": "f2",
+       "total": "28624.16"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "440874.63",
+     "total": "440874.63"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "3327626.00"
+      },
+      {
+       "id": "p0b",
+       "total": "1714234.00"
+      }
+     ],
+     "id": "p0",
+     "preference": "5041860.00",
+     "residual": "0.00",
+     "total": "5041860.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "35905.00"
+      },
+      {
+       "id": "p1b",
+       "total": "220560.00"
+      }
+     ],
+     "id": "p1",
+     "preference": "256465.00",
+     "residual": "0.00",
+     "total": "256465.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2762360
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2549205
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2099600.00",
+      "shares": 542937
+     },
+     {
+      "id": "p0b",
+      "invested": "1520401.00",
+      "shares": 393162
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "3100289.00",
+      "shares": 2576735
+     },
+     {
+      "id": "p1b",
+      "invested": "422767.00",
+      "shares": 351373
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "1717949.00",
+      "shares": 836332
+     },
+     {
+      "id": "p2b",
+      "invested": "885005.00",
+      "shares": 430838
+     }
+    ],
+    "id": "p2",
+    "multiple": "2",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "34608298.18",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "9154563.78"
+      },
+      {
+       "id": "f2",
+       "total": "8448160.18"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "17602723.96",
+     "total": "17602723.96"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1799313.41"
+      },
+      {
+       "id": "p0b",
+       "total": "1302953.49"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "3102266.90",
+     "total": "3102266.90"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "8539395.62"
+      },
+      {
+       "id": "p1b",
+       "total": "1164463.19"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "9703858.81",
+     "total": "9703858.81"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "2771635.35"
+      },
+      {
+       "id": "p2b",
+       "total": "1427813.16"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "4199448.51",
+     "total": "4199448.51"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "8643576.09"
+      },
+      {
+       "id": "f2",
+       "total": "7976602.40"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "16620178.49",
+     "total": "16620178.49"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2099600.00"
+      },
+      {
+       "id": "p0b",
+       "total": "1520401.00"
+      }
+     ],
+     "id": "p0",
+     "preference": "3620001.00",
+     "residual": "0.00",
+     "total": "3620001.00"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "8062745.28"
+      },
+      {
+       "id": "p1b",
+       "total": "1099465.41"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "9162210.69",
+     "total": "9162210.69"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "3435898.00"
+      },
+      {
+       "id": "p2b",
+       "total": "1770010.00"
+      }
+     ],
+     "id": "p2",
+     "preference": "5205908.00",
+     "residual": "0.00",
+     "total": "5205908.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2576023
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1255384
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "3243522.00",
+      "shares": 1413072
+     },
+     {
+      "id": "p0b",
+      "invested": "810881.00",
+      "shares": 353269
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "253390.00",
+      "shares": 241529
+     },
+     {
+      "id": "p1b",
+      "invested": "1013564.00",
+      "shares": 966118
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "1190674.00",
+      "shares": 1491215
+     },
+     {
+      "id": "p2b",
+      "invested": "279295.00",
+      "shares": 349792
+     }
+    ],
+    "id": "p2",
+    "multiple": "2",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "41438112.84",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "12345659.12"
+      },
+      {
+       "id": "f2",
+       "total": "6016461.40"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "18362120.52",
+     "total": "18362120.52"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "6772185.35"
+      },
+      {
+       "id": "p0b",
+       "total": "1693051.13"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "8465236.48",
+     "total": "8465236.48"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1157534.19"
+      },
+      {
+       "id": "p1b",
+       "total": "4630146.36"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "5787680.55",
+     "total": "5787680.55"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "7146687.77"
+      },
+      {
+       "id": "p2b",
+       "total": "1676387.52"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "8823075.29",
+     "total": "8823075.29"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "12345659.12"
+      },
+      {
+       "id": "f2",
+       "total": "6016461.40"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "18362120.52",
+     "total": "18362120.52"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "6772185.35"
+      },
+      {
+       "id": "p0b",
+       "total": "1693051.13"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "8465236.48",
+     "total": "8465236.48"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1157534.19"
+      },
+      {
+       "id": "p1b",
+       "total": "4630146.36"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "5787680.55",
+     "total": "5787680.55"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "7146687.77"
+      },
+      {
+       "id": "p2b",
+       "total": "1676387.52"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "8823075.29",
+     "total": "8823075.29"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1306066
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1346458
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "655737.00",
+      "shares": 1050135
+     },
+     {
+      "id": "p0b",
+      "invested": "1165757.00",
+      "shares": 1866907
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "643648.00",
+      "shares": 432137
+     },
+     {
+      "id": "p1b",
+      "invested": "2932175.00",
+      "shares": 1968628
+     }
+    ],
+    "id": "p1",
+    "multiple": "1.5",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "495223.00",
+      "shares": 260195
+     },
+     {
+      "id": "p2b",
+      "invested": "10107.00",
+      "shares": 5311
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "42136539.66",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "6682150.44"
+      },
+      {
+       "id": "f2",
+       "total": "6888805.70"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "13570956.14",
+     "total": "13570956.14"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "5372745.37"
+      },
+      {
+       "id": "p0b",
+       "total": "9551549.02"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "14924294.39",
+     "total": "14924294.39"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "2210917.71"
+      },
+      {
+       "id": "p1b",
+       "total": "10071978.33"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "12282896.04",
+     "total": "12282896.04"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "1331220.73"
+      },
+      {
+       "id": "p2b",
+       "total": "27172.36"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "1358393.09",
+     "total": "1358393.09"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "6393291.96"
+      },
+      {
+       "id": "f2",
+       "total": "6591013.85"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "12984305.81",
+     "total": "12984305.81"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "5796227.33"
+      },
+      {
+       "id": "p0b",
+       "total": "10304408.11"
+      }
+     ],
+     "id": "p0",
+     "preference": "1821494.00",
+     "residual": "14279141.44",
+     "total": "16100635.44"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "2115343.33"
+      },
+      {
+       "id": "p1b",
+       "total": "9636583.11"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "11751926.44",
+     "total": "11751926.44"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "1273674.22"
+      },
+      {
+       "id": "p2b",
+       "total": "25997.75"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "1299671.97",
+     "total": "1299671.97"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 491000
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 161722
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "39131.00",
+      "shares": 168975
+     },
+     {
+      "id": "p0b",
+      "invested": "131007.00",
+      "shares": 565700
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "612742.00",
+      "shares": 203134
+     },
+     {
+      "id": "p1b",
+      "invested": "39112.00",
+      "shares": 12966
+     }
+    ],
+    "id": "p1",
+    "multiple": "2",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "174644.00",
+      "shares": 137660
+     },
+     {
+      "id": "p2b",
+      "invested": "989650.00",
+      "shares": 780078
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "58091143.28",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "11313007.85"
+      },
+      {
+       "id": "f2",
+       "total": "3726196.04"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "15039203.89",
+     "total": "15039203.89"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "3893310.59"
+      },
+      {
+       "id": "p0b",
+       "total": "13034151.82"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "16927462.41",
+     "total": "16927462.41"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "4680359.55"
+      },
+      {
+       "id": "p1b",
+       "total": "298746.35"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "4979105.90",
+     "total": "4979105.90"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "3171789.53"
+      },
+      {
+       "id": "p2b",
+       "total": "17973581.55"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "21145371.08",
+     "total": "21145371.08"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "11059116.16"
+      },
+      {
+       "id": "f2",
+       "total": "3642571.04"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "14701687.20",
+     "total": "14701687.20"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "3805935.14"
+      },
+      {
+       "id": "p0b",
+       "total": "12741633.42"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "16547568.56",
+     "total": "16547568.56"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "5800804.78"
+      },
+      {
+       "id": "p1b",
+       "total": "370265.75"
+      }
+     ],
+     "id": "p1",
+     "preference": "1303708.00",
+     "residual": "4867362.53",
+     "total": "6171070.53"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "3100606.78"
+      },
+      {
+       "id": "p2b",
+       "total": "17570210.21"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "20670816.99",
+     "total": "20670816.99"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1692503
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 852926
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1962985.00",
+      "shares": 482370
+     },
+     {
+      "id": "p0b",
+      "invested": "2602097.00",
+      "shares": 639422
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "2011711.00",
+      "shares": 474992
+     },
+     {
+      "id": "p1b",
+      "invested": "2894902.00",
+      "shares": 683527
+     }
+    ],
+    "id": "p1",
+    "multiple": "2",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "1064728.00",
+      "shares": 694758
+     },
+     {
+      "id": "p2b",
+      "invested": "1737190.00",
+      "shares": 1133553
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "27348237.86",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "6956209.78"
+      },
+      {
+       "id": "f2",
+       "total": "3505537.17"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "10461746.95",
+     "total": "10461746.95"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1982547.10"
+      },
+      {
+       "id": "p0b",
+       "total": "2628032.90"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "4610580.00",
+     "total": "4610580.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1952223.42"
+      },
+      {
+       "id": "p1b",
+       "total": "2809305.03"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "4761528.45",
+     "total": "4761528.45"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "2855464.59"
+      },
+      {
+       "id": "p2b",
+       "total": "4658917.87"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "7514382.46",
+     "total": "7514382.46"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "3298989.62"
+      },
+      {
+       "id": "f2",
+       "total": "1662504.60"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "4961494.22",
+     "total": "4961494.22"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2903209.99"
+      },
+      {
+       "id": "p0b",
+       "total": "3848444.30"
+      }
+     ],
+     "id": "p0",
+     "preference": "4565082.00",
+     "residual": "2186572.29",
+     "total": "6751654.29"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "4949265.96"
+      },
+      {
+       "id": "p1b",
+       "total": "7122119.80"
+      }
+     ],
+     "id": "p1",
+     "preference": "9813226.00",
+     "residual": "2258159.76",
+     "total": "12071385.76"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "1354207.01"
+      },
+      {
+       "id": "p2b",
+       "total": "2209496.58"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "3563703.59",
+     "total": "3563703.59"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 974474
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1823936
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2095028.00",
+      "shares": 1166508
+     },
+     {
+      "id": "p0b",
+      "invested": "1178454.00",
+      "shares": 656161
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "26130858.17",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "5510367.14"
+      },
+      {
+       "id": "f2",
+       "total": "10313827.77"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "15824194.91",
+     "total": "15824194.91"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "6596263.58"
+      },
+      {
+       "id": "p0b",
+       "total": "3710399.68"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "10306663.26",
+     "total": "10306663.26"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "5510367.14"
+      },
+      {
+       "id": "f2",
+       "total": "10313827.77"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "15824194.91",
+     "total": "15824194.91"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "6596263.58"
+      },
+      {
+       "id": "p0b",
+       "total": "3710399.68"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "10306663.26",
+     "total": "10306663.26"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1261795
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 714557
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "3361407.00",
+      "shares": 1488701
+     },
+     {
+      "id": "p0b",
+      "invested": "688482.00",
+      "shares": 304915
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "105857.00",
+      "shares": 125486
+     },
+     {
+      "id": "p1b",
+      "invested": "1658432.00",
+      "shares": 1965963
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "54783747.57",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "11793369.89"
+      },
+      {
+       "id": "f2",
+       "total": "6678608.66"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "18471978.55",
+     "total": "18471978.55"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "13914147.35"
+      },
+      {
+       "id": "p0b",
+       "total": "2849888.75"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "16764036.10",
+     "total": "16764036.10"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1172855.19"
+      },
+      {
+       "id": "p1b",
+       "total": "18374877.73"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "19547732.92",
+     "total": "19547732.92"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "11793369.89"
+      },
+      {
+       "id": "f2",
+       "total": "6678608.66"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "18471978.55",
+     "total": "18471978.55"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "13914147.35"
+      },
+      {
+       "id": "p0b",
+       "total": "2849888.75"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "16764036.10",
+     "total": "16764036.10"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1172855.19"
+      },
+      {
+       "id": "p1b",
+       "total": "18374877.73"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "19547732.92",
+     "total": "19547732.92"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1456677
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2719050
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "678638.00",
+      "shares": 184318
+     },
+     {
+      "id": "p0b",
+      "invested": "2271964.00",
+      "shares": 617065
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "4185797.00",
+      "shares": 1819935
+     },
+     {
+      "id": "p1b",
+      "invested": "517346.00",
+      "shares": 224936
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "594183.00",
+      "shares": 418538
+     },
+     {
+      "id": "p2b",
+      "invested": "1454726.00",
+      "shares": 1024698
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "7190165.32",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "1237268.75"
+      },
+      {
+       "id": "f2",
+       "total": "2309500.04"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "3546768.79",
+     "total": "3546768.79"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "156555.57"
+      },
+      {
+       "id": "p0b",
+       "total": "524121.16"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "680676.73",
+     "total": "680676.73"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1545811.94"
+      },
+      {
+       "id": "p1b",
+       "total": "191055.59"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "1736867.53",
+     "total": "1736867.53"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "355496.78"
+      },
+      {
+       "id": "p2b",
+       "total": "870355.49"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "1225852.27",
+     "total": "1225852.27"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "0.00"
+      },
+      {
+       "id": "f2",
+       "total": "0.00"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "0.00",
+     "total": "0.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1227534.61"
+      },
+      {
+       "id": "p0b",
+       "total": "4109575.99"
+      }
+     ],
+     "id": "p0",
+     "preference": "5337110.60",
+     "residual": "0.00",
+     "total": "5337110.60"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "0.00"
+      },
+      {
+       "id": "p1b",
+       "total": "0.00"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "0.00",
+     "total": "0.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "537385.32"
+      },
+      {
+       "id": "p2b",
+       "total": "1315669.40"
+      }
+     ],
+     "id": "p2",
+     "preference": "1853054.72",
+     "residual": "0.00",
+     "total": "1853054.72"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2666847
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1514961
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "338542.00",
+      "shares": 412793
+     },
+     {
+      "id": "p0b",
+      "invested": "1015627.00",
+      "shares": 1238381
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "14768752.81",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "6752293.10"
+      },
+      {
+       "id": "f2",
+       "total": "3835788.37"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "10588081.47",
+     "total": "10588081.47"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1045166.57"
+      },
+      {
+       "id": "p0b",
+       "total": "3135504.77"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "4180671.34",
+     "total": "4180671.34"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "6752293.10"
+      },
+      {
+       "id": "f2",
+       "total": "3835788.37"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "10588081.47",
+     "total": "10588081.47"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1045166.57"
+      },
+      {
+       "id": "p0b",
+       "total": "3135504.77"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "4180671.34",
+     "total": "4180671.34"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2097165
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1055973
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1488790.00",
+      "shares": 734689
+     },
+     {
+      "id": "p0b",
+      "invested": "1430407.00",
+      "shares": 705879
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "1066862.00",
+      "shares": 1867397
+     },
+     {
+      "id": "p1b",
+      "invested": "394594.00",
+      "shares": 690682
+     }
+    ],
+    "id": "p1",
+    "multiple": "1.5",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "261172.00",
+      "shares": 278757
+     },
+     {
+      "id": "p2b",
+      "invested": "706134.00",
+      "shares": 753677
+     }
+    ],
+    "id": "p2",
+    "multiple": "1.5",
+    "name": "Series 2",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "51490017.84",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "13194058.38"
+      },
+      {
+       "id": "f2",
+       "total": "6643525.62"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "19837584.00",
+     "total": "19837584.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "4622206.43"
+      },
+      {
+       "id": "p0b",
+       "total": "4440951.83"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "9063158.26",
+     "total": "9063158.26"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "11748500.97"
+      },
+      {
+       "id": "p1b",
+       "total": "4345341.75"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "16093842.72",
+     "total": "16093842.72"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "1753765.74"
+      },
+      {
+       "id": "p2b",
+       "total": "4741667.12"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "6495432.86",
+     "total": "6495432.86"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "12260521.29"
+      },
+      {
+       "id": "f2",
+       "total": "6173467.25"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "18433988.54",
+     "total": "18433988.54"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "4295165.20"
+      },
+      {
+       "id": "p0b",
+       "total": "4126735.14"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "8421900.34",
+     "total": "8421900.34"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "12517536.36"
+      },
+      {
+       "id": "p1b",
+       "total": "4629780.90"
+      }
+     ],
+     "id": "p1",
+     "preference": "2192184.00",
+     "residual": "14955133.26",
+     "total": "17147317.26"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "2021437.18"
+      },
+      {
+       "id": "p2b",
+       "total": "5465374.52"
+      }
+     ],
+     "id": "p2",
+     "preference": "1450959.00",
+     "residual": "6035852.70",
+     "total": "7486811.70"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2673838
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 283542
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "903199.00",
+      "shares": 2529085
+     },
+     {
+      "id": "p0b",
+      "invested": "89328.00",
+      "shares": 250130
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "998624.00",
+      "shares": 2503497
+     },
+     {
+      "id": "p1b",
+      "invested": "136177.00",
+      "shares": 341387
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "8848776.67",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "2757123.26"
+      },
+      {
+       "id": "f2",
+       "total": "292373.82"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "3049497.08",
+     "total": "3049497.08"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2607861.46"
+      },
+      {
+       "id": "p0b",
+       "total": "257921.10"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "2865782.56",
+     "total": "2865782.56"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "2581476.44"
+      },
+      {
+       "id": "p1b",
+       "total": "352020.59"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "2933497.03",
+     "total": "2933497.03"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "2757123.26"
+      },
+      {
+       "id": "f2",
+       "total": "292373.82"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "3049497.08",
+     "total": "3049497.08"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2607861.46"
+      },
+      {
+       "id": "p0b",
+       "total": "257921.10"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "2865782.56",
+     "total": "2865782.56"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "2581476.44"
+      },
+      {
+       "id": "p1b",
+       "total": "352020.59"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "2933497.03",
+     "total": "2933497.03"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1467647
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2137583
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1559512.00",
+      "shares": 442989
+     },
+     {
+      "id": "p0b",
+      "invested": "2244178.00",
+      "shares": 637474
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "14244365.51",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4461602.65"
+      },
+      {
+       "id": "f2",
+       "total": "6498187.90"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "10959790.55",
+     "total": "10959790.55"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1346673.21"
+      },
+      {
+       "id": "p0b",
+       "total": "1937901.75"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "3284574.96",
+     "total": "3284574.96"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "2701839.24"
+      },
+      {
+       "id": "f2",
+       "total": "3935146.27"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "6636985.51",
+     "total": "6636985.51"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "3119024.00"
+      },
+      {
+       "id": "p0b",
+       "total": "4488356.00"
+      }
+     ],
+     "id": "p0",
+     "preference": "7607380.00",
+     "residual": "0.00",
+     "total": "7607380.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 3734393
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1582277
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "352705.00",
+      "shares": 214800
+     },
+     {
+      "id": "p0b",
+      "invested": "4056115.00",
+      "shares": 2470211
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "2009788.00",
+      "shares": 930085
+     },
+     {
+      "id": "p1b",
+      "invested": "1082194.00",
+      "shares": 500816
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "1298019.00",
+      "shares": 321951
+     },
+     {
+      "id": "p2b",
+      "invested": "3028713.00",
+      "shares": 751219
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "42099772.26",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "14964858.76"
+      },
+      {
+       "id": "f2",
+       "total": "6340669.51"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "21305528.27",
+     "total": "21305528.27"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "860769.52"
+      },
+      {
+       "id": "p0b",
+       "total": "9898893.53"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "10759663.05",
+     "total": "10759663.05"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "3727136.02"
+      },
+      {
+       "id": "p1b",
+       "total": "2006923.40"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "5734059.42",
+     "total": "5734059.42"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "1290156.46"
+      },
+      {
+       "id": "p2b",
+       "total": "3010365.06"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "4300521.52",
+     "total": "4300521.52"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "11984887.56"
+      },
+      {
+       "id": "f2",
+       "total": "5078043.99"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "17062931.55",
+     "total": "17062931.55"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1042068.40"
+      },
+      {
+       "id": "p0b",
+       "total": "11983829.38"
+      }
+     ],
+     "id": "p0",
+     "preference": "4408820.00",
+     "residual": "8617077.78",
+     "total": "13025897.78"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "4994734.72"
+      },
+      {
+       "id": "p1b",
+       "total": "2689476.21"
+      }
+     ],
+     "id": "p1",
+     "preference": "3091982.00",
+     "residual": "4592228.93",
+     "total": "7684210.93"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "1298019.00"
+      },
+      {
+       "id": "p2b",
+       "total": "3028713.00"
+      }
+     ],
+     "id": "p2",
+     "preference": "4326732.00",
+     "residual": "0.00",
+     "total": "4326732.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 3971450
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2701594
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "63655.00",
+      "shares": 410275
+     },
+     {
+      "id": "p0b",
+      "invested": "391025.00",
+      "shares": 2520264
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "178979.00",
+      "shares": 1174927
+     },
+     {
+      "id": "p1b",
+      "invested": "9420.00",
+      "shares": 61839
+     }
+    ],
+    "id": "p1",
+    "multiple": "1.5",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "40510601.74",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "14841388.34"
+      },
+      {
+       "id": "f2",
+       "total": "10095910.99"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "24937299.33",
+     "total": "24937299.33"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1533205.91"
+      },
+      {
+       "id": "p0b",
+       "total": "9418277.14"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "10951483.05",
+     "total": "10951483.05"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "4390725.78"
+      },
+      {
+       "id": "p1b",
+       "total": "231093.58"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "4621819.36",
+     "total": "4621819.36"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "14841388.34"
+      },
+      {
+       "id": "f2",
+       "total": "10095910.99"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "24937299.33",
+     "total": "24937299.33"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1533205.91"
+      },
+      {
+       "id": "p0b",
+       "total": "9418277.14"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "10951483.05",
+     "total": "10951483.05"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "4390725.78"
+      },
+      {
+       "id": "p1b",
+       "total": "231093.58"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "4621819.36",
+     "total": "4621819.36"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2587485
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 288111
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "51625.00",
+      "shares": 176359
+     },
+     {
+      "id": "p0b",
+      "invested": "808803.00",
+      "shares": 2762970
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "11518253.48",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "5125312.55"
+      },
+      {
+       "id": "f2",
+       "total": "570692.75"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "5696005.30",
+     "total": "5696005.30"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "349333.43"
+      },
+      {
+       "id": "p0b",
+       "total": "5472914.75"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "5822248.18",
+     "total": "5822248.18"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4551011.63"
+      },
+      {
+       "id": "f2",
+       "total": "506745.55"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "5057757.18",
+     "total": "5057757.18"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "387627.46"
+      },
+      {
+       "id": "p0b",
+       "total": "6072868.84"
+      }
+     ],
+     "id": "p0",
+     "preference": "1290642.00",
+     "residual": "5169854.30",
+     "total": "6460496.30"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2657059
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 635650
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "595034.00",
+      "shares": 116607
+     },
+     {
+      "id": "p0b",
+      "invested": "3371865.00",
+      "shares": 660774
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "237149.00",
+      "shares": 1162581
+     },
+     {
+      "id": "p1b",
+      "invested": "218908.00",
+      "shares": 1073153
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "2234875.00",
+      "shares": 1505885
+     },
+     {
+      "id": "p2b",
+      "invested": "2147233.00",
+      "shares": 1446832
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "13232445.13",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "3797508.42"
+      },
+      {
+       "id": "f2",
+       "total": "908480.48"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "4705988.90",
+     "total": "4705988.90"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "166656.47"
+      },
+      {
+       "id": "p0b",
+       "total": "944388.07"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "1111044.54",
+     "total": "1111044.54"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1661578.14"
+      },
+      {
+       "id": "p1b",
+       "total": "1533766.30"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "3195344.44",
+     "total": "3195344.44"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "2152233.34"
+      },
+      {
+       "id": "p2b",
+       "total": "2067833.91"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "4220067.25",
+     "total": "4220067.25"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "2127870.88"
+      },
+      {
+       "id": "f2",
+       "total": "509051.97"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "2636922.85",
+     "total": "2636922.85"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "595034.00"
+      },
+      {
+       "id": "p0b",
+       "total": "3371865.00"
+      }
+     ],
+     "id": "p0",
+     "preference": "3966899.00",
+     "residual": "0.00",
+     "total": "3966899.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1168186.76"
+      },
+      {
+       "id": "p1b",
+       "total": "1078328.52"
+      }
+     ],
+     "id": "p1",
+     "preference": "456057.00",
+     "residual": "1790458.28",
+     "total": "2246515.28"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "2234875.00"
+      },
+      {
+       "id": "p2b",
+       "total": "2147233.00"
+      }
+     ],
+     "id": "p2",
+     "preference": "4382108.00",
+     "residual": "0.00",
+     "total": "4382108.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2099208
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1149505
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "173826.00",
+      "shares": 2053523
+     },
+     {
+      "id": "p0b",
+      "invested": "64292.00",
+      "shares": 759523
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "59502.00",
+      "shares": 844855
+     },
+     {
+      "id": "p1b",
+      "invested": "115506.00",
+      "shares": 1640015
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "866212.00",
+      "shares": 708181
+     },
+     {
+      "id": "p2b",
+      "invested": "976793.00",
+      "shares": 798589
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "51612886.41",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "10777069.93"
+      },
+      {
+       "id": "f2",
+       "total": "5901414.14"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "16678484.07",
+     "total": "16678484.07"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "10542528.89"
+      },
+      {
+       "id": "p0b",
+       "total": "3899295.58"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "14441824.47",
+     "total": "14441824.47"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "4337379.34"
+      },
+      {
+       "id": "p1b",
+       "total": "8419630.80"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "12757010.14",
+     "total": "12757010.14"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "3635712.21"
+      },
+      {
+       "id": "p2b",
+       "total": "4099855.52"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "7735567.73",
+     "total": "7735567.73"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "10702489.30"
+      },
+      {
+       "id": "f2",
+       "total": "5860574.54"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "16563063.84",
+     "total": "16563063.84"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "10730310.35"
+      },
+      {
+       "id": "p0b",
+       "total": "3968749.26"
+      }
+     ],
+     "id": "p0",
+     "preference": "357177.00",
+     "residual": "14341882.61",
+     "total": "14699059.61"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "4307363.35"
+      },
+      {
+       "id": "p1b",
+       "total": "8361364.38"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "12668727.73",
+     "total": "12668727.73"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "3610551.97"
+      },
+      {
+       "id": "p2b",
+       "total": "4071483.26"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "7682035.23",
+     "total": "7682035.23"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1733500
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1177638
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "21275.00",
+      "shares": 10038
+     },
+     {
+      "id": "p0b",
+      "invested": "2106280.00",
+      "shares": 993840
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "362893.00",
+      "shares": 354313
+     },
+     {
+      "id": "p1b",
+      "invested": "1905193.00",
+      "shares": 1860149
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "2963107.00",
+      "shares": 1641902
+     },
+     {
+      "id": "p2b",
+      "invested": "885085.00",
+      "shares": 490439
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "45011862.44",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "9444416.96"
+      },
+      {
+       "id": "f2",
+       "total": "6415981.72"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "15860398.68",
+     "total": "15860398.68"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "54688.81"
+      },
+      {
+       "id": "p0b",
+       "total": "5414617.46"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "5469306.27",
+     "total": "5469306.27"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1930360.37"
+      },
+      {
+       "id": "p1b",
+       "total": "10134423.30"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "12064783.67",
+     "total": "12064783.67"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "8945374.74"
+      },
+      {
+       "id": "p2b",
+       "total": "2671999.08"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "11617373.82",
+     "total": "11617373.82"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "8968525.75"
+      },
+      {
+       "id": "f2",
+       "total": "6092689.20"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "15061214.95",
+     "total": "15061214.95"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "51933.12"
+      },
+      {
+       "id": "p0b",
+       "total": "5141782.31"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "5193715.43",
+     "total": "5193715.43"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "2195985.16"
+      },
+      {
+       "id": "p1b",
+       "total": "11528956.61"
+      }
+     ],
+     "id": "p1",
+     "preference": "2268086.00",
+     "residual": "11456855.77",
+     "total": "13724941.77"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "8494629.57"
+      },
+      {
+       "id": "p2b",
+       "total": "2537360.72"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "11031990.29",
+     "total": "11031990.29"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1887134
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 497198
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "3794635.00",
+      "shares": 1696875
+     },
+     {
+      "id": "p0b",
+      "invested": "1133463.00",
+      "shares": 506859
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "34627750.69",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "14242865.22"
+      },
+      {
+       "id": "f2",
+       "total": "3752528.49"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "17995393.71",
+     "total": "17995393.71"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "12806913.52"
+      },
+      {
+       "id": "p0b",
+       "total": "3825443.46"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "16632356.98",
+     "total": "16632356.98"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "11202374.54"
+      },
+      {
+       "id": "f2",
+       "total": "2951458.78"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "14153833.32",
+     "total": "14153833.32"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "15764914.62"
+      },
+      {
+       "id": "p0b",
+       "total": "4709002.75"
+      }
+     ],
+     "id": "p0",
+     "preference": "7392147.00",
+     "residual": "13081770.37",
+     "total": "20473917.37"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 4538546
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2100147
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1062042.00",
+      "shares": 140815
+     },
+     {
+      "id": "p0b",
+      "invested": "2600174.00",
+      "shares": 344755
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "8816680.03",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "5616708.41"
+      },
+      {
+       "id": "f2",
+       "total": "2599051.17"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "8215759.58",
+     "total": "8215759.58"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "174266.56"
+      },
+      {
+       "id": "p0b",
+       "total": "426653.89"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "600920.45",
+     "total": "600920.45"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "2272014.12"
+      },
+      {
+       "id": "f2",
+       "total": "1051341.91"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "3323356.03",
+     "total": "3323356.03"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1593063.00"
+      },
+      {
+       "id": "p0b",
+       "total": "3900261.00"
+      }
+     ],
+     "id": "p0",
+     "preference": "5493324.00",
+     "residual": "0.00",
+     "total": "5493324.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2970889
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1837732
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "111785.00",
+      "shares": 254405
+     },
+     {
+      "id": "p0b",
+      "invested": "4658.00",
+      "shares": 10601
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "14741942.08",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "8632221.80"
+      },
+      {
+       "id": "f2",
+       "total": "5339718.25"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "13971940.05",
+     "total": "13971940.05"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "739199.74"
+      },
+      {
+       "id": "p0b",
+       "total": "30802.29"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "770002.03",
+     "total": "770002.03"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "8632221.80"
+      },
+      {
+       "id": "f2",
+       "total": "5339718.25"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "13971940.05",
+     "total": "13971940.05"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "739199.74"
+      },
+      {
+       "id": "p0b",
+       "total": "30802.29"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "770002.03",
+     "total": "770002.03"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 4539986
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 509814
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "81312.00",
+      "shares": 34203
+     },
+     {
+      "id": "p0b",
+      "invested": "2629121.00",
+      "shares": 1105926
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "178239.00",
+      "shares": 149582
+     },
+     {
+      "id": "p1b",
+      "invested": "1604159.00",
+      "shares": 1346238
+     }
+    ],
+    "id": "p1",
+    "multiple": "2",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "13464523.19",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "7953518.49"
+      },
+      {
+       "id": "f2",
+       "total": "893133.83"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "8846652.32",
+     "total": "8846652.32"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "59919.61"
+      },
+      {
+       "id": "p0b",
+       "total": "1937451.54"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "1997371.15",
+     "total": "1997371.15"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "262049.97"
+      },
+      {
+       "id": "p1b",
+       "total": "2358449.75"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "2620499.72",
+     "total": "2620499.72"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "5245085.16"
+      },
+      {
+       "id": "f2",
+       "total": "588992.53"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "5834077.69",
+     "total": "5834077.69"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "121968.00"
+      },
+      {
+       "id": "p0b",
+       "total": "3943681.50"
+      }
+     ],
+     "id": "p0",
+     "preference": "4065649.50",
+     "residual": "0.00",
+     "total": "4065649.50"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "356478.00"
+      },
+      {
+       "id": "p1b",
+       "total": "3208318.00"
+      }
+     ],
+     "id": "p1",
+     "preference": "3564796.00",
+     "residual": "0.00",
+     "total": "3564796.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 3205452
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 687340
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2204656.00",
+      "shares": 1087958
+     },
+     {
+      "id": "p0b",
+      "invested": "300635.00",
+      "shares": 148358
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "18032793.81",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "11269650.59"
+      },
+      {
+       "id": "f2",
+       "total": "2416533.34"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "13686183.93",
+     "total": "13686183.93"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "3825016.41"
+      },
+      {
+       "id": "p0b",
+       "total": "521593.47"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "4346609.88",
+     "total": "4346609.88"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "10722914.27"
+      },
+      {
+       "id": "f2",
+       "total": "2299297.54"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "13022211.81",
+     "total": "13022211.81"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "4409312.00"
+      },
+      {
+       "id": "p0b",
+       "total": "601270.00"
+      }
+     ],
+     "id": "p0",
+     "preference": "5010582.00",
+     "residual": "0.00",
+     "total": "5010582.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2715811
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1462289
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2006650.00",
+      "shares": 1986806
+     },
+     {
+      "id": "p0b",
+      "invested": "944307.00",
+      "shares": 934968
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "32704803.94",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "12510090.50"
+      },
+      {
+       "id": "f2",
+       "total": "6735876.59"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "19245967.09",
+     "total": "19245967.09"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "9152007.58"
+      },
+      {
+       "id": "p0b",
+       "total": "4306829.27"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "13458836.85",
+     "total": "13458836.85"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "11381304.06"
+      },
+      {
+       "id": "f2",
+       "total": "6128097.92"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "17509401.98",
+     "total": "17509401.98"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "10332871.23"
+      },
+      {
+       "id": "p0b",
+       "total": "4862530.73"
+      }
+     ],
+     "id": "p0",
+     "preference": "2950957.00",
+     "residual": "12244444.96",
+     "total": "15195401.96"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 222030
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 689697
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "127511.00",
+      "shares": 43626
+     },
+     {
+      "id": "p0b",
+      "invested": "3060286.00",
+      "shares": 1047028
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "1882981.00",
+      "shares": 2114957
+     },
+     {
+      "id": "p1b",
+      "invested": "141730.00",
+      "shares": 159191
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "1914878.00",
+      "shares": 810287
+     },
+     {
+      "id": "p2b",
+      "invested": "1698101.00",
+      "shares": 718557
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "20364783.82",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "778863.47"
+      },
+      {
+       "id": "f2",
+       "total": "2419401.87"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "3198265.34",
+     "total": "3198265.34"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "153036.52"
+      },
+      {
+       "id": "p0b",
+       "total": "3672890.42"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "3825926.94",
+     "total": "3825926.94"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "7419099.87"
+      },
+      {
+       "id": "p1b",
+       "total": "558429.29"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "7977529.16",
+     "total": "7977529.16"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "2842421.94"
+      },
+      {
+       "id": "p2b",
+       "total": "2520640.44"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "5363062.38",
+     "total": "5363062.38"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "595984.63"
+      },
+      {
+       "id": "f2",
+       "total": "1851321.06"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "2447305.69",
+     "total": "2447305.69"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "308369.71"
+      },
+      {
+       "id": "p0b",
+       "total": "7400916.77"
+      }
+     ],
+     "id": "p0",
+     "preference": "4781695.50",
+     "residual": "2927590.98",
+     "total": "7709286.48"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "5677079.09"
+      },
+      {
+       "id": "p1b",
+       "total": "427308.88"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "6104387.97",
+     "total": "6104387.97"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "2175015.09"
+      },
+      {
+       "id": "p2b",
+       "total": "1928788.59"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "4103803.68",
+     "total": "4103803.68"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 3000846
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2044458
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1139529.00",
+      "shares": 801352
+     },
+     {
+      "id": "p0b",
+      "invested": "1285001.00",
+      "shares": 903653
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "59625.00",
+      "shares": 192572
+     },
+     {
+      "id": "p1b",
+      "invested": "685692.00",
+      "shares": 2214578
+     }
+    ],
+    "id": "p1",
+    "multiple": "1.5",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "46849415.94",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "15352280.85"
+      },
+      {
+       "id": "f2",
+       "total": "10459414.91"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "25811695.76",
+     "total": "25811695.76"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "4099704.20"
+      },
+      {
+       "id": "p0b",
+       "total": "4623074.51"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "8722778.71",
+     "total": "8722778.71"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "985195.32"
+      },
+      {
+       "id": "p1b",
+       "total": "11329746.15"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "12314941.47",
+     "total": "12314941.47"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "14985926.79"
+      },
+      {
+       "id": "f2",
+       "total": "10209820.13"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "25195746.92",
+     "total": "25195746.92"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "4001872.27"
+      },
+      {
+       "id": "p0b",
+       "total": "4512753.30"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "8514625.57",
+     "total": "8514625.57"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1051122.94"
+      },
+      {
+       "id": "p1b",
+       "total": "12087920.51"
+      }
+     ],
+     "id": "p1",
+     "preference": "1117975.50",
+     "residual": "12021067.95",
+     "total": "13139043.45"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 4265912
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1140563
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2637127.00",
+      "shares": 289999
+     },
+     {
+      "id": "p0b",
+      "invested": "198494.00",
+      "shares": 21828
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "16377722.81",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "12217949.36"
+      },
+      {
+       "id": "f2",
+       "total": "3266673.34"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "15484622.70",
+     "total": "15484622.70"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "830582.79"
+      },
+      {
+       "id": "p0b",
+       "total": "62517.32"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "893100.11",
+     "total": "893100.11"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "10685227.36"
+      },
+      {
+       "id": "f2",
+       "total": "2856874.45"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "13542101.81",
+     "total": "13542101.81"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2637127.00"
+      },
+      {
+       "id": "p0b",
+       "total": "198494.00"
+      }
+     ],
+     "id": "p0",
+     "preference": "2835621.00",
+     "residual": "0.00",
+     "total": "2835621.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 167232
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1944538
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1448297.00",
+      "shares": 870140
+     },
+     {
+      "id": "p0b",
+      "invested": "814668.00",
+      "shares": 489454
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "1458642.00",
+      "shares": 955239
+     },
+     {
+      "id": "p1b",
+      "invested": "3099615.00",
+      "shares": 2029884
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "4348612.05",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "112635.10"
+      },
+      {
+       "id": "f2",
+       "total": "1309696.96"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "1422332.06",
+     "total": "1422332.06"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "586061.94"
+      },
+      {
+       "id": "p0b",
+       "total": "329660.01"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "915721.95",
+     "total": "915721.95"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "643378.33"
+      },
+      {
+       "id": "p1b",
+       "total": "1367179.71"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "2010558.04",
+     "total": "2010558.04"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "0.00"
+      },
+      {
+       "id": "f2",
+       "total": "0.00"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "0.00",
+     "total": "0.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2172445.50"
+      },
+      {
+       "id": "p0b",
+       "total": "1222002.00"
+      }
+     ],
+     "id": "p0",
+     "preference": "3394447.50",
+     "residual": "0.00",
+     "total": "3394447.50"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "305332.61"
+      },
+      {
+       "id": "p1b",
+       "total": "648831.94"
+      }
+     ],
+     "id": "p1",
+     "preference": "954164.55",
+     "residual": "0.00",
+     "total": "954164.55"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1396223
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2693523
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "597022.00",
+      "shares": 655957
+     },
+     {
+      "id": "p0b",
+      "invested": "1268672.00",
+      "shares": 1393911
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "337594.00",
+      "shares": 445044
+     },
+     {
+      "id": "p1b",
+      "invested": "868100.00",
+      "shares": 1144399
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "605633.00",
+      "shares": 1504119
+     },
+     {
+      "id": "p2b",
+      "invested": "515910.00",
+      "shares": 1281287
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "21718010.63",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "2883950.04"
+      },
+      {
+       "id": "f2",
+       "total": "5563570.97"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "8447521.01",
+     "total": "8447521.01"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1354903.35"
+      },
+      {
+       "id": "p0b",
+       "total": "2879174.51"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "4234077.86",
+     "total": "4234077.86"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "919254.77"
+      },
+      {
+       "id": "p1b",
+       "total": "2363798.29"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "3283053.06",
+     "total": "3283053.06"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "3106813.20"
+      },
+      {
+       "id": "p2b",
+       "total": "2646545.50"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "5753358.70",
+     "total": "5753358.70"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "2883950.04"
+      },
+      {
+       "id": "f2",
+       "total": "5563570.97"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "8447521.01",
+     "total": "8447521.01"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1354903.35"
+      },
+      {
+       "id": "p0b",
+       "total": "2879174.51"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "4234077.86",
+     "total": "4234077.86"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "919254.77"
+      },
+      {
+       "id": "p1b",
+       "total": "2363798.29"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "3283053.06",
+     "total": "3283053.06"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "3106813.20"
+      },
+      {
+       "id": "p2b",
+       "total": "2646545.50"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "5753358.70",
+     "total": "5753358.70"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 494024
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 217146
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1946861.00",
+      "shares": 598199
+     },
+     {
+      "id": "p0b",
+      "invested": "2688523.00",
+      "shares": 826085
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "561054.00",
+      "shares": 191662
+     },
+     {
+      "id": "p1b",
+      "invested": "1596846.00",
+      "shares": 545503
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "2238166.00",
+      "shares": 1749134
+     },
+     {
+      "id": "p2b",
+      "invested": "1102381.00",
+      "shares": 861515
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "47447149.84",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4274828.58"
+      },
+      {
+       "id": "f2",
+       "total": "1878981.44"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "6153810.02",
+     "total": "6153810.02"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "5176263.06"
+      },
+      {
+       "id": "p0b",
+       "total": "7148178.56"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "12324441.62",
+     "total": "12324441.62"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1658466.38"
+      },
+      {
+       "id": "p1b",
+       "total": "4720280.42"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "6378746.80",
+     "total": "6378746.80"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "15135394.26"
+      },
+      {
+       "id": "p2b",
+       "total": "7454757.14"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "22590151.40",
+     "total": "22590151.40"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "3973856.53"
+      },
+      {
+       "id": "f2",
+       "total": "1746690.55"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "5720547.08",
+     "total": "5720547.08"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "4811824.94"
+      },
+      {
+       "id": "p0b",
+       "total": "6644906.47"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "11456731.41",
+     "total": "11456731.41"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1541700.99"
+      },
+      {
+       "id": "p1b",
+       "total": "4387946.05"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "5929647.04",
+     "total": "5929647.04"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "16307943.12"
+      },
+      {
+       "id": "p2b",
+       "total": "8032281.19"
+      }
+     ],
+     "id": "p2",
+     "preference": "3340547.00",
+     "residual": "20999677.31",
+     "total": "24340224.31"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1393247
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1505927
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2835785.00",
+      "shares": 845575
+     },
+     {
+      "id": "p0b",
+      "invested": "181008.00",
+      "shares": 53973
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "183734.00",
+      "shares": 95599
+     },
+     {
+      "id": "p1b",
+      "invested": "4409637.00",
+      "shares": 2294399
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "1819364.00",
+      "shares": 244125
+     },
+     {
+      "id": "p2b",
+      "invested": "779728.00",
+      "shares": 104626
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "18788041.72",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4004053.37"
+      },
+      {
+       "id": "f2",
+       "total": "4327884.48"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "8331937.85",
+     "total": "8331937.85"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2430098.48"
+      },
+      {
+       "id": "p0b",
+       "total": "155113.04"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "2585211.52",
+     "total": "2585211.52"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "274742.02"
+      },
+      {
+       "id": "p1b",
+       "total": "6593874.63"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "6868616.65",
+     "total": "6868616.65"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "701590.98"
+      },
+      {
+       "id": "p2b",
+       "total": "300684.72"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "1002275.70",
+     "total": "1002275.70"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "3072408.86"
+      },
+      {
+       "id": "f2",
+       "total": "3320892.47"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "6393301.33",
+     "total": "6393301.33"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "4253677.50"
+      },
+      {
+       "id": "p0b",
+       "total": "271512.00"
+      }
+     ],
+     "id": "p0",
+     "preference": "4525189.50",
+     "residual": "0.00",
+     "total": "4525189.50"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "210816.33"
+      },
+      {
+       "id": "p1b",
+       "total": "5059642.56"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "5270458.89",
+     "total": "5270458.89"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "1819364.00"
+      },
+      {
+       "id": "p2b",
+       "total": "779728.00"
+      }
+     ],
+     "id": "p2",
+     "preference": "2599092.00",
+     "residual": "0.00",
+     "total": "2599092.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2718617
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2046007
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2201240.00",
+      "shares": 291313
+     },
+     {
+      "id": "p0b",
+      "invested": "988964.00",
+      "shares": 130880
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "273929.00",
+      "shares": 1351422
+     },
+     {
+      "id": "p1b",
+      "invested": "106529.00",
+      "shares": 525554
+     }
+    ],
+    "id": "p1",
+    "multiple": "1.5",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "2160552.88",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "831524.33"
+      },
+      {
+       "id": "f2",
+       "total": "625797.83"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "1457322.16",
+     "total": "1457322.16"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "89101.87"
+      },
+      {
+       "id": "p0b",
+       "total": "40031.35"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "129133.22",
+     "total": "129133.22"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "413349.98"
+      },
+      {
+       "id": "p1b",
+       "total": "160747.52"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "574097.50",
+     "total": "574097.50"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "0.00"
+      },
+      {
+       "id": "f2",
+       "total": "0.00"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "0.00",
+     "total": "0.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1490780.97"
+      },
+      {
+       "id": "p0b",
+       "total": "669771.91"
+      }
+     ],
+     "id": "p0",
+     "preference": "2160552.88",
+     "residual": "0.00",
+     "total": "2160552.88"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "0.00"
+      },
+      {
+       "id": "p1b",
+       "total": "0.00"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "0.00",
+     "total": "0.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2958306
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2973835
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1938982.00",
+      "shares": 1387679
+     },
+     {
+      "id": "p0b",
+      "invested": "425631.00",
+      "shares": 304613
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "2445580.00",
+      "shares": 460226
+     },
+     {
+      "id": "p1b",
+      "invested": "2545400.00",
+      "shares": 479011
+     }
+    ],
+    "id": "p1",
+    "multiple": "2",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "37289554.97",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "12881616.67"
+      },
+      {
+       "id": "f2",
+       "total": "12949235.98"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "25830852.65",
+     "total": "25830852.65"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "6042494.90"
+      },
+      {
+       "id": "p0b",
+       "total": "1326403.66"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "7368898.56",
+     "total": "7368898.56"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "2004003.28"
+      },
+      {
+       "id": "p1b",
+       "total": "2085800.48"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "4089803.76",
+     "total": "4089803.76"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "8760484.14"
+      },
+      {
+       "id": "f2",
+       "total": "8806470.45"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "17566954.59",
+     "total": "17566954.59"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "7987322.49"
+      },
+      {
+       "id": "p0b",
+       "total": "1753317.89"
+      }
+     ],
+     "id": "p0",
+     "preference": "4729226.00",
+     "residual": "5011414.38",
+     "total": "9740640.38"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "4891160.00"
+      },
+      {
+       "id": "p1b",
+       "total": "5090800.00"
+      }
+     ],
+     "id": "p1",
+     "preference": "9981960.00",
+     "residual": "0.00",
+     "total": "9981960.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1218107
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1430406
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "739441.00",
+      "shares": 232637
+     },
+     {
+      "id": "p0b",
+      "invested": "4190166.00",
+      "shares": 1318277
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "1862228.00",
+      "shares": 463482
+     },
+     {
+      "id": "p1b",
+      "invested": "3038373.00",
+      "shares": 756208
+     }
+    ],
+    "id": "p1",
+    "multiple": "1.5",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "2345464.00",
+      "shares": 1399767
+     },
+     {
+      "id": "p2b",
+      "invested": "740673.00",
+      "shares": 442032
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "466602.09",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "78278.18"
+      },
+      {
+       "id": "f2",
+       "total": "91920.97"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "170199.15",
+     "total": "170199.15"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "14949.75"
+      },
+      {
+       "id": "p0b",
+       "total": "84715.32"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "99665.07",
+     "total": "99665.07"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "29784.35"
+      },
+      {
+       "id": "p1b",
+       "total": "48595.55"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "78379.90",
+     "total": "78379.90"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "89952.04"
+      },
+      {
+       "id": "p2b",
+       "total": "28405.93"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "118357.97",
+     "total": "118357.97"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "0.00"
+      },
+      {
+       "id": "f2",
+       "total": "0.00"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "0.00",
+     "total": "0.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "40095.57"
+      },
+      {
+       "id": "p0b",
+       "total": "227208.26"
+      }
+     ],
+     "id": "p0",
+     "preference": "267303.83",
+     "residual": "0.00",
+     "total": "267303.83"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "75733.32"
+      },
+      {
+       "id": "p1b",
+       "total": "123564.94"
+      }
+     ],
+     "id": "p1",
+     "preference": "199298.26",
+     "residual": "0.00",
+     "total": "199298.26"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "0.00"
+      },
+      {
+       "id": "p2b",
+       "total": "0.00"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "0.00",
+     "total": "0.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1269229
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1527953
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "762769.00",
+      "shares": 1546223
+     },
+     {
+      "id": "p0b",
+      "invested": "552350.00",
+      "shares": 1119680
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "42134214.59",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "9788968.51"
+      },
+      {
+       "id": "f2",
+       "total": "11784385.49"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "21573354.00",
+     "total": "21573354.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "11925293.43"
+      },
+      {
+       "id": "p0b",
+       "total": "8635567.16"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "20560860.59",
+     "total": "20560860.59"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "9330659.56"
+      },
+      {
+       "id": "f2",
+       "total": "11232653.26"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "20563312.82",
+     "total": "20563312.82"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "12511117.56"
+      },
+      {
+       "id": "p0b",
+       "total": "9059784.21"
+      }
+     ],
+     "id": "p0",
+     "preference": "1972678.50",
+     "residual": "19598223.27",
+     "total": "21570901.77"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 4328045
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 703206
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "264271.00",
+      "shares": 266429
+     },
+     {
+      "id": "p0b",
+      "invested": "2138196.00",
+      "shares": 2155653
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "918021.00",
+      "shares": 591852
+     },
+     {
+      "id": "p1b",
+      "invested": "1035217.00",
+      "shares": 667409
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "28406901.25",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "14111336.64"
+      },
+      {
+       "id": "f2",
+       "total": "2292761.88"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "16404098.52",
+     "total": "16404098.52"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "868676.11"
+      },
+      {
+       "id": "p0b",
+       "total": "7028380.06"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "7897056.17",
+     "total": "7897056.17"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1929698.70"
+      },
+      {
+       "id": "p1b",
+       "total": "2176047.86"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "4105746.56",
+     "total": "4105746.56"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "14111336.64"
+      },
+      {
+       "id": "f2",
+       "total": "2292761.88"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "16404098.52",
+     "total": "16404098.52"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "868676.11"
+      },
+      {
+       "id": "p0b",
+       "total": "7028380.06"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "7897056.17",
+     "total": "7897056.17"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1929698.70"
+      },
+      {
+       "id": "p1b",
+       "total": "2176047.86"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "4105746.56",
+     "total": "4105746.56"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2812322
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2607933
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "331513.00",
+      "shares": 448889
+     },
+     {
+      "id": "p0b",
+      "invested": "643526.00",
+      "shares": 871373
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "31148626.91",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "12996031.12"
+      },
+      {
+       "id": "f2",
+       "total": "12051528.40"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "25047559.52",
+     "total": "25047559.52"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2074362.54"
+      },
+      {
+       "id": "p0b",
+       "total": "4026704.85"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "6101067.39",
+     "total": "6101067.39"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "12996031.12"
+      },
+      {
+       "id": "f2",
+       "total": "12051528.40"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "25047559.52",
+     "total": "25047559.52"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2074362.54"
+      },
+      {
+       "id": "p0b",
+       "total": "4026704.85"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "6101067.39",
+     "total": "6101067.39"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 114895
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 200212
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "389741.00",
+      "shares": 224473
+     },
+     {
+      "id": "p0b",
+      "invested": "867490.00",
+      "shares": 499635
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "11841.00",
+      "shares": 114162
+     },
+     {
+      "id": "p1b",
+      "invested": "284193.00",
+      "shares": 2739899
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "19183864.25",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "566137.64"
+      },
+      {
+       "id": "f2",
+       "total": "986531.61"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "1552669.25",
+     "total": "1552669.25"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1106076.11"
+      },
+      {
+       "id": "p0b",
+       "total": "2461918.96"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "3567995.07",
+     "total": "3567995.07"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "562525.83"
+      },
+      {
+       "id": "p1b",
+       "total": "13500674.10"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "14063199.93",
+     "total": "14063199.93"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "566137.64"
+      },
+      {
+       "id": "f2",
+       "total": "986531.61"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "1552669.25",
+     "total": "1552669.25"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1106076.11"
+      },
+      {
+       "id": "p0b",
+       "total": "2461918.96"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "3567995.07",
+     "total": "3567995.07"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "562525.83"
+      },
+      {
+       "id": "p1b",
+       "total": "13500674.10"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "14063199.93",
+     "total": "14063199.93"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 128823
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 7356
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "750031.00",
+      "shares": 420599
+     },
+     {
+      "id": "p0b",
+      "invested": "3937666.00",
+      "shares": 2208149
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "1596975.00",
+      "shares": 214292
+     },
+     {
+      "id": "p1b",
+      "invested": "532325.00",
+      "shares": 71431
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "18823079.85",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "794861.96"
+      },
+      {
+       "id": "f2",
+       "total": "45387.89"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "840249.85",
+     "total": "840249.85"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2595174.33"
+      },
+      {
+       "id": "p0b",
+       "total": "13624691.44"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "16219865.77",
+     "total": "16219865.77"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1322221.63"
+      },
+      {
+       "id": "p1b",
+       "total": "440742.60"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "1762964.23",
+     "total": "1762964.23"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "704945.77"
+      },
+      {
+       "id": "f2",
+       "total": "40253.53"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "745199.30",
+     "total": "745199.30"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2301603.63"
+      },
+      {
+       "id": "p0b",
+       "total": "12083442.31"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "14385045.94",
+     "total": "14385045.94"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "2769624.59"
+      },
+      {
+       "id": "p1b",
+       "total": "923210.02"
+      }
+     ],
+     "id": "p1",
+     "preference": "2129300.00",
+     "residual": "1563534.61",
+     "total": "3692834.61"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 585408
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1516078
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2035256.00",
+      "shares": 1132346
+     },
+     {
+      "id": "p0b",
+      "invested": "1247416.00",
+      "shares": 694019
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "11067086.80",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "1649441.68"
+      },
+      {
+       "id": "f2",
+       "total": "4271691.27"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "5921132.95",
+     "total": "5921132.95"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "3190490.54"
+      },
+      {
+       "id": "p0b",
+       "total": "1955463.31"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "5145953.85",
+     "total": "5145953.85"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "1160191.34"
+      },
+      {
+       "id": "f2",
+       "total": "3004640.45"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "4164831.79",
+     "total": "4164831.79"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "4279396.87"
+      },
+      {
+       "id": "p0b",
+       "total": "2622858.14"
+      }
+     ],
+     "id": "p0",
+     "preference": "3282672.00",
+     "residual": "3619583.01",
+     "total": "6902255.01"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 3909790
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 872448
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "956905.00",
+      "shares": 471545
+     },
+     {
+      "id": "p0b",
+      "invested": "956906.00",
+      "shares": 471545
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "3487270.00",
+      "shares": 1186422
+     },
+     {
+      "id": "p1b",
+      "invested": "1041653.00",
+      "shares": 354386
+     }
+    ],
+    "id": "p1",
+    "multiple": "1.5",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "2964069.00",
+      "shares": 1639594
+     },
+     {
+      "id": "p2b",
+      "invested": "482523.00",
+      "shares": 266911
+     }
+    ],
+    "id": "p2",
+    "multiple": "2",
+    "name": "Series 2",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "43948468.32",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "18732803.55"
+      },
+      {
+       "id": "f2",
+       "total": "4180121.44"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "22912924.99",
+     "total": "22912924.99"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2259292.66"
+      },
+      {
+       "id": "p0b",
+       "total": "2259292.66"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "4518585.32",
+     "total": "4518585.32"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "5684451.15"
+      },
+      {
+       "id": "p1b",
+       "total": "1697953.94"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "7382405.09",
+     "total": "7382405.09"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "7855714.07"
+      },
+      {
+       "id": "p2b",
+       "total": "1278838.85"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "9134552.92",
+     "total": "9134552.92"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "14032510.23"
+      },
+      {
+       "id": "f2",
+       "total": "3131276.99"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "17163787.22",
+     "total": "17163787.22"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "3127765.54"
+      },
+      {
+       "id": "p0b",
+       "total": "3127767.04"
+      }
+     ],
+     "id": "p0",
+     "preference": "2870716.50",
+     "residual": "3384816.08",
+     "total": "6255532.58"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "5230905.00"
+      },
+      {
+       "id": "p1b",
+       "total": "1562479.50"
+      }
+     ],
+     "id": "p1",
+     "preference": "6793384.50",
+     "residual": "0.00",
+     "total": "6793384.50"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "11812755.74"
+      },
+      {
+       "id": "p2b",
+       "total": "1923008.28"
+      }
+     ],
+     "id": "p2",
+     "preference": "6893184.00",
+     "residual": "6842580.02",
+     "total": "13735764.02"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 3281236
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 647965
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "236637.00",
+      "shares": 183461
+     },
+     {
+      "id": "p0b",
+      "invested": "1078018.00",
+      "shares": 835767
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "3397194.00",
+      "shares": 687616
+     },
+     {
+      "id": "p1b",
+      "invested": "796873.00",
+      "shares": 161293
+     }
+    ],
+    "id": "p1",
+    "multiple": "2",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "54492365.20",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "30842140.03"
+      },
+      {
+       "id": "f2",
+       "total": "6090579.06"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "36932719.09",
+     "total": "36932719.09"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1724450.74"
+      },
+      {
+       "id": "p0b",
+       "total": "7855833.25"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "9580283.99",
+     "total": "9580283.99"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "6463280.59"
+      },
+      {
+       "id": "p1b",
+       "total": "1516081.53"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "7979362.12",
+     "total": "7979362.12"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "30571088.95"
+      },
+      {
+       "id": "f2",
+       "total": "6037053.01"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "36608141.96",
+     "total": "36608141.96"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1709295.69"
+      },
+      {
+       "id": "p0b",
+       "total": "7786793.55"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "9496089.24",
+     "total": "9496089.24"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "6794388.00"
+      },
+      {
+       "id": "p1b",
+       "total": "1593746.00"
+      }
+     ],
+     "id": "p1",
+     "preference": "8388134.00",
+     "residual": "0.00",
+     "total": "8388134.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 843023
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2363881
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2356819.00",
+      "shares": 1463986
+     },
+     {
+      "id": "p0b",
+      "invested": "204941.00",
+      "shares": 127304
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "26437424.29",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4644946.98"
+      },
+      {
+       "id": "f2",
+       "total": "13024676.57"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "17669623.55",
+     "total": "17669623.55"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "8066372.27"
+      },
+      {
+       "id": "p0b",
+       "total": "701428.47"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "8767800.74",
+     "total": "8767800.74"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4194856.26"
+      },
+      {
+       "id": "f2",
+       "total": "11762598.42"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "15957454.68",
+     "total": "15957454.68"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "9641567.86"
+      },
+      {
+       "id": "p0b",
+       "total": "838401.75"
+      }
+     ],
+     "id": "p0",
+     "preference": "2561760.00",
+     "residual": "7918209.61",
+     "total": "10479969.61"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 607696
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 965048
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1769580.00",
+      "shares": 2061558
+     },
+     {
+      "id": "p0b",
+      "invested": "17875.00",
+      "shares": 20824
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "28098328.43",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4671587.73"
+      },
+      {
+       "id": "f2",
+       "total": "7418686.98"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "12090274.71",
+     "total": "12090274.71"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "15847971.80"
+      },
+      {
+       "id": "p0b",
+       "total": "160081.92"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "16008053.72",
+     "total": "16008053.72"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4671587.73"
+      },
+      {
+       "id": "f2",
+       "total": "7418686.98"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "12090274.71",
+     "total": "12090274.71"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "15847971.80"
+      },
+      {
+       "id": "p0b",
+       "total": "160081.92"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "16008053.72",
+     "total": "16008053.72"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 366611
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1456086
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2108052.00",
+      "shares": 1375408
+     },
+     {
+      "id": "p0b",
+      "invested": "702685.00",
+      "shares": 458470
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "22537168.41",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "2259593.70"
+      },
+      {
+       "id": "f2",
+       "total": "8974533.66"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "11234127.36",
+     "total": "11234127.36"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "8477277.71"
+      },
+      {
+       "id": "p0b",
+       "total": "2825763.34"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "11303041.05",
+     "total": "11303041.05"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "1836883.75"
+      },
+      {
+       "id": "f2",
+       "total": "7295636.82"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "9132520.57",
+     "total": "9132520.57"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "10053482.25"
+      },
+      {
+       "id": "p0b",
+       "total": "3351165.59"
+      }
+     ],
+     "id": "p0",
+     "preference": "4216105.50",
+     "residual": "9188542.34",
+     "total": "13404647.84"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 3090593
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 422610
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1936506.00",
+      "shares": 1742081
+     },
+     {
+      "id": "p0b",
+      "invested": "953802.00",
+      "shares": 858041
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "40132140.19",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "20288813.62"
+      },
+      {
+       "id": "f2",
+       "total": "2774307.56"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "23063121.18",
+     "total": "23063121.18"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "11436237.88"
+      },
+      {
+       "id": "p0b",
+       "total": "5632781.13"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "17069019.01",
+     "total": "17069019.01"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "20288813.62"
+      },
+      {
+       "id": "f2",
+       "total": "2774307.56"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "23063121.18",
+     "total": "23063121.18"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "11436237.88"
+      },
+      {
+       "id": "p0b",
+       "total": "5632781.13"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "17069019.01",
+     "total": "17069019.01"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 3553977
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2378783
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2212300.00",
+      "shares": 493593
+     },
+     {
+      "id": "p0b",
+      "invested": "1738237.00",
+      "shares": 387824
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "720501.00",
+      "shares": 164143
+     },
+     {
+      "id": "p1b",
+      "invested": "3071613.00",
+      "shares": 699770
+     }
+    ],
+    "id": "p1",
+    "multiple": "2",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "751039.00",
+      "shares": 499294
+     },
+     {
+      "id": "p2b",
+      "invested": "1335182.00",
+      "shares": 887635
+     }
+    ],
+    "id": "p2",
+    "multiple": "1.5",
+    "name": "Series 2",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "3375784.24",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "1323489.73"
+      },
+      {
+       "id": "f2",
+       "total": "885851.22"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "2209340.95",
+     "total": "2209340.95"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "183812.46"
+      },
+      {
+       "id": "p0b",
+       "total": "144424.43"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "328236.89",
+     "total": "328236.89"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "61126.33"
+      },
+      {
+       "id": "p1b",
+       "total": "260592.12"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "321718.45",
+     "total": "321718.45"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "185935.50"
+      },
+      {
+       "id": "p2b",
+       "total": "330552.45"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "516487.95",
+     "total": "516487.95"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "0.00"
+      },
+      {
+       "id": "f2",
+       "total": "0.00"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "0.00",
+     "total": "0.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1890438.56"
+      },
+      {
+       "id": "p0b",
+       "total": "1485345.68"
+      }
+     ],
+     "id": "p0",
+     "preference": "3375784.24",
+     "residual": "0.00",
+     "total": "3375784.24"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "0.00"
+      },
+      {
+       "id": "p1b",
+       "total": "0.00"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "0.00",
+     "total": "0.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "0.00"
+      },
+      {
+       "id": "p2b",
+       "total": "0.00"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "0.00",
+     "total": "0.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 748313
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 727482
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "3097825.00",
+      "shares": 2090832
+     },
+     {
+      "id": "p0b",
+      "invested": "590063.00",
+      "shares": 398254
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "1251128.00",
+      "shares": 2187339
+     },
+     {
+      "id": "p1b",
+      "invested": "352883.00",
+      "shares": 616943
+     }
+    ],
+    "id": "p1",
+    "multiple": "2",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "51551470.00",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "5698878.16"
+      },
+      {
+       "id": "f2",
+       "total": "5540236.88"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "11239115.04",
+     "total": "11239115.04"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "15923011.91"
+      },
+      {
+       "id": "p0b",
+       "total": "3032956.83"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "18955968.74",
+     "total": "18955968.74"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "16657973.94"
+      },
+      {
+       "id": "p1b",
+       "total": "4698412.28"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "21356386.22",
+     "total": "21356386.22"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "5344239.84"
+      },
+      {
+       "id": "f2",
+       "total": "5195470.73"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "10539710.57",
+     "total": "10539710.57"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "14932130.91"
+      },
+      {
+       "id": "p0b",
+       "total": "2844217.45"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "17776348.36",
+     "total": "17776348.36"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "18123612.62"
+      },
+      {
+       "id": "p1b",
+       "total": "5111798.45"
+      }
+     ],
+     "id": "p1",
+     "preference": "3208022.00",
+     "residual": "20027389.07",
+     "total": "23235411.07"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 5497
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 929665
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1037240.00",
+      "shares": 185239
+     },
+     {
+      "id": "p0b",
+      "invested": "2804393.00",
+      "shares": 500835
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "27031228.09",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "91652.70"
+      },
+      {
+       "id": "f2",
+       "total": "15500511.13"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "15592163.83",
+     "total": "15592163.83"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "3088531.01"
+      },
+      {
+       "id": "p0b",
+       "total": "8350533.25"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "11439064.26",
+     "total": "11439064.26"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "78627.17"
+      },
+      {
+       "id": "f2",
+       "total": "13297604.37"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "13376231.54",
+     "total": "13376231.54"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "3686834.14"
+      },
+      {
+       "id": "p0b",
+       "total": "9968162.41"
+      }
+     ],
+     "id": "p0",
+     "preference": "3841633.00",
+     "residual": "9813363.55",
+     "total": "13654996.55"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 384531
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1386106
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "490936.00",
+      "shares": 385093
+     },
+     {
+      "id": "p0b",
+      "invested": "181580.00",
+      "shares": 142433
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "52931330.18",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "8856524.68"
+      },
+      {
+       "id": "f2",
+       "total": "31924817.49"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "40781342.17",
+     "total": "40781342.17"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "8869468.68"
+      },
+      {
+       "id": "p0b",
+       "total": "3280519.33"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "12149988.01",
+     "total": "12149988.01"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "8856524.68"
+      },
+      {
+       "id": "f2",
+       "total": "31924817.49"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "40781342.17",
+     "total": "40781342.17"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "8869468.68"
+      },
+      {
+       "id": "p0b",
+       "total": "3280519.33"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "12149988.01",
+     "total": "12149988.01"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 340792
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2360271
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2921584.00",
+      "shares": 827414
+     },
+     {
+      "id": "p0b",
+      "invested": "1867898.00",
+      "shares": 529004
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "366900.00",
+      "shares": 612711
+     },
+     {
+      "id": "p1b",
+      "invested": "506672.00",
+      "shares": 846127
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "1542049.00",
+      "shares": 1233407
+     },
+     {
+      "id": "p2b",
+      "invested": "1071594.00",
+      "shares": 857115
+     }
+    ],
+    "id": "p2",
+    "multiple": "1.5",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "6698246.61",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "300086.31"
+      },
+      {
+       "id": "f2",
+       "total": "2078349.90"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "2378436.21",
+     "total": "2378436.21"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "728584.05"
+      },
+      {
+       "id": "p0b",
+       "total": "465817.45"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "1194401.50",
+     "total": "1194401.50"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "539526.11"
+      },
+      {
+       "id": "p1b",
+       "total": "745061.89"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "1284588.00",
+     "total": "1284588.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "1086083.47"
+      },
+      {
+       "id": "p2b",
+       "total": "754737.43"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "1840820.90",
+     "total": "1840820.90"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "0.00"
+      },
+      {
+       "id": "f2",
+       "total": "0.00"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "0.00",
+     "total": "0.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2723090.44"
+      },
+      {
+       "id": "p0b",
+       "total": "1740992.28"
+      }
+     ],
+     "id": "p0",
+     "preference": "4464082.72",
+     "residual": "0.00",
+     "total": "4464082.72"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "170986.34"
+      },
+      {
+       "id": "p1b",
+       "total": "236124.25"
+      }
+     ],
+     "id": "p1",
+     "preference": "407110.59",
+     "residual": "0.00",
+     "total": "407110.59"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "1077961.19"
+      },
+      {
+       "id": "p2b",
+       "total": "749092.11"
+      }
+     ],
+     "id": "p2",
+     "preference": "1827053.30",
+     "residual": "0.00",
+     "total": "1827053.30"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 3983371
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 402814
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "1947548.00",
+      "shares": 552761
+     },
+     {
+      "id": "p0b",
+      "invested": "2802570.00",
+      "shares": 795438
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "50008141.51",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "34737991.15"
+      },
+      {
+       "id": "f2",
+       "total": "3512841.05"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "38250832.20",
+     "total": "38250832.20"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "4820491.67"
+      },
+      {
+       "id": "p0b",
+       "total": "6936817.64"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "11757309.31",
+     "total": "11757309.31"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "34737991.15"
+      },
+      {
+       "id": "f2",
+       "total": "3512841.05"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "38250832.20",
+     "total": "38250832.20"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "4820491.67"
+      },
+      {
+       "id": "p0b",
+       "total": "6936817.64"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "11757309.31",
+     "total": "11757309.31"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2311848
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 229350
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "23500.00",
+      "shares": 29310
+     },
+     {
+      "id": "p0b",
+      "invested": "2326545.00",
+      "shares": 2901774
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "16013880.38",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "6765305.10"
+      },
+      {
+       "id": "f2",
+       "total": "671161.22"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "7436466.32",
+     "total": "7436466.32"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "85771.68"
+      },
+      {
+       "id": "p0b",
+       "total": "8491642.38"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "8577414.06",
+     "total": "8577414.06"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4779681.25"
+      },
+      {
+       "id": "f2",
+       "total": "474174.73"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "5253855.98",
+     "total": "5253855.98"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "107597.61"
+      },
+      {
+       "id": "p0b",
+       "total": "10652426.79"
+      }
+     ],
+     "id": "p0",
+     "preference": "4700090.00",
+     "residual": "6059934.40",
+     "total": "10760024.40"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1353756
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 1087080
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "132702.00",
+      "shares": 174605
+     },
+     {
+      "id": "p0b",
+      "invested": "1341765.00",
+      "shares": 1765456
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "878851.00",
+      "shares": 511221
+     },
+     {
+      "id": "p1b",
+      "invested": "636410.00",
+      "shares": 370195
+     }
+    ],
+    "id": "p1",
+    "multiple": "1.5",
+    "name": "Series 1",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "668340.00",
+      "shares": 982731
+     },
+     {
+      "id": "p2b",
+      "invested": "99867.00",
+      "shares": 146846
+     }
+    ],
+    "id": "p2",
+    "multiple": "2",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "21709697.91",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4597956.76"
+      },
+      {
+       "id": "f2",
+       "total": "3692206.59"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "8290163.35",
+     "total": "8290163.35"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "593036.14"
+      },
+      {
+       "id": "p0b",
+       "total": "5996272.85"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "6589308.99",
+     "total": "6589308.99"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1736333.62"
+      },
+      {
+       "id": "p1b",
+       "total": "1257346.67"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "2993680.29",
+     "total": "2993680.29"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "3337791.03"
+      },
+      {
+       "id": "p2b",
+       "total": "498754.25"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "3836545.28",
+     "total": "3836545.28"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4116574.80"
+      },
+      {
+       "id": "f2",
+       "total": "3305651.93"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "7422226.73",
+     "total": "7422226.73"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "530948.37"
+      },
+      {
+       "id": "p0b",
+       "total": "5368494.53"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "5899442.90",
+     "total": "5899442.90"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "2872825.09"
+      },
+      {
+       "id": "p1b",
+       "total": "2080324.07"
+      }
+     ],
+     "id": "p1",
+     "preference": "2272891.50",
+     "residual": "2680257.66",
+     "total": "4953149.16"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "2988341.82"
+      },
+      {
+       "id": "p2b",
+       "total": "446537.30"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "3434879.12",
+     "total": "3434879.12"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 3867231
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 862116
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "299582.00",
+      "shares": 97819
+     },
+     {
+      "id": "p0b",
+      "invested": "3445202.00",
+      "shares": 1124928
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "41193894.84",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "26764749.87"
+      },
+      {
+       "id": "f2",
+       "total": "5966625.50"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "32731375.37",
+     "total": "32731375.37"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "676996.30"
+      },
+      {
+       "id": "p0b",
+       "total": "7785523.17"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "8462519.47",
+     "total": "8462519.47"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "26764749.87"
+      },
+      {
+       "id": "f2",
+       "total": "5966625.50"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "32731375.37",
+     "total": "32731375.37"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "676996.30"
+      },
+      {
+       "id": "p0b",
+       "total": "7785523.17"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "8462519.47",
+     "total": "8462519.47"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 1134285
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2830343
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "2648589.00",
+      "shares": 340061
+     },
+     {
+      "id": "p0b",
+      "invested": "1840545.00",
+      "shares": 236314
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "1646562.00",
+      "shares": 140373
+     },
+     {
+      "id": "p1b",
+      "invested": "609003.00",
+      "shares": 51920
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "20393624.00",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "4887119.21"
+      },
+      {
+       "id": "f2",
+       "total": "12194663.28"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "17081782.49",
+     "total": "17081782.49"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "1465168.50"
+      },
+      {
+       "id": "p0b",
+       "total": "1018169.76"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "2483338.26",
+     "total": "2483338.26"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "604803.54"
+      },
+      {
+       "id": "p1b",
+       "total": "223699.71"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "828503.25",
+     "total": "828503.25"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "3904974.41"
+      },
+      {
+       "id": "f2",
+       "total": "9743950.59"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "13648925.00",
+     "total": "13648925.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2648589.00"
+      },
+      {
+       "id": "p0b",
+       "total": "1840545.00"
+      }
+     ],
+     "id": "p0",
+     "preference": "4489134.00",
+     "residual": "0.00",
+     "total": "4489134.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "1646562.00"
+      },
+      {
+       "id": "p1b",
+       "total": "609003.00"
+      }
+     ],
+     "id": "p1",
+     "preference": "2255565.00",
+     "residual": "0.00",
+     "total": "2255565.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 381158
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2985828
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "421720.00",
+      "shares": 443991
+     },
+     {
+      "id": "p0b",
+      "invested": "2058986.00",
+      "shares": 2167723
+     }
+    ],
+    "id": "p0",
+    "multiple": "1.5",
+    "name": "Series 0",
+    "participating": true,
+    "preference": true,
+    "seniority": 2
+   }
+  ],
+  "exit": "33375953.08",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "2127805.63"
+      },
+      {
+       "id": "f2",
+       "total": "16668315.06"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "18796120.69",
+     "total": "18796120.69"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2478569.38"
+      },
+      {
+       "id": "p0b",
+       "total": "12101263.01"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "14579832.39",
+     "total": "14579832.39"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "1890578.24"
+      },
+      {
+       "id": "f2",
+       "total": "14809977.60"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "16700555.84",
+     "total": "16700555.84"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "2834815.62"
+      },
+      {
+       "id": "p0b",
+       "total": "13840581.62"
+      }
+     ],
+     "id": "p0",
+     "preference": "3721059.00",
+     "residual": "12954338.24",
+     "total": "16675397.24"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 4210155
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 2319421
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "269759.00",
+      "shares": 7612
+     },
+     {
+      "id": "p0b",
+      "invested": "4226239.00",
+      "shares": 119271
+     }
+    ],
+    "id": "p0",
+    "multiple": "2",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "2991674.00",
+      "shares": 1042346
+     },
+     {
+      "id": "p1b",
+      "invested": "893617.00",
+      "shares": 311351
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p2a",
+      "invested": "3707854.00",
+      "shares": 753352
+     },
+     {
+      "id": "p2b",
+      "invested": "1045805.00",
+      "shares": 212484
+     }
+    ],
+    "id": "p2",
+    "multiple": "1",
+    "name": "Series 2",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "19521170.97",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "9156331.20"
+      },
+      {
+       "id": "f2",
+       "total": "5044324.22"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "14200655.42",
+     "total": "14200655.42"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "16554.73"
+      },
+      {
+       "id": "p0b",
+       "total": "259393.01"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "275947.74",
+     "total": "275947.74"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "2266915.40"
+      },
+      {
+       "id": "p1b",
+       "total": "677132.52"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "2944047.92",
+     "total": "2944047.92"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "1638405.34"
+      },
+      {
+       "id": "p2b",
+       "total": "462114.55"
+      }
+     ],
+     "id": "p2",
+     "preference": "0.00",
+     "residual": "2100519.89",
+     "total": "2100519.89"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "1218783.59"
+      },
+      {
+       "id": "f2",
+       "total": "671441.38"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "1890224.97",
+     "total": "1890224.97"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "539518.00"
+      },
+      {
+       "id": "p0b",
+       "total": "8452478.00"
+      }
+     ],
+     "id": "p0",
+     "preference": "8991996.00",
+     "residual": "0.00",
+     "total": "8991996.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "2991674.00"
+      },
+      {
+       "id": "p1b",
+       "total": "893617.00"
+      }
+     ],
+     "id": "p1",
+     "preference": "3885291.00",
+     "residual": "0.00",
+     "total": "3885291.00"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p2a",
+       "total": "3707854.00"
+      },
+      {
+       "id": "p2b",
+       "total": "1045805.00"
+      }
+     ],
+     "id": "p2",
+     "preference": "4753659.00",
+     "residual": "0.00",
+     "total": "4753659.00"
+    }
+   ]
+  }
+ },
+ {
+  "classes": [
+   {
+    "holders": [
+     {
+      "id": "f1",
+      "invested": "0.00",
+      "shares": 2137905
+     },
+     {
+      "id": "f2",
+      "invested": "0.00",
+      "shares": 953524
+     }
+    ],
+    "id": "ord",
+    "multiple": "0",
+    "name": "Ordinary",
+    "participating": false,
+    "preference": false,
+    "seniority": 0
+   },
+   {
+    "holders": [
+     {
+      "id": "p0a",
+      "invested": "54172.00",
+      "shares": 76166
+     },
+     {
+      "id": "p0b",
+      "invested": "1751585.00",
+      "shares": 2462702
+     }
+    ],
+    "id": "p0",
+    "multiple": "1",
+    "name": "Series 0",
+    "participating": false,
+    "preference": true,
+    "seniority": 2
+   },
+   {
+    "holders": [
+     {
+      "id": "p1a",
+      "invested": "1274214.00",
+      "shares": 2264488
+     },
+     {
+      "id": "p1b",
+      "invested": "67064.00",
+      "shares": 119184
+     }
+    ],
+    "id": "p1",
+    "multiple": "1",
+    "name": "Series 1",
+    "participating": false,
+    "preference": true,
+    "seniority": 1
+   }
+  ],
+  "exit": "51226885.23",
+  "result": {
+   "as_converted": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "13665914.37"
+      },
+      {
+       "id": "f2",
+       "total": "6095115.23"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "19761029.60",
+     "total": "19761029.60"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "486868.23"
+      },
+      {
+       "id": "p0b",
+       "total": "15742081.45"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "16228949.68",
+     "total": "16228949.68"
+    },
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "14475058.10"
+      },
+      {
+       "id": "p1b",
+       "total": "761847.85"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "15236905.95",
+     "total": "15236905.95"
+    }
+   ],
+   "classes": [
+    {
+     "converts": false,
+     "holders": [
+      {
+       "id": "f1",
+       "total": "13665914.37"
+      },
+      {
+       "id": "f2",
+       "total": "6095115.23"
+      }
+     ],
+     "id": "ord",
+     "preference": "0.00",
+     "residual": "19761029.60",
+     "total": "19761029.60"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p0a",
+       "total": "486868.23"
+      },
+      {
+       "id": "p0b",
+       "total": "15742081.45"
+      }
+     ],
+     "id": "p0",
+     "preference": "0.00",
+     "residual": "16228949.68",
+     "total": "16228949.68"
+    },
+    {
+     "converts": true,
+     "holders": [
+      {
+       "id": "p1a",
+       "total": "14475058.10"
+      },
+      {
+       "id": "p1b",
+       "total": "761847.85"
+      }
+     ],
+     "id": "p1",
+     "preference": "0.00",
+     "residual": "15236905.95",
+     "total": "15236905.95"
+    }
+   ]
+  }
+ }
+]

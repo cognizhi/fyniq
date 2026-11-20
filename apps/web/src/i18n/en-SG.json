@@ -1819,6 +1819,30 @@
       "label": "Management reports",
       "tooltip": "Sales by customer and by item, spend by supplier and the top expenses for any run of months, each with its share of the total, net of GST."
     },
+    "reports.dashboards": {
+      "label": "Dashboard",
+      "tooltip": "Your own arrangement of KPI tiles: add, remove, reorder and resize them and save. Each tile shows what you may read, when it was read, and opens what is behind it."
+    },
+    "reports.board-pack": {
+      "label": "Board pack",
+      "tooltip": "The month's board pack: its figures as they stand, the highlights, commentary and asks you write, and Publish, which freezes the figures. A correction is a new version."
+    },
+    "equity.updates": {
+      "label": "Investor updates",
+      "tooltip": "An update built from a published board pack, sent once to the members you choose. They are told by a notification that links to the signed-in update; it carries no figure."
+    },
+    "board.portal": {
+      "label": "Board and investor portal",
+      "tooltip": "The published board packs, the investor updates sent to you and your own holding, after you sign in."
+    },
+    "reports.builder": {
+      "label": "Report builder",
+      "tooltip": "Choose the rows (an account, a report group or a calculation), the columns (this period, the one before, a year earlier, the year to date) and the filters, then save the report, share it and send it on a schedule."
+    },
+    "report.schedule": {
+      "label": "Send a report on a schedule",
+      "tooltip": "Each person you choose is told by a notification that links to the report when it is due. It carries no figure and no file, and each person's right to read it is checked again when it is sent."
+    },
     "reports.kpis": {
       "label": "Start-up KPIs",
       "tooltip": "A month's KPIs beside the month before: MRR, burn, runway, margins, churn, CAC and the rest, each with how it is worked out. The customer counts and headcount are entered here each month."
@@ -2498,6 +2522,10 @@
     "card-line.complete": {
       "label": "Complete",
       "tooltip": "Say what a payment with your company card was for: the category of its receipt, or personal spend that you refund."
+    },
+    "card-line.suggestions": {
+      "label": "Suggested receipts",
+      "tooltip": "Receipts in your own inbox that the model read as the same amount near this line's date. Nothing is attached until you choose Attach; the model's reading is only a suggestion."
     },
     "card-line.attach-evidence": {
       "label": "Attach",

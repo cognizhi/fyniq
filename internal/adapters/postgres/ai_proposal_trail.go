@@ -65,7 +65,7 @@ func (r aiTrail) QualityRows(ctx context.Context, from, to time.Time) ([]storage
 	out := make([]storage.AIQualityRow, 0, len(rows))
 	for _, x := range rows {
 		out = append(out, storage.AIQualityRow{ID: x.ID, TaskType: x.TaskType, Status: x.Status, ProposedAt: x.ProposedAt, DecidedBy: x.DecidedBy, DecidedAt: x.DecidedAt,
-			ApprovedWhole: x.ApprovedSha256 != nil && *x.ApprovedSha256 == x.PayloadSha256, Reason: x.Reason, FirstViewedAt: x.FirstViewedAt})
+			ApprovedWhole: x.ApprovedSha256 != nil && *x.ApprovedSha256 == x.PayloadSha256, Reason: x.Reason, FirstViewedAt: x.FirstViewedAt, UndoneAt: x.UndoneAt})
 	}
 	return out, nil
 }

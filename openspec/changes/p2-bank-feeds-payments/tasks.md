@@ -32,5 +32,5 @@ Decisions are in design.md. Cloud and real-account checks are tagged `[live-veri
 
 ## 3. Corporate cards (FR-AP-08)
 
-- [ ] 3.1 Receipt suggestions for a card line.
-- [x] 3.2 The daily missing-receipt reminder through the Inbox (rev 0.548: the job `notify.card_receipts`, notification `card.receipt_missing`, setting `claims.receipt_reminder_days`; test `TestACardholderIsToldOnceADayOfTheirLinesWithNoReceipt`). Left: 3.1, the suggestion of a captured receipt of the same amount near the date (a pure matcher over the document inbox's readings, a read for the holder and an attach that dismisses the capture).
+- [x] 3.1 Receipt suggestions for a card line (rev 0.549: `capture.SuggestsFor`, `listCardReceiptSuggestions`, `attachCardReceiptSuggestion`; tests `TestAReceiptIsSuggestedOnlyForTheSameAmountNearTheDate`, `TestACapturedReceiptIsSuggestedForACardLineAndAttachedByItsHolder`). Only the holder's own captures (an Employee may not upload to the inbox, so their own address's mail is what qualifies); an upload by the holder with a bill-entering role also counts.
+- [x] 3.2 The daily missing-receipt reminder through the Inbox (rev 0.548: the job `notify.card_receipts`, notification `card.receipt_missing`, setting `claims.receipt_reminder_days`; test `TestACardholderIsToldOnceADayOfTheirLinesWithNoReceipt`). 

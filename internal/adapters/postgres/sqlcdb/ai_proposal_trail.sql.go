@@ -93,9 +93,10 @@ func (q *Queries) AIQualityReviewOf(ctx context.Context, month time.Time) ([]AIQ
 }
 
 const aIQualityRows = `-- name: AIQualityRows :many
-SELECT p.id, p.task_type, p.status, p.proposed_at, p.decided_by, p.decided_at, p.approved_sha256, p.payload_sha256, p.reason, v.first_viewed_at
+SELECT p.id, p.task_type, p.status, p.proposed_at, p.decided_by, p.decided_at, p.approved_sha256, p.payload_sha256, p.reason, v.first_viewed_at, un.undone_at
 FROM fyniq.ai_proposal p
 LEFT JOIN fyniq.ai_proposal_view v ON v.organisation_id = p.organisation_id AND v.proposal_id = p.id AND v.user_id = p.decided_by
+LEFT JOIN fyniq.ai_proposal_undo un ON un.organisation_id = p.organisation_id AND un.proposal_id = p.id
 WHERE p.proposed_at >= $1 AND p.proposed_at < $2
 ORDER BY p.id
 `
@@ -116,6 +117,7 @@ type AIQualityRowsRow struct {
 	PayloadSha256  string
 	Reason         string
 	FirstViewedAt  *time.Time
+	UndoneAt       *time.Time
 }
 
 func (q *Queries) AIQualityRows(ctx context.Context, arg AIQualityRowsParams) ([]AIQualityRowsRow, error) {
@@ -138,6 +140,7 @@ func (q *Queries) AIQualityRows(ctx context.Context, arg AIQualityRowsParams) ([
 			&i.PayloadSha256,
 			&i.Reason,
 			&i.FirstViewedAt,
+			&i.UndoneAt,
 		); err != nil {
 			return nil, err
 		}

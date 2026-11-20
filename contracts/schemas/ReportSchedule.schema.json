@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active": {
+      "description": "False when the schedule is switched off.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "cadence": {
+      "description": "weekly: on a weekday; monthly: on a day of the month.",
+      "enum": [
+        "weekly",
+        "monthly"
+      ],
+      "examples": [
+        "monthly"
+      ],
+      "type": "string"
+    },
+    "channel": {
+      "description": "email: a notification that links to the signed-in report, with no figure in it and no file; slack: a post to a channel through the Slack connector (not live yet: [live-verify]).",
+      "enum": [
+        "email",
+        "slack"
+      ],
+      "examples": [
+        "email"
+      ],
+      "type": "string"
+    },
+    "day_of_month": {
+      "description": "A monthly schedule's day, 1 to 28 so that every month has it.",
+      "examples": [
+        5
+      ],
+      "format": "int64",
+      "maximum": 28,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "definition_id": {
+      "description": "The report it sends.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5a10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The schedule's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "last_run_on": {
+      "description": "The last day it ran.",
+      "examples": [
+        "2026-11-05"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "next_run_on": {
+      "description": "The next day it runs.",
+      "examples": [
+        "2026-12-05"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "period_rule": {
+      "description": "The month the report is for when it is sent: the latest closed month, or the month so far.",
+      "enum": [
+        "last_closed_month",
+        "month_to_date"
+      ],
+      "examples": [
+        "last_closed_month"
+      ],
+      "type": "string"
+    },
+    "recipients": {
+      "description": "Member user IDs; each is checked again at send time, and one who may no longer read the report is skipped.",
+      "items": {
+        "description": "A member's user ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "slack_channel": {
+      "description": "The Slack channel, for the slack channel.",
+      "examples": [
+        "#finance"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    },
+    "updated_at": {
+      "description": "When it last changed.",
+      "examples": [
+        "2026-11-23T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "version": {
+      "description": "Its version, which is its ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "weekday": {
+      "description": "A weekly schedule's weekday, 1 Monday to 7 Sunday.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 7,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "definition_id",
+    "cadence",
+    "period_rule",
+    "channel",
+    "recipients",
+    "active",
+    "next_run_on",
+    "version",
+    "updated_at"
+  ],
+  "title": "ReportSchedule",
+  "type": "object"
+}

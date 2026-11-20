@@ -995,6 +995,27 @@ type FyniqBillingRate struct {
 	CreatedAt      time.Time
 }
 
+type FyniqBoardPack struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Month          time.Time
+	Version        int32
+	Status         string
+	Highlights     string
+	Commentary     string
+	Asks           string
+	Figures        []byte
+	LedgerRevision *int64
+	Supersedes     *uuid.UUID
+	Edit           int32
+	CreatedBy      string
+	CreatedAt      time.Time
+	UpdatedBy      string
+	UpdatedAt      time.Time
+	PublishedBy    *string
+	PublishedAt    *time.Time
+}
+
 type FyniqBrandVersion struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -1331,6 +1352,18 @@ type FyniqCustomerGroup struct {
 	Active         bool
 	Version        int32
 	CreatedAt      time.Time
+}
+
+type FyniqDashboardLayout struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Scope          string
+	Role           *string
+	UserID         *uuid.UUID
+	Tiles          []byte
+	Version        int32
+	UpdatedBy      string
+	UpdatedAt      time.Time
 }
 
 type FyniqDataInventoryEntry struct {
@@ -1864,6 +1897,33 @@ type FyniqInstallationConnectorSecret struct {
 	DestroyedAt *time.Time
 }
 
+type FyniqInvestorUpdate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PackID         uuid.UUID
+	Kind           string
+	Title          string
+	Highlights     string
+	Asks           string
+	Recipients     []uuid.UUID
+	Status         string
+	Edit           int32
+	CreatedBy      string
+	CreatedAt      time.Time
+	UpdatedBy      string
+	UpdatedAt      time.Time
+	SentBy         *string
+	SentAt         *time.Time
+}
+
+type FyniqInvestorUpdateRead struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UpdateID       uuid.UUID
+	UserID         uuid.UUID
+	ReadAt         time.Time
+}
+
 type FyniqInvitationCode struct {
 	CodeHash []byte
 	Owner    uuid.UUID
@@ -2208,6 +2268,20 @@ type FyniqKbSnapshotPage struct {
 	SnapshotNumber int32
 	Key            string
 	Version        int32
+}
+
+type FyniqKpiAlert struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	Category       string
+	Month          time.Time
+	Currency       string
+	Spend          string
+	Mean           string
+	HistoryMonths  int32
+	LedgerRevision int64
+	RaisedAt       time.Time
 }
 
 type FyniqKpiInput struct {
@@ -3541,6 +3615,22 @@ type FyniqRecurringJournalVersion struct {
 	EditedAt           time.Time
 }
 
+type FyniqReportDefinition struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Name           string
+	Description    string
+	Definition     []byte
+	Visibility     string
+	OwnerID        uuid.UUID
+	Version        int32
+	CreatedBy      string
+	CreatedAt      time.Time
+	UpdatedBy      string
+	UpdatedAt      time.Time
+	ArchivedAt     *time.Time
+}
+
 type FyniqReportExport struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -3559,6 +3649,38 @@ type FyniqReportExport struct {
 	ReadyAt        *time.Time
 	ExpiresAt      *time.Time
 	Failure        *string
+}
+
+type FyniqReportSchedule struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DefinitionID   uuid.UUID
+	Cadence        string
+	Weekday        *int16
+	DayOfMonth     *int16
+	PeriodRule     string
+	Channel        string
+	Recipients     []uuid.UUID
+	SlackChannel   *string
+	Active         bool
+	NextRunOn      time.Time
+	LastRunOn      pgtype.Date
+	Version        int32
+	CreatedBy      string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+type FyniqReportScheduleRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ScheduleID     uuid.UUID
+	RanOn          time.Time
+	PeriodLabel    string
+	LedgerRevision int64
+	Sent           int32
+	Skipped        []byte
+	RanAt          time.Time
 }
 
 type FyniqRestoreDrill struct {

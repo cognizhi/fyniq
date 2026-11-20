@@ -31,8 +31,12 @@ func (e *env) runCatalogue() {
 func (e *env) joined(name string, roles ...string) uuid.UUID {
 	e.t.Helper()
 	code := e.call(http.MethodPost, "/v1/members/invitations", e.as(authz.Administrator), map[string]any{"display_name": name, "roles": roles}).str("code")
-	id := e.call(http.MethodPost, "/v1/members", e.principal(authn.Principal{Subject: "member-" + name, Client: "web"}),
-		map[string]any{"invitation_code": code, "display_name": name}).str("member_id")
+	acc := e.call(http.MethodPost, "/v1/members", e.principal(authn.Principal{Subject: "member-" + name, Client: "web"}),
+		map[string]any{"invitation_code": code, "display_name": name})
+	id := acc.str("member_id")
+	if id == "" {
+		e.t.Fatalf("%s's acceptance = %d: %s", name, acc.Status, acc.Raw)
+	}
 	for _, x := range e.call(http.MethodGet, "/v1/members", e.as(authz.Administrator), nil).Body["items"].([]any) {
 		if m := x.(map[string]any); m["id"] == id {
 			return uuid.MustParse(m["user_id"].(string))

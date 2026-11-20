@@ -4,7 +4,7 @@ type: task
 title: Review, approve or reject a change the AI proposed
 summary: Review, approve, reject or undo an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
 sources:
-  - docs/user-guide/ai-proposals.md sha256:1dd8527a2b83d04ab7b2733763787b72cb4d53d859addf8a13ffc4bbdc002a5d
+  - docs/user-guide/ai-proposals.md sha256:2b17d1c50f70cbafb0c9690bd235a8094e53e6a4bc260aeba7eeac447b851cdb
 data_class: general
 taint: trusted
 status: draft
@@ -166,6 +166,7 @@ aliases:
 ## Approval quality
 
 - The Approval quality tab on the AI tasks page, for the Owner and the DPO, shows how each month's AI proposals were decided: made, approved, rejected, expired, invalid or out of date; how many were approved within ten seconds of opening them or without opening them; the median time to a decision; and how many rejections gave a reason. A high share approved within seconds means proposals are stamped, not read.
+- It also shows how many approvals were edited before approving (an item changed or removed), how many approved proposals were undone afterwards, and, for each task type, how many were approved, edited and undone and the median time to a decision, and what each person approved of each task type. A task type nobody ever edits, or one often undone, is worth a look.
 - After a month ends the Owner or the DPO signs its review, with a note, after confirming it is them. A month is signed once, and the signed review is kept as evidence.
 
 (src: docs/user-guide/ai-proposals.md#approval-quality)

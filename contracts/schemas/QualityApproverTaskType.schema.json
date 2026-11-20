@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approved": {
+      "description": "How many they approved.",
+      "examples": [
+        5
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "edited": {
+      "description": "How many with an item changed or removed.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "quick": {
+      "description": "How many of them within ten seconds of first opening the review with no item changed, or with no look.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "reversed": {
+      "description": "How many were undone afterwards.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "task_type": {
+      "description": "The task type.",
+      "examples": [
+        "ap.draft_bill"
+      ],
+      "type": "string"
+    },
+    "user": {
+      "description": "The person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "user",
+    "task_type",
+    "approved",
+    "quick",
+    "edited",
+    "reversed"
+  ],
+  "title": "QualityApproverTaskType",
+  "type": "object"
+}

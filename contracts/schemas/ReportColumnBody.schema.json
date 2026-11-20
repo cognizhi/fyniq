@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "key": {
+      "description": "current: the run asked for; prior_period: the run of the same length just before; prior_year: the same months a year earlier; ytd: the financial year's first month to the run's last. A balance sheet account's figure is its position at the column's last day, a P\u0026L account's the movement over the column's months.",
+      "enum": [
+        "current",
+        "prior_period",
+        "prior_year",
+        "ytd"
+      ],
+      "examples": [
+        "current"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "The column's heading; left out, the builder names it.",
+      "examples": [
+        "This month"
+      ],
+      "maxLength": 40,
+      "type": "string"
+    }
+  },
+  "required": [
+    "key"
+  ],
+  "title": "ReportColumnBody",
+  "type": "object"
+}

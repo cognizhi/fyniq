@@ -795,6 +795,24 @@ billing_rate | currency | text | not null |
 billing_rate | minor_units | smallint | not null | 
 billing_rate | created_by | text | not null | 
 billing_rate | created_at | timestamp with time zone | not null | now()
+board_pack | organisation_id | uuid | not null | current_org()
+board_pack | id | uuid | not null | uuidv7()
+board_pack | month | date | not null | 
+board_pack | version | integer | not null | 1
+board_pack | status | text | not null | 'draft'::text
+board_pack | highlights | text | not null | ''::text
+board_pack | commentary | text | not null | ''::text
+board_pack | asks | text | not null | ''::text
+board_pack | figures | jsonb | null | 
+board_pack | ledger_revision | bigint | null | 
+board_pack | supersedes | uuid | null | 
+board_pack | edit | integer | not null | 1
+board_pack | created_by | text | not null | 
+board_pack | created_at | timestamp with time zone | not null | 
+board_pack | updated_by | text | not null | 
+board_pack | updated_at | timestamp with time zone | not null | 
+board_pack | published_by | text | null | 
+board_pack | published_at | timestamp with time zone | null | 
 brand_version | organisation_id | uuid | not null | current_org()
 brand_version | id | uuid | not null | uuidv7()
 brand_version | version | integer | not null | 
@@ -1055,6 +1073,15 @@ customer_group | reminder_days | integer[] | not null |
 customer_group | active | boolean | not null | true
 customer_group | version | integer | not null | 1
 customer_group | created_at | timestamp with time zone | not null | now()
+dashboard_layout | organisation_id | uuid | not null | current_org()
+dashboard_layout | id | uuid | not null | uuidv7()
+dashboard_layout | scope | text | not null | 
+dashboard_layout | role | text | null | 
+dashboard_layout | user_id | uuid | null | 
+dashboard_layout | tiles | jsonb | not null | 
+dashboard_layout | version | integer | not null | 1
+dashboard_layout | updated_by | text | not null | 
+dashboard_layout | updated_at | timestamp with time zone | not null | 
 data_inventory_entry | organisation_id | uuid | not null | current_org()
 data_inventory_entry | id | uuid | not null | uuidv7()
 data_inventory_entry | entry_id | uuid | not null | 
@@ -1466,6 +1493,27 @@ installation_connector_secret | set_by | text | not null |
 installation_connector_secret | set_at | timestamp with time zone | not null | 
 installation_connector_secret | valid_until | timestamp with time zone | null | 
 installation_connector_secret | destroyed_at | timestamp with time zone | null | 
+investor_update | organisation_id | uuid | not null | current_org()
+investor_update | id | uuid | not null | uuidv7()
+investor_update | pack_id | uuid | not null | 
+investor_update | kind | text | not null | 
+investor_update | title | text | not null | 
+investor_update | highlights | text | not null | ''::text
+investor_update | asks | text | not null | ''::text
+investor_update | recipients | uuid[] | not null | '{}'::uuid[]
+investor_update | status | text | not null | 'draft'::text
+investor_update | edit | integer | not null | 1
+investor_update | created_by | text | not null | 
+investor_update | created_at | timestamp with time zone | not null | 
+investor_update | updated_by | text | not null | 
+investor_update | updated_at | timestamp with time zone | not null | 
+investor_update | sent_by | text | null | 
+investor_update | sent_at | timestamp with time zone | null | 
+investor_update_read | organisation_id | uuid | not null | current_org()
+investor_update_read | id | uuid | not null | uuidv7()
+investor_update_read | update_id | uuid | not null | 
+investor_update_read | user_id | uuid | not null | 
+investor_update_read | read_at | timestamp with time zone | not null | 
 invitation_code | code_hash | bytea | not null | 
 invitation_code | owner | uuid | not null | 
 invoice_dispute | organisation_id | uuid | not null | current_org()
@@ -1734,6 +1782,17 @@ kb_snapshot_page | id | uuid | not null | uuidv7()
 kb_snapshot_page | snapshot_number | integer | not null | 
 kb_snapshot_page | key | text | not null | 
 kb_snapshot_page | version | integer | not null | 
+kpi_alert | organisation_id | uuid | not null | current_org()
+kpi_alert | id | uuid | not null | uuidv7()
+kpi_alert | kind | text | not null | 
+kpi_alert | category | text | not null | 
+kpi_alert | month | date | not null | 
+kpi_alert | currency | text | not null | 
+kpi_alert | spend | numeric(20,4) | not null | 
+kpi_alert | mean | numeric(20,4) | not null | 
+kpi_alert | history_months | integer | not null | 
+kpi_alert | ledger_revision | bigint | not null | 
+kpi_alert | raised_at | timestamp with time zone | not null | 
 kpi_input | organisation_id | uuid | not null | current_org()
 kpi_input | id | uuid | not null | uuidv7()
 kpi_input | month | date | not null | 
@@ -2765,6 +2824,19 @@ recurring_journal_version | version | integer | not null |
 recurring_journal_version | content | jsonb | not null | 
 recurring_journal_version | edited_by | text | not null | 
 recurring_journal_version | edited_at | timestamp with time zone | not null | now()
+report_definition | organisation_id | uuid | not null | current_org()
+report_definition | id | uuid | not null | uuidv7()
+report_definition | name | text | not null | 
+report_definition | description | text | not null | ''::text
+report_definition | definition | jsonb | not null | 
+report_definition | visibility | text | not null | 'private'::text
+report_definition | owner_id | uuid | not null | 
+report_definition | version | integer | not null | 1
+report_definition | created_by | text | not null | 
+report_definition | created_at | timestamp with time zone | not null | 
+report_definition | updated_by | text | not null | 
+report_definition | updated_at | timestamp with time zone | not null | 
+report_definition | archived_at | timestamp with time zone | null | 
 report_export | organisation_id | uuid | not null | current_org()
 report_export | id | uuid | not null | uuidv7()
 report_export | report | text | not null | 
@@ -2782,6 +2854,32 @@ report_export | rows_count | bigint | null |
 report_export | ready_at | timestamp with time zone | null | 
 report_export | expires_at | timestamp with time zone | null | 
 report_export | failure | text | null | 
+report_schedule | organisation_id | uuid | not null | current_org()
+report_schedule | id | uuid | not null | uuidv7()
+report_schedule | definition_id | uuid | not null | 
+report_schedule | cadence | text | not null | 
+report_schedule | weekday | smallint | null | 
+report_schedule | day_of_month | smallint | null | 
+report_schedule | period_rule | text | not null | 
+report_schedule | channel | text | not null | 'email'::text
+report_schedule | recipients | uuid[] | not null | 
+report_schedule | slack_channel | text | null | 
+report_schedule | active | boolean | not null | true
+report_schedule | next_run_on | date | not null | 
+report_schedule | last_run_on | date | null | 
+report_schedule | version | integer | not null | 1
+report_schedule | created_by | text | not null | 
+report_schedule | created_at | timestamp with time zone | not null | 
+report_schedule | updated_at | timestamp with time zone | not null | 
+report_schedule_run | organisation_id | uuid | not null | current_org()
+report_schedule_run | id | uuid | not null | uuidv7()
+report_schedule_run | schedule_id | uuid | not null | 
+report_schedule_run | ran_on | date | not null | 
+report_schedule_run | period_label | text | not null | 
+report_schedule_run | ledger_revision | bigint | not null | 
+report_schedule_run | sent | integer | not null | 
+report_schedule_run | skipped | jsonb | not null | '[]'::jsonb
+report_schedule_run | ran_at | timestamp with time zone | not null | 
 restore_drill | organisation_id | uuid | not null | current_org()
 restore_drill | id | uuid | not null | uuidv7()
 restore_drill | held_on | date | not null | 
@@ -4439,6 +4537,31 @@ billing_rate | billing_rate_role_length | CHECK (((role_name IS NULL) OR ((lengt
 billing_rate | billing_rate_scope | CHECK ((((project_id IS NULL) <> (customer_id IS NULL)) AND (NOT ((user_id IS NOT NULL) AND (role_name IS NOT NULL)))))
 billing_rate | billing_rate_user_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
 billing_rate | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+board_pack | board_pack_asks_not_null | NOT NULL asks
+board_pack | board_pack_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (updated_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((published_by IS NULL) OR (published_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+board_pack | board_pack_commentary_not_null | NOT NULL commentary
+board_pack | board_pack_created_at_not_null | NOT NULL created_at
+board_pack | board_pack_created_by_not_null | NOT NULL created_by
+board_pack | board_pack_edit_not_null | NOT NULL edit
+board_pack | board_pack_figures_object | CHECK (((figures IS NULL) OR (jsonb_typeof(figures) = 'object'::text)))
+board_pack | board_pack_first_of_month | CHECK ((month = (date_trunc('month'::text, (month)::timestamp with time zone))::date))
+board_pack | board_pack_highlights_not_null | NOT NULL highlights
+board_pack | board_pack_id_not_null | NOT NULL id
+board_pack | board_pack_month_not_null | NOT NULL month
+board_pack | board_pack_month_version | UNIQUE (organisation_id, month, version)
+board_pack | board_pack_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+board_pack | board_pack_organisation_id_not_null | NOT NULL organisation_id
+board_pack | board_pack_pkey | PRIMARY KEY (organisation_id, id)
+board_pack | board_pack_published_form | CHECK (((status = 'published'::text) = ((figures IS NOT NULL) AND (ledger_revision IS NOT NULL) AND (published_by IS NOT NULL) AND (published_at IS NOT NULL))))
+board_pack | board_pack_size | CHECK (((pg_column_size(figures) <= 4194304) AND (length(highlights) <= 5000) AND (length(commentary) <= 20000) AND (length(asks) <= 5000)))
+board_pack | board_pack_status | CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text])))
+board_pack | board_pack_status_not_null | NOT NULL status
+board_pack | board_pack_supersedes_fkey | FOREIGN KEY (organisation_id, supersedes) REFERENCES board_pack(organisation_id, id)
+board_pack | board_pack_updated_at_not_null | NOT NULL updated_at
+board_pack | board_pack_updated_by_not_null | NOT NULL updated_by
+board_pack | board_pack_version_not_null | NOT NULL version
+board_pack | board_pack_version_positive | CHECK (((version >= 1) AND (edit >= 1)))
+board_pack | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 brand_version | brand_version_accent | CHECK (((accent IS NULL) OR (accent ~ '^#[0-9A-F]{6}$'::text)))
 brand_version | brand_version_cleaned_not_null | NOT NULL cleaned
 brand_version | brand_version_cleaned_object | CHECK ((jsonb_typeof(cleaned) = 'object'::text))
@@ -4853,6 +4976,21 @@ customer_group | customer_group_reminder_days_not_null | NOT NULL reminder_days
 customer_group | customer_group_version_not_null | NOT NULL version
 customer_group | customer_group_version_positive | CHECK ((version > 0))
 customer_group | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+dashboard_layout | dashboard_layout_by_form | CHECK ((updated_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+dashboard_layout | dashboard_layout_id_not_null | NOT NULL id
+dashboard_layout | dashboard_layout_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+dashboard_layout | dashboard_layout_organisation_id_not_null | NOT NULL organisation_id
+dashboard_layout | dashboard_layout_pkey | PRIMARY KEY (organisation_id, id)
+dashboard_layout | dashboard_layout_role_known | CHECK (((role IS NULL) OR (role ~ '^[a-z_]{3,40}$'::text)))
+dashboard_layout | dashboard_layout_scope | CHECK ((((scope = 'role'::text) AND (role IS NOT NULL) AND (user_id IS NULL)) OR ((scope = 'user'::text) AND (user_id IS NOT NULL) AND (role IS NULL))))
+dashboard_layout | dashboard_layout_scope_not_null | NOT NULL scope
+dashboard_layout | dashboard_layout_tiles | CHECK (((jsonb_typeof(tiles) = 'array'::text) AND (jsonb_array_length(tiles) <= 24)))
+dashboard_layout | dashboard_layout_tiles_not_null | NOT NULL tiles
+dashboard_layout | dashboard_layout_updated_at_not_null | NOT NULL updated_at
+dashboard_layout | dashboard_layout_updated_by_not_null | NOT NULL updated_by
+dashboard_layout | dashboard_layout_version | CHECK ((version >= 1))
+dashboard_layout | dashboard_layout_version_not_null | NOT NULL version
+dashboard_layout | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 data_inventory_entry | data_inventory_entry_entry_id_not_null | NOT NULL entry_id
 data_inventory_entry | data_inventory_entry_id_not_null | NOT NULL id
 data_inventory_entry | data_inventory_entry_needs_dpia_not_null | NOT NULL needs_dpia
@@ -5488,6 +5626,39 @@ installation_connector_secret | installation_connector_secret_ref_form | CHECK (
 installation_connector_secret | installation_connector_secret_ref_not_null | NOT NULL ref
 installation_connector_secret | installation_connector_secret_set_at_not_null | NOT NULL set_at
 installation_connector_secret | installation_connector_secret_set_by_not_null | NOT NULL set_by
+investor_update | investor_update_asks_not_null | NOT NULL asks
+investor_update | investor_update_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (updated_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((sent_by IS NULL) OR (sent_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+investor_update | investor_update_created_at_not_null | NOT NULL created_at
+investor_update | investor_update_created_by_not_null | NOT NULL created_by
+investor_update | investor_update_edit_not_null | NOT NULL edit
+investor_update | investor_update_edit_positive | CHECK ((edit >= 1))
+investor_update | investor_update_highlights_not_null | NOT NULL highlights
+investor_update | investor_update_id_not_null | NOT NULL id
+investor_update | investor_update_kind | CHECK ((kind = ANY (ARRAY['monthly'::text, 'quarterly'::text])))
+investor_update | investor_update_kind_not_null | NOT NULL kind
+investor_update | investor_update_organisation_id_not_null | NOT NULL organisation_id
+investor_update | investor_update_pack_fkey | FOREIGN KEY (organisation_id, pack_id) REFERENCES board_pack(organisation_id, id)
+investor_update | investor_update_pack_id_not_null | NOT NULL pack_id
+investor_update | investor_update_pkey | PRIMARY KEY (organisation_id, id)
+investor_update | investor_update_recipients_not_null | NOT NULL recipients
+investor_update | investor_update_sent_form | CHECK (((status = 'sent'::text) = ((sent_by IS NOT NULL) AND (sent_at IS NOT NULL) AND ((cardinality(recipients) >= 1) AND (cardinality(recipients) <= 200)))))
+investor_update | investor_update_size | CHECK (((length(highlights) <= 5000) AND (length(asks) <= 5000)))
+investor_update | investor_update_status | CHECK ((status = ANY (ARRAY['draft'::text, 'sent'::text])))
+investor_update | investor_update_status_not_null | NOT NULL status
+investor_update | investor_update_title | CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 120)))
+investor_update | investor_update_title_not_null | NOT NULL title
+investor_update | investor_update_updated_at_not_null | NOT NULL updated_at
+investor_update | investor_update_updated_by_not_null | NOT NULL updated_by
+investor_update | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+investor_update_read | investor_update_read_id_not_null | NOT NULL id
+investor_update_read | investor_update_read_once | UNIQUE (organisation_id, update_id, user_id)
+investor_update_read | investor_update_read_organisation_id_not_null | NOT NULL organisation_id
+investor_update_read | investor_update_read_pkey | PRIMARY KEY (organisation_id, id)
+investor_update_read | investor_update_read_read_at_not_null | NOT NULL read_at
+investor_update_read | investor_update_read_update_fkey | FOREIGN KEY (organisation_id, update_id) REFERENCES investor_update(organisation_id, id)
+investor_update_read | investor_update_read_update_id_not_null | NOT NULL update_id
+investor_update_read | investor_update_read_user_id_not_null | NOT NULL user_id
+investor_update_read | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 invitation_code | invitation_code_code_hash_not_null | NOT NULL code_hash
 invitation_code | invitation_code_hash_length | CHECK ((octet_length(code_hash) = 32))
 invitation_code | invitation_code_owner_not_null | NOT NULL owner
@@ -5889,6 +6060,27 @@ kb_snapshot_page | kb_snapshot_page_snapshot_fkey | FOREIGN KEY (organisation_id
 kb_snapshot_page | kb_snapshot_page_snapshot_number_not_null | NOT NULL snapshot_number
 kb_snapshot_page | kb_snapshot_page_version_fkey | FOREIGN KEY (organisation_id, key, version) REFERENCES kb_page_version(organisation_id, key, number)
 kb_snapshot_page | kb_snapshot_page_version_not_null | NOT NULL version
+kpi_alert | kpi_alert_amounts | CHECK (((spend <> 'NaN'::numeric) AND (mean <> 'NaN'::numeric) AND (spend > (0)::numeric) AND (mean >= (0)::numeric)))
+kpi_alert | kpi_alert_category | CHECK (((length(btrim(category)) >= 1) AND (length(btrim(category)) <= 120)))
+kpi_alert | kpi_alert_category_not_null | NOT NULL category
+kpi_alert | kpi_alert_currency | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+kpi_alert | kpi_alert_currency_not_null | NOT NULL currency
+kpi_alert | kpi_alert_first_of_month | CHECK ((month = (date_trunc('month'::text, (month)::timestamp with time zone))::date))
+kpi_alert | kpi_alert_history | CHECK (((history_months >= 6) AND (history_months <= 36)))
+kpi_alert | kpi_alert_history_months_not_null | NOT NULL history_months
+kpi_alert | kpi_alert_id_not_null | NOT NULL id
+kpi_alert | kpi_alert_kind | CHECK ((kind = 'spend_anomaly'::text))
+kpi_alert | kpi_alert_kind_not_null | NOT NULL kind
+kpi_alert | kpi_alert_ledger_revision_not_null | NOT NULL ledger_revision
+kpi_alert | kpi_alert_mean_not_null | NOT NULL mean
+kpi_alert | kpi_alert_month_not_null | NOT NULL month
+kpi_alert | kpi_alert_once | UNIQUE (organisation_id, kind, category, month)
+kpi_alert | kpi_alert_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+kpi_alert | kpi_alert_organisation_id_not_null | NOT NULL organisation_id
+kpi_alert | kpi_alert_pkey | PRIMARY KEY (organisation_id, id)
+kpi_alert | kpi_alert_raised_at_not_null | NOT NULL raised_at
+kpi_alert | kpi_alert_spend_not_null | NOT NULL spend
+kpi_alert | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 kpi_input | kpi_input_customers_together | CHECK ((((paying_customers IS NULL) = (new_customers IS NULL)) AND ((new_customers IS NULL) = (lost_customers IS NULL))))
 kpi_input | kpi_input_entered_at_not_null | NOT NULL entered_at
 kpi_input | kpi_input_entered_by | CHECK (((length(btrim(entered_by)) >= 1) AND (length(btrim(entered_by)) <= 200)))
@@ -7580,6 +7772,28 @@ recurring_journal_version | recurring_journal_version_positive | CHECK ((version
 recurring_journal_version | recurring_journal_version_recurring_journal_id_not_null | NOT NULL recurring_journal_id
 recurring_journal_version | recurring_journal_version_version_not_null | NOT NULL version
 recurring_journal_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+report_definition | report_definition_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (updated_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+report_definition | report_definition_created_at_not_null | NOT NULL created_at
+report_definition | report_definition_created_by_not_null | NOT NULL created_by
+report_definition | report_definition_definition_not_null | NOT NULL definition
+report_definition | report_definition_description | CHECK ((length(description) <= 500))
+report_definition | report_definition_description_not_null | NOT NULL description
+report_definition | report_definition_id_not_null | NOT NULL id
+report_definition | report_definition_name | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 80)))
+report_definition | report_definition_name_not_null | NOT NULL name
+report_definition | report_definition_object | CHECK (((jsonb_typeof(definition) = 'object'::text) AND ((definition ->> 'schema'::text) = 'fyniq-report@1'::text) AND (jsonb_typeof((definition -> 'rows'::text)) = 'array'::text) AND ((jsonb_array_length((definition -> 'rows'::text)) >= 1) AND (jsonb_array_length((definition -> 'rows'::text)) <= 60)) AND (jsonb_typeof((definition -> 'columns'::text)) = 'array'::text) AND ((jsonb_array_length((definition -> 'columns'::text)) >= 1) AND (jsonb_array_length((definition -> 'columns'::text)) <= 12))))
+report_definition | report_definition_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+report_definition | report_definition_organisation_id_not_null | NOT NULL organisation_id
+report_definition | report_definition_owner_id_not_null | NOT NULL owner_id
+report_definition | report_definition_pkey | PRIMARY KEY (organisation_id, id)
+report_definition | report_definition_size | CHECK ((pg_column_size(definition) <= 65536))
+report_definition | report_definition_updated_at_not_null | NOT NULL updated_at
+report_definition | report_definition_updated_by_not_null | NOT NULL updated_by
+report_definition | report_definition_version | CHECK ((version >= 1))
+report_definition | report_definition_version_not_null | NOT NULL version
+report_definition | report_definition_visibility | CHECK ((visibility = ANY (ARRAY['private'::text, 'shared'::text])))
+report_definition | report_definition_visibility_not_null | NOT NULL visibility
+report_definition | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 report_export | report_export_failed_says_why | CHECK (((status <> 'failed'::text) OR ((length(btrim(failure)) >= 1) AND (length(btrim(failure)) <= 500))))
 report_export | report_export_file_name_length | CHECK (((length(file_name) >= 1) AND (length(file_name) <= 200)))
 report_export | report_export_format_known | CHECK ((format = ANY (ARRAY['csv'::text, 'xlsx'::text, 'zip'::text])))
@@ -7598,6 +7812,42 @@ report_export | report_export_requested_by_not_null | NOT NULL requested_by
 report_export | report_export_status_known | CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text, 'failed'::text, 'expired'::text])))
 report_export | report_export_status_not_null | NOT NULL status
 report_export | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+report_schedule | report_schedule_active_not_null | NOT NULL active
+report_schedule | report_schedule_by_form | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+report_schedule | report_schedule_cadence | CHECK ((((cadence = 'weekly'::text) AND ((weekday >= 1) AND (weekday <= 7)) AND (day_of_month IS NULL)) OR ((cadence = 'monthly'::text) AND ((day_of_month >= 1) AND (day_of_month <= 28)) AND (weekday IS NULL))))
+report_schedule | report_schedule_cadence_not_null | NOT NULL cadence
+report_schedule | report_schedule_channel | CHECK ((((channel = 'email'::text) AND (slack_channel IS NULL)) OR ((channel = 'slack'::text) AND ((length(btrim(slack_channel)) >= 1) AND (length(btrim(slack_channel)) <= 80)))))
+report_schedule | report_schedule_channel_not_null | NOT NULL channel
+report_schedule | report_schedule_created_at_not_null | NOT NULL created_at
+report_schedule | report_schedule_created_by_not_null | NOT NULL created_by
+report_schedule | report_schedule_definition_fkey | FOREIGN KEY (organisation_id, definition_id) REFERENCES report_definition(organisation_id, id)
+report_schedule | report_schedule_definition_id_not_null | NOT NULL definition_id
+report_schedule | report_schedule_id_not_null | NOT NULL id
+report_schedule | report_schedule_next_run_on_not_null | NOT NULL next_run_on
+report_schedule | report_schedule_organisation_id_not_null | NOT NULL organisation_id
+report_schedule | report_schedule_period_rule | CHECK ((period_rule = ANY (ARRAY['last_closed_month'::text, 'month_to_date'::text])))
+report_schedule | report_schedule_period_rule_not_null | NOT NULL period_rule
+report_schedule | report_schedule_pkey | PRIMARY KEY (organisation_id, id)
+report_schedule | report_schedule_recipients | CHECK (((cardinality(recipients) >= 1) AND (cardinality(recipients) <= 50)))
+report_schedule | report_schedule_recipients_not_null | NOT NULL recipients
+report_schedule | report_schedule_updated_at_not_null | NOT NULL updated_at
+report_schedule | report_schedule_version | CHECK ((version >= 1))
+report_schedule | report_schedule_version_not_null | NOT NULL version
+report_schedule | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+report_schedule_run | report_schedule_run_counts | CHECK (((sent >= 0) AND (jsonb_typeof(skipped) = 'array'::text) AND (jsonb_array_length(skipped) <= 50) AND (ledger_revision >= 0)))
+report_schedule_run | report_schedule_run_id_not_null | NOT NULL id
+report_schedule_run | report_schedule_run_ledger_revision_not_null | NOT NULL ledger_revision
+report_schedule_run | report_schedule_run_once | UNIQUE (organisation_id, schedule_id, ran_on)
+report_schedule_run | report_schedule_run_organisation_id_not_null | NOT NULL organisation_id
+report_schedule_run | report_schedule_run_period_label_not_null | NOT NULL period_label
+report_schedule_run | report_schedule_run_pkey | PRIMARY KEY (organisation_id, id)
+report_schedule_run | report_schedule_run_ran_at_not_null | NOT NULL ran_at
+report_schedule_run | report_schedule_run_ran_on_not_null | NOT NULL ran_on
+report_schedule_run | report_schedule_run_schedule_fkey | FOREIGN KEY (organisation_id, schedule_id) REFERENCES report_schedule(organisation_id, id)
+report_schedule_run | report_schedule_run_schedule_id_not_null | NOT NULL schedule_id
+report_schedule_run | report_schedule_run_sent_not_null | NOT NULL sent
+report_schedule_run | report_schedule_run_skipped_not_null | NOT NULL skipped
+report_schedule_run | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 restore_drill | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 restore_drill | restore_drill_audit_chain_not_null | NOT NULL audit_chain
 restore_drill | restore_drill_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
@@ -8453,6 +8703,7 @@ CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree 
 CREATE INDEX record_comment_thread ON fyniq.record_comment USING btree (organisation_id, record_type, record_id, created_at, id)
 CREATE INDEX report_export_expiring ON fyniq.report_export USING btree (organisation_id, status, expires_at)
 CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organisation_id, requested_by, requested_at DESC)
+CREATE INDEX report_schedule_due ON fyniq.report_schedule USING btree (organisation_id, next_run_on) WHERE active
 CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
 CREATE INDEX risk_review_risk_idx ON fyniq.risk_review USING btree (organisation_id, risk_id, reviewed_at)
 CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
@@ -8590,6 +8841,9 @@ CREATE UNIQUE INDEX bank_transfer_to_line ON fyniq.bank_transfer USING btree (or
 CREATE UNIQUE INDEX bill_payment_plan_pkey ON fyniq.bill_payment_plan USING btree (organisation_id, id)
 CREATE UNIQUE INDEX billing_rate_day_key ON fyniq.billing_rate USING btree (organisation_id, COALESCE(project_id, customer_id), COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid), COALESCE(role_name, ''::text), effective_from)
 CREATE UNIQUE INDEX billing_rate_pkey ON fyniq.billing_rate USING btree (organisation_id, id)
+CREATE UNIQUE INDEX board_pack_month_version ON fyniq.board_pack USING btree (organisation_id, month, version)
+CREATE UNIQUE INDEX board_pack_one_draft ON fyniq.board_pack USING btree (organisation_id, month) WHERE (status = 'draft'::text)
+CREATE UNIQUE INDEX board_pack_pkey ON fyniq.board_pack USING btree (organisation_id, id)
 CREATE UNIQUE INDEX brand_version_number ON fyniq.brand_version USING btree (organisation_id, version)
 CREATE UNIQUE INDEX brand_version_pkey ON fyniq.brand_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX break_glass_pkey ON fyniq.break_glass USING btree (organisation_id, id)
@@ -8631,6 +8885,9 @@ CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree 
 CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
 CREATE UNIQUE INDEX customer_group_name_key ON fyniq.customer_group USING btree (organisation_id, lower(btrim(name)))
 CREATE UNIQUE INDEX customer_group_pkey ON fyniq.customer_group USING btree (organisation_id, id)
+CREATE UNIQUE INDEX dashboard_layout_pkey ON fyniq.dashboard_layout USING btree (organisation_id, id)
+CREATE UNIQUE INDEX dashboard_layout_role_once ON fyniq.dashboard_layout USING btree (organisation_id, role) WHERE (scope = 'role'::text)
+CREATE UNIQUE INDEX dashboard_layout_user_once ON fyniq.dashboard_layout USING btree (organisation_id, user_id) WHERE (scope = 'user'::text)
 CREATE UNIQUE INDEX data_inventory_entry_pkey ON fyniq.data_inventory_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX data_inventory_entry_version_once ON fyniq.data_inventory_entry USING btree (organisation_id, entry_id, version)
 CREATE UNIQUE INDEX data_inventory_review_once ON fyniq.data_inventory_review USING btree (organisation_id, quarter)
@@ -8697,6 +8954,9 @@ CREATE UNIQUE INDEX installation_connector_secret_current ON fyniq.installation_
 CREATE UNIQUE INDEX installation_connector_secret_once ON fyniq.installation_connector_secret USING btree (ref)
 CREATE UNIQUE INDEX installation_connector_secret_pkey ON fyniq.installation_connector_secret USING btree (id)
 CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
+CREATE UNIQUE INDEX investor_update_pkey ON fyniq.investor_update USING btree (organisation_id, id)
+CREATE UNIQUE INDEX investor_update_read_once ON fyniq.investor_update_read USING btree (organisation_id, update_id, user_id)
+CREATE UNIQUE INDEX investor_update_read_pkey ON fyniq.investor_update_read USING btree (organisation_id, id)
 CREATE UNIQUE INDEX invitation_code_pkey ON fyniq.invitation_code USING btree (code_hash, owner)
 CREATE UNIQUE INDEX invoice_dispute_one_open ON fyniq.invoice_dispute USING btree (organisation_id, invoice_id, kind) WHERE (status = 'open'::text)
 CREATE UNIQUE INDEX invoice_dispute_pkey ON fyniq.invoice_dispute USING btree (organisation_id, id)
@@ -8736,6 +8996,8 @@ CREATE UNIQUE INDEX kb_snapshot_id ON fyniq.kb_snapshot USING btree (organisatio
 CREATE UNIQUE INDEX kb_snapshot_page_id ON fyniq.kb_snapshot_page USING btree (organisation_id, id)
 CREATE UNIQUE INDEX kb_snapshot_page_pkey ON fyniq.kb_snapshot_page USING btree (organisation_id, snapshot_number, key)
 CREATE UNIQUE INDEX kb_snapshot_pkey ON fyniq.kb_snapshot USING btree (organisation_id, number)
+CREATE UNIQUE INDEX kpi_alert_once ON fyniq.kpi_alert USING btree (organisation_id, kind, category, month)
+CREATE UNIQUE INDEX kpi_alert_pkey ON fyniq.kpi_alert USING btree (organisation_id, id)
 CREATE UNIQUE INDEX kpi_input_id_key ON fyniq.kpi_input USING btree (organisation_id, id)
 CREATE UNIQUE INDEX kpi_input_pkey ON fyniq.kpi_input USING btree (organisation_id, month)
 CREATE UNIQUE INDEX ledger_boundary_boundary_key ON fyniq.ledger_boundary USING btree (organisation_id, boundary)
@@ -8911,7 +9173,12 @@ CREATE UNIQUE INDEX recurring_invoice_version_pkey ON fyniq.recurring_invoice_ve
 CREATE UNIQUE INDEX recurring_journal_pkey ON fyniq.recurring_journal USING btree (organisation_id, id)
 CREATE UNIQUE INDEX recurring_journal_version_key ON fyniq.recurring_journal_version USING btree (organisation_id, recurring_journal_id, version)
 CREATE UNIQUE INDEX recurring_journal_version_pkey ON fyniq.recurring_journal_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX report_definition_name_live ON fyniq.report_definition USING btree (organisation_id, lower(btrim(name))) WHERE (archived_at IS NULL)
+CREATE UNIQUE INDEX report_definition_pkey ON fyniq.report_definition USING btree (organisation_id, id)
 CREATE UNIQUE INDEX report_export_pkey ON fyniq.report_export USING btree (organisation_id, id)
+CREATE UNIQUE INDEX report_schedule_pkey ON fyniq.report_schedule USING btree (organisation_id, id)
+CREATE UNIQUE INDEX report_schedule_run_once ON fyniq.report_schedule_run USING btree (organisation_id, schedule_id, ran_on)
+CREATE UNIQUE INDEX report_schedule_run_pkey ON fyniq.report_schedule_run USING btree (organisation_id, id)
 CREATE UNIQUE INDEX restore_drill_pkey ON fyniq.restore_drill USING btree (organisation_id, id)
 CREATE UNIQUE INDEX review_log_entry_approval_once ON fyniq.review_log_entry USING btree (organisation_id, approval_id)
 CREATE UNIQUE INDEX review_log_entry_pkey ON fyniq.review_log_entry USING btree (organisation_id, id)
@@ -9044,9 +9311,11 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_event DEFERR
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_sender', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.equity_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'transaction_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.holding_movement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('holding_movement', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.investor_update_read DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('investor_update_read', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.kb_page_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_page_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.kb_snapshot DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_snapshot', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.kpi_alert DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kpi_alert', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ledger_boundary DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ledger_boundary', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.mcp_user_optin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('mcp_user_optin', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_archive DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
@@ -9096,6 +9365,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.record_comment DEF
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_bill_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'recurring_bill_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_invoice_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'recurring_invoice_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_journal_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'recurring_journal_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.report_schedule_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('report_schedule_run', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.restore_drill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('restore_drill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_review', 'id')
@@ -9145,6 +9415,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_rec
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_rule DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_rule', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_signal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_signal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_transfer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_transfer', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.board_pack DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('board_pack', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.brand_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('brand_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.break_glass DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('break_glass', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
@@ -9154,6 +9425,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_pl
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.compliance_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('compliance_task', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.customer_group DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('customer_group', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.dashboard_layout DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('dashboard_layout', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.dimension DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('dimension', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.dimension_value DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('dimension', 'dimension_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
@@ -9165,6 +9437,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fixed_as
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'message_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.investor_update DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('investor_update', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoice_dispute DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoice_dispute', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_contingency DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_contingency', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_exclusion DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_exclusion', 'id')
@@ -9206,7 +9479,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_txn 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_journal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.report_definition DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('report_definition', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.report_export DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('report_export', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.report_schedule DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('report_schedule', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.salary_batch DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('salary_batch', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.statement_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statement_mapping', 'id')
@@ -9329,6 +9604,8 @@ CREATE TRIGGER bank_transfer_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ba
 CREATE TRIGGER bill_payment_plan_immutable BEFORE DELETE OR UPDATE ON fyniq.bill_payment_plan FOR EACH ROW EXECUTE FUNCTION bill_payment_plan_immutable()
 CREATE TRIGGER billing_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.billing_rate FOR EACH ROW EXECUTE FUNCTION rate_immutable()
 CREATE TRIGGER billing_rate_no_truncate BEFORE TRUNCATE ON fyniq.billing_rate FOR EACH STATEMENT EXECUTE FUNCTION rate_immutable()
+CREATE TRIGGER board_pack_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.board_pack FOR EACH ROW EXECUTE FUNCTION board_pack_guard()
+CREATE TRIGGER board_pack_no_truncate BEFORE TRUNCATE ON fyniq.board_pack FOR EACH STATEMENT EXECUTE FUNCTION board_pack_guard()
 CREATE TRIGGER brand_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.brand_version FOR EACH ROW EXECUTE FUNCTION brand_version_guard()
 CREATE TRIGGER break_glass_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.break_glass FOR EACH ROW EXECUTE FUNCTION break_glass_guard()
 CREATE TRIGGER break_glass_no_truncate BEFORE TRUNCATE ON fyniq.break_glass FOR EACH STATEMENT EXECUTE FUNCTION break_glass_guard()
@@ -9374,6 +9651,8 @@ CREATE TRIGGER conversion_step_no_truncate BEFORE TRUNCATE ON fyniq.conversion_s
 CREATE TRIGGER corporate_document_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION corporate_document_guard()
 CREATE TRIGGER corporate_record_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION corporate_record_guard()
 CREATE TRIGGER corporate_register_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION corporate_register_guard()
+CREATE TRIGGER dashboard_layout_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.dashboard_layout FOR EACH ROW EXECUTE FUNCTION dashboard_layout_guard()
+CREATE TRIGGER dashboard_layout_no_truncate BEFORE TRUNCATE ON fyniq.dashboard_layout FOR EACH STATEMENT EXECUTE FUNCTION dashboard_layout_guard()
 CREATE TRIGGER data_inventory_entry_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.data_inventory_entry FOR EACH ROW EXECUTE FUNCTION data_inventory_guard()
 CREATE TRIGGER data_inventory_entry_no_truncate BEFORE TRUNCATE ON fyniq.data_inventory_entry FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER data_inventory_review_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.data_inventory_review FOR EACH ROW EXECUTE FUNCTION data_inventory_guard()
@@ -9448,6 +9727,10 @@ CREATE TRIGGER installation_connector_secret_named BEFORE INSERT ON fyniq.instal
 CREATE TRIGGER installation_connector_secret_no_truncate BEFORE TRUNCATE ON fyniq.installation_connector_secret FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER instrument_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION instrument_guard()
 CREATE TRIGGER investor_right_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION investor_right_guard()
+CREATE TRIGGER investor_update_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.investor_update FOR EACH ROW EXECUTE FUNCTION investor_update_guard()
+CREATE TRIGGER investor_update_no_truncate BEFORE TRUNCATE ON fyniq.investor_update FOR EACH STATEMENT EXECUTE FUNCTION investor_update_guard()
+CREATE TRIGGER investor_update_read_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.investor_update_read FOR EACH ROW EXECUTE FUNCTION investor_update_read_guard()
+CREATE TRIGGER investor_update_read_no_truncate BEFORE TRUNCATE ON fyniq.investor_update_read FOR EACH STATEMENT EXECUTE FUNCTION investor_update_read_guard()
 CREATE TRIGGER invitation_code_guard BEFORE DELETE OR UPDATE ON fyniq.invitation_code FOR EACH ROW EXECUTE FUNCTION invitation_code_guard()
 CREATE TRIGGER invitation_code_no_truncate BEFORE TRUNCATE ON fyniq.invitation_code FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER invitation_code_registered AFTER INSERT ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION invitation_code_registered()
@@ -9487,6 +9770,8 @@ CREATE TRIGGER kb_snapshot_guard BEFORE DELETE OR UPDATE ON fyniq.kb_snapshot FO
 CREATE TRIGGER kb_snapshot_no_truncate BEFORE TRUNCATE ON fyniq.kb_snapshot FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER kb_snapshot_page_guard BEFORE DELETE OR UPDATE ON fyniq.kb_snapshot_page FOR EACH ROW EXECUTE FUNCTION kb_guard()
 CREATE TRIGGER kb_snapshot_page_no_truncate BEFORE TRUNCATE ON fyniq.kb_snapshot_page FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER kpi_alert_guard BEFORE DELETE OR UPDATE ON fyniq.kpi_alert FOR EACH ROW EXECUTE FUNCTION kpi_alert_guard()
+CREATE TRIGGER kpi_alert_no_truncate BEFORE TRUNCATE ON fyniq.kpi_alert FOR EACH STATEMENT EXECUTE FUNCTION kpi_alert_guard()
 CREATE TRIGGER kpi_input_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.kpi_input FOR EACH ROW EXECUTE FUNCTION kpi_input_guard()
 CREATE TRIGGER kpi_input_no_truncate BEFORE TRUNCATE ON fyniq.kpi_input FOR EACH STATEMENT EXECUTE FUNCTION kpi_input_guard()
 CREATE TRIGGER last_owner_guard BEFORE UPDATE OF revoked_at ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION last_owner_guard()
@@ -9676,8 +9961,14 @@ CREATE TRIGGER recurring_invoice_version_no_truncate BEFORE TRUNCATE ON fyniq.re
 CREATE TRIGGER recurring_journal_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_journal_version FOR EACH ROW EXECUTE FUNCTION recurring_journal_version_immutable()
 CREATE TRIGGER removed_member_guard BEFORE INSERT ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION removed_member_guard()
 CREATE TRIGGER removed_member_guard BEFORE UPDATE OF status ON fyniq.user_membership FOR EACH ROW EXECUTE FUNCTION removed_member_guard()
+CREATE TRIGGER report_definition_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.report_definition FOR EACH ROW EXECUTE FUNCTION report_definition_guard()
+CREATE TRIGGER report_definition_no_truncate BEFORE TRUNCATE ON fyniq.report_definition FOR EACH STATEMENT EXECUTE FUNCTION report_definition_guard()
 CREATE TRIGGER report_export_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.report_export FOR EACH ROW EXECUTE FUNCTION report_export_guard()
 CREATE TRIGGER report_export_no_truncate BEFORE TRUNCATE ON fyniq.report_export FOR EACH STATEMENT EXECUTE FUNCTION report_export_guard()
+CREATE TRIGGER report_schedule_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.report_schedule FOR EACH ROW EXECUTE FUNCTION report_schedule_guard()
+CREATE TRIGGER report_schedule_no_truncate BEFORE TRUNCATE ON fyniq.report_schedule FOR EACH STATEMENT EXECUTE FUNCTION report_schedule_guard()
+CREATE TRIGGER report_schedule_run_guard BEFORE DELETE OR UPDATE ON fyniq.report_schedule_run FOR EACH ROW EXECUTE FUNCTION report_schedule_run_guard()
+CREATE TRIGGER report_schedule_run_no_truncate BEFORE TRUNCATE ON fyniq.report_schedule_run FOR EACH STATEMENT EXECUTE FUNCTION report_schedule_run_guard()
 CREATE TRIGGER restore_drill_guard BEFORE DELETE OR UPDATE ON fyniq.restore_drill FOR EACH ROW EXECUTE FUNCTION restore_drill_guard()
 CREATE TRIGGER restore_drill_no_truncate BEFORE TRUNCATE ON fyniq.restore_drill FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION review_log_guard()
@@ -9807,6 +10098,7 @@ bank_statement | tenant_isolation | * | (organisation_id = current_org()) | (org
 bank_transfer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bill_payment_plan | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 billing_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+board_pack | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 brand_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 break_glass | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 break_glass_use | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9829,6 +10121,7 @@ control_run | tenant_isolation | * | (organisation_id = current_org()) | (organi
 control_state | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 conversion_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 customer_group | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+dashboard_layout | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 data_inventory_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 data_inventory_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 dimension | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9859,6 +10152,8 @@ holding_movement | tenant_isolation | * | (organisation_id = current_org()) | (o
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_file | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+investor_update | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+investor_update_read | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 invoice_dispute | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 invoicenow_contingency | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 invoicenow_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9876,6 +10171,7 @@ kb_note | tenant_isolation | * | (organisation_id = current_org()) | (organisati
 kb_page_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 kb_snapshot | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 kb_snapshot_page | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+kpi_alert | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 kpi_input | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_boundary | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_purged_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9971,7 +10267,10 @@ recurring_invoice | tenant_isolation | * | (organisation_id = current_org()) | (
 recurring_invoice_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_journal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_journal_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+report_definition | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 report_export | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+report_schedule | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+report_schedule_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 restore_drill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10065,6 +10364,7 @@ bank_statement | enabled | forced
 bank_transfer | enabled | forced
 bill_payment_plan | enabled | forced
 billing_rate | enabled | forced
+board_pack | enabled | forced
 brand_version | enabled | forced
 break_glass | enabled | forced
 break_glass_use | enabled | forced
@@ -10090,6 +10390,7 @@ control_state | enabled | forced
 conversion_step | enabled | forced
 currency | disabled | not forced
 customer_group | enabled | forced
+dashboard_layout | enabled | forced
 data_inventory_entry | enabled | forced
 data_inventory_review | enabled | forced
 dimension | enabled | forced
@@ -10128,6 +10429,8 @@ installation_announcement | disabled | not forced
 installation_change | disabled | not forced
 installation_connector | disabled | not forced
 installation_connector_secret | disabled | not forced
+investor_update | enabled | forced
+investor_update_read | enabled | forced
 invitation_code | disabled | not forced
 invoice_dispute | enabled | forced
 invoicenow_contingency | enabled | forced
@@ -10152,6 +10455,7 @@ kb_platform_release | disabled | not forced
 kb_platform_source | disabled | not forced
 kb_snapshot | enabled | forced
 kb_snapshot_page | enabled | forced
+kpi_alert | enabled | forced
 kpi_input | enabled | forced
 ledger_boundary | enabled | forced
 ledger_purged_entry | enabled | forced
@@ -10252,7 +10556,10 @@ recurring_invoice | enabled | forced
 recurring_invoice_version | enabled | forced
 recurring_journal | enabled | forced
 recurring_journal_version | enabled | forced
+report_definition | enabled | forced
 report_export | enabled | forced
+report_schedule | enabled | forced
+report_schedule_run | enabled | forced
 restore_drill | enabled | forced
 review_log_entry | enabled | forced
 review_log_review | enabled | forced
@@ -10377,6 +10684,7 @@ bank_statement_guard() → trigger | security invoker | v | search_path=pg_catal
 bank_transfer_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2a459aeb50a6cb1dcb5b2e92fe31c98d
 beat(p_name text, p_at timestamp with time zone, p_detail text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 464af91fa7b0d569c10c9b291c9d6460
 bill_payment_plan_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d53bcb2c3cc4abaeb7eb39ce991bc40
+board_pack_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 790c338c4aa39251a74f4ea159c692bc
 bootstrap_installation_connectors(p_rows jsonb, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | aaf122d42b55f7004f7bf7ec42326134
 brand_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df02ba30772ae414556351eb8481e851
 break_glass_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 962a60f5cbf377604e7f27ec16e6b71d
@@ -10425,6 +10733,7 @@ create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security 
 create_scheduled_invoice_draft(p_recurring_invoice uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2965fc4edb05408641ee8a47909a2109
 create_scheduled_revaluation(p_period uuid, p_payload jsonb, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3a11f739d0529e16f9662b7ad7fd8477
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
+dashboard_layout_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e06337ea62e5f10b08b5f3be9c8562b9
 data_inventory_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1dc593065673ca2a9bed7ad2e347d0a5
 decide_installation_change(p_by uuid, p_id uuid, p_hash bytea, p_approve boolean, p_mfa_at timestamp with time zone, p_reason text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 338fe991475e9f427093a25bef17d1d0
 decide_join_request(p_by uuid, p_id uuid, p_approve boolean, p_now timestamp with time zone, OUT user_id uuid, OUT membership_id uuid, OUT role_assignment_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7989699e7aeef23a35e52dbc46bc826a
@@ -10495,6 +10804,8 @@ installation_dual_control() → boolean | security invoker | s | search_path=pg_
 installation_org() → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9731da83e60ff6283071958a473dc801
 instrument_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 249c231a7cc53d4f0e283ebd13cde723
 investor_right_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7af4ae546a25e838d926206dc41bbb07
+investor_update_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 61bfca06922e94b4f963dc2716fddc3e
+investor_update_read_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b2420800b375b543d651fac2a0440734
 invitation_code_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 25e66eda35f692c46e109756f9386ae1
 invitation_code_registered() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 493cbaf52e2913b053d4354c418ba404
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001
@@ -10531,6 +10842,7 @@ kb_platform_page_get(p_key text, p_roles text[], p_classes text[]) → TABLE(key
 kb_platform_page_guides(p_key text, p_roles text[], p_classes text[]) → TABLE(file text, key text, title text, draft boolean) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | aa653b92242d6fed6ef0deae9052d670
 kb_platform_readable(p_key text, p_roles text[], p_classes text[]) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4c28f1c52571c14662d29634d2f7861c
 kb_platform_search(p_terms text[], p_roles text[], p_classes text[], p_scope text, p_limit integer) → TABLE(kind text, key text, title text, summary text, snippet text, rank real, draft boolean) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4dd60b9e92df8a4e6c5b45a7ac270599
+kpi_alert_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9cc677868bc3ec818ec1342b6f0e0b7
 kpi_input_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9f9ba3f0de039e4e5e95975fec3d4493
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
@@ -10658,7 +10970,10 @@ release_join_domain(p_org uuid, p_domain text) → boolean | security definer | 
 remittance_allowed(p_payment uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 71486c98f030e272cb2b831b924e47d1
 remittance_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f9c42f700a81ca6d6d0fd3fc96e9ba53
 removed_member_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 217d2428d697906d9215522a21f5c049
+report_definition_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4d1a8c2f6161bd697a4cd4085ed9497f
 report_export_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 20502c6b8dfb382053b912027176702f
+report_schedule_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8eeb34cd1d7c0735ddeeb2fc40a6acc7
+report_schedule_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | de5e4377294bb752073a97092343042c
 request_installation_change(p_by uuid, p_connector_id uuid, p_connector text, p_step text, p_summary text, p_change jsonb, p_envelope text, p_hash bytea, p_mfa_at timestamp with time zone, p_at timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 081e531ac2fa6d7a04725c2968ee4893
 request_to_join(p_session bytea, p_name text, p_now timestamp with time zone, OUT organisation_id uuid, OUT request_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 48fe2b7d682eeb278e1638056c897cd0
 require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88b80585540483298b0397296b364b9d

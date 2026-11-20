@@ -172,6 +172,28 @@ var matrixCards = map[string]func(e *env, tok string) (response, func() bool){
 			return len(l.Body["items"].([]any)) == 0
 		}
 	},
+	"listCardReceiptSuggestions": func(e *env, tok string) (response, func() bool) {
+		l := e.lineOn(e.cardOf(matrixApprover(e)), "-27.30", nil)
+		return e.call(http.MethodGet, "/v1/card-lines/"+l.ID.String()+"/receipt-suggestions", steppedUp(e, tok), nil), nil
+	},
+	"attachCardReceiptSuggestion": func(e *env, tok string) (response, func() bool) {
+		travel, _ := e.claimSetup()
+		l := e.lineOn(e.cardOf(matrixApprover(e)), "-27.30", nil)
+		done := e.call(http.MethodPost, "/v1/card-lines/"+l.ID.String()+"/complete", steppedUp(e, e.as(authz.Employee)),
+			map[string]any{"category_id": travel, "gst_code": "NR"}, "If-Match", etag(l.Version))
+		capture := e.readCaptureOf(uuid.MustParse(matrixApprover(e)), "matrix.pdf", "27.30", "2026-10-19")
+		r := e.call(http.MethodPost, "/v1/card-lines/"+l.ID.String()+"/receipt-suggestions/attach", steppedUp(e, tok),
+			map[string]any{"capture_id": capture.String()}, "If-Match", done.Header.Get("ETag"))
+		return r, func() bool {
+			var read bool
+			e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+				c, err := u.DocumentCaptures().Get(ctx, capture)
+				read = err == nil && c.Status == storage.CaptureRead
+				return err
+			})
+			return read
+		}
+	},
 	"getClaimGSTCodes": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/expense-claims/gst-codes?on=2026-10-15", tok, nil), nil
 	},

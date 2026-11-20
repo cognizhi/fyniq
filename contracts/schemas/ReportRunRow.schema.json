@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cells": {
+      "description": "One per column.",
+      "items": {
+        "$ref": "ReportRunCell.schema.json"
+      },
+      "type": "array"
+    },
+    "format": {
+      "description": "Its figures' format; a heading has none.",
+      "enum": [
+        "amount",
+        "percent",
+        "ratio"
+      ],
+      "examples": [
+        "amount"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The row's ID.",
+      "examples": [
+        "rev"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "Its kind.",
+      "enum": [
+        "account",
+        "group",
+        "calc",
+        "heading"
+      ],
+      "examples": [
+        "group"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "Its label.",
+      "examples": [
+        "Revenue"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "label",
+    "kind",
+    "cells"
+  ],
+  "title": "ReportRunRow",
+  "type": "object"
+}

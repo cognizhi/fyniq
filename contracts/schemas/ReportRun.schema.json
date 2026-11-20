@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "columns": {
+      "description": "The columns.",
+      "items": {
+        "$ref": "ReportRunColumn.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The base currency of the amounts.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "definition_id": {
+      "description": "The saved report it ran; absent for a draft run.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5a10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "definition_version": {
+      "description": "The version it ran.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "from": {
+      "description": "The run's first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision every figure was read at (FR-RPT-08).",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "platform_version": {
+      "description": "The version of Fyniq that worked it out.",
+      "examples": [
+        "0.1.0"
+      ],
+      "type": "string"
+    },
+    "rows": {
+      "description": "The rows; an account or group row of zeros is left out unless the definition includes it.",
+      "items": {
+        "$ref": "ReportRunRow.schema.json"
+      },
+      "type": "array"
+    },
+    "to": {
+      "description": "The run's last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "from",
+    "to",
+    "ledger_revision",
+    "platform_version",
+    "columns",
+    "rows"
+  ],
+  "title": "ReportRun",
+  "type": "object"
+}

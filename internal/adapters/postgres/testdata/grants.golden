@@ -152,6 +152,9 @@ fyniq_api       INSERT    bill_payment_plan (bill_id, planned_on, recorded_by)
 fyniq_api       SELECT    bill_payment_plan
 fyniq_api       INSERT    billing_rate (created_by, currency, customer_id, effective_from, hourly_rate, minor_units, project_id, role_name, user_id)
 fyniq_api       SELECT    billing_rate
+fyniq_api       INSERT    board_pack (asks, commentary, created_at, created_by, highlights, month, supersedes, updated_at, updated_by, version)
+fyniq_api       SELECT    board_pack
+fyniq_api       UPDATE    board_pack (asks, commentary, edit, figures, highlights, ledger_revision, published_at, published_by, status, updated_at, updated_by)
 fyniq_api       EXECUTE   bootstrap_installation_connectors()
 fyniq_api       INSERT    brand_version
 fyniq_api       SELECT    brand_version
@@ -212,6 +215,9 @@ fyniq_api       EXECUTE   current_org()
 fyniq_api       INSERT    customer_group (name, reminder_days)
 fyniq_api       SELECT    customer_group
 fyniq_api       UPDATE    customer_group (active, name, reminder_days, version)
+fyniq_api       INSERT    dashboard_layout (role, scope, tiles, updated_at, updated_by, user_id)
+fyniq_api       SELECT    dashboard_layout
+fyniq_api       UPDATE    dashboard_layout (tiles, updated_at, updated_by, version)
 fyniq_api       INSERT    data_inventory_entry (entry_id, needs_dpia, retention, saved_at, saved_by, state, transfers, version, what, where_held, who, why)
 fyniq_api       SELECT    data_inventory_entry
 fyniq_api       INSERT    data_inventory_review (note, quarter, reviewed_at, reviewed_by)
@@ -308,6 +314,11 @@ fyniq_api       EXECUTE   installation_changes()
 fyniq_api       EXECUTE   installation_connector_secrets()
 fyniq_api       EXECUTE   installation_connectors()
 fyniq_api       EXECUTE   installation_org()
+fyniq_api       INSERT    investor_update (asks, created_at, created_by, highlights, kind, pack_id, title, updated_at, updated_by)
+fyniq_api       SELECT    investor_update
+fyniq_api       UPDATE    investor_update (asks, edit, highlights, recipients, sent_at, sent_by, status, title, updated_at, updated_by)
+fyniq_api       INSERT    investor_update_read (read_at, update_id, user_id)
+fyniq_api       SELECT    investor_update_read
 fyniq_api       EXECUTE   invite_super_admin()
 fyniq_api       INSERT    invoice_dispute (amount, created_at, created_by, currency, invoice_id, kind, promised_on, reason)
 fyniq_api       SELECT    invoice_dispute
@@ -363,6 +374,7 @@ fyniq_api       INSERT    kb_snapshot (approval_id, created_at, created_by, numb
 fyniq_api       SELECT    kb_snapshot
 fyniq_api       INSERT    kb_snapshot_page (key, snapshot_number, version)
 fyniq_api       SELECT    kb_snapshot_page
+fyniq_api       SELECT    kpi_alert
 fyniq_api       INSERT    kpi_input (entered_at, entered_by, headcount, lost_customers, month, new_customers, paying_customers)
 fyniq_api       SELECT    kpi_input
 fyniq_api       UPDATE    kpi_input (entered_at, entered_by, headcount, lost_customers, new_customers, paying_customers, version)
@@ -601,8 +613,15 @@ fyniq_api       INSERT    recurring_journal_version (content, edited_by, recurri
 fyniq_api       SELECT    recurring_journal_version
 fyniq_api       EXECUTE   register_private_endpoint()
 fyniq_api       EXECUTE   release_join_domain()
+fyniq_api       INSERT    report_definition (created_at, created_by, definition, description, name, owner_id, updated_at, updated_by, visibility)
+fyniq_api       SELECT    report_definition
+fyniq_api       UPDATE    report_definition (archived_at, definition, description, name, updated_at, updated_by, version, visibility)
 fyniq_api       INSERT    report_export (format, parameters, report, requested_at, requested_by)
 fyniq_api       SELECT    report_export
+fyniq_api       INSERT    report_schedule (active, cadence, channel, created_at, created_by, day_of_month, definition_id, next_run_on, period_rule, recipients, slack_channel, updated_at, weekday)
+fyniq_api       SELECT    report_schedule
+fyniq_api       UPDATE    report_schedule (active, cadence, channel, day_of_month, next_run_on, period_rule, recipients, slack_channel, updated_at, version, weekday)
+fyniq_api       SELECT    report_schedule_run
 fyniq_api       EXECUTE   request_installation_change()
 fyniq_api       EXECUTE   request_to_join()
 fyniq_api       INSERT    restore_drill (audit_chain, data_lost_minutes, documents, findings, held_on, keys, ledger, outbox, recorded_at, recorded_by, restored_from, scenario, sign_in, tick, took_minutes)
@@ -901,6 +920,7 @@ fyniq_readonly  SELECT    bank_statement
 fyniq_readonly  SELECT    bank_transfer
 fyniq_readonly  SELECT    bill_payment_plan
 fyniq_readonly  SELECT    billing_rate
+fyniq_readonly  SELECT    board_pack
 fyniq_readonly  SELECT    brand_version
 fyniq_readonly  SELECT    break_glass
 fyniq_readonly  SELECT    break_glass_use
@@ -925,6 +945,7 @@ fyniq_readonly  SELECT    conversion_step
 fyniq_readonly  SELECT    currencies
 fyniq_readonly  EXECUTE   current_org()
 fyniq_readonly  SELECT    customer_group
+fyniq_readonly  SELECT    dashboard_layout
 fyniq_readonly  SELECT    data_inventory_entry
 fyniq_readonly  SELECT    data_inventory_review
 fyniq_readonly  SELECT    dimension
@@ -957,6 +978,8 @@ fyniq_readonly  SELECT    holding_movement
 fyniq_readonly  SELECT    idempotency_key
 fyniq_readonly  SELECT    inbound_file
 fyniq_readonly  SELECT    inbound_message
+fyniq_readonly  SELECT    investor_update
+fyniq_readonly  SELECT    investor_update_read
 fyniq_readonly  SELECT    invoice_dispute
 fyniq_readonly  SELECT    invoicenow_contingency
 fyniq_readonly  SELECT    invoicenow_event
@@ -975,6 +998,7 @@ fyniq_readonly  SELECT    kb_note
 fyniq_readonly  SELECT    kb_page_version
 fyniq_readonly  SELECT    kb_snapshot
 fyniq_readonly  SELECT    kb_snapshot_page
+fyniq_readonly  SELECT    kpi_alert
 fyniq_readonly  SELECT    kpi_input
 fyniq_readonly  SELECT    ledger_boundary
 fyniq_readonly  SELECT    ledger_purged_entry
@@ -1067,7 +1091,10 @@ fyniq_readonly  SELECT    recurring_invoice
 fyniq_readonly  SELECT    recurring_invoice_version
 fyniq_readonly  SELECT    recurring_journal
 fyniq_readonly  SELECT    recurring_journal_version
+fyniq_readonly  SELECT    report_definition
 fyniq_readonly  SELECT    report_export
+fyniq_readonly  SELECT    report_schedule
+fyniq_readonly  SELECT    report_schedule_run
 fyniq_readonly  SELECT    restore_drill
 fyniq_readonly  SELECT    review_log_entry
 fyniq_readonly  SELECT    review_log_review
@@ -1200,6 +1227,7 @@ fyniq_worker    UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, und
 fyniq_worker    EXECUTE   beat()
 fyniq_worker    SELECT    bill_payment_plan
 fyniq_worker    SELECT    billing_rate
+fyniq_worker    SELECT    board_pack
 fyniq_worker    SELECT    brand_version
 fyniq_worker    SELECT    break_glass
 fyniq_worker    SELECT    break_glass_use
@@ -1240,6 +1268,7 @@ fyniq_worker    EXECUTE   create_scheduled_revaluation()
 fyniq_worker    SELECT    currencies
 fyniq_worker    EXECUTE   current_org()
 fyniq_worker    SELECT    customer_group
+fyniq_worker    SELECT    dashboard_layout
 fyniq_worker    SELECT    data_inventory_entry
 fyniq_worker    SELECT    data_inventory_review
 fyniq_worker    EXECUTE   destroyed_installation_connector_secret()
@@ -1298,6 +1327,8 @@ fyniq_worker    EXECUTE   installation_changes()
 fyniq_worker    EXECUTE   installation_connector_secrets()
 fyniq_worker    EXECUTE   installation_connectors()
 fyniq_worker    EXECUTE   installation_org()
+fyniq_worker    SELECT    investor_update
+fyniq_worker    SELECT    investor_update_read
 fyniq_worker    SELECT    invoice_dispute
 fyniq_worker    SELECT    invoicenow_contingency
 fyniq_worker    INSERT    invoicenow_event (actor, at, detail, status, submission_id)
@@ -1320,6 +1351,8 @@ fyniq_worker    SELECT    kb_note
 fyniq_worker    SELECT    kb_page_version
 fyniq_worker    SELECT    kb_snapshot
 fyniq_worker    SELECT    kb_snapshot_page
+fyniq_worker    INSERT    kpi_alert (category, currency, history_months, kind, ledger_revision, mean, month, raised_at, spend)
+fyniq_worker    SELECT    kpi_alert
 fyniq_worker    SELECT    kpi_input
 fyniq_worker    INSERT    ledger_boundary (anchor_key, approval, boundary, counts, purged_hash, written_at)
 fyniq_worker    SELECT    ledger_boundary
@@ -1468,8 +1501,13 @@ fyniq_worker    SELECT    recurring_journal
 fyniq_worker    UPDATE    recurring_journal (next_on)
 fyniq_worker    SELECT    recurring_journal_version
 fyniq_worker    EXECUTE   remittance_allowed()
+fyniq_worker    SELECT    report_definition
 fyniq_worker    SELECT    report_export
 fyniq_worker    UPDATE    report_export (expires_at, failure, file_name, file_sha256, ledger_revision, media_type, ready_at, rows_count, size_bytes, status)
+fyniq_worker    SELECT    report_schedule
+fyniq_worker    UPDATE    report_schedule (last_run_on, next_run_on, updated_at, version)
+fyniq_worker    INSERT    report_schedule_run (ledger_revision, period_label, ran_at, ran_on, schedule_id, sent, skipped)
+fyniq_worker    SELECT    report_schedule_run
 fyniq_worker    SELECT    restore_drill
 fyniq_worker    INSERT    review_log_entry (actor, approval_id, kind, logged_at, object_key, object_type, summary)
 fyniq_worker    SELECT    review_log_entry

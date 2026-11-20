@@ -11,9 +11,10 @@ INSERT INTO fyniq.ai_proposal_view (proposal_id, user_id, first_viewed_at) VALUE
 ON CONFLICT DO NOTHING;
 
 -- name: AIQualityRows :many
-SELECT p.id, p.task_type, p.status, p.proposed_at, p.decided_by, p.decided_at, p.approved_sha256, p.payload_sha256, p.reason, v.first_viewed_at
+SELECT p.id, p.task_type, p.status, p.proposed_at, p.decided_by, p.decided_at, p.approved_sha256, p.payload_sha256, p.reason, v.first_viewed_at, un.undone_at
 FROM fyniq.ai_proposal p
 LEFT JOIN fyniq.ai_proposal_view v ON v.organisation_id = p.organisation_id AND v.proposal_id = p.id AND v.user_id = p.decided_by
+LEFT JOIN fyniq.ai_proposal_undo un ON un.organisation_id = p.organisation_id AND un.proposal_id = p.id
 WHERE p.proposed_at >= sqlc.arg(from_at) AND p.proposed_at < sqlc.arg(to_at)
 ORDER BY p.id;
 

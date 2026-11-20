@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "user_id": {
+      "description": "The recipient.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    },
+    "why": {
+      "description": "Why.",
+      "examples": [
+        "no longer reads the whole ledger's reports"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "why"
+  ],
+  "title": "SkippedSend",
+  "type": "object"
+}

@@ -271,6 +271,14 @@ var fyCodes = map[string]string{
 	"FY900": storage.CodePeopleLink,         // the link deleted, started out of epoch order, moved between states it may not, or a person moved to an older version (000900)
 	"FY901": storage.CodePayrollRun,         // a payroll entry with no receipt from its own transaction (000903)
 	"FY912": storage.CodeSalaryBatch,        // a salary batch's line, event or release changed, a batch moved back, approved or released by its run's preparer or approver, or unapproved (000912)
+	"FYR01": storage.CodeReportDefinition,   // a report definition changed other than as its next version, or deleted (001100)
+	"FYR02": storage.CodeReportSchedule,     // a report schedule changed other than as its next version, or deleted (001100)
+	"FYR03": storage.CodeReportScheduleRun,  // a recorded run of a report schedule changed or deleted (001100)
+	"FYR04": storage.CodeBoardPack,         // a published board pack changed, a pack deleted, or a draft changed out of its course (001101)
+	"FYR05": storage.CodeInvestorUpdate,    // a sent investor update changed, an update deleted, or one sent from an unpublished pack (001101)
+	"FYR06": storage.CodeInvestorRead,      // a read recorded for someone the update was not sent to, or changed (001101)
+	"FYR07": storage.CodeKPIAlert,          // a raised KPI alert changed or deleted (001102)
+	"FYR08": storage.CodeDashboardLayout,   // a dashboard layout changed other than as its next version, or deleted (001103)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
@@ -334,6 +342,10 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"migration_commit_one":                      {storage.CodeDuplicate, "the migration is committed already"},
 	"migration_record_key":                      {storage.CodeDuplicate, "the record is imported already"},
 	"quote_outcome_once":                        {storage.CodeQuoteOutcome, "the quote has an outcome already"},
+	"board_pack_one_draft":                      {storage.CodeBoardPackDraft, "the month has a draft already: edit it, or publish it"},
+	"report_definition_name_live":               {storage.CodeReportName, "a live report already has that name"},
+	"dashboard_layout_role_once":                {storage.CodeVersion, "the role's layout was saved meanwhile"},
+	"dashboard_layout_user_once":                {storage.CodeVersion, "the person's layout was saved meanwhile"},
 	"kpi_input_pkey":                            {storage.CodeVersion, "the month's counts were entered meanwhile"},
 	"check_state_pkey":                          {storage.CodeVersion, "another run wrote the check meanwhile"},
 	"check_owner_pkey":                          {storage.CodeVersion, "the check's owner was named meanwhile"},

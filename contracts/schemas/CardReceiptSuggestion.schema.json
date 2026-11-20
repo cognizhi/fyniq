@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "capture_id": {
+      "description": "The captured document.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d41"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "The date it shows.",
+      "examples": [
+        "2026-10-19"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "file_name": {
+      "description": "The name it was captured with: data, never a path.",
+      "examples": [
+        "taxi.pdf"
+      ],
+      "type": "string"
+    },
+    "media_type": {
+      "description": "Its type.",
+      "examples": [
+        "application/pdf"
+      ],
+      "type": "string"
+    },
+    "supplier": {
+      "description": "Who issued it, as the model read it (the model's reading, not a figure Fyniq computed).",
+      "examples": [
+        "ComfortDelGro"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "description": "The total it shows, a decimal string.",
+      "examples": [
+        "27.30"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "capture_id",
+    "file_name",
+    "media_type",
+    "date",
+    "total"
+  ],
+  "title": "CardReceiptSuggestion",
+  "type": "object"
+}

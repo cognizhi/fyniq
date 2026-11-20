@@ -31,6 +31,7 @@ type AIQualityRow struct {
 	ApprovedWhole bool
 	Reason        string
 	FirstViewedAt *time.Time
+	UndoneAt      *time.Time // when a person undid the executed proposal (AI-91), if they did
 }
 
 // AIQualityReview is a month's signed review of the approval-quality metrics (CTL-AI-07), with the metrics as they stood when it was signed.

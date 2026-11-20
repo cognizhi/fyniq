@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, CalendarClock, ChartBarDecreasing, ChartColumn, ChevronRight, Gauge, HandCoins, Landmark, ReceiptText, Scale, ScrollText, Search, Target, Truck, Wallet, type LucideIcon } from "lucide-react";
+import { BookOpen, CalendarClock, ChartBarDecreasing, ChartColumn, ChevronRight, Gauge, HandCoins, Landmark, LayoutList, ReceiptText, Scale, ScrollText, Search, Target, Truck, Wallet, type LucideIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -32,6 +32,9 @@ const more: { name: string; line: string; icon: LucideIcon; to: string; params?:
   { name: statementNames.tb, line: "Every account's balance at a month's end, debits and credits.", icon: BookOpen, to: "/reports/statements/$kind", params: { kind: "tb" }, expert: true },
   { name: "General ledger", line: "Every posted line of the accounts you choose, with a running balance.", icon: ScrollText, to: "/reports/general-ledger", expert: true },
   { name: "Schedules", line: "Costs and income spread over months, and what each has recognised.", icon: CalendarClock, to: "/accounting/schedules", expert: true },
+  { name: "Dashboard", line: "Arrange the KPI tiles you watch, and save your own dashboard.", icon: Gauge, to: "/dashboards" },
+  { name: "Board pack", line: "The month's board pack: its figures, your commentary, and Publish.", icon: Landmark, to: "/reports/board-pack", expert: true },
+  { name: "Report builder", line: "Choose rows, columns and calculated rows, then save, share and schedule the report.", icon: LayoutList, to: "/reports/builder", expert: true },
   { name: "Budget vs Actual", line: "Each account's actual against the year's budget, and whether the gap is favourable.", icon: Target, to: "/reports/budget-vs-actual", expert: true },
 ];
 

@@ -117,7 +117,9 @@ describe("the AI tasks page", () => {
   });
 
   it("shows the Owner the month's approval quality and lets them sign its review, once", async () => {
-    const metrics = { made: 10, approved: 8, rejected: 1, expired: 1, invalid: 0, stale: 0, quick_share: 0.25, median_decision_seconds: 90, rejected_with_reason_share: 1, per_approver: [], task_types: [] };
+    const metrics = { made: 10, approved: 8, rejected: 1, expired: 1, invalid: 0, stale: 0, quick_share: 0.25, median_decision_seconds: 90, rejected_with_reason_share: 1, per_approver: [],
+      task_types: [{ task_type: "ap.draft_bill", count: 6, share: 0.6, approved: 5, edited: 2, reversed: 1, median_decision_seconds: 310 }],
+      edited: 2, edited_share: 0.4, reversed: 1, reversed_share: 0.2, per_approver_task_type: [] };
     const seen = serve([createTask], "", {
       "GET /v1/ai/approval-quality": { status: 200, body: { month: "2026-11", metrics } },
       "POST /v1/ai/approval-reviews": { status: 201, body: { month: "2026-11", metrics, signed_by: "u1", signed_at: "2026-12-01T01:00:00Z", note: "Fine" } },
@@ -126,6 +128,10 @@ describe("the AI tasks page", () => {
     fireEvent.click(await screen.findByRole("tab", { name: "Approval quality" }));
     expect(await screen.findByText("25%")).toBeTruthy();
     expect(screen.getByText("Proposals made")).toBeTruthy();
+    // AI-33: the edit-before-approve rate, the reversals after approval and the table by task type.
+    expect(screen.getByText("Approved after an edit").nextSibling?.textContent).toBe("40%");
+    expect(screen.getByText("Approved, then undone").nextSibling?.textContent).toBe("20%");
+    expect(screen.getByRole("row", { name: /ap.draft_bill 6 5 2 1 310 s/ })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Sign the review of/ }));
     await waitFor(() => expect(seen.some((s) => s.path === "/v1/ai/approval-reviews")).toBe(true));
   });

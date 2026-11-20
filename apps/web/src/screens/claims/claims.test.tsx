@@ -149,6 +149,27 @@ describe("my claims", () => {
     await waitFor(() => expect(seen.find((s) => s.path === "/v1/card-lines/l2/complete")?.body).toMatchObject({ personal: true }));
   });
 
+  // req: FR-AP-08
+  it("suggests a captured receipt for a completed card line and attaches it only when the member chooses", async () => {
+    answer({
+      "GET /v1/expense-claims": { status: 200, body: { items: [] } },
+      "GET /v1/expense-claims/owed": { status: 200, body: { as_at: "2026-10-15", people: [], total: sgd("0.00") } },
+      "GET /v1/card-lines": { status: 200, body: { items: [line({ status: "categorised", completed: "spend", document_id: "bt1", version: 2 })] } },
+      "GET /v1/card-lines/l1/evidence": { status: 200, body: { items: [] } },
+      "GET /v1/card-lines/l1/receipt-suggestions": { status: 200, body: { items: [{ capture_id: "c1", file_name: "taxi.pdf", media_type: "application/pdf", supplier: "ComfortDelGro", date: "2026-10-13", total: "27.30" }] } },
+      "POST /v1/card-lines/l1/receipt-suggestions/attach": { status: 201, body: { id: "e1", line_id: "l1", document_id: "bt1", evidence_type: "receipt", file_name: "taxi.pdf", media_type: "application/pdf", size_bytes: 10, sha256: "a".repeat(64) } },
+    });
+    renderPage(MyClaims, { path: "/me/claims", session: employee, organisation, mode: "basic" });
+    fireEvent.click(await screen.findByRole("button", { name: /Card lines/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Receipt for Grab" }));
+    expect(await screen.findByText(/Read from the file by the model: ComfortDelGro/)).toBeTruthy();
+    expect(seen.some((s) => s.path.endsWith("/attach"))).toBe(false);
+    await noViolations(document.body);
+    fireEvent.click(screen.getByRole("button", { name: "Attach taxi.pdf as the receipt" }));
+    await waitFor(() => expect(seen.find((s) => s.path.endsWith("/attach"))?.body).toEqual({ capture_id: "c1" }));
+    expect(seen.find((s) => s.path.endsWith("/attach"))?.headers.get("If-Match")).toBe('"2"');
+  });
+
   it("exports the history as CSV: plain decimals, and a title that starts like a formula made inert", () => {
     const csv = claimsCSV([claim(), claim({ id: "c4", number: "CLM-0004", title: "=HYPERLINK(1)", stage: "paid", total: sgd("1234.50") })]);
     expect(csv).toBe("Number,Date,Title,Stage,Amount,Currency\r\nCLM-0001,2026-10-15,Acme visit,Draft,27.30,SGD\r\nCLM-0004,2026-10-15,'=HYPERLINK(1),Paid,1234.50,SGD\r\n");
