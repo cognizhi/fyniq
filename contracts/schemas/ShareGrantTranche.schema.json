@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "shares": {
+      "description": "Whole shares.",
+      "examples": [
+        12000
+      ],
+      "format": "int64",
+      "minimum": 1,
+      "type": "integer"
+    },
+    "vest_on": {
+      "description": "The day they vest: the grant's expense for them runs to the end of that day's month.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "shares",
+    "vest_on"
+  ],
+  "title": "ShareGrantTranche",
+  "type": "object"
+}

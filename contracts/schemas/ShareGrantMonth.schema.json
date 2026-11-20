@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expense": {
+      "description": "The month's expense, debited to the expense account and credited to the reserve.",
+      "examples": [
+        "500.00"
+      ],
+      "type": "string"
+    },
+    "grant_id": {
+      "description": "The grant.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "journal_id": {
+      "description": "The draft journal for an approver.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c2a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "month": {
+      "description": "The month.",
+      "examples": [
+        "2026-01"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "grant_id",
+    "month",
+    "expense",
+    "journal_id"
+  ],
+  "title": "ShareGrantMonth",
+  "type": "object"
+}

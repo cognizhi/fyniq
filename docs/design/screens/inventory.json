@@ -5308,6 +5308,38 @@
    ]
   },
   {
+   "id": "share-grants",
+   "file": "ShareGrants",
+   "title": "Shares for services",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/share-grants",
+   "kind": "editor",
+   "phase": "P2",
+   "roles": [
+    "Accountant",
+    "Controller",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-13",
+    "ALLOC-EVEN"
+   ],
+   "purpose": "Record a grant of shares for services and expense it over its service months as draft journals.",
+   "content": [
+    "Grant: recipient, fair value at the grant date with its valuation, service start, tranches (shares and vest day), expense and reserve accounts",
+    "Schedule: each month's expense, the tranches' parts added",
+    "Propose a month as a draft journal for an approver; a month is proposed once"
+   ],
+   "states": [
+    "no grants yet",
+    "schedule",
+    "month proposed",
+    "refused grant"
+   ]
+  },
+  {
    "id": "round-simulator",
    "file": "RoundSimulator",
    "title": "Round simulator",
