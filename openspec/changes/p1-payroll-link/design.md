@@ -51,7 +51,7 @@ Nemura's side of the link (`p1-nemura-fyniq-link`); a real provider's connector 
 - **D8. A mapping version, no more.** FR-PPL-09 needs Fyniq's current account-mapping version. The department → salary account mapping (FR-EMP-02) is
   `p1-nemura-payroll`'s row in the plan; this change builds the minimum, a versioned `payroll_mapping` (department value → salary account, a version that
   changes on any edit), without tagging FR-EMP-02.
-- **D9. A salary batch is a payment batch.** Kind `salary`, lines sealed (`fieldseal`: payee, account, amount) and visible only with the salary-payments
+- **D9. A salary batch is a payment batch.** *(Amended 21 Nov 2026, built as a sibling of the payment batch, not a kind of it [owner to confirm]: the payment batch's document payload, versions, audit values, approval diff and envelope print each payee and amount, which FR-PPL-17 forbids; it is released once (FY239), so a part of it could not go while a held person waits; its items are bills and claims. The salary batch keeps its sealed lines in tables of its own (migration 000912) and reuses the approval engine, the release under a step-up and the payment files' writers.)* Kind `salary`, lines sealed (`fieldseal`: payee, account, amount) and visible only with the salary-payments
   right; others see total, count and state. Each line keeps its bank-detail record ID, version and digest inside the batch's approval envelope, so a newer
   version blocks the line until re-approval. "Paid" comes from the bank feed or recorded evidence only.
 - **D10. The hold check is a port.** `HoldAuthority` answers hold status and version per person within 5 seconds (a fake with a timeout in tests, the link
@@ -77,3 +77,5 @@ Nemura's side of the link (`p1-nemura-fyniq-link`); a real provider's connector 
 
 - The SDL difference (PRD-001 question 27) stays with the accountant: the posting takes totals from Nemura as given and posts SDL as stated.
 - Whether untaken-leave accrual drafts (FR-PPL-07, P2 part) arrive through `payroll.journal.submit`: built as a draft journal source only if time allows.
+
+- **D15. Partial release and the lines' versions (21 Nov 2026) [owner to confirm].** A release pays the lines free to go and leaves the others waiting (held, new bank details, an unknown outcome), each in a later release with its own file; a line goes in one release. A revised line (a new `payments.ready` at a higher lines version) is a new version of the line, never an update, and moves the digest the approval binds, so the batch is approved again (FR-PPL-14). The approval's envelope holds the total and a digest of the lines, never a name or an account; only the roles that may create or approve on the pay-run row see lines; the tenant export carries the batch header only. No break-glass reaches a salary. The payment file is downloaded by the Payment releaser who may release it, stepped up and audited (owner to confirm).

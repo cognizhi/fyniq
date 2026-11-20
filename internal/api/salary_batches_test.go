@@ -173,10 +173,7 @@ func (w *salaryWorld) trailHas(t *testing.T, needles ...string) []string {
 // Ben is held at Nemura but not yet in the projection: the release pays Cai and leaves the two waiting, the payment list holds Cai alone, each line has its instruction ID and no line is paid
 // (paid comes only from the bank feed or a person's record with evidence); when the hold is lifted and Ben's, the rest goes in a second release; a second release with nothing free is SB-03.
 // req: FR-PAY-11
-// req: FR-PPL-12
-// req: FR-PPL-13
-// req: FR-PPL-17
-// req: FR-PPL-10
+// part of FR-PPL-12 (paid from the bank feed or a person's evidence is task 6.2), FR-PPL-13 (claims and advances outside a batch are open) and FR-PPL-17 (exports, search and AI tools beyond the API)
 // asvs: V8.2.1, V11.2.1, V14.2.4
 func TestASalaryBatchIsApprovedThenReleasedWithTheHeldLeftWaiting(t *testing.T) {
 	w := newSalaryWorld(t)
@@ -360,9 +357,7 @@ func (w *salaryWorld) preparedBatch(t *testing.T) (id string, tag string, asked 
 // run's approver in Nemura holds the Owner's right in Fyniq here and cannot approve its salary batch (SB-06), the run's preparer cannot either, and neither releases it, though each holds
 // the right the row asks for. Whoever asked for the approval never approves it, and the database backs all of it: a batch is not approved without a second person who is neither of
 // them, a release is for an approved batch under its own approval and never by the run's preparer or approver, and a released batch is not cancelled. A salary batch has no break-glass.
-// req: FR-PPL-10
-// req: FR-PAY-11
-// req: SOD-4
+// part of FR-PPL-10 (Nemura's own half is p1-nemura-fyniq-link's); no requirement is tagged for SOD-4 beyond this
 // asvs: V8.2.1, V8.3.1, V2.3.5
 func TestAttackNoOneWhoPreparedOrApprovedTheRunApprovesOrReleasesItsSalary(t *testing.T) {
 	w := newSalaryWorld(t)

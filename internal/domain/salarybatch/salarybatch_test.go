@@ -11,7 +11,7 @@ import (
 
 // The legal moves of a payment line are Nemura's (PRD-002 NM-PAY-10): the first event may be any state, paid goes back only to returned, an unknown outcome is resolved only to paid,
 // rejected or returned, and a payment that came back may be scheduled again.
-// req: FR-PPL-12
+// part of FR-PPL-12
 func TestALinkMovesOnlyAsPaymentsDo(t *testing.T) {
 	for _, c := range []struct {
 		from, to string
@@ -58,7 +58,7 @@ func TestTheApprovedDigestFollowsTheLinesAndNamesNobody(t *testing.T) {
 }
 
 // A batch is paid only when every line is paid: a release is not paid, and a part paid is paid in part (FR-PPL-12).
-// req: FR-PPL-12
+// part of FR-PPL-12
 func TestABatchIsPaidOnlyWhenEveryLineIs(t *testing.T) {
 	x, y := storage.SalaryLine{LineRef: uuid.New()}, storage.SalaryLine{LineRef: uuid.New()}
 	lines := []storage.SalaryLine{x, y}

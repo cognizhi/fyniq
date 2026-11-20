@@ -52950,10 +52950,10 @@ export interface components {
             id: string;
             /**
              * Format: int64
-             * @description How many people it pays.
+             * @description How many people it pays; only with the salary-payments right, since a release of one person would state their pay (FR-PPL-17).
              * @example 11
              */
-            lines: number;
+            lines?: number;
             /**
              * Format: date-time
              * @description When it was released.
@@ -52967,8 +52967,8 @@ export interface components {
              * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
              */
             sha256: string;
-            /** @description What it pays in all. */
-            total: components["schemas"]["Money"];
+            /** @description What it pays in all; only with the salary-payments right (FR-PPL-17). */
+            total?: components["schemas"]["Money"];
             /**
              * @description The file's format and version.
              * @example payment-list@1

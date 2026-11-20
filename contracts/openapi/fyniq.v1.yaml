@@ -51162,7 +51162,7 @@ components:
           format: uuid
           type: string
         lines:
-          description: How many people it pays.
+          description: How many people it pays; only with the salary-payments right, since a release of one person would state their pay (FR-PPL-17).
           examples:
             - 11
           format: int64
@@ -51183,7 +51183,7 @@ components:
           type: string
         total:
           $ref: "#/components/schemas/Money"
-          description: What it pays in all.
+          description: What it pays in all; only with the salary-payments right (FR-PPL-17).
         writer:
           description: The file's format and version.
           examples:
@@ -51197,8 +51197,6 @@ components:
         - writer
         - file_name
         - sha256
-        - lines
-        - total
       type: object
     SalesGSTCode:
       additionalProperties: false
