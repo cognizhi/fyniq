@@ -157,7 +157,7 @@ func TestACandidateMovesAlongTheBoardAndAnInterviewerReadsAndScoresOnlyTheirAssi
 // A candidate who is not progressing is kept six months from the decision unless they consent to be kept for future roles, and not past a withdrawal of that consent; then a report goes to a person, and
 // only once it is reviewed is the candidate deleted, with their notes and scores and a proof (NM-REC-05, NM-SEC-05).
 // req: NM-REC-05, NM-SEC-05
-// asvs: V8.3.4
+// asvs: V8.3.1
 func TestACandidateNotProgressingIsDeletedSixMonthsLaterOnlyAfterAReviewedReportAndNeverWhileTheyConsentedToBeKept(t *testing.T) {
 	c := newHiringCo(t)
 	ctx := context.Background()
