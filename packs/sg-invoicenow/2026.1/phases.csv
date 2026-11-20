@@ -1,0 +1,8 @@
+group,from,description,source
+new_incorporated_voluntary,2025-11-01,A newly incorporated company (within 6 months) that registers for GST voluntarily,iras-etax-phases
+new_voluntary,2026-04-01,Every new voluntary GST registrant,iras-etax-phases
+new_compulsory,2028-04-01,Every new compulsory GST registrant,iras-etax-phases
+existing_up_to_200k,2028-04-01,An existing registrant with total annual supplies of S$200000 or less,iras-etax-phases
+existing_up_to_1m,2029-04-01,An existing registrant with total annual supplies of S$1000000 or less,iras-etax-phases
+existing_up_to_4m,2030-04-01,An existing registrant with total annual supplies of S$4000000 or less,iras-etax-phases
+existing_over_4m,2031-04-01,An existing registrant with total annual supplies above S$4000000,iras-etax-phases

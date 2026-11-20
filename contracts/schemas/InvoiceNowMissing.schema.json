@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "The date.",
+      "examples": [
+        "2027-02-03"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The document id.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What kind of document it is.",
+      "enum": [
+        "sale",
+        "purchase",
+        "credit_note"
+      ],
+      "examples": [
+        "sale"
+      ],
+      "type": "string"
+    },
+    "needs_choice": {
+      "description": "It has an exempt line and the tax agent has not chosen ES33 or ESN33 (setting invoicenow.es_category).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "number": {
+      "description": "The number.",
+      "examples": [
+        "INV-2027-0007"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "Where its submission stands: none when it has not been queued.",
+      "enum": [
+        "none",
+        "queued",
+        "sent",
+        "failed",
+        "acknowledged"
+      ],
+      "examples": [
+        "queued"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "document_id",
+    "number",
+    "kind",
+    "date",
+    "state",
+    "needs_choice"
+  ],
+  "title": "InvoiceNowMissing",
+  "type": "object"
+}

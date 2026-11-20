@@ -174,9 +174,9 @@ var fyCodes = map[string]string{
 	"FY267": storage.CodeBanking,
 
 	"FY268": storage.CodeSuccession,
-	"FY700": storage.CodeMembership, // a department scope never changes or goes (000702)
-	"FY701": storage.CodeMembership, // only a live Approver role is narrowed to departments (000702)
-	"FY702": storage.CodeMembership, // a scope names department values (000702)
+	"FY700": storage.CodeMembership,         // a department scope never changes or goes (000702)
+	"FY701": storage.CodeMembership,         // only a live Approver role is narrowed to departments (000702)
+	"FY702": storage.CodeMembership,         // a scope names department values (000702)
 	"FY269": storage.CodeVersion,            // an invitation's registry entry never changes (000236)
 	"FY270": storage.CodeIdentityStepUp,     // a sign-in linked or removed without a recent second factor (000239)
 	"FY271": storage.CodeIdentity,           // a sign-in linked already, or the last or current one removed (000239)
@@ -207,6 +207,10 @@ var fyCodes = map[string]string{
 	"FY356": storage.CodeCorporateDocument,  // a corporate document outside its rules (000399)
 	"FY297": storage.CodeAcraExtract,        // an ACRA extract outside its rules (000270)
 	"FY298": storage.CodeGSTForecast,        // a GST forecast outside its rules (000272)
+	"FYI01": storage.CodeInvoiceNow,         // an InvoiceNow submission off its legal path (001000)
+	"FYI02": storage.CodeInvoiceNow,         // a submission's history changed (001000)
+	"FYI03": storage.CodeInvoiceNow,         // an exclusion changed, or a second live one (001000)
+	"FYI04": storage.CodeInvoiceNow,         // a contingency approved by its requester, or changed (001000)
 	"FY299": storage.CodeStatutoryFiling,    // a filing record outside its rules, or a second live one of its item (000274)
 	"FY300": storage.CodeForecast,           // a forecast outside its keys, limits or decimal strings (000277)
 	"FY301": storage.CodeBudget,             // a budget outside its keys, limits or decimal strings (000279)
@@ -249,7 +253,7 @@ var fyCodes = map[string]string{
 	"FY338": storage.CodeAIBudgetSpent,      // the organisation's, agent's or person's AI budget spent, or not applicable (000359)
 	"FY339": storage.CodeAIQualification,    // a qualification changed or removed, or put out of date twice (000361)
 	"FY340": storage.CodeAIGrant,            // a delegated read grant changed, removed or ended twice (000366)
-	"FY561": storage.CodeKnowledge, // a knowledge-base version, snapshot or page changed or removed, or a note changed but by its next version (000563)
+	"FY561": storage.CodeKnowledge,          // a knowledge-base version, snapshot or page changed or removed, or a note changed but by its next version (000563)
 	"FY341": storage.CodeAIConversation,     // a conversation, turn, tool call or feedback changed against its course, or removed (000369)
 	"FY343": storage.CodeMCPClient,          // a registered AI app's name, redirects or origin changed, a step out of its course, or a delete (000585)
 	"FY342": storage.CodeAIProposal,         // an AI proposal's step out of its lifecycle or by another role, a change to what it proposed, or a delete (000375)
@@ -304,6 +308,8 @@ var fyCodes = map[string]string{
 
 // constraintCodes maps named constraints to the port's stable codes and plain messages.
 var constraintCodes = map[string]struct{ code, message string }{
+	"invoicenow_exclusion_live":                 {storage.CodeInvoiceNow, "the document has a live exclusion already: withdraw it to record another"},
+	"invoicenow_submission_version_key":         {storage.CodeInvoiceNow, "that version of the document is queued already"},
 	"ai_feedback_once":                          {storage.CodeDuplicate, "the person rated this answer already"},
 	"compliance_task_open":                      {storage.CodeDuplicate, "the finding has an open task already: update it, or close it first"},
 	"ai_proposal_payload":                       {storage.CodeInvalid, "the proposal's payload is not a JSON object of at most 64 KiB, or its SHA-256 is not the payload's"},

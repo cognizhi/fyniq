@@ -397,8 +397,8 @@ var (
 	TakeAwaySavedItem          = Policy{Operation: "takeAwaySavedItem", Capability: OwnNotifications, Need: Create}
 	// A practice organisation (FR-UX-36; the owner's decision of 21 Nov 2026): opened by an Owner only, who holds A on the row, one at a time.
 	// The organisations a person works in and the choice of which a session is in: their own memberships, nothing else of any tenant.
-	ListMyOrganisations = Policy{Operation: "listMyOrganisations", Capability: Session, Need: View, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser: their own memberships only."}
-	SwitchMyOrganisation = Policy{Operation: "switchMyOrganisation", Capability: Session, Need: Create, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser, and an active membership of the organisation chosen."}
+	ListMyOrganisations        = Policy{Operation: "listMyOrganisations", Capability: Session, Need: View, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser: their own memberships only."}
+	SwitchMyOrganisation       = Policy{Operation: "switchMyOrganisation", Capability: Session, Need: Create, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser, and an active membership of the organisation chosen."}
 	CreatePracticeOrganisation = Policy{Operation: "createPracticeOrganisation", Capability: UsersAndRoles, Need: Approve,
 		Note: "An Owner of an organisation that keeps books, stepped up in the last 5 minutes, who holds no practice organisation: the database's function decides."}
 	// Comments and @mentions on a record (FR-UX-13, rev 0.382): any member may read, write and mention on a record they may see; the
@@ -1776,16 +1776,25 @@ var (
 // The GST registration monitor (FR-TAX-05; p1-gst slice 2, design D4): read by whoever reads GST returns; a forecast is
 // drafted, given its evidence and recorded by whoever prepares them, the Accountant or the Tax agent.
 var (
-	GetGSTMonitor             = Policy{Operation: "getGSTMonitor", Capability: GSTReturns, Need: View}
-	ListGSTForecasts          = Policy{Operation: "listGSTForecasts", Capability: GSTReturns, Need: View}
-	CreateGSTForecast         = Policy{Operation: "createGSTForecast", Capability: GSTReturns, Need: Create}
-	GetGSTForecast            = Policy{Operation: "getGSTForecast", Capability: GSTReturns, Need: View}
-	ReplaceGSTForecast        = Policy{Operation: "replaceGSTForecast", Capability: GSTReturns, Need: Create}
-	RecordGSTForecast         = Policy{Operation: "recordGSTForecast", Capability: GSTReturns, Need: Create, Note: "A forecast with its evidence: it posts nothing."}
-	AddGSTForecastEvidence    = Policy{Operation: "addGSTForecastEvidence", Capability: GSTReturns, Need: Create}
-	ListGSTForecastEvidence   = Policy{Operation: "listGSTForecastEvidence", Capability: GSTReturns, Need: View}
-	GetGSTForecastEvidence    = Policy{Operation: "getGSTForecastEvidence", Capability: GSTReturns, Need: View}
-	RemoveGSTForecastEvidence = Policy{Operation: "removeGSTForecastEvidence", Capability: GSTReturns, Need: Create}
+	GetGSTMonitor                = Policy{Operation: "getGSTMonitor", Capability: GSTReturns, Need: View}
+	ListGSTForecasts             = Policy{Operation: "listGSTForecasts", Capability: GSTReturns, Need: View}
+	CreateGSTForecast            = Policy{Operation: "createGSTForecast", Capability: GSTReturns, Need: Create}
+	GetInvoiceNowGate            = Policy{Operation: "getInvoiceNowGate", Capability: GSTReturns, Need: View}
+	ListInvoiceNowSubmissions    = Policy{Operation: "listInvoiceNowSubmissions", Capability: GSTReturns, Need: View}
+	QueueInvoiceNowSubmission    = Policy{Operation: "queueInvoiceNowSubmission", Capability: GSTReturns, Need: Create, Note: "Sends a posted invoice or credit note's PINT-SG document to the network: it posts nothing."}
+	SendInvoiceNowSubmission     = Policy{Operation: "sendInvoiceNowSubmission", Capability: GSTReturns, Need: Create, Note: "Hands a queued submission to the access point, or reads its status."}
+	RetryInvoiceNowSubmission    = Policy{Operation: "retryInvoiceNowSubmission", Capability: GSTReturns, Need: Create}
+	CreateInvoiceNowExclusion    = Policy{Operation: "createInvoiceNowExclusion", Capability: GSTReturns, Need: Create}
+	WithdrawInvoiceNowExclusion  = Policy{Operation: "withdrawInvoiceNowExclusion", Capability: GSTReturns, Need: Create}
+	RequestInvoiceNowContingency = Policy{Operation: "requestInvoiceNowContingency", Capability: GSTReturns, Need: Create}
+	ApproveInvoiceNowContingency = Policy{Operation: "approveInvoiceNowContingency", Capability: GSTReturns, Need: Approve, Note: "Never the person who requested it: the database refuses the same person twice (FR-TAX-11)."}
+	GetGSTForecast               = Policy{Operation: "getGSTForecast", Capability: GSTReturns, Need: View}
+	ReplaceGSTForecast           = Policy{Operation: "replaceGSTForecast", Capability: GSTReturns, Need: Create}
+	RecordGSTForecast            = Policy{Operation: "recordGSTForecast", Capability: GSTReturns, Need: Create, Note: "A forecast with its evidence: it posts nothing."}
+	AddGSTForecastEvidence       = Policy{Operation: "addGSTForecastEvidence", Capability: GSTReturns, Need: Create}
+	ListGSTForecastEvidence      = Policy{Operation: "listGSTForecastEvidence", Capability: GSTReturns, Need: View}
+	GetGSTForecastEvidence       = Policy{Operation: "getGSTForecastEvidence", Capability: GSTReturns, Need: View}
+	RemoveGSTForecastEvidence    = Policy{Operation: "removeGSTForecastEvidence", Capability: GSTReturns, Need: Create}
 )
 
 // Forecasts (FR-PLN-02, FR-PLN-03, FR-PLN-08; p1-planning slice 3, design D10): read by whoever views budgets and
@@ -2193,7 +2202,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
 	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
-	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
+	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetInvoiceNowGate, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
 	AddGSTForecastEvidence, ListGSTForecastEvidence, GetGSTForecastEvidence, RemoveGSTForecastEvidence, GetStatutoryCalendar,
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
