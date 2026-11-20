@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/assistant"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/checks"
+	"github.com/cognizhi/fyniq/internal/nemura/erasure"
 	"github.com/cognizhi/fyniq/internal/nemura/features"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
@@ -613,7 +614,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -823,24 +824,32 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 			seed: func(m *memIdem) {
 				m.seed("k-2", idemHash("POST", "/v1/people", personBody), IdemRecord{Status: 201, HadBody: true})
 			}},
-		CodeAINever:            {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeNever, Message: "The assistant never approves."}},
-		CodeAIInvalid:          {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeInvalid, Message: "reply: text of up to 4000 characters."}},
-		CodeAIOff:              {method: "PUT", path: "/v1/assistant/settings", body: `{"enabled":false,"route":"none","task_types":[]}`, signedIn: true, owner: true, stepUp: true, err: &assistant.Refusal{Code: assistant.CodeOff, Message: "The assistant is off."}},
-		CodeAIConflict:         {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeConflict, Message: "Decided already."}},
-		CodePayrollInvalid:     {method: "POST", path: "/v1/payroll/groups", body: `{"name":"Monthly","pay_day":25,"cutoff_days":7,"approval_days":3}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeInvalid, Message: "The pay day is wrong."}},
-		CodePayrollConflict:    {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/pay/year-to-date", body: `{"year":2026,"ow":"25000.00","aw_subject":"0.00","aw_paid":"0.00","through_month":"2026-05-01"}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeConflict, Message: "Held already."}},
-		CodeOnboardingInvalid:  {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/offboarding", body: `{"kind":"resignation","last_day":"2026-11-30"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeInvalid, Message: "The last day is required."}},
-		CodeOnboardingConflict: {method: "POST", path: "/v1/onboarding/tasks/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20/decision", body: `{"state":"done"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeConflict, Message: "Decided already."}},
-		CodeRequestInvalid:     {method: "POST", path: "/v1/me/questions", body: `{"question":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeInvalid, Message: "Write your question."}},
-		CodeRequestConflict:    {method: "POST", path: "/v1/questions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/reply", body: `{"reply":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeConflict, Message: "That question is closed."}},
-		CodeLetterInvalid:      {method: "POST", path: "/v1/me/letters", body: `{"type":"employment_confirmation","purpose":"x"}`, signedIn: true, err: &letters.Refusal{Code: letters.CodeInvalid, Message: "Say what the letter is for."}},
-		CodeLetterConflict:     {method: "POST", path: "/v1/letters/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/check", signedIn: true, err: &letters.Refusal{Code: letters.CodeConflict, Message: "That request is checked."}},
-		CodeLinkNone:           {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, inboxErr: &payroll.Refusal{Code: "NM_LINK_NONE", Message: "Nemura is not linked to Fyniq."}},
-		CodeLinkClient:         {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, authErr: linkauth.ErrNotLink},
-		CodeLinkApprover:       {method: "POST", path: "/v1/link/proposal", body: `{"fyniq_organisation_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"}`, signedIn: true, owner: true, stepUp: true, err: &payroll.Refusal{Code: "NM_LINK_SECOND_APPROVER", Message: "A second approver decides."}},
-		CodeLinkState:          {method: "POST", path: "/v1/link/approval", body: linkApprovalBody, signedIn: true, owner: true, stepUp: true, err: &payroll.Refusal{Code: "NM_LINK_STATE", Message: "There is no proposed link to approve."}},
-		CodeLinkRefused:        {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, inboxErr: &link.Refusal{Code: link.CodeSignature, Message: "the signature does not verify"}},
-		CodeClientExists:       {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
+		CodeAINever:                 {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeNever, Message: "The assistant never approves."}},
+		CodeAIInvalid:               {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeInvalid, Message: "reply: text of up to 4000 characters."}},
+		CodeAIOff:                   {method: "PUT", path: "/v1/assistant/settings", body: `{"enabled":false,"route":"none","task_types":[]}`, signedIn: true, owner: true, stepUp: true, err: &assistant.Refusal{Code: assistant.CodeOff, Message: "The assistant is off."}},
+		CodeAIConflict:              {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeConflict, Message: "Decided already."}},
+		CodePayrollInvalid:          {method: "POST", path: "/v1/payroll/groups", body: `{"name":"Monthly","pay_day":25,"cutoff_days":7,"approval_days":3}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeInvalid, Message: "The pay day is wrong."}},
+		CodePayrollConflict:         {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/pay/year-to-date", body: `{"year":2026,"ow":"25000.00","aw_subject":"0.00","aw_paid":"0.00","through_month":"2026-05-01"}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeConflict, Message: "Held already."}},
+		CodeOnboardingInvalid:       {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/offboarding", body: `{"kind":"resignation","last_day":"2026-11-30"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeInvalid, Message: "The last day is required."}},
+		CodeOnboardingConflict:      {method: "POST", path: "/v1/onboarding/tasks/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20/decision", body: `{"state":"done"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeConflict, Message: "Decided already."}},
+		CodeRequestInvalid:          {method: "POST", path: "/v1/me/questions", body: `{"question":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeInvalid, Message: "Write your question."}},
+		CodeRequestConflict:         {method: "POST", path: "/v1/questions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/reply", body: `{"reply":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeConflict, Message: "That question is closed."}},
+		CodeLetterInvalid:           {method: "POST", path: "/v1/me/letters", body: `{"type":"employment_confirmation","purpose":"x"}`, signedIn: true, err: &letters.Refusal{Code: letters.CodeInvalid, Message: "Say what the letter is for."}},
+		CodeLetterConflict:          {method: "POST", path: "/v1/letters/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/check", signedIn: true, err: &letters.Refusal{Code: letters.CodeConflict, Message: "That request is checked."}},
+		CodeLinkNone:                {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, inboxErr: &payroll.Refusal{Code: "NM_LINK_NONE", Message: "Nemura is not linked to Fyniq."}},
+		CodeLinkClient:              {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, authErr: linkauth.ErrNotLink},
+		CodeLinkApprover:            {method: "POST", path: "/v1/link/proposal", body: `{"fyniq_organisation_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"}`, signedIn: true, owner: true, stepUp: true, err: &payroll.Refusal{Code: "NM_LINK_SECOND_APPROVER", Message: "A second approver decides."}},
+		CodeLinkState:               {method: "POST", path: "/v1/link/approval", body: linkApprovalBody, signedIn: true, owner: true, stepUp: true, err: &payroll.Refusal{Code: "NM_LINK_STATE", Message: "There is no proposed link to approve."}},
+		CodeLinkRefused:             {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, inboxErr: &link.Refusal{Code: link.CodeSignature, Message: "the signature does not verify"}},
+		"NM_ERASURE_NOT_LEFT":       {method: "POST", path: "/v1/erasures", body: `{"person_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","reason":"x"}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeNotLeft, Message: "x."}},
+		"NM_ERASURE_NOT_YET":        {method: "POST", path: "/v1/erasures", body: `{"person_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","reason":"x"}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeNotYet, Message: "x."}},
+		"NM_ERASURE_HELD":           {method: "POST", path: "/v1/erasures", body: `{"person_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","reason":"x"}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeHeld, Message: "x."}},
+		"NM_ERASURE_SELF":           {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeOwnRequest, Message: "x."}},
+		"NM_ERASURE_NOT_APPROVED":   {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeNotApproved, Message: "x."}},
+		"NM_ERASURE_ALREADY":        {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeAlready, Message: "x."}},
+		"NM_ERASURE_REGISTER":       {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeBadRegister, Message: "x."}},
+		"NM_ERASURE_ACCESS_REQUEST": {method: "POST", path: "/v1/erasures", body: `{"person_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","reason":"x"}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeOpenAccessReq, Message: "x."}},
+		CodeClientExists:            {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
 	}
 	for _, c := range Catalogue {
 		tr, ok := triggers[c.Code]
@@ -1379,4 +1388,16 @@ func TestTheLinkPagesAreForTheOwnerAndAdministratorAndShowNoPrivateKey(t *testin
 			t.Errorf("a proposal shows %q: %s", leak, body)
 		}
 	}
+}
+
+type fakeErasure struct{ err error }
+
+func (f fakeErasure) Request(context.Context, Session, []authz.Role, uuid.UUID, string) (ErasureOrderView, error) {
+	return ErasureOrderView{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71", PersonID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", State: "requested", Reason: "x", EligibleOn: "2096-01-01", RequestedBy: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e11", RequestedAt: "2096-01-02T09:00:00Z"}, f.err
+}
+func (f fakeErasure) Decide(context.Context, Session, []authz.Role, uuid.UUID, bool) error {
+	return f.err
+}
+func (f fakeErasure) List(context.Context, Session) ([]ErasureOrderView, error) {
+	return []ErasureOrderView{}, f.err
 }

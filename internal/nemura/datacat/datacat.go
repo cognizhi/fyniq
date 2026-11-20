@@ -142,6 +142,7 @@ var Categories = []Category{
 
 // NotPersonal are columns whose names look personal and are not, with why. A column here needs a reason a reviewer can read.
 var NotPersonal = map[string]string{
+	"erasure_order.reason":             "why an Owner or an HR administrator asked for an erasure (the retention periods have run): the person is named by ID, and the reason names no one",
 	"bank_account_change.bank_version": "the number of a confirmed change in a person's run of changes, which a restore can raise: a count, no account",
 	"idempotency_key.body":             "the stored answer of a write that cannot carry pay or restricted data, kept 24 hours; an answer that may is never stored",
 	"idempotency_key.had_body":         "whether the first answer had a body: a flag",

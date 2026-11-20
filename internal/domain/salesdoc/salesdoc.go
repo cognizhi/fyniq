@@ -8,10 +8,12 @@ package salesdoc
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
 	"github.com/cockroachdb/apd/v3"
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -314,6 +316,44 @@ func switchOn(ctx context.Context, u storage.UnitOfWork, key string, on time.Tim
 		return false, err
 	}
 	return settings.On(def, changes, on).Value == "true", nil
+}
+
+// PDFLinkSetting is the organisation's switch for the payment link on an invoice's PDF (FR-AR-13, rev 0.599).
+const PDFLinkSetting = "invoices.payment_link_in_pdf"
+
+// LiveLink is the URL of the invoice's live payment link at now, "" when it has none or the organisation's switch (setting) is off: a link counts while it is live and has not run out, and its URL is https
+// (checked when it was stored). It reads the stored link and never asks the provider (FR-AR-13).
+func LiveLink(ctx context.Context, u storage.UnitOfWork, invoiceID uuid.UUID, setting string, now time.Time) (string, error) {
+	on, err := switchOn(ctx, u, setting, now)
+	if err != nil || !on {
+		return "", err
+	}
+	links, err := u.PaymentLinks().OfInvoice(ctx, invoiceID)
+	if err != nil {
+		return "", err
+	}
+	for _, l := range links { // newest first
+		if l.Status == "live" && strings.HasPrefix(l.URL, "https://") && (l.ExpiresAt == nil || l.ExpiresAt.After(now)) {
+			return l.URL, nil
+		}
+	}
+	return "", nil
+}
+
+// WithPaymentLink adds the invoice's live payment link (PDFLinkSetting on, a live stored link) to its data, as the field payment.link a template can place and as the link the payment details block
+// carries when the template does not place it (FR-AR-13, FR-TPL-03: the renderer's rule, the same for every template version). A posted invoice only: a draft has none. It changes nothing without a link.
+func (i *Invoice) WithPaymentLink(ctx context.Context, u storage.UnitOfWork, doc storage.Document, now time.Time) error {
+	if doc.Status != storage.DocumentPosted {
+		return nil
+	}
+	url, err := LiveLink(ctx, u, doc.ID, PDFLinkSetting, now)
+	if err != nil || url == "" {
+		return err
+	}
+	i.Data.Fields = maps.Clone(i.Data.Fields)
+	i.Data.Fields["payment.link"] = render.Value{Text: url}
+	i.Data.PaymentLink = url
+	return nil
 }
 
 func firstCode(probs ledger.Problems) string {

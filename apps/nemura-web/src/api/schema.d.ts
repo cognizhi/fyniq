@@ -276,6 +276,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/erasures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the erasures of former employees' data
+         * @description The erasure orders, newest first, by identity: no name and no value. Only an Owner or an HR administrator. It changes nothing.
+         */
+        get: operations["listErasures"];
+        put?: never;
+        /**
+         * Ask for a former employee's personal data to be erased
+         * @description PRD-002 NM-SEC-08. An Owner or an HR administrator, with a passkey confirmed in the last five minutes, asks once the person has left and their retention periods have run (the employment records' one year after leaving, the payroll records' five years: [accountant to confirm]); a legal hold or an unanswered access request refuses it. A second Owner or HR administrator approves. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["requestErasure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/erasures/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or refuse an erasure
+         * @description A second Owner or HR administrator, not the one who asked, with a passkey confirmed in the last five minutes. An approval queues the worker, which files a signed entry in the register outside the database and then empties the person's personal data in the records that may change; records the database keeps append-only stay. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["decideErasure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/errors": {
         parameters: {
             query?: never;
@@ -4201,6 +4245,92 @@ export interface components {
              * @example 2026-11-30
              */
             on: string;
+        };
+        ErasureDecisionInputBody: {
+            /**
+             * @description True approves, false refuses.
+             * @example true
+             */
+            approve: boolean;
+        };
+        ErasureDecisionOutputBody: {
+            /**
+             * @description True once the decision is recorded.
+             * @example true
+             */
+            decided: boolean;
+        };
+        ErasureListOutputBody: {
+            /** @description The orders, newest first. */
+            items: components["schemas"]["ErasureOrderView"][];
+        };
+        ErasureOrderView: {
+            /**
+             * Format: uuid
+             * @description The second member who approved.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e12
+             */
+            approved_by?: string;
+            /**
+             * Format: date
+             * @description The first day the retention periods allow it.
+             * @example 2096-01-01
+             */
+            eligible_on: string;
+            /**
+             * Format: date-time
+             * @description When it was done.
+             * @example 2096-01-02T09:05:00Z
+             */
+            executed_at?: string;
+            /**
+             * Format: uuid
+             * @description The order.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description The former employee.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Why it is asked for.
+             * @example Left in 2090; the retention periods have run.
+             */
+            reason: string;
+            /**
+             * Format: date-time
+             * @description When it was asked for.
+             * @example 2096-01-02T09:00:00Z
+             */
+            requested_at: string;
+            /**
+             * Format: uuid
+             * @description The member who asked.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e11
+             */
+            requested_by: string;
+            /**
+             * @description requested: waits for a second person; approved: the worker erases; executed: erased; refused.
+             * @example requested
+             * @enum {string}
+             */
+            state: "requested" | "approved" | "executed" | "refused";
+        };
+        ErasureRequestInputBody: {
+            /**
+             * Format: uuid
+             * @description The former employee.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Why the erasure is asked for.
+             * @example Left in 2090; the retention periods have run.
+             */
+            reason: string;
         };
         ErrorsOutputBody: {
             /** @description Every stable error code, in order. */
@@ -10317,6 +10447,257 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listErasures: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErasureListOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestErasure: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ErasureRequestInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErasureOrderView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideErasure: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The order. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ErasureDecisionInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErasureDecisionOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

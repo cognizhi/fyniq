@@ -938,6 +938,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | docs/user-guide/board-pack.md → reports.board-pack (the PDF of a published pack, FR-RPT-06)
 
+## [2026-11-20] compile | invoices, organisation-settings: the payment link on the invoice PDF and by every issuing path (FR-AR-13, rev 0.599)
+
 ## [2026-11-20] compile | docs/user-guide/schedules.md → accounting.schedules (the roll-forward tab, billed, collected and recognised per customer, FR-RPT-13)
 
 ## [2026-11-20] compile | docs/user-guide/equity-register.md, statutory-calendar.md → equity.register, compliance.calendar, compliance.record-filing (investors' information rights as calendar tasks, FR-EQ-28)

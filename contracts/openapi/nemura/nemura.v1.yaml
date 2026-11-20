@@ -1870,6 +1870,128 @@ components:
         - days
         - "on"
       type: object
+    ErasureDecisionInputBody:
+      additionalProperties: false
+      properties:
+        approve:
+          description: True approves, false refuses.
+          examples:
+            - true
+          type: boolean
+      required:
+        - approve
+      type: object
+    ErasureDecisionOutputBody:
+      additionalProperties: false
+      properties:
+        decided:
+          description: True once the decision is recorded.
+          examples:
+            - true
+          type: boolean
+      required:
+        - decided
+      type: object
+    ErasureListOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The orders, newest first.
+          items:
+            $ref: "#/components/schemas/ErasureOrderView"
+          type: array
+      required:
+        - items
+      type: object
+    ErasureOrderView:
+      additionalProperties: false
+      properties:
+        approved_by:
+          description: The second member who approved.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e12
+          format: uuid
+          type: string
+        eligible_on:
+          description: The first day the retention periods allow it.
+          examples:
+            - "2096-01-01"
+          format: date
+          type: string
+        executed_at:
+          description: When it was done.
+          examples:
+            - "2096-01-02T09:05:00Z"
+          format: date-time
+          type: string
+        id:
+          description: The order.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71
+          format: uuid
+          type: string
+        person_id:
+          description: The former employee.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        reason:
+          description: Why it is asked for.
+          examples:
+            - Left in 2090; the retention periods have run.
+          type: string
+        requested_at:
+          description: When it was asked for.
+          examples:
+            - "2096-01-02T09:00:00Z"
+          format: date-time
+          type: string
+        requested_by:
+          description: The member who asked.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e11
+          format: uuid
+          type: string
+        state:
+          description: "requested: waits for a second person; approved: the worker erases; executed: erased; refused."
+          enum:
+            - requested
+            - approved
+            - executed
+            - refused
+          examples:
+            - requested
+          type: string
+      required:
+        - id
+        - person_id
+        - state
+        - reason
+        - eligible_on
+        - requested_by
+        - requested_at
+      type: object
+    ErasureRequestInputBody:
+      additionalProperties: false
+      properties:
+        person_id:
+          description: The former employee.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        reason:
+          description: Why the erasure is asked for.
+          examples:
+            - Left in 2090; the retention periods have run.
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - person_id
+        - reason
+      type: object
     ErrorsOutputBody:
       additionalProperties: false
       properties:
@@ -10066,6 +10188,210 @@ paths:
       summary: Approve or refuse a change of details
       tags:
         - Self-service
+  /v1/erasures:
+    get:
+      description: "The erasure orders, newest first, by identity: no name and no value. Only an Owner or an HR administrator. It changes nothing."
+      operationId: listErasures
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErasureListOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: List the erasures of former employees' data
+      tags:
+        - Privacy
+    post:
+      description: "PRD-002 NM-SEC-08. An Owner or an HR administrator, with a passkey confirmed in the last five minutes, asks once the person has left and their retention periods have run (the employment records' one year after leaving, the payroll records' five years: [accountant to confirm]); a legal hold or an unanswered access request refuses it. A second Owner or HR administrator approves. It is on the never-list for the AI and MCP surfaces."
+      operationId: requestErasure
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ErasureRequestInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErasureOrderView"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Ask for a former employee's personal data to be erased
+      tags:
+        - Privacy
+  /v1/erasures/{id}/decision:
+    post:
+      description: A second Owner or HR administrator, not the one who asked, with a passkey confirmed in the last five minutes. An approval queues the worker, which files a signed entry in the register outside the database and then empties the person's personal data in the records that may change; records the database keeps append-only stay. It is on the never-list for the AI and MCP surfaces.
+      operationId: decideErasure
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The order.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The order.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ErasureDecisionInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErasureDecisionOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Approve or refuse an erasure
+      tags:
+        - Privacy
   /v1/errors:
     get:
       description: Lists every stable error code the API returns, with its HTTP status, its title and the usual fix. It needs no sign-in and changes nothing; a code never changes meaning inside /v1.
@@ -20211,6 +20537,8 @@ tags:
     name: Self-service
   - description: Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07).
     name: Letters
+  - description: Erasure of a former employee's personal data after its retention, by two people (NM-SEC-08).
+    name: Privacy
   - description: "The link to Fyniq: the events Fyniq sends back, signed and received once (NM-INT-10, NM-INT-03)."
     name: Link
   - description: Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02).

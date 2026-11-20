@@ -114,6 +114,13 @@ WHERE d.mapping_version = (SELECT max(mapping_version) FROM nemura.link_mapping)
 
 // PersonEventOf builds a person's payload from their record as it is now (their job on the day of sending), or a tombstone when the record is gone.
 func PersonEventOf(ctx context.Context, tx pgx.Tx, person uuid.UUID, now time.Time) (PersonEvent, error) {
+	var erased bool
+	if err := tx.QueryRow(ctx, `SELECT coalesce((SELECT erased_at IS NOT NULL FROM nemura.person WHERE id = $1), false)`, person).Scan(&erased); err != nil {
+		return PersonEvent{}, err
+	}
+	if erased { // an erased person is a tombstone to Fyniq, which clears the name and email it held (NM-SEC-08)
+		return PersonEvent{PersonID: person, Deleted: true}, nil
+	}
 	p, err := PersonOn(ctx, tx, person, now)
 	var ref *people.Refusal
 	if errors.As(err, &ref) && ref.Code == people.CodeNotFound {

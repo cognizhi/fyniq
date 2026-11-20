@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, InvoiceNow, cash buffer, numbering, features, AI, terms, banking, claims, thresholds, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:46f0af2e02f8ce901196e4902a848099af4b3dd9073ef3f74dc2e9fde83b9574
+  - docs/user-guide/organisation-settings.md sha256:a43947080011c1b341c0327963f6d580dee3e61936a4cb080c8634cab4ffc2f8
 data_class: general
 taint: trusted
 status: draft
