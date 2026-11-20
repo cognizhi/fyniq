@@ -1,0 +1,4 @@
+case,group,want_from,why,source
+a new voluntary registrant,new_voluntary,2026-04-01,5.5(b): from 1 Apr 2026 for all new voluntary registrants,iras-etax-phases
+a registrant of S$1 million or less,existing_up_to_1m,2029-04-01,5.5(d): from 1 Apr 2029 for supplies of at most $1000000,iras-etax-phases
+a registrant above S$4 million,existing_over_4m,2031-04-01,5.5(f): from 1 Apr 2031 for supplies above $4000000,iras-etax-phases

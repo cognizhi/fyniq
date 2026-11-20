@@ -2,6 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "disputed": {
+      "description": "What of their open invoices they dispute (open disputes, FR-AR-08), a total per currency: the rows above include it, so what is undisputed is the rows less this.",
+      "items": {
+        "$ref": "Money.schema.json"
+      },
+      "type": "array"
+    },
     "id": {
       "description": "The customer's contact ID.",
       "examples": [
@@ -28,7 +35,8 @@
   "required": [
     "id",
     "name",
-    "rows"
+    "rows",
+    "disputed"
   ],
   "title": "ReceivablesCustomer",
   "type": "object"

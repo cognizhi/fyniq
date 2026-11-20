@@ -603,25 +603,28 @@ func (p PayrollService) FinalPayOf(ctx context.Context, s api.Session, person uu
 // Export makes the journal file or the bank payment file of an approved version, with its manifest (NM-PAY-05).
 func (p PayrollService) Export(ctx context.Context, s api.Session, run uuid.UUID, in api.ExportInput) (api.ExportFile, error) {
 	var out api.ExportFile
-	if in.Kind != "journal" && in.Kind != "payments" {
-		return out, &payroll.Refusal{Code: payroll.CodeInvalid, Message: "kind: choose the journal file or the payments file."}
+	if in.Kind != "journal" && in.Kind != "payments" && in.Kind != "cpf" {
+		return out, &payroll.Refusal{Code: payroll.CodeInvalid, Message: "kind: choose the journal file, the payments file or the CPF file."}
 	}
-	if in.Kind == "payments" && p.Cipher == nil {
+	if (in.Kind == "payments" || in.Kind == "cpf") && p.Cipher == nil {
 		return out, &payroll.Refusal{Code: "NM_UNAVAILABLE", Message: "This deployment has no key service to open bank accounts with yet: ask whoever runs Nemura."}
 	}
 	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
 		var file []byte
 		var m Manifest
 		var err error
-		if in.Kind == "journal" {
+		switch in.Kind {
+		case "journal":
 			file, m, err = ExportJournal(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, run, in.Version)
-		} else {
+		case "cpf":
+			file, m, err = ExportCPF(ctx, tx, p.Cipher, s.Organisation, p.Clock.Now(), s.Member, run, in.Version, CPFInput{PaymentType: in.PaymentType, Serial: in.Serial, AdviceCode: in.AdviceCode})
+		default:
 			file, m, err = ExportPayments(ctx, tx, p.Cipher, s.Organisation, p.Clock.Now(), s.Member, run, in.Version)
 		}
 		if err != nil {
 			return err
 		}
-		out = api.ExportFile{ID: m.ID, Kind: m.Kind, Version: m.Version, Month: m.Month, Lines: m.Lines, Total: m.Total, SHA256: m.SHA256, Note: m.Note, Reference: m.Reference, Skipped: []api.ExportSkipped{}, ContentBase64: base64.StdEncoding.EncodeToString(file)}
+		out = api.ExportFile{ID: m.ID, Kind: m.Kind, Version: m.Version, Month: m.Month, Lines: m.Lines, Total: m.Total, SHA256: m.SHA256, Note: m.Note, Reference: m.Reference, FileName: m.FileName, Skipped: []api.ExportSkipped{}, ContentBase64: base64.StdEncoding.EncodeToString(file)}
 		for _, k := range m.Skipped {
 			out.Skipped = append(out.Skipped, api.ExportSkipped{PersonID: k.PersonID, Person: k.Person, Reason: k.Reason})
 		}

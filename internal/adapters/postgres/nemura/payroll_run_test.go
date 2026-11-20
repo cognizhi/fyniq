@@ -1001,7 +1001,7 @@ func TestTheHandOffFilesAreMadeFromAnApprovedVersionWithAManifestAndNeverProveAP
 	// Evidence: the manifests are written once and the trail holds no account and no amount.
 	su := connect(t, db.SuperURL())
 	var n int
-	if err := su.QueryRow(ctx, "SELECT count(*) FROM nemura.pay_export").Scan(&n); err != nil || n != 5 {
+	if err := su.QueryRow(ctx, "SELECT count(*) FROM nemura.pay_export WHERE organisation_id = $1", lt.c.org).Scan(&n); err != nil || n != 5 {
 		t.Errorf("manifests: %d %v", n, err)
 	}
 	for _, q := range []string{"UPDATE nemura.pay_export SET line_count = 0", "DELETE FROM nemura.pay_export"} {

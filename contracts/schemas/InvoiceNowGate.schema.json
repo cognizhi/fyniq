@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acknowledged": {
+      "description": "The acknowledged.",
+      "examples": [
+        9
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "contingency": {
+      "$ref": "InvoiceNowContingency.schema.json",
+      "description": "The approved contingency that lets the return be filed."
+    },
+    "documents": {
+      "description": "The documents of the period the requirement covers.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "excluded": {
+      "description": "The excluded.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "from": {
+      "description": "The from.",
+      "examples": [
+        "2027-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "missing": {
+      "description": "What the gate waits for, in date order.",
+      "items": {
+        "$ref": "InvoiceNowMissing.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "reason": {
+      "description": "Why the gate is not assessed.",
+      "examples": [
+        "The InvoiceNow requirement is not marked as applying (setting invoicenow.applies)."
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "not_assessed: the requirement is not marked as applying, or no sg-invoicenow version is active; ready: nothing is missing, or an approved contingency covers it; blocked: the return waits.",
+      "enum": [
+        "not_assessed",
+        "ready",
+        "blocked"
+      ],
+      "examples": [
+        "blocked"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "The to.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "state",
+    "documents",
+    "acknowledged",
+    "excluded",
+    "missing"
+  ],
+  "title": "InvoiceNowGate",
+  "type": "object"
+}

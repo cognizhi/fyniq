@@ -268,6 +268,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/compliance/incidents` (listIncidents): List the security incidents
 - `POST /v1/compliance/incidents` (openIncident): Open a security incident
 - `POST /v1/compliance/incidents/{incident_id}/steps` (stepIncident): Add an incident's next step
+- `GET /v1/compliance/invoicenow-gate` (getInvoiceNowGate): Get the InvoiceNow filing gate for a return period
 - `GET /v1/compliance/personal-data-requests` (listPersonalDataRequests): List the access and correction requests
 - `POST /v1/compliance/personal-data-requests` (createPersonalDataRequest): Record an access or correction request
 - `GET /v1/compliance/personal-data-requests/{request_id}/report` (getPersonalDataReport): Report the personal data held about a request's subject
@@ -616,10 +617,21 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/investor-rights/{rights_id}/evidence` (addInvestorRightsEvidence): Attach the agreements a holder's rights come from
 - `GET /v1/investor-rights/{rights_id}/evidence/{evidence_id}` (getInvestorRightsEvidence): Get a file of a holder's rights
 - `DELETE /v1/investor-rights/{rights_id}/evidence/{evidence_id}` (removeInvestorRightsEvidence): Remove a file from a holder's drafted rights
+- `POST /v1/invoice-disputes/{dispute_id}/resolution` (resolveInvoiceDispute): Resolve a dispute or a promise to pay
+- `POST /v1/invoicenow/contingencies` (requestInvoiceNowContingency): Ask to file a return with a gap in its InvoiceNow submissions
+- `POST /v1/invoicenow/contingencies/{contingency_id}/approve` (approveInvoiceNowContingency): Approve a contingency
+- `POST /v1/invoicenow/exclusions` (createInvoiceNowExclusion): Leave a document out of the InvoiceNow submissions
+- `POST /v1/invoicenow/exclusions/{exclusion_id}/withdraw` (withdrawInvoiceNowExclusion): Withdraw an exclusion
+- `GET /v1/invoicenow/submissions` (listInvoiceNowSubmissions): List the InvoiceNow submissions
+- `POST /v1/invoicenow/submissions` (queueInvoiceNowSubmission): Queue an invoice or credit note for InvoiceNow
+- `POST /v1/invoicenow/submissions/{submission_id}/retry` (retryInvoiceNowSubmission): Queue a failed submission again
+- `POST /v1/invoicenow/submissions/{submission_id}/send` (sendInvoiceNowSubmission): Send a queued submission and read its status
 - `GET /v1/invoices` (listInvoices): List the invoices
 - `POST /v1/invoices` (createInvoice): Save a draft invoice
 - `GET /v1/invoices/{invoice_id}` (getInvoice): Get an invoice
 - `PUT /v1/invoices/{invoice_id}` (replaceInvoice): Change a draft invoice
+- `GET /v1/invoices/{invoice_id}/disputes` (getInvoiceDisputes): Read an invoice's disputes and promises to pay
+- `POST /v1/invoices/{invoice_id}/disputes` (createInvoiceDispute): Record a customer's dispute of an invoice, or their promise to pay
 - `GET /v1/invoices/{invoice_id}/document` (getInvoiceDocument): Render an invoice as a document
 - `POST /v1/invoices/{invoice_id}/edit` (editInvoice): Edit an issued invoice
 - `POST /v1/invoices/{invoice_id}/edit-approval` (requestInvoiceEdit): Ask for approval to edit an issued invoice

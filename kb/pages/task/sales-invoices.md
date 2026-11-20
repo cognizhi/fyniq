@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:02ec1d98efd8d0aba356f42dc49d0f37421cbec52a9a28e2aa40d9b240453e63
+  - docs/user-guide/invoices.md sha256:133c44d5b0c9e69ad947d71a7f5c0edba6c00a43c57bd0695b4a63960ee959be
 data_class: general
 taint: trusted
 status: draft
@@ -56,6 +56,9 @@ aliases:
   - incoming-funds alert
   - payment link
   - customer portal
+  - disputed invoice
+  - promise to pay
+  - dispute an invoice
   - customer statement online
   - pay online
   - HitPay link
@@ -133,6 +136,14 @@ aliases:
 - The email's secure link opens the invoice or quote without signing in: the document as its PDF shows it, the amount due or total, and **Download the PDF**; on a sent quote still valid, the customer accepts with their name or declines, with a comment kept as a record ([[sales.quotes]]). It shows nothing else, works until it ends or is revoked, and the first opening marks the invoice **Viewed**.
 
 (src: docs/user-guide/invoices.md#what-the-customer-sees)
+
+## A disputed invoice or a promise to pay
+
+- **Record it** on an issued invoice (an Accountant or an AR specialist) notes that the customer disputes an amount (at most what is open, with why) or promises to pay on a day (from today to 90 days away).
+- A dispute pauses the invoice's reminders until you **Resolve** it with how it ended; a promise until its day has passed. AR ageing shows the disputed part apart; the rows still count it.
+- At most one open dispute and one open promise per invoice; a record is resolved once. Nothing is posted: correct the invoice with a credit note.
+
+(src: docs/user-guide/invoices.md#a-disputed-invoice-or-a-promise-to-pay)
 
 ## The customer portal
 

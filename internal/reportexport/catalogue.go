@@ -7,7 +7,7 @@ package reportexport
 // Exported are the tables the export writes, each as tables/<name>.csv.
 var Exported = []string{
 	"access_review_attestation", "account", "accountant_review", "accountant_review_journal", "accountant_review_query",
-	"accounting_framework", "accounting_policy", "ai_budget", "ai_call", "ai_connection", "ai_connection_version", "ai_conversation", "ai_feedback", "ai_data_policy", "ai_model", "ai_model_list_read", "ai_price", "ai_price_rate", "ai_proposal", "ai_proposal_undo", "ai_proposal_view", "ai_quality_review", "ai_qualification", "ai_reservation", "ai_route", "ai_route_step", "ai_tool_call", "ai_turn", "agent_run", "allocation", "announcement", "announcement_dismissal",
+	"accounting_framework", "accounting_policy", "ai_budget", "ai_call", "ai_connection", "ai_connection_version", "ai_conversation", "ai_feedback", "ai_data_policy", "ai_model", "ai_model_list_read", "ai_price", "ai_price_rate", "ai_proposal", "ai_proposal_undo", "ai_proposal_view", "ai_quality_review", "ai_qualification", "ai_reservation", "ai_route", "ai_route_step", "ai_tool_call", "ai_turn", "agent_run", "allocation", "announcement", "announcement_dismissal", "invoicenow_submission", "invoicenow_event", "invoicenow_exclusion", "invoicenow_contingency",
 	"api_client", "approval_policy", "approval_request", "approval_signature", "audit_boundary", "audit_chain", "audit_event",
 	"audit_recovery", "audit_recovery_acknowledgement", "audit_request_detail", "balance", "bank_feed",
 	"bank_gap", "bank_line", "bank_match", "bank_reconciliation", "bank_rule", "bank_signal", "bank_statement", "compliance_task",
@@ -34,7 +34,7 @@ var Exported = []string{
 	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "role_assignment_scope", "sales_reminder",
 	"security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",
 	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "user_preference", "user_saved_item", "record_comment", "withholding_decision", "people_source", "salary_batch", "payroll_arrangement", "payroll_import", "person_projection", "payroll_mapping", "payroll_mapping_entry", "payroll_run_receipt",
-	"psp_account", "psp_balance", "psp_dispute_credit", "psp_dispute_loss", "psp_event", "psp_payout", "psp_txn", "payment_link", "payment_link_payment", "portal_link",
+	"psp_account", "psp_balance", "psp_dispute_credit", "psp_dispute_loss", "psp_event", "psp_payout", "psp_txn", "payment_link", "payment_link_payment", "portal_link", "invoice_dispute",
 }
 
 // Excluded are the tables the export leaves out, with why: no secret, key, token, idempotency key or job in flight

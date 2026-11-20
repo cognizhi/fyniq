@@ -2056,7 +2056,7 @@ pay_export | pay_export_counts | CHECK (((line_count >= 0) AND (skipped_count >=
 pay_export | pay_export_created_at_not_null | NOT NULL created_at
 pay_export | pay_export_created_by_not_null | NOT NULL created_by
 pay_export | pay_export_id_not_null | NOT NULL id
-pay_export | pay_export_kind | CHECK ((kind = ANY (ARRAY['journal'::text, 'payments'::text])))
+pay_export | pay_export_kind | CHECK ((kind = ANY (ARRAY['journal'::text, 'payments'::text, 'cpf'::text, 'ais'::text])))
 pay_export | pay_export_kind_not_null | NOT NULL kind
 pay_export | pay_export_line_count_not_null | NOT NULL line_count
 pay_export | pay_export_organisation_id_not_null | NOT NULL organisation_id

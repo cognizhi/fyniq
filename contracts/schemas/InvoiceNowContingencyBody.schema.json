@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "evidence": {
+      "description": "The outage of the access point or IRAS, and any IRAS correspondence.",
+      "examples": [
+        "The provider's incident notice of 31 March, reference INC-2027-0331"
+      ],
+      "maxLength": 4000,
+      "minLength": 10,
+      "type": "string"
+    },
+    "period_from": {
+      "description": "The return period's first day.",
+      "examples": [
+        "2027-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "period_to": {
+      "description": "The return period's last day.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why the return cannot wait for the missing submissions.",
+      "examples": [
+        "The InvoiceNow requirement is not marked as applying (setting invoicenow.applies)."
+      ],
+      "maxLength": 1000,
+      "minLength": 10,
+      "type": "string"
+    }
+  },
+  "required": [
+    "period_from",
+    "period_to",
+    "reason",
+    "evidence"
+  ],
+  "title": "InvoiceNowContingencyBody",
+  "type": "object"
+}

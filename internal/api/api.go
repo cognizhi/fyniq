@@ -59,10 +59,12 @@ type Deps struct {
 	Outbox       *outbox.Dispatcher   // queues background work, such as token revocations; nil when there is none
 	KBCompiler   bool                 // the worker holds the knowledge-base compiler's own service identity, so a recompile can run (local build; release waits for its Cloud Run job [live-verify])
 	Clock        ports.Clock
-	Auth         authn.Authenticator
-	SignIn       ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
-	Log          *slog.Logger
-	Version      string // the platform version: the document's info.version
+	// AccessPoint is the InvoiceNow access point (FR-AR-12); nil when none is connected: sending answers "not available here".
+	AccessPoint ports.AccessPoint
+	Auth        authn.Authenticator
+	SignIn      ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
+	Log         *slog.Logger
+	Version     string // the platform version: the document's info.version
 	// Build is the build's commit, time and flavour (REL-05): the platform version's endpoint answers them, and every
 	// exported report carries the commit beside the version.
 	Build PlatformBuild
@@ -446,6 +448,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerCorporateReconciliation(a)
 	registerAcra(a)
 	registerGSTMonitor(a)
+	registerInvoiceNow(a)
 	registerCalendar(a)
 	registerForecasts(a)
 	registerBudgets(a)
@@ -529,6 +532,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerInvoiceDocuments(a)
 	registerPaymentLinks(a)
 	registerPortal(a)
+	registerInvoiceDisputes(a)
 	registerDocumentSends(a)
 	registerSalesReminders(a)
 	registerStatements(a)

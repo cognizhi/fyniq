@@ -1869,6 +1869,79 @@ type FyniqInvitationCode struct {
 	Owner    uuid.UUID
 }
 
+type FyniqInvoiceDispute struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	InvoiceID      uuid.UUID
+	Kind           string
+	Amount         *string
+	Currency       *string
+	Reason         *string
+	PromisedOn     pgtype.Date
+	Status         string
+	Resolution     *string
+	Version        int32
+	CreatedBy      string
+	CreatedAt      time.Time
+	ResolvedBy     *string
+	ResolvedAt     *time.Time
+}
+
+type FyniqInvoicenowContingency struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PeriodFrom     time.Time
+	PeriodTo       time.Time
+	Reason         string
+	Evidence       string
+	RequestedBy    string
+	RequestedAt    time.Time
+	ApprovedBy     *string
+	ApprovedAt     *time.Time
+	WithdrawnAt    *time.Time
+}
+
+type FyniqInvoicenowEvent struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	SubmissionID   uuid.UUID
+	At             time.Time
+	Status         string
+	Detail         *string
+	Actor          string
+}
+
+type FyniqInvoicenowExclusion struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	Reason         string
+	Detail         *string
+	RecordedBy     string
+	RecordedAt     time.Time
+	WithdrawnAt    *time.Time
+	WithdrawnBy    *string
+}
+
+type FyniqInvoicenowSubmission struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	DocumentUuid   uuid.UUID
+	Version        int32
+	Kind           string
+	Direction      string
+	Status         string
+	Recipient      *string
+	TransmissionID *string
+	IrasAck        *string
+	LastError      *string
+	PayloadSha256  []byte
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	CreatedBy      string
+}
+
 type FyniqIpRateWindow struct {
 	Client      string
 	Kind        string

@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/disputes"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -136,6 +137,11 @@ func Due(ctx context.Context, u storage.UnitOfWork, base money.Currency, today t
 		}
 		return c, err
 	}
+	// An invoice the customer disputes, or promises to pay on a day not yet passed, is not chased (FR-AR-08, P2).
+	paused, err := disputes.Pause(ctx, u, today)
+	if err != nil {
+		return nil, err
+	}
 	var out []Reminder
 	for _, acc := range accounts {
 		if string(acc.Role) != ledger.RoleAccountsReceivable {
@@ -155,7 +161,7 @@ func Due(ctx context.Context, u storage.UnitOfWork, base money.Currency, today t
 				days = schedules[*c.CustomerGroupID]
 			}
 			for _, it := range cu.Items {
-				if it.Kind != receivables.KindInvoice || it.Open.Sign() <= 0 || it.DueDate.IsZero() {
+				if it.Kind != receivables.KindInvoice || it.Open.Sign() <= 0 || it.DueDate.IsZero() || paused[it.DocumentID] {
 					continue
 				}
 				step, ok := Step(days, it.DueDate, today)

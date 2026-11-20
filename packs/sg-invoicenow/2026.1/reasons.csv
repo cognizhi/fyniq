@@ -1,0 +1,9 @@
+reason,label,source
+reverse_charge,A reverse charge supply or purchase,iras-etax-excluded
+import_permit,An import permit for goods,iras-etax-excluded
+deemed_supply,A deemed supply (such as free goods),iras-etax-excluded
+financial_services,An exempt financial service or digital payment token,iras-etax-excluded
+unregistered_supplier,A purchase from a supplier not registered for GST,iras-etax-excluded
+blocked_input_tax,A purchase whose input tax is blocked,iras-etax-excluded
+out_of_scope,A supply or purchase outside the scope of GST,iras-etax-excluded
+other,Another reason (the person says which),iras-etax-scope

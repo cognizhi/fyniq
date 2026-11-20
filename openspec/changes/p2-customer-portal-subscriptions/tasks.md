@@ -14,7 +14,8 @@ Migrations 001070 to 001099. Cloud and real-account checks are tagged `[live-ver
 
 ## 2. Disputes and promise-to-pay (FR-AR-08, P2)
 
-- [ ] 2.1 `invoice_dispute`, its operations, the reminder pause and the ageing split. `// req: FR-AR-08`
+- [x] 2.1 `invoice_dispute`, its operations, the reminder pause and the ageing split. `// req: FR-AR-08`
+  - Built (rev 0.521): migration 001072, `internal/domain/disputes` (`Make`, `Resolve`, `Pause`, `Disputed`), `salesreminder.Due` skips a paused invoice, `getReceivables` gains `disputed` per customer, `internal/api/invoice_disputes.go`, the invoice's `DisputeCard`, help keys, the guide section and kb page. Tests: `TestADisputeOrPromisePausesRemindersAndSplitsTheAgeing`, `TestADisputeOrPromiseIsOfAnInvoiceAndOnlyEnds`, `matrixInvoiceDisputes`, `disputeCard.test.tsx`.
 
 ## 3. Subscription contracts (FR-AR-15)
 

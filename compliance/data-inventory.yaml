@@ -199,6 +199,8 @@ flows:
     cross_border: true
     note: "The email providers keep mail outside Singapore (FR-INT-21); where each processes [live-verify]"
 not_personal:
+  - column: invoicenow_submission.recipient
+    why: "A business's Peppol participant ID, its UEN on the network: the buyer a document is sent to, an organisation (FR-AR-12)"
   - column: ai_reservation.person
     why: "Names who an AI call ran for by user ID, or a system job, never by name: what a person's AI budget counts (AI-77)"
   - column: person_key.person

@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "description": "The created at.",
+      "examples": [
+        "2027-02-03T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "direction": {
+      "description": "The direction.",
+      "enum": [
+        "sale",
+        "purchase"
+      ],
+      "examples": [
+        "sale"
+      ],
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The invoice or credit note it is for.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "document_uuid": {
+      "description": "The document's unique identifier on the network (BT-SG-003): the same for every version.",
+      "examples": [
+        "0a1b2c3d-1111-4222-8333-444455556666"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The submission's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "iras_ack": {
+      "description": "IRAS's acknowledgement ID.",
+      "examples": [
+        "1500003994"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "peppol: to a customer on the network; extracted_sale: to IRAS alone, the customer not being on the network.",
+      "enum": [
+        "peppol",
+        "extracted_sale",
+        "extracted_purchase",
+        "aggregated"
+      ],
+      "examples": [
+        "peppol"
+      ],
+      "type": "string"
+    },
+    "last_error": {
+      "description": "Why it failed.",
+      "examples": [
+        "the document changed after it was queued: queue it again"
+      ],
+      "type": "string"
+    },
+    "recipient": {
+      "description": "The customer's Peppol participant ID, for a Peppol submission.",
+      "examples": [
+        "0195:SGUEN201912345A"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "acknowledged only with IRAS's acknowledgement ID.",
+      "enum": [
+        "queued",
+        "sent",
+        "acknowledged",
+        "failed"
+      ],
+      "examples": [
+        "sent"
+      ],
+      "type": "string"
+    },
+    "transmission_id": {
+      "description": "The access point's ID for the transmission.",
+      "examples": [
+        "tx-3f2c1a9d4b7e"
+      ],
+      "type": "string"
+    },
+    "updated_at": {
+      "description": "The updated at.",
+      "examples": [
+        "2027-02-03T09:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "version": {
+      "description": "1, then one more for each correction sent.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "document_id",
+    "document_uuid",
+    "version",
+    "kind",
+    "direction",
+    "status",
+    "created_at",
+    "updated_at"
+  ],
+  "title": "InvoiceNowSubmission",
+  "type": "object"
+}

@@ -55,6 +55,9 @@ type Kit struct {
 	// Rates is the daily exchange-rate feed (FR-GL-05); nil until one is configured: the MAS adapter arrives at the
 	// cloud gate, and until then organisations enter their own rates.
 	Rates ports.RateFeed
+	// AccessPoint is the InvoiceNow access point (FR-AR-12); nil until one is connected (question 2): local mode has a stand-in,
+	// and the release build answers "not available here".
+	AccessPoint ports.AccessPoint
 	// Prices is the public model price catalogue read daily (AI-82, AI-85): LiteLLM's through the platform's egress
 	// guard in a release, a directory of files locally; nil: every model stays unpriced.
 	Prices ports.PriceCatalogue
