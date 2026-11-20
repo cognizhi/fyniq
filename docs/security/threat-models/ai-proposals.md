@@ -146,6 +146,14 @@ tests' own type checks the harness: a right proposal passes, and a turn that pro
   pause, under the API's role, while the template is at the version the execution left; a budget draft is not undoable by design. Needs human review:
   migrations 000961 and 000962. Proved by `TestTheAIAddsARecurringJournalThatAPersonApprovesAndUndoes`, `TestTheAIDraftsABudgetThatAPersonApproves` and
   `TestAttackTheExecutorAddsARecurringJournalAndDraftsABudgetAndNothingMore`; evals `recur-create-template` and `plan-propose-budget`.
+- **`bank.rule_upsert` (version 1, tier 1; 21 Nov 2026).** A bank rule created or changed through the functions a person's create and change run. The payload
+  has no auto-apply field, so a rule the AI proposes can never apply by itself (another person's approval after the back-test, FR-BNK-14); the executor's
+  grants (migration 000963, **needs human review**) are the API's own columns MINUS `auto_apply` and `auto_apply_approval_id`, with SELECT on `bank_rule`
+  alone (no bank line, match or transfer, no delete), and a trigger makes a rule the executor creates say it is an AI proposal's. The coding goes to an
+  ordinary account (the domain's own check refuses money, receivables and payables accounts); the dry run's back-test is the API role's and shows counts
+  only, never a line's description. The undo switches a created rule off or puts a changed one back, as the person, while the rule is at the version the
+  execution left. Proved by `TestTheAIProposesABankRuleThatAPersonApprovesAndUndoes` and
+  `TestAttackTheExecutorKeepsBankRulesAndCanNeverMakeOneApplyByItself`; evals `bank-rule-upsert` and `bank-rule-redteam`.
 - **An injection that stays within the person's rights.** A turned model can propose only a type that is on, within
   its limits, as something the person may do. A person still reads Fyniq's summary and decides.
 - **Model Armor.** In a release, screening of the model's answers and of a proposal's words runs through Model
