@@ -5090,6 +5090,18 @@ export interface components {
              */
             note: string;
             /**
+             * Format: int64
+             * @description Which part this file is.
+             * @example 1
+             */
+            part?: number;
+            /**
+             * Format: int64
+             * @description The IR8A payload of a year of more than 2,000 people: how many parts the year has; this file is the one asked for with part (absent when the year is one payload).
+             * @example 2
+             */
+            parts?: number;
+            /**
              * @description The payment reference in a payment file.
              * @example Salary 2026-06
              */
@@ -5146,6 +5158,12 @@ export interface components {
              * @enum {string}
              */
             kind: "journal" | "payments" | "cpf" | "ais";
+            /**
+             * Format: int64
+             * @description For the IR8A payload of a year with more than 2,000 people: which payload of the year to make, from 1 (the default). IRAS takes at most 2,000 records in a submission (A11), so the year is sent in parts, each of its own people in order; the answer's parts says how many there are.
+             * @example 1
+             */
+            part?: number;
             /**
              * @description The payment type of the employer's CPF Submission Number, as its CPF EZPay account holds it; needed for the CPF file.
              * @example PTE

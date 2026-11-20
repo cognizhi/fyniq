@@ -27659,7 +27659,10 @@ components:
       properties:
         activity:
           description: The kind of record.
-          enum:
+          examples:
+            - bill
+          type: string
+          x-extensible-enum:
             - bill
             - invoice
             - journal
@@ -27674,9 +27677,6 @@ components:
             - gst_forecast
             - corporate
             - board_pack
-          examples:
-            - bill
-          type: string
         date:
           description: Its date.
           examples:
@@ -58880,7 +58880,10 @@ components:
           description: The kinds of record you may search.
           items:
             description: A kind of record files are attached to.
-            enum:
+            examples:
+              - bill
+            type: string
+            x-extensible-enum:
               - bill
               - invoice
               - journal
@@ -58896,9 +58899,6 @@ components:
               - tax_paper
               - corporate
               - board_pack
-            examples:
-              - bill
-            type: string
           type: array
         items:
           description: The files on this page, newest record date first.
@@ -61638,7 +61638,10 @@ components:
           type: string
         obligation:
           description: "What is due: the register_ ones are a register's own, done and checked on their record: the corporate profile's lodgements are done once a version with the day lodged is recorded."
-          enum:
+          examples:
+            - eci
+          type: string
+          x-extensible-enum:
             - gst_f5
             - cpf
             - ir8a_ais
@@ -61663,9 +61666,6 @@ components:
             - sg-deadlines
             - sg-acra
             - investor_information
-          examples:
-            - eci
-          type: string
         reason:
           description: Why it is not assessed.
           examples:

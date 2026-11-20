@@ -36,4 +36,4 @@ Outside needs: none. Job boards (MyCareersFuture) are posted to by a person (NM-
 **Chosen (the owner's):** the Owner and the HR administrator may also create a requisition (Appendix B's row Hiring is now C for the Recruiter and the HR administrator,
 C/A for the Owner); approval stays with the Owner, and in founder mode the same Owner may ask and approve (the one exception to NM-ROLE-05, for requisitions only;
 the audit trail names the same person twice). Every member reads company and team goals; a personal goal stays private to the person, their line manager and the people team
-(Appendix B's row Performance gives the Employee "O; V (company and team goals)"). PRD-002 revision 0.68.
+(Appendix B's row Performance gives the Employee "O; V (company and team goals)"). PRD-002 revision 0.69.

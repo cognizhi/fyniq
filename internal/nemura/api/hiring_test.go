@@ -8,7 +8,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 )
 
-// Appendix B's row Hiring decides who may do what: the Recruiter, the HR administrator and the Owner ask and write (rev 0.68), the HR officer reads, the Owner alone approves (and may approve what they asked for); nobody else does anything, nobody without a session
+// Appendix B's row Hiring decides who may do what: the Recruiter, the HR administrator and the Owner ask and write (rev 0.69), the HR officer reads, the Owner alone approves (and may approve what they asked for); nobody else does anything, nobody without a session
 // does anything, and everything is refused with the reason while Hiring is switched off (NM-REC-01, NM-FEAT-01).
 // req: NM-REC-01, NM-REC-02, NM-REC-03, NM-FEAT-01
 // asvs: V8.2.1, V8.2.2, V8.3.1

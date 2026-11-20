@@ -6,11 +6,11 @@ Roles, landing pages and the experience in Nemura: its own design system, ease o
 ## Requirements
 
 ### Requirement: Permission matrix
-Each Nemura role SHALL hold only the rights PRD-002 Appendix B gives it, per field and action, and nobody SHALL approve their own request, change, pay or role, except that in founder mode the Owner may approve a requisition they asked for (rev 0.68).
+Each Nemura role SHALL hold only the rights PRD-002 Appendix B gives it, per field and action, and nobody SHALL approve their own request, change, pay or role, except that in founder mode the Owner may approve a requisition they asked for (rev 0.69).
 
 Source: PRD-002 §B
 
-#### Scenario: Requisitions and goals (rev 0.68)
+#### Scenario: Requisitions and goals (rev 0.69)
 - **WHEN** the HR administrator or the Owner asks for a requisition, or any member asks for the company's goals
 - **THEN** both are allowed, while a personal goal is read only by the person, their line manager and the people team
 

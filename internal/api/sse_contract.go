@@ -60,6 +60,9 @@ func messagePurposesAreExtensible(api huma.API) {
 			if strings.HasSuffix(schema, "Draft") { // what a client sends stays a closed list: only what it may receive grows
 				continue
 			}
+			if p != nil && p.Type == huma.TypeArray && p.Items != nil { // a list of them: the items grow
+				p = p.Items
+			}
 			if p == nil || !slices.Contains(p.Enum, member) {
 				continue
 			}
@@ -75,4 +78,11 @@ func messagePurposesAreExtensible(api huma.API) {
 	extensible("kind", any("payment-provider"))
 	// The bank report formats a source reads grow with the banks' formats (MT942 after CAMT.053): a client is told to handle a format it has not seen.
 	extensible("report_format", any("mt942"))
+	// The activities evidence is kept for and the obligations the calendar lists grow with each module that takes evidence or a deadline (a board pack's PDF, a tax paper, an investor's
+	// information right): a client is told to handle a value it has not seen.
+	extensible("activity", any("board_pack"))
+	extensible("activities", any("board_pack"))
+	extensible("activity", any("tax_paper"))
+	extensible("activities", any("tax_paper"))
+	extensible("obligation", any("investor_information"))
 }

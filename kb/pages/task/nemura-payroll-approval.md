@@ -4,7 +4,7 @@ type: task
 title: Read and approve a pay run in Nemura
 summary: Who approves a pay run and why not its preparer, what the approver reads and signs (with proof for Fyniq when linked) and what approving does
 sources:
-  - docs/user-guide/nemura/payroll-approval.md sha256:7dcbdcf804a9744a75568925fa058bf9f1a9823f649df27fceb976dcbc5e37a0
+  - docs/user-guide/nemura/payroll-approval.md sha256:a1ec9c0a766b50b5211242d4fc55eacaf0a6e7162b0d2437b13422b6c2eb2713
 data_class: personal
 taint: trusted
 status: published
@@ -48,7 +48,7 @@ aliases:
 
 ## Files for CPF and IRAS
 
-Under **Files for CPF and IRAS** an approved version makes the **CPF EZPay file** (it needs your CPF Submission Number's payment type and serial number and an advice code, which only you know) and the **IR8A file** for IRAS's Auto-Inclusion Scheme: the IR8A payload of the income year the run is paid in, from every approved run paid in that year, with each person's pay items in the IR8A's boxes (the accountant confirms the mapping) and the year's employee CPF. The IR8A file also needs the person authorised to file, their contact number and email, and each person's NRIC or FIN and the sex and address set on the person by the HR officer or the HR administrator. Each asks for your passkey. A person without the details is left out and listed with why, and a detail that breaks one of IRAS's rules is refused with the rule named. Neither file is proof that anything was submitted.
+Under **Files for CPF and IRAS** an approved version makes the **CPF EZPay file** (it needs your CPF Submission Number's payment type and serial number and an advice code, which only you know) and the **IR8A file** for IRAS's Auto-Inclusion Scheme: the IR8A payload of the income year the run is paid in, from every approved run paid in that year, with each person's pay items in the IR8A's boxes (the accountant confirms the mapping) and the year's employee CPF. The IR8A file also needs the person authorised to file, their contact number and email, and each person's NRIC or FIN and the sex and address set on the person by the HR officer or the HR administrator. Each asks for your passkey. A person without the details is left out and listed with why, and a detail that breaks one of IRAS's rules is refused with the rule named. A year of more than 2,000 people is made a part at a time (choose the part, from 1; the file says how many parts the year has and is named for its part). Neither file is proof that anything was submitted.
 
 (src: docs/user-guide/nemura/payroll-approval.md#steps)
 
