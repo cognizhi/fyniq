@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amendment": {
+      "$ref": "SubscriptionAmendment.schema.json",
+      "description": "The amendment that took effect in the month, the last if several."
+    },
+    "month": {
+      "description": "The month's first day.",
+      "examples": [
+        "2026-04-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "mrr": {
+      "$ref": "Money.schema.json",
+      "description": "The monthly value in force on the month's last day: the contract's contracted MRR at month end (FR-KPI-02)."
+    },
+    "status": {
+      "description": "What the contract is on the month's last day.",
+      "enum": [
+        "not_started",
+        "active",
+        "ended"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "month",
+    "status",
+    "mrr"
+  ],
+  "title": "SubscriptionMonth",
+  "type": "object"
+}

@@ -18245,6 +18245,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/subscription-contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List subscription contracts
+         * @description The organisation's subscription contracts, oldest first, a page at a time, optionally one customer's (FR-AR-15), each with its status and monthly value today. Read-only.
+         */
+        get: operations["listSubscriptionContracts"];
+        put?: never;
+        /**
+         * Record a customer's subscription contract
+         * @description Records a subscription of an active customer: its name, currency, first day, an optional agreed last day and the monthly value at the start (FR-AR-15). A contract is a record, not a posting: invoices and credit notes post through their own rules, and the schedule and the contracted MRR are derived from it and its amendments. It never changes; a change is an amendment (amendSubscriptionContract). Idempotent with Idempotency-Key; Prefer: return=preview records nothing.
+         */
+        post: operations["createSubscriptionContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscription-contracts/{contract_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a subscription contract with its amendments and schedule
+         * @description The contract, its amendments by effective day, and its schedule month by month: the monthly value in force on each month's last day, which is its contracted MRR at month end (FR-AR-15, FR-KPI-02). Derived on every read. Read-only.
+         */
+        get: operations["getSubscriptionContract"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscription-contracts/{contract_id}/amendments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Amend a subscription contract from a day
+         * @description Records a dated amendment (FR-AR-15): an upgrade or downgrade sets a new monthly value from its day, a cancellation ends the subscription on its day, and a renewal starts it again after it ended. The day is on or after the contract's start, after its last amendment, and in an open month: a closed month's figures are never rewritten (FR-GL-12). The accounting of the invoices and credit notes it causes follows the revenue policy and is entered as they are (FR-ORG-10). Needs If-Match with the contract's ETag. Idempotent with Idempotency-Key; Prefer: return=preview records nothing.
+         */
+        post: operations["amendSubscriptionContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscription-mrr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the contracted MRR on a day
+         * @description The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Nothing is converted. Read-only.
+         */
+        get: operations["getContractedMRR"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/super-admins": {
         parameters: {
             query?: never;
@@ -23197,6 +23281,30 @@ export interface components {
              * @example 20
              */
             tool_calls: number;
+        };
+        AmendSubscriptionInputBody: {
+            /**
+             * Format: date
+             * @description The first day of the change: after the contract's last amendment and in an open month.
+             * @example 2026-04-01
+             */
+            effective_on: string;
+            /**
+             * @description What changes.
+             * @example upgrade
+             * @enum {string}
+             */
+            kind: "upgrade" | "downgrade" | "cancel" | "renew";
+            /**
+             * @description The new monthly value from that day, above nothing; left out for a cancellation.
+             * @example 150.00
+             */
+            mrr?: string;
+            /**
+             * @description Why it changes.
+             * @example The customer moved to the larger plan
+             */
+            reason: string;
         };
         Announcement: {
             /**
@@ -31101,6 +31209,31 @@ export interface components {
              */
             to: string;
         };
+        ContractedMRR: {
+            /**
+             * Format: int64
+             * @description How many contracts are active.
+             * @example 12
+             */
+            active: number;
+            /**
+             * @description The currency: totals are not converted.
+             * @example SGD
+             */
+            currency: string;
+            /** @description The monthly value of the contracts active that day. */
+            mrr: components["schemas"]["Money"];
+        };
+        ContractedMRROutputBody: {
+            /**
+             * Format: date
+             * @description The day.
+             * @example 2026-10-31
+             */
+            as_at: string;
+            /** @description The monthly value of the contracts active that day, by currency (contracted MRR, FR-KPI-02); nothing is converted. */
+            totals: components["schemas"]["ContractedMRR"][];
+        };
         Control: {
             /**
              * Format: date-time
@@ -32631,6 +32764,41 @@ export interface components {
              * @example 1
              */
             weekday?: number;
+        };
+        CreateSubscriptionInputBody: {
+            /**
+             * Format: uuid
+             * @description The customer: an active contact marked as a customer.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0
+             */
+            contact_id: string;
+            /**
+             * @description The contract's currency.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: date
+             * @description The agreed last day, if any.
+             * @example 2026-12-31
+             */
+            ends_on?: string;
+            /**
+             * @description The monthly value at the start, a decimal string.
+             * @example 100.00
+             */
+            mrr: string;
+            /**
+             * @description What the customer subscribes to.
+             * @example Fyniq Growth plan
+             */
+            name: string;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-01-15
+             */
+            starts_on: string;
         };
         CreditApplication: {
             /** @description What was applied, in their currency. */
@@ -59478,6 +59646,163 @@ export interface components {
              * @example 5
              */
             years: number;
+        };
+        SubscriptionAmendment: {
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-03-20T09:30:00Z
+             */
+            created_at: string;
+            /**
+             * Format: date
+             * @description The first day of the new monthly value; for a cancellation, the first day with no subscription.
+             * @example 2026-04-01
+             */
+            effective_on: string;
+            /**
+             * Format: uuid
+             * @description The amendment's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5a02
+             */
+            id: string;
+            /**
+             * @description What changed: the monthly value rose or fell, the subscription was cancelled, or it started again after it ended.
+             * @example upgrade
+             * @enum {string}
+             */
+            kind: "upgrade" | "downgrade" | "cancel" | "renew";
+            /** @description The monthly value from that day; zero for a cancellation. */
+            mrr: components["schemas"]["Money"];
+            /**
+             * @description Why it changed.
+             * @example The customer moved to the larger plan
+             */
+            reason: string;
+        };
+        SubscriptionContract: {
+            /**
+             * Format: uuid
+             * @description The customer.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0
+             */
+            contact_id: string;
+            /**
+             * Format: date
+             * @description The agreed last day, when there is one; a renewal continues past it.
+             * @example 2026-12-31
+             */
+            ends_on?: string;
+            /**
+             * Format: uuid
+             * @description The contract's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5a01
+             */
+            id: string;
+            /** @description The monthly value at the start. */
+            initial_mrr: components["schemas"]["Money"];
+            /** @description The monthly value in force today; zero unless active. */
+            mrr: components["schemas"]["Money"];
+            /**
+             * @description What the customer subscribes to.
+             * @example Fyniq Growth plan
+             */
+            name: string;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-01-15
+             */
+            starts_on: string;
+            /**
+             * @description What it is today.
+             * @example active
+             * @enum {string}
+             */
+            status: "not_started" | "active" | "ended";
+            /**
+             * Format: int64
+             * @description The contract's version: it moves with each amendment, and makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        SubscriptionContractDetail: {
+            /** @description Its amendments, by effective day. */
+            amendments: components["schemas"]["SubscriptionAmendment"][];
+            /**
+             * Format: uuid
+             * @description The customer.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0
+             */
+            contact_id: string;
+            /**
+             * Format: date
+             * @description The agreed last day, when there is one; a renewal continues past it.
+             * @example 2026-12-31
+             */
+            ends_on?: string;
+            /**
+             * Format: uuid
+             * @description The contract's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5a01
+             */
+            id: string;
+            /** @description The monthly value at the start. */
+            initial_mrr: components["schemas"]["Money"];
+            /** @description The monthly value in force today; zero unless active. */
+            mrr: components["schemas"]["Money"];
+            /**
+             * @description What the customer subscribes to.
+             * @example Fyniq Growth plan
+             */
+            name: string;
+            /** @description Month by month from the month it starts through the month of the later of today and its last change (at most 120 months). */
+            schedule: components["schemas"]["SubscriptionMonth"][];
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-01-15
+             */
+            starts_on: string;
+            /**
+             * @description What it is today.
+             * @example active
+             * @enum {string}
+             */
+            status: "not_started" | "active" | "ended";
+            /**
+             * Format: int64
+             * @description The contract's version: it moves with each amendment, and makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        SubscriptionContractPage: {
+            items: components["schemas"]["SubscriptionContract"][];
+            /**
+             * @description Pass it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjEwMCJ9
+             */
+            next_cursor?: string;
+        };
+        SubscriptionMonth: {
+            /** @description The amendment that took effect in the month, the last if several. */
+            amendment?: components["schemas"]["SubscriptionAmendment"];
+            /**
+             * Format: date
+             * @description The month's first day.
+             * @example 2026-04-01
+             */
+            month: string;
+            /** @description The monthly value in force on the month's last day: the contract's contracted MRR at month end (FR-KPI-02). */
+            mrr: components["schemas"]["Money"];
+            /**
+             * @description What the contract is on the month's last day.
+             * @example active
+             * @enum {string}
+             */
+            status: "not_started" | "active" | "ended";
         };
         SuccessionListOutputBody: {
             /** @description The successions on this page, latest first. */
@@ -200589,6 +200914,596 @@ export interface operations {
             };
             /** @description Not Found: `API-NOT-FOUND-01` Not found. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSubscriptionContracts: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only this customer's contracts. */
+                contact_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionContractPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createSubscriptionContract: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSubscriptionInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionContractDetail"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionContractDetail"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AR-SUB-01` A subscription is for an active customer; `AR-SUB-02` The subscription's terms are not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getSubscriptionContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The contract's ID. */
+                contract_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionContractDetail"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    amendSubscriptionContract: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The contract's ID. */
+                contract_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AmendSubscriptionInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionContractDetail"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionContractDetail"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AR-SUB-03` The amendment does not fit what the contract is that day; `AR-SUB-04` The amendment's day is not valid; `AR-SUB-05` The amendment's monthly value is not valid; `AR-SUB-06` An amendment needs its reason. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getContractedMRR: {
+        parameters: {
+            query?: {
+                /** @description The day; today when left out. */
+                as_at?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractedMRROutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

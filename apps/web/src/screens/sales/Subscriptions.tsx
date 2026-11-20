@@ -12,6 +12,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { issuers, SalesTabs } from "./Invoices";
+import { SubscriptionContracts } from "./SubscriptionContracts";
 
 type Invoice = components["schemas"]["PaymentProviderInvoice"];
 type Subscription = components["schemas"]["PaymentProviderSubscription"];
@@ -92,6 +93,7 @@ export function Subscriptions() {
       )}
       {problem && <Refusal problem={problem} title="The invoices were not issued" />}
       {one.isError && <Refusal problem={problemOf(one.error)} title="The provider's invoices could not be read" />}
+      <SubscriptionContracts may={may} />
       {one.isPending && <p className="fy-secondary">Loading what the provider bills…</p>}
       {parked.length > 0 && (
         <div className="fy-banner fy-banner--warning" role="alert">

@@ -3132,6 +3132,26 @@ statutory_pack_versions | tax_point_rule | text | null |
 statutory_pack_versions | sources | jsonb | null | 
 statutory_pack_versions | digest | text | null | 
 statutory_pack_versions | loaded_at | timestamp with time zone | null | 
+subscription_amendment | organisation_id | uuid | not null | current_org()
+subscription_amendment | id | uuid | not null | uuidv7()
+subscription_amendment | contract_id | uuid | not null | 
+subscription_amendment | kind | text | not null | 
+subscription_amendment | effective_on | date | not null | 
+subscription_amendment | mrr | numeric(20,4) | not null | 
+subscription_amendment | reason | text | not null | 
+subscription_amendment | created_by | text | not null | 
+subscription_amendment | created_at | timestamp with time zone | not null | 
+subscription_contract | organisation_id | uuid | not null | current_org()
+subscription_contract | id | uuid | not null | uuidv7()
+subscription_contract | contact_id | uuid | not null | 
+subscription_contract | name | text | not null | 
+subscription_contract | currency | text | not null | 
+subscription_contract | starts_on | date | not null | 
+subscription_contract | ends_on | date | null | 
+subscription_contract | mrr | numeric(20,4) | not null | 
+subscription_contract | version | integer | not null | 1
+subscription_contract | created_by | text | not null | 
+subscription_contract | created_at | timestamp with time zone | not null | 
 super_admin | user_id | uuid | not null | 
 super_admin | added_at | timestamp with time zone | not null | now()
 super_admin | added_by | uuid | null | 
@@ -8254,6 +8274,40 @@ statutory_pack_version | statutory_pack_version_title_length | CHECK (((length(t
 statutory_pack_version | statutory_pack_version_title_not_null | NOT NULL title
 statutory_pack_version | statutory_pack_version_verifier | CHECK (((length(btrim(verifier)) >= 1) AND (length(btrim(verifier)) <= 300)))
 statutory_pack_version | statutory_pack_version_verifier_not_null | NOT NULL verifier
+subscription_amendment | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+subscription_amendment | subscription_amendment_by_form | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+subscription_amendment | subscription_amendment_contract_fkey | FOREIGN KEY (organisation_id, contract_id) REFERENCES subscription_contract(organisation_id, id)
+subscription_amendment | subscription_amendment_contract_id_not_null | NOT NULL contract_id
+subscription_amendment | subscription_amendment_created_at_not_null | NOT NULL created_at
+subscription_amendment | subscription_amendment_created_by_not_null | NOT NULL created_by
+subscription_amendment | subscription_amendment_effective_on_not_null | NOT NULL effective_on
+subscription_amendment | subscription_amendment_id_not_null | NOT NULL id
+subscription_amendment | subscription_amendment_kind_known | CHECK ((kind = ANY (ARRAY['upgrade'::text, 'downgrade'::text, 'cancel'::text, 'renew'::text])))
+subscription_amendment | subscription_amendment_kind_not_null | NOT NULL kind
+subscription_amendment | subscription_amendment_mrr_form | CHECK (((mrr <> 'NaN'::numeric) AND (mrr >= (0)::numeric) AND ((kind <> 'cancel'::text) OR (mrr = (0)::numeric))))
+subscription_amendment | subscription_amendment_mrr_not_null | NOT NULL mrr
+subscription_amendment | subscription_amendment_organisation_id_not_null | NOT NULL organisation_id
+subscription_amendment | subscription_amendment_pkey | PRIMARY KEY (organisation_id, id)
+subscription_amendment | subscription_amendment_reason_form | CHECK (((length(reason) >= 1) AND (length(reason) <= 500)))
+subscription_amendment | subscription_amendment_reason_not_null | NOT NULL reason
+subscription_contract | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+subscription_contract | subscription_contract_by_form | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+subscription_contract | subscription_contract_contact_fkey | FOREIGN KEY (organisation_id, contact_id) REFERENCES contact(organisation_id, id)
+subscription_contract | subscription_contract_contact_id_not_null | NOT NULL contact_id
+subscription_contract | subscription_contract_created_at_not_null | NOT NULL created_at
+subscription_contract | subscription_contract_created_by_not_null | NOT NULL created_by
+subscription_contract | subscription_contract_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+subscription_contract | subscription_contract_currency_not_null | NOT NULL currency
+subscription_contract | subscription_contract_id_not_null | NOT NULL id
+subscription_contract | subscription_contract_mrr_form | CHECK (((mrr <> 'NaN'::numeric) AND (mrr >= (0)::numeric)))
+subscription_contract | subscription_contract_mrr_not_null | NOT NULL mrr
+subscription_contract | subscription_contract_name_form | CHECK (((length(name) >= 1) AND (length(name) <= 140)))
+subscription_contract | subscription_contract_name_not_null | NOT NULL name
+subscription_contract | subscription_contract_organisation_id_not_null | NOT NULL organisation_id
+subscription_contract | subscription_contract_pkey | PRIMARY KEY (organisation_id, id)
+subscription_contract | subscription_contract_starts_on_not_null | NOT NULL starts_on
+subscription_contract | subscription_contract_term_form | CHECK (((ends_on IS NULL) OR (ends_on >= starts_on)))
+subscription_contract | subscription_contract_version_not_null | NOT NULL version
 super_admin | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 super_admin | super_admin_added_at_not_null | NOT NULL added_at
 super_admin | super_admin_added_by_fkey | FOREIGN KEY (added_by) REFERENCES app_user(user_id)
@@ -8715,6 +8769,7 @@ CREATE INDEX security_incident_step_incident ON fyniq.security_incident_step USI
 CREATE INDEX share_issue_holder ON fyniq.share_issue USING btree (organisation_id, holder_id)
 CREATE INDEX share_issue_settlement ON fyniq.share_issue USING btree (organisation_id, settlement_id)
 CREATE INDEX sod_override_lookup ON fyniq.sod_override USING btree (organisation_id, team_mode_version, user_id, conflict)
+CREATE INDEX subscription_contract_contact ON fyniq.subscription_contract USING btree (organisation_id, contact_id, starts_on)
 CREATE INDEX super_admin_grant_created_by_idx ON fyniq.super_admin_grant USING btree (created_by)
 CREATE INDEX super_admin_grant_used_by_idx ON fyniq.super_admin_grant USING btree (used_by)
 CREATE INDEX super_admin_grant_user_idx ON fyniq.super_admin_grant USING btree (user_id, kind)
@@ -9217,6 +9272,9 @@ CREATE UNIQUE INDEX statutory_pack_activation_pkey ON fyniq.statutory_pack_activ
 CREATE UNIQUE INDEX statutory_pack_activation_version_key ON fyniq.statutory_pack_activation USING btree (organisation_id, version_id)
 CREATE UNIQUE INDEX statutory_pack_row_pkey ON fyniq.statutory_pack_row USING btree (version_id, pinned, table_name, row_no)
 CREATE UNIQUE INDEX statutory_pack_version_pkey ON fyniq.statutory_pack_version USING btree (id)
+CREATE UNIQUE INDEX subscription_amendment_day ON fyniq.subscription_amendment USING btree (organisation_id, contract_id, effective_on)
+CREATE UNIQUE INDEX subscription_amendment_pkey ON fyniq.subscription_amendment USING btree (organisation_id, id)
+CREATE UNIQUE INDEX subscription_contract_pkey ON fyniq.subscription_contract USING btree (organisation_id, id)
 CREATE UNIQUE INDEX super_admin_grant_pkey ON fyniq.super_admin_grant USING btree (code_hash)
 CREATE UNIQUE INDEX super_admin_pkey ON fyniq.super_admin USING btree (user_id)
 CREATE UNIQUE INDEX team_mode_pkey ON fyniq.team_mode USING btree (organisation_id, id)
@@ -9382,6 +9440,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_incident_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.share_issue DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('share_issue', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sod_override', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.statutory_pack_activation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statutory_pack_activation', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.subscription_amendment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('subscription_amendment', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.team_mode DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('team_mode', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.tick_drill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('tick_drill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.time_timer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('time_timer', 'user_id')
@@ -9485,6 +9544,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.report_s
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.salary_batch DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('salary_batch', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.statement_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statement_mapping', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.subscription_contract DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('subscription_contract', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_installation_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin_grant DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_grant_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.time_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('time_week', 'week_id')
@@ -10021,6 +10081,10 @@ CREATE TRIGGER statutory_filing_live BEFORE UPDATE OF status ON fyniq.document F
 CREATE TRIGGER statutory_pack_activation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.statutory_pack_activation FOR EACH ROW EXECUTE FUNCTION statutory_pack_activation_guard()
 CREATE TRIGGER statutory_pack_row_immutable BEFORE DELETE OR UPDATE ON fyniq.statutory_pack_row FOR EACH ROW EXECUTE FUNCTION statutory_pack_immutable()
 CREATE TRIGGER statutory_pack_version_immutable BEFORE DELETE OR UPDATE ON fyniq.statutory_pack_version FOR EACH ROW EXECUTE FUNCTION statutory_pack_immutable()
+CREATE TRIGGER subscription_amendment_guard BEFORE DELETE OR UPDATE ON fyniq.subscription_amendment FOR EACH ROW EXECUTE FUNCTION subscription_amendment_guard()
+CREATE TRIGGER subscription_amendment_no_truncate BEFORE TRUNCATE ON fyniq.subscription_amendment FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER subscription_contract_guard BEFORE DELETE OR UPDATE ON fyniq.subscription_contract FOR EACH ROW EXECUTE FUNCTION subscription_contract_guard()
+CREATE TRIGGER subscription_contract_no_truncate BEFORE TRUNCATE ON fyniq.subscription_contract FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER super_admin_guard BEFORE INSERT OR UPDATE ON fyniq.super_admin FOR EACH ROW EXECUTE FUNCTION super_admin_guard()
 CREATE TRIGGER super_admin_no_delete BEFORE DELETE OR TRUNCATE ON fyniq.super_admin FOR EACH STATEMENT EXECUTE FUNCTION super_admin_no_delete()
 CREATE TRIGGER team_mode_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.team_mode FOR EACH ROW EXECUTE FUNCTION team_mode_guard()
@@ -10291,6 +10355,8 @@ share_issue | tenant_isolation | * | (organisation_id = current_org()) | (organi
 sod_override | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statement_mapping | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statutory_pack_activation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+subscription_amendment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+subscription_contract | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 team_mode | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 tick_drill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 time_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10583,6 +10649,8 @@ statement_mapping | enabled | forced
 statutory_pack_activation | enabled | forced
 statutory_pack_row | disabled | not forced
 statutory_pack_version | disabled | not forced
+subscription_amendment | enabled | forced
+subscription_contract | enabled | forced
 super_admin | disabled | not forced
 super_admin_grant | disabled | not forced
 team_mode | enabled | forced
@@ -11028,6 +11096,8 @@ statutory_filing_guard() → trigger | security invoker | v | search_path=pg_cat
 statutory_filing_live() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 25a8e8f729c38fac7a10f4d1bc2707bf
 statutory_pack_activation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7ef02590dc3dd32325e6222bb4d1789d
 statutory_pack_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c9f66a7d4fd181c1348790e46eaba6d7
+subscription_amendment_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f78e76d51b0c4de11d691a029e93755c
+subscription_contract_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 027d4ed6356c5a8a12794296f6671507
 super_admin_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | dc4916e4ee7460c18329392b923b6a4a
 super_admin_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 69611a1d7f11f9c63fa128f901944024
 super_admin_list() → TABLE(user_id uuid, display_name text, added_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | ecec0ff442d71114cafff37710451386

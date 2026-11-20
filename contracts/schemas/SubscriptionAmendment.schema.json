@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-03-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "effective_on": {
+      "description": "The first day of the new monthly value; for a cancellation, the first day with no subscription.",
+      "examples": [
+        "2026-04-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The amendment's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What changed: the monthly value rose or fell, the subscription was cancelled, or it started again after it ended.",
+      "enum": [
+        "upgrade",
+        "downgrade",
+        "cancel",
+        "renew"
+      ],
+      "examples": [
+        "upgrade"
+      ],
+      "type": "string"
+    },
+    "mrr": {
+      "$ref": "Money.schema.json",
+      "description": "The monthly value from that day; zero for a cancellation."
+    },
+    "reason": {
+      "description": "Why it changed.",
+      "examples": [
+        "The customer moved to the larger plan"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "effective_on",
+    "mrr",
+    "reason",
+    "created_at"
+  ],
+  "title": "SubscriptionAmendment",
+  "type": "object"
+}
