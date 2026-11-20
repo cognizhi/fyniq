@@ -12,6 +12,7 @@ SET LOCAL statement_timeout = '60s';
 
 CREATE TABLE fyniq.project_revenue_election (
   organisation_id uuid          NOT NULL DEFAULT fyniq.current_org(),
+  id              uuid          NOT NULL DEFAULT uuidv7(),
   project_id      uuid          NOT NULL,
   method          text          NOT NULL,
   estimated_cost  numeric(20,4),          -- the estimated total cost, in the project's currency; set for over_time
@@ -19,6 +20,7 @@ CREATE TABLE fyniq.project_revenue_election (
   set_by          text          NOT NULL,
   set_at          timestamptz   NOT NULL,
   CONSTRAINT project_revenue_election_pkey PRIMARY KEY (organisation_id, project_id),
+  CONSTRAINT project_revenue_election_id_key UNIQUE (organisation_id, id),
   CONSTRAINT project_revenue_election_project_fkey FOREIGN KEY (organisation_id, project_id) REFERENCES fyniq.project (organisation_id, id),
   CONSTRAINT project_revenue_election_method_known CHECK (method IN ('milestone', 'over_time')),
   CONSTRAINT project_revenue_election_estimate_form CHECK ((method = 'over_time') = (estimated_cost IS NOT NULL) AND (estimated_cost IS NULL OR (estimated_cost <> 'NaN' AND estimated_cost > 0))),

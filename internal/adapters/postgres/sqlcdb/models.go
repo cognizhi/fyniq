@@ -3317,6 +3317,7 @@ type FyniqProjectMilestone struct {
 
 type FyniqProjectRevenueElection struct {
 	OrganisationID uuid.UUID
+	ID             uuid.UUID
 	ProjectID      uuid.UUID
 	Method         string
 	EstimatedCost  *string
