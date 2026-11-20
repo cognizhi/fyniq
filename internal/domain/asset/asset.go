@@ -35,6 +35,8 @@ const (
 	CodeDisposed   = "ASSET-12" // a change of an asset nothing of which is left
 	CodeAssetVoid  = "ASSET-20" // (rev 0.151) a void refused: a disposal of the asset stands, or a month to reverse is in a period not open
 	CodeVoided     = "ASSET-21" // (rev 0.151) an asset voided: it changes, disposes and voids no more
+	CodeTaxMethod  = "ASSET-23" // (rev 0.591) a capital allowance election that is not section 19, 19A(1) or 19A(10A), or whose working life the pack does not allow
+	CodeTaxFixed   = "ASSET-24" // (rev 0.591) a section 19 election changed: the company's election of a working life is irrevocable
 )
 
 // The longest texts an asset keeps, and its longest life.
@@ -62,6 +64,43 @@ func InRegister(a storage.Account) bool {
 		}
 	}
 	return false
+}
+
+// The capital allowance methods an asset may be elected under (FR-FA-04): the pack sg-capital-allowances holds their values.
+const (
+	TaxS19     = "s19"     // section 19: the initial allowance and annual allowances over an elected working life
+	TaxS19A1   = "s19a1"   // section 19A(1): a third a year over 3 years
+	TaxS19A10A = "s19a10a" // section 19A(10A): the whole cost in one year, for a low-value asset
+)
+
+// TaxElection is the capital allowance claim a company elects for an asset (FR-FA-04, rev 0.591): the method and, under section 19, the working life the Sixth Schedule
+// prescribes for it (6, 12 or 16 years) and the years elected, which the pack allows for that life. Nil until the company elects: the capital allowance schedule lists such an
+// asset apart and never guesses. It changes nothing in the books: the depreciation is the asset's own.
+type TaxElection struct {
+	Method          string
+	PrescribedYears int
+	Years           int
+}
+
+// CheckTax is the election's own shape: a known method, and under section 19 a prescribed life and the years elected, under the others neither. Which years the prescribed life
+// allows is the pack's (the caller asks sg-capital-allowances).
+func CheckTax(t *TaxElection) *Error {
+	if t == nil {
+		return nil
+	}
+	switch t.Method {
+	case TaxS19:
+		if t.PrescribedYears < 1 || t.Years < 1 {
+			return &Error{CodeTaxMethod, "a section 19 election names the working life the Sixth Schedule prescribes and the years elected", "Send both, such as 6 and 6 for a motor vehicle"}
+		}
+	case TaxS19A1, TaxS19A10A:
+		if t.PrescribedYears != 0 || t.Years != 0 {
+			return &Error{CodeTaxMethod, "a working life belongs to a section 19 election only", "Leave the working life out"}
+		}
+	default:
+		return &Error{CodeTaxMethod, fmt.Sprintf("the method %q is not section 19, 19A(1) or 19A(10A)", t.Method), "Use s19, s19a1 or s19a10a"}
+	}
+	return nil
 }
 
 // Source is the line an asset was registered from: a line (from 1) of a bill, or a part of a categorised bank line, at
@@ -95,6 +134,13 @@ type Asset struct {
 	Disposed    bool
 	DisposalID  *uuid.UUID
 	Notes       string
+	Tax         *TaxElection
+}
+
+type taxPayload struct {
+	Method          string `json:"method"`
+	PrescribedYears int    `json:"prescribed_years,omitempty"`
+	Years           int    `json:"years,omitempty"`
 }
 
 type sourcePayload struct {
@@ -119,6 +165,7 @@ type payload struct {
 	Disposed    bool           `json:"disposed,omitempty"`
 	DisposalID  *uuid.UUID     `json:"disposal_id,omitempty"`
 	Notes       string         `json:"notes,omitempty"`
+	Tax         *taxPayload    `json:"tax,omitempty"`
 }
 
 // Error is an asset command's refusal with a stable code.
@@ -149,6 +196,9 @@ func Encode(a Asset) ([]byte, error) {
 		From: a.From.Format(monthLayout), Disposed: a.Disposed, DisposalID: a.DisposalID, Notes: a.Notes}
 	if a.Source != nil {
 		p.Source = &sourcePayload{DocumentID: a.Source.DocumentID, Version: a.Source.Version, Line: a.Source.Line}
+	}
+	if a.Tax != nil {
+		p.Tax = &taxPayload{Method: a.Tax.Method, PrescribedYears: a.Tax.PrescribedYears, Years: a.Tax.Years}
 	}
 	return json.Marshal(p)
 }
@@ -185,6 +235,9 @@ func Read(doc storage.Document) (Asset, error) {
 	}
 	if p.Source != nil {
 		a.Source = &Source{DocumentID: p.Source.DocumentID, Version: p.Source.Version, Line: p.Source.Line}
+	}
+	if p.Tax != nil {
+		a.Tax = &TaxElection{Method: p.Tax.Method, PrescribedYears: p.Tax.PrescribedYears, Years: p.Tax.Years}
 	}
 	return a, nil
 }

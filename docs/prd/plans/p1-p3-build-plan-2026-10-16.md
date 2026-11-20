@@ -11,8 +11,8 @@ behind the specs or the screens.
 
 <!-- roadmap:summary -->
 
-That is all 1,411 requirements:
-- 118 belong to the P0 changes, which built them or hold them for the cloud gate;
+That is all 1,412 requirements:
+- 119 belong to the P0 changes, which built them or hold them for the cloud gate;
 - the other 1,293 are spread over 66 changes below;
 - all 204 designed screens after P0 sit with the change that owns most of their requirements.
 

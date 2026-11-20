@@ -36,6 +36,11 @@ type AssetFigures struct {
 	AccountID   uuid.UUID
 	Cost        money.Money
 	Accumulated money.Money
+	// Bought is the cost the asset was bought for, before any disposal took part of it off, and PurchasedOn the day; Opening is true for an asset bought before the
+	// books start, whose cost the opening balances carry (FR-FA-04: the movement schedule).
+	Bought      money.Money
+	PurchasedOn time.Time
+	Opening     bool
 }
 
 // disposalAt is a disposal with whether it is live now (posted) and was live on a day (posted then, and not voided by
@@ -107,6 +112,12 @@ func AssetFiguresAt(ctx context.Context, u storage.UnitOfWork, base money.Curren
 			return nil
 		}
 		cost, acc := a.Cost, money.Zero(base)
+		bought := a.Cost // the cost it was bought for: what is on its account now with what its live disposals took off, back on
+		for _, x := range disposals[doc.ID] {
+			if x.now {
+				bought, _ = bought.Add(x.Cost)
+			}
+		}
 		if a.Source == nil {
 			if acc, err = openingAccumulated(ctx, u, doc); err != nil {
 				return err
@@ -138,7 +149,7 @@ func AssetFiguresAt(ctx context.Context, u storage.UnitOfWork, base money.Curren
 			}
 			acc, _ = acc.Add(part)
 		}
-		out = append(out, AssetFigures{Asset: doc, AccountID: a.AccountID, Cost: cost, Accumulated: acc})
+		out = append(out, AssetFigures{Asset: doc, AccountID: a.AccountID, Cost: cost, Accumulated: acc, Bought: bought, PurchasedOn: a.PurchasedOn, Opening: a.Source == nil})
 		return nil
 	})
 	return out, err

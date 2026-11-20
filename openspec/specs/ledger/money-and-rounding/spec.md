@@ -415,6 +415,16 @@ Source: PRD-001 §10.4
 - **THEN** earned = round(fee × cost ÷ estimate, minor units), half away from zero, computed exactly before its one rounding, and a cost at or above the estimate earns the whole fee
 - **AND** the months' adjustments add up to the cumulative figure exactly, and a negative fee or cost or an estimate of nothing is refused
 
+### Requirement: RND-CAPALLOW Capital allowance
+The capital allowance of an asset SHALL be worked in whole minor units: the initial allowance under section 19 is 20% of the cost rounded to the currency's minor units, half away from zero; the rest of the cost under section 19 and the whole cost under section 19A(1) SHALL be split over their years by cumulative rounding (ALLOC-EVEN), so the years add to the cost exactly (new, FR-FA-04).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Capital allowance formula
+- **WHEN** the capital allowance of an asset is computed
+- **THEN** the initial allowance is round(cost × 20%, minor units), half away from zero, and the other part of the cost is split over the years of the working life by ALLOC-EVEN
+- **AND** the allowances of the years add to the cost exactly, and the first year takes the initial allowance and the first annual allowance
+
 ### Requirement: RND-DISPLAY Display never re-rounds
 Display SHALL never re-round stored amounts, and totals SHALL be sums of stored amounts, so every report foots and cross-foots exactly (new).
 

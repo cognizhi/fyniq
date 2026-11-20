@@ -17229,6 +17229,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/reports/capital-allowances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the tax capital allowance schedule of a year of assessment
+         * @description For a year of assessment (FR-FA-04): each registered asset's allowance under the method the company elected for it (changeFixedAsset's tax_election), from the pack sg-capital-allowances: section 19 (an initial allowance of 20% of the cost in the first year, and annual allowances of the other 80% over the elected working life of 6, 12 or 16 years), section 19A(1) (a third a year over 3 years) and section 19A(10A) (the whole cost in one year, for an asset of at most S$5,000, the year's claims within S$30,000, taken whole in the order of purchase), with the tax written down value brought and carried forward. An asset the schedule cannot place (none elected, a disposal stands, bought before YA 2023, a working life that is not allowed, over the cap) is listed apart with why, never guessed. The year of assessment of a purchase is the year after the financial year it was bought in ends. Amounts are rounded to cents by ALLOC-EVEN, IRAS shows whole dollars [accountant to confirm]. Read-only; no side effects.
+         */
+        get: operations["getCapitalAllowanceSchedule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/reports/deferral-roll-forward": {
         parameters: {
             query?: never;
@@ -17241,6 +17261,26 @@ export interface paths {
          * @description For a run of months (FR-RPT-13): by customer for 2400 Deferred revenue and by supplier for 1210 Prepayments, what the schedules held on the day before the run, what was added, what was released to the profit and loss, what was reversed or cancelled (reversed releases, credit notes, edits and cancellations) and what they hold at the end, so that closing = opening + added - released + reversed exactly. Each holding account's closing is tied to the ledger (INV-07) with its direct amounts and what is unexplained. Months post only once reached (ENG-05): a month not yet posted is not released. Read-only; no side effects.
          */
         get: operations["getDeferralRollForward"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reports/fixed-asset-movement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the fixed asset movement schedule
+         * @description For a run of months (FR-FA-04): each registered asset's cost and accumulated depreciation on the day before the run, the cost added by an asset bought inside it, the depreciation it charged (net of reversals), what a disposal took off, and the cost and accumulated depreciation at the end, with the net book value; by asset account, so that closing = opening + additions - disposals and closing accumulated = opening + charge - disposals, exactly. The register is tied to the ledger at the end of the run through the balance service (INV-07): what the register does not explain is shown as unexplained, never hidden. Read-only; no side effects.
+         */
+        get: operations["getFixedAssetMovement"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24581,6 +24621,36 @@ export interface components {
              */
             whole: boolean;
         };
+        AssetMovementReport: {
+            /** @description One per asset account that holds an asset. */
+            categories: components["schemas"]["MovementCategory"][];
+            /**
+             * @description The base currency every amount is in.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: date
+             * @description The run's first day.
+             * @example 2026-01-01
+             */
+            from: string;
+            /**
+             * @description True when every account ties: nothing is unexplained.
+             * @example true
+             */
+            tied: boolean;
+            /** @description The register against the ledger at the end of the run. */
+            ties: components["schemas"]["MovementTie"][];
+            /**
+             * Format: date
+             * @description The run's last day.
+             * @example 2026-12-31
+             */
+            to: string;
+            /** @description The totals of every asset. */
+            total: components["schemas"]["MovementAsset"];
+        };
         AssetVoid: {
             /**
              * @description Why it is voided, such as registered from the wrong line; the audit trail and each reversing entry record it (FR-GL-12).
@@ -28554,6 +28624,135 @@ export interface components {
              * @example 1252083
              */
             votes: string;
+        };
+        CapitalAllowanceApart: {
+            /**
+             * Format: uuid
+             * @description The asset.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1
+             */
+            asset_id: string;
+            /** @description The cost it was bought for. */
+            cost: components["schemas"]["Money"];
+            /**
+             * @description What to do.
+             * @example Elect a method on the asset: section 19, 19A(1) or 19A(10A)
+             */
+            fix: string;
+            /**
+             * @description Its name.
+             * @example MacBook Pro 14, Wei Ling
+             */
+            name: string;
+            /**
+             * @description Its number in the register.
+             * @example FA-0001
+             */
+            number?: string;
+            /**
+             * Format: date
+             * @description The day it was bought.
+             * @example 2026-03-14
+             */
+            purchased_on: string;
+            /**
+             * @description Why it is listed apart: no_election, the company has not elected a method; before_pack, acquired in a basis period before YA 2023; disposed, a disposal stands and its balancing allowance or charge is the tax agent's; over_cap, elected under section 19A(10A) but over S$5,000 or past the year's S$30,000; bad_life, a working life the prescribed life does not allow; not_sgd, the base currency is not Singapore dollars.
+             * @example no_election
+             * @enum {string}
+             */
+            reason: "no_election" | "before_pack" | "disposed" | "over_cap" | "bad_life" | "not_sgd";
+        };
+        CapitalAllowanceRow: {
+            /** @description The year's allowance: initial + annual. */
+            allowance: components["schemas"]["Money"];
+            /** @description The rest of the year's allowance. */
+            annual_allowance: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The asset.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1
+             */
+            asset_id: string;
+            /** @description The tax written down value brought forward: its cost less the allowances of the years before. */
+            brought_forward: components["schemas"]["Money"];
+            /** @description brought forward - allowance. */
+            carried_forward: components["schemas"]["Money"];
+            /** @description The cost it was bought for. */
+            cost: components["schemas"]["Money"];
+            /**
+             * Format: int64
+             * @description The year of assessment of its first claim: the year after the financial year it was bought in ends.
+             * @example 2027
+             */
+            first_ya: number;
+            /** @description Section 19 only, in the first year: 20% of the cost. */
+            initial_allowance: components["schemas"]["Money"];
+            /**
+             * @description The method elected.
+             * @example s19a1
+             * @enum {string}
+             */
+            method: "s19" | "s19a1" | "s19a10a";
+            /**
+             * @description Its name.
+             * @example MacBook Pro 14, Wei Ling
+             */
+            name: string;
+            /**
+             * @description Its number in the register.
+             * @example FA-0001
+             */
+            number?: string;
+            /**
+             * Format: date
+             * @description The day it was bought.
+             * @example 2026-03-14
+             */
+            purchased_on: string;
+            /**
+             * Format: int64
+             * @description Section 19: the years elected.
+             * @example 6
+             */
+            working_life_years?: number;
+        };
+        CapitalAllowanceSchedule: {
+            /** @description The assets the schedule cannot place, listed apart and never guessed. */
+            apart: components["schemas"]["CapitalAllowanceApart"][];
+            /**
+             * @description The base currency every amount is in.
+             * @example SGD
+             */
+            currency: string;
+            /** @description What the schedule does not work out, [accountant to confirm]. */
+            notes: string[];
+            /**
+             * @description The sg-capital-allowances version the rules come from.
+             * @example sg-capital-allowances@2026.1
+             */
+            pack: string;
+            /** @description The assets claiming in the year, by purchase date. */
+            rows: components["schemas"]["CapitalAllowanceRow"][];
+            /** @description The columns' sums. */
+            totals: components["schemas"]["CapitalAllowanceTotals"];
+            /**
+             * Format: int64
+             * @description The year of assessment.
+             * @example 2027
+             */
+            ya: number;
+        };
+        CapitalAllowanceTotals: {
+            /** @description The total claim of the year: initial + annual. */
+            allowance: components["schemas"]["Money"];
+            /** @description The sum of the annual allowances. */
+            annual_allowance: components["schemas"]["Money"];
+            /** @description The sum of the tax written down values brought forward. */
+            brought_forward: components["schemas"]["Money"];
+            /** @description The sum of the tax written down values carried forward. */
+            carried_forward: components["schemas"]["Money"];
+            /** @description The sum of the initial allowances. */
+            initial_allowance: components["schemas"]["Money"];
         };
         CaptureAddress: {
             /**
@@ -39032,6 +39231,8 @@ export interface components {
              * @enum {string}
              */
             status: "in_use" | "fully_depreciated" | "disposed" | "voided";
+            /** @description The capital allowance claim elected for it, absent until the company elects (FR-FA-04). */
+            tax_election?: components["schemas"]["FixedAssetTaxElection"];
             /**
              * Format: int64
              * @description The version of its content; it makes the ETag.
@@ -39073,6 +39274,8 @@ export interface components {
              * @example 2026-04
              */
             start?: string;
+            /** @description The capital allowance claim elected for the asset (FR-FA-04): it posts nothing and may be sent at any time; a section 19 election, once made, never changes. */
+            tax_election?: components["schemas"]["FixedAssetTaxElection"];
         };
         FixedAssetDraft: {
             /**
@@ -39212,6 +39415,26 @@ export interface components {
              * @example 1
              */
             line: number;
+        };
+        FixedAssetTaxElection: {
+            /**
+             * @description s19: the initial allowance of 20% and annual allowances over a working life; s19a1: a third a year over 3 years; s19a10a: the whole cost in one year, for an asset of at most S$5,000 within S$30,000 a year of assessment. The pack sg-capital-allowances holds the values.
+             * @example s19a1
+             * @enum {string}
+             */
+            method: "s19" | "s19a1" | "s19a10a";
+            /**
+             * Format: int64
+             * @description Section 19 only: the working life the Sixth Schedule of the Income Tax Act prescribes for the asset (12 or less, or 16): it decides which lives may be elected.
+             * @example 6
+             */
+            prescribed_working_life_years?: number;
+            /**
+             * Format: int64
+             * @description Section 19 only: the years elected, 6 or 12 for a prescribed life of 12 years or less, 6, 12 or 16 for 16. The election is irrevocable once made.
+             * @example 6
+             */
+            working_life_years?: number;
         };
         Flag: {
             /**
@@ -47342,6 +47565,90 @@ export interface components {
             report_format?: "csv" | "xlsx" | "ofx" | "camt053" | "mt940" | "mt940_sap" | "mt942";
             /** @description email: the bank's registered addresses (DMARC must pass for each, FR-INT-22). */
             senders?: string[] | null;
+        };
+        MovementAsset: {
+            /** @description The cost of it, when it was bought inside the run. */
+            additions: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The asset; absent on a total.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1
+             */
+            asset_id?: string;
+            /** @description The depreciation the run posted, net of its reversals. */
+            charge: components["schemas"]["Money"];
+            /** @description opening accumulated + charge - disposals, exactly. */
+            closing_accumulated: components["schemas"]["Money"];
+            /** @description opening cost + additions - disposals, exactly. */
+            closing_cost: components["schemas"]["Money"];
+            /** @description Closing cost less closing accumulated depreciation. */
+            closing_nbv: components["schemas"]["Money"];
+            /** @description The cost a disposal inside the run took off it. */
+            disposals: components["schemas"]["Money"];
+            /** @description The accumulated depreciation a disposal inside the run took off it. */
+            disposed_accumulated: components["schemas"]["Money"];
+            /**
+             * @description Its name, or Total.
+             * @example MacBook Pro 14, Wei Ling
+             */
+            name: string;
+            /**
+             * @description Its number in the register.
+             * @example FA-0001
+             */
+            number?: string;
+            /** @description Its accumulated depreciation on the day before the run. */
+            opening_accumulated: components["schemas"]["Money"];
+            /** @description Its cost on the day before the run. */
+            opening_cost: components["schemas"]["Money"];
+            /** @description Opening cost less opening accumulated depreciation. */
+            opening_nbv: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The day it was bought.
+             * @example 2026-03-14
+             */
+            purchased_on?: string;
+        };
+        MovementCategory: {
+            /**
+             * @description Its code.
+             * @example 1510
+             */
+            account_code: string;
+            /**
+             * Format: uuid
+             * @description The asset account: its category.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510
+             */
+            account_id: string;
+            /**
+             * @description Its name.
+             * @example Computer equipment
+             */
+            account_name: string;
+            /** @description Its assets, by number. */
+            assets: components["schemas"]["MovementAsset"][];
+            /** @description The totals of its assets. */
+            total: components["schemas"]["MovementAsset"];
+        };
+        MovementTie: {
+            /**
+             * @description The ledger account: an asset account of the register, or 1590 Accumulated depreciation.
+             * @example 1510
+             */
+            account_code: string;
+            /**
+             * @description Its name.
+             * @example Computer equipment
+             */
+            account_name: string;
+            /** @description Its balance at the end of the run, from the balance service (ENG-04), read positive. */
+            ledger: components["schemas"]["Money"];
+            /** @description What the register and the purchases not in it yet account for. */
+            register: components["schemas"]["Money"];
+            /** @description What is left over: zero when it ties. */
+            unexplained: components["schemas"]["Money"];
         };
         MyConnection: {
             /**
@@ -130565,7 +130872,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-11` Its depreciation has posted already; `ASSET-12` Nothing of the asset is left; `ASSET-21` The asset was voided; `STORAGE-ASSET-01` The asset register does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-11` Its depreciation has posted already; `ASSET-12` Nothing of the asset is left; `ASSET-21` The asset was voided; `ASSET-24` A section 19 election is irrevocable; `STORAGE-ASSET-01` The asset register does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -130601,7 +130908,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read; `ASSET-03` The asset cannot come from that line; `ASSET-04` Not an asset account of the register; `ASSET-05` The useful life does not fit; `ASSET-06` The residual value does not fit; `ASSET-07` Depreciation cannot start then; `ASSET-08` The depreciation method is not available; `ASSET-09` The opening figures do not fit; `ASSET-10` A text of the asset does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read; `ASSET-03` The asset cannot come from that line; `ASSET-04` Not an asset account of the register; `ASSET-05` The useful life does not fit; `ASSET-06` The residual value does not fit; `ASSET-07` Depreciation cannot start then; `ASSET-08` The depreciation method is not available; `ASSET-09` The opening figures do not fit; `ASSET-10` A text of the asset does not fit; `ASSET-23` The capital allowance election does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -196280,6 +196587,84 @@ export interface operations {
             };
         };
     };
+    getCapitalAllowanceSchedule: {
+        parameters: {
+            query: {
+                /** @description The year of assessment, such as 2027 for the financial year that ends in 2026. */
+                ya: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapitalAllowanceSchedule"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getDeferralRollForward: {
         parameters: {
             query: {
@@ -196305,6 +196690,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RollForward"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getFixedAssetMovement: {
+        parameters: {
+            query: {
+                /** @description The run's first month, YYYY-MM. */
+                from: string;
+                /** @description The run's last month, YYYY-MM; left out, the first month's. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetMovementReport"];
                 };
             };
             /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
