@@ -318,4 +318,46 @@ describe("Compliance › Data protection", () => {
     await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/compliance/anonymisations")).toBe(true));
     expect(seen.find((x) => x.method === "POST" && x.path === "/v1/compliance/anonymisations")?.body).toEqual({ contact_id: "c-1", request_id: "r-1", reason: "Request honoured" });
   });
+  // req: AUD-11
+  it("lists the legal holds, places one on a financial year with a reason and lifts another; axe finds nothing", async () => {
+    const held = { hold_id: "h-1", kind: "contact", contact_id: "c-1", contact_name: "Acme Pte Ltd", reason: "The supplier disputes a bill", placed_by: "user:u-1",
+      placed_at: "2026-11-09T02:00:00Z", in_force: true };
+    const seen = answer({
+      "GET /v1/compliance/holds": { status: 200, body: { items: [held], in_force: 1 } },
+      "GET /v1/contacts": { status: 200, body: { items: [{ id: "c-1", legal_name: "Acme Pte Ltd" }] } },
+      "POST /v1/compliance/holds": { status: 201, body: { hold_id: "h-2", kind: "financial_year", year_number: 1, year_starts_on: "2026-01-01", year_ends_on: "2026-12-31",
+        reason: "An audit is open", placed_by: "user:u-1", placed_at: "2026-11-09T02:00:00Z", in_force: true } },
+      "POST /v1/compliance/holds/h-1/lift": { status: 200, body: { ...held, in_force: false, lifted_at: "2026-12-01T02:00:00Z", lifted_by: "user:u-1", lift_reason: "Settled" } },
+    });
+    renderPage(DataProtection, { path: "/compliance/data-protection", session: dpo });
+    fireEvent.click(await screen.findByRole("tab", { name: "Holds" }));
+    const list = await screen.findByRole("list", { name: "Legal holds" });
+    expect(within(list).getByText("Contact Acme Pte Ltd")).toBeTruthy();
+    expect(within(list).getByText("Held")).toBeTruthy();
+    await noViolations();
+
+    fireEvent.click(screen.getByRole("button", { name: "Place a hold" }));
+    let dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Why"), { target: { value: "An audit is open" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Place the hold" }));
+    await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/compliance/holds")).toBe(true));
+    expect(seen.find((x) => x.method === "POST" && x.path === "/v1/compliance/holds")?.body).toEqual({ kind: "financial_year", financial_year: 1, reason: "An audit is open" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(within(list).getByRole("button", { name: "Lift the hold on Contact Acme Pte Ltd" }));
+    dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Why it is lifted"), { target: { value: "Settled" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Lift the hold" }));
+    await waitFor(() => expect(seen.some((x) => x.path === "/v1/compliance/holds/h-1/lift")).toBe(true));
+    expect(seen.find((x) => x.path === "/v1/compliance/holds/h-1/lift")?.body).toEqual({ reason: "Settled" });
+  });
+
+  it("shows the holds to an auditor with no way to place or lift one; axe finds nothing", async () => {
+    answer({ "GET /v1/compliance/holds": { status: 200, body: { items: [], in_force: 0 } } });
+    renderPage(DataProtection, { path: "/compliance/data-protection", session: auditor });
+    fireEvent.click(await screen.findByRole("tab", { name: "Holds" }));
+    expect(await screen.findByText(/No hold stands/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Place a hold" })).toBeNull();
+    await noViolations();
+  });
 });

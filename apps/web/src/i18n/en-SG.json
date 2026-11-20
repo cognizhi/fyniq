@@ -2731,6 +2731,18 @@
       "label": "Anonymise",
       "tooltip": "Replace a person's contact details the records do not need, once their request is honoured or their purpose ends: their emails and phone go, their address reads Anonymised, their name stays."
     },
+    "data-protection.holds": {
+      "label": "Holds",
+      "tooltip": "The legal holds on a record, a contact or a financial year: while one stands, the purge after retention skips what it covers and its evidence files stay in the store."
+    },
+    "data-protection.hold-place": {
+      "label": "Place a hold",
+      "tooltip": "Keep a record, a contact and the documents that name them, or a financial year, because of a dispute, claim, audit or inquiry. Say why; it is kept in the audit trail."
+    },
+    "data-protection.hold-lift": {
+      "label": "Lift the hold",
+      "tooltip": "End a hold with a reason, after you confirm it is you. The purge after retention may then reach what it covered; a lifted hold never stands again."
+    },
     "data-protection.transfers": {
       "label": "Transfers",
       "tooltip": "Each transfer of personal data out of Singapore, with what protects it there, when it was assessed and when it is reviewed next."
