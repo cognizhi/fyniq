@@ -874,6 +874,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | equity.board-portal: the Owner's grant of the full cap table
 
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (match a bank debit)
+
 ## [2026-11-20] compile | sales.invoices: subscription contracts (FR-AR-15)
 
 ## [2026-11-20] compile | nemura.payroll-approval: the IR8A file and the CPF and IR8A buttons (p2-payroll-outputs)

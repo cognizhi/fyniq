@@ -12,6 +12,7 @@ import { formatAmount } from "../../format/amount";
 import { date } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
+import { BankMatch } from "./BankMatch";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 
@@ -308,6 +309,7 @@ export function SalaryPayment() {
   const [failed, setFailed] = useState("");
   const [preparing, setPreparing] = useState(false);
   const [recording, setRecording] = useState<Line | null>(null);
+  const [matching, setMatching] = useState(false);
   const ask = helpText("salary.ask");
   const release = helpText("salary.release");
   const cancel = helpText("salary.cancel");
@@ -367,6 +369,12 @@ export function SalaryPayment() {
         </div>
         <div className="fy-pagehead__actions">
           <SalaryState batch={b} />
+          {b.lines_visible && b.lines?.some((l) => l.state === "released") && (prepares || releases) && (
+            <Button variant="secondary" onClick={() => setMatching(true)} disabled={busy} title={helpText("salary.bank-match").tooltip}>
+              <Icon of={Wallet} />
+              {helpText("salary.bank-match").label}
+            </Button>
+          )}
           {open && prepares && !b.releases.length && (
             <Button variant="secondary" onClick={() => setPreparing(true)} disabled={busy} title={prepare.tooltip}>
               {prepare.label}
@@ -523,6 +531,18 @@ export function SalaryPayment() {
           onClose={() => setPreparing(false)}
           onDone={(what) => {
             setPreparing(false);
+            setStatus(what);
+            void refresh();
+          }}
+        />
+      )}
+      {matching && (
+        <BankMatch
+          batch={b}
+          etag={etag}
+          onClose={() => setMatching(false)}
+          onDone={(what) => {
+            setMatching(false);
             setStatus(what);
             void refresh();
           }}
