@@ -392,6 +392,13 @@ Source: PRD-001 §9.7 · Priority S · Phase P2
 - **WHEN** a third-party client tries to register itself
 - **THEN** it is not registered
 
+#### Scenario: Manual registration by an Administrator, approved by an Owner
+- **GIVEN** an Owner has turned on AI apps through MCP and third-party registration, each with a second approver
+- **WHEN** an Administrator, with step-up, registers an app with its publisher, purpose, processing location and exact redirect URIs
+- **THEN** it is created as an agent-class public client with the default read scope alone, and nothing the Administrator named is fetched
+- **AND** it cannot connect until an Owner adds it to the apps that may connect, the approval a self-registered app needs
+- **AND** a registration while either switch is off is refused
+
 #### Scenario: Quarterly access review
 - **WHEN** the quarterly access review runs (FR-CTL-06)
 - **THEN** each third-party client is reviewed
