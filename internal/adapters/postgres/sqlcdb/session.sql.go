@@ -87,6 +87,49 @@ func (q *Queries) IdleTimeout(ctx context.Context, arg IdleTimeoutParams) (int64
 	return seconds, err
 }
 
+const organisationsOfSession = `-- name: OrganisationsOfSession :many
+SELECT r.organisation_id::uuid AS organisation_id, r.name::text AS name, r.practice::boolean AS practice, r.chosen::boolean AS chosen
+  FROM fyniq.organisations_of_session($1::bytea, $2::timestamptz) r
+`
+
+type OrganisationsOfSessionParams struct {
+	TokenHash []byte
+	Now       time.Time
+}
+
+type OrganisationsOfSessionRow struct {
+	OrganisationID uuid.UUID
+	Name           string
+	Practice       bool
+	Chosen         bool
+}
+
+// The organisations a live session's person is an active member of, with their names (000712).
+func (q *Queries) OrganisationsOfSession(ctx context.Context, arg OrganisationsOfSessionParams) ([]OrganisationsOfSessionRow, error) {
+	rows, err := q.db.Query(ctx, organisationsOfSession, arg.TokenHash, arg.Now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OrganisationsOfSessionRow
+	for rows.Next() {
+		var i OrganisationsOfSessionRow
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.Name,
+			&i.Practice,
+			&i.Chosen,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const sessionFor = `-- name: SessionFor :one
 SELECT coalesce(s.issuer, '')::text AS issuer, coalesce(s.subject, '')::text AS subject, coalesce(s.provider, '')::text AS provider,
        coalesce(s.user_id, '00000000-0000-0000-0000-000000000000')::uuid AS user_id,
@@ -166,6 +209,23 @@ func (q *Queries) StartSession(ctx context.Context, arg StartSessionParams) erro
 		arg.UserAgent,
 	)
 	return err
+}
+
+const switchSessionOrganisation = `-- name: SwitchSessionOrganisation :one
+SELECT fyniq.switch_session_organisation($1::bytea, $2::uuid, $3::timestamptz)::boolean AS switched
+`
+
+type SwitchSessionOrganisationParams struct {
+	TokenHash []byte
+	Org       uuid.UUID
+	Now       time.Time
+}
+
+func (q *Queries) SwitchSessionOrganisation(ctx context.Context, arg SwitchSessionOrganisationParams) (bool, error) {
+	row := q.db.QueryRow(ctx, switchSessionOrganisation, arg.TokenHash, arg.Org, arg.Now)
+	var switched bool
+	err := row.Scan(&switched)
+	return switched, err
 }
 
 const userSessions = `-- name: UserSessions :many

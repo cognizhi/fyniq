@@ -155,6 +155,11 @@ Source: PRD-001 §7.9 · Priority S · Phase P1
 - **THEN** the sample company opens as a separate, clearly labelled organisation
 - **AND** nothing they do there changes the real books
 
+#### Scenario: Only an Owner opens one, one at a time (rev 0.430, the owner's decision of 21 Nov 2026)
+- **WHEN** a person asks to open a practice organisation
+- **THEN** it opens only for an Owner of an organisation that keeps books who holds no practice organisation, with empty books and nothing copied
+- **AND** it is audited in both organisations' trails, and the person reads nothing else of any other organisation
+
 ### Requirement: FR-UX-41 Needs additional verification
 While an area of rules awaits its second review, every page listed for that area in the review register (`docs/prd/reviews/review-status.json`) SHALL show a caveat banner at the top: which rules await review, by whom, and what to check before relying on them.
 

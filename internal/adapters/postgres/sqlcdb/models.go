@@ -2983,6 +2983,13 @@ type FyniqPolicyVersion struct {
 	PublishedAt    time.Time
 }
 
+type FyniqPracticeOrganisation struct {
+	OrganisationID       uuid.UUID
+	CreatedBy            uuid.UUID
+	SourceOrganisationID uuid.UUID
+	CreatedAt            time.Time
+}
+
 type FyniqPrivateEndpoint struct {
 	ID         uuid.UUID
 	Version    int32
@@ -3811,19 +3818,20 @@ type FyniqUserSavedItem struct {
 }
 
 type FyniqUserSession struct {
-	TokenHash    []byte
-	Issuer       string
-	Subject      string
-	Provider     string
-	UserID       *uuid.UUID
-	CreatedAt    time.Time
-	LastSeenAt   time.Time
-	ExpiresAt    time.Time
-	StepUpAt     *time.Time
-	EndedAt      *time.Time
-	StepUpMethod *string
-	UserAgent    *string
-	Email        *string
+	TokenHash            []byte
+	Issuer               string
+	Subject              string
+	Provider             string
+	UserID               *uuid.UUID
+	CreatedAt            time.Time
+	LastSeenAt           time.Time
+	ExpiresAt            time.Time
+	StepUpAt             *time.Time
+	EndedAt              *time.Time
+	StepUpMethod         *string
+	UserAgent            *string
+	Email                *string
+	ChosenOrganisationID *uuid.UUID
 }
 
 type FyniqWebauthnChallenge struct {

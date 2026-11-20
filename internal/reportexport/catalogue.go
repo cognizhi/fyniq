@@ -56,6 +56,7 @@ var Excluded = map[string]string{
 	"person_key":                    "key material: each person's data key, wrapped by the platform's key (§11.8)",
 	"organisation_connector_secret": "secrets: where the integrations' credentials are kept in the secret store",
 	"tenant_directory":              "the platform's directory of organisations: the organisation table holds the organisation's record",
+	"practice_organisation":         "the platform's registry of practice organisations and who holds one: no organisation's own data (FR-UX-36)",
 	"ai_grant":                      "tokens: the assistant's delegated read grants, each live for one turn of at most 5 minutes",
 }
 

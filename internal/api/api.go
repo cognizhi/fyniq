@@ -402,6 +402,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerPreferences(a)
 	registerSavedItems(a)
 	registerRecordComments(a)
+	registerPractice(a)
 	registerInstallationConsole(a)
 	registerMCPOptIn(a)
 	registerConnectedApps(a)

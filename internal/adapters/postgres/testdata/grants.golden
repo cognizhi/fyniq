@@ -206,6 +206,7 @@ fyniq_api       INSERT    conversion_step (kind, on_date, recorded_at, recorded_
 fyniq_api       SELECT    conversion_step
 fyniq_api       EXECUTE   count_ip_request()
 fyniq_api       EXECUTE   count_super_admins()
+fyniq_api       EXECUTE   create_practice_organisation()
 fyniq_api       SELECT    currencies
 fyniq_api       EXECUTE   current_org()
 fyniq_api       INSERT    customer_group (name, reminder_days)
@@ -422,8 +423,10 @@ fyniq_api       EXECUTE   organisation_connector_route()
 fyniq_api       INSERT    organisation_connector_secret (connector_id, expires_on, name, ref, set_at, set_by)
 fyniq_api       SELECT    organisation_connector_secret
 fyniq_api       UPDATE    organisation_connector_secret (valid_until)
+fyniq_api       EXECUTE   organisation_is_practice()
 fyniq_api       INSERT    organisation_setting (effective_from, key, value, version)
 fyniq_api       SELECT    organisation_setting
+fyniq_api       EXECUTE   organisations_of_session()
 fyniq_api       INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_api       SELECT    outbox
 fyniq_api       UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
@@ -630,6 +633,7 @@ fyniq_api       SELECT    statutory_pack_rows
 fyniq_api       SELECT    statutory_pack_versions
 fyniq_api       EXECUTE   super_admin_for_identity()
 fyniq_api       EXECUTE   super_admin_list()
+fyniq_api       EXECUTE   switch_session_organisation()
 fyniq_api       INSERT    team_mode (created_at, created_by, mode, request_id, version)
 fyniq_api       SELECT    team_mode
 fyniq_api       SELECT    tenants

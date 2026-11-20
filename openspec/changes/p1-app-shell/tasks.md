@@ -350,3 +350,10 @@
   by loading the help catalogue on demand, Trace, Recovery and the report tiles' code lazily, then tag NFR-PERF-UI-03.)
 - [ ] 6.1 Build the 18 shell screens as designed. Each has help keys, a `docs/user-guide/` page compiled into `kb/`, and a tour step where it is on the first-run path
 - [ ] 6.2 Finish with `make check`, `make test` and `make test-e2e`
+
+(20 Nov 2026, PRD-001 rev 0.430, FR-UX-36 and the organisation switcher of 2.1: the owner decided a practice organisation is opened by an Owner only, one at a time, with empty books.
+`create_practice_organisation` (migration 000711: security definer, migrator-owned, fixed search_path; one registry row per person; both rules in the database), the API's
+`POST /v1/organisation/practice`, `GET /v1/session/organisations` and `POST /v1/session/organisation` (migration 000712: a session's choice, checked against the membership at every
+request), the Practice card in Settings › Organisation and a banner on every page of a practice organisation. Guide `practice-organisation.md`, compiled into `settings.practice`.
+Tests as the PRD row lists. **Left:** deleting an organisation (a practice one stays until the organisation's own delete exists), the sample company's data in it, the tour and guide-page entry points (4.2),
+and the organisation switcher in the header for someone who is not an Owner.)

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "base_currency": {
+      "description": "Its books' currency: the organisation it was opened from.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The practice organisation's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name, always labelled as a practice organisation.",
+      "examples": [
+        "Practice: Northwind Analytics Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "practice": {
+      "description": "Always true: this organisation is for trying a task, and holds no real books.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "base_currency",
+    "practice"
+  ],
+  "title": "PracticeOrganisation",
+  "type": "object"
+}

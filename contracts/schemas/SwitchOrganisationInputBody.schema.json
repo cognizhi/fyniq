@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "organisation_id": {
+      "description": "An organisation the caller is an active member of.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "organisation_id"
+  ],
+  "title": "SwitchOrganisationInputBody",
+  "type": "object"
+}

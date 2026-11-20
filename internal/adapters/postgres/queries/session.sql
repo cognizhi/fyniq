@@ -33,3 +33,11 @@ SELECT fyniq.end_user_session(sqlc.arg(user_id)::uuid, sqlc.arg(token_hash)::byt
 -- name: IdleTimeout :one
 SELECT extract(epoch FROM fyniq.idle_timeout(sqlc.arg(org)::uuid, sqlc.arg(now)::timestamptz,
        sqlc.arg(fallback_seconds)::bigint * interval '1 second'))::bigint AS seconds;
+
+-- name: OrganisationsOfSession :many
+-- The organisations a live session's person is an active member of, with their names (000712).
+SELECT r.organisation_id::uuid AS organisation_id, r.name::text AS name, r.practice::boolean AS practice, r.chosen::boolean AS chosen
+  FROM fyniq.organisations_of_session(sqlc.arg(token_hash)::bytea, sqlc.arg(now)::timestamptz) r;
+
+-- name: SwitchSessionOrganisation :one
+SELECT fyniq.switch_session_organisation(sqlc.arg(token_hash)::bytea, sqlc.arg(org)::uuid, sqlc.arg(now)::timestamptz)::boolean AS switched;

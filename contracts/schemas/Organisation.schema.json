@@ -32,6 +32,13 @@
       ],
       "type": "string"
     },
+    "practice": {
+      "description": "true for a practice organisation, opened to try a task without touching the real books (FR-UX-36).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "team_mode": {
       "description": "The team mode (PRD-001 §6.4): Founder mode until a switch is approved (rev 0.42).",
       "enum": [

@@ -111,6 +111,8 @@ type UnitOfWork interface {
 	Preferences() Preferences
 	// SavedItems are each person's own favourites and saved views (FR-UX-12).
 	SavedItems() SavedItems
+	// Practices opens a practice organisation from the organisation this unit of work is for, and says whether one is practice (FR-UX-36).
+	Practices() Practices
 	// RecordComments are the comments and @mentions on records (FR-UX-13).
 	RecordComments() RecordComments
 	// PeopleLinks are the link to Nemura, the inbox of its events and the employee projection (FR-PPL-06, 15, 16).
@@ -1023,6 +1025,10 @@ const (
 	// expense claim posts only under an approved request its claimant asked for and did not sign; a saved place keeps
 	// its person and is never deleted (FR-AP-15, FR-AP-16, FR-AP-17).
 	CodeClaim = "STORAGE-CLAIM-01"
+	// CodePractice: a practice organisation is opened only by an Owner of an organisation that keeps books, and a person holds one
+	// at a time (FR-UX-36; the owner's decision of 21 Nov 2026). CodePracticeHeld: they hold one already.
+	CodePractice     = "STORAGE-PRACTICE-01"
+	CodePracticeHeld = "STORAGE-PRACTICE-02"
 	// CodeAsset: an asset comes from one line of a posted bill or bank line that debits an asset account, once, and
 	// keeps it; a month's depreciation names a registered asset at its current version (FR-FA-01, FR-FA-02).
 	CodeAsset = "STORAGE-ASSET-01"

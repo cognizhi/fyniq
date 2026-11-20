@@ -820,6 +820,14 @@
     "status": "draft"
   },
   {
+    "file": "practice-organisation.md",
+    "key": "settings.practice",
+    "roles": [
+      "owner"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "pre-incorporation-costs.md",
     "key": "equity.pre-incorporation-costs",
     "roles": [

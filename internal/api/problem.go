@@ -965,6 +965,8 @@ var codeFacts = map[string]struct {
 	ledger.CodeClaimLine:             {422, "A claim line's amounts do not fit"},
 	ledger.CodeClaimPaid:             {422, "What was paid or settled does not fit"},
 	storage.CodeClaim:                {409, "The expense claim record does not allow that"},
+	storage.CodePractice:             {403, "A practice organisation is not yours to open"},
+	storage.CodePracticeHeld:         {409, "You hold a practice organisation already"},
 	claim.CodeCategoryName:           {422, "The category's name does not fit"},
 	claim.CodeCategoryAccount:        {422, "A claim cannot cost that account"},
 	claim.CodeCategoryLimit:          {422, "A limit of the category does not fit"},

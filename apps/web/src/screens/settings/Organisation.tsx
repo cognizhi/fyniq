@@ -11,6 +11,7 @@ import { formatAmount } from "../../format/amount";
 import { date, timeZone } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
+import { PracticeCard } from "./PracticeCard";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import type { Approval } from "../approvals/words";
@@ -523,7 +524,7 @@ export function DPOContact({ profile: p, onCopied }: { profile: Profile; onCopie
 // document type, and every setting with its recommended value, why, and whether it needs a second approver. A change takes effect from a day, today or later; a preview
 // checks it without saving (FR-INT-14); one under dual control waits for another Owner (FM-1).
 export function Organisation() {
-  const { session } = useSignedIn();
+  const { session, organisation } = useSignedIn();
   const settings = useQuery({ queryKey: ["settings"], queryFn: listSettings });
   const profile = useQuery({ queryKey: ["profile"], queryFn: getProfile });
   const dpoMember = profile.data?.profile.dpo_user_id;
@@ -553,6 +554,7 @@ export function Organisation() {
       <p className="fy-small" role="status">
         {status}
       </p>
+      <PracticeCard mayOpen={(session.roles ?? []).includes("owner") && !organisation?.practice} />
       {waits && (
         <div className="fy-banner fy-banner--info" role="status">
           <Icon of={Hourglass} size={20} />

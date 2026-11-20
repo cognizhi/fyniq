@@ -36,7 +36,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "deleteAIConversation Prefer", "deleteAIConversation If-Match", "askAIConversation Idempotency-Key", "askAIConversation Prefer",
 		"askAIConversation If-Match")
 	want = append(want, "giveAIFeedback If-Match", "reviewAIFeedback Idempotency-Key", "reviewAIFeedback Prefer") // QA-AI-05: given once, reviewed once
-	want = append(want, "revokePasskey Prefer", "signOutDevice Prefer", "unlinkIdentity Prefer", "signOutOtherDevices Idempotency-Key", "signOutOtherDevices Prefer")
+	want = append(want, "revokePasskey Prefer", "signOutDevice Prefer", "unlinkIdentity Prefer", "signOutOtherDevices Idempotency-Key", "signOutOtherDevices Prefer", "switchMyOrganisation Idempotency-Key", "switchMyOrganisation Prefer")
 	// An event of the link carries its own ID, which the inbox dedupes (FR-PPL-15); a preview of a signed message proves nothing.
 	want = append(want, "receivePeopleHoldEvent Idempotency-Key", "receivePeopleHoldEvent Prefer", "receivePeopleProjectionEvent Idempotency-Key", "receivePeopleProjectionEvent Prefer",
 		"submitPayrollRun Idempotency-Key", "submitPayrollRun Prefer", "receivePayrollPayments Idempotency-Key", "receivePayrollPayments Prefer")

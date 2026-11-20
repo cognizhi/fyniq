@@ -2330,6 +2330,10 @@ policy_version | sha256 | bytea | not null |
 policy_version | from_draft | text | not null | 
 policy_version | published_by | text | not null | 
 policy_version | published_at | timestamp with time zone | not null | 
+practice_organisation | organisation_id | uuid | not null | 
+practice_organisation | created_by | uuid | not null | 
+practice_organisation | source_organisation_id | uuid | not null | 
+practice_organisation | created_at | timestamp with time zone | not null | 
 private_endpoint | id | uuid | not null | 
 private_endpoint | version | integer | not null | 
 private_endpoint | address | cidr | not null | 
@@ -2978,6 +2982,7 @@ user_session | ended_at | timestamp with time zone | null |
 user_session | step_up_method | text | null | 
 user_session | user_agent | text | null | 
 user_session | email | text | null | 
+user_session | chosen_organisation_id | uuid | null | 
 webauthn_challenge | id | uuid | not null | uuidv7()
 webauthn_challenge | user_id | uuid | not null | 
 webauthn_challenge | purpose | text | not null | 
@@ -6701,6 +6706,14 @@ policy_version | policy_version_title_length | CHECK (((length(btrim(title)) >= 
 policy_version | policy_version_title_not_null | NOT NULL title
 policy_version | policy_version_version_not_null | NOT NULL version
 policy_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+practice_organisation | practice_organisation_created_at_not_null | NOT NULL created_at
+practice_organisation | practice_organisation_created_by_not_null | NOT NULL created_by
+practice_organisation | practice_organisation_one_each | UNIQUE (created_by)
+practice_organisation | practice_organisation_org_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+practice_organisation | practice_organisation_organisation_id_not_null | NOT NULL organisation_id
+practice_organisation | practice_organisation_pkey | PRIMARY KEY (organisation_id)
+practice_organisation | practice_organisation_source_organisation_id_not_null | NOT NULL source_organisation_id
+practice_organisation | practice_organisation_user_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 private_endpoint | private_endpoint_address_not_null | NOT NULL address
 private_endpoint | private_endpoint_change_fkey | FOREIGN KEY (change_id) REFERENCES installation_change(id)
 private_endpoint | private_endpoint_credential_not_null | NOT NULL credential
@@ -8347,6 +8360,8 @@ CREATE UNIQUE INDEX policy_draft_once ON fyniq.policy_draft USING btree (organis
 CREATE UNIQUE INDEX policy_draft_pkey ON fyniq.policy_draft USING btree (organisation_id, id)
 CREATE UNIQUE INDEX policy_version_once ON fyniq.policy_version USING btree (organisation_id, key, version)
 CREATE UNIQUE INDEX policy_version_pkey ON fyniq.policy_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX practice_organisation_one_each ON fyniq.practice_organisation USING btree (created_by)
+CREATE UNIQUE INDEX practice_organisation_pkey ON fyniq.practice_organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX private_endpoint_pkey ON fyniq.private_endpoint USING btree (id, version)
 CREATE UNIQUE INDEX project_billed_item_once ON fyniq.project_billed_item USING btree (organisation_id, kind, ref_id, line_no)
 CREATE UNIQUE INDEX project_billed_item_pkey ON fyniq.project_billed_item USING btree (organisation_id, id)
@@ -9618,6 +9633,7 @@ person_projection | enabled | forced
 policy_acknowledgement | enabled | forced
 policy_draft | enabled | forced
 policy_version | enabled | forced
+practice_organisation | disabled | not forced
 private_endpoint | disabled | not forced
 project | enabled | forced
 project_billed_item | enabled | forced
@@ -9804,6 +9820,7 @@ corporate_record_guard() → trigger | security invoker | v | search_path=pg_cat
 corporate_register_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d96330e0fa0223d43334b75905ec64e8
 count_ip_request(p_client text, p_kind text, p_window timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8575f61e43912f7761275d614681a8b1
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
+create_practice_organisation(p_user uuid, p_source uuid, p_name text, p_currency text, p_at timestamp with time zone, OUT organisation_id uuid, OUT membership_id uuid, OUT assignment_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3bd3533cac5bdd714b774c72f3b3018b
 create_scheduled_bill_draft(p_recurring_bill uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 034ac02e0e0c8386e09e6dfb54a6f8fa
 create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b23a8c0aa6277cadb7bd3f6aae5f5661
 create_scheduled_invoice_draft(p_recurring_invoice uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2965fc4edb05408641ee8a47909a2109
@@ -9958,10 +9975,12 @@ organisation_connector_route(p_id uuid) → TABLE(organisation_id uuid, connecto
 organisation_connector_routed() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e2531e8042725c748ea5b1b3618ba342
 organisation_created() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9
 organisation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e64f58bdebe328f60e1806f8c9cbcbe6
+organisation_is_practice(p_org uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | fa5110d76f6c6beb844c6f741c76b0da
 organisation_kind_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ca73dacb480df743be50b20da1632d78
 organisation_registered() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d82a943b556593182602dbe5a532147
 organisation_setting_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4d07be7995f65387c9c970d632b1bcb8
 organisation_setting_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0ab583b33ece447fa48c299fcc23d967
+organisations_of_session(p_hash bytea, p_now timestamp with time zone, OUT organisation_id uuid, OUT name text, OUT practice boolean, OUT chosen boolean) → SETOF record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 03d96bbd0d395499a3ffaf1263010772
 outbox_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 58b04bc5d8e9853cd11acce22f3b6723
 outbox_no_delete() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1366cfa8290e64e2804d4cb992c01d1f
 owner_succession_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9af86b3b9cce23a498a8c2f23972f8fa
@@ -10050,7 +10069,7 @@ scheduled_invoice_email_sent() → trigger | security invoker | v | search_path=
 scheduled_issue_allowed(p_document uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 574b7af4c2dbb0a7e81f6dedebde4a8b
 scheduled_issue_fence() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f5b36ed327ce553d134249eb0e82efde
 security_incident_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ba0df3a8877374fa18fe1af3436dee82
-session_for(p_hash bytea, p_now timestamp with time zone, p_idle interval, OUT issuer text, OUT subject text, OUT provider text, OUT user_id uuid, OUT organisation_id uuid, OUT roles text[], OUT step_up_at timestamp with time zone, OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0375cf31d4bcd7d576a9ce47bc92707b
+session_for(p_hash bytea, p_now timestamp with time zone, p_idle interval, OUT issuer text, OUT subject text, OUT provider text, OUT user_id uuid, OUT organisation_id uuid, OUT roles text[], OUT step_up_at timestamp with time zone, OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a437f2b962a69bcf1cb495d6c85ce607
 session_step_up(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 557b605544981a727167d857731ab8f9
 session_step_up_method(p_hash bytea) → text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 69b01e01a7b355f060b2e48248d0d248
 set_installation_connector_secret(p_by uuid, p_change uuid, p_id uuid, p_name text, p_ref text, p_valid_until timestamp with time zone, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8e2b7bc27e6a1464a4d6957cd45085f4
@@ -10085,6 +10104,7 @@ super_admin_guard() → trigger | security invoker | v | search_path=pg_catalog,
 super_admin_list() → TABLE(user_id uuid, display_name text, added_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | ecec0ff442d71114cafff37710451386
 super_admin_no_delete() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 54ab8e3adb579022cf3b8de46100e62c
 super_admin_users() → SETOF uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4ddf2dc2a0fe3a9cd3600725e7bf0f97
+switch_session_organisation(p_hash bytea, p_org uuid, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 73fb3736f2838afb266e728ff944b42a
 team_mode_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fe7cdb44517d02103801c6dd386d11b9
 team_mode_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1e8ab28fa03705e0a02ec3819d22d067
 tenant_rows(p_table text, p_after uuid, p_limit integer) → SETOF text | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 5393ad3f836b2db72023aab42941f263

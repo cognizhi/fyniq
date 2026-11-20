@@ -87,6 +87,7 @@ type Organisation struct {
 	Name           string `json:"name" doc:"Its name." example:"Northwind Analytics Pte. Ltd."`
 	BaseCurrency   string `json:"base_currency" doc:"The currency the books are kept in." example:"SGD"`
 	BaseMinorUnits int    `json:"base_minor_units" doc:"How many decimals the base currency has." example:"2"`
+	Practice       bool   `json:"practice,omitempty" doc:"true for a practice organisation, opened to try a task without touching the real books (FR-UX-36)." example:"false"`
 	TeamMode       string `json:"team_mode" enum:"founder,standard,enterprise" doc:"The team mode (PRD-001 §6.4): Founder mode until a switch is approved (rev 0.42)." example:"founder"`
 	Version        int    `json:"version" doc:"The record's version; it also makes the ETag." example:"1"`
 }
@@ -111,7 +112,11 @@ func registerOrganisation(a *API) {
 				return err
 			}
 			mode, _, _, err := teamModeOf(ctx, u)
-			out.Body = Organisation{ID: o.ID.String(), Name: o.Name, BaseCurrency: o.BaseCurrency, BaseMinorUnits: o.BaseMinorUnits, TeamMode: mode, Version: o.Version}
+			if err != nil {
+				return err
+			}
+			practice, err := u.Practices().IsPractice(ctx, o.ID)
+			out.Body = Organisation{ID: o.ID.String(), Name: o.Name, BaseCurrency: o.BaseCurrency, BaseMinorUnits: o.BaseMinorUnits, Practice: practice, TeamMode: mode, Version: o.Version}
 			out.ETag = etag(o.Version)
 			return err
 		})

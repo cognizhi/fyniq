@@ -820,6 +820,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/organisation/join-domains` (listJoinDomains): List the email domains claimed for joining
 - `PUT /v1/organisation/join-domains/{domain}` (claimJoinDomain): Claim an email domain for joining
 - `DELETE /v1/organisation/join-domains/{domain}` (releaseJoinDomain): Release an email domain for joining
+- `POST /v1/organisation/practice` (createPracticeOrganisation): Open a practice organisation
 - `GET /v1/organisation/profile` (getOrganisationProfile): Get the organisation's profile
 - `PATCH /v1/organisation/profile` (updateOrganisationProfile): Change the organisation's profile
 - `GET /v1/organisation/sequences` (listSequences): List the document number sequences
@@ -1015,6 +1016,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/session/identities/{identity_id}` (unlinkIdentity): Remove a sign-in
 - `GET /v1/session/join-offer` (getJoinOffer): Find the organisation you may ask to join
 - `POST /v1/session/join-requests` (requestToJoin): Ask to join by your email domain
+- `POST /v1/session/organisation` (switchMyOrganisation): Work in another organisation
+- `GET /v1/session/organisations` (listMyOrganisations): List the organisations you work in
 - `GET /v1/session/passkeys` (listPasskeys): List your passkeys
 - `POST /v1/session/passkeys` (registerPasskey): Register a passkey
 - `POST /v1/session/passkeys/challenge` (startPasskeyRegistration): Start registering a passkey
