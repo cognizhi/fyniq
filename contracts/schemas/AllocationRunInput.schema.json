@@ -10,6 +10,14 @@
       "format": "date",
       "type": "string"
     },
+    "rule_id": {
+      "description": "The rule to run.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "to": {
       "description": "The last day of the last month (the same month or a later one, at most a year in all).",
       "examples": [
@@ -24,6 +32,7 @@
     }
   },
   "required": [
+    "rule_id",
     "from",
     "to"
   ],

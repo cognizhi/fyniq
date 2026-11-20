@@ -5,6 +5,9 @@
     "accounts": {
       "description": "The expense accounts whose cost, with no dimension value, is split (IDs of accounts).",
       "items": {
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01"
+        ],
         "type": "string"
       },
       "maxItems": 20,

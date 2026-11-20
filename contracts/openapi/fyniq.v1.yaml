@@ -6501,6 +6501,8 @@ components:
         values:
           description: The dimension values the line carries.
           items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01
             type: string
           type: array
       required:
@@ -6617,6 +6619,8 @@ components:
         accounts:
           description: The expense accounts whose cost, with no dimension value, is split (IDs of accounts).
           items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01
             type: string
           maxItems: 20
           minItems: 1
@@ -6675,6 +6679,8 @@ components:
         accounts:
           description: The expense accounts whose cost, with no dimension value, is split (IDs of accounts).
           items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01
             type: string
           maxItems: 20
           minItems: 1
@@ -6738,6 +6744,12 @@ components:
             - "2026-03-01"
           format: date
           type: string
+        rule_id:
+          description: The rule to run.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
+          format: uuid
+          type: string
         to:
           description: The last day of the last month (the same month or a later one, at most a year in all).
           examples:
@@ -6748,6 +6760,7 @@ components:
           $ref: "#/components/schemas/AllocationUsage"
           description: "With the usage key: the usage file."
       required:
+        - rule_id
         - from
         - to
       type: object
@@ -6884,6 +6897,8 @@ components:
         values:
           description: The dimension values the allocated lines carry, one of each dimension at most (the department, the project, a customer or a product).
           items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01
             type: string
           maxItems: 8
           minItems: 1
@@ -76072,6 +76087,141 @@ paths:
       x-fyniq-permission:
         capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
         right: V
+  /v1/allocation-previews:
+    post:
+      description: "Runs a rule over whole months and shows what it would do (FR-DIM-03): each source account's cost with no dimension value (read through the balance service), the key's weights, the split by ALLOC-PRORATA with what the key cannot place left unallocated, and the journal's lines. A usage file must add up to its stated total and equal the supplier's bill it explains, or it is refused (ALLOC-06). Nothing is saved or posted. Read-only; no side effects."
+      operationId: previewAllocation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AllocationRunInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationReport"
+          description: OK
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              schema:
+                description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `ALLOC-07` The rule allocated those months already; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Work an allocation out without saving it
+      tags:
+        - Journals
+      x-fyniq-error-codes:
+        - ALLOC-01
+        - ALLOC-02
+        - ALLOC-03
+        - ALLOC-04
+        - ALLOC-05
+        - ALLOC-06
+        - ALLOC-07
+        - ALLOC-08
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: A preview saves nothing, so a repeat is harmless and answers the same (FR-DIM-03).
+        Prefer: "A preview saves nothing: return=preview would answer the same as the request itself (FR-INT-14)."
+      x-fyniq-permission:
+        capability: Journals
+        right: V
   /v1/allocation-rules:
     get:
       description: Every allocation rule, the latest first, a page at a time (FR-DIM-03). Read-only; no side effects.
@@ -76183,7 +76333,7 @@ paths:
           description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
       summary: List the allocation rules
       tags:
-        - Accounting
+        - Journals
       x-fyniq-error-codes:
         - API-AUTH-01
         - API-AUTHZ-01
@@ -76368,7 +76518,7 @@ paths:
           description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
       summary: Save an allocation rule
       tags:
-        - Accounting
+        - Journals
       x-fyniq-error-codes:
         - ALLOC-01
         - ALLOC-02
@@ -76507,7 +76657,7 @@ paths:
           description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
       summary: Get an allocation rule
       tags:
-        - Accounting
+        - Journals
       x-fyniq-error-codes:
         - API-AUTH-01
         - API-AUTHZ-01
@@ -76703,7 +76853,7 @@ paths:
           description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
       summary: Change an allocation rule
       tags:
-        - Accounting
+        - Journals
       x-fyniq-error-codes:
         - ALLOC-01
         - ALLOC-02
@@ -76736,160 +76886,18 @@ paths:
       x-fyniq-permission:
         capability: Journals
         right: C
-  /v1/allocation-rules/{rule_id}/preview:
-    post:
-      description: "Runs a rule over whole months and shows what it would do (FR-DIM-03): each source account's cost with no dimension value (read through the balance service), the key's weights, the split by ALLOC-PRORATA with what the key cannot place left unallocated, and the journal's lines. A usage file must add up to its stated total and equal the supplier's bill it explains, or it is refused (ALLOC-06). Nothing is saved or posted. Read-only; no side effects."
-      operationId: previewAllocation
-      parameters:
-        - description: The rule.
-          in: path
-          name: rule_id
-          required: true
-          schema:
-            description: The rule.
-            examples:
-              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
-            format: uuid
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AllocationRunInput"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AllocationReport"
-          description: OK
-          headers:
-            Idempotent-Replayed:
-              schema:
-                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
-                type: string
-            Preference-Applied:
-              schema:
-                description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
-                type: string
-            RateLimit:
-              description: What is left of the limit (r) and the seconds until the window ends (t).
-              schema:
-                examples:
-                  - "\"reads\";r=599;t=42"
-                type: string
-            RateLimit-Policy:
-              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
-              schema:
-                examples:
-                  - "\"reads\";q=600;w=60"
-                type: string
-        "401":
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-          description: "Unauthorized: `API-AUTH-01` Sign-in required."
-        "403":
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
-        "404":
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-          description: "Not Found: `API-NOT-FOUND-01` Not found."
-        "409":
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-          description: "Conflict: `ALLOC-07` The rule allocated those months already; `STORAGE-LOCK-01` Another change is in progress."
-        "422":
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-INPUT-02` A field is not valid."
-        "429":
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-          description: "Too Many Requests: `API-RATE-01` Too many requests."
-          headers:
-            RateLimit:
-              description: What is left of the limit (r) and the seconds until the window ends (t).
-              schema:
-                examples:
-                  - "\"reads\";r=599;t=42"
-                type: string
-            RateLimit-Policy:
-              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
-              schema:
-                examples:
-                  - "\"reads\";q=600;w=60"
-                type: string
-            Retry-After:
-              description: Seconds to wait before sending the request again.
-              schema:
-                examples:
-                  - "42"
-                type: string
-        "500":
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
-        "503":
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
-      summary: Work an allocation out without saving it
-      tags:
-        - Accounting
-      x-fyniq-error-codes:
-        - ALLOC-01
-        - ALLOC-02
-        - ALLOC-03
-        - ALLOC-04
-        - ALLOC-05
-        - ALLOC-06
-        - ALLOC-07
-        - ALLOC-08
-        - API-AUTH-01
-        - API-AUTH-02
-        - API-AUTHZ-01
-        - API-AUTHZ-02
-        - API-AUTHZ-03
-        - API-AUTHZ-07
-        - API-FAILURE-01
-        - API-INPUT-02
-        - API-NOT-FOUND-01
-        - API-RATE-01
-        - STORAGE-LOCK-01
-        - STORAGE-RETRY-01
-      x-fyniq-permission:
-        capability: Journals
-        right: V
-  /v1/allocation-rules/{rule_id}/runs:
+  /v1/allocation-runs:
     get:
       description: The runs recorded for a rule, earliest first, a page at a time (FR-DIM-03). Read-only; no side effects.
       operationId: listAllocationRuns
       parameters:
-        - description: The rule.
-          in: path
+        - description: The rule whose runs are listed.
+          explode: false
+          in: query
           name: rule_id
           required: true
           schema:
-            description: The rule.
+            description: The rule whose runs are listed.
             examples:
               - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
             format: uuid
@@ -77006,7 +77014,7 @@ paths:
           description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
       summary: List a rule's runs
       tags:
-        - Accounting
+        - Journals
       x-fyniq-error-codes:
         - API-AUTH-01
         - API-AUTHZ-01
@@ -77027,16 +77035,6 @@ paths:
       description: "Runs a rule over whole months (previewAllocation shows what it does) and makes the journal as a draft for an approver (FR-DIM-03): each part debited to its account with the target's dimension values, what was placed credited with none, so what the key cannot place stays on the account. A rule runs once for a month (ALLOC-07). The run is recorded, never changed and never reversed (FYR14). Side effects: the draft journal, the recorded run and their audit events. Nothing is posted. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
       operationId: proposeAllocation
       parameters:
-        - description: The rule.
-          in: path
-          name: rule_id
-          required: true
-          schema:
-            description: The rule.
-            examples:
-              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01
-            format: uuid
-            type: string
         - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
           in: header
           name: Idempotency-Key
@@ -77198,7 +77196,7 @@ paths:
           description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
       summary: Run an allocation rule into a draft journal
       tags:
-        - Accounting
+        - Journals
       x-fyniq-error-codes:
         - ALLOC-01
         - ALLOC-02

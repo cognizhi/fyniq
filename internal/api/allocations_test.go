@@ -49,21 +49,21 @@ func TestAnAllocationRuleSplitsASharedCostIntoADraftJournal(t *testing.T) {
 	id := made.str("id")
 
 	// Previewed: the cost, the weights, the split and the journal's lines; nothing is saved.
-	period := map[string]any{"from": "2026-10-01", "to": "2026-10-31"}
-	pre := e.call(http.MethodPost, "/v1/allocation-rules/"+id+"/preview", accountant, period)
+	period := map[string]any{"rule_id": id, "from": "2026-10-01", "to": "2026-10-31"}
+	pre := e.call(http.MethodPost, "/v1/allocation-previews", accountant, period)
 	if pre.Status != http.StatusOK || !strings.Contains(pre.Raw, `"source":"1000.00"`) || !strings.Contains(pre.Raw, `"unallocated":"250.00"`) || !strings.Contains(pre.Raw, `"amount":"400.00"`) ||
 		!strings.Contains(pre.Raw, `"amount":"350.00"`) || !strings.Contains(pre.Raw, `"amount":"-750.00"`) || pre.Body["proposed"] != false {
 		t.Fatalf("the preview: %d %s", pre.Status, pre.Raw)
 	}
-	if runs := e.call(http.MethodGet, "/v1/allocation-rules/"+id+"/runs", accountant, nil); runs.Status != http.StatusOK || strings.Contains(runs.Raw, `"journal_id"`) {
+	if runs := e.call(http.MethodGet, "/v1/allocation-runs?rule_id="+id, accountant, nil); runs.Status != http.StatusOK || strings.Contains(runs.Raw, `"journal_id"`) {
 		t.Errorf("a preview saved a run: %s", runs.Raw)
 	}
 	// Months that are not whole months, or that the books lack, are refused.
-	e.problemIs(e.call(http.MethodPost, "/v1/allocation-rules/"+id+"/preview", accountant, map[string]any{"from": "2026-10-02", "to": "2026-10-31"}), "previewAllocation", 422, allocation.CodePeriod)
-	e.problemIs(e.call(http.MethodPost, "/v1/allocation-rules/"+id+"/preview", accountant, map[string]any{"from": "2025-01-01", "to": "2025-01-31"}), "previewAllocation", 422, allocation.CodePeriod)
+	e.problemIs(e.call(http.MethodPost, "/v1/allocation-previews", accountant, map[string]any{"rule_id": id, "from": "2026-10-02", "to": "2026-10-31"}), "previewAllocation", 422, allocation.CodePeriod)
+	e.problemIs(e.call(http.MethodPost, "/v1/allocation-previews", accountant, map[string]any{"rule_id": id, "from": "2025-01-01", "to": "2025-01-31"}), "previewAllocation", 422, allocation.CodePeriod)
 
 	// Run into a draft journal whose lines carry the departments.
-	run := e.call(http.MethodPost, "/v1/allocation-rules/"+id+"/runs", accountant, period)
+	run := e.call(http.MethodPost, "/v1/allocation-runs", accountant, period)
 	if run.Status != http.StatusCreated || run.str("journal_id") == "" || run.Body["proposed"] != true {
 		t.Fatalf("the run: %d %s", run.Status, run.Raw)
 	}
@@ -75,12 +75,12 @@ func TestAnAllocationRuleSplitsASharedCostIntoADraftJournal(t *testing.T) {
 		t.Errorf("posting the allocation like any journal: %d %s", p.Status, p.Raw)
 	}
 	// A rule allocates a month once; the run is recorded.
-	e.problemIs(e.call(http.MethodPost, "/v1/allocation-rules/"+id+"/runs", accountant, period), "proposeAllocation", 409, allocation.CodeRun)
-	if runs := e.call(http.MethodGet, "/v1/allocation-rules/"+id+"/runs", accountant, nil); !strings.Contains(runs.Raw, run.str("journal_id")) || !strings.Contains(runs.Raw, `"key":"fixed"`) {
+	e.problemIs(e.call(http.MethodPost, "/v1/allocation-runs", accountant, period), "proposeAllocation", 409, allocation.CodeRun)
+	if runs := e.call(http.MethodGet, "/v1/allocation-runs?rule_id="+id, accountant, nil); !strings.Contains(runs.Raw, run.str("journal_id")) || !strings.Contains(runs.Raw, `"key":"fixed"`) {
 		t.Errorf("the recorded run: %s", runs.Raw)
 	}
 	// After it posts, what is left with no department is the 250.00 the rule could not place: another run of the month is refused, and November has nothing to split.
-	e.problemIs(e.call(http.MethodPost, "/v1/allocation-rules/"+id+"/runs", accountant, map[string]any{"from": "2026-11-01", "to": "2026-11-30"}), "proposeAllocation", 422, allocation.CodeNothing)
+	e.problemIs(e.call(http.MethodPost, "/v1/allocation-runs", accountant, map[string]any{"rule_id": id, "from": "2026-11-01", "to": "2026-11-30"}), "proposeAllocation", 422, allocation.CodeNothing)
 
 	// The next version of the rule needs its ETag; archiving puts it out of use.
 	body := fixed
@@ -89,14 +89,14 @@ func TestAnAllocationRuleSplitsASharedCostIntoADraftJournal(t *testing.T) {
 	if r := e.call(http.MethodPut, "/v1/allocation-rules/"+id, accountant, body, "If-Match", made.Header.Get("ETag")); r.Status != http.StatusOK || r.Body["archived"] != true {
 		t.Errorf("archiving: %d %s", r.Status, r.Raw)
 	}
-	e.problemIs(e.call(http.MethodPost, "/v1/allocation-rules/"+id+"/preview", accountant, period), "previewAllocation", 422, allocation.CodeRule)
+	e.problemIs(e.call(http.MethodPost, "/v1/allocation-previews", accountant, period), "previewAllocation", 422, allocation.CodeRule)
 
 	// The headcount key counts people of the projection, and with nobody it has nothing to split by.
 	hc := e.call(http.MethodPost, "/v1/allocation-rules", accountant, rule("headcount", []map[string]any{{"label": "Engineering", "values": []string{eng.str("id")}}}))
 	if hc.Status != http.StatusCreated {
 		t.Fatalf("the headcount rule: %d %s", hc.Status, hc.Raw)
 	}
-	e.problemIs(e.call(http.MethodPost, "/v1/allocation-rules/"+hc.str("id")+"/preview", accountant, period), "previewAllocation", 422, allocation.CodeWeights)
+	e.problemIs(e.call(http.MethodPost, "/v1/allocation-previews", accountant, map[string]any{"rule_id": hc.str("id"), "from": "2026-10-01", "to": "2026-10-31"}), "previewAllocation", 422, allocation.CodeWeights)
 }
 
 // A usage file is refused unless its rows add up to its stated total and the supplier's bill it explains has that total (FR-DIM-03); the rows naming no target are what the key cannot place.
@@ -114,15 +114,15 @@ func TestAUsageFileMustEqualTheBillItExplains(t *testing.T) {
 	if made.Status != http.StatusCreated {
 		t.Fatalf("the rule: %d %s", made.Status, made.Raw)
 	}
-	path := "/v1/allocation-rules/" + made.str("id") + "/preview"
+	path := "/v1/allocation-previews"
 	usage := func(total string, rows ...map[string]any) map[string]any {
-		return map[string]any{"from": "2026-10-01", "to": "2026-10-31", "usage": map[string]any{"bill_id": bill, "billed_total": total, "rows": rows}}
+		return map[string]any{"rule_id": made.str("id"), "from": "2026-10-01", "to": "2026-10-31", "usage": map[string]any{"bill_id": bill, "billed_total": total, "rows": rows}}
 	}
 	row := func(code, qty, billed string) map[string]any {
 		return map[string]any{"code": code, "quantity": qty, "billed": billed}
 	}
 	// No file, rows that do not add up, a total that is not the bill's, and a bill that is not there are each refused.
-	e.problemIs(e.call(http.MethodPost, path, accountant, map[string]any{"from": "2026-10-01", "to": "2026-10-31"}), "previewAllocation", 422, allocation.CodeUsage)
+	e.problemIs(e.call(http.MethodPost, path, accountant, map[string]any{"rule_id": made.str("id"), "from": "2026-10-01", "to": "2026-10-31"}), "previewAllocation", 422, allocation.CodeUsage)
 	e.problemIs(e.call(http.MethodPost, path, accountant, usage("1000.00", row("acme", "600", "600.00"), row("beta", "300", "300.00"))), "previewAllocation", 422, allocation.CodeUsage)
 	e.problemIs(e.call(http.MethodPost, path, accountant, usage("900.00", row("acme", "600", "500.00"), row("beta", "300", "300.00"), row("other", "100", "100.00"))), "previewAllocation", 422, allocation.CodeUsage)
 	gone := usage("1000.00", row("acme", "600", "600.00"), row("beta", "300", "300.00"), row("other", "100", "100.00"))

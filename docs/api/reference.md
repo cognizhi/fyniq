@@ -4643,6 +4643,175 @@ Sends the caller's draft and returned entries of the week, each project's part a
 
 Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12).
 
+### `POST /v1/allocation-previews`
+
+**Work an allocation out without saving it** (`previewAllocation`)
+
+Runs a rule over whole months and shows what it would do (FR-DIM-03): each source account's cost with no dimension value (read through the balance service), the key's weights, the split by ALLOC-PRORATA with what the key cannot place left unallocated, and the journal's lines. A usage file must add up to its stated total and equal the supplier's bill it explains, or it is refused (ALLOC-06). Nothing is saved or posted. Read-only; no side effects.
+
+- **Permission:** View on Journals
+- **Request body:** [`AllocationRunInput`](../../contracts/schemas/AllocationRunInput.schema.json)
+- **Responses:**
+  - `200` OK [`AllocationReport`](../../contracts/schemas/AllocationReport.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `ALLOC-07` The rule allocated those months already; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `ALLOC-01`, `ALLOC-02`, `ALLOC-03`, `ALLOC-04`, `ALLOC-05`, `ALLOC-06`, `ALLOC-07`, `ALLOC-08`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/allocation-rules`
+
+**List the allocation rules** (`listAllocationRules`)
+
+Every allocation rule, the latest first, a page at a time (FR-DIM-03). Read-only; no side effects.
+
+- **Permission:** View on Journals
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`AllocationRulePage`](../../contracts/schemas/AllocationRulePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/allocation-rules`
+
+**Save an allocation rule** (`createAllocationRule`)
+
+Saves a rule (FR-DIM-03): the expense accounts whose cost with no dimension value is split, the key and the targets. The rule posts nothing; running it proposes a draft journal. Every problem comes back together. Side effects: the rule and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Journals
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AllocationRuleInput`](../../contracts/schemas/AllocationRuleInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AllocationRule`](../../contracts/schemas/AllocationRule.schema.json)
+  - `201` Created [`AllocationRule`](../../contracts/schemas/AllocationRule.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `ALLOC-07` The rule allocated those months already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `ALLOC-01`, `ALLOC-02`, `ALLOC-03`, `ALLOC-04`, `ALLOC-05`, `ALLOC-06`, `ALLOC-07`, `ALLOC-08`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/allocation-rules/{rule_id}`
+
+**Get an allocation rule** (`getAllocationRule`)
+
+A rule as saved, with its ETag (FR-DIM-03). Read-only; no side effects.
+
+- **Permission:** View on Journals
+- **Parameters:**
+  - `rule_id` (path, required): The rule.
+- **Responses:**
+  - `200` OK [`AllocationRule`](../../contracts/schemas/AllocationRule.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PUT /v1/allocation-rules/{rule_id}`
+
+**Change an allocation rule** (`replaceAllocationRule`)
+
+Saves the rule's next version (FR-DIM-03); runs already recorded keep the version they ran. archived: true puts it out of use. Needs If-Match with its ETag. Side effects: the new version and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Journals
+- **Parameters:**
+  - `rule_id` (path, required): The rule.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AllocationRuleInput`](../../contracts/schemas/AllocationRuleInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AllocationRule`](../../contracts/schemas/AllocationRule.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `ALLOC-07` The rule allocated those months already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `ALLOC-01`, `ALLOC-02`, `ALLOC-03`, `ALLOC-04`, `ALLOC-05`, `ALLOC-06`, `ALLOC-07`, `ALLOC-08`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/allocation-runs`
+
+**List a rule's runs** (`listAllocationRuns`)
+
+The runs recorded for a rule, earliest first, a page at a time (FR-DIM-03). Read-only; no side effects.
+
+- **Permission:** View on Journals
+- **Parameters:**
+  - `rule_id` (query, required): The rule whose runs are listed.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`AllocationRunPage`](../../contracts/schemas/AllocationRunPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/allocation-runs`
+
+**Run an allocation rule into a draft journal** (`proposeAllocation`)
+
+Runs a rule over whole months (previewAllocation shows what it does) and makes the journal as a draft for an approver (FR-DIM-03): each part debited to its account with the target's dimension values, what was placed credited with none, so what the key cannot place stays on the account. A rule runs once for a month (ALLOC-07). The run is recorded, never changed and never reversed (FYR14). Side effects: the draft journal, the recorded run and their audit events. Nothing is posted. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Journals
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AllocationRunInput`](../../contracts/schemas/AllocationRunInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AllocationReport`](../../contracts/schemas/AllocationReport.schema.json)
+  - `201` Created [`AllocationReport`](../../contracts/schemas/AllocationReport.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `ALLOC-07` The rule allocated those months already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `ALLOC-01` A percentage does not fit; `ALLOC-02` A usage quantity does not fit; `ALLOC-03` The key gives nothing to split by; `ALLOC-04` The allocation rule does not fit; `ALLOC-05` The months are not whole months of the books; `ALLOC-06` The usage file is refused; `ALLOC-08` There is nothing to split; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `ALLOC-01`, `ALLOC-02`, `ALLOC-03`, `ALLOC-04`, `ALLOC-05`, `ALLOC-06`, `ALLOC-07`, `ALLOC-08`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/journals`
 
 **List the journals** (`listJournals`)

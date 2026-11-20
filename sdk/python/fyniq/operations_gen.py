@@ -181,7 +181,7 @@ OPERATIONS = {
     "keepBankLine": {"method": "POST", "path": "/v1/bank-lines/{line_id}/keep", "summary": "Keep a possible duplicate", "path_params": ["line_id"], "query": [], "body": False, "scopes": ["fyniq.write.banking"], "paged": False, "preview": True, "idempotency_key": True, "if_match": True},
     "listAccounts": {"method": "GET", "path": "/v1/accounts", "summary": "List the chart of accounts", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listAllocationRules": {"method": "GET", "path": "/v1/allocation-rules", "summary": "List the allocation rules", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
-    "listAllocationRuns": {"method": "GET", "path": "/v1/allocation-rules/{rule_id}/runs", "summary": "List a rule's runs", "path_params": ["rule_id"], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
+    "listAllocationRuns": {"method": "GET", "path": "/v1/allocation-runs", "summary": "List a rule's runs", "path_params": [], "query": ["cursor", "page_size", "rule_id"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listAssetDisposals": {"method": "GET", "path": "/v1/asset-disposals", "summary": "List disposals of fixed assets", "path_params": [], "query": ["asset_id", "cursor", "page_size"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listAutoReconciliations": {"method": "GET", "path": "/v1/auto-reconciliations", "summary": "List what the system reconciled", "path_params": [], "query": ["cursor", "page_size", "since"], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listBankLines": {"method": "GET", "path": "/v1/bank-lines", "summary": "List bank lines", "path_params": [], "query": ["cursor", "from", "money_account_id", "page_size", "status", "to"], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
@@ -269,8 +269,8 @@ OPERATIONS = {
     "postOpeningBalances": {"method": "POST", "path": "/v1/opening-balances/post", "summary": "Post the opening balances", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.write.accounting"], "paged": False, "preview": True, "idempotency_key": True, "if_match": True},
     "postPaymentProviderInvoices": {"method": "POST", "path": "/v1/payment-providers/invoices/post", "summary": "Issue the drafts made of a billing provider's invoices", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.write.sales"], "paged": False, "preview": True, "idempotency_key": False, "if_match": False},
     "prepareDisputeLoss": {"method": "POST", "path": "/v1/payment-providers/disputes/{dispute_id}/loss", "summary": "Prepare the journal that writes a lost dispute off", "path_params": ["dispute_id"], "query": [], "body": True, "scopes": ["fyniq.write.accounting"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
-    "previewAllocation": {"method": "POST", "path": "/v1/allocation-rules/{rule_id}/preview", "summary": "Work an allocation out without saving it", "path_params": ["rule_id"], "query": [], "body": True, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
-    "proposeAllocation": {"method": "POST", "path": "/v1/allocation-rules/{rule_id}/runs", "summary": "Run an allocation rule into a draft journal", "path_params": ["rule_id"], "query": [], "body": True, "scopes": ["fyniq.write.accounting"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
+    "previewAllocation": {"method": "POST", "path": "/v1/allocation-previews", "summary": "Work an allocation out without saving it", "path_params": [], "query": [], "body": True, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
+    "proposeAllocation": {"method": "POST", "path": "/v1/allocation-runs", "summary": "Run an allocation rule into a draft journal", "path_params": [], "query": [], "body": True, "scopes": ["fyniq.write.accounting"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
     "queryMetrics": {"method": "POST", "path": "/v1/metrics:query", "summary": "Query the semantic layer", "path_params": [], "query": [], "body": True, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "readCapture": {"method": "POST", "path": "/v1/captures/{capture_id}/read", "summary": "Have the model read a captured document", "path_params": ["capture_id"], "query": [], "body": False, "scopes": ["fyniq.write.purchases"], "paged": False, "preview": False, "idempotency_key": False, "if_match": True},
     "recordBankTransfer": {"method": "POST", "path": "/v1/bank-transfers", "summary": "Record a transfer between money accounts", "path_params": [], "query": [], "body": True, "scopes": ["fyniq.write.banking"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
@@ -1074,9 +1074,9 @@ class OperationsMixin:
         """List the allocation rules (GET /v1/allocation-rules; scopes fyniq.read.accounting, fyniq.write.accounting)."""
         return self.call("listAllocationRules", [], None, **options)
 
-    def list_allocation_runs(self, rule_id, **options):
-        """List a rule's runs (GET /v1/allocation-rules/{rule_id}/runs; scopes fyniq.read.accounting, fyniq.write.accounting)."""
-        return self.call("listAllocationRuns", [rule_id], None, **options)
+    def list_allocation_runs(self, **options):
+        """List a rule's runs (GET /v1/allocation-runs; scopes fyniq.read.accounting, fyniq.write.accounting)."""
+        return self.call("listAllocationRuns", [], None, **options)
 
     def list_asset_disposals(self, **options):
         """List disposals of fixed assets (GET /v1/asset-disposals; scopes fyniq.read.accounting, fyniq.write.accounting)."""
@@ -1426,13 +1426,13 @@ class OperationsMixin:
         """Prepare the journal that writes a lost dispute off (POST /v1/payment-providers/disputes/{dispute_id}/loss; scopes fyniq.write.accounting)."""
         return self.call("prepareDisputeLoss", [dispute_id], body, **options)
 
-    def preview_allocation(self, rule_id, body=None, **options):
-        """Work an allocation out without saving it (POST /v1/allocation-rules/{rule_id}/preview; scopes fyniq.read.accounting, fyniq.write.accounting)."""
-        return self.call("previewAllocation", [rule_id], body, **options)
+    def preview_allocation(self, body=None, **options):
+        """Work an allocation out without saving it (POST /v1/allocation-previews; scopes fyniq.read.accounting, fyniq.write.accounting)."""
+        return self.call("previewAllocation", [], body, **options)
 
-    def propose_allocation(self, rule_id, body=None, **options):
-        """Run an allocation rule into a draft journal (POST /v1/allocation-rules/{rule_id}/runs; scopes fyniq.write.accounting)."""
-        return self.call("proposeAllocation", [rule_id], body, **options)
+    def propose_allocation(self, body=None, **options):
+        """Run an allocation rule into a draft journal (POST /v1/allocation-runs; scopes fyniq.write.accounting)."""
+        return self.call("proposeAllocation", [], body, **options)
 
     def query_metrics(self, body=None, **options):
         """Query the semantic layer (POST /v1/metrics:query; scopes fyniq.read.reports)."""

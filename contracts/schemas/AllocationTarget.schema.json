@@ -30,6 +30,9 @@
     "values": {
       "description": "The dimension values the allocated lines carry, one of each dimension at most (the department, the project, a customer or a product).",
       "items": {
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"
+        ],
         "type": "string"
       },
       "maxItems": 8,

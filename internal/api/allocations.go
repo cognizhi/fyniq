@@ -67,9 +67,10 @@ type AllocationUsage struct {
 
 // AllocationRunInput asks for a rule over whole months.
 type AllocationRunInput struct {
-	From  string           `json:"from" format:"date" doc:"The first day of the first month." example:"2026-03-01"`
-	To    string           `json:"to" format:"date" doc:"The last day of the last month (the same month or a later one, at most a year in all)." example:"2026-03-31"`
-	Usage *AllocationUsage `json:"usage,omitempty" doc:"With the usage key: the usage file."`
+	RuleID string           `json:"rule_id" format:"uuid" doc:"The rule to run." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01"`
+	From   string           `json:"from" format:"date" doc:"The first day of the first month." example:"2026-03-01"`
+	To     string           `json:"to" format:"date" doc:"The last day of the last month (the same month or a later one, at most a year in all)." example:"2026-03-31"`
+	Usage  *AllocationUsage `json:"usage,omitempty" doc:"With the usage key: the usage file."`
 }
 
 // AllocationPart is one target's part of one account's cost.
@@ -165,11 +166,9 @@ type (
 		Body AllocationRule
 	}
 	allocationRunInput struct {
-		AllocationRulePath
 		Body AllocationRunInput
 	}
 	allocationProposeInput struct {
-		AllocationRulePath
 		KeyHeader
 		PreferHeader
 		Body AllocationRunInput
@@ -181,7 +180,7 @@ type (
 		Body     AllocationReport
 	}
 	allocationRunsInput struct {
-		AllocationRulePath
+		RuleID string `query:"rule_id" format:"uuid" required:"true" doc:"The rule whose runs are listed." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a01"`
 		PageQuery
 	}
 	allocationRunsOutput struct{ Body AllocationRunPage }
@@ -290,7 +289,7 @@ func registerAllocations(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	domain := []string{allocation.CodePercent, allocation.CodeQuantity, allocation.CodeWeights, allocation.CodeRule, allocation.CodePeriod, allocation.CodeUsage, allocation.CodeRun, allocation.CodeNothing}
 	writes := append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeNotFound}, locks...)
-	tags := []string{"Accounting"}
+	tags := []string{"Journals"}
 
 	register(a, authz.ListAllocationRules, huma.Operation{
 		OperationID: "listAllocationRules", Method: http.MethodGet, Path: "/v1/allocation-rules", Tags: tags,
@@ -412,14 +411,15 @@ func registerAllocations(a *API) {
 		return allocationAnswer(w), nil
 	})
 
-	register(a, authz.PreviewAllocation, huma.Operation{
-		OperationID: "previewAllocation", Method: http.MethodPost, Path: "/v1/allocation-rules/{rule_id}/preview", Tags: tags,
+	register(a, authz.PreviewAllocation, exempt(exempt(huma.Operation{
+		OperationID: "previewAllocation", Method: http.MethodPost, Path: "/v1/allocation-previews", Tags: tags,
 		Summary: "Work an allocation out without saving it",
 		Description: "Runs a rule over whole months and shows what it would do (FR-DIM-03): each source account's cost with no dimension value (read through the balance service), the key's weights, the " +
 			"split by ALLOC-PRORATA with what the key cannot place left unallocated, and the journal's lines. A usage file must add up to its stated total and equal the supplier's bill it explains, " +
 			"or it is refused (ALLOC-06). Nothing is saved or posted. Read-only; no side effects.",
-	}, append([]string{CodeNotFound, CodeInvalid}, append(domain, locks...)...), func(ctx context.Context, in *allocationRunInput) (*allocationReportOutput, error) {
-		id, err := parseID("rule_id", in.RuleID)
+	}, "Idempotency-Key", "A preview saves nothing, so a repeat is harmless and answers the same (FR-DIM-03)."),
+		"Prefer", "A preview saves nothing: return=preview would answer the same as the request itself (FR-INT-14)."), append([]string{CodeNotFound, CodeInvalid}, append(domain, locks...)...), func(ctx context.Context, in *allocationRunInput) (*allocationReportOutput, error) {
+		id, err := parseID("body.rule_id", in.Body.RuleID)
 		if err != nil {
 			return nil, err
 		}
@@ -449,13 +449,13 @@ func registerAllocations(a *API) {
 	})
 
 	register(a, authz.ProposeAllocation, huma.Operation{
-		OperationID: "proposeAllocation", Method: http.MethodPost, Path: "/v1/allocation-rules/{rule_id}/runs", Tags: tags, DefaultStatus: http.StatusCreated,
+		OperationID: "proposeAllocation", Method: http.MethodPost, Path: "/v1/allocation-runs", Tags: tags, DefaultStatus: http.StatusCreated,
 		Summary: "Run an allocation rule into a draft journal",
 		Description: "Runs a rule over whole months (previewAllocation shows what it does) and makes the journal as a draft for an approver (FR-DIM-03): each part debited to its account with the target's " +
 			"dimension values, what was placed credited with none, so what the key cannot place stays on the account. A rule runs once for a month (ALLOC-07). The run is recorded, never changed " +
 			"and never reversed (FYR14). Side effects: the draft journal, the recorded run and their audit events. Nothing is posted. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
 	}, append([]string{CodeNotFound}, append(domain, writes...)...), func(ctx context.Context, in *allocationProposeInput) (*allocationReportOutput, error) {
-		id, err := parseID("rule_id", in.RuleID)
+		id, err := parseID("body.rule_id", in.Body.RuleID)
 		if err != nil {
 			return nil, err
 		}
@@ -487,7 +487,7 @@ func registerAllocations(a *API) {
 	})
 
 	register(a, authz.ListAllocationRuns, huma.Operation{
-		OperationID: "listAllocationRuns", Method: http.MethodGet, Path: "/v1/allocation-rules/{rule_id}/runs", Tags: tags,
+		OperationID: "listAllocationRuns", Method: http.MethodGet, Path: "/v1/allocation-runs", Tags: tags,
 		Summary: "List a rule's runs", Description: "The runs recorded for a rule, earliest first, a page at a time (FR-DIM-03). Read-only; no side effects.",
 	}, append([]string{CodeNotFound, CodeCursor}, locks...), func(ctx context.Context, in *allocationRunsInput) (*allocationRunsOutput, error) {
 		id, err := parseID("rule_id", in.RuleID)
@@ -527,4 +527,22 @@ func allocationAnswer(w written[AllocationRule]) *allocationWriteOutput {
 		return &allocationWriteOutput{Status: w.Status, Applied: applied(w), Body: w.Body}
 	}
 	return &allocationWriteOutput{Status: w.Status, ETag: etag(w.Body.Version, "draft"), Replayed: replayedHeader(w.Replayed), Body: w.Body}
+}
+
+// TransformSchema implements huma.SchemaTransformer: an example for each account ID (NFR-API-01).
+func (AllocationRuleInput) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"accounts": "01928f6e-7a3b-7c41-9d2e-5f8a1b3c1a01"})
+	return s
+}
+
+// TransformSchema implements huma.SchemaTransformer: an example for each dimension value ID (NFR-API-01).
+func (AllocationTarget) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"values": "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"})
+	return s
+}
+
+// TransformSchema implements huma.SchemaTransformer: an example for each dimension value ID (NFR-API-01).
+func (AllocationLine) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"values": "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"})
+	return s
 }

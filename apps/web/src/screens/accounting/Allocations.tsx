@@ -98,14 +98,14 @@ export function Allocations() {
 
   const runBody = () => {
     const from = `${month || months[0]}-01`;
-    const body: components["schemas"]["AllocationRunInput"] = { from, to: monthEnd(month || months[0]!) };
+    const body: components["schemas"]["AllocationRunInput"] = { rule_id: openId, from, to: monthEnd(month || months[0]!) };
     if (form.key === "usage") body.usage = { bill_id: usage.bill, billed_total: usage.total, rows: usageRows(usage.rows) };
     return body;
   };
   const preview = async () => {
     if (!openId) return;
     setBusy(true);
-    const { data, error } = await api.POST("/v1/allocation-rules/{rule_id}/preview", { params: { path: { rule_id: openId } }, body: runBody() });
+    const { data, error } = await api.POST("/v1/allocation-previews", { body: runBody() });
     setBusy(false);
     if (error || !data) return setProblem(problemOf(error)), setReport(null);
     setProblem(null);
@@ -114,7 +114,7 @@ export function Allocations() {
   const propose = async () => {
     if (!openId) return;
     setBusy(true);
-    const { data, error } = await api.POST("/v1/allocation-rules/{rule_id}/runs", { params: { path: { rule_id: openId } }, body: runBody() });
+    const { data, error } = await api.POST("/v1/allocation-runs", { body: runBody() });
     setBusy(false);
     if (error || !data) return setProblem(problemOf(error));
     setProblem(null);

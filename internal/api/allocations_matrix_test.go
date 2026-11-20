@@ -50,11 +50,11 @@ var matrixAllocations = map[string]func(e *env, tok string) (response, func() bo
 	},
 	"listAllocationRuns": func(e *env, tok string) (response, func() bool) {
 		id, _ := matrixAllocation(e)
-		return e.call(http.MethodGet, "/v1/allocation-rules/"+id+"/runs", tok, nil), nil
+		return e.call(http.MethodGet, "/v1/allocation-runs?rule_id="+id, tok, nil), nil
 	},
 	"previewAllocation": func(e *env, tok string) (response, func() bool) {
 		id, _ := matrixAllocation(e)
-		return e.call(http.MethodPost, "/v1/allocation-rules/"+id+"/preview", tok, map[string]any{"from": "2026-10-01", "to": "2026-10-31"}), nil
+		return e.call(http.MethodPost, "/v1/allocation-previews", tok, map[string]any{"rule_id": id, "from": "2026-10-01", "to": "2026-10-31"}), nil
 	},
 	"createAllocationRule": func(e *env, tok string) (response, func() bool) {
 		owner := e.as(authz.Accountant)
@@ -71,9 +71,9 @@ var matrixAllocations = map[string]func(e *env, tok string) (response, func() bo
 	},
 	"proposeAllocation": func(e *env, tok string) (response, func() bool) {
 		id, _ := matrixAllocation(e)
-		r := e.call(http.MethodPost, "/v1/allocation-rules/"+id+"/runs", tok, map[string]any{"from": "2026-10-01", "to": "2026-10-31"}, "Prefer", "return=preview")
+		r := e.call(http.MethodPost, "/v1/allocation-runs", tok, map[string]any{"rule_id": id, "from": "2026-10-01", "to": "2026-10-31"}, "Prefer", "return=preview")
 		return r, func() bool {
-			return e.call(http.MethodGet, "/v1/allocation-rules/"+id+"/runs", e.as(authz.Accountant), nil).Body["items"].([]any) == nil || len(e.call(http.MethodGet, "/v1/allocation-rules/"+id+"/runs", e.as(authz.Accountant), nil).Body["items"].([]any)) == 0
+			return len(e.call(http.MethodGet, "/v1/allocation-runs?rule_id="+id, e.as(authz.Accountant), nil).Body["items"].([]any)) == 0
 		}
 	},
 }

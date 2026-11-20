@@ -30,8 +30,8 @@ describe("Allocations", () => {
       "GET /v1/dimensions": { status: 200, body: dimensions },
       "GET /v1/dimension-values": { status: 200, body: values },
       "GET /v1/periods": { status: 200, body: periods },
-      ["POST /v1/allocation-rules/" + rule.id + "/preview"]: { status: 200, body: report },
-      ["POST /v1/allocation-rules/" + rule.id + "/runs"]: { status: 201, body: { ...report, proposed: true, journal_id: "44444444-4444-4444-8444-444444444444" } },
+      "POST /v1/allocation-previews": { status: 200, body: report },
+      "POST /v1/allocation-runs": { status: 201, body: { ...report, proposed: true, journal_id: "44444444-4444-4444-8444-444444444444" } },
     });
     renderPage(Allocations, { path: "/accounting/allocations", session: accountant, mode: "expert" });
     await screen.findByRole("option", { name: "Rent by department" });
@@ -40,9 +40,9 @@ describe("Allocations", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Preview/ }));
     expect(await screen.findByText("Unallocated (stays on the account)")).toBeTruthy();
     expect(screen.getByText("250.00")).toBeTruthy();
-    expect(seen.find((s) => s.path.endsWith("/preview"))!.body).toMatchObject({ from: "2026-10-01", to: "2026-10-31" });
+    expect(seen.find((s) => s.path.endsWith("/allocation-previews"))!.body).toMatchObject({ from: "2026-10-01", to: "2026-10-31" });
     fireEvent.click(screen.getByRole("button", { name: /Propose the journal/ }));
-    await waitFor(() => expect(seen.some((s) => s.path.endsWith("/runs"))).toBe(true));
+    await waitFor(() => expect(seen.some((s) => s.path.endsWith("/allocation-runs"))).toBe(true));
     expect(await screen.findByText(/The draft journal is made/)).toBeTruthy();
     await noViolations(document.body);
   });

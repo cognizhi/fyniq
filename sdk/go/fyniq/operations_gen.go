@@ -185,7 +185,7 @@ var Operations = map[string]Operation{
 	"keepBankLine":                         {ID: "keepBankLine", Method: "POST", Path: "/v1/bank-lines/{line_id}/keep", Summary: "Keep a possible duplicate", PathParams: []string{"line_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.write.banking"}, Paged: false, Preview: true, IdempotencyKey: true, IfMatch: true},
 	"listAccounts":                         {ID: "listAccounts", Method: "GET", Path: "/v1/accounts", Summary: "List the chart of accounts", PathParams: nil, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listAllocationRules":                  {ID: "listAllocationRules", Method: "GET", Path: "/v1/allocation-rules", Summary: "List the allocation rules", PathParams: nil, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
-	"listAllocationRuns":                   {ID: "listAllocationRuns", Method: "GET", Path: "/v1/allocation-rules/{rule_id}/runs", Summary: "List a rule's runs", PathParams: []string{"rule_id"}, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
+	"listAllocationRuns":                   {ID: "listAllocationRuns", Method: "GET", Path: "/v1/allocation-runs", Summary: "List a rule's runs", PathParams: nil, Query: []string{"cursor", "page_size", "rule_id"}, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listAssetDisposals":                   {ID: "listAssetDisposals", Method: "GET", Path: "/v1/asset-disposals", Summary: "List disposals of fixed assets", PathParams: nil, Query: []string{"asset_id", "cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listAutoReconciliations":              {ID: "listAutoReconciliations", Method: "GET", Path: "/v1/auto-reconciliations", Summary: "List what the system reconciled", PathParams: nil, Query: []string{"cursor", "page_size", "since"}, Body: false, Scopes: []string{"fyniq.read.banking", "fyniq.write.banking"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listBankLines":                        {ID: "listBankLines", Method: "GET", Path: "/v1/bank-lines", Summary: "List bank lines", PathParams: nil, Query: []string{"cursor", "from", "money_account_id", "page_size", "status", "to"}, Body: false, Scopes: []string{"fyniq.read.banking", "fyniq.write.banking"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
@@ -273,8 +273,8 @@ var Operations = map[string]Operation{
 	"postOpeningBalances":                  {ID: "postOpeningBalances", Method: "POST", Path: "/v1/opening-balances/post", Summary: "Post the opening balances", PathParams: nil, Query: nil, Body: false, Scopes: []string{"fyniq.write.accounting"}, Paged: false, Preview: true, IdempotencyKey: true, IfMatch: true},
 	"postPaymentProviderInvoices":          {ID: "postPaymentProviderInvoices", Method: "POST", Path: "/v1/payment-providers/invoices/post", Summary: "Issue the drafts made of a billing provider's invoices", PathParams: nil, Query: nil, Body: false, Scopes: []string{"fyniq.write.sales"}, Paged: false, Preview: true, IdempotencyKey: false, IfMatch: false},
 	"prepareDisputeLoss":                   {ID: "prepareDisputeLoss", Method: "POST", Path: "/v1/payment-providers/disputes/{dispute_id}/loss", Summary: "Prepare the journal that writes a lost dispute off", PathParams: []string{"dispute_id"}, Query: nil, Body: true, Scopes: []string{"fyniq.write.accounting"}, Paged: false, Preview: true, IdempotencyKey: true, IfMatch: false},
-	"previewAllocation":                    {ID: "previewAllocation", Method: "POST", Path: "/v1/allocation-rules/{rule_id}/preview", Summary: "Work an allocation out without saving it", PathParams: []string{"rule_id"}, Query: nil, Body: true, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
-	"proposeAllocation":                    {ID: "proposeAllocation", Method: "POST", Path: "/v1/allocation-rules/{rule_id}/runs", Summary: "Run an allocation rule into a draft journal", PathParams: []string{"rule_id"}, Query: nil, Body: true, Scopes: []string{"fyniq.write.accounting"}, Paged: false, Preview: true, IdempotencyKey: true, IfMatch: false},
+	"previewAllocation":                    {ID: "previewAllocation", Method: "POST", Path: "/v1/allocation-previews", Summary: "Work an allocation out without saving it", PathParams: nil, Query: nil, Body: true, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
+	"proposeAllocation":                    {ID: "proposeAllocation", Method: "POST", Path: "/v1/allocation-runs", Summary: "Run an allocation rule into a draft journal", PathParams: nil, Query: nil, Body: true, Scopes: []string{"fyniq.write.accounting"}, Paged: false, Preview: true, IdempotencyKey: true, IfMatch: false},
 	"queryMetrics":                         {ID: "queryMetrics", Method: "POST", Path: "/v1/metrics:query", Summary: "Query the semantic layer", PathParams: nil, Query: nil, Body: true, Scopes: []string{"fyniq.read.reports"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"readCapture":                          {ID: "readCapture", Method: "POST", Path: "/v1/captures/{capture_id}/read", Summary: "Have the model read a captured document", PathParams: []string{"capture_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.write.purchases"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: true},
 	"recordBankTransfer":                   {ID: "recordBankTransfer", Method: "POST", Path: "/v1/bank-transfers", Summary: "Record a transfer between money accounts", PathParams: nil, Query: nil, Body: true, Scopes: []string{"fyniq.write.banking"}, Paged: false, Preview: true, IdempotencyKey: true, IfMatch: false},
@@ -1253,9 +1253,9 @@ func (c *Client) ListAllocationRules(ctx context.Context, opts ...CallOption) (*
 	return c.Do(ctx, Operations["listAllocationRules"], []string{}, nil, opts)
 }
 
-// ListAllocationRuns: List a rule's runs (GET /v1/allocation-rules/{rule_id}/runs; scopes fyniq.read.accounting, fyniq.write.accounting).
-func (c *Client) ListAllocationRuns(ctx context.Context, ruleID string, opts ...CallOption) (*Response, error) {
-	return c.Do(ctx, Operations["listAllocationRuns"], []string{ruleID}, nil, opts)
+// ListAllocationRuns: List a rule's runs (GET /v1/allocation-runs; scopes fyniq.read.accounting, fyniq.write.accounting).
+func (c *Client) ListAllocationRuns(ctx context.Context, opts ...CallOption) (*Response, error) {
+	return c.Do(ctx, Operations["listAllocationRuns"], []string{}, nil, opts)
 }
 
 // ListAssetDisposals: List disposals of fixed assets (GET /v1/asset-disposals; scopes fyniq.read.accounting, fyniq.write.accounting).
@@ -1693,14 +1693,14 @@ func (c *Client) PrepareDisputeLoss(ctx context.Context, disputeID string, body 
 	return c.Do(ctx, Operations["prepareDisputeLoss"], []string{disputeID}, body, opts)
 }
 
-// PreviewAllocation: Work an allocation out without saving it (POST /v1/allocation-rules/{rule_id}/preview; scopes fyniq.read.accounting, fyniq.write.accounting).
-func (c *Client) PreviewAllocation(ctx context.Context, ruleID string, body any, opts ...CallOption) (*Response, error) {
-	return c.Do(ctx, Operations["previewAllocation"], []string{ruleID}, body, opts)
+// PreviewAllocation: Work an allocation out without saving it (POST /v1/allocation-previews; scopes fyniq.read.accounting, fyniq.write.accounting).
+func (c *Client) PreviewAllocation(ctx context.Context, body any, opts ...CallOption) (*Response, error) {
+	return c.Do(ctx, Operations["previewAllocation"], []string{}, body, opts)
 }
 
-// ProposeAllocation: Run an allocation rule into a draft journal (POST /v1/allocation-rules/{rule_id}/runs; scopes fyniq.write.accounting).
-func (c *Client) ProposeAllocation(ctx context.Context, ruleID string, body any, opts ...CallOption) (*Response, error) {
-	return c.Do(ctx, Operations["proposeAllocation"], []string{ruleID}, body, opts)
+// ProposeAllocation: Run an allocation rule into a draft journal (POST /v1/allocation-runs; scopes fyniq.write.accounting).
+func (c *Client) ProposeAllocation(ctx context.Context, body any, opts ...CallOption) (*Response, error) {
+	return c.Do(ctx, Operations["proposeAllocation"], []string{}, body, opts)
 }
 
 // QueryMetrics: Query the semantic layer (POST /v1/metrics:query; scopes fyniq.read.reports).

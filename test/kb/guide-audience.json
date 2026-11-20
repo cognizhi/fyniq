@@ -105,9 +105,9 @@
     "file": "allocations.md",
     "key": "accounting.allocations",
     "roles": [
-      "owner",
+      "accountant",
       "controller",
-      "accountant"
+      "owner"
     ],
     "status": "draft"
   },
