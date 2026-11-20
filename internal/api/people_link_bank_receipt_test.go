@@ -10,7 +10,7 @@ import (
 
 // Fyniq answers a bank-details event it ignored as no newer than what it holds with the version and the record it holds, so Nemura can tell a restore that lost a confirmed change from a repeat or a late
 // older event: it carries an ID and a number, never an account, and only for a bank-details event whose answer is ignored_older (FR-PPL-19; PRD-002 NM-INT-13).
-// req: FR-PPL-19
+// part of FR-PPL-19 (the checkpoint and the privacy deletions are tested elsewhere)
 // asvs: V8.2.1, V13.2.1
 func TestAnIgnoredBankDetailsEventIsAnsweredWithTheVersionAndRecordFyniqHolds(t *testing.T) {
 	w := payrollWorld(t)

@@ -61,6 +61,7 @@ nemura_api | column nemura.approval_request.version | INSERT
 nemura_api | column nemura.audit_event.body | INSERT
 nemura_api | column nemura.audit_event.id | INSERT
 nemura_api | column nemura.bank_account_change.approval_id | INSERT
+nemura_api | column nemura.bank_account_change.bank_version | UPDATE
 nemura_api | column nemura.bank_account_change.confirmed_at | UPDATE
 nemura_api | column nemura.bank_account_change.id | INSERT
 nemura_api | column nemura.bank_account_change.new_bank_code | INSERT
@@ -71,6 +72,9 @@ nemura_api | column nemura.bank_account_change.new_sealed | INSERT
 nemura_api | column nemura.bank_account_change.person_id | INSERT
 nemura_api | column nemura.bank_account_change.proposed_by | INSERT
 nemura_api | column nemura.bank_account_change.state | UPDATE
+nemura_api | column nemura.bank_reconfirm.resolved_at | UPDATE
+nemura_api | column nemura.bank_reconfirm.resolved_change_id | UPDATE
+nemura_api | column nemura.bank_reconfirm.state | UPDATE
 nemura_api | column nemura.company_policy.created_by | INSERT
 nemura_api | column nemura.company_policy.effective_from | INSERT
 nemura_api | column nemura.company_policy.effective_to | UPDATE
@@ -895,6 +899,8 @@ nemura_api | table nemura.api_client | SELECT
 nemura_api | table nemura.api_client_request | SELECT
 nemura_api | table nemura.approval_request | SELECT
 nemura_api | table nemura.bank_account_change | SELECT
+nemura_api | table nemura.bank_reconfirm | SELECT
+nemura_api | table nemura.bank_version_floor | SELECT
 nemura_api | table nemura.company_policy | SELECT
 nemura_api | table nemura.cpf_ytd | SELECT
 nemura_api | table nemura.deletion_proof | SELECT
@@ -1054,6 +1060,8 @@ nemura_readonly | table nemura.approval_request | SELECT
 nemura_readonly | table nemura.audit_chain | SELECT
 nemura_readonly | table nemura.audit_event | SELECT
 nemura_readonly | table nemura.bank_account_change | SELECT
+nemura_readonly | table nemura.bank_reconfirm | SELECT
+nemura_readonly | table nemura.bank_version_floor | SELECT
 nemura_readonly | table nemura.company_policy | SELECT
 nemura_readonly | table nemura.cpf_ytd | SELECT
 nemura_readonly | table nemura.deletion_proof | SELECT
@@ -1134,6 +1142,15 @@ nemura_readonly | table nemura.work_pass | SELECT
 nemura_readonly | table nemura.working_pattern | SELECT
 nemura_worker | column nemura.audit_event.body | INSERT
 nemura_worker | column nemura.audit_event.id | INSERT
+nemura_worker | column nemura.bank_reconfirm.found_at | INSERT
+nemura_worker | column nemura.bank_reconfirm.held_record_id | INSERT
+nemura_worker | column nemura.bank_reconfirm.held_version | INSERT
+nemura_worker | column nemura.bank_reconfirm.nemura_version | INSERT
+nemura_worker | column nemura.bank_reconfirm.person_id | INSERT
+nemura_worker | column nemura.bank_version_floor.floor | INSERT
+nemura_worker | column nemura.bank_version_floor.floor | UPDATE
+nemura_worker | column nemura.bank_version_floor.person_id | INSERT
+nemura_worker | column nemura.bank_version_floor.updated_at | UPDATE
 nemura_worker | column nemura.deletion_proof.deleted_on | INSERT
 nemura_worker | column nemura.deletion_proof.fingerprint | INSERT
 nemura_worker | column nemura.deletion_proof.id | INSERT
@@ -1217,6 +1234,8 @@ nemura_worker | table nemura.approval_request | SELECT
 nemura_worker | table nemura.audit_chain | SELECT
 nemura_worker | table nemura.audit_event | SELECT
 nemura_worker | table nemura.bank_account_change | SELECT
+nemura_worker | table nemura.bank_reconfirm | SELECT
+nemura_worker | table nemura.bank_version_floor | SELECT
 nemura_worker | table nemura.company_policy | SELECT
 nemura_worker | table nemura.cpf_ytd | SELECT
 nemura_worker | table nemura.deletion_proof | SELECT

@@ -25,7 +25,7 @@ import (
 // After a restore of Nemura's database, Fyniq may hold a bank-detail version that Nemura lost. Fyniq answers an event it ignored with the version and the record it holds; Nemura compares them with its
 // own record at that version. A repeat of an event, or a late older one, is not a restore and flags nothing; a version Nemura does not have, or has as another record, raises the person's version floor so
 // the next confirmed change is numbered above Fyniq's, holds the person's payments, shows on N.1 #7, and is released only by the ordinary change confirmed with the employee's passkey (NM-INT-13).
-// req: NM-INT-13
+// part of NM-INT-13 (the restore's other halves are tested with the restore)
 // part of FR-PPL-19 (Fyniq's side is its own test)
 // asvs: V8.2.1, V13.2.1, V11.4.1
 func TestARestoreThatLostABankChangeIsFoundFromFyniqsAnswerAndHoldsTheirPaymentsUntilReconfirmed(t *testing.T) {
@@ -187,7 +187,7 @@ func TestARestoreThatLostABankChangeIsFoundFromFyniqsAnswerAndHoldsTheirPayments
 
 // A re-confirmation is a fence the database keeps, not only the code: the worker finds one and raises a floor, the API alone ends one, and nobody lowers a floor, deletes a flag, rewrites what it
 // found, or ends it with a change that is not the same person's confirmed one numbered above the version Fyniq held (NM-INT-13).
-// req: NM-INT-13
+// part of NM-INT-13
 // asvs: V8.2.1, V8.3.1, V11.4.1
 func TestABankReconfirmationCanOnlyBeEndedByTheChangeThatReconfirms(t *testing.T) {
 	now := today.Add(10 * time.Hour)

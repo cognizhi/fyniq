@@ -31,6 +31,10 @@ The Payroll administrator and the Owner are also told, once for each oldest stuc
 
 When Nemura's database has been restored, the people who run the deployment record it, and the link is held: nothing is sent or paid. **After a restore** lists each pay run approved with proof whose answer the restored database does not hold, because Fyniq may have posted it after the restore point. For each, look at the run in Fyniq (its People and HR page shows what it posted) and choose **Fyniq posted it** with Fyniq's reference, or **Fyniq did not post it**: that approval is then sent again. When the last is decided the link resumes and the current state is sent again.
 
+### Bank details to confirm again
+
+A restore can also lose a change of someone's salary account that Fyniq already holds. Nemura finds out from Fyniq's answer to the person's bank-details event: Fyniq says which version and record it holds, and if Nemura has none like it, **Bank details to confirm again** lists the person and shows a ✖ on Checks. No payment is made to them, by file or by Fyniq, until their bank account is changed and confirmed again: propose it on their record, have a second person approve it, and the employee confirms it with a passkey. The new change is numbered above Fyniq's version and sent, and the person is released. Fyniq's answer for a repeated or a late older event is not a restore and lists no one.
+
 ## The Finance and People switch
 
 While Nemura is linked, a person who may cross sees **Finance | People** in the header. It opens the other app with the same account, and each app keeps its own last page: you come back to the page you left. It never changes what you may do: each app has its own roles, a role in one grants nothing in the other, and an employee who only claims sees no switch (their Claims tile opens the personal workspace in Fyniq). Nemura shows it to Owners, Administrators and Payroll administrators; Fyniq decides what is behind it.
@@ -42,6 +46,7 @@ Signing out of Fyniq, or being removed from it, signs the person out of Nemura a
 - **Fyniq refused an event.** The code says why; the content is never shown. Correct what it names, then send the current state again.
 - **A pay run is refused.** See [Read and approve a pay run](payroll-approval.md): a refusal Fyniq's side can put right is sent again from the run.
 - **The link is held.** A restore has not been reconciled: decide each run listed under **After a restore**.
+- **A person is listed under Bank details to confirm again.** A restore lost a change of their salary account that Fyniq holds: change it again on their record and have it approved and confirmed; they are not paid before that.
 
 ## Related
 
