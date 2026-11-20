@@ -3444,6 +3444,32 @@ export interface components {
              */
             state: "proposed" | "approved" | "refused" | "confirmed";
         };
+        BankReconfirmView: {
+            /**
+             * Format: date-time
+             * @description When Fyniq's answer showed it.
+             * @example 2026-11-25T09:00:00Z
+             */
+            found_at: string;
+            /**
+             * Format: int64
+             * @description The bank-detail version Fyniq holds.
+             * @example 2
+             */
+            held_version: number;
+            /**
+             * Format: int64
+             * @description Nemura's own version when this was found.
+             * @example 1
+             */
+            nemura_version: number;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+        };
         CalendarEntry: {
             /**
              * Format: date
@@ -5728,6 +5754,8 @@ export interface components {
             type: string;
         };
         LinkHealthView: {
+            /** @description People whose bank details wait to be re-confirmed after a restore: Fyniq holds a bank-detail version this database lost. No payment is made to them until their bank account is changed and confirmed again (the ordinary change). By identity: never the account. */
+            bank_reconfirm: components["schemas"]["BankReconfirmView"][];
             /**
              * Format: int64
              * @description The link's epoch.

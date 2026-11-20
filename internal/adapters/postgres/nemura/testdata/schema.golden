@@ -10,6 +10,8 @@ approval_request | nemura_migrator | true | true
 audit_chain | nemura_migrator | true | true
 audit_event | nemura_migrator | true | true
 bank_account_change | nemura_migrator | true | true
+bank_reconfirm | nemura_migrator | true | true
+bank_version_floor | nemura_migrator | true | true
 company_policy | nemura_migrator | true | true
 cpf_ytd | nemura_migrator | true | true
 deletion_proof | nemura_migrator | true | true
@@ -205,6 +207,21 @@ bank_account_change | confirmed_at | timestamp with time zone | false |
 bank_account_change | created_at | timestamp with time zone | true | now()
 bank_account_change | new_bank_code | text | false | 
 bank_account_change | new_bank_name | text | false | 
+bank_account_change | bank_version | integer | false | 
+bank_reconfirm | organisation_id | uuid | true | nemura.current_org()
+bank_reconfirm | id | uuid | true | uuidv7()
+bank_reconfirm | person_id | uuid | true | 
+bank_reconfirm | held_version | integer | true | 
+bank_reconfirm | held_record_id | uuid | true | 
+bank_reconfirm | nemura_version | integer | true | 
+bank_reconfirm | found_at | timestamp with time zone | true | 
+bank_reconfirm | state | text | true | 'open'::text
+bank_reconfirm | resolved_at | timestamp with time zone | false | 
+bank_reconfirm | resolved_change_id | uuid | false | 
+bank_version_floor | organisation_id | uuid | true | nemura.current_org()
+bank_version_floor | person_id | uuid | true | 
+bank_version_floor | floor | integer | true | 
+bank_version_floor | updated_at | timestamp with time zone | true | now()
 company_policy | organisation_id | uuid | true | nemura.current_org()
 company_policy | id | uuid | true | uuidv7()
 company_policy | effective_from | date | true | 
@@ -1245,6 +1262,7 @@ bank_account_change | bank_account_change_approval_fkey | FOREIGN KEY (organisat
 bank_account_change | bank_account_change_approval_id_not_null | NOT NULL approval_id
 bank_account_change | bank_account_change_bank_code | CHECK (((new_bank_code IS NULL) OR (new_bank_code ~ '^[0-9]{4}([0-9]{3})?$'::text)))
 bank_account_change | bank_account_change_bank_name | CHECK (((new_bank_name IS NULL) OR ((char_length(new_bank_name) >= 1) AND (char_length(new_bank_name) <= 140))))
+bank_account_change | bank_account_change_bank_version | CHECK (((bank_version IS NULL) OR (bank_version >= 1)))
 bank_account_change | bank_account_change_confirmed_whole | CHECK (((state = 'confirmed'::text) = (confirmed_at IS NOT NULL)))
 bank_account_change | bank_account_change_created_at_not_null | NOT NULL created_at
 bank_account_change | bank_account_change_id_not_null | NOT NULL id
@@ -1261,6 +1279,28 @@ bank_account_change | bank_account_change_proposed_by_not_null | NOT NULL propos
 bank_account_change | bank_account_change_state_known | CHECK ((state = ANY (ARRAY['proposed'::text, 'approved'::text, 'refused'::text, 'confirmed'::text])))
 bank_account_change | bank_account_change_state_not_null | NOT NULL state
 bank_account_change | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+bank_reconfirm | bank_reconfirm_change_fkey | FOREIGN KEY (organisation_id, resolved_change_id) REFERENCES nemura.bank_account_change(organisation_id, id)
+bank_reconfirm | bank_reconfirm_found_at_not_null | NOT NULL found_at
+bank_reconfirm | bank_reconfirm_held_record_id_not_null | NOT NULL held_record_id
+bank_reconfirm | bank_reconfirm_held_version_not_null | NOT NULL held_version
+bank_reconfirm | bank_reconfirm_id_not_null | NOT NULL id
+bank_reconfirm | bank_reconfirm_nemura_version_not_null | NOT NULL nemura_version
+bank_reconfirm | bank_reconfirm_organisation_id_not_null | NOT NULL organisation_id
+bank_reconfirm | bank_reconfirm_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+bank_reconfirm | bank_reconfirm_person_id_not_null | NOT NULL person_id
+bank_reconfirm | bank_reconfirm_pkey | PRIMARY KEY (organisation_id, id)
+bank_reconfirm | bank_reconfirm_resolved_whole | CHECK (((state = 'resolved'::text) = ((resolved_at IS NOT NULL) AND (resolved_change_id IS NOT NULL))))
+bank_reconfirm | bank_reconfirm_state_known | CHECK ((state = ANY (ARRAY['open'::text, 'resolved'::text])))
+bank_reconfirm | bank_reconfirm_state_not_null | NOT NULL state
+bank_reconfirm | bank_reconfirm_versions | CHECK (((held_version >= 1) AND (nemura_version >= 0)))
+bank_reconfirm | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+bank_version_floor | bank_version_floor_floor_not_null | NOT NULL floor
+bank_version_floor | bank_version_floor_organisation_id_not_null | NOT NULL organisation_id
+bank_version_floor | bank_version_floor_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+bank_version_floor | bank_version_floor_person_id_not_null | NOT NULL person_id
+bank_version_floor | bank_version_floor_pkey | PRIMARY KEY (organisation_id, person_id)
+bank_version_floor | bank_version_floor_positive | CHECK ((floor >= 1))
+bank_version_floor | bank_version_floor_updated_at_not_null | NOT NULL updated_at
 company_policy | company_policy_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
 company_policy | company_policy_created_at_not_null | NOT NULL created_at
 company_policy | company_policy_created_by_not_null | NOT NULL created_by
@@ -2621,6 +2661,9 @@ CREATE INDEX audit_event_object_idx ON nemura.audit_event USING btree (organisat
 CREATE UNIQUE INDEX audit_event_pkey ON nemura.audit_event USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_event_seq_key ON nemura.audit_event USING btree (organisation_id, seq)
 CREATE UNIQUE INDEX bank_account_change_pkey ON nemura.bank_account_change USING btree (organisation_id, id)
+CREATE UNIQUE INDEX bank_reconfirm_one_open ON nemura.bank_reconfirm USING btree (organisation_id, person_id) WHERE (state = 'open'::text)
+CREATE UNIQUE INDEX bank_reconfirm_pkey ON nemura.bank_reconfirm USING btree (organisation_id, id)
+CREATE UNIQUE INDEX bank_version_floor_pkey ON nemura.bank_version_floor USING btree (organisation_id, person_id)
 CREATE UNIQUE INDEX company_policy_pkey ON nemura.company_policy USING btree (organisation_id, id)
 CREATE UNIQUE INDEX cpf_ytd_pkey ON nemura.cpf_ytd USING btree (organisation_id, person_id, year)
 CREATE UNIQUE INDEX deletion_proof_pkey ON nemura.deletion_proof USING btree (organisation_id, id)
@@ -2819,6 +2862,9 @@ CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON nemura.audit_eve
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON nemura.audit_event FOR EACH STATEMENT EXECUTE FUNCTION nemura.audit_immutable()
 CREATE TRIGGER bank_account_change_guard BEFORE DELETE OR UPDATE ON nemura.bank_account_change FOR EACH ROW EXECUTE FUNCTION nemura.bank_account_change_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.bank_account_change DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('bank_account_change', 'id')
+CREATE TRIGGER bank_reconfirm_guard BEFORE DELETE OR UPDATE ON nemura.bank_reconfirm FOR EACH ROW EXECUTE FUNCTION nemura.bank_reconfirm_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.bank_reconfirm DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('bank_reconfirm', 'id')
+CREATE TRIGGER bank_version_floor_guard BEFORE DELETE OR UPDATE ON nemura.bank_version_floor FOR EACH ROW EXECUTE FUNCTION nemura.bank_version_floor_guard()
 CREATE TRIGGER company_policy_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.company_policy FOR EACH ROW EXECUTE FUNCTION nemura.company_policy_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.company_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('company_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.cpf_ytd DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('cpf_ytd', 'person_id')
@@ -2965,6 +3011,8 @@ approval_request | tenant_isolation | (organisation_id = nemura.current_org()) |
 audit_chain | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 audit_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 bank_account_change | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+bank_reconfirm | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+bank_version_floor | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 company_policy | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 cpf_ytd | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 deletion_proof | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3217,6 +3265,39 @@ BEGIN
      OR NEW.proposed_by IS DISTINCT FROM OLD.proposed_by OR NEW.approval_id IS DISTINCT FROM OLD.approval_id
      OR NOT ((OLD.state = 'proposed' AND NEW.state IN ('approved', 'refused')) OR (OLD.state = 'approved' AND NEW.state = 'confirmed')) THEN
     RAISE EXCEPTION 'A bank account change moves forward only: proposed, approved or refused, then confirmed' USING ERRCODE = 'NM126';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.bank_reconfirm_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR OLD.state <> 'open' OR NEW.state <> 'resolved' OR NEW.person_id IS DISTINCT FROM OLD.person_id
+     OR NEW.held_version IS DISTINCT FROM OLD.held_version OR NEW.held_record_id IS DISTINCT FROM OLD.held_record_id
+     OR NEW.nemura_version IS DISTINCT FROM OLD.nemura_version OR NEW.found_at IS DISTINCT FROM OLD.found_at THEN
+    RAISE EXCEPTION 'A bank re-confirmation is found once and resolved once, and never deleted' USING ERRCODE = 'NM195';
+  END IF;
+  -- it ends only by a confirmed change of the same person's account, numbered above the version Fyniq held
+  IF NOT EXISTS (SELECT 1 FROM nemura.bank_account_change c WHERE c.organisation_id = NEW.organisation_id AND c.id = NEW.resolved_change_id
+                   AND c.person_id = NEW.person_id AND c.state = 'confirmed' AND c.bank_version > NEW.held_version) THEN
+    RAISE EXCEPTION 'A bank re-confirmation ends only with a confirmed change of that person''s account, numbered above the version Fyniq held' USING ERRCODE = 'NM195';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.bank_version_floor_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.floor <= OLD.floor THEN
+    RAISE EXCEPTION 'A person''s bank-detail version floor only rises and is never deleted' USING ERRCODE = 'NM194';
   END IF;
   RETURN NEW;
 END

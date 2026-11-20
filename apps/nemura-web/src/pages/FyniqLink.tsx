@@ -168,6 +168,17 @@ export function FyniqLink({ roles }: { roles: readonly string[] }) {
                     </ul>
                   </section>
                 )}
+                {(health.bank_reconfirm ?? []).length > 0 && (
+                  <section className="fy-stack fy-stack--2" aria-labelledby="reconfirm-h">
+                    <h2 className="fy-h2" id="reconfirm-h" title={helpText("link.bankReconfirm").tooltip}>{t("link.bankReconfirm.title")}</h2>
+                    <p role="alert">{t("link.bankReconfirm.lead")}</p>
+                    <ul className="fy-stack fy-stack--2">
+                      {(health.bank_reconfirm ?? []).map((r) => (
+                        <li key={r.person_id}><a href={`/people/${r.person_id}`}>{t("link.bankReconfirm.person", { person: r.person_id.slice(0, 8), held: String(r.held_version), at: r.found_at })}</a></li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
               </>
             )}
           </>

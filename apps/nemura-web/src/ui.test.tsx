@@ -1667,6 +1667,16 @@ describe("the link to Fyniq", () => {
     expect(bodies.get("POST /v1/link/restore/decisions")).toEqual({ run_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43", version: 2, posted: true, reference: "ref-9" });
   });
 
+  it("lists the people whose bank details Fyniq holds a version of that a restore lost, with the way to release them", async () => {
+    answer("GET /v1/link", { status: 200, body: { state: "active", ...base } });
+    answer("GET /v1/link/health", { status: 200, body: { ...health, failing_over_24_hours: false, undelivered: [], bank_reconfirm: [{ person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", held_version: 3, nemura_version: 2, found_at: "2026-11-25T09:00:00Z" }] } });
+    const { container } = render(<FyniqLink roles={["owner"]} />);
+    expect(await screen.findByText("Bank details to confirm again")).toBeTruthy();
+    expect(screen.getByText(/No payment is made to them until their bank account is changed and confirmed again/)).toBeTruthy();
+    expect(screen.getByText("Person 0194f5a0: Fyniq holds version 3, found 2026-11-25T09:00:00Z")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+  });
+
   it("is for an Owner or an Administrator, proposes the link with a passkey and shows what to give Fyniq", async () => {
     render(<FyniqLink roles={["hr_admin"]} />);
     expect(await screen.findByText("Only an Owner or an Administrator sees the link to Fyniq.")).toBeTruthy();

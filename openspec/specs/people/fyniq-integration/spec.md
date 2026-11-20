@@ -226,3 +226,9 @@ Source: PRD-002 §16 · Priority M · Phase P1
 #### Scenario: Deleted data comes back
 - **WHEN** a restore brings back a personal field that had been deleted
 - **THEN** it is deleted again before anyone can see it
+
+#### Scenario: A restore lost a bank-detail change (rev 0.58)
+- **GIVEN** Fyniq holds a bank-detail version and record that Nemura's restored database does not have at that version
+- **WHEN** Fyniq ignores Nemura's event as no newer and answers with the version and record it holds
+- **THEN** Nemura raises the person's version floor so the next confirmed change is numbered above Fyniq's, records the person for the people team to re-confirm, and makes no payment line for them until the ordinary change is confirmed
+- **AND** a repeated event or a late older one, where Nemura's own record at the held version is the held record, flags nothing

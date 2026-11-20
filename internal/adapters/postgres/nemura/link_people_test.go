@@ -35,6 +35,8 @@ type fyniqInMiniature struct {
 	calls  []link.Envelope
 	status int    // the answer's status (200 when zero)
 	code   string // a problem's code for a refusal
+	// answer, when set, is the body of a 2xx answer to an envelope (the receipt); it answers "applied" otherwise.
+	answer func(env link.Envelope) string
 }
 
 func newFyniqInMiniature(t *testing.T, offer nemura.LinkOffer, paths ...string) *fyniqInMiniature {
@@ -66,6 +68,10 @@ func newFyniqInMiniature(t *testing.T, offer nemura.LinkOffer, paths ...string) 
 				w.Header().Set("Content-Type", "application/problem+json")
 				w.WriteHeader(f.status)
 				_, _ = w.Write([]byte(`{"code":"` + f.code + `","detail":"a payload I must not repeat"}`))
+				return
+			}
+			if f.answer != nil {
+				_, _ = w.Write([]byte(f.answer(env)))
 				return
 			}
 			_, _ = w.Write([]byte(`{"event_id":"x","outcome":"applied"}`))

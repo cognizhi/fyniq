@@ -4,7 +4,7 @@ type: task
 title: Link Nemura to Fyniq and keep the link healthy
 summary: How an Owner and a second approver link Nemura to Fyniq, what is sent each way, how to read the link's health and repair a gap, and what to do after a restore
 sources:
-  - docs/user-guide/nemura/fyniq-link.md sha256:22e123416fed80408a1df2f4ad1cb53a5c0b470d65ca765b5598b085737ff999
+  - docs/user-guide/nemura/fyniq-link.md sha256:d262be812a81422704535df791991d8ee367a31ccb0392e8156a1c65faa45e2b
 data_class: personal
 taint: trusted
 status: published
@@ -42,6 +42,7 @@ aliases:
 ## After a restore
 
 - After a restore of Nemura's database the link is held and nothing is sent or paid. The page lists each pay run approved with proof whose answer the restored database lacks; check each in Fyniq and choose that Fyniq posted it (with its reference) or did not (the approval is then sent again). When the last is decided the link resumes and the current state is sent again. (src: docs/user-guide/nemura/fyniq-link.md#after-a-restore-of-nemuras-database)
+- A restore can also lose a change of someone's salary account that Fyniq holds. Fyniq says which bank-detail version and record it holds when it ignores Nemura's event; if Nemura has none like it, **Bank details to confirm again** lists the person and Checks shows a ✖. No payment is made to them, by file or by Fyniq, until their bank account is changed and confirmed again (proposed, approved by a second person, confirmed by the employee with a passkey): the new change is numbered above Fyniq's version. A repeated or late older event lists no one. (src: docs/user-guide/nemura/fyniq-link.md#bank-details-to-confirm-again)
 
 ## The Finance and People switch
 
@@ -49,4 +50,4 @@ aliases:
 
 ## When it looks wrong
 
-- A refusal from Fyniq carries a code, never the content: correct what it names, then send the current state again. A pay run's refusal is handled on the run (see [[nemura.payroll-approval]]). A held link means an unreconciled restore. (src: docs/user-guide/nemura/fyniq-link.md#common-problems)
+- A refusal from Fyniq carries a code, never the content: correct what it names, then send the current state again. A pay run's refusal is handled on the run (see [[nemura.payroll-approval]]). A held link means an unreconciled restore; a person listed under Bank details to confirm again is not paid until their account is changed and confirmed again. (src: docs/user-guide/nemura/fyniq-link.md#common-problems)

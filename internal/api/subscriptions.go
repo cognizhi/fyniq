@@ -67,7 +67,7 @@ type SubscriptionContractPage struct {
 type ContractedMRRInBase struct {
 	MRR     Money               `json:"mrr" doc:"The sum of each currency's total converted once into the base currency (RND-FX); only the currencies that have a rate."`
 	Rates   []ContractedMRRRate `json:"rates" nullable:"false" doc:"The rate each currency was converted at, with its date: the rate of the day or the nearest the rate cascade found."`
-	Missing []string            `json:"missing" nullable:"false" doc:"Currencies with no rate for the day, left out of mrr: while there are any, mrr is not the whole." example:"[\"JPY\"]"`
+	Missing []string            `json:"missing" nullable:"false" maxItems:"50" doc:"Currencies with no rate for the day, left out of mrr: while there are any, mrr is not the whole." example:"[\"JPY\"]"`
 }
 
 // TransformSchema implements huma.SchemaTransformer: an example for each currency with no rate (NFR-API-01).
