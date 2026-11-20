@@ -12,6 +12,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
+	"github.com/cognizhi/fyniq/internal/domain/subledger"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -121,6 +123,68 @@ type TaxAsset struct {
 	Cost        money.Money
 	Election    *asset.TaxElection
 	Disposed    bool
+	// Sale is the one live disposal of the whole asset, with its proceeds net of GST in the base currency; nil for an asset not sold whole (a part disposal leaves Disposed set
+	// and Sale nil, and the schedule lists it apart).
+	Sale *TaxSale
+}
+
+// TaxSale is the sale of a whole asset as the capital allowance schedule reads it (FR-FA-04, rev 0.603): its day and its proceeds net of GST.
+type TaxSale struct {
+	On       time.Time
+	Proceeds money.Money
+}
+
+// taxSales are the assets sold whole by one live disposal, by asset: the proceeds are the money received less its output GST (RND-GST-INCL), the invoice line's net, or nothing for a
+// write-off. An asset with more than one live disposal, or one of a share of its cost, has none.
+func taxSales(ctx context.Context, u storage.UnitOfWork, base money.Currency) (map[uuid.UUID]*TaxSale, error) {
+	live := map[uuid.UUID][]asset.Disposal{}
+	forever := time.Date(9999, 12, 31, 0, 0, 0, 0, time.UTC)
+	if err := subledger.Pages(ctx, u, storage.DocumentAssetDisposal, forever, func(doc storage.Document) error {
+		if doc.Status != storage.DocumentPosted {
+			return nil
+		}
+		voided, err := subledger.VoidedBy(ctx, u, ledger.AssetDisposalIdentity(doc.ID, doc.Version, ledger.RuleAssetDisposal), forever)
+		if err != nil || voided {
+			return err
+		}
+		x, err := asset.ReadDisposal(doc)
+		if err != nil {
+			return err
+		}
+		live[x.AssetID] = append(live[x.AssetID], x)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	out := map[uuid.UUID]*TaxSale{}
+	for id, ds := range live {
+		if len(ds) != 1 || !ds[0].Whole {
+			continue
+		}
+		d := ds[0]
+		net := money.Zero(base)
+		switch d.Proceeds {
+		case asset.ProceedsMoney:
+			if d.Gross != nil {
+				net = *d.Gross
+				if d.GSTRate != "" {
+					gst, err := rounding.GSTIncl(*d.Gross, d.GSTRate)
+					if err != nil {
+						return nil, err
+					}
+					if net, err = net.Sub(gst); err != nil {
+						return nil, err
+					}
+				}
+			}
+		case asset.ProceedsInvoice:
+			if d.InvoiceNet != nil {
+				net = *d.InvoiceNet
+			}
+		}
+		out[id] = &TaxSale{On: d.Date, Proceeds: net}
+	}
+	return out, nil
 }
 
 // TaxAssets are the registered assets as the capital allowance schedule reads them, in number order: each asset's cost is the one it was bought for, an asset with a live
@@ -134,6 +198,10 @@ func TaxAssets(ctx context.Context, u storage.UnitOfWork) ([]TaxAsset, error) {
 	if err != nil {
 		return nil, err
 	}
+	sales, err := taxSales(ctx, u, s.Base)
+	if err != nil {
+		return nil, err
+	}
 	var out []TaxAsset
 	for _, f := range figures {
 		a, err := asset.Read(f.Asset)
@@ -141,7 +209,7 @@ func TaxAssets(ctx context.Context, u storage.UnitOfWork) ([]TaxAsset, error) {
 			return nil, fmt.Errorf("%s: %w", f.Asset.Number, err)
 		}
 		out = append(out, TaxAsset{AssetID: f.Asset.ID, Number: f.Asset.Number, Name: a.Name, AccountID: f.AccountID, PurchasedOn: f.PurchasedOn, Cost: f.Bought,
-			Election: a.Tax, Disposed: !f.Bought.Equal(f.Cost) || a.Disposed})
+			Election: a.Tax, Disposed: !f.Bought.Equal(f.Cost) || a.Disposed, Sale: sales[f.Asset.ID]})
 	}
 	slices.SortStableFunc(out, func(a, b TaxAsset) int {
 		if c := a.PurchasedOn.Compare(b.PurchasedOn); c != 0 {

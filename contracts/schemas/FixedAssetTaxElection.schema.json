@@ -3,10 +3,11 @@
   "additionalProperties": false,
   "properties": {
     "method": {
-      "description": "s19: the initial allowance of 20% and annual allowances over a working life; s19a1: a third a year over 3 years; s19a10a: the whole cost in one year, for an asset of at most S$5,000 within S$30,000 a year of assessment. The pack sg-capital-allowances holds the values.",
+      "description": "s19: the initial allowance of 20% and annual allowances over a working life; s19a1: a third a year over 3 years; s19a2: the whole cost in one year for a computer or prescribed automation equipment, with no cap (rev 0.603); s19a10a: the whole cost in one year, for an asset of at most S$5,000 within S$30,000 a year of assessment. The pack sg-capital-allowances holds the values.",
       "enum": [
         "s19",
         "s19a1",
+        "s19a2",
         "s19a10a"
       ],
       "examples": [

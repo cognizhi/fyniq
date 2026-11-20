@@ -949,3 +949,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura-erasure: erase a former employee's data (NM-SEC-08)
 
 ## [2026-11-20] compile | invoices: the provider's credit notes mirrored and issued at the provider's total (FR-PSP-07, rev 0.601)
+
+## [2026-11-20] compile | docs/user-guide/fixed-assets.md → accounting.fixed-assets (section 19A(2), the balancing allowance and charge on a sale, sg-capital-allowances@2026.2, FR-FA-04)

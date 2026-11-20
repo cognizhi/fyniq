@@ -37,7 +37,7 @@ func TestTheCapitalAllowanceScheduleFollowsTheElectionsTheRegisterKeeps(t *testi
 	for ya, want := range map[string][2]string{"2027": {"1000.00", "2000.00"}, "2028": {"1000.00", "1000.00"}, "2029": {"1000.00", "0.00"}} {
 		s := e.call(http.MethodGet, "/v1/reports/capital-allowances?ya="+ya, accountant, nil)
 		rows, _ := s.Body["rows"].([]any)
-		if s.Status != http.StatusOK || len(rows) != 1 || s.str("pack") != "sg-capital-allowances@2026.1" {
+		if s.Status != http.StatusOK || len(rows) != 1 || s.str("pack") != "sg-capital-allowances@2026.2" {
 			t.Fatalf("YA %s = %d: %s", ya, s.Status, s.Raw)
 		}
 		row := rows[0].(map[string]any)
@@ -173,4 +173,72 @@ func TestTheMovementScheduleTakesWhatDisposalsTookOffAndTiesToTheLedger(t *testi
 	first := e.call(http.MethodGet, "/v1/reports/fixed-asset-movement?from=2026-10&to=2026-12", accountant, nil)
 	f := first.Body["categories"].([]any)[0].(map[string]any)["total"].(map[string]any)
 	want(sum(f, cols...), "0.00", "14400.00", "0.00", "14400.00", "0.00", "1200.00", "0.00", "1200.00", "13200.00")
+}
+
+// A computer elected under section 19A(2) claims its whole cost in the year of assessment of its purchase, and an asset sold whole takes no allowance in the year of its sale but a
+// balancing allowance or charge (FR-FA-04, rev 0.603; IRAS, "Calculating BA/ BC"): a S$3,000 computer sold for S$200 in the year it was bought has a written down value of 3,000 and a
+// balancing allowance of 2,800; a S$1,200 asset on the three-year write-off, written off, has one of 1,200; a computer kept claims its 1,600. The totals say the year's allowance
+// and its balancing allowance, and the sale shows its day and net proceeds.
+// req: FR-FA-04
+func TestASoldAssetHasItsBalancingAllowanceAndAComputerClaimsItsCostInOneYear(t *testing.T) {
+	e := newEnv(t)
+	e.booksFrom()
+	e.disposalBooks()
+	bank := e.chartMoneyAccount()
+	accountant := e.as(authz.Accountant)
+	elect := func(id, tag, method string) {
+		t.Helper()
+		if r := e.call(http.MethodPost, "/v1/fixed-assets/"+id+"/change", accountant, map[string]any{"tax_election": map[string]any{"method": method}}, "If-Match", tag); r.Status != http.StatusOK {
+			t.Fatalf("electing %s = %d: %s", method, r.Status, r.Raw)
+		}
+	}
+	sold, soldTag := e.registered("3000.00")
+	elect(sold, soldTag, "s19a2")
+	off, offTag := e.registered("1200.00")
+	elect(off, offTag, "s19a1")
+	kept, keptTag := e.registered("1600.00")
+	elect(kept, keptTag, "s19a2")
+	tagOf := func(id string) string {
+		return e.call(http.MethodGet, "/v1/fixed-assets/"+id, accountant, nil).Header.Get("ETag")
+	}
+	if r := e.call(http.MethodPost, "/v1/fixed-assets/"+sold+"/disposals", accountant, map[string]any{"date": "2026-10-15", "proceeds": "money", "money_account_id": bank.ID.String(),
+		"amount": sgd("200.00")}, "If-Match", tagOf(sold)); r.Status != http.StatusCreated {
+		t.Fatalf("the sale = %d: %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, "/v1/fixed-assets/"+off+"/disposals", accountant, map[string]any{"date": "2026-10-15", "proceeds": "none"}, "If-Match", tagOf(off)); r.Status != http.StatusCreated {
+		t.Fatalf("the write-off = %d: %s", r.Status, r.Raw)
+	}
+	s := e.call(http.MethodGet, "/v1/reports/capital-allowances?ya=2027", e.as(authz.Auditor), nil)
+	rows, _ := s.Body["rows"].([]any)
+	if s.Status != http.StatusOK || len(rows) != 3 || len(s.Body["apart"].([]any)) != 0 {
+		t.Fatalf("YA 2027 = %d: %s", s.Status, s.Raw)
+	}
+	amount := func(m map[string]any, field string) string {
+		if x, ok := m[field].(map[string]any); ok {
+			return x["amount"].(string)
+		}
+		return ""
+	}
+	byID := map[string]map[string]any{}
+	for _, x := range rows {
+		byID[x.(map[string]any)["asset_id"].(string)] = x.(map[string]any)
+	}
+	if r := byID[sold]; r["sold_on"] != "2026-10-15" || amount(r, "proceeds") != "200.00" || amount(r, "allowance") != "0.00" || amount(r, "brought_forward") != "3000.00" ||
+		amount(r, "balancing_allowance") != "2800.00" || amount(r, "balancing_charge") != "0.00" || r["method"] != "s19a2" {
+		t.Errorf("the computer sold: %v", r)
+	}
+	if r := byID[off]; amount(r, "proceeds") != "0.00" || amount(r, "balancing_allowance") != "1200.00" || amount(r, "allowance") != "0.00" {
+		t.Errorf("the asset written off: %v", r)
+	}
+	if r := byID[kept]; r["sold_on"] != nil || amount(r, "allowance") != "1600.00" || amount(r, "carried_forward") != "0.00" || r["balancing_allowance"] != nil {
+		t.Errorf("the computer kept: %v", r)
+	}
+	tot := s.Body["totals"].(map[string]any)
+	if amount(tot, "allowance") != "1600.00" || amount(tot, "balancing_allowance") != "4000.00" || amount(tot, "balancing_charge") != "0.00" {
+		t.Errorf("the totals: %v", tot)
+	}
+	// The year after the sale says nothing of the sold assets.
+	if n := e.call(http.MethodGet, "/v1/reports/capital-allowances?ya=2028", e.as(authz.Auditor), nil); len(n.Body["rows"].([]any)) != 0 {
+		t.Errorf("YA 2028: %s", n.Raw)
+	}
 }

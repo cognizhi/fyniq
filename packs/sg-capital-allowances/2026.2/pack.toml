@@ -1,0 +1,93 @@
+# sg-capital-allowances@2026.2 (2026.1 and the one-year write-off of computers and prescribed automation equipment under section 19A(2), and the balancing allowance and charge on a sale): the rules of the capital allowances a company claims on its fixed assets under sections 19, 19A(1) and 19A(10A) of the
+# Income Tax Act 1947 (PRD-001 FR-FA-04; ENG-30; p2-reporting-planning task 5.2).
+# Never edit this version once it is active anywhere: a correction is sg-capital-allowances@2026.3 (fyniq-sg-statutory).
+id = "sg-capital-allowances@2026.2"
+title = "Singapore capital allowances: sections 19, 19A(1), 19A(2) and 19A(10A), and the balancing allowance and charge on a sale"
+effective_from = "2026-01-01"
+review_date = "2027-03-31"
+verifier = "Claude Code against IRAS's page Capital Allowances, as its text came back on 20 Nov 2026 and again on 21 Nov 2026 (p2-reporting-planning); the tax agent's review is pending (FR-UX-41)"
+conditions = "an asset that qualifies for capital allowances (owned by the company and used for its trade or business), acquired in a basis period relating to YA 2023 or later and bought for cash, sold whole or kept; hire purchase (its principal payments are not recorded), the two-year write-off of section 19A(1E) (acquisitions of the basis periods of YA 2021, 2022 and 2024 only), deferred claims, tax written down value brought forward into a one-year write-off, a part disposal, the Section 24 election and a conversion to trading stock are not worked by this version [accountant to confirm]; that an asset is a computer or prescribed automation equipment is the company's election for it [accountant to confirm]; whether the year of a sale takes an annual allowance as well as the balancing allowance or charge is not on IRAS's page, and none is given [accountant to confirm]"
+
+[[sources]]
+id = "iras-s19"
+title = "IRAS: Capital Allowances"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/income-deductions-for-companies/claiming-allowances/capital-allowances"
+section = "Write-Off Over the Prescribed Working Life of the Asset (Section 19): the initial and annual allowance"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "IA = 20% x the cost of asset; AA = (80% x the cost of asset)/ number of years of working life"
+
+[[sources]]
+id = "iras-wl"
+title = "IRAS: Capital Allowances"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/income-deductions-for-companies/claiming-allowances/capital-allowances"
+section = "Write-Off Over the Prescribed Working Life of the Asset (Section 19): the working lives a company may elect"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "the prescribed working life of the assets in the Sixth Schedule has been streamlined to 6, 12 and 16 years: If the prescribed working life of the asset in the Sixth Schedule is 12 years or less, your company may make an irrevocable election to claim capital allowances over either 6 or 12 years. If the prescribed working life of the asset in the Sixth Schedule is 16 years, your company may make an irrevocable election to claim capital allowances over 6, 12 or 16 years. The above change applies to assets acquired in the basis periods relating to YA 2023 and subsequent YAs."
+
+[[sources]]
+id = "iras-s19a1"
+title = "IRAS: Capital Allowances"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/income-deductions-for-companies/claiming-allowances/capital-allowances"
+section = "Write-Off Over 3 Years [Section 19A(1)]"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "Under the 3-year write-off, capital allowance is given in the form of annual allowance (AA) where: For assets purchased with cash: AA for each year = 1/3 of the cost of asset"
+
+[[sources]]
+id = "iras-s19a10a"
+title = "IRAS: Capital Allowances"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/income-deductions-for-companies/claiming-allowances/capital-allowances"
+section = "Low-Value Assets [Section 19A(10A)]"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "The total claim for a 1-year write-off of all low-value assets must not exceed $30,000 per YA. A low-value asset is one that does not cost more than $5,000."
+
+[[sources]]
+id = "iras-s19a2"
+title = "IRAS: Capital Allowances"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/income-deductions-for-companies/claiming-allowances/capital-allowances"
+section = "100% Write-Off in 1 Year [Sections 19A(2) and 19A(10A)]: computers and prescribed automation equipment"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "Under Section 19A of the Income Tax Act 1947, assets that qualify for 100% write-off are: Computers [Section 19A(2)] Prescribed automation equipment [Section 19A(2)] Low-value assets [Section 19A(10A)] ... For assets purchased with cash: AA = 100% of the cost of the asset"
+
+[[sources]]
+id = "iras-ba-bc"
+title = "IRAS: Capital Allowances"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/income-deductions-for-companies/claiming-allowances/capital-allowances"
+section = "Sale/ Disposal/ Conversion/ Transfer of Fixed Assets: Calculating BA/ BC"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "Sale Proceeds - TWDV = BA or BC. Where the sale proceeds are lower than the TWDV, the difference is known as BA. BA is tax-deductible. Where the sale proceeds are higher than the TWDV, the difference is known as BC. BC is taxable as income. The amount of BC taxable is restricted to the total amount of capital allowances allowed previously in respect of the asset disposed."
+
+[[tables]]
+name = "rules"
+file = "rules.csv"
+description = "The percentages, years and limits of each method: s19_initial_percent and s19_annual_percent (of the cost, whole percents), s19a1_years, s19a10a_max_cost (the dearest asset, in Singapore dollars) and s19a10a_cap (the most claimed under it in a year of assessment); each applies from the year of assessment from_ya to to_ya (blank while current), for an asset acquired in the basis period of that YA"
+
+[[tables]]
+name = "working_life"
+file = "working_life.csv"
+description = "The working lives a company may elect under section 19 for each class of the Sixth Schedule's prescribed life: up_to_12 (a prescribed life of 12 years or less) and 16; elect_years lists the years, separated by a space, for assets acquired in the basis period of YA from_ya to to_ya (blank while current)"
+
+[[pinned]]
+name = "series"
+file = "pinned/series.csv"
+description = "Hand-pinned allowances for each year of assessment from the first, worked from iras-s19, iras-s19a1 and iras-s19a10a, not from rules.csv"
+
+[[pinned]]
+name = "lowvalue"
+file = "pinned/lowvalue.csv"
+description = "Hand-pinned choices of assets for the one-year write-off under the S$30,000 cap, worked from iras-s19a10a's own example"
+
+[[pinned]]
+name = "balancing"
+file = "pinned/balancing.csv"
+description = "Hand-pinned balancing allowances and charges on a sale, worked from iras-ba-bc's own example: the tax written down value is the cost less the allowances allowed before, the balancing allowance or charge is the difference to the sale proceeds, and a charge is at most the allowances allowed before"
+
+[[pinned]]
+name = "elections"
+file = "pinned/elections.csv"
+description = "Hand-pinned working lives a company may elect for a prescribed life, worked from iras-wl"

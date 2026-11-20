@@ -1,0 +1,5 @@
+case,ya,costs,want_taken,why,source
+CA-LOW-01,2027,1500.00;2000.00;4400.00;4400.00;4400.00;4400.00;4400.00;4400.00;4400.00,yyyyyyyyn,"IRAS's example: asset Y at 1,500 and asset Z's 2,000 written down value, then six of seven pieces of asset X at 4,400 come to 29,900, within 30,000; the seventh piece would make 34,300, so it is not claimed under section 19A(10A) in the year",iras-s19a10a
+CA-LOW-02,2027,5000.00;5000.00;5000.00;5000.00;5000.00;5000.00,yyyyyy,"six assets of exactly 5,000 come to exactly 30,000: the cap is met, not exceeded",iras-s19a10a
+CA-LOW-03,2027,5000.01;100.00,ny,"an asset that costs more than 5,000 is not a low-value asset, whatever the cap has left; the next asset that fits is taken",iras-s19a10a
+CA-LOW-04,2027,20000.00;5000.00;5000.00;5000.00;5000.00;5000.00,nyyyyy,"an asset over 5,000 is never taken; the five of 5,000 come to 25,000, within the cap",iras-s19a10a

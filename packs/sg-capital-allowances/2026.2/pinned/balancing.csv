@@ -1,0 +1,6 @@
+case,cost,twdv,proceeds,want,why,source
+CA-BA-01,3000.00,1000.00,200.00,BA 800.00,"IRAS's example: furniture bought for 3,000 with a tax written down value of 1,000 and sold for 200: proceeds lower than the TWDV, a balancing allowance of 800",iras-ba-bc
+CA-BC-01,2000.00,0.00,200.00,BC 200.00,"IRAS's example: a computer bought for 2,000, written off, sold for 200: proceeds above the TWDV of nothing, a balancing charge of 200 (within the 2,000 allowed before)",iras-ba-bc
+CA-BC-02,20000.00,13333.33,21000.00,BC 6666.67,"IRAS's example: a van bought for 20,000 with a TWDV of 13,333.33 (IRAS rounds to 13,333) sold for 21,000: proceeds exceed the TWDV by 7,666.67 but the charge is restricted to the 6,666.67 allowed before (IRAS: 6,667)",iras-ba-bc
+CA-BC-03,5000.00,5000.00,5000.00,BA 0.00,"sold for exactly the tax written down value: neither an allowance nor a charge",iras-ba-bc
+CA-BC-04,5000.00,5000.00,9000.00,BA 0.00,"sold in the year it was bought for more than it cost: nothing was allowed before, so the charge, restricted to the allowances allowed before, is nothing",iras-ba-bc

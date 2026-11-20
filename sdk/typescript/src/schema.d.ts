@@ -28676,7 +28676,7 @@ export interface components {
             cost: components["schemas"]["Money"];
             /**
              * @description What to do.
-             * @example Elect a method on the asset: section 19, 19A(1) or 19A(10A)
+             * @example Elect a method on the asset: section 19, 19A(1), 19A(2) or 19A(10A)
              */
             fix: string;
             /**
@@ -28696,7 +28696,7 @@ export interface components {
              */
             purchased_on: string;
             /**
-             * @description Why it is listed apart: no_election, the company has not elected a method; before_pack, acquired in a basis period before YA 2023; disposed, a disposal stands and its balancing allowance or charge is the tax agent's; over_cap, elected under section 19A(10A) but over S$5,000 or past the year's S$30,000; bad_life, a working life the prescribed life does not allow; not_sgd, the base currency is not Singapore dollars.
+             * @description Why it is listed apart: no_election, the company has not elected a method; before_pack, acquired in a basis period before YA 2023; disposed, a disposal of part of the asset stands, or of one whose proceeds are not known, and its balancing allowance or charge is the tax agent's; over_cap, elected under section 19A(10A) but over S$5,000 or past the year's S$30,000; bad_life, a working life the prescribed life does not allow; not_sgd, the base currency is not Singapore dollars.
              * @example no_election
              * @enum {string}
              */
@@ -28713,6 +28713,10 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1
              */
             asset_id: string;
+            /** @description For the year of a sale: the tax written down value less the proceeds, when the proceeds are lower; tax deductible (IRAS). */
+            balancing_allowance?: components["schemas"]["Money"];
+            /** @description For the year of a sale: the proceeds less the tax written down value, when the proceeds are higher, at most the allowances allowed before; taxable (IRAS). */
+            balancing_charge?: components["schemas"]["Money"];
             /** @description The tax written down value brought forward: its cost less the allowances of the years before. */
             brought_forward: components["schemas"]["Money"];
             /** @description brought forward - allowance. */
@@ -28732,7 +28736,7 @@ export interface components {
              * @example s19a1
              * @enum {string}
              */
-            method: "s19" | "s19a1" | "s19a10a";
+            method: "s19" | "s19a1" | "s19a2" | "s19a10a";
             /**
              * @description Its name.
              * @example MacBook Pro 14, Wei Ling
@@ -28743,12 +28747,20 @@ export interface components {
              * @example FA-0001
              */
             number?: string;
+            /** @description For the year of a sale: the sale proceeds net of GST (nothing for a write-off). */
+            proceeds?: components["schemas"]["Money"];
             /**
              * Format: date
              * @description The day it was bought.
              * @example 2026-03-14
              */
             purchased_on: string;
+            /**
+             * Format: date
+             * @description For the year of a sale (rev 0.603): the day the whole asset was sold. No allowance is given in the year: brought forward is the tax written down value.
+             * @example 2028-09-01
+             */
+            sold_on?: string;
             /**
              * Format: int64
              * @description Section 19: the years elected.
@@ -28787,6 +28799,10 @@ export interface components {
             allowance: components["schemas"]["Money"];
             /** @description The sum of the annual allowances. */
             annual_allowance: components["schemas"]["Money"];
+            /** @description The sum of the balancing allowances of the year's sales (rev 0.603). */
+            balancing_allowance: components["schemas"]["Money"];
+            /** @description The sum of the balancing charges of the year's sales (rev 0.603). */
+            balancing_charge: components["schemas"]["Money"];
             /** @description The sum of the tax written down values brought forward. */
             brought_forward: components["schemas"]["Money"];
             /** @description The sum of the tax written down values carried forward. */
@@ -39458,11 +39474,11 @@ export interface components {
         };
         FixedAssetTaxElection: {
             /**
-             * @description s19: the initial allowance of 20% and annual allowances over a working life; s19a1: a third a year over 3 years; s19a10a: the whole cost in one year, for an asset of at most S$5,000 within S$30,000 a year of assessment. The pack sg-capital-allowances holds the values.
+             * @description s19: the initial allowance of 20% and annual allowances over a working life; s19a1: a third a year over 3 years; s19a2: the whole cost in one year for a computer or prescribed automation equipment, with no cap (rev 0.603); s19a10a: the whole cost in one year, for an asset of at most S$5,000 within S$30,000 a year of assessment. The pack sg-capital-allowances holds the values.
              * @example s19a1
              * @enum {string}
              */
-            method: "s19" | "s19a1" | "s19a10a";
+            method: "s19" | "s19a1" | "s19a2" | "s19a10a";
             /**
              * Format: int64
              * @description Section 19 only: the working life the Sixth Schedule of the Income Tax Act prescribes for the asset (12 or less, or 16): it decides which lives may be elected.

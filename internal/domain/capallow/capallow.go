@@ -1,5 +1,6 @@
 // Package capallow is the tax capital allowance schedule of the registered assets (PRD-001 FR-FA-04; p2-reporting-planning task 5.2 and design D11): for a year of assessment,
-// each asset's allowance under the method the company elected for it (section 19, 19A(1) or 19A(10A)), its tax written down value brought and carried forward, and the assets the
+// each asset's allowance under the method the company elected for it (section 19, 19A(1), 19A(2) or 19A(10A)), its tax written down value brought and carried forward, the
+// balancing allowance or charge of one sold in the year, and the assets the
 // schedule cannot place, listed apart with the reason and never guessed. The values come from the pack sg-capital-allowances and the sums are whole minor units; the schedule
 // is a pure function of the assets, the elections, the pack and the organisation's financial years, so every figure can be worked by hand (and the oracle's half does).
 package capallow
@@ -21,7 +22,7 @@ import (
 const (
 	ReasonNoElection = "no_election" // the company has not elected a method for it
 	ReasonBeforePack = "before_pack" // acquired in a basis period the pack's rules do not cover (before YA 2023)
-	ReasonDisposed   = "disposed"    // a disposal stands: the balancing allowance or charge is the tax agent's [accountant to confirm]
+	ReasonDisposed   = "disposed"    // a disposal of part of it stands, or one whose proceeds are not known: its balancing allowance or charge is the tax agent's [accountant to confirm]
 	ReasonOverCap    = "over_cap"    // elected under section 19A(10A) but above S$5,000, or past the S$30,000 of the year
 	ReasonBadLife    = "bad_life"    // the working life elected is not one the pack allows for the prescribed life
 	ReasonNotSGD     = "not_sgd"     // the base currency is not Singapore dollars, the pack's currency
@@ -36,6 +37,15 @@ type Asset struct {
 	Cost        money.Money
 	Election    *asset.TaxElection
 	Disposed    bool
+	// Disposal is the sale of the whole asset, with its proceeds net of GST in the base currency; nil for an asset not sold. An asset with Disposed set and no Disposal had
+	// a part of it disposed of, or has proceeds the schedule cannot read: it is listed apart.
+	Disposal *Disposal
+}
+
+// Disposal is the sale of a whole asset: its day and the proceeds, net of GST, in the base currency (a write-off is proceeds of nothing).
+type Disposal struct {
+	On       time.Time
+	Proceeds money.Money
 }
 
 // Row is one asset's line in a year of assessment.
@@ -49,6 +59,11 @@ type Row struct {
 	Annual    money.Money // the annual allowance (the whole of the year's allowance, but the initial allowance)
 	Allowance money.Money // Initial + Annual
 	CarriedFw money.Money // BroughtFw − Allowance
+	// Sold is the sale the row is the year of: no allowance is given in it (BroughtFw is the tax written down value, CarriedFw nothing), and the balancing allowance or charge is
+	// the proceeds' difference to it, a charge at most the allowances allowed before (pack.Balancing). Nil for any other row.
+	Sold            *Disposal
+	BalancingAllow  money.Money
+	BalancingCharge money.Money
 }
 
 // Apart is an asset the schedule lists apart, with why.
@@ -86,13 +101,15 @@ func YearOfAssessment(cal period.Calendar, day time.Time) int {
 func Work(v pack.Version, cal period.Calendar, base money.Currency, ya int, assets []Asset) (Schedule, error) {
 	out := Schedule{YA: ya, Pack: v.ID}
 	zero := money.Zero(base)
-	out.Totals = Row{BroughtFw: zero, Initial: zero, Annual: zero, Allowance: zero, CarriedFw: zero}
+	out.Totals = Row{BroughtFw: zero, Initial: zero, Annual: zero, Allowance: zero, CarriedFw: zero, BalancingAllow: zero, BalancingCharge: zero}
 	type claim struct {
 		a      Asset
 		method string
 		years  int
 		first  int
 		series []int64
+		sale   *Disposal
+		saleYA int
 	}
 	var claims []claim
 	minor := func(m money.Money) int64 { n, _ := m.Minor(); return n }
@@ -103,7 +120,7 @@ func Work(v pack.Version, cal period.Calendar, base money.Currency, ya int, asse
 		case base.Code != "SGD":
 			apart(ReasonNotSGD)
 			continue
-		case a.Disposed:
+		case a.Disposed && a.Disposal == nil:
 			apart(ReasonDisposed)
 			continue
 		case a.Election == nil:
@@ -131,12 +148,16 @@ func Work(v pack.Version, cal period.Calendar, base money.Currency, ya int, asse
 		if err != nil {
 			return Schedule{}, fmt.Errorf("%s: %w", a.Number, err)
 		}
-		claims = append(claims, claim{a: a, method: a.Election.Method, years: years, first: first, series: series})
+		c := claim{a: a, method: a.Election.Method, years: years, first: first, series: series}
+		if a.Disposal != nil {
+			c.sale, c.saleYA = a.Disposal, YearOfAssessment(cal, a.Disposal.On)
+		}
+		claims = append(claims, c)
 	}
 	// The one-year write-off of low-value assets, year by year: the cap takes whole assets in the order given.
 	byYA := map[int][]int{}
 	for i, c := range claims {
-		if c.method == asset.TaxS19A10A {
+		if c.method == asset.TaxS19A10A && !(c.sale != nil && c.saleYA <= c.first) { // one sold in the year it was bought is claimed nothing: it takes no part of the cap
 			byYA[c.first] = append(byYA[c.first], i)
 		}
 	}
@@ -159,7 +180,24 @@ func Work(v pack.Version, cal period.Calendar, base money.Currency, ya int, asse
 	}
 	for i, c := range claims {
 		k := ya - c.first
-		if dropped[i] || k < 0 || k >= len(c.series) {
+		if dropped[i] || k < 0 {
+			continue
+		}
+		if c.sale != nil && ya >= c.saleYA {
+			if ya > c.saleYA {
+				continue // sold in an earlier year: nothing more to say
+			}
+			row, err := soldRow(c.a, c.method, c.years, c.first, c.series, k, c.sale, base)
+			if err != nil {
+				return Schedule{}, err
+			}
+			out.Rows = append(out.Rows, row)
+			if err := out.Totals.add(row); err != nil {
+				return Schedule{}, err
+			}
+			continue
+		}
+		if k >= len(c.series) {
 			continue
 		}
 		var before int64
@@ -179,16 +217,10 @@ func Work(v pack.Version, cal period.Calendar, base money.Currency, ya int, asse
 			row.Initial = money.FromMinor(initial, base)
 			row.Annual = money.FromMinor(this-initial, base)
 		}
+		row.BalancingAllow, row.BalancingCharge = zero, zero
 		out.Rows = append(out.Rows, row)
-		for _, f := range []struct {
-			into *money.Money
-			x    money.Money
-		}{{&out.Totals.BroughtFw, row.BroughtFw}, {&out.Totals.Initial, row.Initial}, {&out.Totals.Annual, row.Annual}, {&out.Totals.Allowance, row.Allowance}, {&out.Totals.CarriedFw, row.CarriedFw}} {
-			s, err := f.into.Add(f.x)
-			if err != nil {
-				return Schedule{}, err
-			}
-			*f.into = s
+		if err := out.Totals.add(row); err != nil {
+			return Schedule{}, err
 		}
 	}
 	out.Apart = slices.DeleteFunc(out.Apart, func(x Apart) bool { return x.YA > ya }) // an asset first claimed in a later year has nothing to say yet
@@ -199,6 +231,38 @@ func Work(v pack.Version, cal period.Calendar, base money.Currency, ya int, asse
 		return compareString(a.Asset.Number, b.Asset.Number)
 	})
 	return out, nil
+}
+
+// add adds a row's columns to the totals.
+func (t *Row) add(row Row) error {
+	for _, f := range []struct {
+		into *money.Money
+		x    money.Money
+	}{{&t.BroughtFw, row.BroughtFw}, {&t.Initial, row.Initial}, {&t.Annual, row.Annual}, {&t.Allowance, row.Allowance}, {&t.CarriedFw, row.CarriedFw},
+		{&t.BalancingAllow, row.BalancingAllow}, {&t.BalancingCharge, row.BalancingCharge}} {
+		s, err := f.into.Add(f.x)
+		if err != nil {
+			return err
+		}
+		*f.into = s
+	}
+	return nil
+}
+
+// soldRow is the row of the year of assessment an asset was sold in: the tax written down value is the cost less the allowances of the years before (the first k years of
+// its series, all of them when it was written off already), no allowance is given in the year, and the balancing allowance or charge is pack.Balancing's.
+func soldRow(a Asset, method string, years, first int, series []int64, k int, sale *Disposal, base money.Currency) (Row, error) {
+	cost, _ := a.Cost.Minor()
+	var before int64
+	for _, x := range series[:min(max(k, 0), len(series))] {
+		before += x
+	}
+	twdv := cost - before
+	proceeds, _ := sale.Proceeds.Minor()
+	ba, bc := pack.Balancing(cost, twdv, proceeds)
+	zero := money.Zero(base)
+	return Row{Asset: a, Method: method, Years: years, FirstYA: first, BroughtFw: money.FromMinor(twdv, base), Initial: zero, Annual: zero, Allowance: zero, CarriedFw: zero,
+		Sold: sale, BalancingAllow: money.FromMinor(ba, base), BalancingCharge: money.FromMinor(bc, base)}, nil
 }
 
 func compareString(a, b string) int {
