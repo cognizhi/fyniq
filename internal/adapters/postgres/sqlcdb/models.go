@@ -3333,12 +3333,15 @@ type FyniqProjectMilestone struct {
 
 type FyniqProjectRevenueElection struct {
 	OrganisationID uuid.UUID
+	ID             uuid.UUID
 	ProjectID      uuid.UUID
 	Method         string
 	EstimatedCost  *string
 	Version        int32
 	SetBy          string
 	SetAt          time.Time
+	ExcludedCost   string
+	ExcludedReason *string
 }
 
 type FyniqProjectRevenueRun struct {

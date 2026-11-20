@@ -18,7 +18,7 @@ func (u *unitOfWork) ProjectRevenue() storage.ProjectRevenue { return projectRev
 type projectRevenue struct{ u *unitOfWork }
 
 func toElection(r sqlcdb.GetProjectRevenueElectionRow) storage.ProjectRevenueElection {
-	e := storage.ProjectRevenueElection{ProjectID: r.ProjectID, Method: r.Method, Version: int(r.Version), SetBy: r.SetBy, SetAt: r.SetAt}
+	e := storage.ProjectRevenueElection{ProjectID: r.ProjectID, Method: r.Method, ExcludedCost: storage.Decimal(r.ExcludedCost), ExcludedReason: r.ExcludedReason, Version: int(r.Version), SetBy: r.SetBy, SetAt: r.SetAt}
 	if r.EstimatedCost != "" {
 		d := storage.Decimal(r.EstimatedCost)
 		e.EstimatedCost = &d
@@ -55,7 +55,7 @@ func (p projectRevenue) Elections(ctx context.Context) ([]storage.ProjectRevenue
 	return out, nil
 }
 
-func (p projectRevenue) Elect(ctx context.Context, project uuid.UUID, version int, method string, estimated *storage.Decimal, at time.Time) (storage.ProjectRevenueElection, error) {
+func (p projectRevenue) Elect(ctx context.Context, project uuid.UUID, version int, method string, estimated *storage.Decimal, excluded storage.Decimal, reason string, at time.Time) (storage.ProjectRevenueElection, error) {
 	if err := p.u.check(); err != nil {
 		return storage.ProjectRevenueElection{}, err
 	}
@@ -67,7 +67,7 @@ func (p projectRevenue) Elect(ctx context.Context, project uuid.UUID, version in
 	var out storage.ProjectRevenueElection
 	var oldMethod any
 	if version == 0 {
-		r, err := p.u.q.InsertProjectRevenueElection(ctx, sqlcdb.InsertProjectRevenueElectionParams{ProjectID: project, Method: method, EstimatedCost: est, SetBy: p.u.actor(ctx), SetAt: at})
+		r, err := p.u.q.InsertProjectRevenueElection(ctx, sqlcdb.InsertProjectRevenueElectionParams{ProjectID: project, Method: method, EstimatedCost: est, ExcludedCost: string(excluded), ExcludedReason: optStr(reason), SetBy: p.u.actor(ctx), SetAt: at})
 		if err != nil {
 			return storage.ProjectRevenueElection{}, mapError(err)
 		}
@@ -78,7 +78,7 @@ func (p projectRevenue) Elect(ctx context.Context, project uuid.UUID, version in
 			return storage.ProjectRevenueElection{}, err
 		}
 		oldMethod = old.Method
-		r, err := p.u.q.UpdateProjectRevenueElection(ctx, sqlcdb.UpdateProjectRevenueElectionParams{ProjectID: project, Version: int32(version), Method: method, EstimatedCost: est, SetBy: p.u.actor(ctx), SetAt: at})
+		r, err := p.u.q.UpdateProjectRevenueElection(ctx, sqlcdb.UpdateProjectRevenueElectionParams{ProjectID: project, Version: int32(version), Method: method, EstimatedCost: est, ExcludedCost: string(excluded), ExcludedReason: optStr(reason), SetBy: p.u.actor(ctx), SetAt: at})
 		if errors.Is(err, pgx.ErrNoRows) {
 			return storage.ProjectRevenueElection{}, &storage.Error{Code: storage.CodeVersion, Message: "the election was changed by someone else", Hint: "Reload it and try again"}
 		}
@@ -91,6 +91,10 @@ func (p projectRevenue) Elect(ctx context.Context, project uuid.UUID, version in
 	changes := map[string][2]any{"method": {oldMethod, out.Method}}
 	if out.EstimatedCost != nil {
 		changes["estimated_cost"] = [2]any{nil, string(*out.EstimatedCost)}
+	}
+	changes["excluded_cost"] = [2]any{nil, string(out.ExcludedCost)}
+	if out.ExcludedReason != "" {
+		changes["excluded_reason"] = [2]any{nil, out.ExcludedReason}
 	}
 	return out, p.u.event(ctx, "project_revenue_election.set", "project_revenue_election", project, &v, changes)
 }
@@ -131,4 +135,12 @@ func (p projectRevenue) Record(ctx context.Context, n storage.NewProjectRevenueR
 	out := toRun(r)
 	return out, p.u.event(ctx, "project_revenue_run.created", "project_revenue_run", out.ID, nil, map[string][2]any{"project_id": {nil, out.ProjectID.String()},
 		"month": {nil, out.Month.Format(time.DateOnly)}, "journal_id": {nil, out.JournalID.String()}, "adjustment": {nil, string(out.Adjustment)}, "earned": {nil, string(out.Earned)}})
+}
+
+// optStr is a text for a nullable column: nil when empty.
+func optStr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

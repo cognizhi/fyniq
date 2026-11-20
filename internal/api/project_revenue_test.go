@@ -115,6 +115,33 @@ func TestAFixedFeeProjectRecognisesRevenueOverTimeByAProposedJournal(t *testing.
 		amount("invoiced") != "400.00" || amount("held") != "400.00" || amount("adjustment") != "100.00" || amount("contract_asset") != "100.00" || amount("contract_liability") != "0.00" {
 		t.Fatalf("the month's figures: %d %s", g.Status, g.Raw)
 	}
+	// Costs that do not show progress are left out with their reason: 100.00 of the 300.00 posted leaves 200.00, a third of the estimate, so 333.33 is earned and the journal would book
+	// minus 66.67 against the 400.00 held. Without a reason, or with more than was posted, they are refused; and leaving none out puts the figures back.
+	tag := g.Header.Get("ETag")
+	reelect := func(body map[string]any) response { return elect(acc, body, tag) }
+	if r := reelect(map[string]any{"method": "over_time", "estimated_cost": "600.00", "excluded_cost": "100.00"}); r.Status != 422 || !strings.Contains(r.Raw, "excluded_reason") {
+		t.Errorf("costs left out with no reason: %d %s", r.Status, r.Raw)
+	}
+	left := reelect(map[string]any{"method": "over_time", "estimated_cost": "600.00", "excluded_cost": "100.00", "excluded_reason": "Rework of a drawing the customer had approved"})
+	if left.Status != 200 || left.str("election", "excluded_cost", "amount") != "100.00" {
+		t.Fatalf("leaving costs out: %d %s", left.Status, left.Raw)
+	}
+	cut := e.call(http.MethodGet, url+"?month=2026-10-01", acc, nil).Body["position"].(map[string]any)
+	cutAmount := func(k string) any { return cut[k].(map[string]any)["amount"] }
+	if cut["progress"] != "33.3" || cutAmount("costs_posted") != "300.00" || cutAmount("costs_left_out") != "100.00" || cutAmount("cost_to_date") != "200.00" || cutAmount("earned") != "333.33" || cutAmount("adjustment") != "-66.67" {
+		t.Errorf("with costs left out: %v", cut)
+	}
+	if r := elect(acc, map[string]any{"method": "over_time", "estimated_cost": "600.00", "excluded_cost": "400.00", "excluded_reason": "More than was spent"}, left.Header.Get("ETag")); r.Status != 200 {
+		t.Fatalf("electing with too much left out: %d %s", r.Status, r.Raw)
+	}
+	if bad := e.call(http.MethodGet, url+"?month=2026-10-01", acc, nil); !strings.Contains(bad.str("problem"), "are more than") || bad.Body["position"] != nil {
+		t.Errorf("more left out than posted: %s", bad.Raw)
+	}
+	back := elect(acc, map[string]any{"method": "over_time", "estimated_cost": "600.00"}, e.call(http.MethodGet, url, acc, nil).Header.Get("ETag"))
+	if back.Status != 200 || back.Body["election"].(map[string]any)["excluded_cost"] != nil {
+		t.Fatalf("leaving none out again: %d %s", back.Status, back.Raw)
+	}
+	el = back
 	// A month that has not begun, and one that is not a first day, are refused with their reason.
 	if f := e.call(http.MethodGet, url+"?month=2026-12-01", acc, nil); f.str("problem") == "" || f.Body["position"] != nil {
 		t.Errorf("a month that has not begun: %s", f.Raw)

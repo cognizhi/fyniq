@@ -1,0 +1,39 @@
+{
+  "id": "filedrop-local",
+  "name": "Statement files in a local folder (local mode)",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "Local mode only: reads a bank's statement files (MT940, camt.053, OFX) from a folder on this machine into Banking, read-only, as the SFTP connector reads a bank's folder. Never in a release.",
+  "scope": "organisation",
+  "capabilities": [
+    {
+      "kind": "bank-data",
+      "trigger": "system-rule",
+      "trigger_rule": "The sync schedule: the tick's hourly bank.sync.",
+      "on_pause": "hold",
+      "on_disable": "hold",
+      "in_flight": "finish"
+    }
+  ],
+  "configuration": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["folder"],
+    "properties": {
+      "folder": { "type": "string", "title": "Folder", "description": "A folder on this machine the statement files are in.", "minLength": 1, "maxLength": 500 },
+      "format": { "type": "string", "title": "File format", "description": "The format of the files.", "enum": ["mt940", "camt053", "ofx"], "default": "mt940" }
+    }
+  },
+  "secrets": [],
+  "provider_scopes": [],
+  "fyniq_scopes": [],
+  "data_classes": [],
+  "regions": ["SG"],
+  "destinations": [{ "host": "filedrop.localhost", "port": 22 }],
+  "webhooks": [],
+  "health_check": "Each feed's last sync and why it stopped.",
+  "test_action": "Lists the folder's files and the accounts their statements name.",
+  "local_substitute": "It is itself local mode's substitute for the bank's SFTP folder.",
+  "limits": { "requests_per_minute": 60, "breaker_failures": 5, "breaker_cooldown_seconds": 300 }
+}

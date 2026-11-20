@@ -18482,7 +18482,7 @@ export interface paths {
         };
         /**
          * Read the contracted MRR on a day
-         * @description The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Nothing is converted. Read-only.
+         * @description The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Each currency stays as it is; in_base is a separate figure, the totals converted into the base currency at the rates of the day (each total converted once, RND-FX) and labelled with each rate and its date, and any currency with no rate named in missing. Read-only.
          */
         get: operations["getContractedMRR"];
         put?: never;
@@ -31429,6 +31429,19 @@ export interface components {
             /** @description The monthly value of the contracts active that day. */
             mrr: components["schemas"]["Money"];
         };
+        ContractedMRRInBase: {
+            /**
+             * @description Currencies with no rate for the day, left out of mrr: while there are any, mrr is not the whole.
+             * @example [
+             *       "JPY"
+             *     ]
+             */
+            missing: string[];
+            /** @description The sum of each currency's total converted once into the base currency (RND-FX); only the currencies that have a rate. */
+            mrr: components["schemas"]["Money"];
+            /** @description The rate each currency was converted at, with its date: the rate of the day or the nearest the rate cascade found. */
+            rates: components["schemas"]["ContractedMRRRate"][];
+        };
         ContractedMRROutputBody: {
             /**
              * Format: date
@@ -31436,8 +31449,33 @@ export interface components {
              * @example 2026-10-31
              */
             as_at: string;
+            /** @description The totals converted into the base currency at the rates of the day, as a separate figure; absent when no contract is active. */
+            in_base?: components["schemas"]["ContractedMRRInBase"];
             /** @description The monthly value of the contracts active that day, by currency (contracted MRR, FR-KPI-02); nothing is converted. */
             totals: components["schemas"]["ContractedMRR"][];
+        };
+        ContractedMRRRate: {
+            /**
+             * @description The currency converted.
+             * @example USD
+             */
+            currency: string;
+            /**
+             * @description Base currency per one unit of the currency.
+             * @example 1.3472
+             */
+            rate: string;
+            /**
+             * Format: date
+             * @description The date the rate is of.
+             * @example 2026-10-30
+             */
+            rate_date: string;
+            /**
+             * @description Where the rate came from.
+             * @example MAS daily feed of 2026-10-30
+             */
+            source: string;
         };
         Control: {
             /**
@@ -53163,6 +53201,13 @@ export interface components {
         ProjectRevenueElection: {
             /** @description The estimated total cost of the project, in its currency; set for over_time. */
             estimated_cost?: components["schemas"]["Money"];
+            /** @description The running total of the project's posted costs left out of its progress because they do not show it (SFRS(I) 15 B19), with its reason; absent when none. */
+            excluded_cost?: components["schemas"]["Money"];
+            /**
+             * @description Why they are left out.
+             * @example Rework of a drawing the customer had already approved
+             */
+            excluded_reason?: string;
             /**
              * @description milestone: revenue is recognised as each milestone is invoiced (the default); over_time: by cost-to-cost progress, through a monthly journal proposed for approval.
              * @example over_time
@@ -53183,8 +53228,12 @@ export interface components {
             contract_asset: components["schemas"]["Money"];
             /** @description The contract liability after the journal: invoiced and not yet earned. */
             contract_liability: components["schemas"]["Money"];
-            /** @description The project's costs posted to the end of the month (direct and payroll-tagged), the input of cost-to-cost progress. */
+            /** @description What progress is measured by: the project's costs posted to the end of the month (direct and payroll-tagged) less those left out as not showing progress. */
             cost_to_date: components["schemas"]["Money"];
+            /** @description The part of them the accountant left out of progress, with the reason on the election. */
+            costs_left_out: components["schemas"]["Money"];
+            /** @description The project's costs posted to the end of the month, before any are left out. */
+            costs_posted: components["schemas"]["Money"];
             /** @description The revenue earned to date: RND-RECOGNISE of the fee by progress. */
             earned: components["schemas"]["Money"];
             /** @description The estimated total cost. */
@@ -58150,6 +58199,16 @@ export interface components {
              * @example 6000.00
              */
             estimated_cost?: string;
+            /**
+             * @description The running total of the project's posted costs to leave out of its progress because they do not show it (waste, rework, a cost out of proportion to the work: SFRS(I) 15 B19); over_time only, with excluded_reason; left out for none.
+             * @example 250.00
+             */
+            excluded_cost?: string;
+            /**
+             * @description Why those costs do not show progress; needed with excluded_cost above nothing.
+             * @example Rework of a drawing the customer had already approved
+             */
+            excluded_reason?: string;
             /**
              * @description How the project recognises its revenue.
              * @example over_time

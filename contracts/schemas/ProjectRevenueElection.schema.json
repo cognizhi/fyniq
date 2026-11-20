@@ -6,6 +6,17 @@
       "$ref": "Money.schema.json",
       "description": "The estimated total cost of the project, in its currency; set for over_time."
     },
+    "excluded_cost": {
+      "$ref": "Money.schema.json",
+      "description": "The running total of the project's posted costs left out of its progress because they do not show it (SFRS(I) 15 B19), with its reason; absent when none."
+    },
+    "excluded_reason": {
+      "description": "Why they are left out.",
+      "examples": [
+        "Rework of a drawing the customer had already approved"
+      ],
+      "type": "string"
+    },
     "method": {
       "description": "milestone: revenue is recognised as each milestone is invoiced (the default); over_time: by cost-to-cost progress, through a monthly journal proposed for approval.",
       "enum": [

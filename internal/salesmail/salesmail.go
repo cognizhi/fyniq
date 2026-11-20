@@ -29,6 +29,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
 	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
+	orgsettings "github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/statement"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/outbox"
@@ -76,7 +77,7 @@ type Sending struct {
 	Subject  string
 	Body     string
 	FileName string
-	Applied  doctemplate.Applied // its content in the brand's accent when it is the platform's starter
+	Applied  doctemplate.Applied  // its content in the brand's accent when it is the platform's starter
 	Brand    storage.BrandVersion // the brand in force when the document was issued: its logo is the PDF's (FR-ORG-09)
 	PDF      []byte
 	SHA      string
@@ -233,6 +234,15 @@ func (s Sender) prepare(ctx context.Context, org, id uuid.UUID, what What, to st
 		}
 		if out.Subject, out.Body, err = render.Email(mail.Content, emailed); err != nil {
 			return err
+		}
+		// An invoice with a live payment link carries it: the link is read from the invoice's stored one, so no call to the provider is made while sending, and a link made
+		// afterwards goes with the next send (FR-AR-13, rev 0.575). An organisation can switch it off (invoices.payment_link_in_email); a reminder carries it as well.
+		if what == Invoice && out.DocType == doctemplate.Invoice {
+			if url, err := livePaymentLink(ctx, u, doc.ID, s.Clock.Now()); err != nil {
+				return err
+			} else if url != "" {
+				out.Body = strings.TrimRight(out.Body, "\n") + "\n\nYou can pay this invoice online: " + url + "\n"
+			}
 		}
 		if utf8.RuneCountInString(out.Subject) > 200 {
 			out.Subject = string([]rune(out.Subject)[:199]) + "…"
@@ -434,4 +444,27 @@ func (x Scheduled) RunAll(ctx context.Context, now time.Time) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// livePaymentLink is the URL of the invoice's live payment link at now, "" when it has none or the organisation does not put it in its emails: a link counts while it is
+// live and has not run out, and its URL is https (checked when it was stored).
+func livePaymentLink(ctx context.Context, u storage.UnitOfWork, invoice uuid.UUID, now time.Time) (string, error) {
+	def, _ := orgsettings.Lookup("invoices.payment_link_in_email")
+	changes, err := u.Settings().Changes(ctx, def.Key)
+	if err != nil {
+		return "", err
+	}
+	if orgsettings.On(def, changes, now).Value != "true" {
+		return "", nil
+	}
+	links, err := u.PaymentLinks().OfInvoice(ctx, invoice)
+	if err != nil {
+		return "", err
+	}
+	for _, l := range links { // newest first
+		if l.Status == "live" && l.URL != "" && (l.ExpiresAt == nil || l.ExpiresAt.After(now)) {
+			return l.URL, nil
+		}
+	}
+	return "", nil
 }

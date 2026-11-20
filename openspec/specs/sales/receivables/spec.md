@@ -561,6 +561,12 @@ Source: PRD-001 §8.5 · Priority S · Phase P2
 - **WHEN** an AI client or an MCP tool tries to create a payment link
 - **THEN** it has no such tool and the capability is never triggered by it
 
+#### Scenario: The email carries the stored live link (rev 0.578)
+- **GIVEN** an issued invoice with a live payment link stored for it
+- **WHEN** the invoice is emailed
+- **THEN** the email ends with a line giving the link, and the payment provider is asked for nothing while it is sent
+- **AND** an invoice with no link, a cancelled link or an expired link carries no such line, and an Owner can switch the line off
+
 ### Requirement: FR-AR-14 Customer portal
 The system SHALL offer a customer portal where a customer views and pays their invoices and downloads statements.
 

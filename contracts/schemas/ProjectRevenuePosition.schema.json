@@ -16,7 +16,15 @@
     },
     "cost_to_date": {
       "$ref": "Money.schema.json",
-      "description": "The project's costs posted to the end of the month (direct and payroll-tagged), the input of cost-to-cost progress."
+      "description": "What progress is measured by: the project's costs posted to the end of the month (direct and payroll-tagged) less those left out as not showing progress."
+    },
+    "costs_left_out": {
+      "$ref": "Money.schema.json",
+      "description": "The part of them the accountant left out of progress, with the reason on the election."
+    },
+    "costs_posted": {
+      "$ref": "Money.schema.json",
+      "description": "The project's costs posted to the end of the month, before any are left out."
     },
     "earned": {
       "$ref": "Money.schema.json",
@@ -64,6 +72,8 @@
     "fee",
     "estimated_cost",
     "cost_to_date",
+    "costs_posted",
+    "costs_left_out",
     "progress",
     "overrun",
     "earned",

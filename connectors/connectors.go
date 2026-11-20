@@ -6,6 +6,7 @@ package connectors
 import (
 	"github.com/cognizhi/fyniq/connectors/airwallex"
 	"github.com/cognizhi/fyniq/connectors/anthropic"
+	"github.com/cognizhi/fyniq/connectors/filedrop"
 	"github.com/cognizhi/fyniq/connectors/gemini"
 	"github.com/cognizhi/fyniq/connectors/hitpay"
 	"github.com/cognizhi/fyniq/connectors/openai"
@@ -19,7 +20,7 @@ import (
 )
 
 // bindings are the connectors compiled in.
-var bindings = []func() (connector.Binding, error){smtp.Binding, zeptomail.Binding, resend.Binding, wise.Binding, airwallex.Binding,
+var bindings = []func() (connector.Binding, error){smtp.Binding, zeptomail.Binding, resend.Binding, wise.Binding, airwallex.Binding, filedrop.Binding,
 	stripe.Binding, hitpay.Binding, anthropic.Binding, openai.Binding, gemini.Binding, compatible.Binding}
 
 // Catalogue is the release's catalogue, with local mode's substitutes when the local build passes them (never a

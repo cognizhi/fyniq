@@ -4,7 +4,7 @@ type: task
 title: Categorise and match the waiting bank lines
 summary: Accept, change or skip each waiting line's suggestion, run Reconcile now, and in Expert split, transfer, match or suspend lines
 sources:
-  - docs/user-guide/banking.md sha256:3a9112663e374a3fc4360d3c0f9cd8b13514f04bced020feb3eb6206c8170058
+  - docs/user-guide/banking.md sha256:bdc2177c8bb0f0a6ea043d0475036f8601fa128c0eeff0245f18f79ff8973159
 data_class: general
 taint: trusted
 status: draft

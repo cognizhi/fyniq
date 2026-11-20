@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/apd/v3"
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/cognizhi/fyniq/internal/authn"
@@ -22,6 +23,8 @@ import (
 type ProjectRevenueElection struct {
 	Method        string `json:"method" enum:"milestone,over_time" doc:"milestone: revenue is recognised as each milestone is invoiced (the default); over_time: by cost-to-cost progress, through a monthly journal proposed for approval." example:"over_time"`
 	EstimatedCost *Money `json:"estimated_cost,omitempty" doc:"The estimated total cost of the project, in its currency; set for over_time."`
+	ExcludedCost  *Money `json:"excluded_cost,omitempty" doc:"The running total of the project's posted costs left out of its progress because they do not show it (SFRS(I) 15 B19), with its reason; absent when none."`
+	ExcludedWhy   string `json:"excluded_reason,omitempty" doc:"Why they are left out." example:"Rework of a drawing the customer had already approved"`
 	Version       int    `json:"version" doc:"The election's version, for If-Match; 0 when none was made." example:"1"`
 }
 
@@ -46,7 +49,9 @@ type ProjectRevenue struct {
 type ProjectRevenuePosition struct {
 	Fee         Money  `json:"fee" doc:"The fixed fee: the total of the project's milestones."`
 	Estimate    Money  `json:"estimated_cost" doc:"The estimated total cost."`
-	CostToDate  Money  `json:"cost_to_date" doc:"The project's costs posted to the end of the month (direct and payroll-tagged), the input of cost-to-cost progress."`
+	CostToDate  Money  `json:"cost_to_date" doc:"What progress is measured by: the project's costs posted to the end of the month (direct and payroll-tagged) less those left out as not showing progress."`
+	CostPosted  Money  `json:"costs_posted" doc:"The project's costs posted to the end of the month, before any are left out."`
+	CostLeftOut Money  `json:"costs_left_out" doc:"The part of them the accountant left out of progress, with the reason on the election."`
 	Progress    string `json:"progress" doc:"Cost to date over the estimate as a percentage, at most 100.0 (RND-PERCENT)." example:"50.0"`
 	Overrun     bool   `json:"overrun" doc:"The cost has reached the estimate: the whole fee is earned and the estimate needs revisiting." example:"false"`
 	Earned      Money  `json:"earned" doc:"The revenue earned to date: RND-RECOGNISE of the fee by progress."`
@@ -66,7 +71,16 @@ func electionOf(e storage.ProjectRevenueElection, currency string) ProjectRevenu
 		m := moneyOf(*e.EstimatedCost, currency)
 		out.EstimatedCost = &m
 	}
+	if string(e.ExcludedCost) != "" && !isZeroDecimal(e.ExcludedCost) {
+		m := moneyOf(e.ExcludedCost, currency)
+		out.ExcludedCost, out.ExcludedWhy = &m, e.ExcludedReason
+	}
 	return out
+}
+
+func isZeroDecimal(d storage.Decimal) bool {
+	v, _, err := apd.NewFromString(string(d))
+	return err == nil && v.IsZero()
 }
 
 func revenueRunsOf(rs []storage.ProjectRevenueRun, currency string) []ProjectRevenueRun {
@@ -96,6 +110,8 @@ type setProjectRevenueInput struct {
 	Body struct {
 		Method        string `json:"method" enum:"milestone,over_time" doc:"How the project recognises its revenue." example:"over_time"`
 		EstimatedCost string `json:"estimated_cost,omitempty" pattern:"^(0|[1-9][0-9]{0,15})(\\.[0-9]{1,4})?$" doc:"The estimated total cost in the project's currency, above nothing; needed for over_time." example:"6000.00"`
+		ExcludedCost  string `json:"excluded_cost,omitempty" pattern:"^(0|[1-9][0-9]{0,15})(\\.[0-9]{1,4})?$" doc:"The running total of the project's posted costs to leave out of its progress because they do not show it (waste, rework, a cost out of proportion to the work: SFRS(I) 15 B19); over_time only, with excluded_reason; left out for none." example:"250.00"`
+		ExcludedWhy   string `json:"excluded_reason,omitempty" maxLength:"500" doc:"Why those costs do not show progress; needed with excluded_cost above nothing." example:"Rework of a drawing the customer had already approved"`
 	}
 }
 
@@ -120,7 +136,7 @@ type projectRevenueRunOutput struct {
 
 func positionOf(r projectrevenue.Report) *ProjectRevenuePosition {
 	p := r.Position
-	return &ProjectRevenuePosition{Fee: revMoney(r.Fee), Estimate: revMoney(r.Estimate), CostToDate: revMoney(r.CostToDate), Progress: p.Progress, Overrun: p.Overrun, Earned: revMoney(p.Earned),
+	return &ProjectRevenuePosition{Fee: revMoney(r.Fee), Estimate: revMoney(r.Estimate), CostToDate: revMoney(r.CostToDate), CostPosted: revMoney(r.CostPosted), CostLeftOut: revMoney(r.Excluded), Progress: p.Progress, Overrun: p.Overrun, Earned: revMoney(p.Earned),
 		Invoiced: revMoney(r.Billed), Held: revMoney(r.Held), Adjustment: revMoney(p.Adjustment), Asset: revMoney(p.Asset), Liability: revMoney(p.Liability),
 		NothingToDo: p.AssetChange.IsZero() && p.LiabilityChange.IsZero()}
 }
@@ -238,11 +254,28 @@ func registerProjectRevenue(a *API) {
 					d := storage.Decimal(m.String())
 					est = &d
 				case storage.RevenueMilestone:
-					if strings.TrimSpace(in.Body.EstimatedCost) != "" {
+					if strings.TrimSpace(in.Body.EstimatedCost) != "" || strings.TrimSpace(in.Body.ExcludedCost) != "" {
 						return ProjectRevenue{}, invalid([]FieldProblem{{Code: projectrevenue.CodeEstimate, Field: "body.estimated_cost", Message: "belongs to revenue over time", Fix: "Leave it out for milestone"}})
 					}
 				default:
 					return ProjectRevenue{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.method", Message: "is milestone or over_time", Fix: "Choose one of them"}})
+				}
+				excluded, why := storage.Decimal("0"), ""
+				if txt := strings.TrimSpace(in.Body.ExcludedCost); txt != "" && in.Body.Method == storage.RevenueOverTime {
+					cur, err := money.Lookup(pr.Currency)
+					if err != nil {
+						return ProjectRevenue{}, err
+					}
+					m, err := money.Parse(txt, cur)
+					if err != nil || m.Sign() < 0 {
+						return ProjectRevenue{}, invalid([]FieldProblem{{Code: projectrevenue.CodeEstimate, Field: "body.excluded_cost", Message: "is not an amount of zero or more in " + cur.Code, Fix: "Enter what to leave out, such as 250.00, or leave it out"}})
+					}
+					excluded = storage.Decimal(m.String())
+					if !m.IsZero() {
+						if why = strings.TrimSpace(in.Body.ExcludedWhy); why == "" {
+							return ProjectRevenue{}, invalid([]FieldProblem{{Code: projectrevenue.CodeEstimate, Field: "body.excluded_reason", Message: "is needed with costs left out of progress", Fix: "Say why those costs do not show progress"}})
+						}
+					}
 				}
 				version := 0
 				if cur, err := u.ProjectRevenue().Election(ctx, pid); err == nil {
@@ -253,7 +286,7 @@ func registerProjectRevenue(a *API) {
 				} else if err != ports.ErrNotFound {
 					return ProjectRevenue{}, err
 				}
-				el, err := u.ProjectRevenue().Elect(ctx, pid, version, in.Body.Method, est, a.deps.Clock.Now())
+				el, err := u.ProjectRevenue().Elect(ctx, pid, version, in.Body.Method, est, excluded, why, a.deps.Clock.Now())
 				if err != nil {
 					return ProjectRevenue{}, err
 				}

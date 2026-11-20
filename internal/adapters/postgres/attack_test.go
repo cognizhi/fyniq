@@ -462,6 +462,7 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"invoice_dispute.amount":                  func(t *testing.T, b porttest.Books, v string) error { return rawInvoiceDispute(t, b, v) },
 	"subscription_contract.mrr":               func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "contract", v) },
 	"project_revenue_election.estimated_cost": func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "election", v) },
+	"project_revenue_election.excluded_cost":  func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "excluded", v) },
 	"project_revenue_run.earned":              func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "earned", v) },
 	"project_revenue_run.adjustment":          func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "run", v) },
 	"subscription_amendment.mrr":              func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "amendment", v) },
@@ -1626,6 +1627,11 @@ func rawProjectRevenue(t *testing.T, b porttest.Books, kind, value string) error
 		if kind == "election" {
 			_, err := tx.Exec(ctx, `INSERT INTO fyniq.project_revenue_election (project_id, method, estimated_cost, set_by, set_at)
 VALUES ($1, 'over_time', $2::numeric, 'user:x', now())`, uuid.New(), value)
+			return err
+		}
+		if kind == "excluded" {
+			_, err := tx.Exec(ctx, `INSERT INTO fyniq.project_revenue_election (project_id, method, estimated_cost, excluded_cost, excluded_reason, set_by, set_at)
+VALUES ($1, 'over_time', 1, $2::numeric, 'why', 'user:x', now())`, uuid.New(), value)
 			return err
 		}
 		if kind == "earned" {

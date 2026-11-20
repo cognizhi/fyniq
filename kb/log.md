@@ -884,6 +884,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | compliance.invoicenow: the exclusion form and the contingency approval button
 
+## [2026-11-20] compile | compliance.gst: aliases for the GST rate question, so the newer tax pages do not outrank it
+
 ## [2026-11-20] compile | payroll-salary-payments.md -> kb (the BIC from the bank code)
 
 ## [2026-11-20] compile | payroll-salary-payments.md -> kb (payroll in the books)
@@ -897,3 +899,11 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | contacts.and-items: emailing the portal link (FR-AR-14)
 
 ## [2026-11-20] compile | payroll-salary-payments.md -> kb (who is away)
+
+## [2026-11-20] compile | banking.accounts: SFTP statement files (FR-BNK-17)
+
+## [2026-11-20] compile | sales.invoices: the contracted MRR in the base currency (FR-AR-15)
+
+## [2026-11-20] compile | sales.invoices, settings.organisation: the payment link in the invoice email (FR-AR-13)
+
+## [2026-11-20] compile | projects.billing: costs left out of a project's progress (FR-PRJ-11)

@@ -302,6 +302,11 @@ what is shown, never what a person may do.
   after its date.
 - A contact's own payment terms always win over these.
 
+## Payment link in the invoice email
+
+**Put an invoice's payment link in its email** (on unless changed) adds a line saying where to pay online to an invoice or reminder emailed while the invoice has a
+live payment link. The link is the one already stored; nothing is asked of the payment provider while an email is sent. See [Invoices](invoices.md).
+
 ## Bill reminders
 
 **Remind of bills due within** says how many days ahead the Inbox lists the bills to pay: 3 days unless

@@ -2601,12 +2601,15 @@ project_milestone | version | integer | not null | 1
 project_milestone | created_at | timestamp with time zone | not null | now()
 project_milestone | changed_at | timestamp with time zone | not null | now()
 project_revenue_election | organisation_id | uuid | not null | current_org()
+project_revenue_election | id | uuid | not null | uuidv7()
 project_revenue_election | project_id | uuid | not null | 
 project_revenue_election | method | text | not null | 
 project_revenue_election | estimated_cost | numeric(20,4) | null | 
 project_revenue_election | version | integer | not null | 1
 project_revenue_election | set_by | text | not null | 
 project_revenue_election | set_at | timestamp with time zone | not null | 
+project_revenue_election | excluded_cost | numeric(20,4) | not null | 0
+project_revenue_election | excluded_reason | text | null | 
 project_revenue_run | organisation_id | uuid | not null | current_org()
 project_revenue_run | id | uuid | not null | uuidv7()
 project_revenue_run | project_id | uuid | not null | 
@@ -7475,6 +7478,10 @@ project_milestone | project_milestone_version_positive | CHECK ((version >= 1))
 project_milestone | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 project_revenue_election | project_revenue_election_by_form | CHECK ((set_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 project_revenue_election | project_revenue_election_estimate_form | CHECK ((((method = 'over_time'::text) = (estimated_cost IS NOT NULL)) AND ((estimated_cost IS NULL) OR ((estimated_cost <> 'NaN'::numeric) AND (estimated_cost > (0)::numeric)))))
+project_revenue_election | project_revenue_election_excluded_cost_not_null | NOT NULL excluded_cost
+project_revenue_election | project_revenue_election_excluded_form | CHECK (((excluded_cost <> 'NaN'::numeric) AND (excluded_cost >= (0)::numeric) AND ((excluded_cost = (0)::numeric) = (excluded_reason IS NULL)) AND ((excluded_reason IS NULL) OR ((length(excluded_reason) >= 1) AND (length(excluded_reason) <= 500)))))
+project_revenue_election | project_revenue_election_id_key | UNIQUE (organisation_id, id)
+project_revenue_election | project_revenue_election_id_not_null | NOT NULL id
 project_revenue_election | project_revenue_election_method_known | CHECK ((method = ANY (ARRAY['milestone'::text, 'over_time'::text])))
 project_revenue_election | project_revenue_election_method_not_null | NOT NULL method
 project_revenue_election | project_revenue_election_organisation_id_not_null | NOT NULL organisation_id
@@ -9290,6 +9297,7 @@ CREATE UNIQUE INDEX project_member_person_key ON fyniq.project_member USING btre
 CREATE UNIQUE INDEX project_member_pkey ON fyniq.project_member USING btree (organisation_id, id)
 CREATE UNIQUE INDEX project_milestone_pkey ON fyniq.project_milestone USING btree (organisation_id, id)
 CREATE UNIQUE INDEX project_pkey ON fyniq.project USING btree (organisation_id, id)
+CREATE UNIQUE INDEX project_revenue_election_id_key ON fyniq.project_revenue_election USING btree (organisation_id, id)
 CREATE UNIQUE INDEX project_revenue_election_pkey ON fyniq.project_revenue_election USING btree (organisation_id, project_id)
 CREATE UNIQUE INDEX project_revenue_run_month ON fyniq.project_revenue_run USING btree (organisation_id, project_id, month)
 CREATE UNIQUE INDEX project_revenue_run_pkey ON fyniq.project_revenue_run USING btree (organisation_id, id)

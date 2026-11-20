@@ -5,6 +5,7 @@ package wiring
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	neturl "net/url"
 	"os"
@@ -13,11 +14,13 @@ import (
 
 	"github.com/cognizhi/fyniq/connectors"
 	"github.com/cognizhi/fyniq/internal/adapters/clamav"
+	"github.com/cognizhi/fyniq/internal/adapters/filedrop"
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/adapters/smtp"
 	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/assistant"
+	"github.com/cognizhi/fyniq/internal/bankfile"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/egress"
@@ -67,7 +70,11 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	if err != nil {
 		return nil, err
 	}
-	catalogue, err := connectors.Catalogue(scripted)
+	drop, err := localFileDrop()
+	if err != nil {
+		return nil, err
+	}
+	catalogue, err := connectors.Catalogue(scripted, drop)
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +156,21 @@ func scriptedModel() (connector.Binding, error) {
 	}
 	return connector.Binding{Manifest: m, Model: func(connector.Config) (ports.ModelProvider, error) {
 		return local.Scripted{Scripts: scripts}, nil
+	}}, nil
+}
+
+// localFileDrop is local mode's statement-folder connector: a directory on this machine in place of the bank's SFTP folder. Only the local build adds it to the catalogue (DEV-07).
+func localFileDrop() (connector.Binding, error) {
+	m, err := connector.Parse(local.FileDropManifest)
+	if err != nil {
+		return connector.Binding{}, err
+	}
+	return connector.Binding{Manifest: m, BankData: func(c connector.Config) (ports.BankData, error) {
+		folder := c.String("folder", "")
+		if folder == "" {
+			return nil, errors.New("the folder is not set: enter a folder on this machine")
+		}
+		return filedrop.Statements{Format: c.String("format", bankfile.FormatMT940), Drop: local.Directory{Root: folder}}, nil
 	}}, nil
 }
 
