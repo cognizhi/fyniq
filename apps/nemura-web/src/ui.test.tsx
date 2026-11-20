@@ -1851,7 +1851,7 @@ describe("raising and handling a concern", () => {
   });
 
   it("shows a handler the inquiry and lets them record, decide and pass on, and shows nothing to anyone else", async () => {
-    answer("GET /v1/grievances", { status: 200, body: { assigned: [{ id: g, filed_at: "2026-11-20T10:00:00Z", state: "open" }], unrouted: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9", filed_at: "2026-11-21T10:00:00Z", state: "unrouted" }] } });
+    answer("GET /v1/grievances", { status: 200, body: { assigned: [{ id: g, filed_at: "2026-11-20T10:00:00Z", state: "open" }], unrouted: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9", filed_at: "2026-11-21T10:00:00Z", state: "open", reason: "handler_left" }] } });
     answer(`GET /v1/grievances/${g}`, { status: 200, body: { id: g, filed_at: "2026-11-20T10:00:00Z", state: "open", complainant: "Nurul Aziz", summary: "A remark was made.", about: [{ person_id: "p", name: "Sam Seah" }], entries: [{ id: "e1", kind: "routing", body: "Filed and routed.", by: "Nurul Aziz", at: "2026-11-20T10:00:00Z" }] } });
     answer(`POST /v1/grievances/${g}/entries`, { status: 201, body: { done: true } });
     answer(`POST /v1/grievances/${g}/outcome`, { status: 200, body: { done: true } });
@@ -1859,7 +1859,8 @@ describe("raising and handling a concern", () => {
     answer("GET /v1/grievances/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9", { status: 200, body: { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea9", filed_at: "2026-11-21T10:00:00Z", state: "open", complainant: "Dev Rao", summary: "Waiting one.", about: [], entries: [] } });
     const { container } = render(<Grievances roles={["hr_admin"]} />);
     const { fireEvent } = await import("@testing-library/react");
-    fireEvent.click(await screen.findByRole("button", { name: "Open" }));
+    expect(await screen.findByText(/Waiting: its handler has left/)).toBeTruthy();
+    fireEvent.click((await screen.findAllByRole("button", { name: "Open" }))[0]!);
     expect(await screen.findByText("Nurul Aziz")).toBeTruthy();
     expect(screen.getByText(/Sam Seah/)).toBeTruthy();
     fireEvent.change(screen.getByLabelText("What to record"), { target: { value: "Spoke with the complainant." } });

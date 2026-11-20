@@ -43,6 +43,7 @@ export function Grievances({ roles }: { roles: readonly string[] }) {
     if (closes) setOpen(null);
     else await read(id);
   };
+  const handling = open !== null && open.state === "open" && assigned.some((row) => row.id === open.id); // a stranded grievance is read here but handled only once taken
   return (
     <Shell roles={roles} directory={team(roles)}>
       <main className="nm-shell__main" id="main">
@@ -72,7 +73,8 @@ export function Grievances({ roles }: { roles: readonly string[] }) {
                 <ul className="fy-stack fy-stack--1">
                   {waiting.map((g) => (
                     <li key={g.id} className="fy-row" style={{ gap: "var(--space-2)" }}>
-                      <span>{t("grievances.line", { filed: g.filed_at, state: t("concerns.state.unrouted") })}</span>
+                      <span>{t("grievances.line", { filed: g.filed_at, state: (g.reason === "handler_left" ? t("grievances.reason.handler_left") : t("grievances.reason.unrouted")) })}</span>
+                      <button className="fy-btn fy-btn--secondary" type="button" onClick={() => read(g.id)}>{t("grievances.open")}</button>
                       <button className="fy-btn fy-btn--primary" type="button" onClick={async () => done((await api.POST("/v1/grievances/{id}/taking", { params: { path: { id: g.id } } })).error, t("grievances.taken"), g.id)}>{t("grievances.take")}</button>
                     </li>
                   ))}
@@ -89,7 +91,7 @@ export function Grievances({ roles }: { roles: readonly string[] }) {
                 <ul className="fy-stack fy-stack--1">
                   {open.entries.map((e) => <li key={e.id}>{t("grievances.entry", { kind: t(`grievances.kind.${e.kind}`), by: e.by, at: e.at, body: e.body })}</li>)}
                 </ul>
-                {open.state === "open" && (
+                {handling && (
                   <>
                     <form className="fy-stack fy-stack--2" aria-labelledby="entry-h" onSubmit={async (ev) => { ev.preventDefault(); await done((await api.POST("/v1/grievances/{id}/entries", { params: { path: { id: open.id } }, body: { kind, note: text } })).error, t("grievances.recorded"), open.id); }}>
                       <h3 className="fy-h3" id="entry-h">{t("grievances.addEntry")}</h3>
