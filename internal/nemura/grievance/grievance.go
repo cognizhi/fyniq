@@ -31,6 +31,13 @@ const (
 	MaxPeople = 5
 )
 
+// RecordType is the grievances' record type in the retention report and the legal holds (NM-SEC-05).
+const RecordType = "grievances"
+
+// RetentionMonths is how long a decided grievance is kept, from the day its outcome is written: five years [owner to confirm]. The database refuses a deletion before it
+// (migration 000064); the company may keep longer (NM-PACK-04) and a legal hold keeps what it names. Complaints are kept to answer a later claim, and no official page sets a period.
+const RetentionMonths = 60
+
 // Findings are what a written outcome concludes.
 var Findings = []string{"substantiated", "partly_substantiated", "not_substantiated", "no_finding"}
 

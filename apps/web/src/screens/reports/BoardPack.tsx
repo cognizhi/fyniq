@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { FileDown, Plus, Save, Send } from "lucide-react";
+import { Archive, FileDown, Plus, Save, Send } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -38,6 +38,17 @@ export function BoardPack() {
     retry: false,
     queryFn: async () => {
       const r = await api.GET("/v1/board-packs/{id}", { params: { path: { id: openId } } });
+      if (r.error) throw r.error;
+      return r.data;
+    },
+  });
+  // keeping: where the published pack's PDF is as evidence (FR-RPT-06, rev 0.607): not kept, waiting for another person's approval, or kept.
+  const keeping = useQuery({
+    queryKey: ["board-pack-keeping", openId],
+    enabled: openId !== "" && pack.data?.status === "published",
+    retry: false,
+    queryFn: async () => {
+      const r = await api.GET("/v1/board-packs/{id}/pdf/keeping", { params: { path: { id: openId } } });
       if (r.error) throw r.error;
       return r.data;
     },
@@ -93,6 +104,16 @@ export function BoardPack() {
     a.download = data.file_name;
     a.click();
     URL.revokeObjectURL(url);
+  };
+  // keepPdf asks another person to approve keeping the PDF as evidence; it is kept only when they do.
+  const keepPdf = async () => {
+    if (!p) return;
+    setBusy(true);
+    const { data, error } = await api.POST("/v1/board-packs/{id}/pdf/keeping", { params: { path: { id: p.id } } });
+    setBusy(false);
+    if (error || !data) return setProblem(problemOf(error));
+    setProblem(null);
+    await client.invalidateQueries({ queryKey: ["board-pack-keeping"] });
   };
   const publish = async () => {
     if (!p) return;
@@ -178,6 +199,30 @@ export function BoardPack() {
                 <Button variant="secondary" onClick={downloadPdf} disabled={busy}>
                   <Icon of={FileDown} /> Download the PDF
                 </Button>
+              </div>
+            )}
+            {!draft && keeping.data && (
+              <div className="fy-row fy-row--wrap gap-3" data-testid="pack-keeping">
+                {keeping.data.state === "kept" ? (
+                  <p className="fy-small">
+                    <Icon of={Archive} /> The PDF is kept as evidence ({keeping.data.file_name}, SHA-256 {keeping.data.sha256?.slice(0, 12)}…){keeping.data.file_state === "final" ? ", committed and append-only" : ", being committed"}.
+                  </p>
+                ) : (
+                  <>
+                    <Button variant="secondary" onClick={keepPdf} disabled={busy}>
+                      <Icon of={Archive} /> Keep the PDF as evidence
+                    </Button>
+                    <p className="fy-small fy-muted">
+                      {keeping.data.state === "waiting" ? (
+                        <>
+                          Asked: it waits for another person to approve it. <Link to="/approvals">See Approvals</Link>. If it was refused or lapsed, ask again.
+                        </>
+                      ) : (
+                        "Another person who may approve it (in Founder mode, the other founder) must approve keeping it. Once kept, it cannot change."
+                      )}
+                    </p>
+                  </>
+                )}
               </div>
             )}
             {!draft && <p className="fy-small fy-muted">A published pack never changes. To correct it, start the pack of this month again: that is the next version.</p>}

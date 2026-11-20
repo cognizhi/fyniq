@@ -43,6 +43,8 @@ a person other than the one who published a draft they wrote only when the organ
 object `board_pack`); the default follows the engine's setting. A PDF is rendered from the published version by the render service
 and kept as evidence with its SHA-256.
 
+**Decided (rev 0.607, the owner away, `[owner to confirm]`):** the approval is on *keeping the PDF as evidence*, not on publishing. A published pack is readable by the board at once, as built, and the PDF a person asks to keep is approved by another Owner or Controller (in Founder mode, the other founder: the engine never lets a requester sign, FM-1), in every team mode, so "dual control on" is not a setting. Options: (a) approve keeping the PDF (built; no change to publishing; the evidence is two-person); (b) approve publishing when the organisation has dual control on (the pack waits for a second person before the board reads it; needs a setting and changes publishing, its tests and the investor flows). Recommendation: (a), with (b) added if the board must never read an unapproved pack.
+
 ## D5. Access-controlled links are sign-in pages
 
 The PRD's "access-controlled link" is a link to a page that needs the reader's own sign-in and role: a Board / investor viewer

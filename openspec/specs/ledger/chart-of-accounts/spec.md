@@ -199,6 +199,10 @@ Source: PRD-001 §8.2 · Priority S · Phase P2
 - **WHEN** a cost or usage file per customer and product is imported as an allocation key (for example a cloud or AI-model provider's export, with the FinOps FOCUS columns as the reference format)
 - **THEN** the file's billed total must equal the supplier's bill it explains, or the import is refused
 
+#### Scenario: Weights of the three keys (rev 0.608)
+- **WHEN** a shared cost is split by fixed percentages, by headcount or by usage
+- **THEN** the weights are whole numbers, the part the key cannot place is the last weight, and the split is by ALLOC-PRORATA so the parts and the unallocated amount add to the cost exactly
+
 #### Scenario: Unallocated line
 - **WHEN** the key cannot place part of a cost
 - **THEN** that part stays on an **unallocated** line

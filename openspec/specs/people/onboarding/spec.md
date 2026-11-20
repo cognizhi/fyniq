@@ -14,6 +14,15 @@ Source: PRD-002 §14 · Priority M · Phase P2
 - **WHEN** a joiner's start date is Mon 2 Nov 2026
 - **THEN** the plan's tasks are due relative to it, KETs within 14 days, by Mon 16 Nov
 
+#### Scenario: A template is copied, never edited (rev 0.65)
+- **GIVEN** a plan made from a template
+- **WHEN** the template is archived or a new one made
+- **THEN** the plan keeps its tasks and due dates, and a person has one plan
+
+#### Scenario: Each task is the person's it is for (rev 0.65)
+- **WHEN** the joiner, the line manager, IT or the people team reads the tasks
+- **THEN** each sees only the tasks that are theirs, decides each once, and only the people team skips one
+
 ### Requirement: NM-ONB-02 Accounts
 Every joiner who may claim expenses SHALL be invited to Fyniq with the Employee role only, by a person with the right to invite, from a task raised when the person is added (until onboarding plans exist) or listed when the link starts; Nemura SHALL never grant Fyniq roles itself.
 

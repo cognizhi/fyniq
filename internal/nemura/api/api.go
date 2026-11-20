@@ -162,6 +162,8 @@ type Deps struct {
 	LinkOps LinkOps
 	// Erasure is the erasure of a former employee's personal data (NM-SEC-08); nil: the deployment has none.
 	Erasure ErasureOps
+	// Plans is onboarding plans (NM-ONB-01); nil: the deployment has none.
+	Plans Plans
 	// Grievances is the confidential grievance channel (NM-SEC-06); nil: the deployment has none.
 	Grievances Grievances
 	// LetterVerify is the public look-up of an issued letter and the employee's withdrawal of it (NM-LTR-05); nil: the deployment has none.
@@ -205,6 +207,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerLetters()
 	a.registerSelfService()
 	a.registerOnboarding()
+	a.registerPlans()
 	a.registerPayroll()
 	a.registerLink()
 	a.registerLinkAdmin()

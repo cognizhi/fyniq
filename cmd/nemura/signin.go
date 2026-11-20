@@ -125,6 +125,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	d.RunLink = nemura.RunLinkService{Store: store, Clock: deps.Clock, Origin: origin, RPID: relyingPartyID(origin, getenv("NEMURA_RP_ID"))}
 	d.LinkOps = nemura.LinkOpsService{Store: store, Clock: deps.Clock}
 	d.LetterVerify = nemura.LetterVerifyService{Store: store, Clock: deps.Clock}                                          // the public look-up of an issued letter (NM-LTR-05)
+	d.Plans = nemura.PlanService{Store: store, Clock: deps.Clock}                                                         // onboarding plans (NM-ONB-01)
 	d.Grievances = nemura.GrievanceService{Store: store, Clock: deps.Clock}                                               // the confidential grievance channel (NM-SEC-06)
 	d.Erasure = nemura.ErasureOpsService{Store: store, Clock: deps.Clock}                                                 // asking and approving an erasure; the worker erases (NM-SEC-08)
 	d.Workspace = nemura.WorkspaceService{Store: store, FinanceOrigin: getenv("NEMURA_FYNIQ_WEB_ORIGIN")}                 // where the Finance | People switch leads; none: it does not show

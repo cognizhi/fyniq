@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | FR-INT-24 (inbound tasks from ticketing and other integrations), FR-INT-02 (client scopes); p2-api-third-parties task 2; Appendix D row "Tasks made by integrations" (rev 0.607) |
+| Feature and requirement IDs | FR-INT-24 (inbound tasks from ticketing and other integrations), FR-INT-02 (client scopes); p2-api-third-parties task 2; Appendix D row "Tasks made by integrations" (rev 0.609) |
 | Author, reviewer, date | Claude Code for the owner, 21 Nov 2026; second review waived before production (AGENTS.md), held with `needs-human-review` |
 | Data and its class | A task's title, detail, due date, link and the client's reference (internal; the client is told not to send personal data or amounts); the client's ID |
 | Who acts | An integration API client with the scope `fyniq.write.tasks` acting for a member holding C on the row (Owner, Administrator); people with V on the row read |

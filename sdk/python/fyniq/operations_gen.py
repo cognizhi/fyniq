@@ -69,6 +69,7 @@ OPERATIONS = {
     "getBillPayment": {"method": "GET", "path": "/v1/bill-payments/{payment_id}", "summary": "Get a payment of bills", "path_params": ["payment_id"], "query": [], "body": False, "scopes": ["fyniq.read.purchases", "fyniq.write.purchases"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBillsTemplate": {"method": "GET", "path": "/v1/imports/bills/template", "summary": "Get the template for bills and vendor credits, as drafts", "path_params": [], "query": ["format"], "body": False, "scopes": ["fyniq.read.purchases", "fyniq.write.purchases"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBoardPack": {"method": "GET", "path": "/v1/board-packs/{id}", "summary": "Get a board pack", "path_params": ["id"], "query": [], "body": False, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
+    "getBoardPackKeeping": {"method": "GET", "path": "/v1/board-packs/{id}/pdf/keeping", "summary": "See whether a board pack's PDF is kept as evidence", "path_params": ["id"], "query": [], "body": False, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBrand": {"method": "GET", "path": "/v1/organisation/brand", "summary": "Read the logo and brand", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales", "fyniq.write.tasks"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBrandFile": {"method": "GET", "path": "/v1/organisation/brand/files/{kind}", "summary": "Read a logo or icon file", "path_params": ["kind"], "query": ["version"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales", "fyniq.write.tasks"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBudget": {"method": "GET", "path": "/v1/budgets/{budget_id}", "summary": "Get a budget", "path_params": ["budget_id"], "query": [], "body": False, "scopes": ["fyniq.read.planning"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
@@ -616,6 +617,10 @@ class OperationsMixin:
     def get_board_pack(self, id, **options):
         """Get a board pack (GET /v1/board-packs/{id}; scopes fyniq.read.reports)."""
         return self.call("getBoardPack", [id], None, **options)
+
+    def get_board_pack_keeping(self, id, **options):
+        """See whether a board pack's PDF is kept as evidence (GET /v1/board-packs/{id}/pdf/keeping; scopes fyniq.read.reports)."""
+        return self.call("getBoardPackKeeping", [id], None, **options)
 
     def get_brand(self, **options):
         """Read the logo and brand (GET /v1/organisation/brand; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales, fyniq.write.tasks)."""

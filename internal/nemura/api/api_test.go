@@ -147,9 +147,9 @@ func (f fakeFeatures) List(context.Context, Session) (features.Switches, error) 
 		return features.Switches{}, nil
 	}
 	if errors.As(f.err, &l) { // a refusal of the leave service is not the feature switches'
-		return features.Switches{"leave": {State: features.On}}, nil
+		return features.Switches{"leave": {State: features.On}, "onboarding": {State: features.On}}, nil
 	}
-	return features.Switches{"leave": {State: features.On}}, f.err
+	return features.Switches{"leave": {State: features.On}, "onboarding": {State: features.On}}, f.err
 }
 func (f fakeFeatures) Set(context.Context, Session, string, string, string, []features.Arrangement) error {
 	return f.err
@@ -615,7 +615,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LetterVerify: fakeLetterVerify{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, Grievances: fakeGrievances{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Plans: fakePlans{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LetterVerify: fakeLetterVerify{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, Grievances: fakeGrievances{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -1413,6 +1413,29 @@ func (f fakeErasure) Decide(context.Context, Session, []authz.Role, uuid.UUID, b
 }
 func (f fakeErasure) List(context.Context, Session) ([]ErasureOrderView, error) {
 	return []ErasureOrderView{}, f.err
+}
+
+type fakePlans struct{ err error }
+
+func (f fakePlans) Templates(context.Context, Session) ([]PlanTemplate, error) {
+	return []PlanTemplate{}, f.err
+}
+func (f fakePlans) MakeTemplate(context.Context, Session, string, []PlanTemplateTask) (PlanTemplate, error) {
+	return PlanTemplate{Tasks: []PlanTemplateTask{}}, f.err
+}
+func (f fakePlans) ArchiveTemplate(context.Context, Session, uuid.UUID) error { return f.err }
+func (f fakePlans) Start(context.Context, Session, uuid.UUID, *uuid.UUID) (Plan, error) {
+	return Plan{Tasks: []PlanTask{}}, f.err
+}
+func (f fakePlans) List(context.Context, Session) ([]Plan, error) { return []Plan{}, f.err }
+func (f fakePlans) AddTask(context.Context, Session, uuid.UUID, PlanTaskInput) (PlanTask, error) {
+	return PlanTask{}, f.err
+}
+func (f fakePlans) Mine(context.Context, Session, []authz.Role) ([]PlanTask, error) {
+	return []PlanTask{}, f.err
+}
+func (f fakePlans) Decide(context.Context, Session, []authz.Role, uuid.UUID, string, string) error {
+	return f.err
 }
 
 type fakeGrievances struct{ err error }

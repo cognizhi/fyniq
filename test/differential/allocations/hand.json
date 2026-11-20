@@ -1,0 +1,294 @@
+[
+ {
+  "name": "a hundred dollars over three equal weights: the odd cent goes to the earliest",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "100.00",
+  "key": "weights",
+  "targets": [
+   "1",
+   "1",
+   "1"
+  ],
+  "want": {
+   "parts": [
+    "33.34",
+    "33.33",
+    "33.33"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "name": "40% and 35% leave 25% unallocated",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "1000.00",
+  "key": "percent",
+  "targets": [
+   "40",
+   "35"
+  ],
+  "want": {
+   "parts": [
+    "400.00",
+    "350.00"
+   ],
+   "unallocated": "250.00"
+  }
+ },
+ {
+  "name": "three targets and an equal unplaced weight share equally",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "100.00",
+  "key": "weights",
+  "targets": [
+   "1",
+   "1",
+   "1"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "25.00",
+    "25.00",
+    "25.00"
+   ],
+   "unallocated": "25.00"
+  }
+ },
+ {
+  "name": "a target with no weight gets nothing",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "10.00",
+  "key": "weights",
+  "targets": [
+   "1",
+   "2",
+   "0",
+   "7"
+  ],
+  "want": {
+   "parts": [
+    "1.00",
+    "2.00",
+    "0.00",
+    "7.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "name": "a credit splits as the debit does, mirrored",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "-100.00",
+  "key": "weights",
+  "targets": [
+   "1",
+   "1",
+   "1"
+  ],
+  "want": {
+   "parts": [
+    "-33.34",
+    "-33.33",
+    "-33.33"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "name": "yen have no minor unit",
+  "currency": "JPY",
+  "minor_units": 0,
+  "amount": "100",
+  "key": "weights",
+  "targets": [
+   "1",
+   "1",
+   "1"
+  ],
+  "want": {
+   "parts": [
+    "34",
+    "33",
+    "33"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "name": "dinar have three decimals",
+  "currency": "KWD",
+  "minor_units": 3,
+  "amount": "1.000",
+  "key": "weights",
+  "targets": [
+   "1",
+   "1",
+   "1"
+  ],
+  "want": {
+   "parts": [
+    "0.334",
+    "0.333",
+    "0.333"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "name": "five cents over three: the two left go to the first two",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "0.05",
+  "key": "weights",
+  "targets": [
+   "1",
+   "1",
+   "1"
+  ],
+  "want": {
+   "parts": [
+    "0.02",
+    "0.02",
+    "0.01"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "name": "the larger remainder takes the unit left over, not the earlier part",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "0.04",
+  "key": "weights",
+  "targets": [
+   "1",
+   "2"
+  ],
+  "want": {
+   "parts": [
+    "0.01",
+    "0.03"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "name": "the unit can be left unallocated when its remainder is the largest",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "0.01",
+  "key": "weights",
+  "targets": [
+   "1",
+   "1"
+  ],
+  "unplaced": "2",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "0.01"
+  }
+ },
+ {
+  "name": "usage quantities weigh in millionths",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "1000.00",
+  "key": "quantity",
+  "targets": [
+   "1250",
+   "3.5",
+   "0.5"
+  ],
+  "want": {
+   "parts": [
+    "996.81",
+    "2.79",
+    "0.40"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "name": "usage the key could not place stays unallocated",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "1000.00",
+  "key": "quantity",
+  "targets": [
+   "500",
+   "300"
+  ],
+  "unplaced": "200",
+  "want": {
+   "parts": [
+    "500.00",
+    "300.00"
+   ],
+   "unallocated": "200.00"
+  }
+ },
+ {
+  "name": "headcount of two departments and people with none",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "2500.00",
+  "key": "weights",
+  "targets": [
+   "12",
+   "8"
+  ],
+  "unplaced": "5",
+  "want": {
+   "parts": [
+    "1200.00",
+    "800.00"
+   ],
+   "unallocated": "500.00"
+  }
+ },
+ {
+  "name": "percentages with a decimal: a tie of remainders goes to the earlier target",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "1.00",
+  "key": "percent",
+  "targets": [
+   "12.5",
+   "87.5"
+  ],
+  "want": {
+   "parts": [
+    "0.13",
+    "0.87"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "name": "a large amount keeps every unit",
+  "currency": "SGD",
+  "minor_units": 2,
+  "amount": "9999999999999999.99",
+  "key": "weights",
+  "targets": [
+   "1",
+   "2"
+  ],
+  "want": {
+   "parts": [
+    "3333333333333333.33",
+    "6666666666666666.66"
+   ],
+   "unallocated": "0.00"
+  }
+ }
+]

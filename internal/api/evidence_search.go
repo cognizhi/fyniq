@@ -48,6 +48,7 @@ var EvidenceActivities = []EvidenceActivity{
 	{"gst_forecast", "GST forecasts", authz.GSTReturns, []storage.DocumentType{storage.DocumentGSTForecast}},
 	{"corporate", "The corporate profile", authz.CorporateProfile, []storage.DocumentType{storage.DocumentCorporateDetail, storage.DocumentCorporateOfficer,
 		storage.DocumentNomineeEntry, storage.DocumentStatementsApproval, storage.DocumentCorporateDocument}},
+	{"board_pack", "Board packs", authz.Reports, []storage.DocumentType{storage.DocumentBoardPackPDF}},
 }
 
 // ActivityKey names a kind of record an evidence search covers.
@@ -74,7 +75,7 @@ func activityOf(t storage.DocumentType) string {
 
 // EvidenceRecord is the record a file is attached to.
 type EvidenceRecord struct {
-	Activity string `json:"activity" enum:"bill,invoice,journal,bank,claim,vendor_bank_change,person_bank_change,founders,owner_succession,equity,filing,gst_forecast,corporate" doc:"The kind of record." example:"bill"`
+	Activity string `json:"activity" enum:"bill,invoice,journal,bank,claim,vendor_bank_change,person_bank_change,founders,owner_succession,equity,filing,gst_forecast,corporate,board_pack" doc:"The kind of record." example:"bill"`
 	Type     string `json:"type" doc:"The record's document type, such as bill or vendor_credit." example:"bill"`
 	ID       string `json:"id" format:"uuid" doc:"The record's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"`
 	Number   string `json:"number,omitempty" doc:"Its number, once it has one." example:"BILL-0012"`
@@ -99,7 +100,7 @@ type EvidenceFound struct {
 
 type searchEvidenceInput struct {
 	PageQuery
-	Activity     string `query:"activity" enum:"bill,invoice,journal,bank,claim,vendor_bank_change,person_bank_change,founders,owner_succession,equity,filing,gst_forecast,corporate" doc:"Only files on this kind of record; every kind you may see when left out." example:"bill"`
+	Activity     string `query:"activity" enum:"bill,invoice,journal,bank,claim,vendor_bank_change,person_bank_change,founders,owner_succession,equity,filing,gst_forecast,corporate,board_pack" doc:"Only files on this kind of record; every kind you may see when left out." example:"bill"`
 	EvidenceType string `query:"evidence_type" maxLength:"100" doc:"Only files whose evidence type contains this, case aside." example:"invoice"`
 	From         string `query:"from" format:"date" doc:"Only files on records dated on or after this day." example:"2026-10-01"`
 	To           string `query:"to" format:"date" doc:"Only files on records dated on or before this day." example:"2026-10-31"`
