@@ -1190,6 +1190,15 @@
     "status": "published"
   },
   {
+    "file": "webhooks.md",
+    "key": "settings.webhooks",
+    "roles": [
+      "owner",
+      "administrator"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "workbook-import.md",
     "key": "settings.import",
     "roles": [
