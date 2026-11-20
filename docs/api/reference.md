@@ -6784,6 +6784,33 @@ Stops a link working at once (FR-AR-06): whoever holds it then gets LINK-01. A l
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LINK-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/invoice-disputes/{dispute_id}/resolution`
+
+**Resolve a dispute or a promise to pay** (`resolveInvoiceDispute`)
+
+Ends an open dispute or promise with how it ended (FR-AR-08): the invoice's reminders then follow its customer's schedule again. A record is resolved once; a new one is recorded if the customer says something new. Idempotent with Idempotency-Key; Prefer: return=preview records nothing.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `dispute_id` (path, required): The record's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ResolveInvoiceDisputeInputBody`](../../contracts/schemas/ResolveInvoiceDisputeInputBody.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`InvoiceDispute`](../../contracts/schemas/InvoiceDispute.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `AR-DISPUTE-04` The invoice has an open record of that kind; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AR-DISPUTE-01` A dispute or promise is for an invoice with something open; `AR-DISPUTE-02` The disputed amount is not valid; `AR-DISPUTE-03` The promised day is not valid; `AR-DISPUTE-05` A reason or resolution is needed.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `AR-DISPUTE-01`, `AR-DISPUTE-02`, `AR-DISPUTE-03`, `AR-DISPUTE-04`, `AR-DISPUTE-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/invoices`
 
 **List the invoices** (`listInvoices`)
@@ -6882,6 +6909,53 @@ Saves the draft's new content as its next version, recording who saved it; the e
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `INVOICE-01`, `INVOICE-02`, `INVOICE-04`, `INVOICE-08`, `INVOICE-09`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `MONEY-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/invoices/{invoice_id}/disputes`
+
+**Read an invoice's disputes and promises to pay** (`getInvoiceDisputes`)
+
+The invoice's disputes and promises, newest first, open or resolved (FR-AR-08). Read-only.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `invoice_id` (path, required): The invoice's ID.
+- **Responses:**
+  - `200` OK [`InvoiceDisputesOutputBody`](../../contracts/schemas/InvoiceDisputesOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/invoices/{invoice_id}/disputes`
+
+**Record a customer's dispute of an invoice, or their promise to pay** (`createInvoiceDispute`)
+
+Records that the customer disputes part of an issued invoice (an amount, at most what is open, and a reason), or promises to pay it on a day (from today to 90 days away) (FR-AR-08). An open dispute pauses the invoice's reminders until it is resolved; an open promise until its day has passed; AR ageing shows the disputed amounts apart. An invoice has at most one open dispute and one open promise. It posts nothing and changes nothing of the invoice. Idempotent with Idempotency-Key; Prefer: return=preview records nothing.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `invoice_id` (path, required): The invoice's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`CreateInvoiceDisputeInputBody`](../../contracts/schemas/CreateInvoiceDisputeInputBody.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`InvoiceDispute`](../../contracts/schemas/InvoiceDispute.schema.json)
+  - `201` Created [`InvoiceDispute`](../../contracts/schemas/InvoiceDispute.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `AR-DISPUTE-04` The invoice has an open record of that kind; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AR-DISPUTE-01` A dispute or promise is for an invoice with something open; `AR-DISPUTE-02` The disputed amount is not valid; `AR-DISPUTE-03` The promised day is not valid; `AR-DISPUTE-05` A reason or resolution is needed.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `AR-DISPUTE-01`, `AR-DISPUTE-02`, `AR-DISPUTE-03`, `AR-DISPUTE-04`, `AR-DISPUTE-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/invoices/{invoice_id}/document`
 

@@ -309,6 +309,9 @@ fyniq_api       EXECUTE   installation_connector_secrets()
 fyniq_api       EXECUTE   installation_connectors()
 fyniq_api       EXECUTE   installation_org()
 fyniq_api       EXECUTE   invite_super_admin()
+fyniq_api       INSERT    invoice_dispute (amount, created_at, created_by, currency, invoice_id, kind, promised_on, reason)
+fyniq_api       SELECT    invoice_dispute
+fyniq_api       UPDATE    invoice_dispute (resolution, resolved_at, resolved_by, status, version)
 fyniq_api       EXECUTE   is_owner()
 fyniq_api       EXECUTE   is_super_admin()
 fyniq_api       INSERT    item (code, description, gst_code, name, revenue_account_id, type, unit)
@@ -930,6 +933,7 @@ fyniq_readonly  SELECT    holding_movement
 fyniq_readonly  SELECT    idempotency_key
 fyniq_readonly  SELECT    inbound_file
 fyniq_readonly  SELECT    inbound_message
+fyniq_readonly  SELECT    invoice_dispute
 fyniq_readonly  SELECT    item
 fyniq_readonly  SELECT    item_price
 fyniq_readonly  SELECT    job_slots
@@ -1258,6 +1262,7 @@ fyniq_worker    EXECUTE   installation_changes()
 fyniq_worker    EXECUTE   installation_connector_secrets()
 fyniq_worker    EXECUTE   installation_connectors()
 fyniq_worker    EXECUTE   installation_org()
+fyniq_worker    SELECT    invoice_dispute
 fyniq_worker    SELECT    item
 fyniq_worker    SELECT    item_price
 fyniq_worker    SELECT    job_slots

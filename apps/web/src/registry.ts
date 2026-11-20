@@ -660,6 +660,8 @@ export const actions = [
   { kind: "action", id: "invoice.ask-approval", mode: "basic", help: "invoice.ask-approval", guide: "sales.invoices#invoices-above-the-self-approval-threshold" },
   { kind: "action", id: "contact.portal-link", mode: "basic", help: "contact.portal-link", guide: "contacts.manage#the-customer-portal" },
   { kind: "action", id: "contact.portal-revoke", mode: "basic", help: "contact.portal-revoke", guide: "contacts.manage#the-customer-portal" },
+  { kind: "action", id: "invoice.dispute", mode: "basic", help: "invoice.dispute", guide: "sales.invoices#a-disputed-invoice-or-a-promise-to-pay" },
+  { kind: "action", id: "invoice.dispute-resolve", mode: "basic", help: "invoice.dispute-resolve", guide: "sales.invoices#a-disputed-invoice-or-a-promise-to-pay" },
   { kind: "action", id: "invoice.payment-link", mode: "basic", help: "invoice.payment-link", guide: "sales.invoices#a-payment-link-on-an-invoice" },
   { kind: "action", id: "invoice.payment-link-cancel", mode: "expert", help: "invoice.payment-link-cancel", guide: "sales.invoices#a-payment-link-on-an-invoice" },
   { kind: "action", id: "invoice.email", mode: "basic", help: "invoice.email", guide: "sales.invoices#email-an-invoice" },

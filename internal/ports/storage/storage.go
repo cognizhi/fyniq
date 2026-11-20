@@ -108,6 +108,8 @@ type UnitOfWork interface {
 	PaymentLinks() PaymentLinks
 	// PortalLinks are the customer portal's links, one customer each (FR-AR-14).
 	PortalLinks() PortalLinks
+	// InvoiceDisputes are the disputes and promises to pay beside invoices (FR-AR-08).
+	InvoiceDisputes() InvoiceDisputes
 	Notifications() Notifications
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates

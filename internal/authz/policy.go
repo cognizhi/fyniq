@@ -1167,6 +1167,10 @@ var (
 	// the right to post. No AI or MCP route reaches them.
 	// The customer portal (FR-AR-14): a link is made, read and revoked under "Invoices" by a person with the right to post (reading: to view);
 	// the portal's own operations take a link's token, never a session, and are Public.
+	// A customer's dispute of an invoice, or promise to pay it (FR-AR-08): recorded and resolved under "Invoices" with the right to post.
+	CreateInvoiceDispute  = Policy{Operation: "createInvoiceDispute", Capability: Invoices, Need: Post}
+	GetInvoiceDisputes    = Policy{Operation: "getInvoiceDisputes", Capability: Invoices, Need: View}
+	ResolveInvoiceDispute = Policy{Operation: "resolveInvoiceDispute", Capability: Invoices, Need: Post}
 	CreatePortalLink       = Policy{Operation: "createPortalLink", Capability: Invoices, Need: Post}
 	GetContactPortalLinks  = Policy{Operation: "getContactPortalLinks", Capability: Invoices, Need: View}
 	RevokePortalLink       = Policy{Operation: "revokePortalLink", Capability: Invoices, Need: Post}
@@ -2154,7 +2158,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid, RequestBankRuleAutoApply,
-	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, SettleDisputeCredit, CreateInvoicePaymentLink, GetInvoicePaymentLink, CancelInvoicePaymentLink, CreatePortalLink, GetContactPortalLinks, RevokePortalLink, GetPortal, GetPortalInvoicePDF, GetPortalStatement, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
+	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, SettleDisputeCredit, CreateInvoicePaymentLink, GetInvoicePaymentLink, CancelInvoicePaymentLink, CreateInvoiceDispute, GetInvoiceDisputes, ResolveInvoiceDispute, CreatePortalLink, GetContactPortalLinks, RevokePortalLink, GetPortal, GetPortalInvoicePDF, GetPortalStatement, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
 	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
 	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
 	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,

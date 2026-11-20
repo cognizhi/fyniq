@@ -309,6 +309,13 @@ Source: PRD-001 §8.5 · Priority S · Phase P1 / P2 (disputes and promise-to-pa
 - **THEN** it brings the balance forward, lists each invoice, credit note, payment received, refund, write-off and void with a running balance, and shows the balance due with an ageing that adds up to it
 - **AND** one whose lines do not come to the balance due is never made; made, it is numbered ST-, kept as it said, never voided (FY204), and emailed with its PDF
 
+#### Scenario: A dispute or promise as built (rev 0.521)
+- **GIVEN** an overdue issued invoice that is due a reminder
+- **WHEN** a person records that the customer disputes 40.00 of it with a reason, or promises to pay on a day within 90 days
+- **THEN** its reminders are paused until the dispute is resolved, or the promised day has passed
+- **AND** AR ageing shows the disputed amount apart while its rows still count it
+- **AND** a dispute above what is open, one without a reason, a day in the past or a second open record of a kind is refused in words
+
 ### Requirement: FR-AR-09 Customer deposits and retainers
 The system SHALL record customer deposits and retainers and apply them to invoices.
 

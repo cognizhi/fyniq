@@ -132,6 +132,18 @@ still valid, the customer accepts it with their name, or declines it, with a com
 the decision. The link shows nothing else, works until it ends or is revoked, and the first time it is
 opened the invoice shows **Viewed**.
 
+## A disputed invoice or a promise to pay
+
+When a customer disputes part of an issued invoice, or promises to pay it on a day, record it on the invoice (an Accountant or an AR
+specialist): select **Record it** under **Dispute or promise to pay**.
+
+- A **dispute** has the amount in dispute (at most what is open) and why. Its reminders are paused until you **Resolve** it with how it
+  ended, such as "credit note issued"; AR ageing then shows the disputed part apart (the rows still count it).
+- A **promise** has the day the customer says they will pay, from today to 90 days away. Its reminders are paused until that day has
+  passed, or you resolve it sooner.
+- An invoice has at most one open dispute and one open promise, and a record is resolved once; record a new one if the customer says
+  something new. Nothing is posted: to correct the invoice itself, issue a credit note.
+
 ## The customer portal
 
 The customer's side of the portal, opened through the private link their supplier sent them (see **Contacts**, "The customer

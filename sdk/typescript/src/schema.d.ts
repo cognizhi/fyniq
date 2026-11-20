@@ -9905,6 +9905,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/invoice-disputes/{dispute_id}/resolution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a dispute or a promise to pay
+         * @description Ends an open dispute or promise with how it ended (FR-AR-08): the invoice's reminders then follow its customer's schedule again. A record is resolved once; a new one is recorded if the customer says something new. Idempotent with Idempotency-Key; Prefer: return=preview records nothing.
+         */
+        post: operations["resolveInvoiceDispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/invoices": {
         parameters: {
             query?: never;
@@ -9947,6 +9967,30 @@ export interface paths {
          */
         put: operations["replaceInvoice"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invoices/{invoice_id}/disputes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read an invoice's disputes and promises to pay
+         * @description The invoice's disputes and promises, newest first, open or resolved (FR-AR-08). Read-only.
+         */
+        get: operations["getInvoiceDisputes"];
+        put?: never;
+        /**
+         * Record a customer's dispute of an invoice, or their promise to pay
+         * @description Records that the customer disputes part of an issued invoice (an amount, at most what is open, and a reason), or promises to pay it on a day (from today to 90 days away) (FR-AR-08). An open dispute pauses the invoice's reminders until it is resolved; an open promise until its day has passed; AR ageing shows the disputed amounts apart. An invoice has at most one open dispute and one open promise. It posts nothing and changes nothing of the invoice. Idempotent with Idempotency-Key; Prefer: return=preview records nothing.
+         */
+        post: operations["createInvoiceDispute"];
         delete?: never;
         options?: never;
         head?: never;
@@ -31394,6 +31438,30 @@ export interface components {
             /** @description The active members a rate can be entered for, by name: the Payroll administrator may not read the members list, so it comes with the rates. */
             people: components["schemas"]["ProjectPerson"][];
         };
+        CreateInvoiceDisputeInputBody: {
+            /**
+             * @description A dispute's: the part of the invoice in dispute, at most what is open.
+             * @example 40.00
+             */
+            amount?: string;
+            /**
+             * @description dispute or promise.
+             * @example dispute
+             * @enum {string}
+             */
+            kind: "dispute" | "promise";
+            /**
+             * Format: date
+             * @description A promise's: the day, from today to 90 days away.
+             * @example 2026-12-05
+             */
+            promised_on?: string;
+            /**
+             * @description A dispute's: why the customer disputes it.
+             * @example The training was not delivered
+             */
+            reason?: string;
+        };
         CreatePaymentLinkInputBody: {
             /**
              * Format: uuid
@@ -40256,6 +40324,72 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa0
              */
             deposit_id: string;
+        };
+        InvoiceDispute: {
+            /** @description A dispute's: the part of the invoice in dispute. */
+            amount?: components["schemas"]["Money"];
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-11-20T09:30:00Z
+             */
+            created_at: string;
+            /**
+             * Format: uuid
+             * @description The record's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f95
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description The invoice.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+             */
+            invoice_id: string;
+            /**
+             * @description dispute: the customer disputes an amount; promise: they promise to pay on a day.
+             * @example dispute
+             * @enum {string}
+             */
+            kind: "dispute" | "promise";
+            /**
+             * Format: date
+             * @description A promise's: the day the customer says they will pay.
+             * @example 2026-12-05
+             */
+            promised_on?: string;
+            /**
+             * @description A dispute's: why.
+             * @example The training was not delivered
+             */
+            reason?: string;
+            /**
+             * @description How it ended, once resolved.
+             * @example Credit note issued for the training
+             */
+            resolution?: string;
+            /**
+             * Format: date-time
+             * @description When it was resolved.
+             * @example 2026-11-28T09:30:00Z
+             */
+            resolved_at?: string;
+            /**
+             * @description open pauses the invoice's reminders: a dispute until it is resolved, a promise until its day has passed.
+             * @example open
+             * @enum {string}
+             */
+            status: "open" | "resolved";
+            /**
+             * Format: int64
+             * @description Its version.
+             * @example 1
+             */
+            version: number;
+        };
+        InvoiceDisputesOutputBody: {
+            /** @description The invoice's disputes and promises, newest first. */
+            records: components["schemas"]["InvoiceDispute"][];
         };
         InvoiceDocument: {
             /**
@@ -51587,6 +51721,8 @@ export interface components {
             totals: components["schemas"]["ReceivablesRow"][];
         };
         ReceivablesCustomer: {
+            /** @description What of their open invoices they dispute (open disputes, FR-AR-08), a total per currency: the rows above include it, so what is undisputed is the rows less this. */
+            disputed: components["schemas"]["Money"][];
             /**
              * Format: uuid
              * @description The customer's contact ID.
@@ -52456,6 +52592,13 @@ export interface components {
             /**
              * @description How it was resolved: the statement imported, or why there is none.
              * @example The bank's statement for 16–17 Oct imported
+             */
+            resolution: string;
+        };
+        ResolveInvoiceDisputeInputBody: {
+            /**
+             * @description How it ended.
+             * @example Credit note issued for the training
              */
             resolution: string;
         };
@@ -136597,6 +136740,150 @@ export interface operations {
             };
         };
     };
+    resolveInvoiceDispute: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The record's ID. */
+                dispute_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveInvoiceDisputeInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDispute"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `AR-DISPUTE-04` The invoice has an open record of that kind; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AR-DISPUTE-01` A dispute or promise is for an invoice with something open; `AR-DISPUTE-02` The disputed amount is not valid; `AR-DISPUTE-03` The promised day is not valid; `AR-DISPUTE-05` A reason or resolution is needed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listInvoices: {
         parameters: {
             query?: {
@@ -137053,6 +137340,250 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getInvoiceDisputes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The invoice's ID. */
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDisputesOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createInvoiceDispute: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The invoice's ID. */
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInvoiceDisputeInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDispute"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDispute"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `AR-DISPUTE-04` The invoice has an open record of that kind; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AR-DISPUTE-01` A dispute or promise is for an invoice with something open; `AR-DISPUTE-02` The disputed amount is not valid; `AR-DISPUTE-03` The promised day is not valid; `AR-DISPUTE-05` A reason or resolution is needed. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

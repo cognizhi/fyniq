@@ -2115,6 +2115,14 @@
       "label": "Issue",
       "tooltip": "Number it and post it to the ledger on its date: it adds its total to what the customer owes."
     },
+    "invoice.dispute": {
+      "label": "Record it",
+      "tooltip": "Note that the customer disputes part of this invoice, or promises to pay it on a day. Its reminders pause until the dispute is resolved or the promised day has passed."
+    },
+    "invoice.dispute-resolve": {
+      "label": "Resolve",
+      "tooltip": "End the dispute or promise with how it ended. The invoice's reminders then follow the customer's schedule again."
+    },
     "invoice.payment-link": {
       "label": "Add a payment link",
       "tooltip": "Ask your payment provider for a page where the customer pays what is open on this invoice. When they pay, Fyniq matches the provider's line to the invoice by itself."

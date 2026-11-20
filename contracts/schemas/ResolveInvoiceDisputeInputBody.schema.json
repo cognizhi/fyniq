@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "resolution": {
+      "description": "How it ended.",
+      "examples": [
+        "Credit note issued for the training"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "resolution"
+  ],
+  "title": "ResolveInvoiceDisputeInputBody",
+  "type": "object"
+}

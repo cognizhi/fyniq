@@ -1869,6 +1869,24 @@ type FyniqInvitationCode struct {
 	Owner    uuid.UUID
 }
 
+type FyniqInvoiceDispute struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	InvoiceID      uuid.UUID
+	Kind           string
+	Amount         *string
+	Currency       *string
+	Reason         *string
+	PromisedOn     pgtype.Date
+	Status         string
+	Resolution     *string
+	Version        int32
+	CreatedBy      string
+	CreatedAt      time.Time
+	ResolvedBy     *string
+	ResolvedAt     *time.Time
+}
+
 type FyniqIpRateWindow struct {
 	Client      string
 	Kind        string

@@ -1468,6 +1468,21 @@ installation_connector_secret | valid_until | timestamp with time zone | null |
 installation_connector_secret | destroyed_at | timestamp with time zone | null | 
 invitation_code | code_hash | bytea | not null | 
 invitation_code | owner | uuid | not null | 
+invoice_dispute | organisation_id | uuid | not null | current_org()
+invoice_dispute | id | uuid | not null | uuidv7()
+invoice_dispute | invoice_id | uuid | not null | 
+invoice_dispute | kind | text | not null | 
+invoice_dispute | amount | numeric(20,4) | null | 
+invoice_dispute | currency | text | null | 
+invoice_dispute | reason | text | null | 
+invoice_dispute | promised_on | date | null | 
+invoice_dispute | status | text | not null | 'open'::text
+invoice_dispute | resolution | text | null | 
+invoice_dispute | version | integer | not null | 1
+invoice_dispute | created_by | text | not null | 
+invoice_dispute | created_at | timestamp with time zone | not null | 
+invoice_dispute | resolved_by | text | null | 
+invoice_dispute | resolved_at | timestamp with time zone | null | 
 ip_rate_window | client | text | not null | 
 ip_rate_window | kind | text | not null | 
 ip_rate_window | window_start | timestamp with time zone | not null | 
@@ -5354,6 +5369,23 @@ invitation_code | invitation_code_code_hash_not_null | NOT NULL code_hash
 invitation_code | invitation_code_hash_length | CHECK ((octet_length(code_hash) = 32))
 invitation_code | invitation_code_owner_not_null | NOT NULL owner
 invitation_code | invitation_code_pkey | PRIMARY KEY (code_hash, owner)
+invoice_dispute | invoice_dispute_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((resolved_by IS NULL) OR (resolved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+invoice_dispute | invoice_dispute_created_at_not_null | NOT NULL created_at
+invoice_dispute | invoice_dispute_created_by_not_null | NOT NULL created_by
+invoice_dispute | invoice_dispute_dispute_form | CHECK (((kind <> 'dispute'::text) OR ((amount IS NOT NULL) AND (amount <> 'NaN'::numeric) AND (amount > (0)::numeric) AND (currency ~ '^[A-Z]{3}$'::text) AND (reason IS NOT NULL) AND ((length(reason) >= 1) AND (length(reason) <= 500)) AND (promised_on IS NULL))))
+invoice_dispute | invoice_dispute_id_not_null | NOT NULL id
+invoice_dispute | invoice_dispute_invoice_fkey | FOREIGN KEY (organisation_id, invoice_id) REFERENCES document(organisation_id, id)
+invoice_dispute | invoice_dispute_invoice_id_not_null | NOT NULL invoice_id
+invoice_dispute | invoice_dispute_kind_known | CHECK ((kind = ANY (ARRAY['dispute'::text, 'promise'::text])))
+invoice_dispute | invoice_dispute_kind_not_null | NOT NULL kind
+invoice_dispute | invoice_dispute_organisation_id_not_null | NOT NULL organisation_id
+invoice_dispute | invoice_dispute_pkey | PRIMARY KEY (organisation_id, id)
+invoice_dispute | invoice_dispute_promise_form | CHECK (((kind <> 'promise'::text) OR ((promised_on IS NOT NULL) AND (amount IS NULL) AND (currency IS NULL) AND (reason IS NULL))))
+invoice_dispute | invoice_dispute_resolved_form | CHECK (((status = 'resolved'::text) = ((resolved_at IS NOT NULL) AND (resolved_by IS NOT NULL) AND (resolution IS NOT NULL) AND ((length(resolution) >= 1) AND (length(resolution) <= 500)))))
+invoice_dispute | invoice_dispute_status_known | CHECK ((status = ANY (ARRAY['open'::text, 'resolved'::text])))
+invoice_dispute | invoice_dispute_status_not_null | NOT NULL status
+invoice_dispute | invoice_dispute_version_not_null | NOT NULL version
+invoice_dispute | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ip_rate_window | ip_rate_window_client_hash | CHECK ((client ~ '^[0-9a-f]{64}$'::text))
 ip_rate_window | ip_rate_window_client_not_null | NOT NULL client
 ip_rate_window | ip_rate_window_kind_known | CHECK ((kind = ANY (ARRAY['signin'::text, 'join'::text, 'public'::text, 'setup'::text])))
@@ -8023,6 +8055,7 @@ CREATE INDEX inbound_file_message ON fyniq.inbound_file USING btree (organisatio
 CREATE INDEX inbound_message_sender ON fyniq.inbound_message USING btree (organisation_id, sender, address_id) WHERE (status = 'quarantined'::text)
 CREATE INDEX inbound_message_status ON fyniq.inbound_message USING btree (organisation_id, status, received_at)
 CREATE INDEX installation_change_pending ON fyniq.installation_change USING btree (connector) WHERE (status = 'pending'::text)
+CREATE INDEX invoice_dispute_invoice ON fyniq.invoice_dispute USING btree (organisation_id, invoice_id, created_at)
 CREATE INDEX ip_rate_window_start ON fyniq.ip_rate_window USING btree (window_start)
 CREATE INDEX join_domain_organisation ON fyniq.join_domain USING btree (claiming_organisation)
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
@@ -8343,6 +8376,8 @@ CREATE UNIQUE INDEX installation_connector_secret_once ON fyniq.installation_con
 CREATE UNIQUE INDEX installation_connector_secret_pkey ON fyniq.installation_connector_secret USING btree (id)
 CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
 CREATE UNIQUE INDEX invitation_code_pkey ON fyniq.invitation_code USING btree (code_hash, owner)
+CREATE UNIQUE INDEX invoice_dispute_one_open ON fyniq.invoice_dispute USING btree (organisation_id, invoice_id, kind) WHERE (status = 'open'::text)
+CREATE UNIQUE INDEX invoice_dispute_pkey ON fyniq.invoice_dispute USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ip_rate_window_pkey ON fyniq.ip_rate_window USING btree (client, kind, window_start)
 CREATE UNIQUE INDEX item_code_key ON fyniq.item USING btree (organisation_id, code)
 CREATE UNIQUE INDEX item_pkey ON fyniq.item USING btree (organisation_id, id)
@@ -8786,6 +8821,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fixed_as
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'message_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoice_dispute DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoice_dispute', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.join_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('join_request', 'id')
@@ -9064,6 +9100,8 @@ CREATE TRIGGER investor_right_guard BEFORE INSERT ON fyniq.document_version FOR 
 CREATE TRIGGER invitation_code_guard BEFORE DELETE OR UPDATE ON fyniq.invitation_code FOR EACH ROW EXECUTE FUNCTION invitation_code_guard()
 CREATE TRIGGER invitation_code_no_truncate BEFORE TRUNCATE ON fyniq.invitation_code FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER invitation_code_registered AFTER INSERT ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION invitation_code_registered()
+CREATE TRIGGER invoice_dispute_guard BEFORE DELETE OR UPDATE ON fyniq.invoice_dispute FOR EACH ROW EXECUTE FUNCTION invoice_dispute_guard()
+CREATE TRIGGER invoice_dispute_no_truncate BEFORE TRUNCATE ON fyniq.invoice_dispute FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER journal_entry_asset_depreciation BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'asset_depreciation'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_asset_depreciation()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
 CREATE TRIGGER journal_entry_bank_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = ANY (ARRAY['bank_out_release'::text, 'bank_in_release'::text])) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_bank_release()
@@ -9448,6 +9486,7 @@ holding_movement | tenant_isolation | * | (organisation_id = current_org()) | (o
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_file | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoice_dispute | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 join_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9706,6 +9745,7 @@ installation_change | disabled | not forced
 installation_connector | disabled | not forced
 installation_connector_secret | disabled | not forced
 invitation_code | disabled | not forced
+invoice_dispute | enabled | forced
 ip_rate_window | disabled | not forced
 item | enabled | forced
 item_price | enabled | forced
@@ -10062,6 +10102,7 @@ investor_right_guard() → trigger | security invoker | v | search_path=pg_catal
 invitation_code_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 25e66eda35f692c46e109756f9386ae1
 invitation_code_registered() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 493cbaf52e2913b053d4354c418ba404
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001
+invoice_dispute_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 13d9c2a472364d03e695d11beffcfe55
 is_owner(p_org uuid, p_membership uuid, p_now timestamp with time zone) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 97b45f40b83ee4da8c083c1ed8bd9b3b
 is_super_admin(p_user uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 74b765a558e7f7fc6d37b5f2a3be3c11
 issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1c6a399b76934acce5ae3a3dc9d8d7e8

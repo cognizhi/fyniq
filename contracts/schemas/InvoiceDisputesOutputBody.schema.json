@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "records": {
+      "description": "The invoice's disputes and promises, newest first.",
+      "items": {
+        "$ref": "InvoiceDispute.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "records"
+  ],
+  "title": "InvoiceDisputesOutputBody",
+  "type": "object"
+}

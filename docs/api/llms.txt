@@ -616,10 +616,13 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/investor-rights/{rights_id}/evidence` (addInvestorRightsEvidence): Attach the agreements a holder's rights come from
 - `GET /v1/investor-rights/{rights_id}/evidence/{evidence_id}` (getInvestorRightsEvidence): Get a file of a holder's rights
 - `DELETE /v1/investor-rights/{rights_id}/evidence/{evidence_id}` (removeInvestorRightsEvidence): Remove a file from a holder's drafted rights
+- `POST /v1/invoice-disputes/{dispute_id}/resolution` (resolveInvoiceDispute): Resolve a dispute or a promise to pay
 - `GET /v1/invoices` (listInvoices): List the invoices
 - `POST /v1/invoices` (createInvoice): Save a draft invoice
 - `GET /v1/invoices/{invoice_id}` (getInvoice): Get an invoice
 - `PUT /v1/invoices/{invoice_id}` (replaceInvoice): Change a draft invoice
+- `GET /v1/invoices/{invoice_id}/disputes` (getInvoiceDisputes): Read an invoice's disputes and promises to pay
+- `POST /v1/invoices/{invoice_id}/disputes` (createInvoiceDispute): Record a customer's dispute of an invoice, or their promise to pay
 - `GET /v1/invoices/{invoice_id}/document` (getInvoiceDocument): Render an invoice as a document
 - `POST /v1/invoices/{invoice_id}/edit` (editInvoice): Edit an issued invoice
 - `POST /v1/invoices/{invoice_id}/edit-approval` (requestInvoiceEdit): Ask for approval to edit an issued invoice

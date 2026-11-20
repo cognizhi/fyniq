@@ -56,6 +56,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/dimension"
 	"github.com/cognizhi/fyniq/internal/domain/director"
+	"github.com/cognizhi/fyniq/internal/domain/disputes"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
@@ -76,9 +77,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
 	"github.com/cognizhi/fyniq/internal/domain/paymentfile"
 	"github.com/cognizhi/fyniq/internal/domain/paymentlink"
-	"github.com/cognizhi/fyniq/internal/domain/portal"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/planning"
+	"github.com/cognizhi/fyniq/internal/domain/portal"
 	"github.com/cognizhi/fyniq/internal/domain/project"
 	"github.com/cognizhi/fyniq/internal/domain/projectbilling"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
@@ -938,6 +939,11 @@ var codeFacts = map[string]struct {
 	CodeLinkConnector:         {422, "No payment-link connector is enabled"},
 	CodeLinkClosed:            {409, "The payment link is not live"},
 	portal.CodeLink:           {404, "This link does not open anything"},
+	disputes.CodeNotOpen:      {422, "A dispute or promise is for an invoice with something open"},
+	disputes.CodeAmount:       {422, "The disputed amount is not valid"},
+	disputes.CodeDate:         {422, "The promised day is not valid"},
+	disputes.CodeOpen:         {409, "The invoice has an open record of that kind"},
+	disputes.CodeWords:        {422, "A reason or resolution is needed"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},
@@ -1440,6 +1446,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		cne *connector.Error
 		bke *banking.Error
 		plk *paymentlink.Error
+		dsp *disputes.Error
 		pfe *paymentfile.Error
 		cle *claim.Error
 		dre *director.Error
@@ -1540,6 +1547,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(pye.Code, sentence(pye.Message), sentence(pye.Fix))
 	case errors.As(err, &pyp) && len(pyp) > 0:
 		return payeeProblems(pyp).(*Problem)
+	case errors.As(err, &dsp):
+		return problem(dsp.Code, sentence(dsp.Message), sentence(dsp.Fix))
 	case errors.As(err, &plk):
 		return problem(plk.Code, sentence(plk.Message), sentence(plk.Fix))
 	case errors.As(err, &bke):
