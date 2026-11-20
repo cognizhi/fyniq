@@ -75,3 +75,31 @@ func linkRestore(ctx context.Context, getenv func(string) string, args []string,
 	fmt.Fprintf(os.Stderr, "The link is suspended. %d run(s) approved with proof have no answer from Fyniq in the restored database: an Owner or an Administrator decides each on the link's page against Fyniq's own record, and the link resumes.\n", held)
 	return nil
 }
+
+// erasureReapply is the deployment's step after a restore of Nemura's database and before it opens (NM-SEC-08, NM-INT-13): every signed entry of the register of erasures is applied again, so a personal field erased
+// since the backup does not come back. An entry that does not verify is reported and not applied; running it again is safe.
+func erasureReapply(ctx context.Context, getenv func(string) string, args []string, clock ports.Clock) error {
+	if len(args) != 1 {
+		return errors.New("usage: NEMURA_ROLE=migrate nemura erasure-reapply <organisation id>")
+	}
+	org, err := uuid.Parse(args[0])
+	if err != nil {
+		return fmt.Errorf("the organisation ID %q is not an ID", args[0])
+	}
+	register, signer := erasureWiring(getenv)
+	if register == nil || signer == nil {
+		return errors.New("this deployment has no register of erasures: nothing can be applied again")
+	}
+	url, err := databaseURL(role.Migrate, getenv)
+	if err != nil {
+		return err
+	}
+	store, err := nemura.Open(ctx, url)
+	if err != nil {
+		return err
+	}
+	defer store.Close()
+	n, err := (&nemura.ErasureRunner{Store: store, Blobs: register, Signer: signer, Clock: clock}).Reapply(ctx, org)
+	fmt.Fprintf(os.Stderr, "%d person(s) erased again from the register.\n", n)
+	return err
+}

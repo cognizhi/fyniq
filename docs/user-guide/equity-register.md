@@ -3,7 +3,7 @@ key: equity.register
 title: Equity register
 mode: basic
 roles: [owner, controller, accountant, auditor, tax_agent, dpo, board_viewer, company_secretary, employee]
-requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-19, FR-EQ-20, FR-EQ-21, FR-EQ-22, FR-EQ-25, FR-EQ-26, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
+requirements: [FR-EQ-28, FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-19, FR-EQ-20, FR-EQ-21, FR-EQ-22, FR-EQ-25, FR-EQ-26, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
 ---
 
 # Equity register
@@ -116,6 +116,10 @@ matters that need their consent. Fyniq records these rights; it computes nothing
   them, never the holder. Rights recorded later supersede them.
 - A board majority, or any consent matter, **could confer control**: the holder is then named in the
   controller test for the company secretary to weigh.
+- Besides the words, record **Information they are owed** as a list: monthly accounts, quarterly accounts,
+  annual accounts or the board pack, each with the days after the period's end it is due. Each kind
+  is named once. Once the rights are recorded, the statutory calendar raises a task for every period they
+  cover ([Statutory calendar](statutory-calendar.md#what-it-holds)).
 
 ## Registrable controllers and the exempt status
 

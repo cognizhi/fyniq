@@ -40,6 +40,10 @@ var signInWiring = func(app.Deps, func(string) string, *httpserver.Server) (port
 // (Cloud KMS and Cloud Storage, [live-verify]): the sealed fields and documents then answer NM_UNAVAILABLE. The local build wires files under NEMURA_DATA_DIR.
 var restrictedWiring = func(getenv func(string) string) (ports.Cipher, ports.BlobStore) { return nil, nil }
 
+// erasureWiring is the register of erasures (NM-SEC-08): a write-once store outside Nemura's database, and the key that signs its entries. The release build has none until the cloud adapters exist
+// ([live-verify]: its own bucket with an object retention lock, and a Cloud KMS key); without it an erasure is refused as unavailable and nothing is erased.
+var erasureWiring = func(getenv func(string) string) (ports.BlobStore, ports.Signer) { return nil, nil }
+
 var hydraAdmin = func(admin string) ports.OAuthClients {
 	return hydra.New(admin, (&egress.Guard{Propagate: true}).Bounded(0, 10*time.Second).For(egress.HostOf(admin)))
 }
@@ -120,6 +124,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	// A pay run is approved with the approver's passkey over the approval envelope, answered at Nemura's own origin for the relying party the two apps share (NM-INT-06).
 	d.RunLink = nemura.RunLinkService{Store: store, Clock: deps.Clock, Origin: origin, RPID: relyingPartyID(origin, getenv("NEMURA_RP_ID"))}
 	d.LinkOps = nemura.LinkOpsService{Store: store, Clock: deps.Clock}
+	d.Erasure = nemura.ErasureOpsService{Store: store, Clock: deps.Clock}                                                 // asking and approving an erasure; the worker erases (NM-SEC-08)
 	d.Workspace = nemura.WorkspaceService{Store: store, FinanceOrigin: getenv("NEMURA_FYNIQ_WEB_ORIGIN")}                 // where the Finance | People switch leads; none: it does not show
 	d.LinkAdmin = nemura.LinkAdminService{LinkService: nemura.LinkService{Store: store, OAuth: oauth, Clock: deps.Clock}} // an Owner proposes and another approves; approving needs the OAuth server
 	// The link's inbox takes Fyniq's client's bearer token, checked with Nemura's own OAuth server; without one there is no inbox (the link needs the server for its client anyway).

@@ -32557,6 +32557,31 @@ components:
       required:
         - items
       type: object
+    InformationRightDraft:
+      additionalProperties: false
+      properties:
+        days:
+          description: The days after the period's end that it is due; the calendar raises one task for each period.
+          examples:
+            - 45
+          format: int64
+          maximum: 365
+          minimum: 1
+          type: integer
+        kind:
+          description: "What is owed: the accounts for each month, for each quarter of the financial year or for each financial year, or the board pack for each month."
+          enum:
+            - monthly_accounts
+            - quarterly_accounts
+            - annual_accounts
+            - board_pack
+          examples:
+            - quarterly_accounts
+          type: string
+      required:
+        - kind
+        - days
+      type: object
     InstallConnectorRequest:
       additionalProperties: false
       properties:
@@ -33677,6 +33702,12 @@ components:
             - Quarterly management accounts within 45 days; annual accounts within 120 days
           maxLength: 1000
           type: string
+        information_rights:
+          description: "The information rights as structured data (FR-EQ-28), each kind once: each becomes a task on the statutory calendar for every period it covers, closed when the update or pack is delivered to the holder."
+          items:
+            $ref: "#/components/schemas/InformationRightDraft"
+          maxItems: 8
+          type: array
         note:
           description: A note.
           examples:
@@ -33752,6 +33783,12 @@ components:
             - Quarterly management accounts within 45 days; annual accounts within 120 days
           maxLength: 1000
           type: string
+        information_rights:
+          description: "The information rights as structured data (FR-EQ-28), each kind once: each becomes a task on the statutory calendar for every period it covers, closed when the update or pack is delivered to the holder."
+          items:
+            $ref: "#/components/schemas/InformationRightDraft"
+          maxItems: 8
+          type: array
         note:
           description: A note.
           examples:
@@ -60155,6 +60192,40 @@ components:
         - today
         - deadlines
       type: object
+    StatutoryDelivery:
+      additionalProperties: false
+      properties:
+        id:
+          description: The update's or the pack's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b01
+          format: uuid
+          type: string
+        kind:
+          description: "update: an investor update sent to the holder; pack: the month's published board pack."
+          enum:
+            - update
+            - pack
+          examples:
+            - update
+          type: string
+        sent_on:
+          description: The day it was sent or published.
+          examples:
+            - "2026-10-28"
+          format: date
+          type: string
+        title:
+          description: Its title.
+          examples:
+            - Q3 2026 investor update
+          type: string
+      required:
+        - kind
+        - id
+        - title
+        - sent_on
+      type: object
     StatutoryFilingDraft:
       additionalProperties: false
       properties:
@@ -60328,6 +60399,9 @@ components:
           examples:
             - tax
           type: string
+        delivery:
+          $ref: "#/components/schemas/StatutoryDelivery"
+          description: "For an investor's information right (FR-EQ-28): the update or pack that was delivered and closed the task, kept as its evidence."
         due_on:
           description: Its due day; absent while not assessed.
           examples:
@@ -60378,6 +60452,7 @@ components:
             - financial_year
             - sg-deadlines
             - sg-acra
+            - investor_information
           examples:
             - eci
           type: string

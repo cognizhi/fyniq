@@ -11210,7 +11210,7 @@ installation_connectors() → SETOF installation_connector | security definer | 
 installation_dual_control() → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | a3a29b8dc4a420477e6b9ff6948499d8
 installation_org() → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9731da83e60ff6283071958a473dc801
 instrument_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 249c231a7cc53d4f0e283ebd13cde723
-investor_right_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7af4ae546a25e838d926206dc41bbb07
+investor_right_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 96cf1779564b1618a9b0c82c231fe328
 investor_update_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 61bfca06922e94b4f963dc2716fddc3e
 investor_update_read_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b2420800b375b543d651fac2a0440734
 invitation_code_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 25e66eda35f692c46e109756f9386ae1

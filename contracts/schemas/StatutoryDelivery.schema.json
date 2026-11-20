@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The update's or the pack's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "update: an investor update sent to the holder; pack: the month's published board pack.",
+      "enum": [
+        "update",
+        "pack"
+      ],
+      "examples": [
+        "update"
+      ],
+      "type": "string"
+    },
+    "sent_on": {
+      "description": "The day it was sent or published.",
+      "examples": [
+        "2026-10-28"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "title": {
+      "description": "Its title.",
+      "examples": [
+        "Q3 2026 investor update"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "id",
+    "title",
+    "sent_on"
+  ],
+  "title": "StatutoryDelivery",
+  "type": "object"
+}

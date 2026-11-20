@@ -41770,6 +41770,20 @@ export interface components {
             /** @description The incidents, oldest first. */
             items: components["schemas"]["IncidentView"][];
         };
+        InformationRightDraft: {
+            /**
+             * Format: int64
+             * @description The days after the period's end that it is due; the calendar raises one task for each period.
+             * @example 45
+             */
+            days: number;
+            /**
+             * @description What is owed: the accounts for each month, for each quarter of the financial year or for each financial year, or the board pack for each month.
+             * @example quarterly_accounts
+             * @enum {string}
+             */
+            kind: "monthly_accounts" | "quarterly_accounts" | "annual_accounts" | "board_pack";
+        };
         InstallConnectorRequest: {
             /**
              * @description Its id in the catalogue.
@@ -42570,6 +42584,8 @@ export interface components {
              * @example Quarterly management accounts within 45 days; annual accounts within 120 days
              */
             information?: string;
+            /** @description The information rights as structured data (FR-EQ-28), each kind once: each becomes a task on the statutory calendar for every period it covers, closed when the update or pack is delivered to the holder. */
+            information_rights?: components["schemas"]["InformationRightDraft"][];
             /**
              * @description A note.
              * @example The pro-rata right lapses on a listing
@@ -42622,6 +42638,8 @@ export interface components {
              * @example Quarterly management accounts within 45 days; annual accounts within 120 days
              */
             information?: string;
+            /** @description The information rights as structured data (FR-EQ-28), each kind once: each becomes a task on the statutory calendar for every period it covers, closed when the update or pack is delivered to the holder. */
+            information_rights?: components["schemas"]["InformationRightDraft"][];
             /**
              * @description A note.
              * @example The pro-rata right lapses on a listing
@@ -60932,6 +60950,31 @@ export interface components {
              */
             today: string;
         };
+        StatutoryDelivery: {
+            /**
+             * Format: uuid
+             * @description The update's or the pack's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b01
+             */
+            id: string;
+            /**
+             * @description update: an investor update sent to the holder; pack: the month's published board pack.
+             * @example update
+             * @enum {string}
+             */
+            kind: "update" | "pack";
+            /**
+             * Format: date
+             * @description The day it was sent or published.
+             * @example 2026-10-28
+             */
+            sent_on: string;
+            /**
+             * @description Its title.
+             * @example Q3 2026 investor update
+             */
+            title: string;
+        };
         StatutoryFilingDraft: {
             /**
              * Format: date
@@ -61061,6 +61104,8 @@ export interface components {
              * @enum {string}
              */
             area?: "tax" | "payroll" | "corporate";
+            /** @description For an investor's information right (FR-EQ-28): the update or pack that was delivered and closed the task, kept as its evidence. */
+            delivery?: components["schemas"]["StatutoryDelivery"];
             /**
              * Format: date
              * @description Its due day; absent while not assessed.
@@ -61089,7 +61134,7 @@ export interface components {
              * @example eci
              * @enum {string}
              */
-            obligation: "gst_f5" | "cpf" | "ir8a_ais" | "eci" | "form_cs" | "annual_return" | "agm" | "statements_to_members" | "gst_register_retrospective" | "gst_register_prospective" | "register_controller_entry" | "register_controller_central" | "register_controller_notice" | "register_share_lodgement" | "register_officer_appointment" | "register_officer_cessation" | "register_detail_change" | "register_nominee_informs" | "register_nominee_entry" | "register_nominee_central" | "financial_year" | "sg-deadlines" | "sg-acra";
+            obligation: "gst_f5" | "cpf" | "ir8a_ais" | "eci" | "form_cs" | "annual_return" | "agm" | "statements_to_members" | "gst_register_retrospective" | "gst_register_prospective" | "register_controller_entry" | "register_controller_central" | "register_controller_notice" | "register_share_lodgement" | "register_officer_appointment" | "register_officer_cessation" | "register_detail_change" | "register_nominee_informs" | "register_nominee_entry" | "register_nominee_central" | "financial_year" | "sg-deadlines" | "sg-acra" | "investor_information";
             /**
              * @description Why it is not assessed.
              * @example The books start and the first financial year's end are not set: set them in Settings › Organisation

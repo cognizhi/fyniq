@@ -39,6 +39,7 @@ func init() {
 	taskWiring = localTasks
 	signInWiring = localSignIn
 	restrictedWiring = localRestricted
+	erasureWiring = localErasure
 	scriptedAllowed = true
 	letterRenderer = letters.Local{} // a plain Latin text PDF that says it is local (design D3)
 	hydraAdmin = func(admin string) ports.OAuthClients {
@@ -95,4 +96,20 @@ func localRestricted(getenv func(string) string) (ports.Cipher, ports.BlobStore)
 		return cipher, nil
 	}
 	return cipher, blobs
+}
+
+// localErasure keeps the register of erasures and its signing key under NEMURA_DATA_DIR, in a directory of their own: outside the database, so a restore of the database does not touch them.
+func localErasure(getenv func(string) string) (ports.BlobStore, ports.Signer) {
+	dir := cmp.Or(getenv("NEMURA_DATA_DIR"), ".data/nemura")
+	blobs, err := local.NewDir(dir + "/erasure-register")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "nemura: the register of erasures is off: %v\n", err)
+		return nil, nil
+	}
+	signer, err := local.LoadOrCreateEd25519(dir + "/keys/erasure-register")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "nemura: the register of erasures is off: %v\n", err)
+		return nil, nil
+	}
+	return blobs, signer
 }

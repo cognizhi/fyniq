@@ -29,6 +29,27 @@ const (
 	MaxNotices     = 50
 )
 
+// The information rights an investor is owed (FR-EQ-22, FR-EQ-28; design D8): each a kind of document and the days after the end of its
+// period it is due. Monthly accounts and the board pack are owed for each month, quarterly accounts for each quarter of the financial year and annual
+// accounts for each financial year.
+const (
+	InfoMonthlyAccounts   = "monthly_accounts"
+	InfoQuarterlyAccounts = "quarterly_accounts"
+	InfoAnnualAccounts    = "annual_accounts"
+	InfoBoardPack         = "board_pack"
+	MaxInformationRights  = 8
+	MaxInformationDays    = 365
+)
+
+// InformationKinds are the kinds of information right, in the order lists show them.
+var InformationKinds = []string{InfoMonthlyAccounts, InfoQuarterlyAccounts, InfoAnnualAccounts, InfoBoardPack}
+
+// InformationRight is one thing an investor is owed and the days after its period's end it is due, such as quarterly accounts within 45 days.
+type InformationRight struct {
+	Kind string
+	Days int
+}
+
 // The grounds on which a holder is a registrable controller (FR-EQ-25; ACRA's registrable-controllers guidance): more
 // than 25% of the shares, or of the votes, the right to appoint or remove directors holding a majority of the board's
 // votes, or significant influence or control.
@@ -46,24 +67,32 @@ type InvestorRights struct {
 	Observer      bool
 	BoardMajority bool
 	Information   string
-	ProRata       bool
-	Consents      []string
-	Agreements    string // the agreements they come from, such as a shareholders' agreement and a side letter
-	Note          string
+	// InformationRights are the information rights as structured data (FR-EQ-28), beside the text: each becomes a calendar task for every period it covers.
+	InformationRights []InformationRight
+	ProRata           bool
+	Consents          []string
+	Agreements        string // the agreements they come from, such as a shareholders' agreement and a side letter
+	Note              string
+}
+
+type infoRightPayload struct {
+	Kind string `json:"kind"`
+	Days int    `json:"days"`
 }
 
 type rightsPayload struct {
-	Date          string   `json:"date"`
-	HolderID      string   `json:"holder_id"`
-	From          string   `json:"from"`
-	BoardSeats    int      `json:"board_seats"`
-	Observer      bool     `json:"observer"`
-	BoardMajority bool     `json:"board_majority"`
-	Information   string   `json:"information,omitempty"`
-	ProRata       bool     `json:"pro_rata"`
-	Consents      []string `json:"consents"`
-	Agreements    string   `json:"agreements"`
-	Note          string   `json:"note,omitempty"`
+	Date          string             `json:"date"`
+	HolderID      string             `json:"holder_id"`
+	From          string             `json:"from"`
+	BoardSeats    int                `json:"board_seats"`
+	Observer      bool               `json:"observer"`
+	BoardMajority bool               `json:"board_majority"`
+	Information   string             `json:"information,omitempty"`
+	InfoRights    []infoRightPayload `json:"information_rights,omitempty"`
+	ProRata       bool               `json:"pro_rata"`
+	Consents      []string           `json:"consents"`
+	Agreements    string             `json:"agreements"`
+	Note          string             `json:"note,omitempty"`
 }
 
 // ConfersControl says whether the rights could make their holder a registrable controller whatever their shares: the
@@ -77,8 +106,12 @@ func EncodeRights(r InvestorRights) ([]byte, error) {
 	if consents == nil {
 		consents = []string{}
 	}
+	var info []infoRightPayload
+	for _, x := range r.InformationRights {
+		info = append(info, infoRightPayload{Kind: x.Kind, Days: x.Days})
+	}
 	return json.Marshal(rightsPayload{Date: dateText(r.Date), HolderID: idText(r.HolderID), From: dateText(r.From), BoardSeats: r.BoardSeats,
-		Observer: r.Observer, BoardMajority: r.BoardMajority, Information: r.Information, ProRata: r.ProRata, Consents: consents,
+		Observer: r.Observer, BoardMajority: r.BoardMajority, Information: r.Information, InfoRights: info, ProRata: r.ProRata, Consents: consents,
 		Agreements: r.Agreements, Note: r.Note})
 }
 
@@ -90,6 +123,9 @@ func ReadRights(doc storage.Document) (InvestorRights, error) {
 	}
 	out := InvestorRights{BoardSeats: p.BoardSeats, Observer: p.Observer, BoardMajority: p.BoardMajority, Information: p.Information, ProRata: p.ProRata,
 		Consents: p.Consents, Agreements: p.Agreements, Note: p.Note}
+	for _, x := range p.InfoRights {
+		out.InformationRights = append(out.InformationRights, InformationRight{Kind: x.Kind, Days: x.Days})
+	}
 	var err error
 	if out.HolderID, err = uuid.Parse(p.HolderID); err != nil {
 		return out, err
@@ -128,6 +164,20 @@ func CheckRights(r InvestorRights, today time.Time) ledger.Problems {
 	}
 	if utf8.RuneCountInString(r.Information) > MaxNote {
 		add("information", fmt.Sprintf("the information rights are longer than %d characters", MaxNote), "Shorten them")
+	}
+	if len(r.InformationRights) > MaxInformationRights {
+		add("information_rights", fmt.Sprintf("%d information rights are more than %d", len(r.InformationRights), MaxInformationRights), "Group them: one for each kind of document")
+	}
+	for k, x := range r.InformationRights {
+		field := fmt.Sprintf("information_rights[%d]", k)
+		switch {
+		case !slices.Contains(InformationKinds, x.Kind):
+			add(field+".kind", "the information right is not monthly, quarterly or annual accounts or the board pack", "Choose one of the four")
+		case x.Days < 1 || x.Days > MaxInformationDays:
+			add(field+".days", fmt.Sprintf("%d days is outside 1 to %d", x.Days, MaxInformationDays), "Enter the days after the period's end that the agreement allows")
+		case slices.ContainsFunc(r.InformationRights[:k], func(y InformationRight) bool { return y.Kind == x.Kind }):
+			add(field+".kind", "the information right is named twice", "Keep one for each kind of document")
+		}
 	}
 	if len(r.Consents) > MaxConsents {
 		add("consents", fmt.Sprintf("%d consent matters are more than %d", len(r.Consents), MaxConsents), "Group them, or name the agreement's clause")

@@ -108,3 +108,26 @@ Source: PRD-002 §20 · Priority M · Phase P1
 #### Scenario: Withdrawal of consent
 - **WHEN** an employee withdraws consent
 - **THEN** records the law requires are kept
+
+### Requirement: NM-SEC-08 Erasure of a former employee's personal data
+An Owner or an HR administrator SHALL be able to ask for a former employee's personal data to be erased once the retention periods have run, a second one SHALL approve it, and a signed register outside the database SHALL keep each erasure and be applied again after a restore, without loosening any append-only guard.
+
+Source: PRD-002 §20 · Priority M · Phase P1
+
+#### Scenario: Too early, not left, held
+- **WHEN** an erasure is asked for before the periods ran, for a person who has not left, or while a legal hold or an unanswered access request keeps the records
+- **THEN** it is refused with its own code and nothing is created
+
+#### Scenario: Two people
+- **WHEN** an HR administrator asks and a second Owner or HR administrator approves, each with a fresh passkey
+- **THEN** the worker files a signed register entry first, empties the personal columns of the records that may change, tells Fyniq with a tombstone and deletes the person's files
+- **AND** the one who asked cannot approve
+
+#### Scenario: After a restore
+- **GIVEN** a restore brought back a field erased since the backup
+- **WHEN** `nemura erasure-reapply` runs before the copy opens
+- **THEN** every entry that verifies is applied again, and one that does not verify is reported and not applied
+
+#### Scenario: What it cannot reach
+- **WHEN** personal data sits in plaintext in an append-only row
+- **THEN** it stays, tied to the person's opaque ID, until the owner decides how it is shredded

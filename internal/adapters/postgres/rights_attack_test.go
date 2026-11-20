@@ -19,6 +19,7 @@ import (
 // in ACRA's after it; a holder who is not one with a reason, and no grounds, register days or notices.
 // req: FR-EQ-22
 // req: FR-EQ-25
+// req: FR-EQ-28
 // asvs: V8.2.1
 func TestAttackHolderRightsKeepTheirRules(t *testing.T) {
 	ctx := context.Background()
@@ -41,6 +42,14 @@ func TestAttackHolderRightsKeepTheirRules(t *testing.T) {
 		"half a board seat":        strings.Replace(rights(d.director.ID, ``), `"board_seats":1`, `"board_seats":1.5`, 1),
 		"consents that are text":   strings.Replace(rights(d.director.ID, ``), `["Issuing new shares"]`, `"Issuing new shares"`, 1),
 		"an observer that is text": strings.Replace(rights(d.director.ID, ``), `"observer":false`, `"observer":"no"`, 1),
+		// The structured information rights keep their own shape (FR-EQ-28; migration 001108).
+		"an information right of an unknown kind":    rights(d.director.ID, `,"information_rights":[{"kind":"weekly_accounts","days":5}]`),
+		"an information right due in 0 days":         rights(d.director.ID, `,"information_rights":[{"kind":"board_pack","days":0}]`),
+		"an information right due in 366 days":       rights(d.director.ID, `,"information_rights":[{"kind":"board_pack","days":366}]`),
+		"an information right due in half a day":     rights(d.director.ID, `,"information_rights":[{"kind":"board_pack","days":1.5}]`),
+		"an information right with a key of its own": rights(d.director.ID, `,"information_rights":[{"kind":"board_pack","days":5,"waived":true}]`),
+		"information rights that are text":           rights(d.director.ID, `,"information_rights":"quarterly"`),
+		"nine information rights":                    rights(d.director.ID, `,"information_rights":[`+strings.TrimSuffix(strings.Repeat(`{"kind":"board_pack","days":5},`, 9), ",")+`]`),
 	} {
 		if err := create(storage.DocumentInvestorRights, payload); storage.CodeOf(err) != storage.CodeInvestorRights {
 			t.Errorf("investor rights with %s: %v", name, err)
@@ -48,6 +57,9 @@ func TestAttackHolderRightsKeepTheirRules(t *testing.T) {
 	}
 	if err := create(storage.DocumentInvestorRights, rights(d.director.ID, ``)); err != nil {
 		t.Errorf("investor rights as their rules allow: %v", err)
+	}
+	if err := create(storage.DocumentInvestorRights, rights(d.director.ID, `,"information_rights":[{"kind":"quarterly_accounts","days":45},{"kind":"board_pack","days":20}]`)); err != nil {
+		t.Errorf("investor rights with information rights as their rules allow: %v", err)
 	}
 
 	entry := func(holder uuid.UUID, body string) string {

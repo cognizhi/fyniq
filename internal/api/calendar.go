@@ -34,7 +34,7 @@ var CalendarCodes = []string{CodeInvoiceNowGate, deadlines.CodeFiling, deadlines
 // StatutoryItem is one deadline of the calendar.
 type StatutoryItem struct {
 	Key        string               `json:"key" doc:"The item: its obligation and its anchor day. Record it with this key." example:"eci:2026-12-31"`
-	Obligation string               `json:"obligation" enum:"gst_f5,cpf,ir8a_ais,eci,form_cs,annual_return,agm,statements_to_members,gst_register_retrospective,gst_register_prospective,register_controller_entry,register_controller_central,register_controller_notice,register_share_lodgement,register_officer_appointment,register_officer_cessation,register_detail_change,register_nominee_informs,register_nominee_entry,register_nominee_central,financial_year,sg-deadlines,sg-acra" doc:"What is due: the register_ ones are a register's own, done and checked on their record: the corporate profile's lodgements are done once a version with the day lodged is recorded." example:"eci"`
+	Obligation string               `json:"obligation" enum:"gst_f5,cpf,ir8a_ais,eci,form_cs,annual_return,agm,statements_to_members,gst_register_retrospective,gst_register_prospective,register_controller_entry,register_controller_central,register_controller_notice,register_share_lodgement,register_officer_appointment,register_officer_cessation,register_detail_change,register_nominee_informs,register_nominee_entry,register_nominee_central,financial_year,sg-deadlines,sg-acra,investor_information" doc:"What is due: the register_ ones are a register's own, done and checked on their record: the corporate profile's lodgements are done once a version with the day lodged is recorded." example:"eci"`
 	Area       string               `json:"area,omitempty" enum:"tax,payroll,corporate" doc:"Its area, to filter by." example:"tax"`
 	Title      string               `json:"title" doc:"What is due, in plain words." example:"Estimated chargeable income for the year ended 31 Dec 2026"`
 	Anchor     string               `json:"anchor,omitempty" format:"date" doc:"The day it counts from: a period's or a year's end, or a forecast's day." example:"2026-12-31"`
@@ -48,6 +48,15 @@ type StatutoryItem struct {
 	Filing     *StatutoryFilingView `json:"filing,omitempty" doc:"The live record, once the item is recorded."`
 	Register   bool                 `json:"register,omitempty" doc:"true for a register's own deadline (a controller, a share lodgement): done on its record, which link opens, and never recorded here." example:"false"`
 	Link       string               `json:"link,omitempty" doc:"Where in the web app a register's deadline is done." example:"/equity/holders/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
+	Delivery   *StatutoryDelivery   `json:"delivery,omitempty" doc:"For an investor's information right (FR-EQ-28): the update or pack that was delivered and closed the task, kept as its evidence."`
+}
+
+// StatutoryDelivery is the update or pack that closed an investor's information task (FR-EQ-28).
+type StatutoryDelivery struct {
+	Kind   string `json:"kind" enum:"update,pack" doc:"update: an investor update sent to the holder; pack: the month's published board pack." example:"update"`
+	ID     string `json:"id" format:"uuid" doc:"The update's or the pack's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b01"`
+	Title  string `json:"title" doc:"Its title." example:"Q3 2026 investor update"`
+	SentOn string `json:"sent_on" format:"date" doc:"The day it was sent or published." example:"2026-10-28"`
 }
 
 // StatutoryCalendarView is the calendar from one day to another.
@@ -264,6 +273,9 @@ func (a *API) itemOut(ctx context.Context, u storage.UnitOfWork, it deadlines.It
 	}
 	if !it.Due.IsZero() {
 		out.DueOn = it.Due.Format(time.DateOnly)
+	}
+	if d := it.Delivery; d != nil {
+		out.Delivery = &StatutoryDelivery{Kind: d.Kind, ID: d.ID.String(), Title: d.Title, SentOn: d.SentOn.Format(time.DateOnly)}
 	}
 	if it.Filing != nil {
 		v, err := a.shownFiling(ctx, u, it.Filing.DocumentID)
