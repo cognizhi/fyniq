@@ -82,6 +82,8 @@ const (
 	ReportDefinitions   Capability = "Report definitions and schedules: save, share and schedule a report (rev 0.560)"
 	AuditEngagements    Capability = "Auditor engagement: open, confirm and close (rev 0.574)"
 	AuditRequests       Capability = "Auditor requests and samples: ask, answer, draw (rev 0.574)"
+	EntityGroups        Capability = "Entity groups and consolidation: invite, accept and end an entity; map accounts; enter translation rates; run and read a consolidation (rev 0.623)"
+	FirmClients         Capability = "Accountant firm and client links: switch on firm mode, invite and end a client, accept and end a firm, read the practice dashboard (rev 0.623)"
 	IntegrationTasks    Capability = "Tasks made by integrations: an API client's own tasks, with the scope `fyniq.write.tasks` (rev 0.610)"
 )
 
@@ -91,7 +93,7 @@ const (
 var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, ProjectCostRates, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, RetentionHolds, SecurityAssessments, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection, ReportDefinitions, AuditEngagements, AuditRequests, IntegrationTasks}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, ProjectCostRates, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, RetentionHolds, SecurityAssessments, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection, ReportDefinitions, AuditEngagements, AuditRequests, IntegrationTasks, EntityGroups, FirmClients}
 
 // The capabilities outside Appendix D.
 const (
@@ -316,6 +318,14 @@ var Grants = map[Capability]map[string]Cell{
 	// mode); the engagement is time-boxed. The Auditor's one C is on the requests row, to ask and to draw samples, and nowhere else; the Controller and the Accountant answer.
 	AuditEngagements: {
 		"Owner": {"CA", "+ second approver (opens; confirms)"}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	// (rev 0.623) A group of entities and its consolidation (FR-ENT-04 to FR-ENT-06): the Owner alone issues, accepts and ends a link (with step-up); the Controller and
+	// the Accountant map, enter rates and run. A group's figures are never the AI's.
+	EntityGroups: {
+		"Owner": {"CA", "issues, accepts and ends a link, with step-up"}, "Admin": {"V", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	FirmClients: {
+		"Owner": {"CA", "the firm's Owner invites; the client's Owner accepts"}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {},
 	},
 	IntegrationTasks: {
 		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
