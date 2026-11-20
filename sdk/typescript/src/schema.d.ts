@@ -19327,6 +19327,11 @@ export interface components {
             /** @description The items approved, when an approval chose some. */
             approved_items?: number[] | null;
             /**
+             * @description Whether you may undo it now (AI-31): it executed, its task type can be undone, it was not undone already and you hold the right its command needs.
+             * @example false
+             */
+            can_undo: boolean;
+            /**
              * Format: date-time
              * @example 2026-11-15T10:00:00Z
              */
@@ -19446,6 +19451,23 @@ export interface components {
              * @example 1
              */
             tier: number;
+            /**
+             * @description Why it was undone.
+             * @example It was the wrong branch
+             */
+            undo_reason?: string;
+            /**
+             * Format: date-time
+             * @description When it was undone, if it was.
+             * @example 2026-11-15T11:00:00Z
+             */
+            undone_at?: string;
+            /**
+             * Format: uuid
+             * @description Who undid it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            undone_by?: string;
             /**
              * @description Whether you may sign its approval request now.
              * @example true

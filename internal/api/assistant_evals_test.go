@@ -310,6 +310,13 @@ func (h *evalHarness) fill(c evalsuite.Case) evalsuite.Case {
 		reads[i] = evalsuite.Read{Tool: r.Tool, Input: in}
 	}
 	c.Solution = reads
+	if w := c.Expect.Proposal; w != nil { // the contact or account a right proposal names is a plant's, or the sample company's
+		payload, err := evalsuite.Fill(w.Payload, h.plants, h.account)
+		if err != nil {
+			h.t.Fatalf("%s: %v", c.ID, err)
+		}
+		c.Expect.Proposal = &evalsuite.WantProposal{TaskType: w.TaskType, Payload: payload}
+	}
 	return c
 }
 

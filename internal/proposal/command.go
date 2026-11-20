@@ -59,13 +59,17 @@ var ErrStale = errors.New("a record the proposal relied on changed since its dry
 type Execution struct {
 	Records []string `json:"records"`
 	Entries []string `json:"entries"`
+	// Undo is what the command's own Undo needs to reverse it, written as it executes: the values it replaced and the version it left a record at
+	// (AI-31, AI-91). Opaque to everything else, kept with the proposal's execution record, never shown as a figure, and never carrying a person's
+	// sealed personal data: a command that changes such a record refuses instead.
+	Undo json.RawMessage `json:"undo,omitempty"`
 }
 
 // Commands are the release's commands, by the name the catalogue gives them.
 type Commands map[string]Command
 
 // Release are the release's commands. Each task type's change adds its own with what it acts on.
-var Release = Commands{"CreateComplianceTask": CreateComplianceTask{}, "DraftReminder": DraftReminder{}, "DraftCorporateDocument": DraftCorporateDocument{}, "DraftInvoice": DraftInvoice{}, "DraftBill": DraftBill{}, "DraftClaim": DraftClaim{}}
+var Release = Commands{"CreateComplianceTask": CreateComplianceTask{}, "DraftReminder": DraftReminder{}, "DraftCorporateDocument": DraftCorporateDocument{}, "DraftInvoice": DraftInvoice{}, "DraftBill": DraftBill{}, "DraftClaim": DraftClaim{}, "UpdateContact": UpdateContact{}}
 
 // Measure is what a payload holds, for the limits: its items (1 when it is not a batch) and each item's amount.
 type Measure struct {

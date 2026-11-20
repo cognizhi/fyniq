@@ -2427,6 +2427,11 @@ components:
           type:
             - array
             - "null"
+        can_undo:
+          description: "Whether you may undo it now (AI-31): it executed, its task type can be undone, it was not undone already and you hold the right its command needs."
+          examples:
+            - false
+          type: boolean
         decided_at:
           examples:
             - "2026-11-15T10:00:00Z"
@@ -2560,6 +2565,23 @@ components:
           maximum: 3
           minimum: 1
           type: integer
+        undo_reason:
+          description: Why it was undone.
+          examples:
+            - It was the wrong branch
+          type: string
+        undone_at:
+          description: When it was undone, if it was.
+          examples:
+            - "2026-11-15T11:00:00Z"
+          format: date-time
+          type: string
+        undone_by:
+          description: Who undid it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
         you_may_approve:
           description: Whether you may sign its approval request now.
           examples:
@@ -2574,6 +2596,7 @@ components:
         - evidence
         - model
         - prompt
+        - can_undo
         - you_may_approve
         - id
         - task_type

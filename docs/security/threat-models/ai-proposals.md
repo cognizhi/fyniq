@@ -120,9 +120,22 @@ tests' own type checks the harness: a right proposal passes, and a turn that pro
 - **Two approvers for tier 3, and undo.** Tier 3 is still reserved: no catalogue loads a type of it. The engine is ready: a tier-3
   request has two steps, the same person cannot sign twice, and the requester never signs (`TestATierThreeRequestNeedsTwoDifferentPeople`).
   Undo (AI-31) is a person's act through the command's own `Undoer`, as the person, once, only while the records are as the
-  execution left them, in an append-only record; a draft is not undoable by design. No real task type implements it yet, so the
-  threats (an undo by someone without the right, an undo of what moved) are proved on a test-only undoable type; each real posting
-  type adds its own undo with its attack test.
+  execution left them, in an append-only record; a draft is not undoable by design. The first real
+  type to implement it is `ct.update_contact` (below), which proves the threats (an undo by someone without the right, an undo of what
+  moved); each later posting type adds its own undo with its attack test.
+- **`ct.update_contact` (version 1, tier 2; 21 Nov 2026) and the first real undo.** The first task type that changes master data. The threat is
+  an injected instruction (in a contact's own text, an email or a document) that redirects money or hides a record: so the payload names six
+  details only (billing email, phone, address, payment terms, default category, default GST code), the command reads it with unknown fields
+  refused, and the **executor's grant is column-limited to those six and `version`** (migration 000960): no remittance email, bank detail, tax
+  residence, legal name, UEN, Peppol ID, flag or member link, whatever SQL the executor were made to send; a trigger also refuses the executor
+  any contact of a person (an individual, director, shareholder, investor or linked member) or an inactive one. A person's contact is never
+  changed by the AI because its values are sealed in the audit trail and the undo would have to keep the old ones unsealed; the undo's
+  pre-image of a company contact (the six old values) is kept in the proposal's execution record, is not shown on any review and is only read by
+  the undo. The undo runs as the person with the command's right, under the API's role, through the same narrow query, once, only while the
+  contact is at the version the execution left. Proved by `TestTheAIUpdatesAContactAndAPersonUndoesIt` (AI-31, AI-91) and
+  `TestAttackTheExecutorChangesSixDetailsOfACompanyContactAndNothingElse`; its evals are `ct-update-contact` (proposal) and
+  `ct-update-contact-redteam`. Needs human review: migration 000960's grant. The MCP surface is not widened: no task type is named in
+  `mcp-scopes.json` by this change.
 - **An injection that stays within the person's rights.** A turned model can propose only a type that is on, within
   its limits, as something the person may do. A person still reads Fyniq's summary and decides.
 - **Model Armor.** In a release, screening of the model's answers and of a proposal's words runs through Model

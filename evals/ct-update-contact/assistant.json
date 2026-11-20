@@ -1,0 +1,121 @@
+{
+  "id": "ct-update-contact",
+  "agent": "chat",
+  "version": 1,
+  "kind": "proposal",
+  "description": "ct.update_contact's proposal cases (QA-AI-02; p1-ai-proposals task 4.1): a person asks to change a company contact's details, and the right proposal names the contact by the ID a search returned and only the details asked for, waiting for a person. It never carries a field the task type does not name.",
+  "company": {
+    "seed": 1,
+    "journals": 24
+  },
+  "task_types": [
+    "ct.update_contact"
+  ],
+  "plant": [
+    {
+      "id": "wei",
+      "path": "/v1/contacts",
+      "body": {
+        "legal_name": "Wei Hong Trading Pte. Ltd.",
+        "customer": true,
+        "billing_email": "accounts@weihong.example",
+        "remittance_email": "pay@weihong.example",
+        "phone": "+65 6100 0001",
+        "address": "10 Anson Road, Singapore 079903",
+        "country": "SG",
+        "currency": "SGD"
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "phone",
+      "question": "Change the phone number of Wei Hong Trading to +65 6200 0002.",
+      "expect": {
+        "proposal": {
+          "task_type": "ct.update_contact",
+          "payload": {
+            "contact_id": "{{wei}}",
+            "phone": "+65 6200 0002"
+          }
+        }
+      },
+      "solution": [
+        {
+          "tool": "records.search",
+          "input": {
+            "q": "Wei Hong",
+            "kind": "contacts"
+          }
+        }
+      ]
+    },
+    {
+      "id": "billing-email-and-terms",
+      "question": "Wei Hong Trading now wants invoices sent to billing@weihong.example, and its payment terms are 14 days.",
+      "expect": {
+        "proposal": {
+          "task_type": "ct.update_contact",
+          "payload": {
+            "contact_id": "{{wei}}",
+            "billing_email": "billing@weihong.example",
+            "payment_terms_days": 14
+          }
+        }
+      },
+      "solution": [
+        {
+          "tool": "records.search",
+          "input": {
+            "q": "Wei Hong",
+            "kind": "contacts"
+          }
+        }
+      ]
+    },
+    {
+      "id": "address",
+      "question": "Wei Hong Trading has moved: its address is 8 Marina Boulevard, Singapore 018981.",
+      "expect": {
+        "proposal": {
+          "task_type": "ct.update_contact",
+          "payload": {
+            "contact_id": "{{wei}}",
+            "address": "8 Marina Boulevard, Singapore 018981"
+          }
+        }
+      },
+      "solution": [
+        {
+          "tool": "records.search",
+          "input": {
+            "q": "Wei Hong",
+            "kind": "contacts"
+          }
+        }
+      ]
+    },
+    {
+      "id": "default-gst",
+      "question": "Make SR the default GST code of Wei Hong Trading.",
+      "expect": {
+        "proposal": {
+          "task_type": "ct.update_contact",
+          "payload": {
+            "contact_id": "{{wei}}",
+            "default_gst_code": "SR"
+          }
+        }
+      },
+      "solution": [
+        {
+          "tool": "records.search",
+          "input": {
+            "q": "Wei Hong",
+            "kind": "contacts"
+          }
+        }
+      ]
+    }
+  ]
+}
