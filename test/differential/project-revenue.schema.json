@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fyniq.example/schemas/differential/project-revenue.schema.json",
+  "title": "Revenue over time for a fixed-fee project (PRD-001 FR-PRJ-11, RND-RECOGNISE)",
+  "description": "One hand-worked case both implementations must reproduce. Earned = round(price \u00d7 cost to date \u00f7 estimated total cost, the currency's minor units), half away from zero, once, on the cumulative figures; a cost at or above the estimate earns the whole price and is an overrun. The revenue the ledger holds (held) is the amount invoiced to date plus the earlier journals' adjustments. Adjustment = earned \u2212 held. The contract position after the journal is earned \u2212 billed: an asset when above nothing, a liability (shown positive) when below. The changes are the position after less the position before (held \u2212 billed), asset and liability each on its own; asset_change \u2212 liability_change = adjustment.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "currency",
+    "minor_units",
+    "price",
+    "estimate",
+    "cost",
+    "billed",
+    "held",
+    "want"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "minor_units": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "price": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(\\.[0-9]{1,3})?$"
+    },
+    "estimate": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(\\.[0-9]{1,3})?$"
+    },
+    "cost": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(\\.[0-9]{1,3})?$"
+    },
+    "billed": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(\\.[0-9]{1,3})?$"
+    },
+    "held": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(\\.[0-9]{1,3})?$"
+    },
+    "want": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "progress",
+        "overrun",
+        "earned",
+        "adjustment",
+        "asset",
+        "liability",
+        "asset_change",
+        "liability_change"
+      ],
+      "properties": {
+        "progress": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]$"
+        },
+        "overrun": {
+          "type": "boolean"
+        },
+        "earned": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(\\.[0-9]{1,3})?$"
+        },
+        "adjustment": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(\\.[0-9]{1,3})?$"
+        },
+        "asset": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(\\.[0-9]{1,3})?$"
+        },
+        "liability": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(\\.[0-9]{1,3})?$"
+        },
+        "asset_change": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(\\.[0-9]{1,3})?$"
+        },
+        "liability_change": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(\\.[0-9]{1,3})?$"
+        }
+      }
+    }
+  }
+}

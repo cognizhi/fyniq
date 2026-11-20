@@ -48,3 +48,8 @@ var PartMonthSchema []byte
 //
 //go:embed subscription.schema.json
 var SubscriptionSchema []byte
+
+// ProjectRevenueSchema is project-revenue.schema.json: one hand-worked case of a fixed-fee project's revenue over time by cost-to-cost progress (FR-PRJ-11, RND-RECOGNISE).
+//
+//go:embed project-revenue.schema.json
+var ProjectRevenueSchema []byte

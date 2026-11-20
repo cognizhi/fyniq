@@ -248,6 +248,12 @@ Source: PRD-001 §8.10 · Priority S · Phase P2
 - **WHEN** such a period begins
 - **THEN** the method is re-confirmed against the third edition's five-step revenue model
 
+#### Scenario: The month's figures are a true-up of the revenue the ledger holds (rev 0.571)
+- **GIVEN** a fixed fee of 10,000.00, an estimated total cost of 6,000.00, a cost to date of 3,000.00, 4,000.00 invoiced and 6,500.00 of revenue held for the project
+- **WHEN** the position is worked out
+- **THEN** progress is 50.0%, the revenue earned to date is 5,000.00, the adjustment is minus 1,500.00 and the contract asset is 1,000.00 after the journal
+- **AND** a project invoiced ahead of its progress shows a contract liability instead, and the asset's change less the liability's change is the adjustment
+
 ### Requirement: FR-PRJ-12 Project reports
 The system SHALL report profitability per project, customer and person (revenue − time at cost − direct costs), utilisation, realisation, unbilled work and budget burn, with drill to time entries and costs; time at cost is a management view.
 
