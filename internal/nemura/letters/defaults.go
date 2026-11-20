@@ -11,3 +11,14 @@ var KETDefault = []Block{
 	{Kind: Paragraph, Text: "11. Overtime payment period: {{terms.overtime_period}}\n12. Overtime rate of pay: {{terms.overtime_rate}}\n13. Other salary-related components: {{terms.other_pay}}\n14. Leave entitlements: {{terms.leave}}\n15. Other medical benefits: {{terms.medical_benefits}}\n16. Probation period: {{terms.probation}}\n17. Notice period for termination of employment initiated by either party: {{terms.notice_period}}"},
 	{Kind: Signature, Text: "For {{company.name}}"},
 }
+
+// OfferDefault is the standard text of the offer letter (NM-LTR-01, NM-REC-06): the role, the kind of employment and the first day, from the person record made at the hire. It
+// carries no pay: the offer's terms are the key employment terms, issued within 14 days of the start.
+var OfferDefault = []Block{
+	{Kind: Letterhead, Text: "{{company.name}}\nUEN {{company.uen}}\n{{company.address}}"},
+	{Kind: Heading, Text: "Offer of employment"},
+	{Kind: Paragraph, Text: "Reference {{letter.reference}}. Dated {{letter.date}}."},
+	{Kind: Paragraph, Text: "Dear {{person.legal_name}}, {{company.name}} is pleased to offer you the role of {{job.title}} in {{job.department}}. Kind of employment: {{employment.type}}. Your first day is {{employment.start}}."},
+	{Kind: Paragraph, Text: "Your key employment terms follow within 14 days of your start. This offer is accepted by your reply to the people team."},
+	{Kind: Signature, Text: "For {{company.name}}"},
+}

@@ -168,7 +168,26 @@ func StartOnboardingPlan(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.
 			return uuid.Nil, planError(err)
 		}
 	}
-	return id, Audit(ctx, tx, org, at, user(by), "nemura.onboarding_plan.started", audit.Object{Type: "onboarding_plan", ID: id}, map[string]audit.Change{"person_id": {nil, person.String()}, "template": {nil, name}, "tasks": {nil, len(tasks)}}, "")
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.onboarding_plan.started", audit.Object{Type: "onboarding_plan", ID: id}, map[string]audit.Change{"person_id": {nil, person.String()}, "template": {nil, name}, "tasks": {nil, len(tasks)}}, ""); err != nil {
+		return uuid.Nil, err
+	}
+	// A flow that happened before the plan started (the KETs issued, the person invited) closes its task by its own check: the task is never left open for someone to skip.
+	var kets, invited bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM nemura.letter_issued WHERE person_id = $1 AND type_key = 'kets'), EXISTS (SELECT 1 FROM nemura.join_task WHERE person_id = $1 AND kind = 'fyniq_invitation' AND state = 'done')`, person).Scan(&kets, &invited); err != nil {
+		return uuid.Nil, err
+	}
+	for _, f := range []struct {
+		flow     string
+		happened bool
+	}{{onboarding.ClosesKETs, kets}, {onboarding.ClosesInvitation, invited}} {
+		flow := f.flow
+		if f.happened {
+			if _, err := closeTasksByFlow(ctx, tx, org, at, by, person, flow, "Closed by itself when the plan started: "+closesFlow[flow]+" before it."); err != nil {
+				return uuid.Nil, err
+			}
+		}
+	}
+	return id, nil
 }
 
 const taskColumns = `t.id, t.plan_id, t.person_id, p.legal_name, t.title, t.detail, t.assignee, t.due_on, t.state, coalesce(m.display_name, ''), t.decided_at, coalesce(t.note, ''), coalesce(t.closes, '')`
@@ -442,8 +461,12 @@ var closesFlow = map[string]string{onboarding.ClosesKETs: "the person's key empl
 // CloseOnboardingTasksByFlow marks done the open tasks of a person's plan that close by the flow that has just happened, by the member who ran it, in the flow's own transaction, one audit event each. It
 // closes nothing for a person with no plan or no such task, and never a task already decided (NM-ONB-01, rev 0.75).
 func CloseOnboardingTasksByFlow(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, person uuid.UUID, flow string) (int, error) {
+	return closeTasksByFlow(ctx, tx, org, at, by, person, flow, "Closed by itself when "+closesFlow[flow]+".")
+}
+
+func closeTasksByFlow(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, person uuid.UUID, flow, note string) (int, error) {
 	rows, err := tx.Query(ctx, `UPDATE nemura.onboarding_task SET state = 'done', decided_by = $3, decided_at = $4, note = $5 WHERE person_id = $1 AND closes = $2 AND state = 'open' RETURNING id`,
-		person, flow, by, at, "Closed by itself when "+closesFlow[flow]+".")
+		person, flow, by, at, note)
 	if err != nil {
 		return 0, planError(err)
 	}

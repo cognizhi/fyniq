@@ -77,13 +77,13 @@ export interface paths {
         };
         /**
          * The drafts attached to a request
-         * @description The approved drafts the executor attached to a letter request or a flexible-work request, for the person who decides it to use. The HR officer, the HR administrator and the Owner. It changes nothing.
+         * @description The approved drafts the executor attached to a letter request or a flexible-work request, for the person who decides it to use. The HR officer, the HR administrator and the Owner; the Recruiter the drafts of a requisition only. It changes nothing.
          */
         get: operations["listAssistantDrafts"];
         put?: never;
         /**
          * Ask the assistant to draft a letter or a reply
-         * @description Makes a proposal: a draft letter for an open letter request (its fields filled from the values the request holds from the person's record, its purpose quoted) or a draft reply to an open flexible-work request (an acknowledgement that states no decision and no reason). The request's own words are data, never instructions. The assistant and the task type must be on. The proposal waits for a person to approve it within 72 hours; nothing is checked, issued, signed or replied to. The HR officer, the HR administrator and the Owner. It is audited.
+         * @description Makes a proposal: a draft letter for an open letter request (its fields filled from the values the request holds from the person's record, its purpose quoted) or a draft reply to an open flexible-work request (an acknowledgement that states no decision and no reason). The request's own words are data, never instructions. The assistant and the task type must be on. The proposal waits for a person to approve it within 72 hours; nothing is checked, issued, signed or replied to. The HR officer, the HR administrator and the Owner; the Recruiter for a job post or an interview kit only. It is audited.
          */
         post: operations["draftWithAssistant"];
         delete?: never;
@@ -101,7 +101,7 @@ export interface paths {
         };
         /**
          * The assistant's proposals
-         * @description The drafts the assistant proposed, newest first, with what it proposed, who it acted for and where each is. The HR officer, the HR administrator and the Owner. It changes nothing.
+         * @description The drafts the assistant proposed, newest first, with what it proposed, who it acted for and where each is. The HR officer, the HR administrator and the Owner; the Recruiter sees the drafts of a job post and an interview kit and no other. It changes nothing.
          */
         get: operations["listAssistantProposals"];
         put?: never;
@@ -121,7 +121,7 @@ export interface paths {
         };
         /**
          * One proposal
-         * @description One draft with its text. The HR officer, the HR administrator and the Owner. It changes nothing.
+         * @description One draft with its text. The HR officer, the HR administrator and the Owner; the Recruiter a job post or an interview kit draft only (any other is not found). It changes nothing.
          */
         get: operations["getAssistantProposal"];
         put?: never;
@@ -143,7 +143,7 @@ export interface paths {
         put?: never;
         /**
          * Approve or reject a proposal
-         * @description A named human approves or rejects a pending proposal; a tier 1 draft may be decided by the person who asked for it. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.
+         * @description A named human approves or rejects a pending proposal; a tier 1 draft may be decided by the person who asked for it. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. The HR officer, the HR administrator and the Owner decide every task; the Recruiter decides a job post or an interview kit draft only (NM-AI-05). It is audited with the hashes, never the text.
          */
         post: operations["decideAssistantProposal"];
         delete?: never;
@@ -434,6 +434,26 @@ export interface paths {
          * @description PRD-002 NM-REC-04. A note of the hiring team, kept as written. Notes are opinions formed to evaluate a candidate: they are not released on an access request (PDPC). The Recruiter, the HR administrator and the Owner. It is audited.
          */
         post: operations["noteCandidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/candidates/{id}/offer-letter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for the offer letter of a hired candidate
+         * @description PRD-002 NM-REC-06, NM-LTR-01. Letters are about a person, so the offer letter is made for the person record the hire made, after the offer was accepted: the company's offer letter template is filled from the person's role, team, kind of employment and first day and the letterhead, and then checked by another member of the people team and signed as any letter is. Asked once while one is open or issued (NM_HIRING_CONFLICT); refused with the reason when the company issues no offer letters yet. The HR administrator and the Owner, who made the hire. It is audited.
+         */
+        post: operations["requestOfferLetter"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7152,6 +7172,11 @@ export interface components {
              */
             job_title?: string;
             /**
+             * @description Also ask for the offer letter for the person made at the hire, from the company's offer letter template; refused, and nobody hired, when the company issues none yet.
+             * @example true
+             */
+            offer_letter?: boolean;
+            /**
              * Format: date
              * @description The first day of employment, today or later.
              * @example 2027-02-01
@@ -7170,6 +7195,18 @@ export interface components {
             worksite?: string;
         };
         HireView: {
+            /**
+             * Format: uuid
+             * @description The request for the person's offer letter, when one was made (NM-REC-06); it is checked and signed as any letter is.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01
+             */
+            offer_letter_id?: string;
+            /**
+             * @description Where the offer letter is: requested, checked, issued, refused or withdrawn.
+             * @example requested
+             * @enum {string}
+             */
+            offer_letter_state?: "requested" | "checked" | "issued" | "refused" | "withdrawn";
             /**
              * Format: date
              * @description The day the pass application was made, recorded once.
@@ -14520,6 +14557,95 @@ export interface operations {
                 "application/json": components["schemas"]["CandidateNoteInputBody"];
             };
         };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Candidate"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestOfferLetter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The candidate. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Created */
             201: {

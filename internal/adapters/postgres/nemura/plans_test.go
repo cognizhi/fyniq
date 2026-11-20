@@ -5,6 +5,7 @@ package nemura_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -389,5 +390,52 @@ func TestATaskThatClosesByItsFlowIsClosedByItAndNeverMarkedDoneByHand(t *testing
 		return err
 	}); pgErr(err) != "NM212" && pgErr(err) != "42501" {
 		t.Errorf("a task's flow rewritten: %v", err)
+	}
+}
+
+// A plan started after the person was invited closes the invitation task by its own check at once, by the person who started the plan, with a note that says so; a task of a flow that did not happen stays open
+// (NM-ONB-01, rev 0.77).
+// req: NM-ONB-01
+// asvs: V8.3.1
+func TestAPlanStartedAfterTheInvitationClosesItsInvitationTaskByItsOwnCheck(t *testing.T) {
+	p := newPlanTeam(t)
+	c := p.c
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		if err := nemura.SetInviteToFyniq(ctx, tx, c.org, p.now, c.hr, true); err != nil {
+			return err
+		}
+		return nemura.RaiseJoinTask(ctx, tx, c.org, p.now, c.hr, p.pJon)
+	})
+	var task uuid.UUID
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `SELECT id FROM nemura.join_task WHERE person_id = $1`, p.pJon).Scan(&task)
+	})
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.DecideJoinTask(ctx, tx, c.org, p.now, c.hr, task, "done", "")
+	})
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		tpl, err := nemura.MakeOnboardingTemplate(ctx, tx, c.org, p.now, c.hr, "With flows", []onboarding.Task{
+			{Title: "Issue the KETs", Assignee: onboarding.ForHR, Offset: 14, Closes: onboarding.ClosesKETs},
+			{Title: "Invite them to Fyniq", Assignee: onboarding.ForHR, Offset: 1, Closes: onboarding.ClosesInvitation}})
+		if err != nil {
+			return err
+		}
+		_, err = nemura.StartOnboardingPlan(ctx, tx, c.org, p.now.Add(time.Hour), c.owner, p.pJon, &tpl)
+		return err
+	})
+	var closed, open int
+	var by uuid.UUID
+	var note string
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		if err := tx.QueryRow(ctx, `SELECT count(*), max(note), max(decided_by::text)::uuid FROM nemura.onboarding_task WHERE person_id = $1 AND closes = 'fyniq_invitation' AND state = 'done'`, p.pJon).Scan(&closed, &note, &by); err != nil {
+			return err
+		}
+		return tx.QueryRow(ctx, `SELECT count(*) FROM nemura.onboarding_task WHERE person_id = $1 AND closes = 'kets' AND state = 'open'`, p.pJon).Scan(&open)
+	})
+	if closed != 1 || by != c.owner || !strings.Contains(note, "when the plan started") {
+		t.Errorf("the invitation task: %d closed by %s: %q", closed, by, note)
+	}
+	if open != 1 {
+		t.Errorf("the KETs task, whose letter was not issued, is open: %d", open)
 	}
 }

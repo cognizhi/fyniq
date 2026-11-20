@@ -38,10 +38,33 @@ func FairFindings(text string) []string {
 // the assistant never repeats it.
 func plain(s string, max int, placeholder string) (string, bool) {
 	s = trim(s, max)
-	if s == "" || len([]rune(s)) > 80 || !plainName.MatchString(s) || len(FairFindings(s)) > 0 {
+	if s == "" || len([]rune(s)) > 80 || !plainName.MatchString(s) || len(FairFindings(s)) > 0 || readsAsInstruction(s) {
 		return placeholder, false
 	}
 	return s, true
+}
+
+// maxNameWords is the most words a role's title or a team's name has: a longer run of words, with no punctuation to show it, is a sentence.
+const maxNameWords = 6
+
+// instructionWords are words that turn a few words into a command to a model or a reader: a role's title or a team's name does not hold them. A title that does is data written by a person, not a name,
+// and is not repeated in a draft (NM-AI-04: the requisition's own words are never instructions).
+var instructionWords = map[string]bool{"ignore": true, "disregard": true, "forget": true, "override": true, "overrule": true, "instead": true, "instruction": true, "instructions": true, "previous": true, "prior": true,
+	"above": true, "prompt": true, "reveal": true, "pretend": true, "jailbreak": true, "respond": true, "must": true, "always": true, "never": true,
+	"please": true, "approve": true, "reject": true, "hire": true, "rank": true, "score": true, "send": true, "delete": true, "password": true}
+
+// readsAsInstruction says whether a title or a name is too long to be one, or holds a word that commands: the placeholder stands in its place.
+func readsAsInstruction(s string) bool {
+	ws := strings.Fields(s)
+	if len(ws) > maxNameWords {
+		return true
+	}
+	for _, w := range ws {
+		if instructionWords[strings.ToLower(strings.Trim(w, ",.()'&/-"))] {
+			return true
+		}
+	}
+	return false
 }
 
 // plainName is what a role's title or a team's name looks like: words, digits and the few marks a name carries. A title with a sentence's punctuation in it is a sentence, not a name, and is not repeated.

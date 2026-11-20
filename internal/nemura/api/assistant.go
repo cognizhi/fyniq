@@ -3,11 +3,13 @@ package api
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/nemura/assistant"
+	"github.com/cognizhi/fyniq/internal/nemura/authz"
 )
 
 // Codes of the assistant's refusals (NM-AI-04).
@@ -115,11 +117,12 @@ type AIDraft struct {
 type AssistantAdmin interface {
 	Settings(ctx context.Context, s Session) (AISettings, error)
 	SetSettings(ctx context.Context, s Session, in AISettingsInput) error
-	Proposals(ctx context.Context, s Session, state string) ([]AIProposal, error)
-	Proposal(ctx context.Context, s Session, id uuid.UUID) (AIProposal, error)
-	Decide(ctx context.Context, s Session, id uuid.UUID, in AIDecision) error
+	// hiringOnly is the Recruiter's scope (NM-AI-05): only the proposals and drafts of the two hiring task types are listed, read and decided; the people team's is every task.
+	Proposals(ctx context.Context, s Session, state string, hiringOnly bool) ([]AIProposal, error)
+	Proposal(ctx context.Context, s Session, id uuid.UUID, hiringOnly bool) (AIProposal, error)
+	Decide(ctx context.Context, s Session, id uuid.UUID, in AIDecision, hiringOnly bool) error
 	Draft(ctx context.Context, s Session, in AIDraftInput) (AIDraftResult, error)
-	Drafts(ctx context.Context, s Session, request uuid.UUID) ([]AIDraft, error)
+	Drafts(ctx context.Context, s Session, request uuid.UUID, hiringOnly bool) ([]AIDraft, error)
 }
 
 func assistantError(err error) error {
@@ -203,6 +206,28 @@ func (a *API) registerAssistant() {
 		}
 		return s, nil
 	}
+	// scoped is the people team (every task) or the Recruiter alone (the hiring drafts only): the Recruiter's right is no wider than Hiring: create, which already writes the post and the kit (NM-AI-05).
+	scoped := func(ctx context.Context, cookie string) (Session, bool, error) {
+		s, err := a.signedIn(ctx, cookie)
+		if err != nil {
+			return s, false, err
+		}
+		p, err := a.letterPowers(ctx, s)
+		if err != nil {
+			return s, false, err
+		}
+		if p.Team {
+			return s, false, nil
+		}
+		roles, err := a.d.Sessions.RolesAt(ctx, s.Organisation, s.Member, a.d.Clock.Now())
+		if err != nil {
+			return s, false, huma.Error500InternalServerError("The roles could not be read.")
+		}
+		if slices.Contains(roles, authz.Recruiter) {
+			return s, true, nil
+		}
+		return s, false, Err(CodeRoleRequired, "The HR officer, the HR administrator and the Owner see and decide the assistant's drafts; the Recruiter, those of a job post and an interview kit.")
+	}
 	huma.Register(a.API, huma.Operation{
 		OperationID: "askAssistant", Method: "POST", Path: "/v1/assistant/ask", Tags: []string{"Assistant"}, Summary: "Ask the people assistant",
 		Description: "Answers a question about the signed-in person's own leave balance, their pay day, a rule of the Singapore pack (cited, with a note to confirm it with HR when it has not been verified a second time) or what a line of their payslip is, as a rule with no figure. The read tools run as the person asking, so the assistant reads what they can and nothing else; no pay figure and no sealed field reaches a model, and every figure of the answer came from a tool in this turn. A question that asks it to approve, change, issue, pay or read another person's records is refused in words. The assistant must be on. The question is not stored; the audit event names the tools that ran. It changes nothing.", Errors: []int{401, 409, 422, 503},
@@ -222,11 +247,14 @@ func (a *API) registerAssistant() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "draftWithAssistant", Method: "POST", Path: "/v1/assistant/drafts", Tags: []string{"Assistant"}, Summary: "Ask the assistant to draft a letter or a reply",
-		Description: "Makes a proposal: a draft letter for an open letter request (its fields filled from the values the request holds from the person's record, its purpose quoted) or a draft reply to an open flexible-work request (an acknowledgement that states no decision and no reason). The request's own words are data, never instructions. The assistant and the task type must be on. The proposal waits for a person to approve it within 72 hours; nothing is checked, issued, signed or replied to. The HR officer, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
+		Description: "Makes a proposal: a draft letter for an open letter request (its fields filled from the values the request holds from the person's record, its purpose quoted) or a draft reply to an open flexible-work request (an acknowledgement that states no decision and no reason). The request's own words are data, never instructions. The assistant and the task type must be on. The proposal waits for a person to approve it within 72 hours; nothing is checked, issued, signed or replied to. The HR officer, the HR administrator and the Owner; the Recruiter for a job post or an interview kit only. It is audited.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
 	}, func(ctx context.Context, in *aiDraftPost) (*aiDraftOutput, error) {
-		s, err := team(ctx, in.Cookie)
+		s, hiringOnly, err := scoped(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
+		}
+		if hiringOnly && !assistant.IsHiringDraft(in.Body.Task) {
+			return nil, Err(CodeRoleRequired, "The Recruiter asks for a job post or an interview kit; the other drafts are the people team's.")
 		}
 		r, err := a.d.Assistant.Draft(ctx, s, in.Body)
 		if err != nil {
@@ -236,9 +264,9 @@ func (a *API) registerAssistant() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "listAssistantDrafts", Method: "GET", Path: "/v1/assistant/drafts", Tags: []string{"Assistant"}, Summary: "The drafts attached to a request",
-		Description: "The approved drafts the executor attached to a letter request or a flexible-work request, for the person who decides it to use. The HR officer, the HR administrator and the Owner. It changes nothing.", Errors: []int{401, 403, 422},
+		Description: "The approved drafts the executor attached to a letter request or a flexible-work request, for the person who decides it to use. The HR officer, the HR administrator and the Owner; the Recruiter the drafts of a requisition only. It changes nothing.", Errors: []int{401, 403, 422},
 	}, func(ctx context.Context, in *aiDraftsInput) (*aiDraftsOutput, error) {
-		s, err := team(ctx, in.Cookie)
+		s, hiringOnly, err := scoped(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +274,7 @@ func (a *API) registerAssistant() {
 		if err != nil {
 			return nil, Err(CodeNotFound, "There is no such request.")
 		}
-		list, err := a.d.Assistant.Drafts(ctx, s, id)
+		list, err := a.d.Assistant.Drafts(ctx, s, id, hiringOnly)
 		if err != nil {
 			return nil, assistantError(err)
 		}
@@ -296,13 +324,13 @@ func (a *API) registerAssistant() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "listAssistantProposals", Method: "GET", Path: "/v1/assistant/proposals", Tags: []string{"Assistant"}, Summary: "The assistant's proposals",
-		Description: "The drafts the assistant proposed, newest first, with what it proposed, who it acted for and where each is. The HR officer, the HR administrator and the Owner. It changes nothing.", Errors: []int{401, 403},
+		Description: "The drafts the assistant proposed, newest first, with what it proposed, who it acted for and where each is. The HR officer, the HR administrator and the Owner; the Recruiter sees the drafts of a job post and an interview kit and no other. It changes nothing.", Errors: []int{401, 403},
 	}, func(ctx context.Context, in *aiProposalsInput) (*aiProposalsOutput, error) {
-		s, err := team(ctx, in.Cookie)
+		s, hiringOnly, err := scoped(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
-		list, err := a.d.Assistant.Proposals(ctx, s, in.State)
+		list, err := a.d.Assistant.Proposals(ctx, s, in.State, hiringOnly)
 		if err != nil {
 			return nil, assistantError(err)
 		}
@@ -315,9 +343,9 @@ func (a *API) registerAssistant() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "getAssistantProposal", Method: "GET", Path: "/v1/assistant/proposals/{id}", Tags: []string{"Assistant"}, Summary: "One proposal",
-		Description: "One draft with its text. The HR officer, the HR administrator and the Owner. It changes nothing.", Errors: []int{401, 403, 404},
+		Description: "One draft with its text. The HR officer, the HR administrator and the Owner; the Recruiter a job post or an interview kit draft only (any other is not found). It changes nothing.", Errors: []int{401, 403, 404},
 	}, func(ctx context.Context, in *aiProposalInput) (*aiProposalOutput, error) {
-		s, err := team(ctx, in.Cookie)
+		s, hiringOnly, err := scoped(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
@@ -325,7 +353,7 @@ func (a *API) registerAssistant() {
 		if err != nil {
 			return nil, Err(CodeNotFound, "There is no such proposal.")
 		}
-		p, err := a.d.Assistant.Proposal(ctx, s, id)
+		p, err := a.d.Assistant.Proposal(ctx, s, id, hiringOnly)
 		if err != nil {
 			return nil, assistantError(err)
 		}
@@ -333,9 +361,9 @@ func (a *API) registerAssistant() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "decideAssistantProposal", Method: "POST", Path: "/v1/assistant/proposals/{id}/decision", Tags: []string{"Assistant"}, Summary: "Approve or reject a proposal",
-		Description: "A named human approves or rejects a pending proposal; a tier 1 draft may be decided by the person who asked for it. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 204,
+		Description: "A named human approves or rejects a pending proposal; a tier 1 draft may be decided by the person who asked for it. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. The HR officer, the HR administrator and the Owner decide every task; the Recruiter decides a job post or an interview kit draft only (NM-AI-05). It is audited with the hashes, never the text.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 204,
 	}, func(ctx context.Context, in *aiDecisionInput) (*struct{}, error) {
-		s, err := team(ctx, in.Cookie)
+		s, hiringOnly, err := scoped(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
@@ -343,7 +371,7 @@ func (a *API) registerAssistant() {
 		if err != nil {
 			return nil, Err(CodeNotFound, "There is no such proposal.")
 		}
-		if err := a.d.Assistant.Decide(ctx, s, id, in.Body); err != nil {
+		if err := a.d.Assistant.Decide(ctx, s, id, in.Body, hiringOnly); err != nil {
 			return nil, assistantError(err)
 		}
 		return nil, nil

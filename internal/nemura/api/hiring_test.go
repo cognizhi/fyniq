@@ -25,11 +25,11 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 		{"POST", "/v1/requisitions/" + id + "/job-post/exemption", `{"kind":"transferee","note":"Intra-company."}`},
 		{"POST", "/v1/requisitions/" + id + "/job-post/closing", ``},
 		{"GET", "/v1/interviewers", ""}, {"POST", "/v1/candidates/" + id + "/access-links", `{"days":14}`}, {"GET", "/v1/candidates/" + id + "/access-links", ""}, {"POST", "/v1/candidate-access-links/" + id + "/revocation", ``}}
-	mine := []op{{"GET", "/v1/me/hiring-roles", ""}}                                                                                                                   // a line manager (their own roles only) and the hiring team
-	interviews := []op{{"GET", "/v1/me/interviews", ""}}                                                                                                               // an interviewer alone
-	seen := []op{{"GET", "/v1/requisitions/" + id + "/candidates", ""}, {"GET", "/v1/candidates/" + id, ""}, {"GET", "/v1/requisitions/" + id + "/interview-kit", ""}} // the team and an interviewer
-	scores := []op{{"POST", "/v1/candidates/" + id + "/scores", `{"criterion":"Skill","score":4}`}}                                                                    // an interviewer alone
-	hires := []op{{"POST", "/v1/candidates/" + id + "/hire", `{"start_date":"2027-02-01","employment_type":"full_time"}`}}                                             // the HR administrator and the Owner alone
+	mine := []op{{"GET", "/v1/me/hiring-roles", ""}}                                                                                                                                                   // a line manager (their own roles only) and the hiring team
+	interviews := []op{{"GET", "/v1/me/interviews", ""}}                                                                                                                                               // an interviewer alone
+	seen := []op{{"GET", "/v1/requisitions/" + id + "/candidates", ""}, {"GET", "/v1/candidates/" + id, ""}, {"GET", "/v1/requisitions/" + id + "/interview-kit", ""}}                                 // the team and an interviewer
+	scores := []op{{"POST", "/v1/candidates/" + id + "/scores", `{"criterion":"Skill","score":4}`}}                                                                                                    // an interviewer alone
+	hires := []op{{"POST", "/v1/candidates/" + id + "/hire", `{"start_date":"2027-02-01","employment_type":"full_time","offer_letter":true}`}, {"POST", "/v1/candidates/" + id + "/offer-letter", ``}} // the HR administrator and the Owner alone
 	approves := []op{{"POST", "/v1/requisitions/" + id + "/decision", `{"approve":true}`}}
 	call := func(o op, cookie string) int {
 		_, mux := testAPI(t)
@@ -165,4 +165,50 @@ func TestACandidateReadsTheirOwnDataWithNoSessionAndIsRateLimited(t *testing.T) 
 		t.Errorf("past the limit: %d", last)
 	}
 	verifyLimiter = verifyLimit{}
+}
+
+// The Recruiter asks for, lists, reads and decides the assistant's job post and interview kit drafts and nothing else of the assistant: a letter draft is the people team's, the settings are not theirs,
+// and an employee has no part in it (NM-AI-05).
+// req: NM-AI-05
+// asvs: V4.2.1, V8.2.1
+func TestTheRecruiterReachesTheAssistantsHiringDraftsAndNothingElseOfIt(t *testing.T) {
+	const id = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01"
+	type op struct{ method, path, body string }
+	hiringAsk := op{"POST", "/v1/assistant/drafts", `{"task_type":"people.draft_job_post","request_id":"` + id + `"}`}
+	letterAsk := op{"POST", "/v1/assistant/drafts", `{"task_type":"people.draft_letter","request_id":"` + id + `"}`}
+	shared := []op{hiringAsk, {"GET", "/v1/assistant/drafts?request_id=" + id, ""}, {"GET", "/v1/assistant/proposals", ""}, {"GET", "/v1/assistant/proposals/" + id, ""}, {"POST", "/v1/assistant/proposals/" + id + "/decision", `{"approve":true}`}}
+	call := func(o op) int {
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(o.method, o.path, strings.NewReader(o.body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+	for name, tc := range map[string]struct {
+		role       authz.Role
+		shared, ml bool // the hiring drafts; the letter draft and the settings
+	}{
+		"a Recruiter":         {authz.Recruiter, true, false},
+		"an HR officer":       {authz.HROfficer, true, true},
+		"an HR administrator": {authz.HRAdmin, true, true},
+		"the Owner":           {authz.Owner, true, true},
+		"an employee":         {authz.Employee, false, false},
+		"an interviewer":      {authz.Interviewer, false, false},
+		"a line manager":      {authz.LineManager, false, false},
+	} {
+		testRoles = []authz.Role{tc.role}
+		for _, o := range shared {
+			if got := call(o); (got < 300) != tc.shared {
+				t.Errorf("%s: %s %s: %d, allowed want %v", name, o.method, o.path, got, tc.shared)
+			}
+		}
+		for _, o := range []op{letterAsk, {"GET", "/v1/assistant/settings", ""}} {
+			if got := call(o); (got < 300) != tc.ml {
+				t.Errorf("%s: %s %s %s: %d, allowed want %v", name, o.method, o.path, o.body, got, tc.ml)
+			}
+		}
+	}
 }
