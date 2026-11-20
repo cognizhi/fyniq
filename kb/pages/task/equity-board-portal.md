@@ -4,7 +4,7 @@ type: task
 title: Read the board packs and investor updates
 summary: What a Board viewer or investor sees on the Board and investor portal after signing in: updates sent to them, published board packs and their own holding
 sources:
-  - docs/user-guide/board-portal.md sha256:1f32b030b3b82b5c8b75f39a3fae8c7a7865d9f8a8139b0596e721de1f29d71a
+  - docs/user-guide/board-portal.md sha256:23b70e7749eeea4abc8b68c6efded7475f951bf14c350b3ff5c436a8c2849709
 data_class: general
 taint: trusted
 status: draft
@@ -36,8 +36,8 @@ aliases:
 
 (src: docs/user-guide/board-portal.md#what-you-see)
 
-## What you do not see
+## The full cap table
 
-- The full cap table opens only when an Owner grants it to you.
+- By default the viewer reads their own holding only. The whole cap table opens only while an Owner has granted it, with a reason; the portal says when it has not. An Owner can end the grant at any time, and each grant and each ending is audited.
 
-(src: docs/user-guide/board-portal.md#what-you-do-not-see)
+(src: docs/user-guide/board-portal.md#the-full-cap-table)

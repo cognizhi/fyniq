@@ -259,3 +259,76 @@ func TestAnAlertIsRaisedOnceByTheWorkerAndALayoutKeepsItsVersions(t *testing.T) 
 		t.Fatal(err)
 	}
 }
+
+// An Owner's cap table grant (FR-EQ-24): the API grants one live grant a person, ends it once with a reason, and nothing else changes or deletes it; the
+// worker holds no write; another organisation sees none.
+// req: FR-EQ-24
+// asvs: V4.2.1
+func TestACapTableGrantIsLiveOnceAndEndsOnce(t *testing.T) {
+	ctx := context.Background()
+	api, worker := store(t, "fyniq_api"), store(t, "fyniq_worker")
+	books := porttest.NewBooks(t, api, "Grant Pte Ltd")
+	other := porttest.NewBooks(t, api, "Another grant Pte Ltd")
+	at := time.Date(2026, 11, 4, 9, 0, 0, 0, time.UTC)
+	user, by := uuid.New(), "user:"+uuid.NewString()
+	do := func(s storage.Store, org uuid.UUID, f func(u storage.UnitOfWork) error) error {
+		return s.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error { return f(u) })
+	}
+	if err := do(worker, books.Org, func(u storage.UnitOfWork) error {
+		_, err := u.CapTableGrants().Grant(ctx, user, "Board seat", by, at)
+		return err
+	}); err == nil {
+		t.Fatal("the worker granted")
+	}
+	var g storage.CapTableGrant
+	if err := do(api, books.Org, func(u storage.UnitOfWork) (err error) {
+		g, err = u.CapTableGrants().Grant(ctx, user, "Board seat", by, at)
+		return err
+	}); err != nil || g.RevokedAt != nil {
+		t.Fatalf("the grant: %+v %v", g, err)
+	}
+	if err := do(api, books.Org, func(u storage.UnitOfWork) error {
+		_, err := u.CapTableGrants().Grant(ctx, user, "Again", by, at)
+		return err
+	}); err == nil {
+		t.Fatal("a second live grant")
+	}
+	if err := do(api, books.Org, func(u storage.UnitOfWork) error {
+		_, err := u.CapTableGrants().Revoke(ctx, g.ID, "Seat ended", by, at.Add(time.Hour))
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := do(api, books.Org, func(u storage.UnitOfWork) error {
+		_, err := u.CapTableGrants().Revoke(ctx, g.ID, "Again", by, at.Add(2*time.Hour))
+		return err
+	}); err == nil {
+		t.Fatal("a grant was revoked twice")
+	}
+	if err := do(api, books.Org, func(u storage.UnitOfWork) error {
+		if _, err := u.CapTableGrants().LiveOf(ctx, user); !errors.Is(err, ports.ErrNotFound) {
+			t.Errorf("a revoked grant is live: %v", err)
+		}
+		_, err := u.CapTableGrants().Grant(ctx, user, "A new seat", by, at.Add(3*time.Hour))
+		return err
+	}); err != nil {
+		t.Fatalf("granting again after the revocation: %v", err)
+	}
+	su := conn(t, "fyniq")
+	if _, err := su.Exec(ctx, `SET app.org_id = '`+books.Org.String()+`'`); err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{`DELETE FROM fyniq.cap_table_grant`, `UPDATE fyniq.cap_table_grant SET reason = 'changed'`} {
+		if _, err := su.Exec(ctx, q); err == nil {
+			t.Errorf("%s: a grant changed", q)
+		}
+	}
+	if err := do(api, other.Org, func(u storage.UnitOfWork) error {
+		if l, err := u.CapTableGrants().List(ctx); err != nil || len(l) != 0 {
+			t.Errorf("another organisation lists %d grants: %v", len(l), err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}

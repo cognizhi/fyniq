@@ -21,8 +21,8 @@ guide pages compiled into the knowledge base, and the oracle's half where it pos
 ## 3. Board pack, investor updates and access
 - [x] 3.1 Board pack store, API, publish and PDF (D4, D5). `// req: FR-RPT-06`
   Built: migration 001101, `BoardPacks`, listBoardPacks, getBoardPack, createBoardPackDraft, editBoardPackDraft, publishBoardPack (BPACK-01 to BPACK-05); figures frozen at publication with the ledger revision; a month that is not closed is published and says so. Tests: `TestABoardPackIsFrozenWhenPublishedAndReadAfterSignIn`, `TestABoardPackIsFrozenWhenPublishedAndAnUpdateGoesOnceToItsRecipients`. **Left:** the PDF render of a published pack (the render service) and an approval step when the organisation has dual control.
-- [ ] 3.2 Investor access (D7). `// req: FR-EQ-24`
-  Built in part: a Board viewer reads published packs, the updates sent to them and, through `getMyHolding`, their own holding (the portal). **Left:** the Owner's grant of the full cap table (a new operation beside getCapTable, with a reason and a revoke): it widens a Board viewer's read of the cap table, so it waits for the owner (final report).
+- [x] 3.2 Investor access (D7). `// req: FR-EQ-24`
+  Built: a Board viewer reads published packs, the updates sent to them and their own holding; the Owner's grant of the full cap table (migration 001104; listCapTableGrants, grantCapTableAccess, revokeCapTableAccess, getGrantedCapTable; CAPGRANT-01, CAPGRANT-02) on the owner's decision of 23 Nov 2026. Tests: `TestAnOwnersGrantOpensTheFullCapTableToABoardViewerUntilItIsRevoked`, `TestACapTableGrantIsLiveOnceAndEndsOnce`.
 - [x] 3.3 Investor updates, read status, archive (D6). `// req: FR-EQ-23`
   Built: `investor_update` and `investor_update_read` (001101), five operations, the notification `investor.update` with no figure; the list is the archive. Test: `TestAnInvestorUpdateGoesOnceToThoseItIsSentTo`.
 - [ ] 3.4 Obligation tasks (D8). `// req: FR-EQ-28`

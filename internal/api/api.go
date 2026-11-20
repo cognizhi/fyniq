@@ -61,6 +61,8 @@ type Deps struct {
 	Clock        ports.Clock
 	// AccessPoint is the InvoiceNow access point (FR-AR-12); nil when none is connected: sending answers "not available here".
 	AccessPoint ports.AccessPoint
+	// IRASFiler files returns with IRAS (FR-TAX-03); nil when IRAS's API is not connected. No operation calls it until the GST F5 caller exists (p1-gst 7.2).
+	IRASFiler ports.IRASFiler
 	Auth        authn.Authenticator
 	SignIn      ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
 	Log         *slog.Logger
@@ -388,6 +390,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerReportSchedules(a)
 	registerBoardPacks(a)
 	registerKPIAlerts(a)
+	registerCapTableGrants(a)
 	registerDashboards(a)
 	registerInvestorUpdates(a)
 	registerMetrics(a)

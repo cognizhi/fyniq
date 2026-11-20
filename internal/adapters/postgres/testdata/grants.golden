@@ -163,6 +163,9 @@ fyniq_api       SELECT    break_glass
 fyniq_api       UPDATE    break_glass (ended_at, ended_by, version)
 fyniq_api       INSERT    break_glass_use (batch_id, batch_version, break_glass_id, currency, minor_units, total, used_at, used_by)
 fyniq_api       SELECT    break_glass_use
+fyniq_api       INSERT    cap_table_grant (granted_at, granted_by, reason, user_id)
+fyniq_api       SELECT    cap_table_grant
+fyniq_api       UPDATE    cap_table_grant (revoke_reason, revoked_at, revoked_by)
 fyniq_api       INSERT    capture_address (created_at, created_by, kind, local_part, user_id)
 fyniq_api       SELECT    capture_address
 fyniq_api       UPDATE    capture_address (retired_at, retired_by)
@@ -929,6 +932,7 @@ fyniq_readonly  SELECT    board_pack
 fyniq_readonly  SELECT    brand_version
 fyniq_readonly  SELECT    break_glass
 fyniq_readonly  SELECT    break_glass_use
+fyniq_readonly  SELECT    cap_table_grant
 fyniq_readonly  SELECT    capture_address
 fyniq_readonly  SELECT    capture_sender
 fyniq_readonly  SELECT    check_owner
@@ -1238,6 +1242,7 @@ fyniq_worker    SELECT    board_pack
 fyniq_worker    SELECT    brand_version
 fyniq_worker    SELECT    break_glass
 fyniq_worker    SELECT    break_glass_use
+fyniq_worker    SELECT    cap_table_grant
 fyniq_worker    SELECT    capture_address
 fyniq_worker    EXECUTE   capture_route()
 fyniq_worker    SELECT    capture_sender

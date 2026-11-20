@@ -653,6 +653,7 @@ export const actions = [
   { kind: "action", id: "salary.prepare", mode: "basic", help: "salary.prepare", guide: "payroll.salary-payments#prepare-a-salary-batch" },
   { kind: "action", id: "salary.ask", mode: "basic", help: "salary.ask", guide: "payroll.salary-payments#approve-a-salary-batch" },
   { kind: "action", id: "salary.release", mode: "basic", help: "salary.release", guide: "payroll.salary-payments#release-the-free-lines" },
+  { kind: "action", id: "salary.bank-match", mode: "basic", help: "salary.bank-match", guide: "payroll.salary-payments#what-became-of-a-payment" },
   { kind: "action", id: "salary.record", mode: "basic", help: "salary.record", guide: "payroll.salary-payments#what-became-of-a-payment" },
   { kind: "action", id: "salary.cancel", mode: "basic", help: "salary.cancel", guide: "payroll.salary-payments#prepare-a-salary-batch" },
   { kind: "action", id: "batch.cancel", mode: "basic", help: "batch.cancel", guide: "purchases.payment-batches#cancel-a-batch" },

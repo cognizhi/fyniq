@@ -67,4 +67,37 @@ describe("salary payments", () => {
     expect((screen.getByRole("button", { name: "Ask for approval" }) as HTMLButtonElement).disabled).toBe(true);
     await noViolations(document.body);
   });
+
+  it("matches a bank debit to released lines, and only when the lines make it to the cent", async () => {
+    const lines2 = [
+      { ...lines[1] },
+      { line_id: "l3", person_id: "p3", person_name: "Dee Ng", amount: sgd("1000.00"), account: "UOBSGSG ••••1111", bank_detail_version: 1, line_version: 1, state: "released" as const, instruction_id: "S3" },
+    ];
+    const batch = { ...base, state: "released" as const, released: 2, lines_visible: true, lines: lines2 };
+    const seen = answer({
+      "GET /v1/salary-batches/s1": { status: 200, body: batch, headers: { ETag: '"2-approved"' } },
+      "GET /v1/bank-lines": { status: 200, body: { items: [
+        { id: "b1", money_account_id: "a1", booking_date: "2026-10-31", amount: sgd("-8000.33"), description: "GIRO SALARY", status: "unreconciled" },
+        { id: "b2", money_account_id: "a1", booking_date: "2026-10-30", amount: sgd("500.00"), description: "A receipt", status: "unreconciled" },
+      ] } },
+      "POST /v1/salary-batches/s1/bank-match": { status: 200, body: { ...batch, state: "paid" } },
+    });
+    renderPage(SalaryPayment, { path: "/payroll/salary-payments/s1", route: "/payroll/salary-payments/$batchId", session: payroll });
+    fireEvent.click(await screen.findByRole("button", { name: "Match a bank debit" }));
+    const form = await screen.findByRole("form", { name: "Match a bank debit" });
+    const pick = within(form).getByLabelText("The bank debit") as HTMLSelectElement;
+    await waitFor(() => expect(within(pick).getAllByRole("option").length).toBe(2)); // the credit is not offered
+    fireEvent.change(pick, { target: { value: "b1" } });
+    const submit = within(form).getByRole("button", { name: "Match a bank debit" }) as HTMLButtonElement;
+    fireEvent.click(within(form).getByLabelText(/Cai Yu/));
+    expect(submit.disabled).toBe(true); // 7,000.33 is not 8,000.33
+    fireEvent.click(within(form).getByLabelText(/Dee Ng/));
+    expect(within(form).getByText(/It matches the debit to the cent/)).toBeTruthy();
+    expect(submit.disabled).toBe(false);
+    fireEvent.click(submit);
+    await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/salary-batches/s1/bank-match")).toBe(true));
+    const post = seen.find((x) => x.method === "POST")!;
+    expect(post.body).toEqual({ bank_line_id: "b1", line_ids: ["l2", "l3"] });
+    expect(await screen.findByText(/Matched the bank debit and marked 2 line\(s\) paid/)).toBeTruthy();
+  });
 });

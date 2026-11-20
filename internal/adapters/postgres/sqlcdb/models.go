@@ -1065,6 +1065,18 @@ type FyniqBreakGlassUse struct {
 	Total          string
 }
 
+type FyniqCapTableGrant struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Reason         string
+	GrantedBy      string
+	GrantedAt      time.Time
+	RevokedBy      *string
+	RevokedAt      *time.Time
+	RevokeReason   *string
+}
+
 type FyniqCaptureAddress struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

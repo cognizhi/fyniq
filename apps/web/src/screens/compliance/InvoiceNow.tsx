@@ -35,6 +35,17 @@ const gateWords: Record<Gate["state"], [string, string, typeof CircleCheck]> = {
   not_assessed: ["Not assessed", "fy-chip--neutral", CircleDashed],
 };
 
+type ExclusionReason = components["schemas"]["InvoiceNowExclusion"]["reason"];
+const exclusionReasons: [ExclusionReason, string][] = [
+  ["reverse_charge", "A reverse charge supply"],
+  ["import_permit", "An import under a permit"],
+  ["deemed_supply", "A deemed supply"],
+  ["financial_services", "Financial services"],
+  ["unregistered_supplier", "A supplier not registered for GST"],
+  ["blocked_input_tax", "Input tax that cannot be claimed"],
+  ["out_of_scope", "Out of scope of GST"],
+  ["other", "Another reason"],
+];
 const stateWords: Record<string, string> = { none: "Not sent", queued: "Queued", sent: "Sent", failed: "Failed", acknowledged: "Acknowledged" };
 
 async function gate(from: string, to: string): Promise<Gate> {
@@ -70,6 +81,7 @@ export function InvoiceNow() {
   const [status, setStatus] = useState("");
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [contingency, setContingency] = useState({ reason: "", evidence: "" });
+  const [leaveOut, setLeaveOut] = useState({ document_id: "", reason: "reverse_charge", detail: "" });
   const g = useQuery({ queryKey: ["invoicenow-gate", period.from, period.to], queryFn: () => gate(period.from, period.to) });
   const s = useQuery({ queryKey: ["invoicenow-submissions"], queryFn: submissions });
   const r = useQuery({ queryKey: ["invoicenow-inbound"], queryFn: received });
@@ -100,6 +112,15 @@ export function InvoiceNow() {
   const ask = () =>
     run("contingency", () => api.POST("/v1/invoicenow/contingencies", { params: { header: { "Idempotency-Key": newKey() } }, body: { period_from: period.from, period_to: period.to, ...contingency } }),
       "Asked: someone else approves it before the return may be filed with the gap.");
+  const approve = (id: string) =>
+    run(`approve-${id}`, () => api.POST("/v1/invoicenow/contingencies/{contingency_id}/approve", { params: { path: { contingency_id: id }, header: { "Idempotency-Key": newKey() } } }),
+      "Approved: the return may be filed with the gap, and the unsent items stay queued.");
+  const exclude = () =>
+    run("exclude", async () => {
+      const out = await api.POST("/v1/invoicenow/exclusions", { params: { header: { "Idempotency-Key": newKey() } }, body: { document_id: leaveOut.document_id, reason: leaveOut.reason as ExclusionReason, detail: leaveOut.detail } });
+      if (out.data) setLeaveOut({ document_id: "", reason: "reverse_charge", detail: "" });
+      return out;
+    }, "Left out of the submissions, with its reason.");
   const x = g.data;
   const missing = x?.missing ?? [];
   const chip = x ? gateWords[x.state] : undefined;
@@ -174,11 +195,51 @@ export function InvoiceNow() {
                       Queue for InvoiceNow
                     </Button>
                   )}
+                  {mayPrepare && m.state === "none" && (
+                    <Button size="sm" variant="ghost" onClick={() => setLeaveOut({ ...leaveOut, document_id: leaveOut.document_id === m.document_id ? "" : m.document_id })}>
+                      Leave it out
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
           )}
-          {x?.state === "blocked" && !x.contingency && mayPrepare && (
+          {leaveOut.document_id !== "" && mayPrepare && (
+            <form className="fy-stack fy-stack--2" aria-label="Leave a document out" onSubmit={(e) => { e.preventDefault(); void exclude(); }}>
+              <label className="fy-field">
+                <span className="fy-label">Why it needs no submission</span>
+                <select className="fy-input" value={leaveOut.reason} onChange={(e) => setLeaveOut({ ...leaveOut, reason: e.target.value })}>
+                  {exclusionReasons.map(([k, label]) => (
+                    <option key={k} value={k}>{label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="fy-field">
+                <span className="fy-label">In a few words{leaveOut.reason === "other" ? " (needed)" : " (optional)"}</span>
+                <input className="fy-input" value={leaveOut.detail} onChange={(e) => setLeaveOut({ ...leaveOut, detail: e.target.value })} />
+              </label>
+              <Button size="sm" type="submit" disabled={busy !== "" || (leaveOut.reason === "other" && leaveOut.detail.trim().length < 3)}>
+                Leave it out
+              </Button>
+            </form>
+          )}
+          {x?.pending_contingency && !x.contingency && (
+            <div className="fy-banner fy-banner--warning" role="status">
+              <Icon of={TriangleAlert} size={20} />
+              <div className="fy-banner__text">
+                <strong>A request to file with the gap waits for approval</strong>
+                <span className="fy-small">
+                  {x.pending_contingency.reason} Asked by {x.pending_contingency.requested_by}. Someone else approves it; it lets nothing through before that.
+                </span>
+                {mayApprove && (
+                  <Button size="sm" onClick={() => void approve(x.pending_contingency!.id)} disabled={busy !== ""}>
+                    Approve the request
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+          {x?.state === "blocked" && !x.contingency && !x.pending_contingency && mayPrepare && (
             <details className="fy-stack fy-stack--2">
               <summary title={helpText("invoicenow.contingency").tooltip}>The access point or IRAS was down: ask to file with the gap</summary>
               <label className="fy-field">
@@ -193,9 +254,6 @@ export function InvoiceNow() {
                 Ask someone else to approve
               </Button>
             </details>
-          )}
-          {x?.state === "blocked" && mayApprove && !mayPrepare && (
-            <p className="fy-small fy-muted">A contingency someone asked for is approved with the API (approveInvoiceNowContingency) until its button follows.</p>
           )}
         </div>
       </section>
