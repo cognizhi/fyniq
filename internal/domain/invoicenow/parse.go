@@ -41,6 +41,12 @@ type ReceivedLine struct {
 	ID, Name, Quantity, Unit, Net, Price, Category, Rate string
 }
 
+// rxAmount is an amount with its currency.
+type rxAmount struct {
+	Currency string `xml:"currencyID,attr"`
+	Value    string `xml:",chardata"`
+}
+
 type rxText struct {
 	Scheme string `xml:"schemeID,attr"`
 	Unit   string `xml:"unitCode,attr"`
@@ -96,8 +102,8 @@ type rxDocument struct {
 	Note          string  `xml:"Note"`
 	Currency      string  `xml:"DocumentCurrencyCode"`
 	Seller        rxParty `xml:"AccountingSupplierParty"`
-	Tax           struct {
-		Amount string `xml:"TaxAmount"`
+	Tax           []struct {
+		Amount rxAmount `xml:"TaxAmount"`
 	} `xml:"TaxTotal"`
 	Totals struct {
 		Net   string `xml:"TaxExclusiveAmount"`
@@ -148,7 +154,7 @@ func Parse(b []byte) (Received, error) {
 	p := d.Seller.Party
 	out := Received{Kind: k, Number: strings.TrimSpace(d.ID), UUID: strings.TrimSpace(d.UUID), Issued: strings.TrimSpace(d.Issue),
 		Due: strings.TrimSpace(d.Due), Currency: strings.TrimSpace(d.Currency), Note: strings.TrimSpace(d.Note), Specification: spec,
-		Net: strings.TrimSpace(d.Totals.Net), TaxTotal: strings.TrimSpace(d.Tax.Amount), Gross: strings.TrimSpace(d.Totals.Gross),
+		Net: strings.TrimSpace(d.Totals.Net), TaxTotal: documentTax(d), Gross: strings.TrimSpace(d.Totals.Gross),
 		Seller: ReceivedParty{Name: strings.TrimSpace(p.Legal.Name), EndpointScheme: p.Endpoint.Scheme, EndpointID: strings.TrimSpace(p.Endpoint.Value),
 			UEN: strings.TrimSpace(p.Legal.CompanyID), GST: strings.TrimSpace(p.Tax.CompanyID), PostCode: strings.TrimSpace(p.Address.Post),
 			Country: strings.TrimSpace(p.Address.Country.Code)}}
@@ -164,4 +170,16 @@ func Parse(b []byte) (Received, error) {
 			Net: strings.TrimSpace(l.Net), Price: strings.TrimSpace(l.Price.Amount), Category: strings.TrimSpace(l.Item.Tax.ID), Rate: strings.TrimSpace(l.Item.Tax.Percent)})
 	}
 	return out, nil
+}
+
+// documentTax is the GST total in the document's own currency: a document in another currency also states it in
+// Singapore dollars, in a second TaxTotal, which is not the figure of the document.
+func documentTax(d rxDocument) string {
+	cur := strings.TrimSpace(d.Currency)
+	for _, t := range d.Tax {
+		if t.Amount.Currency == cur {
+			return strings.TrimSpace(t.Amount.Value)
+		}
+	}
+	return ""
 }

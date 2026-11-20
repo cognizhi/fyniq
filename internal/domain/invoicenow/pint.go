@@ -64,11 +64,27 @@ type Party struct {
 	EndpointScheme, EndpointID string
 }
 
+// UENPrefix is what a Singapore participant ID of the UEN scheme starts its identifier with: the UEN 201912345A is the
+// participant 0195:SGUEN201912345A (the form the contacts' Peppol ID takes, CT-08; [verify] with the access point).
+const UENPrefix = "SGUEN"
+
 func (p Party) endpoint() (string, string) {
 	if p.EndpointID != "" {
 		return p.EndpointScheme, p.EndpointID
 	}
-	return UENScheme, p.UEN
+	if p.UEN == "" {
+		return UENScheme, ""
+	}
+	return UENScheme, UENPrefix + p.UEN
+}
+
+// ParticipantID is the party's Peppol participant ID, scheme and identifier: where its documents are sent.
+func (p Party) ParticipantID() string {
+	sch, id := p.endpoint()
+	if id == "" {
+		return ""
+	}
+	return sch + ":" + id
 }
 
 // Line is an invoice line. Net is the line's amount before GST; Rate is the GST rate in percent, such as "9".
@@ -77,7 +93,7 @@ type Line struct {
 	Name     string
 	Quantity string // a decimal
 	Unit     string // a UN/ECE Recommendation 20 code, such as C62 (one) or HUR (hour)
-	NetPrice money.Money
+	NetPrice string // the unit price before GST, a decimal as the engine holds it
 	Net      money.Money
 	Category string
 	Rate     string
@@ -540,9 +556,9 @@ func Build(d Document) ([]byte, error) {
 		}
 		q := quantity{Unit: l.Unit, Value: l.Quantity}
 		if d.Kind == CreditNote {
-			w.value(creditLine{ID: l.ID, Quantity: q, Net: amt(l.Net), Item: it, Price: price{Amount: amt(l.NetPrice)}}, "cac:CreditNoteLine")
+			w.value(creditLine{ID: l.ID, Quantity: q, Net: amt(l.Net), Item: it, Price: price{Amount: amount{Currency: d.Currency.Code, Value: l.NetPrice}}}, "cac:CreditNoteLine")
 		} else {
-			w.value(invoiceLine{ID: l.ID, Quantity: q, Net: amt(l.Net), Item: it, Price: price{Amount: amt(l.NetPrice)}}, "cac:InvoiceLine")
+			w.value(invoiceLine{ID: l.ID, Quantity: q, Net: amt(l.Net), Item: it, Price: price{Amount: amount{Currency: d.Currency.Code, Value: l.NetPrice}}}, "cac:InvoiceLine")
 		}
 	}
 	w.close(name)

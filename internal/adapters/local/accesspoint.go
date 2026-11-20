@@ -15,9 +15,9 @@ import (
 )
 
 // AccessPoint is local mode's stand-in for an InvoiceNow access point (FR-AR-12, ADR-T4): in memory, deterministic and
-// the same for every test, with synthetic participants only. It behaves as connectors/peppol-access-point/contract.json
+// the same for every test, with synthetic participants only. It behaves as contracts/connectors/peppol-access-point.contract.json
 // says:
-//   - a participant whose value starts 9999 is not on the network; any other 0195 participant is;
+//   - a participant 0195:SGUEN<UEN> whose UEN starts 9999 is not on the network; any other is;
 //   - a send is accepted when its payload names PINT-SG's specification identifier and is not empty, else it fails with
 //     its reason; a second send with the same Key returns the same transmission ID and sends nothing again;
 //   - a transmission reads queued, then delivered, then acknowledged with IRAS's acknowledgement ID "IRAS-<ID>", one
@@ -67,7 +67,8 @@ func (a *AccessPoint) Lookup(_ context.Context, id string) (ports.AccessPointPar
 		return ports.AccessPointParticipant{}, ports.ErrAccessPointUnavailable
 	}
 	scheme, value, ok := strings.Cut(id, ":")
-	if !ok || scheme != "0195" || len(value) < 9 || len(value) > 10 || strings.HasPrefix(value, "9999") {
+	value, prefixed := strings.CutPrefix(value, "SGUEN")
+	if !ok || scheme != "0195" || !prefixed || len(value) < 9 || len(value) > 10 || strings.HasPrefix(value, "9999") {
 		return ports.AccessPointParticipant{ID: id}, nil
 	}
 	return ports.AccessPointParticipant{ID: id, Registered: true, Accepts: []string{"invoice", "credit_note", "debit_note"}}, nil

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "description": "What the person says when the reason is other.",
+      "examples": [
+        "Supplied under a customer accounting arrangement"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The document id.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The id.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why no submission is expected.",
+      "enum": [
+        "reverse_charge",
+        "import_permit",
+        "deemed_supply",
+        "financial_services",
+        "unregistered_supplier",
+        "blocked_input_tax",
+        "out_of_scope",
+        "other"
+      ],
+      "examples": [
+        "reverse_charge"
+      ],
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "The recorded at.",
+      "examples": [
+        "2027-02-03T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "description": "The recorded by.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a03"
+      ],
+      "type": "string"
+    },
+    "withdrawn": {
+      "description": "true once ended: the document is expected to be submitted again.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "document_id",
+    "reason",
+    "recorded_by",
+    "recorded_at",
+    "withdrawn"
+  ],
+  "title": "InvoiceNowExclusion",
+  "type": "object"
+}

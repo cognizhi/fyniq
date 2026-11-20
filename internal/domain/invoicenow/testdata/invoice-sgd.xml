@@ -10,7 +10,7 @@
   <cbc:DocumentCurrencyCode>SGD</cbc:DocumentCurrencyCode>
   <cac:AccountingSupplierParty>
     <cac:Party>
-      <cbc:EndpointID schemeID="0195">202012345K</cbc:EndpointID>
+      <cbc:EndpointID schemeID="0195">SGUEN202012345K</cbc:EndpointID>
       <cac:PartyName>
         <cbc:Name>Cognizhi Pte. Ltd.</cbc:Name>
       </cac:PartyName>
@@ -36,7 +36,7 @@
   </cac:AccountingSupplierParty>
   <cac:AccountingCustomerParty>
     <cac:Party>
-      <cbc:EndpointID schemeID="0195">201912345A</cbc:EndpointID>
+      <cbc:EndpointID schemeID="0195">SGUEN201912345A</cbc:EndpointID>
       <cac:PartyName>
         <cbc:Name>Lumen Health Pte. Ltd.</cbc:Name>
       </cac:PartyName>

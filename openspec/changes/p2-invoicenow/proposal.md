@@ -18,7 +18,7 @@ change builds is the function that F5's filing calls.
   into a draft bill (never a posted one).
 - **An access-point port** (`ports.AccessPoint`: look a participant up, send, read a status, poll received documents) with a local
   adapter that behaves like an access point (acknowledgements after a delay, an outage switch for G4-033) and a contract fixture
-  set under `connectors/peppol-access-point/`; a real access point is wired later (`[live-verify]`).
+  set under `contracts/connectors/`; a real access point is wired later (`[live-verify]`).
 - **The submission population and the filing gate** (FR-TAX-10, FR-TAX-11): every GST document of a return period has a submission
   (Peppol, solution-extracted, aggregated, credit or debit note, a resubmission under the same document UUID) or a recorded exclusion
   with its reason; the gate lists what is missing; filing with a gap needs the contingency, dual-approved with evidence.
@@ -31,6 +31,6 @@ change builds is the function that F5's filing calls.
 
 ## Impact
 
-New tables (migration range 001000 to 001049), a port and its local adapter, `connectors/peppol-access-point/`, the API, a job
+New tables (migration range 001000 to 001049), a port and its local adapter, `contracts/connectors/peppol-access-point.contract.json`, the API, a job
 `invoicenow.send` and `invoicenow.poll` on the outbox. No posting rule changes: a submission posts nothing.
 Outside needs: an accredited access point (Q2) and its sandbox credentials: every call that reaches it is `[live-verify]`.

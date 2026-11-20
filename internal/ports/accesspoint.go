@@ -52,7 +52,7 @@ var ErrAccessPointUnavailable = errors.New("the InvoiceNow access point cannot b
 
 // AccessPoint is an IMDA-accredited Peppol access point (FR-AR-12, FR-AP-05). Production: the provider the founders
 // choose (Q2), [live-verify] against its sandbox. Local: an in-memory stand-in that behaves as the contract in
-// connectors/peppol-access-point/contract.json says, so every adapter answers the same fixtures.
+// contracts/connectors/peppol-access-point.contract.json says, so every adapter answers the same fixtures.
 type AccessPoint interface {
 	// Lookup asks the directory whether a participant is on the network and what it accepts (the customer's Peppol ID
 	// is validated before a document is sent).

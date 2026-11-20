@@ -45,7 +45,7 @@ type apExpect struct {
 	From       string   `json:"from"`
 }
 
-// AccessPointContract runs connectors/peppol-access-point/contract.json against ap: valid is a document the network
+// AccessPointContract runs contracts/connectors/peppol-access-point.contract.json against ap: valid is a document the network
 // accepts and invalid one it refuses. It is the one suite every adapter of ports.AccessPoint must pass.
 func AccessPointContract(t *testing.T, ap ports.AccessPoint, drv AccessPointDriver, contractPath string, valid, invalid []byte) {
 	t.Helper()
@@ -141,7 +141,7 @@ func AccessPointContract(t *testing.T, ap ports.AccessPoint, drv AccessPointDriv
 			}
 		case "outage":
 			drv.SetOutage(true)
-			if _, err := ap.Lookup(ctx, "0195:201912345A"); !errors.Is(err, ports.ErrAccessPointUnavailable) {
+			if _, err := ap.Lookup(ctx, "0195:SGUEN201912345A"); !errors.Is(err, ports.ErrAccessPointUnavailable) {
 				t.Errorf("%s: lookup gave %v", s.Name, err)
 			}
 			if _, err := ap.Send(ctx, ports.AccessPointSend{Key: "k3", Payload: valid}); !errors.Is(err, ports.ErrAccessPointUnavailable) {
@@ -154,7 +154,7 @@ func AccessPointContract(t *testing.T, ap ports.AccessPoint, drv AccessPointDriv
 				t.Errorf("%s: poll gave %v", s.Name, err)
 			}
 			drv.SetOutage(false)
-			if _, err := ap.Lookup(ctx, "0195:201912345A"); err != nil {
+			if _, err := ap.Lookup(ctx, "0195:SGUEN201912345A"); err != nil {
 				t.Errorf("%s: after the outage: %v", s.Name, err)
 			}
 		default:

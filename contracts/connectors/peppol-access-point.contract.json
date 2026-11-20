@@ -6,19 +6,19 @@
     "PRD-001 FR-AR-12, FR-AP-05, FR-TAX-10, FR-TAX-11 and G4-030 to G4-034"
   ],
   "steps": [
-    {"name": "a registered participant", "call": "lookup", "id": "0195:201912345A", "expect": {"registered": true, "accepts": ["invoice", "credit_note"]}},
-    {"name": "a participant not on the network", "call": "lookup", "id": "0195:999912345A", "expect": {"registered": false}},
+    {"name": "a registered participant", "call": "lookup", "id": "0195:SGUEN201912345A", "expect": {"registered": true, "accepts": ["invoice", "credit_note"]}},
+    {"name": "a participant not on the network", "call": "lookup", "id": "0195:SGUEN999912345A", "expect": {"registered": false}},
     {"name": "an ID that is not a UEN", "call": "lookup", "id": "SG:123", "expect": {"registered": false}},
-    {"name": "a document is accepted", "call": "send", "key": "k1", "to": "0195:201912345A", "payload": "valid", "save": "tx1"},
-    {"name": "the same key sends nothing again", "call": "send", "key": "k1", "to": "0195:201912345A", "payload": "valid", "expect": {"same_as": "tx1"}},
+    {"name": "a document is accepted", "call": "send", "key": "k1", "to": "0195:SGUEN201912345A", "payload": "valid", "save": "tx1"},
+    {"name": "the same key sends nothing again", "call": "send", "key": "k1", "to": "0195:SGUEN201912345A", "payload": "valid", "expect": {"same_as": "tx1"}},
     {"name": "a first read", "call": "status", "of": "tx1", "expect": {"state": "queued"}, "stub_only": true},
     {"name": "a second read", "call": "status", "of": "tx1", "expect": {"state": "delivered"}, "stub_only": true},
     {"name": "IRAS's acknowledgement ID arrives", "call": "status", "of": "tx1", "expect": {"state": "acknowledged", "ack": "non-empty"}, "stub_only": true},
-    {"name": "a document the network refuses", "call": "send", "key": "k2", "to": "0195:201912345A", "payload": "invalid", "save": "tx2"},
+    {"name": "a document the network refuses", "call": "send", "key": "k2", "to": "0195:SGUEN201912345A", "payload": "invalid", "save": "tx2"},
     {"name": "a refusal gives its reasons", "call": "status", "of": "tx2", "expect": {"state": "failed", "reasons": "non-empty"}, "stub_only": true},
     {"name": "nothing received", "call": "poll", "cursor": "", "expect": {"count": 0}},
-    {"name": "a supplier sends an invoice", "call": "receive", "from": "0195:202012345K", "payload": "valid", "stub_only": true},
-    {"name": "it is polled once", "call": "poll", "cursor": "", "expect": {"count": 1, "from": "0195:202012345K"}, "stub_only": true, "save_cursor": true},
+    {"name": "a supplier sends an invoice", "call": "receive", "from": "0195:SGUEN202012345K", "payload": "valid", "stub_only": true},
+    {"name": "it is polled once", "call": "poll", "cursor": "", "expect": {"count": 1, "from": "0195:SGUEN202012345K"}, "stub_only": true, "save_cursor": true},
     {"name": "and not again", "call": "poll", "cursor": "saved", "expect": {"count": 0}, "stub_only": true},
     {"name": "an outage fails every call and sends nothing", "call": "outage", "stub_only": true}
   ]

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "description": "A posted invoice or credit note.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "document_id"
+  ],
+  "title": "InvoiceNowQueueBody",
+  "type": "object"
+}

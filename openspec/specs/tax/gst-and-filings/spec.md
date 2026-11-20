@@ -225,7 +225,7 @@ Source: PRD-001 §8.11 · Priority M before GST registration; else S · Phase As
 #### Scenario: The gate and the contingency (rev 0.480)
 - **WHEN** a document of the period has neither an acknowledgement ID nor an exclusion
 - **THEN** the gate is blocked and lists it
-- **AND** only a contingency requested by one person and approved by another, with the outage evidence, lets the return be filed
+- **AND** only a contingency requested by one person and approved by another (with the create and the approve right of the GST return), with the outage evidence, lets the return be filed
 
 ### Requirement: FR-TAX-12 GST corrections from the first filed return
 From the first filed return, the system SHALL post GST corrections to filed periods in the open ledger period and place them in an adjustment queue with the original tax period and the amount per box; the tax agent decides how each is filed.

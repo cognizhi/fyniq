@@ -43,8 +43,8 @@ func sgdInvoice(t *testing.T) invoicenow.Document {
 		Issued: time.Date(2027, 2, 3, 0, 0, 0, 0, time.UTC), Due: time.Date(2027, 3, 5, 0, 0, 0, 0, time.UTC), Currency: sgd,
 		Seller: seller(), Buyer: buyer(),
 		Lines: []invoicenow.Line{
-			{ID: "1", Name: "Consulting", Quantity: "10", Unit: "HUR", NetPrice: m(t, "100.00", sgd), Net: m(t, "1000.00", sgd), Category: "SR", Rate: "9"},
-			{ID: "2", Name: "Export service", Quantity: "1", Unit: "C62", NetPrice: m(t, "500.00", sgd), Net: m(t, "500.00", sgd), Category: "ZR", Rate: "0"},
+			{ID: "1", Name: "Consulting", Quantity: "10", Unit: "HUR", NetPrice: "100.00", Net: m(t, "1000.00", sgd), Category: "SR", Rate: "9"},
+			{ID: "2", Name: "Export service", Quantity: "1", Unit: "C62", NetPrice: "500.00", Net: m(t, "500.00", sgd), Category: "ZR", Rate: "0"},
 		},
 		Tax: []invoicenow.TaxSubtotal{
 			{Category: "SR", Rate: "9", Taxable: m(t, "1000.00", sgd), Tax: m(t, "90.00", sgd)},
@@ -58,7 +58,7 @@ func sgdInvoice(t *testing.T) invoicenow.Document {
 func usdInvoice(t *testing.T) invoicenow.Document {
 	d := sgdInvoice(t)
 	d.Currency = usd
-	d.Lines = []invoicenow.Line{{ID: "1", Name: "Licence", Quantity: "1", Unit: "C62", NetPrice: m(t, "100.00", usd), Net: m(t, "100.00", usd), Category: "SR", Rate: "9"}}
+	d.Lines = []invoicenow.Line{{ID: "1", Name: "Licence", Quantity: "1", Unit: "C62", NetPrice: "100.00", Net: m(t, "100.00", usd), Category: "SR", Rate: "9"}}
 	d.Tax = []invoicenow.TaxSubtotal{{Category: "SR", Rate: "9", Taxable: m(t, "100.00", usd), Tax: m(t, "9.00", usd)}}
 	d.Net, d.TaxTotal, d.Gross = m(t, "100.00", usd), m(t, "9.00", usd), m(t, "109.00", usd)
 	tax, net, gross := m(t, "12.15", sgd), m(t, "135.00", sgd), m(t, "147.15", sgd)
@@ -92,7 +92,7 @@ func TestAnSGDInvoiceBuildsToTheGoldenDocument(t *testing.T) {
 	// code follows the dates, the currency follows the type, the parties follow the currency
 	s := string(got)
 	for _, must := range []string{"<cbc:CustomizationID>urn:peppol:pint:billing-1@sg-1</cbc:CustomizationID>", "<cbc:ProfileID>urn:peppol:bis:billing</cbc:ProfileID>",
-		`<cbc:EndpointID schemeID="0195">201912345A</cbc:EndpointID>`, "<cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>"} {
+		`<cbc:EndpointID schemeID="0195">SGUEN201912345A</cbc:EndpointID>`, "<cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>"} {
 		if !strings.Contains(s, must) {
 			t.Errorf("the document lacks %s", must)
 		}
@@ -224,7 +224,7 @@ func TestEachRuleRefusesItsDocument(t *testing.T) {
 func TestTheGSTMayDifferByTheRoundingOfASubtotalAndNoMore(t *testing.T) {
 	d := sgdInvoice(t)
 	// 33.33 at 9% is 2.9997: S$3.00 rounded, S$2.99 a cent short, S$2.98 two
-	d.Lines = []invoicenow.Line{{ID: "1", Name: "Item", Quantity: "1", Unit: "C62", NetPrice: m(t, "33.33", sgd), Net: m(t, "33.33", sgd), Category: "SR", Rate: "9"}}
+	d.Lines = []invoicenow.Line{{ID: "1", Name: "Item", Quantity: "1", Unit: "C62", NetPrice: "33.33", Net: m(t, "33.33", sgd), Category: "SR", Rate: "9"}}
 	d.Net = m(t, "33.33", sgd)
 	for tax, ok := range map[string]bool{"3.00": true, "2.99": true, "2.98": false, "3.02": false} {
 		d.Tax = []invoicenow.TaxSubtotal{{Category: "SR", Rate: "9", Taxable: m(t, "33.33", sgd), Tax: m(t, tax, sgd)}}
@@ -239,7 +239,6 @@ func TestTheGSTMayDifferByTheRoundingOfASubtotalAndNoMore(t *testing.T) {
 
 // What is built is read back as a draft bill's fields (FR-AP-05); a document that is not PINT-SG, not XML or not an
 // invoice is refused with its reason.
-// req: FR-AP-05
 func TestABuiltDocumentIsReadBack(t *testing.T) {
 	b, err := invoicenow.Build(sgdInvoice(t))
 	if err != nil {
@@ -253,7 +252,7 @@ func TestABuiltDocumentIsReadBack(t *testing.T) {
 		r.Currency != "SGD" || r.Net != "1500.00" || r.TaxTotal != "90.00" || r.Gross != "1590.00" {
 		t.Errorf("the header is read as %+v", r)
 	}
-	if r.Seller.Name != "Cognizhi Pte. Ltd." || r.Seller.EndpointScheme != "0195" || r.Seller.EndpointID != "202012345K" || r.Seller.GST != "202012345K" || r.Seller.PostCode != "048616" || r.Seller.Country != "SG" {
+	if r.Seller.Name != "Cognizhi Pte. Ltd." || r.Seller.EndpointScheme != "0195" || r.Seller.EndpointID != "SGUEN202012345K" || r.Seller.GST != "202012345K" || r.Seller.PostCode != "048616" || r.Seller.Country != "SG" {
 		t.Errorf("the sender is read as %+v", r.Seller)
 	}
 	if len(r.Lines) != 2 || r.Lines[0].Name != "Consulting" || r.Lines[0].Quantity != "10" || r.Lines[0].Unit != "HUR" || r.Lines[0].Net != "1000.00" ||
@@ -276,7 +275,6 @@ func TestABuiltDocumentIsReadBack(t *testing.T) {
 	}
 }
 
-// req: FR-AP-05
 func TestADocumentThatIsNotPINTSGIsRefused(t *testing.T) {
 	good, _ := invoicenow.Build(sgdInvoice(t))
 	for name, b := range map[string][]byte{
@@ -294,5 +292,21 @@ func TestADocumentThatIsNotPINTSGIsRefused(t *testing.T) {
 				t.Fatalf("want a ParseError, got %v", err)
 			}
 		})
+	}
+}
+
+// A document in US dollars states its GST twice, in dollars and in Singapore dollars: the received GST total is the
+// document's own.
+func TestAForeignCurrencyDocumentIsReadInItsOwnCurrency(t *testing.T) {
+	b, err := invoicenow.Build(usdInvoice(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := invoicenow.Parse(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Currency != "USD" || r.TaxTotal != "9.00" || r.Net != "100.00" || r.Gross != "109.00" {
+		t.Errorf("the totals are read as %+v", r)
 	}
 }

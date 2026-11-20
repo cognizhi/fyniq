@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approved_at": {
+      "description": "The approved at.",
+      "examples": [
+        "2027-04-02T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "approved_by": {
+      "description": "The approved by.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a04"
+      ],
+      "type": "string"
+    },
+    "evidence": {
+      "description": "The outage and any IRAS correspondence, as recorded.",
+      "examples": [
+        "The provider's incident notice of 31 March, reference INC-2027-0331"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The id.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "period_from": {
+      "description": "The period from.",
+      "examples": [
+        "2027-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "period_to": {
+      "description": "The period to.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reason": {
+      "description": "The reason.",
+      "examples": [
+        "The access point was down on 30 and 31 March"
+      ],
+      "type": "string"
+    },
+    "requested_at": {
+      "description": "The requested at.",
+      "examples": [
+        "2027-04-02T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "requested_by": {
+      "description": "The requested by.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a03"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "period_from",
+    "period_to",
+    "reason",
+    "evidence",
+    "requested_by",
+    "requested_at"
+  ],
+  "title": "InvoiceNowContingency",
+  "type": "object"
+}

@@ -9,7 +9,7 @@ SMP lookup), `Send(request)` (the PINT-SG bytes, the participant, the document U
 transmission ID), `Status(transmission)` (queued, delivered, acknowledged with IRAS's acknowledgement ID, or failed with reasons)
 and `Poll(cursor)` (received documents). The local adapter is deterministic: a transmission reads queued, delivered and then acknowledged, one step for each status read,
 a participant that starts `9999` is unknown, a body that the rules refuse fails, and a switch (`FYNIQ_LOCAL_AP_OUTAGE`) makes every
-call fail with a transport error. `connectors/peppol-access-point/contract.json` holds the fixtures every adapter must answer the same way (run by
+call fail with a transport error. `contracts/connectors/peppol-access-point.contract.json` holds the fixtures every adapter must answer the same way (run by
 `porttest.AccessPointContract`); the manifest (capability `e-invoicing`) arrives with the real adapter, since it names a provider's
 secrets and settings. The cloud adapter arrives with the access point's contract (Q2): `[live-verify]`.
 Options: a hosted access point's API now (blocked on a choice and credentials); a Peppol AS4 access point of our own (a
@@ -20,13 +20,18 @@ certification we do not need). Recommended: the port and a stub.
 Sources (retrieved 20 Nov 2026; PINT SG Billing v1.4.1, released 25 May 2026), `docs.peppol.eu/poac/sg/pint-sg/trn-invoice/`:
 - the specification identifier `urn:peppol:pint:billing-1@sg-1` and the business process `urn:peppol:bis:billing`
   (rule `PEPPOL-EN16931-R004-SG`);
-- the endpoint scheme `0195`, "Singapore UEN identifier" (the EAS list);
+- the endpoint scheme `0195`, "Singapore UEN identifier" (the EAS list); the identifier takes the prefix `SGUEN`, so the UEN
+  201912345A is the participant `0195:SGUEN201912345A`, as the contacts' Peppol ID form says (CT-08) `[verify]` with the access point;
 - the GST categories `SR, SRCA-S, SRCA-C, SROVR-RS, SROVR-LVG, SRRC, SRLVG, ZR, ES33, ESN33, DS, OS, NA, NG` (the `GST-cat` list);
 - the rules `BR-105-GST-SG` (a seller GST identifier when the category is SR, SRCA-S, SRCA-C, ZR, SRRC, SROVR-RS, SROVR-LVG, SRLVG or NA),
   `BR-106` and `BR-107` (seller and buyer address line 1 and post code), `BR-108` (a UUID, BT-SG-003), `BR-109` (UUID format),
   `BR-111` (a credit note gives its reason), `BR-112` (the seller's legal registration identifier), `BR-113` (the accounting
   currency SGD when the invoice currency is not SGD, and not given when it is) and `BR-13-GST-SG` / `BR-14-GST-SG`, `BR-45` to `BR-48-GST-SG`.
-Fyniq checks these itself before queuing, so a document the network would refuse never leaves; the complete Schematron run is the
+Not fetched and so `[verify]` against an access point's validator: the business process value `urn:peppol:bis:billing` (the page
+says only that a business process type is mandatory, IBR-076), the tax scheme identifier `GST` of the tax categories, the credit note
+type code 381 (380 and 383 are in the page's invoice type code list), and the values `HUR` and `C62` for units. The golden document
+`internal/domain/invoicenow/testdata/invoice-sgd.xml` is made by `Build` and so proves the element order read from the page, not
+the values above; no official PINT-SG example file was found. Fyniq checks the rules above itself before queuing, so a document the network would refuse never leaves; the complete Schematron run is the
 access point's and is `[live-verify]`. A line's GST category comes from the line's GST code through a mapping table of the
 `sg-gst` pack's codes to the categories (a code with no mapping blocks sending, with the code named).
 
@@ -63,9 +68,9 @@ gate is "not assessed". Sending a document is always allowed. Auto-send at issue
 
 No new Appendix D row: InvoiceNow is part of the GST return, so its operations use the **GST return, filing** capability: view for
 the Owner, the Finance controller, the Accountant, the Tax agent and the Auditor; send, resubmit, exclude and request a
-contingency with the create right (Finance controller, Accountant, Tax agent; the Owner and the Finance controller hold approve,
-which covers create); approve a contingency with the approve right (the Owner or the Finance controller, never the person who
-requested it). Sending an invoice stays with the invoice's own right. [owner to confirm]
+contingency with the create right (the Accountant and the Tax agent: the Owner and the Finance controller hold approve only, not
+create); approve a contingency with the approve right (the Owner or the Finance controller, so never the same role, and the database
+refuses the same person who holds both roles). Sending an invoice stays with the invoice's own right. [owner to confirm]
 
 ## D8. Received documents
 

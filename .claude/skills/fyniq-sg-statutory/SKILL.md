@@ -61,6 +61,7 @@ payslip.
 | `sg-levy` | Foreign worker levy rates by pass type and tier | Month |
 | `sg-cit` | Rate, SUTE/PTE tiers and conditions, rebate and cap per YA, Form C-S / C-S Lite thresholds | Year of Assessment |
 | `sg-deadlines` | Rules that give each obligation's date from its anchor (FY end, GST period end, month end, calendar year end, a GST forecast): months forward with month ends kept, a day of the month, days; one-off extensions; Singapore's public holidays for the next-working-day roll (CMP-02, `pack.DueOn`) | The date the rule gives, and the organisation's settings (AGM route, overseas branch register) |
+| `sg-invoicenow` | Which lines of a GST return IRAS's InvoiceNow requirement makes a business submit, by Fyniq GST code (submit, exclude with a reason, not reported, choose ES33 or ESN33), the exclusion reasons and the phases from 1 Nov 2025 to 1 Apr 2031 (FR-AR-12, FR-TAX-10; `pack.InvoiceNow`) | The e-Tax Guide's tables: re-read each time IRAS publishes an edition |
 
 **Layout** (PRD-001 ENG-30, rev 0.37): `packs/<pack>/<year>.<n>/`, as `packs/sg-gst/2026.1/` shows:
 

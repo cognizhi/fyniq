@@ -2,9 +2,9 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
+summary: Company-wide settings: GST and its monitor, InvoiceNow, cash buffer, numbering, features, AI, terms, banking, claims, thresholds, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:a33c8f5555677c3fdf09e9c2b71ee34a625534a6c6cfb0dd10515f6818a20b94
+  - docs/user-guide/organisation-settings.md sha256:17dc9f8de2125d1213a4f5a6ba1428d39c8570fd73a6c760ffc8bf4c69cad54d
 data_class: general
 taint: trusted
 status: draft
@@ -129,6 +129,14 @@ aliases:
 The monitor itself: [[compliance.gst]].
 
 (src: docs/user-guide/organisation-settings.md#gst-registration-monitor)
+
+## InvoiceNow
+
+- IRAS requires a GST-registered business to submit the invoice data behind its GST return through InvoiceNow, in phases from 1 April 2026 (new voluntary registrants) to 1 April 2031 (everyone else).
+- **The InvoiceNow requirement applies** is off until the tax agent confirms it applies to the company; while it is off, the filing gate is not assessed and blocks nothing.
+- **GST category of an exempt supply** is none until the tax agent chooses ES33 (regulation 33, such as financial services) or ESN33 (others, such as residential property): Fyniq's code ES does not say which, so an invoice with an exempt line is not sent until one is chosen.
+
+(src: docs/user-guide/organisation-settings.md#invoicenow)
 
 ## Cash buffer
 
