@@ -117,7 +117,7 @@ func TestAnIdentitysAccessIsToldToFyniqAndFyniqsAnswerDecidesTheSwitchAndTheWarn
 	}
 
 	// What goes out: the identity and two answers, by the contract's fields, to the projection's door, signed; never an email or a role name.
-	fy := newFyniqInMiniature(t, offer, "/v1/people-link/projection-events", "/v1/people-link/hold-events")
+	fy := newFyniqInMiniature(t, offer, "/v1/people-link/projection-events", "/v1/people-link/hold-events", "/v1/people-link/session-events")
 	work := fy.sender(t, now).Work()
 	for _, r := range queuedRows(t, lt) {
 		if err := work(ctx, lt.c.org, r); err != nil {
