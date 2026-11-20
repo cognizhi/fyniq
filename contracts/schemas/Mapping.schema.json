@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "type": "string"
+    },
+    "credit": {
+      "type": "string"
+    },
+    "debit": {
+      "type": "string"
+    },
+    "department": {
+      "type": "string"
+    },
+    "memo": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "account",
+    "debit",
+    "credit"
+  ],
+  "title": "Mapping",
+  "type": "object"
+}

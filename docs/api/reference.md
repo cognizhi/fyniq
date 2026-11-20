@@ -830,6 +830,89 @@ Runs the connector's test action through the egress guard (SEC-36) and records t
 
 The link to the people platform (Nemura): where each feature lives, linking and unlinking with two approvers, and the signed events Nemura sends through its own client (PRD-001 §8.26, FR-PPL-01, FR-PPL-15, FR-PPL-16).
 
+### `GET /v1/payroll-arrangements`
+
+**Show how a month's statutory payroll outputs are met** (`getPayrollArrangements`)
+
+The arrangement in force for each item of the payroll go-live gate (FR-PAY-15) for a wage month, and what is missing: itemised payslips, key employment terms, CPF, SDL and SHG submission and payment, and where they apply the Auto-Inclusion Scheme and IR21. While an item is missing, a pay run that pays a person is not approved for payment (PPL-30, G4-009). Where payroll lives in Nemura with the link active, Nemura's issuing of payslips and KETs counts as their arrangement. Read-only; no side effects.
+
+- **Permission:** View on Pay runs, employee data
+- **Parameters:**
+  - `month` (query): The wage month, YYYY-MM; the current month when left out.
+- **Responses:**
+  - `200` OK [`PayrollArrangements`](../../contracts/schemas/PayrollArrangements.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/payroll-arrangements`
+
+**Record how an item of the payroll go-live gate is met** (`setPayrollArrangement`)
+
+Records, as evidence, how one item of the gate (FR-PAY-15) is met from a wage month: a provider's (named), a documented manual process, Nemura's own (payslips and KETs, while the link is active and payroll is Nemura's), or not applicable (the Auto-Inclusion Scheme and IR21 only, with the reason). Every method but Nemura's needs a file of evidence on a record of the organisation (FR-DOC-05). An arrangement is never changed: a new one from a later month replaces it. Needs a person who passed step-up. Side effects: the arrangement and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Pay runs, employee data. A person stepped up in the last 5 minutes, with a file of evidence (FR-DOC-05).
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PayrollArrangementChange`](../../contracts/schemas/PayrollArrangementChange.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PayrollArrangement`](../../contracts/schemas/PayrollArrangement.schema.json)
+  - `201` Created [`PayrollArrangement`](../../contracts/schemas/PayrollArrangement.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong; `STORAGE-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-FAILURE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/payroll-imports`
+
+**List the payroll imports** (`listPayrollImports`)
+
+The provider journals and file imports of pay periods (FR-PPL-05), newest period first, each with the draft journal it made for approval under Journals. Read-only; no side effects.
+
+- **Permission:** View on Pay runs, employee data
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`PayrollImportPage`](../../contracts/schemas/PayrollImportPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/payroll-imports`
+
+**Import a provider's payroll journal as a draft** (`importPayrollJournal`)
+
+Reads a payroll provider's journal for a pay period, or a file import, as a CSV by account and department (no column may name a person: FR-PAY-13), and makes it a **draft journal** under Journals that a Controller or Accountant approves, because the external system's approval cannot be verified (FR-PPL-05, NM-EXT-03). It is idempotent per source system, pay period and version: the same version with the same file answers unchanged, with another file is refused, and a later version drafts only its difference from the version before (the earlier version's journal must be posted first). The draft is dated on the wage month's last day, or today when that month is closed. It is refused while payroll lives in Nemura (the link is live and Nemura holds payroll: PPL-29), so one pay run is never posted from two sources. Prefer: return=preview shows the draft's lines and what changes and saves nothing (FR-INT-27). Side effects: the draft journal and the import's record, each audited. Idempotent with Idempotency-Key. Needs the right to prepare payroll; a draft is posted only under Journals' own approval.
+
+- **Permission:** Create on Pay runs, employee data. A draft journal only: a Controller or Accountant approves it under Journals (NM-EXT-03).
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PayrollImportRequest`](../../contracts/schemas/PayrollImportRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PayrollImport`](../../contracts/schemas/PayrollImport.schema.json)
+  - `201` Created [`PayrollImport`](../../contracts/schemas/PayrollImport.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PPL-29` Payroll lives in Nemura, so a provider's journal or a file import is not taken; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYROLL-RUN-01` A pay run's receipt is kept once, and a payroll entry needs one.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `IMP-01` The payroll file is not a readable CSV; `IMP-02` A column the mapping names is not in the file; `IMP-03` A row's account is not an account of the chart; `IMP-04` A row's amount is not dollars and cents, or has both a debit and a credit; `IMP-05` The file's debits and credits are not equal; `IMP-06` A row's department is not a value of the Department dimension; `IMP-07` The payroll file has more rows than an import holds; `IMP-08` The payroll file names a person: pay is kept by account and department.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `IMP-01`, `IMP-02`, `IMP-03`, `IMP-04`, `IMP-05`, `IMP-06`, `IMP-07`, `IMP-08`, `PPL-29`, `STORAGE-LOCK-01`, `STORAGE-PAYROLL-RUN-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/payroll-mapping`
 
 **Show the account mapping pay runs post by** (`getPayrollMapping`)
@@ -1113,14 +1196,14 @@ Asks for another person's approval of a prepared salary batch at the version rea
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
-  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `SB-01` The salary batch has no money account, payment date and method yet; `SB-04` The salary batch is not in the state the command needs; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PPL-30` How the month's statutory payroll outputs are met is not recorded, so a pay run is not approved for payment; `SB-01` The salary batch has no money account, payment date and method yet; `SB-04` The salary batch is not in the state the command needs; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
   - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `SB-01`, `SB-02`, `SB-04`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `PPL-30`, `SB-01`, `SB-02`, `SB-04`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/salary-batches/{batch_id}/bank-match`
 

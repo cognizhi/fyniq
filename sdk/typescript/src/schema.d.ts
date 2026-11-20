@@ -13917,6 +13917,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll-arrangements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show how a month's statutory payroll outputs are met
+         * @description The arrangement in force for each item of the payroll go-live gate (FR-PAY-15) for a wage month, and what is missing: itemised payslips, key employment terms, CPF, SDL and SHG submission and payment, and where they apply the Auto-Inclusion Scheme and IR21. While an item is missing, a pay run that pays a person is not approved for payment (PPL-30, G4-009). Where payroll lives in Nemura with the link active, Nemura's issuing of payslips and KETs counts as their arrangement. Read-only; no side effects.
+         */
+        get: operations["getPayrollArrangements"];
+        put?: never;
+        /**
+         * Record how an item of the payroll go-live gate is met
+         * @description Records, as evidence, how one item of the gate (FR-PAY-15) is met from a wage month: a provider's (named), a documented manual process, Nemura's own (payslips and KETs, while the link is active and payroll is Nemura's), or not applicable (the Auto-Inclusion Scheme and IR21 only, with the reason). Every method but Nemura's needs a file of evidence on a record of the organisation (FR-DOC-05). An arrangement is never changed: a new one from a later month replaces it. Needs a person who passed step-up. Side effects: the arrangement and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["setPayrollArrangement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the payroll imports
+         * @description The provider journals and file imports of pay periods (FR-PPL-05), newest period first, each with the draft journal it made for approval under Journals. Read-only; no side effects.
+         */
+        get: operations["listPayrollImports"];
+        put?: never;
+        /**
+         * Import a provider's payroll journal as a draft
+         * @description Reads a payroll provider's journal for a pay period, or a file import, as a CSV by account and department (no column may name a person: FR-PAY-13), and makes it a **draft journal** under Journals that a Controller or Accountant approves, because the external system's approval cannot be verified (FR-PPL-05, NM-EXT-03). It is idempotent per source system, pay period and version: the same version with the same file answers unchanged, with another file is refused, and a later version drafts only its difference from the version before (the earlier version's journal must be posted first). The draft is dated on the wage month's last day, or today when that month is closed. It is refused while payroll lives in Nemura (the link is live and Nemura holds payroll: PPL-29), so one pay run is never posted from two sources. Prefer: return=preview shows the draft's lines and what changes and saves nothing (FR-INT-27). Side effects: the draft journal and the import's record, each audited. Idempotent with Idempotency-Key. Needs the right to prepare payroll; a draft is posted only under Journals' own approval.
+         */
+        post: operations["importPayrollJournal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payroll-mapping": {
         parameters: {
             query?: never;
@@ -42075,6 +42123,13 @@ export interface components {
              */
             share: string;
         };
+        Mapping: {
+            account: string;
+            credit: string;
+            debit: string;
+            department?: string;
+            memo?: string;
+        };
         MappingNumber: {
             /**
              * @description Whether (1,234.56) is money out.
@@ -46926,6 +46981,241 @@ export interface components {
              * @example txn_1Q3
              */
             txn_id: string;
+        };
+        PayrollArrangement: {
+            /**
+             * @description The first wage month it holds for, YYYY-MM.
+             * @example 2026-11
+             */
+            effective_from: string;
+            /**
+             * Format: uuid
+             * @description The evidence file that shows it (FR-DOC-05): a contract with the provider, the documented process, a bank advice.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c71
+             */
+            evidence_id?: string;
+            /**
+             * Format: uuid
+             * @description The arrangement.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c70
+             */
+            id: string;
+            /**
+             * @description What it covers.
+             * @example payslips
+             * @enum {string}
+             */
+            item: "payslips" | "kets" | "cpf_sdl_shg" | "ais" | "ir21";
+            /**
+             * @description nemura: Nemura issues it (payslips and KETs); provider: a named payroll provider; manual: a documented manual process; not_applicable: the Auto-Inclusion Scheme or IR21 does not apply, with the reason.
+             * @example provider
+             * @enum {string}
+             */
+            method: "nemura" | "provider" | "manual" | "not_applicable";
+            /**
+             * @description How it is met, or why it does not apply.
+             * @example Fewer than five employees: the AIS does not yet apply
+             */
+            note?: string;
+            /**
+             * @description The provider's name.
+             * @example Talenox
+             */
+            provider?: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-20T09:00:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description Who recorded it: an actor of the audit trail.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            recorded_by: string;
+        };
+        PayrollArrangementChange: {
+            /**
+             * @description The first wage month it holds for.
+             * @example 2026-11
+             */
+            effective_from: string;
+            /**
+             * Format: uuid
+             * @description A file of evidence on a record of the organisation: required for every method but nemura.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c71
+             */
+            evidence_id?: string;
+            /**
+             * @description What it covers.
+             * @example payslips
+             * @enum {string}
+             */
+            item: "payslips" | "kets" | "cpf_sdl_shg" | "ais" | "ir21";
+            /**
+             * @description How it is met. nemura is for payslips and KETs only and needs an active link whose payroll is Nemura's.
+             * @example provider
+             * @enum {string}
+             */
+            method: "nemura" | "provider" | "manual" | "not_applicable";
+            /**
+             * @description How it is met; with not_applicable, why.
+             * @example Fewer than five employees
+             */
+            note?: string;
+            /**
+             * @description The provider's name, with method provider.
+             * @example Talenox
+             */
+            provider?: string;
+        };
+        PayrollArrangements: {
+            /** @description The arrangement of each item in force. */
+            in_force: components["schemas"]["PayrollArrangement"][];
+            /**
+             * @description Every item has an arrangement in force: the gate is open.
+             * @example false
+             */
+            met: boolean;
+            /**
+             * @description The items with none: while any is missing a pay run that pays a person is not approved for payment (G4-009).
+             * @example [
+             *       "kets"
+             *     ]
+             */
+            missing: string[];
+            /**
+             * @description The wage month, YYYY-MM.
+             * @example 2026-11
+             */
+            month: string;
+        };
+        PayrollImport: {
+            /**
+             * @description The file's SHA-256, in hexadecimal.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            file_sha256: string;
+            /**
+             * Format: uuid
+             * @description The import, absent in a preview.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c74
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description The draft journal, to be approved under Journals.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c75
+             */
+            journal_id?: string;
+            /** @description What the draft holds: the version's difference from the one before, by account and department. */
+            lines: components["schemas"]["PayrollImportLine"][];
+            /**
+             * @description drafted: the draft journal was made; unchanged: the same file for the same version was imported before; nothing_changed: the version states the figures already drafted, so there is nothing to draft; preview: nothing was saved.
+             * @example drafted
+             * @enum {string}
+             */
+            outcome: "drafted" | "unchanged" | "preview" | "nothing_changed";
+            /** @example 2026-10 */
+            period: string;
+            /**
+             * Format: date
+             * @description The draft's date: the wage month's last day, or today when that month is closed.
+             * @example 2026-10-31
+             */
+            posting_date: string;
+            /**
+             * Format: int64
+             * @description How many rows the file had.
+             * @example 14
+             */
+            rows: number;
+            /** @example talenox */
+            source_system: string;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            version: number;
+        };
+        PayrollImportLine: {
+            /**
+             * Format: uuid
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c72
+             */
+            account_id: string;
+            /** @description Signed: a debit positive, a credit negative. */
+            amount: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c73
+             */
+            department_id?: string;
+        };
+        PayrollImportPage: {
+            items: components["schemas"]["PayrollImportRow"][];
+            /**
+             * @description Pass it as cursor for the next page; absent on the last page.
+             * @example MTA
+             */
+            next_cursor?: string;
+        };
+        PayrollImportRequest: {
+            /**
+             * @description The CSV, UTF-8, comma separated, with a header row, by account and department: no column may name a person (FR-PAY-13).
+             * @example YWNjb3VudCxkZXBhcnRtZW50LGRlYml0LGNyZWRpdA==
+             */
+            content_base64: string;
+            /** @description The file's column headers, if not Fyniq's own: account, department (optional), debit, credit, memo (optional). */
+            mapping?: components["schemas"]["Mapping"];
+            /**
+             * @description The wage month the journal is for.
+             * @example 2026-10
+             */
+            period: string;
+            /**
+             * @description The system it comes from, such as talenox or file.
+             * @example talenox
+             */
+            source_system: string;
+            /**
+             * Format: int64
+             * @description The period's version: a later one states the period's full figures again and drafts only the difference from the version before. The same version again with the same file is a repeat; with another file it is refused.
+             * @example 1
+             */
+            version: number;
+        };
+        PayrollImportRow: {
+            /**
+             * Format: date-time
+             * @example 2026-11-20T09:00:00Z
+             */
+            created_at: string;
+            /**
+             * Format: uuid
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c74
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c75
+             */
+            journal_id: string;
+            /**
+             * Format: int64
+             * @description How many lines its draft holds.
+             * @example 6
+             */
+            lines: number;
+            /** @example 2026-10 */
+            period: string;
+            /** @example talenox */
+            source_system: string;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            version: number;
         };
         PayrollMapping: {
             /**
@@ -166167,6 +166457,398 @@ export interface operations {
             };
         };
     };
+    getPayrollArrangements: {
+        parameters: {
+            query?: {
+                /** @description The wage month, YYYY-MM; the current month when left out. */
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollArrangements"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPayrollArrangement: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollArrangementChange"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollArrangement"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollArrangement"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong; `STORAGE-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPayrollImports: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollImportPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    importPayrollJournal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollImportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollImport"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollImport"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PPL-29` Payroll lives in Nemura, so a provider's journal or a file import is not taken; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYROLL-RUN-01` A pay run's receipt is kept once, and a payroll entry needs one. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `IMP-01` The payroll file is not a readable CSV; `IMP-02` A column the mapping names is not in the file; `IMP-03` A row's account is not an account of the chart; `IMP-04` A row's amount is not dollars and cents, or has both a debit and a credit; `IMP-05` The file's debits and credits are not equal; `IMP-06` A row's department is not a value of the Department dimension; `IMP-07` The payroll file has more rows than an import holds; `IMP-08` The payroll file names a person: pay is kept by account and department. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getPayrollMapping: {
         parameters: {
             query?: never;
@@ -181857,7 +182539,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `SB-01` The salary batch has no money account, payment date and method yet; `SB-04` The salary batch is not in the state the command needs; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PPL-30` How the month's statutory payroll outputs are met is not recorded, so a pay run is not approved for payment; `SB-01` The salary batch has no money account, payment date and method yet; `SB-04` The salary batch is not in the state the command needs; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;

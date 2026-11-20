@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -17,6 +18,8 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/payrollimport"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/salarybatch"
 	"github.com/cognizhi/fyniq/internal/linksend"
@@ -38,6 +41,34 @@ type salaryWorld struct {
 }
 
 func newSalaryWorld(t *testing.T) *salaryWorld {
+	t.Helper()
+	w := newSalaryWorldWithoutGate(t)
+	w.arrange(t, "2026-10", storage.ArrangePayslips, storage.ArrangeKETs, storage.ArrangeCPF, storage.ArrangeAIS, storage.ArrangeIR21)
+	return w
+}
+
+// arrange records, directly in the store, how each item is met from a month: a provider for payslips, a manual process for the rest.
+func (w *salaryWorld) arrange(t *testing.T, month string, items ...string) {
+	t.Helper()
+	from, _ := time.Parse("2006-01", month)
+	evidence := uuid.MustParse(w.evidence(t))
+	if err := w.e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, item := range items {
+			a := storage.PayrollArrangement{Item: item, Method: storage.MethodManual, EvidenceID: evidence, EffectiveFrom: from, RecordedBy: "user:" + w.payrollU.String(), RecordedAt: w.e.clock.Now()}
+			if item == storage.ArrangePayslips {
+				a.Method, a.Provider = storage.MethodProvider, "Talenox"
+			}
+			if _, err := u.PayrollOutside().Arrange(ctx, a); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func newSalaryWorldWithoutGate(t *testing.T) *salaryWorld {
 	t.Helper()
 	ctx := context.Background()
 	w := &salaryWorld{runWorld: payrollWorld(t), run: uuid.NewString(), ana: uuid.New(), ben: uuid.New(), cai: uuid.New(), holds: &fakeHolds{answer: map[uuid.UUID]linksend.HoldAnswer{}}, version: 1}
@@ -714,5 +745,189 @@ var matrixSalaryStates = map[string]func(e *env, tok string) (response, func() b
 	},
 	"matchSalaryBankLine": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/salary-batches/"+uuid.NewString()+"/bank-match", steppedUp(e, tok), map[string]any{"bank_line_id": uuid.NewString(), "line_ids": []string{uuid.NewString()}}, "If-Match", `"1-open"`), nil
+	},
+}
+
+// The payroll go-live gate holds a pay run back from approval for payment until how the month's statutory outputs are met is recorded as evidence (FR-PAY-15, G4-009; PRD-001 FR-PPL-09's
+// end): with nothing recorded a salary batch is not asked for (PPL-30, naming each item and no person); an arrangement needs the evidence, a provider's name, and a reason when it is "not
+// applicable" (the Auto-Inclusion Scheme and IR21 only); Nemura's own issuing of payslips and KETs counts only where payroll lives in Nemura; a later month's arrangement does not cover an
+// earlier wage month; and once every item is met the batch is asked for.
+// part of FR-PAY-15 (the ✖ check on Checks, and a director on "No salary", are open)
+// asvs: V8.2.1, V16.3.2
+func TestThePayrollGoLiveGateHoldsAPayRunUntilItsArrangementsAreRecorded(t *testing.T) {
+	w := newSalaryWorldWithoutGate(t)
+	e := w.e
+	id, tag, _, _ := w.preparedBatchWithoutAsking(t)
+	e.problemIs(e.call(http.MethodPost, "/v1/salary-batches/"+id+"/approval", w.payroll, nil, "If-Match", tag), "requestSalaryBatchApproval", 409, peoplelink.CodeGate)
+	read := e.call(http.MethodGet, "/v1/payroll-arrangements?month=2026-10", w.payroll, nil)
+	if read.Status != 200 || read.Body["met"] != false || len(read.Body["missing"].([]any)) != 5 {
+		t.Fatalf("the arrangements: %d %s", read.Status, read.Raw)
+	}
+	ev := w.evidence(t)
+	rec := func(body map[string]any) response {
+		return e.call(http.MethodPost, "/v1/payroll-arrangements", w.payroll, body, "Idempotency-Key", uuid.NewString())
+	}
+	for what, body := range map[string]map[string]any{
+		"Nemura's where payroll is not in Nemura": {"item": "payslips", "method": "nemura", "effective_from": "2026-10"},
+		"a provider with no name":                 {"item": "payslips", "method": "provider", "evidence_id": ev, "effective_from": "2026-10"},
+		"a manual process with no evidence":       {"item": "kets", "method": "manual", "effective_from": "2026-10"},
+		"not applicable for payslips":             {"item": "payslips", "method": "not_applicable", "note": "none", "evidence_id": ev, "effective_from": "2026-10"},
+		"not applicable with no reason":           {"item": "ais", "method": "not_applicable", "evidence_id": ev, "effective_from": "2026-10"},
+		"evidence that is not a file":             {"item": "kets", "method": "manual", "evidence_id": uuid.NewString(), "effective_from": "2026-10"},
+	} {
+		if r := rec(body); r.Status != http.StatusUnprocessableEntity && r.Status != http.StatusConflict {
+			t.Errorf("%s: %d %s", what, r.Status, r.Raw)
+		}
+	}
+	// A later month's arrangement does not cover October.
+	if r := rec(map[string]any{"item": "kets", "method": "manual", "evidence_id": ev, "effective_from": "2026-11"}); r.Status != http.StatusCreated {
+		t.Fatalf("a later arrangement: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodGet, "/v1/payroll-arrangements?month=2026-10", w.payroll, nil); len(r.Body["missing"].([]any)) != 5 {
+		t.Errorf("a later month's arrangement covered an earlier month: %s", r.Raw)
+	}
+	for _, body := range []map[string]any{{"item": "payslips", "method": "provider", "provider": "Talenox", "evidence_id": ev, "effective_from": "2026-10"},
+		{"item": "kets", "method": "manual", "evidence_id": ev, "effective_from": "2026-10"}, {"item": "cpf_sdl_shg", "method": "manual", "note": "EZPay", "evidence_id": ev, "effective_from": "2026-10"},
+		{"item": "ais", "method": "not_applicable", "note": "Fewer than five employees", "evidence_id": ev, "effective_from": "2026-10"}} {
+		if r := rec(body); r.Status != http.StatusCreated {
+			t.Fatalf("recording %v: %d %s", body["item"], r.Status, r.Raw)
+		}
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/salary-batches/"+id+"/approval", w.payroll, nil, "If-Match", tag), "requestSalaryBatchApproval", 409, peoplelink.CodeGate)
+	if r := e.call(http.MethodGet, "/v1/payroll-arrangements?month=2026-10", w.payroll, nil); fmt.Sprint(r.Body["missing"]) != "[ir21]" {
+		t.Errorf("one item is left: %s", r.Raw)
+	}
+	// Where payroll lives in Nemura, its issuing of payslips and KETs is the arrangement of those two.
+	if r := rec(map[string]any{"item": "ir21", "method": "manual", "evidence_id": ev, "effective_from": "2026-10"}); r.Status != http.StatusCreated {
+		t.Fatalf("ir21: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/approval", w.payroll, nil, "If-Match", tag); r.Status != http.StatusAccepted {
+		t.Fatalf("with every item met: %d %s", r.Status, r.Raw)
+	}
+	if hit := w.trailHas(t, "Ana Lim", "0123456789"); len(hit) > 0 {
+		t.Errorf("the audit trail holds %v", hit)
+	}
+}
+
+// preparedBatchWithoutAsking is preparedBatch up to the approval request: the batch received and prepared.
+func (w *salaryWorld) preparedBatchWithoutAsking(t *testing.T) (id, tag string, _ response, lines map[string]uuid.UUID) {
+	t.Helper()
+	e := w.e
+	refA, refB := uuid.New(), uuid.New()
+	got := w.payments(w.run, w.line(refA, w.ana, "Ana Lim", "9000.11", 1), w.line(refB, w.cai, "Cai Yu", "7000.33", 1))
+	if got.Status != http.StatusOK {
+		t.Fatalf("the lines: %d %s", got.Status, got.Raw)
+	}
+	id = got.str("batch_id")
+	read := e.call(http.MethodGet, "/v1/salary-batches/"+id, w.payroll, nil)
+	prep := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/prepare", w.payroll, map[string]any{"money_account_id": w.bank.String(), "payment_date": "2026-10-31", "method": "fast"}, "If-Match", read.Header.Get("ETag"))
+	if prep.Status != 200 {
+		t.Fatalf("preparing: %d %s", prep.Status, prep.Raw)
+	}
+	return id, prep.Header.Get("ETag"), response{}, map[string]uuid.UUID{"ana": refA, "cai": refB}
+}
+
+func csvOf(rows ...string) string {
+	return base64.StdEncoding.EncodeToString([]byte(strings.Join(rows, "\n") + "\n"))
+}
+
+// A provider's journal or a file import is a draft, once per source, period and version (FR-PPL-05, FR-PPL-09's "Imports stay drafts"; PRD-002 NM-EXT-02, NM-EXT-03): the CSV by account and
+// department becomes a draft journal under Journals, never posted by the import; the same version and file again is a repeat, another file for the same version is refused, a later version
+// drafts only its difference once the earlier journal is posted, and a preview shows the lines and saves nothing; a file that names a person, an account the chart lacks, a row with both a debit and
+// a credit, or debits and credits that differ is refused with every problem; and while payroll lives in Nemura (the link is live and its source for payroll is Nemura) no import is taken.
+// part of FR-PPL-05 (salary payment lines from an external system and a provider connector are open)
+// req: NM-EXT-03
+// asvs: V5.1.3, V8.2.1, V16.3.2
+func TestAProvidersPayrollJournalIsOnlyEverADraftOncePerPeriodAndVersion(t *testing.T) {
+	w := newSalaryWorldWithoutGate(t)
+	e := w.e
+	post := func(system string, version int, content string, prefer ...string) response {
+		hdr := []string{"Idempotency-Key", uuid.NewString()}
+		if len(prefer) > 0 {
+			hdr = append(hdr, "Prefer", prefer[0])
+		}
+		return e.call(http.MethodPost, "/v1/payroll-imports", w.payroll, map[string]any{"source_system": system, "period": "2026-10", "version": version, "content_base64": content}, hdr...)
+	}
+	v1 := csvOf("account,department,debit,credit,memo", "6013,GA,10000.00,,G&A", "6011,RD,20000.00,,R&D", "6020,,5100.00,,CPF", "2110,,,35100.00,Payable")
+	if r := post("talenox", 1, v1, "return=preview"); r.Status != 200 || r.str("outcome") != "preview" || len(r.Body["lines"].([]any)) != 4 || r.str("journal_id") != "" {
+		t.Fatalf("the preview: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodGet, "/v1/payroll-imports", w.payroll, nil); len(r.Body["items"].([]any)) != 0 {
+		t.Fatalf("the preview saved something: %s", r.Raw)
+	}
+	first := post("talenox", 1, v1)
+	if first.Status != http.StatusCreated || first.str("outcome") != "drafted" || first.str("journal_id") == "" || first.str("posting_date") != "2026-10-31" {
+		t.Fatalf("the import: %d %s", first.Status, first.Raw)
+	}
+	var status storage.DocumentStatus
+	if err := e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		d, err := u.Documents().Get(ctx, uuid.MustParse(first.str("journal_id")))
+		status = d.Status
+		return err
+	}); err != nil || status != storage.DocumentDraft {
+		t.Fatalf("the journal is %s (%v), not a draft", status, err)
+	}
+	if again := post("talenox", 1, v1); again.Status != http.StatusCreated || again.str("outcome") != "unchanged" || again.str("journal_id") != first.str("journal_id") {
+		t.Errorf("the same file again: %d %s", again.Status, again.Raw)
+	}
+	e.problemIs(post("talenox", 1, csvOf("account,department,debit,credit", "6013,GA,1.00,,", "2110,,,1.00")), "importPayrollJournal", 409, storage.CodePayrollRun)
+	e.problemIs(post("talenox", 3, v1), "importPayrollJournal", 422, CodeInvalid)
+	// Version 2 waits for version 1's journal to post; then only the difference is drafted.
+	v2 := csvOf("account,department,debit,credit,memo", "6013,GA,10000.00,,G&A", "6011,RD,20200.00,,R&D", "6020,,5100.00,,CPF", "2110,,,35300.00,Payable")
+	e.problemIs(post("talenox", 2, v2), "importPayrollJournal", 409, storage.CodePayrollRun)
+	if _, err := (journal.Service{Store: e.store}).Post(context.Background(), w.org, uuid.MustParse(first.str("journal_id"))); err != nil {
+		t.Fatalf("posting the first draft: %v", err)
+	}
+	second := post("talenox", 2, v2)
+	if second.Status != http.StatusCreated || second.str("outcome") != "drafted" || len(second.Body["lines"].([]any)) != 2 {
+		t.Fatalf("version 2: %d %s", second.Status, second.Raw)
+	}
+	for _, l := range second.Body["lines"].([]any) {
+		if a := l.(map[string]any)["amount"].(map[string]any)["amount"].(string); a != "200.00" && a != "-200.00" {
+			t.Errorf("a difference line: %s", a)
+		}
+	}
+	// Refusals name every problem and no value of the file.
+	bad := post("file", 1, csvOf("employee,account,debit,credit", "Ana,6013,100.00,", "Ben,9999,,50.00"))
+	if bad.Status != http.StatusUnprocessableEntity || bad.problemCode() != payrollimport.CodePerson || strings.Contains(bad.Raw, "Ana") {
+		t.Errorf("a file that names a person: %d %s", bad.Status, bad.Raw)
+	}
+	if r := post("file", 1, csvOf("account,debit,credit", "9999,100.00,", "6013,,100.00")); r.Status != 422 || !strings.Contains(r.Raw, payrollimport.CodeAccount) {
+		t.Errorf("an account the chart lacks: %d %s", r.Status, r.Raw)
+	}
+	if r := post("file", 1, csvOf("account,debit,credit", "6013,100.00,", "2110,,99.00")); r.Status != 422 || !strings.Contains(r.Raw, payrollimport.CodeUnbalance) {
+		t.Errorf("debits and credits that differ: %d %s", r.Status, r.Raw)
+	}
+	if r := post("file", 1, csvOf("account,debit,credit", "6013,100.00,100.00", "2110,,")); r.Status != 422 || !strings.Contains(r.Raw, payrollimport.CodeAmount) {
+		t.Errorf("a row with both: %d %s", r.Status, r.Raw)
+	}
+	// While payroll lives in Nemura nothing is taken.
+	if err := e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.PeopleLinks().SetSource(ctx, storage.PeopleSource{Feature: storage.FeaturePayroll, Source: storage.SourceNemura, EffectiveFrom: e.clock.Now(), ApprovalID: uuid.New(), SetAt: e.clock.Now()})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	e.problemIs(post("talenox", 3, v2), "importPayrollJournal", 409, peoplelink.CodeInNemura)
+	// And there, Nemura's issuing of payslips and KETs is those two items' arrangement.
+	if r := e.call(http.MethodGet, "/v1/payroll-arrangements?month=2026-10", w.payroll, nil); fmt.Sprint(r.Body["missing"]) != "[cpf_sdl_shg ais ir21]" {
+		t.Errorf("with payroll in Nemura the missing items are: %s", r.Raw)
+	}
+}
+
+// matrixPayrollOutside are the authorisation matrix's rows of the go-live gate's arrangements and the provider imports.
+var matrixPayrollOutside = map[string]func(e *env, tok string) (response, func() bool){
+	"getPayrollArrangements": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/payroll-arrangements", tok, nil), nil
+	},
+	"setPayrollArrangement": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/payroll-arrangements", steppedUp(e, tok), map[string]any{"item": "ais", "method": "not_applicable", "note": "Matrix", "evidence_id": uuid.NewString(),
+			"effective_from": "2026-10"}, "Prefer", "return=preview"), nil
+	},
+	"listPayrollImports": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/payroll-imports", tok, nil), nil
+	},
+	"importPayrollJournal": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/payroll-imports", tok, map[string]any{"source_system": "matrix", "period": "2026-10", "version": 1, "content_base64": csvOf("account,debit,credit", "9999,1.00,")},
+			"Prefer", "return=preview"), nil
 	},
 }

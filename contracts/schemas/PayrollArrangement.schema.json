@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "effective_from": {
+      "description": "The first wage month it holds for, YYYY-MM.",
+      "examples": [
+        "2026-11"
+      ],
+      "type": "string"
+    },
+    "evidence_id": {
+      "description": "The evidence file that shows it (FR-DOC-05): a contract with the provider, the documented process, a bank advice.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c71"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The arrangement.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "item": {
+      "description": "What it covers.",
+      "enum": [
+        "payslips",
+        "kets",
+        "cpf_sdl_shg",
+        "ais",
+        "ir21"
+      ],
+      "examples": [
+        "payslips"
+      ],
+      "type": "string"
+    },
+    "method": {
+      "description": "nemura: Nemura issues it (payslips and KETs); provider: a named payroll provider; manual: a documented manual process; not_applicable: the Auto-Inclusion Scheme or IR21 does not apply, with the reason.",
+      "enum": [
+        "nemura",
+        "provider",
+        "manual",
+        "not_applicable"
+      ],
+      "examples": [
+        "provider"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "How it is met, or why it does not apply.",
+      "examples": [
+        "Fewer than five employees: the AIS does not yet apply"
+      ],
+      "type": "string"
+    },
+    "provider": {
+      "description": "The provider's name.",
+      "examples": [
+        "Talenox"
+      ],
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-20T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "description": "Who recorded it: an actor of the audit trail.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "item",
+    "method",
+    "effective_from",
+    "recorded_by",
+    "recorded_at"
+  ],
+  "title": "PayrollArrangement",
+  "type": "object"
+}

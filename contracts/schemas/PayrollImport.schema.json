@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "file_sha256": {
+      "description": "The file's SHA-256, in hexadecimal.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The import, absent in a preview.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c74"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "journal_id": {
+      "description": "The draft journal, to be approved under Journals.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c75"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "lines": {
+      "description": "What the draft holds: the version's difference from the one before, by account and department.",
+      "items": {
+        "$ref": "PayrollImportLine.schema.json"
+      },
+      "type": "array"
+    },
+    "outcome": {
+      "description": "drafted: the draft journal was made; unchanged: the same file for the same version was imported before; nothing_changed: the version states the figures already drafted, so there is nothing to draft; preview: nothing was saved.",
+      "enum": [
+        "drafted",
+        "unchanged",
+        "preview",
+        "nothing_changed"
+      ],
+      "examples": [
+        "drafted"
+      ],
+      "type": "string"
+    },
+    "period": {
+      "examples": [
+        "2026-10"
+      ],
+      "type": "string"
+    },
+    "posting_date": {
+      "description": "The draft's date: the wage month's last day, or today when that month is closed.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "rows": {
+      "description": "How many rows the file had.",
+      "examples": [
+        14
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "source_system": {
+      "examples": [
+        "talenox"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "source_system",
+    "period",
+    "version",
+    "outcome",
+    "posting_date",
+    "rows",
+    "lines",
+    "file_sha256"
+  ],
+  "title": "PayrollImport",
+  "type": "object"
+}

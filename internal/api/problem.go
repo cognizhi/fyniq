@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cognizhi/fyniq/internal/domain/comment"
+	"github.com/cognizhi/fyniq/internal/domain/payrollimport"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/preference"
 	"github.com/cognizhi/fyniq/internal/domain/salarybatch"
@@ -287,6 +288,16 @@ var codeFacts = map[string]struct {
 	peoplelink.CodePayPerson:      {409, "A payment line is for a person the projection does not hold"},
 	peoplelink.CodePayRelease:     {409, "A released line is not changed, and a cancelled batch takes no line"},
 	peoplelink.CodePayBlocked:     {409, "An unknown outcome blocks a new instruction for the person in this run"},
+	peoplelink.CodeInNemura:       {409, "Payroll lives in Nemura, so a provider's journal or a file import is not taken"},
+	peoplelink.CodeGate:           {409, "How the month's statutory payroll outputs are met is not recorded, so a pay run is not approved for payment"},
+	payrollimport.CodeFile:        {422, "The payroll file is not a readable CSV"},
+	payrollimport.CodeColumn:      {422, "A column the mapping names is not in the file"},
+	payrollimport.CodeAccount:     {422, "A row's account is not an account of the chart"},
+	payrollimport.CodeAmount:      {422, "A row's amount is not dollars and cents, or has both a debit and a credit"},
+	payrollimport.CodeUnbalance:   {422, "The file's debits and credits are not equal"},
+	payrollimport.CodeDept:        {422, "A row's department is not a value of the Department dimension"},
+	payrollimport.CodeTooMany:     {422, "The payroll file has more rows than an import holds"},
+	payrollimport.CodePerson:      {422, "The payroll file names a person: pay is kept by account and department"},
 	storage.CodeSalaryBatch:       {409, "A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver"},
 	salarybatch.CodeNotPrepared:   {409, "The salary batch has no money account, payment date and method yet"},
 	salarybatch.CodeAccount:       {422, "The money account is not an open SGD bank account"},

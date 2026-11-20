@@ -22,6 +22,8 @@ const (
 	CodePayPerson  = "PPL-26" // a line's person is not in the projection: send the people events first
 	CodePayRelease = "PPL-27" // a line that went out is not changed, and a batch that was cancelled takes no line
 	CodePayBlocked = "PPL-28" // an unknown outcome of the person's payment in this run blocks a new instruction until it is resolved (FR-PPL-12)
+	CodeInNemura   = "PPL-29" // payroll lives in Nemura (the link is live): a provider's journal or a file import is refused (FR-PPL-05, FR-PAY-15)
+	CodeGate       = "PPL-30" // the payroll go-live gate: an arrangement is missing, so a pay run cannot be approved for payment (FR-PAY-15, G4-009)
 )
 
 // MaxPaymentLines is how many lines one submission carries: the payment batch's own limit.

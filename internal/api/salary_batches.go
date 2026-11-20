@@ -24,6 +24,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/paymentfile"
+	"github.com/cognizhi/fyniq/internal/domain/payrollimport"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/salarybatch"
 	"github.com/cognizhi/fyniq/internal/domain/team"
@@ -426,6 +427,19 @@ func (a *API) salaryChecks(ctx context.Context, u storage.UnitOfWork, b storage.
 	if problem := a.checkSalaryAccount(ctx, u, b); problem != nil {
 		add(salarybatch.CodeAccount, "money_account_id", problem.Detail)
 	}
+	// The payroll go-live gate (FR-PAY-15, G4-009): a pay run that pays a person is not approved for payment until how the month's statutory outputs are met is recorded as evidence.
+	missing, err := payrollGate(ctx, u, b.WageMonth)
+	if err != nil {
+		return nil, err
+	}
+	if len(missing) > 0 {
+		words := make([]string, len(missing))
+		for i, m := range missing {
+			words[i] = payrollimport.Words[m]
+		}
+		out = append(out, BillCheck{Severity: "error", Code: peoplelink.CodeGate, Field: "payroll_arrangements", Message: "How this month's statutory outputs are met is not recorded: " + strings.Join(words, ", ") + ".",
+			Fix: "Record each in Settings, People and HR, Payroll arrangements, with its evidence (FR-PAY-15)"})
+	}
 	return out, nil
 }
 
@@ -504,7 +518,7 @@ func (a *API) executeSalaryApproval(ctx context.Context, u storage.UnitOfWork, r
 		return err
 	}
 	if len(checks) > 0 {
-		return salaryProblem(checks[0].Code, checks[0].Message)
+		return checkRefusal(checks[0])
 	}
 	if b.Status == storage.SalaryApproved {
 		return nil
@@ -867,7 +881,7 @@ func registerSalaryBatches(a *API) {
 			"and passed step-up, approves; its envelope holds the batch's total and a digest of its lines (each person's amount and bank-detail record, version and digest), never a name or an account, so the " +
 			"approval is for exactly these lines. Needs a person signed in who passed step-up, and If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.",
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired, CodeStepUpRequired, approval.CodePending,
-		storage.CodeApproval, salarybatch.CodeNotPrepared, salarybatch.CodeAccount, salarybatch.CodeNotOpen}, locks...), func(ctx context.Context, in *salaryCommandInput) (*salaryApprovalOutput, error) {
+		storage.CodeApproval, salarybatch.CodeNotPrepared, salarybatch.CodeAccount, salarybatch.CodeNotOpen, peoplelink.CodeGate}, locks...), func(ctx context.Context, in *salaryCommandInput) (*salaryApprovalOutput, error) {
 		id, err := parseID("batch_id", in.BatchID)
 		if err != nil {
 			return nil, err
@@ -888,7 +902,7 @@ func registerSalaryBatches(a *API) {
 				return Approval{}, err
 			}
 			if len(checks) > 0 {
-				return Approval{}, salaryProblem(checks[0].Code, checks[0].Message)
+				return Approval{}, checkRefusal(checks[0])
 			}
 			lines, err := u.SalaryBatches().Lines(ctx, id)
 			if err != nil {
@@ -1071,3 +1085,6 @@ func decodeDependencies(r *storage.ApprovalRequest) (*storage.ApprovalRequest, m
 	}
 	return r, env.Dependencies, nil
 }
+
+// checkRefusal is a salary batch's check as the refusal it stops a command with.
+func checkRefusal(c BillCheck) *Problem { return problem(c.Code, c.Message, c.Fix) }

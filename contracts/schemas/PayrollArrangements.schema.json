@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "in_force": {
+      "description": "The arrangement of each item in force.",
+      "items": {
+        "$ref": "PayrollArrangement.schema.json"
+      },
+      "type": "array"
+    },
+    "met": {
+      "description": "Every item has an arrangement in force: the gate is open.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "missing": {
+      "description": "The items with none: while any is missing a pay run that pays a person is not approved for payment (G4-009).",
+      "examples": [
+        [
+          "kets"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "month": {
+      "description": "The wage month, YYYY-MM.",
+      "examples": [
+        "2026-11"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "month",
+    "in_force",
+    "missing",
+    "met"
+  ],
+  "title": "PayrollArrangements",
+  "type": "object"
+}

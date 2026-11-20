@@ -2597,6 +2597,33 @@ type FyniqPaymentBatchRelease struct {
 	BreakGlassID   *uuid.UUID
 }
 
+type FyniqPayrollArrangement struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Item           string
+	Method         string
+	Provider       *string
+	Note           string
+	EvidenceID     *uuid.UUID
+	EffectiveFrom  time.Time
+	RecordedBy     string
+	RecordedAt     time.Time
+}
+
+type FyniqPayrollImport struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	SourceSystem   string
+	Period         time.Time
+	Version        int32
+	FileSha256     string
+	JournalID      uuid.UUID
+	LineCount      int32
+	Totals         []byte
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
 type FyniqPayrollMapping struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "content_base64": {
+      "description": "The CSV, UTF-8, comma separated, with a header row, by account and department: no column may name a person (FR-PAY-13).",
+      "examples": [
+        "YWNjb3VudCxkZXBhcnRtZW50LGRlYml0LGNyZWRpdA=="
+      ],
+      "maxLength": 4000000,
+      "type": "string"
+    },
+    "mapping": {
+      "$ref": "Mapping.schema.json",
+      "description": "The file's column headers, if not Fyniq's own: account, department (optional), debit, credit, memo (optional)."
+    },
+    "period": {
+      "description": "The wage month the journal is for.",
+      "examples": [
+        "2026-10"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "type": "string"
+    },
+    "source_system": {
+      "description": "The system it comes from, such as talenox or file.",
+      "examples": [
+        "talenox"
+      ],
+      "pattern": "^[a-z][a-z0-9_-]{0,39}$",
+      "type": "string"
+    },
+    "version": {
+      "description": "The period's version: a later one states the period's full figures again and drafts only the difference from the version before. The same version again with the same file is a repeat; with another file it is refused.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "source_system",
+    "period",
+    "version",
+    "content_base64"
+  ],
+  "title": "PayrollImportRequest",
+  "type": "object"
+}

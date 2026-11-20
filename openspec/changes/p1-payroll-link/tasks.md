@@ -85,10 +85,13 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
 ## 7. Without Nemura and the checks (FR-PPL-05, FR-PAY-15; C.1 #19, #20, #21; C.2 #14, #24, #45)
 
 - [ ] 7.1 A provider's journal or file import as a draft journal, idempotent per period and version, with a preview (design D12).
+  (Built, 21 Nov 2026, the file import: migration 000914 `payroll_import`, `importPayrollJournal` (a CSV by account and department with a column mapping, a draft journal under Journals, idempotent per source system, period and version, the difference of a later version once the earlier journal is posted, a preview, refused while payroll lives in Nemura: `PPL-29`), `listPayrollImports`; `TestAProvidersPayrollJournalIsOnlyEverADraftOncePerPeriodAndVersion`. **Left:** one provider's connector (a provider qualifies only once its API is verified: `[live-verify]`, NM-EXT-02) and salary payment lines from an external system.)
 - [ ] 7.2 The payroll go-live gate (FR-PAY-15) and the checks C.1 #19 to #21, C.2 #14, #24 (a director's pay deferred without a choice, FM-handoff from
   `p1-founders-money`) and #45.
 
 ## 8. Screens, help and the close
+
+  (Built in part, 21 Nov 2026, the gate: migration 000914 `payroll_arrangement`, `getPayrollArrangements`, `setPayrollArrangement` (evidence, a named provider, a reason for "not applicable"; Nemura's own issuing counts only while the link is active and Nemura holds payroll), and a salary batch is not asked for approval (`PPL-30`) while an item is missing for its wage month, checked again by the executor; `TestThePayrollGoLiveGateHoldsAPayRunUntilItsArrangementsAreRecorded`. **Left:** the checks themselves on Checks (C.1 #19 to #21, C.2 #14, #24, #45 and G4-009's ✖), a director on "No salary" excepted from the gate, and the gate on a payroll journal imported for payment.)
 
 - [ ] 8.1 `people-hr-settings`, `payroll-overview`, `pay-run`, `salary-batch`, `employee-record` as designed; help keys, user-guide pages compiled into `kb/`.
 - [ ] 8.2 Threat model and controls updated; the PRD revision; the close of this change.

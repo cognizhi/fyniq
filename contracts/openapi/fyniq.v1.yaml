@@ -35533,6 +35533,24 @@ components:
         - share
         - documents
       type: object
+    Mapping:
+      additionalProperties: false
+      properties:
+        account:
+          type: string
+        credit:
+          type: string
+        debit:
+          type: string
+        department:
+          type: string
+        memo:
+          type: string
+      required:
+        - account
+        - debit
+        - credit
+      type: object
     MappingNumber:
       additionalProperties: false
       properties:
@@ -42505,6 +42523,348 @@ components:
         - fee
         - net
         - posted
+      type: object
+    PayrollArrangement:
+      additionalProperties: false
+      properties:
+        effective_from:
+          description: The first wage month it holds for, YYYY-MM.
+          examples:
+            - 2026-11
+          type: string
+        evidence_id:
+          description: "The evidence file that shows it (FR-DOC-05): a contract with the provider, the documented process, a bank advice."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c71
+          format: uuid
+          type: string
+        id:
+          description: The arrangement.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c70
+          format: uuid
+          type: string
+        item:
+          description: What it covers.
+          enum:
+            - payslips
+            - kets
+            - cpf_sdl_shg
+            - ais
+            - ir21
+          examples:
+            - payslips
+          type: string
+        method:
+          description: "nemura: Nemura issues it (payslips and KETs); provider: a named payroll provider; manual: a documented manual process; not_applicable: the Auto-Inclusion Scheme or IR21 does not apply, with the reason."
+          enum:
+            - nemura
+            - provider
+            - manual
+            - not_applicable
+          examples:
+            - provider
+          type: string
+        note:
+          description: How it is met, or why it does not apply.
+          examples:
+            - "Fewer than five employees: the AIS does not yet apply"
+          type: string
+        provider:
+          description: The provider's name.
+          examples:
+            - Talenox
+          type: string
+        recorded_at:
+          description: When.
+          examples:
+            - "2026-11-20T09:00:00Z"
+          format: date-time
+          type: string
+        recorded_by:
+          description: "Who recorded it: an actor of the audit trail."
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          type: string
+      required:
+        - id
+        - item
+        - method
+        - effective_from
+        - recorded_by
+        - recorded_at
+      type: object
+    PayrollArrangementChange:
+      additionalProperties: false
+      properties:
+        effective_from:
+          description: The first wage month it holds for.
+          examples:
+            - 2026-11
+          pattern: ^[0-9]{4}-[0-9]{2}$
+          type: string
+        evidence_id:
+          description: "A file of evidence on a record of the organisation: required for every method but nemura."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c71
+          format: uuid
+          type: string
+        item:
+          description: What it covers.
+          enum:
+            - payslips
+            - kets
+            - cpf_sdl_shg
+            - ais
+            - ir21
+          examples:
+            - payslips
+          type: string
+        method:
+          description: How it is met. nemura is for payslips and KETs only and needs an active link whose payroll is Nemura's.
+          enum:
+            - nemura
+            - provider
+            - manual
+            - not_applicable
+          examples:
+            - provider
+          type: string
+        note:
+          description: How it is met; with not_applicable, why.
+          examples:
+            - Fewer than five employees
+          maxLength: 500
+          type: string
+        provider:
+          description: The provider's name, with method provider.
+          examples:
+            - Talenox
+          maxLength: 120
+          type: string
+      required:
+        - item
+        - method
+        - effective_from
+      type: object
+    PayrollArrangements:
+      additionalProperties: false
+      properties:
+        in_force:
+          description: The arrangement of each item in force.
+          items:
+            $ref: "#/components/schemas/PayrollArrangement"
+          type: array
+        met:
+          description: "Every item has an arrangement in force: the gate is open."
+          examples:
+            - false
+          type: boolean
+        missing:
+          description: "The items with none: while any is missing a pay run that pays a person is not approved for payment (G4-009)."
+          examples:
+            - - kets
+          items:
+            type: string
+          type: array
+        month:
+          description: The wage month, YYYY-MM.
+          examples:
+            - 2026-11
+          type: string
+      required:
+        - month
+        - in_force
+        - missing
+        - met
+      type: object
+    PayrollImport:
+      additionalProperties: false
+      properties:
+        file_sha256:
+          description: The file's SHA-256, in hexadecimal.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        id:
+          description: The import, absent in a preview.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c74
+          format: uuid
+          type: string
+        journal_id:
+          description: The draft journal, to be approved under Journals.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c75
+          format: uuid
+          type: string
+        lines:
+          description: "What the draft holds: the version's difference from the one before, by account and department."
+          items:
+            $ref: "#/components/schemas/PayrollImportLine"
+          type: array
+        outcome:
+          description: "drafted: the draft journal was made; unchanged: the same file for the same version was imported before; nothing_changed: the version states the figures already drafted, so there is nothing to draft; preview: nothing was saved."
+          enum:
+            - drafted
+            - unchanged
+            - preview
+            - nothing_changed
+          examples:
+            - drafted
+          type: string
+        period:
+          examples:
+            - 2026-10
+          type: string
+        posting_date:
+          description: "The draft's date: the wage month's last day, or today when that month is closed."
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+        rows:
+          description: How many rows the file had.
+          examples:
+            - 14
+          format: int64
+          type: integer
+        source_system:
+          examples:
+            - talenox
+          type: string
+        version:
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - source_system
+        - period
+        - version
+        - outcome
+        - posting_date
+        - rows
+        - lines
+        - file_sha256
+      type: object
+    PayrollImportLine:
+      additionalProperties: false
+      properties:
+        account_id:
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c72
+          format: uuid
+          type: string
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "Signed: a debit positive, a credit negative."
+        department_id:
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c73
+          format: uuid
+          type: string
+      required:
+        - account_id
+        - amount
+      type: object
+    PayrollImportPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/PayrollImportRow"
+          type: array
+        next_cursor:
+          description: Pass it as cursor for the next page; absent on the last page.
+          examples:
+            - MTA
+          type: string
+      required:
+        - items
+      type: object
+    PayrollImportRequest:
+      additionalProperties: false
+      properties:
+        content_base64:
+          description: "The CSV, UTF-8, comma separated, with a header row, by account and department: no column may name a person (FR-PAY-13)."
+          examples:
+            - YWNjb3VudCxkZXBhcnRtZW50LGRlYml0LGNyZWRpdA==
+          maxLength: 4000000
+          type: string
+        mapping:
+          $ref: "#/components/schemas/Mapping"
+          description: "The file's column headers, if not Fyniq's own: account, department (optional), debit, credit, memo (optional)."
+        period:
+          description: The wage month the journal is for.
+          examples:
+            - 2026-10
+          pattern: ^[0-9]{4}-[0-9]{2}$
+          type: string
+        source_system:
+          description: The system it comes from, such as talenox or file.
+          examples:
+            - talenox
+          pattern: ^[a-z][a-z0-9_-]{0,39}$
+          type: string
+        version:
+          description: "The period's version: a later one states the period's full figures again and drafts only the difference from the version before. The same version again with the same file is a repeat; with another file it is refused."
+          examples:
+            - 1
+          format: int64
+          minimum: 1
+          type: integer
+      required:
+        - source_system
+        - period
+        - version
+        - content_base64
+      type: object
+    PayrollImportRow:
+      additionalProperties: false
+      properties:
+        created_at:
+          examples:
+            - "2026-11-20T09:00:00Z"
+          format: date-time
+          type: string
+        id:
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c74
+          format: uuid
+          type: string
+        journal_id:
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c75
+          format: uuid
+          type: string
+        lines:
+          description: How many lines its draft holds.
+          examples:
+            - 6
+          format: int64
+          type: integer
+        period:
+          examples:
+            - 2026-10
+          type: string
+        source_system:
+          examples:
+            - talenox
+          type: string
+        version:
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - source_system
+        - period
+        - version
+        - journal_id
+        - lines
+        - created_at
       type: object
     PayrollMapping:
       additionalProperties: false
@@ -202833,6 +203193,545 @@ paths:
       x-fyniq-permission:
         capability: Bank transactions, categorise
         right: V
+  /v1/payroll-arrangements:
+    get:
+      description: "The arrangement in force for each item of the payroll go-live gate (FR-PAY-15) for a wage month, and what is missing: itemised payslips, key employment terms, CPF, SDL and SHG submission and payment, and where they apply the Auto-Inclusion Scheme and IR21. While an item is missing, a pay run that pays a person is not approved for payment (PPL-30, G4-009). Where payroll lives in Nemura with the link active, Nemura's issuing of payslips and KETs counts as their arrangement. Read-only; no side effects."
+      operationId: getPayrollArrangements
+      parameters:
+        - description: The wage month, YYYY-MM; the current month when left out.
+          explode: false
+          in: query
+          name: month
+          schema:
+            description: The wage month, YYYY-MM; the current month when left out.
+            examples:
+              - 2026-11
+            pattern: ^[0-9]{4}-[0-9]{2}$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayrollArrangements"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Show how a month's statutory payroll outputs are met
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Pay runs, employee data
+        right: V
+    post:
+      description: "Records, as evidence, how one item of the gate (FR-PAY-15) is met from a wage month: a provider's (named), a documented manual process, Nemura's own (payslips and KETs, while the link is active and payroll is Nemura's), or not applicable (the Auto-Inclusion Scheme and IR21 only, with the reason). Every method but Nemura's needs a file of evidence on a record of the organisation (FR-DOC-05). An arrangement is never changed: a new one from a later month replaces it. Needs a person who passed step-up. Side effects: the arrangement and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: setPayrollArrangement
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayrollArrangementChange"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayrollArrangement"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayrollArrangement"
+          description: Created
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong; `STORAGE-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Record how an item of the payroll go-live gate is met
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-FAILURE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Pay runs, employee data
+        note: A person stepped up in the last 5 minutes, with a file of evidence (FR-DOC-05).
+        right: C
+  /v1/payroll-imports:
+    get:
+      description: The provider journals and file imports of pay periods (FR-PPL-05), newest period first, each with the draft journal it made for approval under Journals. Read-only; no side effects.
+      operationId: listPayrollImports
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayrollImportPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the payroll imports
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Pay runs, employee data
+        right: V
+    post:
+      description: "Reads a payroll provider's journal for a pay period, or a file import, as a CSV by account and department (no column may name a person: FR-PAY-13), and makes it a **draft journal** under Journals that a Controller or Accountant approves, because the external system's approval cannot be verified (FR-PPL-05, NM-EXT-03). It is idempotent per source system, pay period and version: the same version with the same file answers unchanged, with another file is refused, and a later version drafts only its difference from the version before (the earlier version's journal must be posted first). The draft is dated on the wage month's last day, or today when that month is closed. It is refused while payroll lives in Nemura (the link is live and Nemura holds payroll: PPL-29), so one pay run is never posted from two sources. Prefer: return=preview shows the draft's lines and what changes and saves nothing (FR-INT-27). Side effects: the draft journal and the import's record, each audited. Idempotent with Idempotency-Key. Needs the right to prepare payroll; a draft is posted only under Journals' own approval."
+      operationId: importPayrollJournal
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayrollImportRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayrollImport"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayrollImport"
+          description: Created
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PPL-29` Payroll lives in Nemura, so a provider's journal or a file import is not taken; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYROLL-RUN-01` A pay run's receipt is kept once, and a payroll entry needs one."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `IMP-01` The payroll file is not a readable CSV; `IMP-02` A column the mapping names is not in the file; `IMP-03` A row's account is not an account of the chart; `IMP-04` A row's amount is not dollars and cents, or has both a debit and a credit; `IMP-05` The file's debits and credits are not equal; `IMP-06` A row's department is not a value of the Department dimension; `IMP-07` The payroll file has more rows than an import holds; `IMP-08` The payroll file names a person: pay is kept by account and department."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Import a provider's payroll journal as a draft
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-RATE-01
+        - IMP-01
+        - IMP-02
+        - IMP-03
+        - IMP-04
+        - IMP-05
+        - IMP-06
+        - IMP-07
+        - IMP-08
+        - PPL-29
+        - STORAGE-LOCK-01
+        - STORAGE-PAYROLL-RUN-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Pay runs, employee data
+        note: "A draft journal only: a Controller or Accountant approves it under Journals (NM-EXT-03)."
+        right: C
   /v1/payroll-mapping:
     get:
       description: The current version of what each department's salary and each kind of deduction post to (FR-EMP-02's minimum, p1-payroll-link design D8), for the people with payroll rights. A pay run is calculated against one version and Fyniq refuses a run for another. Read-only; no side effects.
@@ -224182,7 +225081,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `SB-01` The salary batch has no money account, payment date and method yet; `SB-04` The salary batch is not in the state the command needs; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PPL-30` How the month's statutory payroll outputs are met is not recorded, so a pay run is not approved for payment; `SB-01` The salary batch has no money account, payment date and method yet; `SB-04` The salary batch is not in the state the command needs; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress."
         "412":
           content:
             application/problem+json:
@@ -224260,6 +225159,7 @@ paths:
         - API-NOT-FOUND-01
         - API-RATE-01
         - APR-06
+        - PPL-30
         - SB-01
         - SB-02
         - SB-04

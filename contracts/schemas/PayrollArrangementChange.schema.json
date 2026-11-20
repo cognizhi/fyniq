@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "effective_from": {
+      "description": "The first wage month it holds for.",
+      "examples": [
+        "2026-11"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "type": "string"
+    },
+    "evidence_id": {
+      "description": "A file of evidence on a record of the organisation: required for every method but nemura.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c71"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "item": {
+      "description": "What it covers.",
+      "enum": [
+        "payslips",
+        "kets",
+        "cpf_sdl_shg",
+        "ais",
+        "ir21"
+      ],
+      "examples": [
+        "payslips"
+      ],
+      "type": "string"
+    },
+    "method": {
+      "description": "How it is met. nemura is for payslips and KETs only and needs an active link whose payroll is Nemura's.",
+      "enum": [
+        "nemura",
+        "provider",
+        "manual",
+        "not_applicable"
+      ],
+      "examples": [
+        "provider"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "How it is met; with not_applicable, why.",
+      "examples": [
+        "Fewer than five employees"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "provider": {
+      "description": "The provider's name, with method provider.",
+      "examples": [
+        "Talenox"
+      ],
+      "maxLength": 120,
+      "type": "string"
+    }
+  },
+  "required": [
+    "item",
+    "method",
+    "effective_from"
+  ],
+  "title": "PayrollArrangementChange",
+  "type": "object"
+}

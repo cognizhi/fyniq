@@ -855,6 +855,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/payment-providers/events` (listPaymentProviderEvents): List the payment providers' webhook events
 - `POST /v1/payment-providers/events/{event_id}/resolution` (resolvePaymentProviderEvent): Mark a parked provider event as dealt with
 - `GET /v1/payment-providers/payouts` (listPaymentProviderPayouts): List the payment providers' payouts
+- `GET /v1/payroll-arrangements` (getPayrollArrangements): Show how a month's statutory payroll outputs are met
+- `POST /v1/payroll-arrangements` (setPayrollArrangement): Record how an item of the payroll go-live gate is met
+- `GET /v1/payroll-imports` (listPayrollImports): List the payroll imports
+- `POST /v1/payroll-imports` (importPayrollJournal): Import a provider's payroll journal as a draft
 - `GET /v1/payroll-mapping` (getPayrollMapping): Show the account mapping pay runs post by
 - `POST /v1/payroll-mapping` (setPayrollMapping): Set the next version of the account mapping
 - `GET /v1/people-link` (getPeopleLink): Show the link to the people platform and where each feature lives
