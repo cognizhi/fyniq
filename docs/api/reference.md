@@ -6439,7 +6439,7 @@ The customer's portal links, newest first: when each was made, when it expires, 
 
 **Make a customer's portal link** (`createPortalLink`)
 
-Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. A person's alone: the AI and MCP have no tool for it. Side effects: the link and its audit event.
+Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. With send_email the link is also queued to the customer's billing email address from the statements sender (the address cannot be chosen here), in the same step. A person's alone: the AI and MCP have no tool for it. Side effects: the link, the queued email if asked for, and their audit events.
 
 - **Permission:** Post on Invoices, credit notes
 - **Parameters:**

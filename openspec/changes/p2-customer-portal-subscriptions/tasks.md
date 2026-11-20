@@ -10,7 +10,8 @@ Migrations 001070 to 001099. Cloud and real-account checks are tagged `[live-ver
 - [x] 1.3 Threat model, PDPA notes, PRD revision, spec scenarios, stamp.
 
 - Built (rev 0.520): migration 001070 (`portal_link`, its registry `portal_link_token` and `portal_link_route`, FORCE RLS, a guard trigger FYP10 and FYP11, no grant to the worker), `internal/domain/portal` (`Scope`, `Read`, `InvoiceOf`, `Statement`: every read takes the customer from the link), `internal/api/portal.go` (`createPortalLink`, `getContactPortalLinks`, `revokePortalLink`; the public `getPortal`, `getPortalInvoicePDF`, `getPortalStatement`), the page `CustomerPortal` at `/portal` (token from the fragment, sent in `Fyniq-Portal`), the customer's `PortalLinksCard`, help keys, guide sections (`contacts.manage`, `sales.invoices`) and kb pages, the design inventory, the threat model `customer-portal`. Tests: `TestAPortalOpensItsCustomersDocumentsOnly` (cross-customer, unknown, malformed, revoked, expired, other principals both ways, the log), `TestAPortalLinkIsMadeByThoseWhoMayPostAndForCustomersOnly`, `TestAPortalLinkIsRateLimitedPerLink`, `matrixPortal`, the web tests. Needs-human-review: a new external principal and the access design (D1).
-- **Left:** emailing the link from Fyniq (the maker sends it); a paid-invoice history (the statement shows it); a staff-side "view as customer".
+- Built (rev 0.574): emailing the link, `send_email` on `createPortalLink` (the contact's billing address from the statements sender, in the same step; `TestAPortalLinkIsEmailedToTheCustomersBillingAddressOrNotMade`, `portalLinksCard.test.tsx`).
+- **Left:** a paid-invoice history (the statement shows it); a staff-side "view as customer".
 
 ## 2. Disputes and promise-to-pay (FR-AR-08, P2)
 

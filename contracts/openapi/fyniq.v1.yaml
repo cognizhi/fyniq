@@ -20466,6 +20466,11 @@ components:
             - Sent to ap@acme.example
           maxLength: 200
           type: string
+        send_email:
+          description: Also email the link to the customer's billing email address, from the statements sender; nothing is made if it cannot be queued. The address is the contact's own and cannot be chosen here.
+          examples:
+            - true
+          type: boolean
       type: object
     CreateReportScheduleInputBody:
       additionalProperties: false
@@ -47182,6 +47187,11 @@ components:
           examples:
             - "2026-11-20T09:30:00Z"
           format: date-time
+          type: string
+        emailed_to:
+          description: The customer's billing email address the link was queued to, when send_email was true.
+          examples:
+            - ap@acme.example
           type: string
         expires_at:
           description: When it stops working.
@@ -115179,7 +115189,7 @@ paths:
         capability: Invoices, credit notes
         right: V
     post:
-      description: "Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. A person's alone: the AI and MCP have no tool for it. Side effects: the link and its audit event."
+      description: "Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. With send_email the link is also queued to the customer's billing email address from the statements sender (the address cannot be chosen here), in the same step. A person's alone: the AI and MCP have no tool for it. Side effects: the link, the queued email if asked for, and their audit events."
       operationId: createPortalLink
       parameters:
         - description: The contact's ID.

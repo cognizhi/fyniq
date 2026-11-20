@@ -5315,7 +5315,7 @@ export interface paths {
         put?: never;
         /**
          * Make a customer's portal link
-         * @description Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. A person's alone: the AI and MCP have no tool for it. Side effects: the link and its audit event.
+         * @description Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. With send_email the link is also queued to the customer's billing email address from the statements sender (the address cannot be chosen here), in the same step. A person's alone: the AI and MCP have no tool for it. Side effects: the link, the queued email if asked for, and their audit events.
          */
         post: operations["createPortalLink"];
         delete?: never;
@@ -32879,6 +32879,11 @@ export interface components {
              * @example Sent to ap@acme.example
              */
             label?: string;
+            /**
+             * @description Also email the link to the customer's billing email address, from the statements sender; nothing is made if it cannot be queued. The address is the contact's own and cannot be chosen here.
+             * @example true
+             */
+            send_email?: boolean;
         };
         CreateReportScheduleInputBody: {
             /**
@@ -51594,6 +51599,11 @@ export interface components {
              * @example 2026-11-20T09:30:00Z
              */
             created_at: string;
+            /**
+             * @description The customer's billing email address the link was queued to, when send_email was true.
+             * @example ap@acme.example
+             */
+            emailed_to?: string;
             /**
              * Format: date-time
              * @description When it stops working.
