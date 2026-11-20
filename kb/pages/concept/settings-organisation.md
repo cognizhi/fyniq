@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, InvoiceNow, cash buffer, numbering, features, AI, terms, banking, claims, thresholds, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:e8de601d48baff4f1f63e77dd202bdb5f2563539ffb168f604dc6f8ef319100a
+  - docs/user-guide/organisation-settings.md sha256:9e7076a0b97ee4c61bc7798aa450988e3f9eca6ad7e8ab995cecfa92ca23a774
 data_class: general
 taint: trusted
 status: draft
@@ -207,6 +207,15 @@ The calendar itself: [[compliance.calendar]].
 - A change takes effect for people who have not chosen yet; nobody who chose a mode is moved. The mode only changes what is shown, never what a person may do.
 
 (src: docs/user-guide/organisation-settings.md#default-mode-by-role)
+
+## Pin a role to Basic mode
+
+- An Administrator can keep a role in **Basic** mode: under **Pin the** … **to Basic mode**, turn the setting on for a role such as the Employee or the Board viewer.
+- People whose roles are all pinned work in Basic mode and do not see the **Basic | Expert** switch, its keyboard shortcut or its palette command; an Expert choice they saved earlier is not shown, and returns if the pin is lifted.
+- A person who also holds a role that is not pinned keeps the switch. The Owner and the Administrator cannot be pinned.
+- The pin only changes what is shown, never what a person may do; safety information is shown in both modes.
+
+(src: docs/user-guide/organisation-settings.md#pin-a-role-to-basic-mode)
 
 ## AI routes
 

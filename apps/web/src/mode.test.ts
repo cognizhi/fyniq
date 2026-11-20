@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { defaultMode, setMode, useMode } from "./mode";
+import { defaultMode, forgetMode, setMode, setPinnedBasic, useMode, usePinnedBasic } from "./mode";
 
 describe("the experience mode", () => {
   // req: FR-UX-27
@@ -24,5 +24,20 @@ describe("the experience mode", () => {
     act(() => setMode("expert"));
     expect(result.current).toBe("expert");
     expect(window.localStorage.getItem("fyniq.mode")).toBe("expert");
+  });
+
+  // req: FR-UX-28
+  it("shows a pinned person Basic whatever they chose, and ignores a switch", () => {
+    forgetMode();
+    const { result } = renderHook(() => ({ mode: useMode(["accountant"]), pinned: usePinnedBasic() }));
+    act(() => setMode("expert"));
+    expect(result.current).toEqual({ mode: "expert", pinned: false });
+    act(() => setPinnedBasic(true));
+    expect(result.current).toEqual({ mode: "basic", pinned: true });
+    act(() => setMode("expert")); // no choice while pinned
+    expect(result.current.mode).toBe("basic");
+    act(() => setPinnedBasic(false));
+    expect(result.current.mode).toBe("expert"); // their own choice returns when the pin is lifted
+    forgetMode();
   });
 });

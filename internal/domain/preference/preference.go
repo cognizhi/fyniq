@@ -188,3 +188,21 @@ func DefaultMode(roles []string, startingMode func(role string) string) string {
 	}
 	return "basic"
 }
+
+// PinnedBasicKey is the organisation setting that pins a role to Basic mode (FR-UX-28): the Owner and the Administrator cannot be pinned, so the people who set it never lose
+// the switch themselves.
+func PinnedBasicKey(role string) string { return "experience.pinned_basic." + role }
+
+// PinnedBasic is whether a person is pinned to Basic mode: every one of their roles is pinned (FR-UX-28). A person with a role that is not pinned keeps the switch, because
+// pinning a role must never take Expert away from someone whose other role needs it. pinned reads the organisation's setting for a role.
+func PinnedBasic(roles []string, pinned func(role string) bool) bool {
+	if len(roles) == 0 {
+		return false
+	}
+	for _, r := range roles {
+		if !pinned(r) {
+			return false
+		}
+	}
+	return true
+}

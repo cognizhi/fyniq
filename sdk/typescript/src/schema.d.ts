@@ -49967,6 +49967,11 @@ export interface components {
              */
             number_format?: "comma_dot" | "dot_comma" | "space_comma" | "space_dot";
             /**
+             * @description true (absent otherwise) when an Administrator pinned every role the caller holds to Basic mode (FR-UX-28): they work in Basic, do not see the Basic | Expert switch, and a save of mode expert is refused. A caller with a role that is not pinned is not pinned.
+             * @example false
+             */
+            pinned_basic?: boolean;
+            /**
              * Format: date-time
              * @description When the caller last saved their preferences, if ever.
              * @example 2026-11-20T09:30:00Z
@@ -193297,7 +193302,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PRF-05` Your role is pinned to Basic mode; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;

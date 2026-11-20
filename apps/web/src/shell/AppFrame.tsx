@@ -7,7 +7,7 @@ import type { TurnContext } from "../components/ai/assistant";
 import { AssistantContext } from "../components/ai/context";
 import { Button, buttonVariants } from "../components/ui/button";
 import { helpText } from "../i18n";
-import { setMode } from "../mode";
+import { setMode, usePinnedBasic } from "../mode";
 import { nav, type Mode, type NavFeature } from "../registry";
 import { available, enterToNext, keyOf, matcher, onShortcutSheet, useShortcutSettings } from "../shortcuts";
 import { Icon } from "../ui";
@@ -82,7 +82,9 @@ function NavList({ items, path, onNavigate, groups = mainGroups, badges }: { ite
 // class it is the designed pill (docs/design/screens AppShell), one button that names the mode and switches it, since a
 // 320 px header has no room for both options (FR-UX-37).
 export function ModeSwitch({ mode }: { mode: Mode }) {
+  const pinned = usePinnedBasic(); // an Administrator pinned the person's roles to Basic: no switch (FR-UX-28)
   const h = helpText("shell.mode");
+  if (pinned) return null;
   const choices: [Mode, string][] = [
     ["basic", "Basic"],
     ["expert", "Expert"],

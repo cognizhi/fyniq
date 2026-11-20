@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-TAX-10, FR-AR-12, FR-UX-27, CMP-PD-01, FM-8, FR-INT-02, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32, AI-35, AI-43, AI-90]
+requirements: [FR-TAX-10, FR-AR-12, FR-UX-27, FR-UX-28, CMP-PD-01, FM-8, FR-INT-02, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32, AI-35, AI-43, AI-90]
 status: draft
 ---
 
@@ -213,6 +213,18 @@ mode, Basic by default.
 
 A change takes effect for people who have not chosen yet; nobody who chose a mode is moved. The mode only changes
 what is shown, never what a person may do.
+
+## Pin a role to Basic mode
+
+An Administrator can keep a role in **Basic** mode for good. Under **Pin the** … **to Basic mode**, turn the
+setting on for a role such as the Employee or the Board viewer. People whose roles are all pinned work in Basic
+mode, do not see the **Basic | Expert** switch (nor its keyboard shortcut or palette command), and any Expert choice
+they saved earlier is not shown; it returns if the pin is lifted. Safety information such as approvals, locks and
+totals is shown in both modes, so Basic never hides what a person needs to decide.
+
+A person who also holds a role that is not pinned keeps the switch: pinning the Employee role does not take Expert
+away from an Employee who is also an Accountant. The Owner and the Administrator cannot be pinned, so the people who
+set this never lose the switch themselves. The pin only changes what is shown, never what a person may do.
 
 ## AI routes
 

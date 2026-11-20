@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import type { Session } from "../api/client";
 import { buttonVariants } from "../components/ui/button";
 import { helpText } from "../i18n";
-import { setMode } from "../mode";
+import { setMode, usePinnedBasic } from "../mode";
 import type { Mode } from "../registry";
 import { available, inboxKeys, keysOf, normalise, problems, setShortcutSettings, spell, useShortcutSettings, usual, type Shortcut } from "../shortcuts";
 import { Icon } from "../ui";
@@ -52,6 +52,7 @@ function Group({ title, rows }: { title: string; rows: readonly (readonly [React
 export function ShortcutSheet({ open, onOpenChange, session, mode }: { open: boolean; onOpenChange: (open: boolean) => void; session: Person; mode: Mode }) {
   const h = helpText("shell.shortcuts");
   const settings = useShortcutSettings(session.user_id ?? "");
+  const pinned = usePinnedBasic();
   const list = available(session, mode, settings);
   const row = (s: Shortcut) => [<Keys keys={s.keys} />, s.group === "sheet" ? "Show these shortcuts" : s.label] as const;
   return (
@@ -80,11 +81,11 @@ export function ShortcutSheet({ open, onOpenChange, session, mode }: { open: boo
               rows={[
                 [<kbd className="fy-kbd">Ctrl K</kbd>, "Search and commands (⌘K on a Mac)"],
                 [<kbd className="fy-kbd">Ctrl J</kbd>, "The assistant (⌘J on a Mac)"],
-                [<kbd className="fy-kbd">Alt Shift M</kbd>, `Switch to ${mode === "basic" ? "Expert" : "Basic"} mode (Option Shift M on a Mac)`],
+                ...(pinned ? [] : ([[<kbd className="fy-kbd">Alt Shift M</kbd>, `Switch to ${mode === "basic" ? "Expert" : "Basic"} mode (Option Shift M on a Mac)`]] as [ReactNode, string][])),
                 ...list.filter((s) => s.group === "sheet").map(row),
               ]}
             />
-            {mode === "basic" ? (
+            {mode === "basic" && !pinned ? (
               <div className="fy-row fy-row--between fy-row--wrap gap-2">
                 <p className="fy-small fy-secondary">Expert mode adds keys to go to each area and to start each kind of record.</p>
                 <button type="button" className="fy-btn fy-btn--secondary fy-btn--sm" onClick={() => setMode("expert")}>

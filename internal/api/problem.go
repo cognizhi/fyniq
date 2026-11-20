@@ -603,6 +603,7 @@ var codeFacts = map[string]struct {
 	comment.CodeRecord:            {422, "A record that takes no comments"},
 	comment.CodeNoUser:            {422, "Not a person who comments"},
 	CodePreferenceNoUser:          {422, "Not a person with preferences of their own"},
+	CodePinnedBasic:               {409, "Your role is pinned to Basic mode"},
 	preference.CodeValue:          {422, "Not a value for this preference"},
 	preference.CodeKeys:           {422, "Not valid shortcut keys"},
 	preference.CodeReset:          {422, "Not a preference that can be reset"},

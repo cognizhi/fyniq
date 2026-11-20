@@ -113,6 +113,13 @@
       ],
       "type": "string"
     },
+    "pinned_basic": {
+      "description": "true (absent otherwise) when an Administrator pinned every role the caller holds to Basic mode (FR-UX-28): they work in Basic, do not see the Basic | Expert switch, and a save of mode expert is refused. A caller with a role that is not pinned is not pinned.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "set_at": {
       "description": "When the caller last saved their preferences, if ever.",
       "examples": [

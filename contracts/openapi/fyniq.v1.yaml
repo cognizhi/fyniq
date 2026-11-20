@@ -43259,6 +43259,11 @@ components:
           examples:
             - comma_dot
           type: string
+        pinned_basic:
+          description: "true (absent otherwise) when an Administrator pinned every role the caller holds to Basic mode (FR-UX-28): they work in Basic, do not see the Basic | Expert switch, and a save of mode expert is refused. A caller with a role that is not pinned is not pinned."
+          examples:
+            - false
+          type: boolean
         set_at:
           description: When the caller last saved their preferences, if ever.
           examples:
@@ -235414,7 +235419,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PRF-05` Your role is pinned to Basic mode; `STORAGE-LOCK-01` Another change is in progress."
         "412":
           content:
             application/problem+json:
@@ -235507,6 +235512,7 @@ paths:
         - PRF-02
         - PRF-03
         - PRF-04
+        - PRF-05
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
       x-fyniq-permission:

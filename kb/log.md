@@ -1029,3 +1029,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.onboarding: tasks that close by their own flow (rev 0.75)
 
 ## [2026-11-20] compile | nemura.hiring: drafts from the assistant (rev 0.76)
+
+## [2026-11-20] compile | settings.organisation: pin a role to Basic mode (FR-UX-28)

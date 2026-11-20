@@ -2,7 +2,7 @@ import { api, etagOf, newKey, type Session } from "./api/client";
 import type { components } from "./api/schema";
 import { applyAppearance, defaults as appearanceDefaults, theAppearance, type Appearance } from "./appearance";
 import { setLocale } from "./format/locale";
-import { applyMode, setStartingMode, theChosenMode } from "./mode";
+import { applyMode, setPinnedBasic, setStartingMode, theChosenMode } from "./mode";
 import { persist, setPreferenceSender, type PreferenceChange } from "./preferenceSink";
 import type { Mode } from "./registry";
 import { applyShortcutSettings, defaultSettings, shortcutSettings } from "./shortcuts";
@@ -58,6 +58,7 @@ export function adopt(session: Pick<Session, "user_id" | "preferences" | "time_z
   etag = prefs.etag;
   setPreferenceSender(send);
   setStartingMode(prefs.default_mode as Mode);
+  setPinnedBasic(prefs.pinned_basic === true);
   setLocale({ number: prefs.number_format, date: prefs.date_format, negatives: prefs.negative_format, timeZone: session.time_zone });
 
   const upload: PreferenceChange = {};

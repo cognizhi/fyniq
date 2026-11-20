@@ -41,8 +41,23 @@ function current(): Mode | null {
   return chosen;
 }
 
-// setMode is the person's choice: it applies at once, and is kept on the server.
+// An Administrator can pin a role to Basic (FR-UX-28): the person then works in Basic and has no switch.
+let pinned = false;
+
+export function setPinnedBasic(on: boolean): void {
+  if (on === pinned) return;
+  pinned = on;
+  for (const l of listeners) l();
+}
+
+// usePinnedBasic is whether the person's roles are pinned to Basic.
+export function usePinnedBasic(): boolean {
+  return useSyncExternalStore(subscribe, () => pinned);
+}
+
+// setMode is the person's choice: it applies at once, and is kept on the server. A person pinned to Basic has no choice.
 export function setMode(m: Mode): void {
+  if (pinned) return;
   applyMode(m);
   persist({ mode: m });
 }
@@ -79,6 +94,7 @@ export function forgetMode(): void {
   chosen = null;
   loaded = false;
   starting = null;
+  pinned = false;
   try {
     window.localStorage.removeItem(storageKey);
   } catch {
@@ -94,7 +110,8 @@ function subscribe(l: () => void): () => void {
 
 // useMode is the person's mode: their choice, or their roles' default.
 export function useMode(roles: readonly string[] | null | undefined): Mode {
+  const p = useSyncExternalStore(subscribe, () => pinned);
   const c = useSyncExternalStore(subscribe, current);
   const s = useSyncExternalStore(subscribe, () => starting);
-  return c ?? s ?? defaultMode(roles);
+  return p ? "basic" : (c ?? s ?? defaultMode(roles));
 }

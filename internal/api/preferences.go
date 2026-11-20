@@ -22,12 +22,16 @@ var preferenceCodes = []string{preference.CodeValue, preference.CodeKeys, prefer
 // CodePreferenceNoUser refuses saving preferences for a caller that is not a person who is a member.
 const CodePreferenceNoUser = "PRF-04"
 
+// CodePinnedBasic refuses Expert mode to a person whose roles an Administrator pinned to Basic (FR-UX-28).
+const CodePinnedBasic = "PRF-05"
+
 // MyPreferences are the caller's own preferences in this organisation, the same on every device (FR-UX-23, FR-UX-08,
 // FR-UX-06, FR-UX-38, NFR-L10N-01). They are presentation only: they never change what the caller may do, what the API
 // checks or what is saved. A choice never made is absent: the organisation's starting mode for the caller's roles, or
 // the standard choice, applies.
 type MyPreferences struct {
 	Mode           string            `json:"mode,omitempty" enum:"basic,expert" doc:"The experience mode the caller chose; absent until they choose, when default_mode applies." example:"expert"`
+	PinnedBasic    bool              `json:"pinned_basic,omitempty" doc:"true (absent otherwise) when an Administrator pinned every role the caller holds to Basic mode (FR-UX-28): they work in Basic, do not see the Basic | Expert switch, and a save of mode expert is refused. A caller with a role that is not pinned is not pinned." example:"false"`
 	DefaultMode    string            `json:"default_mode" enum:"basic,expert" doc:"The mode in force while the caller has not chosen: from the organisation's starting mode for each of their roles, the Owner's winning when they hold it (FR-UX-27)." example:"basic"`
 	LedgerView     string            `json:"ledger_view,omitempty" enum:"plain,accountant" doc:"Plain view or Accountant view where a screen offers both, in Expert mode (FR-UX-08); absent: plain." example:"plain"`
 	Theme          string            `json:"theme,omitempty" enum:"light,dark,system" doc:"Light, dark or the device's setting (FR-UX-38); absent: system." example:"system"`
@@ -110,8 +114,42 @@ func startingModes(ctx context.Context, a *API, u storage.UnitOfWork) (func(role
 	}, nil
 }
 
-// preferencesOf is the caller's preferences, with the mode they start in.
+// pinnedBasic is whether every role of a person is pinned to Basic mode by the organisation (FR-UX-28). The line manager is a relationship, not a role (§6.2).
+func pinnedBasic(ctx context.Context, a *API, u storage.UnitOfWork, roles []string) (bool, error) {
+	today, err := orgToday(ctx, a, u)
+	if err != nil {
+		return false, err
+	}
+	changes, err := u.Settings().Changes(ctx, "")
+	if err != nil {
+		return false, err
+	}
+	held := slices.DeleteFunc(slices.Clone(roles), func(r string) bool { return r == string(authz.LineManager) })
+	return preference.PinnedBasic(held, func(role string) bool {
+		d, ok := settings.Lookup(preference.PinnedBasicKey(role))
+		return ok && settings.On(d, changes, today).Value == "true"
+	}), nil
+}
+
+// pin shows a pinned person Basic mode: their saved choice, if it was Expert, is not shown, and their starting mode is Basic.
+func pin(out MyPreferences, pinned bool) MyPreferences {
+	if pinned {
+		out.PinnedBasic, out.DefaultMode, out.Mode = true, "basic", "basic"
+	}
+	return out
+}
+
+// myPreferencesOf is the caller's preferences, with the mode they start in.
 func myPreferencesOf(ctx context.Context, a *API, u storage.UnitOfWork, user uuid.UUID, roles []string) (MyPreferences, error) {
+	out, err := rawPreferencesOf(ctx, a, u, user, roles)
+	if err != nil {
+		return out, err
+	}
+	pinned, err := pinnedBasic(ctx, a, u, roles)
+	return pin(out, pinned), err
+}
+
+func rawPreferencesOf(ctx context.Context, a *API, u storage.UnitOfWork, user uuid.UUID, roles []string) (MyPreferences, error) {
 	start, err := startingModes(ctx, a, u)
 	if err != nil {
 		return MyPreferences{}, err
@@ -170,7 +208,7 @@ func registerPreferences(a *API) {
 			"the rest stay. Presentation only, and the only thing a mode switch writes. Side effects: the new state and its audit event. Needs " +
 			"If-Match with the preferences' etag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, append([]string{CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeIdempotencyReused,
-		CodeIdempotencyBusy, CodeIdempotencyOld, CodePreferenceNoUser}, append(slices.Clone(preferenceCodes), locks...)...), func(ctx context.Context, in *setMyPreferencesInput) (*myPreferencesWriteOutput, error) {
+		CodeIdempotencyBusy, CodeIdempotencyOld, CodePreferenceNoUser, CodePinnedBasic}, append(slices.Clone(preferenceCodes), locks...)...), func(ctx context.Context, in *setMyPreferencesInput) (*myPreferencesWriteOutput, error) {
 		p, _ := authn.From(ctx)
 		if p.UserID == uuid.Nil || p.Class != authn.ClassUser {
 			return nil, problem(CodePreferenceNoUser, "Only a person who is a member has preferences of their own.", "Sign in as yourself")
@@ -190,6 +228,14 @@ func registerPreferences(a *API) {
 			if ok {
 				current = &cur
 			}
+			pinned, err := pinnedBasic(ctx, a, u, roleStrings(p.Roles))
+			if err != nil {
+				return MyPreferences{}, err
+			}
+			if pinned && in.Body.Mode == "expert" { // FR-UX-28: a pinned role works in Basic; the switch is not theirs
+				return MyPreferences{}, problem(CodePinnedBasic, "Your role is pinned to Basic mode, so Expert mode is not available to you.",
+					"Ask an Administrator to unpin your role in Settings → Organisation if you need Expert mode")
+			}
 			if err := checkIfMatch(in.IfMatch, preferencesETag(current)); err != nil {
 				return MyPreferences{}, err
 			}
@@ -201,7 +247,7 @@ func registerPreferences(a *API) {
 			if err != nil {
 				return MyPreferences{}, err
 			}
-			return fill(MyPreferences{DefaultMode: preference.DefaultMode(roleStrings(p.Roles), start)}, &saved), nil
+			return pin(fill(MyPreferences{DefaultMode: preference.DefaultMode(roleStrings(p.Roles), start)}, &saved), pinned), nil
 		})
 		if err != nil {
 			return nil, err

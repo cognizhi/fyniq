@@ -298,6 +298,12 @@ Source: PRD-001 §7.8 · Priority C · Phase P2
 - **THEN** they are in Basic mode
 - **AND** they do not see the mode toggle
 
+#### Scenario: A pin changes what is shown, and only for pinned roles (rev REV)
+- **GIVEN** the Administrator pinned the Employee role to Basic, and a person holds Employee and Accountant
+- **WHEN** a person whose every role is pinned saves Expert mode
+- **THEN** the API refuses it with its code and shows them Basic whatever they saved before
+- **AND** the person who also holds an unpinned role keeps the toggle, and the Owner and the Administrator cannot be pinned
+
 ### Requirement: FR-UX-29 One feature registry
 Every route, navigation item, field group, column set and action in `apps/web` SHALL be tagged `basic` or `expert` in a single registry.
 

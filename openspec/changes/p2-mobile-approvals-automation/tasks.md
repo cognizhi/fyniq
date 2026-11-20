@@ -33,7 +33,8 @@
 
 ## 7. Administration and experience
 - [ ] 7.1 The usage view (D7). `// req: FR-ADM-05`
-- [ ] 7.2 Pinned Basic mode (D7). `// req: FR-UX-28`
+- [x] 7.2 Pinned Basic mode (D7). `// req: FR-UX-28`
+  (Built, rev REV, `[owner to confirm]`: one switch setting per pinnable role, `experience.pinned_basic.<role>` (every role but the Owner and the Administrator, so the people who set it never lose the switch); a person is pinned when every role they hold is pinned (the line manager is a relationship, not a role); the preferences and the session say `pinned_basic`, show Basic, and a save of Expert is refused (PRF-05); the web app draws no Basic | Expert switch, palette command or shortcut for them. Tests: `TestAnAdministratorPinsARoleToBasicAndOnlyThatRole`, `mode.test.ts`. **Left:** nothing.)
 - [ ] 7.3 Feature tours and What's new (D7). `// req: FR-UX-35`
 
 ## 8. Templates
