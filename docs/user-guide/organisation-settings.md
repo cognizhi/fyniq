@@ -309,6 +309,13 @@ changed, from 0 to 30. A bill is listed once it falls due within that many days,
 date does, and stays while it is overdue, until its payment is recorded. Members who record bill payments
 see the list. See [Bills](bills.md).
 
+## Card receipt reminders
+
+**Remind a cardholder of a card line with no receipt after** says how many days a line of a company card may wait after its
+booking: 3 days unless changed, from 1 to 60. A line with no receipt attached, or one not yet completed, is told to its cardholder
+once a day, in one notice that counts the lines and names the oldest; completing a line with its receipt ends it. Only the
+cardholder is told, and only about their own card. See [Expense claims](claims-my-claims.md).
+
 ## GST rounding
 
 - **Round GST per line** is off: the GST of a document is worked out once for each GST code, on

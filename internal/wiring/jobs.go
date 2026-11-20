@@ -166,6 +166,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := reminders.TimeMissingAll(ctx, k.Store, k.dispatcher(clock))
 			return err
 		},
+		reminders.CardReceiptsJob: func(ctx context.Context) error { // FR-AP-08: a cardholder's lines with no receipt yet
+			_, err := reminders.CardReceiptsAll(ctx, k.Store, k.dispatcher(clock))
+			return err
+		},
 		reminders.CashBufferJob: func(ctx context.Context) error {
 			_, err := reminders.CashBuffer(ctx, k.Store, k.dispatcher(clock))
 			return err

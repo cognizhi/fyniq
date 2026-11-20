@@ -855,3 +855,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | sales.invoices: subscriptions a provider bills (FR-PSP-03, FR-PSP-07)
 
 ## [2026-11-20] compile | nemura/fyniq-link.md -> kb (alerts for events stuck for an hour near pay day and for 24 hours)
+
+## [2026-11-20] compile | settings.organisation: card receipt reminders (FR-AP-08)
