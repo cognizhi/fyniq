@@ -4,7 +4,7 @@ type: concept
 title: Founder pay choices
 summary: No salary (the recommended default), salary paid, deferred, director's fee or shares; deferral still triggers CPF and tax
 sources:
-  - docs/user-guide/founders-money.md sha256:5bb0d08e258456d44a69cfe4b4347560673bfae95b5661de6b8e3777804096c8
+  - docs/user-guide/founders-money.md sha256:2be04e9cf7aceb04dfdc96385c10f2b1ec2a50e689d3ec82d059384c674e1e53
   - docs/user-guide/director-accounts.md sha256:a7e4ca1ff825f79d72cdd4c6009d2fbffb34880e4ac70e70014614e8bf765df9
 data_class: general
 taint: trusted
@@ -45,7 +45,7 @@ compiled_at: 2026-11-07
 |---|---|
 | No salary | Nothing to record, no CPF, nothing to convert later; the cleanest while cash is short |
 | Salary paid | A normal payroll |
-| Salary deferred | Payroll runs, but net pay is owed instead of paid. **CPF is still due at the end of the month and the salary is taxed**, though nothing was received. Avoid unless the accountant recommends it |
+| Salary deferred | Payroll runs, but net pay is owed instead of paid. **CPF is still due at the end of the month and the salary is taxed**, though nothing was received. Avoid unless the accountant recommends it. For now it is a recorded choice only: a pay run does not calculate a deferral |
 | Director's fee | Approved by the shareholders; no CPF on fees voted at a general meeting |
 | Shares instead of pay | Income tax on the shares' value without receiving cash; rarely sensible before a priced round |
 
@@ -55,8 +55,6 @@ Unpaid pay becomes part of the founder's balance: [[founders.balance]].
 
 ## Messages and fixes
 
-- **✖ Pay deferred without a recorded pay choice**: record the pay choice for that director and
-  month, or pay the salary. (src: docs/user-guide/founders-money.md#common-problems)
 - **The pay choice has no signed decision attached**: attach the minute or resolution, then record
   it; **the pay choice is recorded, so it changes no more**: record a new choice from the month it
   changes. (src: docs/user-guide/director-accounts.md#common-problems)

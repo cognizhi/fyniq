@@ -46,7 +46,7 @@ on money you never received, and investors see a clean balance sheet at the roun
 |---|---|
 | No salary | Nothing to record, no CPF, nothing to convert later. The cleanest choice while cash is short |
 | Salary paid | A normal payroll |
-| Salary deferred | Payroll runs as usual, but your net pay is owed to you instead of paid. **CPF is still due at the end of the month, and you are taxed on the salary**, even though you received nothing. Avoid it unless your accountant recommends it |
+| Salary deferred | Payroll runs as usual, but your net pay is owed to you instead of paid. **CPF is still due at the end of the month, and you are taxed on the salary**, even though you received nothing. Avoid it unless your accountant recommends it. For now it is a recorded choice only: a pay run does not calculate a deferral, so nothing moves your net pay to your account for you |
 | Director's fee | Approved by the shareholders; no CPF on fees voted at a general meeting |
 | Shares instead of pay | You pay income tax on the shares' value without receiving cash. Rarely sensible before a priced round |
 
@@ -91,7 +91,6 @@ you with your passkey. If an entry for that year is posted later, it asks you to
 
 | Message | Fix |
 |---|---|
-| ✖ Pay deferred without a recorded pay choice | Record the pay choice for that director and month, or pay the salary |
 | ⚠ Your director's account is overdrawn | You owe the company. Repay it, or ask your accountant: loans to directors are restricted unless the company is an exempt private company |
 | ⏰ Share-issue approval not filed with ACRA | File the shareholders' approval within 14 days of the resolution and attach the acknowledgement |
 | ✖ Required evidence missing | Attach the resolution, agreement or ACRA acknowledgement the step lists |
