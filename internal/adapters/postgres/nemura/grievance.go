@@ -185,9 +185,11 @@ FROM nemura.grievance g LEFT JOIN nemura.member m ON m.organisation_id = g.organ
 	return out, rows.Err()
 }
 
-// HandledGrievances lists what the member handles, and the unrouted ones the policies show an authorised person who is not involved.
+// HandledGrievances lists what the member handles, and the grievances that wait: unrouted ones and stranded ones (their handler has left), which the policies show an authorised person who is
+// neither the complainant nor involved (option A of 21 Nov 2026).
 func HandledGrievances(ctx context.Context, tx pgx.Tx, member uuid.UUID) (assigned, unrouted []api.GrievanceRow, err error) {
-	rows, err := tx.Query(ctx, `SELECT id, filed_at, state, coalesce(handler_member = $1, false) FROM nemura.grievance WHERE handler_member = $1 OR state = 'unrouted' ORDER BY filed_at DESC, id DESC`, member)
+	rows, err := tx.Query(ctx, `SELECT id, filed_at, state, coalesce(handler_member = $1, false), complainant_member = $1, nemura.is_stranded(state, handler_member, nemura.acting_day())
+FROM nemura.grievance WHERE handler_member = $1 OR state = 'unrouted' OR nemura.is_stranded(state, handler_member, nemura.acting_day()) ORDER BY filed_at DESC, id DESC`, member)
 	if err != nil {
 		return nil, nil, grievanceError(err)
 	}
@@ -196,16 +198,21 @@ func HandledGrievances(ctx context.Context, tx pgx.Tx, member uuid.UUID) (assign
 	for rows.Next() {
 		var id uuid.UUID
 		var filed time.Time
-		var mine bool
+		var mine, filer, stranded bool
 		r := api.GrievanceRow{}
-		if err := rows.Scan(&id, &filed, &r.State, &mine); err != nil {
+		if err := rows.Scan(&id, &filed, &r.State, &mine, &filer, &stranded); err != nil {
 			return nil, nil, err
 		}
 		r.ID, r.FiledAt = id.String(), filed.UTC().Format(time.RFC3339)
-		if mine {
+		switch {
+		case mine:
 			assigned = append(assigned, r)
-		} else if r.State == "unrouted" {
-			// An unrouted grievance is listed to an authorised person who is not the complainant (the complainant has it in their own list).
+		case filer: // the complainant has it in their own list
+		case r.State == "unrouted":
+			r.Reason = "unrouted"
+			unrouted = append(unrouted, r)
+		case stranded:
+			r.Reason = "handler_left"
 			unrouted = append(unrouted, r)
 		}
 	}
@@ -359,27 +366,33 @@ func HandOverGrievance(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Ti
 	return grievanceNotice(ctx, tx, "grievance_assigned", next, id)
 }
 
-// TakeGrievance makes the member the handler of an unrouted grievance. The policies show it only to an authorised person who is not the complainant and not involved, and the guard refuses anyone else.
+// TakeGrievance makes the member the handler of a grievance that waits: an unrouted one, or one whose handler has been deactivated or no longer holds a role that may handle it. The policies show it only
+// to an authorised person who is not the complainant and not involved, and the guard refuses anyone else. The inquiry record the earlier handler kept becomes the new handler's to read.
 func TakeGrievance(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, member, id uuid.UUID) error {
 	var state string
 	var complainant uuid.UUID
-	err := tx.QueryRow(ctx, `SELECT state, complainant_member FROM nemura.grievance WHERE id = $1 FOR UPDATE`, id).Scan(&state, &complainant)
+	var stranded bool
+	err := tx.QueryRow(ctx, `SELECT state, complainant_member, nemura.is_stranded(state, handler_member, nemura.acting_day()) FROM nemura.grievance WHERE id = $1 FOR UPDATE`, id).Scan(&state, &complainant, &stranded)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && complainant == member) {
 		return notYours
 	}
 	if err != nil {
 		return grievanceError(err)
 	}
-	if state != "unrouted" {
+	if state != "unrouted" && !stranded {
 		return &grievance.Refusal{Code: grievance.CodeState, Message: "That grievance is being handled already: read it again."}
 	}
 	if _, err := tx.Exec(ctx, `UPDATE nemura.grievance SET state = 'open', handler_member = $2, routed_at = $3 WHERE id = $1`, id, member, at); err != nil {
 		return grievanceError(err)
 	}
-	if _, err := entry(ctx, tx, org, at, member, id, "routing", "Taken by an HR administrator or the Owner who is not involved."); err != nil {
+	body, event := "Taken by an HR administrator or the Owner who is not involved.", "nemura.grievance.taken"
+	if stranded {
+		body, event = "Taken over by an HR administrator or the Owner who is not involved, because its handler can no longer handle it.", "nemura.grievance.taken_over"
+	}
+	if _, err := entry(ctx, tx, org, at, member, id, "routing", body); err != nil {
 		return err
 	}
-	return Audit(ctx, tx, org, at, user(member), "nemura.grievance.taken", audit.Object{Type: "grievance", ID: id}, map[string]audit.Change{"state": {"unrouted", "open"}}, "")
+	return Audit(ctx, tx, org, at, user(member), event, audit.Object{Type: "grievance", ID: id}, map[string]audit.Change{"state": {state, "open"}}, "")
 }
 
 // GrievanceService is the API's side of the channel: each call runs for the session's member as the acting person on the business day.

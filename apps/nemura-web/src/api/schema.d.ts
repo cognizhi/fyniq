@@ -630,8 +630,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Take an unrouted grievance
-         * @description An HR administrator or the Owner who is neither the complainant nor anyone it is about takes a grievance nobody could handle at filing, and becomes its handler. Audited. It is on the never-list for the AI and MCP surfaces.
+         * Take a grievance that waits
+         * @description An HR administrator or the Owner who is neither the complainant nor anyone it is about takes a grievance that waits (nobody could handle it at filing, or its handler has been deactivated or no longer holds a role that may handle one), and becomes its handler; the inquiry record kept so far becomes theirs to read. Audited. It is on the never-list for the AI and MCP surfaces.
          */
         post: operations["takeGrievance"];
         delete?: never;
@@ -5218,6 +5218,12 @@ export interface components {
              */
             outcome?: string;
             /**
+             * @description Why it waits to be taken, in the list of grievances that wait: unrouted (nobody who is not involved could handle it) or handler_left (its handler has been deactivated or can no longer handle one).
+             * @example handler_left
+             * @enum {string}
+             */
+            reason?: "unrouted" | "handler_left";
+            /**
              * @description Where it is.
              * @example open
              * @enum {string}
@@ -5315,7 +5321,7 @@ export interface components {
         GrievanceHandledOutputBody: {
             /** @description The grievances the caller handles, newest first. */
             assigned: components["schemas"]["GrievanceRow"][];
-            /** @description Grievances nobody who is not involved could handle: the caller, if not involved, may take one. */
+            /** @description Grievances that wait to be taken, each with its reason: nobody who is not involved could handle it, or its handler has left. The caller, if neither the complainant nor involved, may take one. */
             unrouted: components["schemas"]["GrievanceRow"][];
         };
         GrievanceHandoverInputBody: {
@@ -5397,6 +5403,12 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
              */
             id: string;
+            /**
+             * @description Why it waits to be taken, in the list of grievances that wait: unrouted (nobody who is not involved could handle it) or handler_left (its handler has been deactivated or can no longer handle one).
+             * @example handler_left
+             * @enum {string}
+             */
+            reason?: "unrouted" | "handler_left";
             /**
              * @description Where it is.
              * @example open

@@ -129,7 +129,7 @@ var Categories = []Category{
 		Key: "grievances", What: "A concern a member raised in confidence: what happened in their words, the people it is about (by person), who handles it, the inquiry record (notes, interviews, findings and hand-overs) and the written outcome with what it concludes",
 		Purpose:    "To look into a workplace concern fairly and in confidence, to give the person who raised it a written outcome and to show the company handled it (Workplace Fairness Act and the Tripartite Guidelines, NM-SEC-06)",
 		Capability: "Grievances (NM-SEC-06)",
-		Retention:  Rule{After: "the outcome is written", Reason: "No statutory minimum is stated for the channel; kept so the company can show how it handled the concern, until its retention policy decides (NM-SEC-05) [owner to confirm the period]"},
+		Retention:  Rule{MinMonths: 60, After: "the outcome is written", Reason: "No statutory period is stated for the channel; kept five years so the company can show how it handled the concern, then listed for review and deleted with its inquiry record, a legal hold keeping it (NM-SEC-05) [owner to confirm the period]"},
 		Columns:    []string{"grievance.summary", "grievance.subject_people", "grievance.outcome", "grievance_entry.body", "grievance_entry.subject_people"},
 	},
 	{

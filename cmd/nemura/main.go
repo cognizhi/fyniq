@@ -142,7 +142,15 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 			return a + b, err
 		}
 		c, err := store.RaiseLinkAlerts(ctx, org, now) // events for Fyniq stuck for an hour near pay day, or for 24 hours (FR-PPL-08)
-		return a + b + c, err
+		if err != nil {
+			return a + b + c, err
+		}
+		d, err := store.RaiseGrievanceWatch(ctx, org, now) // grievances that wait to be taken: unrouted, or their handler has left (NM-SEC-06)
+		if err != nil {
+			return a + b + c + d, err
+		}
+		_, r, err := store.RunGrievanceRetention(ctx, org, now) // decided grievances past five years: a report for review, then deletion once reviewed (NM-SEC-05)
+		return a + b + c + d + r, err
 	}
 	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock, Raise: raise}
 	// The events for Fyniq (NM-INT-01): sent to the API and token endpoint the deployment names, and to no other host (design D12).

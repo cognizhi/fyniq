@@ -3065,7 +3065,7 @@ CREATE TRIGGER gov_leave_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_l
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.gov_leave DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('gov_leave', 'id')
 CREATE TRIGGER grievance_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.grievance FOR EACH ROW EXECUTE FUNCTION nemura.grievance_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.grievance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('grievance', 'id')
-CREATE TRIGGER grievance_entry_append_only BEFORE DELETE OR UPDATE ON nemura.grievance_entry FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('A grievance entry')
+CREATE TRIGGER grievance_entry_append_only BEFORE DELETE OR UPDATE ON nemura.grievance_entry FOR EACH ROW EXECUTE FUNCTION nemura.grievance_entry_guard()
 CREATE TRIGGER grievance_entry_fill BEFORE INSERT ON nemura.grievance_entry FOR EACH ROW EXECUTE FUNCTION nemura.grievance_entry_fill()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.grievance_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('grievance_entry', 'id')
 CREATE TRIGGER hr_question_guard BEFORE DELETE OR UPDATE ON nemura.hr_question FOR EACH ROW EXECUTE FUNCTION nemura.hr_question_guard()
@@ -3212,17 +3212,19 @@ fyniq_link_secret | tenant_isolation | (organisation_id = nemura.current_org()) 
 gov_claim | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_claim_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_leave | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
-grievance | not_the_subject | ((nemura.current_person() IS NOT NULL) AND (NOT nemura.is_subject_member(subject_people, nemura.current_person()))) | 
-grievance | parties | ((organisation_id = nemura.current_org()) AND (((nemura.current_person() = complainant_member) OR (nemura.current_person() = handler_member)) OR ((handed_by = nemura.current_person()) AND (handover_xact = ((pg_current_xact_id())::text)::bigint)) OR ((state = 'unrouted'::text) AND nemura.can_handle_grievance(nemura.current_person(), nemura.acting_day())))) | 
+grievance | not_the_subject | ((CURRENT_USER = 'nemura_migrator'::name) OR ((nemura.current_person() IS NOT NULL) AND (NOT nemura.is_subject_member(subject_people, nemura.current_person())))) | 
+grievance | owner_functions | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+grievance | parties | ((organisation_id = nemura.current_org()) AND (((nemura.current_person() = complainant_member) OR (nemura.current_person() = handler_member)) OR ((handed_by = nemura.current_person()) AND (handover_xact = ((pg_current_xact_id())::text)::bigint)) OR (((state = 'unrouted'::text) OR nemura.is_stranded(state, handler_member, nemura.acting_day())) AND nemura.can_handle_grievance(nemura.current_person(), nemura.acting_day())))) | 
 grievance | parties_insert |  | ((organisation_id = nemura.current_org()) AND (complainant_member = nemura.current_person()))
-grievance | parties_update | ((organisation_id = nemura.current_org()) AND ((nemura.current_person() = handler_member) OR ((state = 'unrouted'::text) AND nemura.can_handle_grievance(nemura.current_person(), nemura.acting_day())))) | (organisation_id = nemura.current_org())
+grievance | parties_update | ((organisation_id = nemura.current_org()) AND ((nemura.current_person() = handler_member) OR (((state = 'unrouted'::text) OR nemura.is_stranded(state, handler_member, nemura.acting_day())) AND nemura.can_handle_grievance(nemura.current_person(), nemura.acting_day())))) | (organisation_id = nemura.current_org())
 grievance_entry | handler_reads | ((organisation_id = nemura.current_org()) AND (EXISTS ( SELECT 1
    FROM nemura.grievance g
   WHERE ((g.organisation_id = grievance_entry.organisation_id) AND (g.id = grievance_entry.grievance_id) AND (g.handler_member = nemura.current_person()))))) | 
 grievance_entry | handler_writes |  | ((organisation_id = nemura.current_org()) AND (by_member = nemura.current_person()) AND ((kind = 'routing'::text) OR (EXISTS ( SELECT 1
    FROM nemura.grievance g
   WHERE ((g.organisation_id = grievance_entry.organisation_id) AND (g.id = grievance_entry.grievance_id) AND (g.handler_member = nemura.current_person()))))))
-grievance_entry | not_the_subject | ((nemura.current_person() IS NOT NULL) AND (NOT nemura.is_subject_member(subject_people, nemura.current_person()))) | 
+grievance_entry | not_the_subject | ((CURRENT_USER = 'nemura_migrator'::name) OR ((nemura.current_person() IS NOT NULL) AND (NOT nemura.is_subject_member(subject_people, nemura.current_person())))) | 
+grievance_entry | owner_functions | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 hr_question | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 idempotency_key | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 invitation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3752,6 +3754,19 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.grievance_entry_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' AND current_user = 'nemura_migrator' THEN
+    RETURN OLD;
+  END IF;
+  RAISE EXCEPTION 'A grievance entry is append-only: it is never changed or deleted' USING ERRCODE = 'NM209';
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.grievance_guard()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -3759,12 +3774,19 @@ CREATE OR REPLACE FUNCTION nemura.grievance_guard()
 AS $function$
 BEGIN
   IF TG_OP = 'DELETE' THEN
+    IF current_user = 'nemura_migrator' AND OLD.state = 'decided' THEN
+      RETURN OLD; -- only purge_grievances runs as its owner, and it checks the retention period and the holds first
+    END IF;
     RAISE EXCEPTION 'A grievance is kept: it is decided, never deleted' USING ERRCODE = 'NM209';
   END IF;
   IF TG_OP = 'UPDATE' THEN
     IF OLD.state = 'decided' OR (NEW.organisation_id, NEW.id, NEW.complainant_member, NEW.subject_people, NEW.summary, NEW.filed_at) IS DISTINCT FROM
        (OLD.organisation_id, OLD.id, OLD.complainant_member, OLD.subject_people, OLD.summary, OLD.filed_at) THEN
       RAISE EXCEPTION 'A decided grievance, and the complainant, the people complained about and the words of any grievance, never change' USING ERRCODE = 'NM209';
+    END IF;
+    IF OLD.handler_member IS NOT NULL AND nemura.current_person() IS DISTINCT FROM OLD.handler_member
+       AND (NEW.handler_member IS DISTINCT FROM nemura.current_person() OR NEW.state <> 'open' OR NEW.finding IS NOT NULL OR NEW.outcome IS NOT NULL) THEN
+      RAISE EXCEPTION 'Only the handler changes a grievance, and a person who is not the handler may only take one whose handler has left' USING ERRCODE = 'NM210';
     END IF;
   END IF;
   IF TG_OP = 'UPDATE' AND OLD.handler_member IS NULL AND NEW.handler_member IS DISTINCT FROM nemura.current_person() THEN
@@ -3787,6 +3809,34 @@ BEGIN
   END IF;
   RETURN NEW;
 END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.grievances_for_retention()
+ RETURNS TABLE(id uuid, decided_on date, hold_subject uuid, fingerprint bytea)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT g.id, g.decided_at::date,
+         coalesce((SELECT h.subject_id FROM nemura.legal_hold h WHERE h.organisation_id = g.organisation_id AND h.record_type = 'grievances' AND h.released_on IS NULL
+                      AND h.subject_id = ANY (g.subject_people || coalesce(cp.id, '00000000-0000-0000-0000-000000000000'::uuid)) LIMIT 1), cp.id, '00000000-0000-0000-0000-000000000000'::uuid),
+         sha256(convert_to(g.summary || '|' || coalesce(g.outcome, ''), 'UTF8'))
+    FROM nemura.grievance g LEFT JOIN nemura.person cp ON cp.organisation_id = g.organisation_id AND cp.member_id = g.complainant_member
+   WHERE g.organisation_id = nemura.current_org() AND g.state = 'decided'
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.grievances_waiting(p_on date)
+ RETURNS TABLE(grievance_id uuid, notify_member uuid, reason text, handler_key text)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT g.id, c.member_id, CASE WHEN g.state = 'unrouted' THEN 'unrouted' ELSE 'handler_left' END, coalesce(g.handler_member::text, 'none')
+    FROM nemura.grievance g
+    JOIN LATERAL (SELECT DISTINCT a.member_id FROM nemura.role_assignment a JOIN nemura.member m ON m.organisation_id = a.organisation_id AND m.id = a.member_id
+                   WHERE a.organisation_id = g.organisation_id AND a.role IN ('hr_admin', 'owner') AND m.deactivated_at IS NULL AND a.effective_from <= p_on AND (a.effective_to IS NULL OR a.effective_to > p_on)
+                     AND a.member_id <> g.complainant_member AND NOT nemura.is_subject_member(g.subject_people, a.member_id)) c ON true
+   WHERE g.organisation_id = nemura.current_org() AND (g.state = 'unrouted' OR nemura.is_stranded(g.state, g.handler_member, p_on))
 $function$
 
 CREATE OR REPLACE FUNCTION nemura.has_role(wanted text)
@@ -3830,6 +3880,15 @@ AS $function$
      WHERE l.organisation_id = nemura.current_org() AND l.report_id = report AND l.manager_id = nemura.current_person()
        AND l.effective_from <= coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)
        AND (l.effective_to IS NULL OR l.effective_to > coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)))
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.is_stranded(g_state text, handler uuid, on_day date)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT g_state = 'open' AND handler IS NOT NULL AND NOT nemura.can_handle_grievance(handler, on_day)
 $function$
 
 CREATE OR REPLACE FUNCTION nemura.is_subject_member(subjects uuid[], who uuid)
@@ -4747,6 +4806,32 @@ BEGIN
   INSERT INTO nemura.public_rate AS r (scope, key_hash, window_start, hits) VALUES (p_scope, p_key, w, 1)
     ON CONFLICT (scope, key_hash, window_start) DO UPDATE SET hits = r.hits + 1 RETURNING r.hits INTO n;
   RETURN n <= p_limit;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.purge_grievances(p_ids uuid[], p_on date)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  g nemura.grievance;
+  n integer := 0;
+BEGIN
+  FOR g IN SELECT * FROM nemura.grievance WHERE organisation_id = nemura.current_org() AND id = ANY (p_ids) FOR UPDATE LOOP
+    IF g.state <> 'decided' OR (g.decided_at::date + interval '5 years')::date > p_on THEN
+      RAISE EXCEPTION 'A grievance is kept for five years after its outcome is written' USING ERRCODE = 'NM211';
+    END IF;
+    IF EXISTS (SELECT 1 FROM nemura.legal_hold h WHERE h.organisation_id = g.organisation_id AND h.record_type = 'grievances' AND h.released_on IS NULL AND h.placed_on <= p_on
+                  AND (h.subject_id IS NULL OR h.subject_id = ANY (g.subject_people) OR h.subject_id IN (SELECT p.id FROM nemura.person p WHERE p.member_id = g.complainant_member))) THEN
+      RAISE EXCEPTION 'A legal hold keeps this grievance' USING ERRCODE = 'NM211';
+    END IF;
+    DELETE FROM nemura.grievance_entry WHERE organisation_id = g.organisation_id AND grievance_id = g.id;
+    DELETE FROM nemura.grievance WHERE organisation_id = g.organisation_id AND id = g.id;
+    n := n + 1;
+  END LOOP;
+  RETURN n;
 END
 $function$
 

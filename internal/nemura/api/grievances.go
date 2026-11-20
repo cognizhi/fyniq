@@ -39,6 +39,7 @@ type GrievanceRow struct {
 	ID      string `json:"id" format:"uuid" doc:"The grievance." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1"`
 	FiledAt string `json:"filed_at" format:"date-time" doc:"When it was filed." example:"2026-11-20T10:00:00Z"`
 	State   string `json:"state" enum:"unrouted,open,decided" doc:"Where it is." example:"open"`
+	Reason  string `json:"reason,omitempty" enum:"unrouted,handler_left" doc:"Why it waits to be taken, in the list of grievances that wait: unrouted (nobody who is not involved could handle it) or handler_left (its handler has been deactivated or can no longer handle one)." example:"handler_left"`
 }
 
 // GrievanceSubject is a person a grievance is about.
@@ -99,7 +100,7 @@ type grievanceMineOutput struct {
 type grievanceHandledOutput struct {
 	Body struct {
 		Assigned []GrievanceRow `json:"assigned" nullable:"false" doc:"The grievances the caller handles, newest first."`
-		Unrouted []GrievanceRow `json:"unrouted" nullable:"false" doc:"Grievances nobody who is not involved could handle: the caller, if not involved, may take one."`
+		Unrouted []GrievanceRow `json:"unrouted" nullable:"false" doc:"Grievances that wait to be taken, each with its reason: nobody who is not involved could handle it, or its handler has left. The caller, if neither the complainant nor involved, may take one."`
 	}
 }
 type grievanceIDInput struct {
@@ -322,8 +323,8 @@ func (a *API) registerGrievances() {
 		return out, nil
 	})
 	huma.Register(a.API, huma.Operation{
-		OperationID: "takeGrievance", Method: http.MethodPost, Path: "/v1/grievances/{id}/taking", Tags: []string{"Grievances"}, DefaultStatus: http.StatusOK, Summary: "Take an unrouted grievance",
-		Description: "An HR administrator or the Owner who is neither the complainant nor anyone it is about takes a grievance nobody could handle at filing, and becomes its handler. Audited. It is on the never-list for the AI and MCP surfaces.", Errors: []int{401, 403, 404, 409, 503},
+		OperationID: "takeGrievance", Method: http.MethodPost, Path: "/v1/grievances/{id}/taking", Tags: []string{"Grievances"}, DefaultStatus: http.StatusOK, Summary: "Take a grievance that waits",
+		Description: "An HR administrator or the Owner who is neither the complainant nor anyone it is about takes a grievance that waits (nobody could handle it at filing, or its handler has been deactivated or no longer holds a role that may handle one), and becomes its handler; the inquiry record kept so far becomes theirs to read. Audited. It is on the never-list for the AI and MCP surfaces.", Errors: []int{401, 403, 404, 409, 503},
 	}, func(ctx context.Context, in *grievanceIDInput) (*grievanceDoneOutput, error) {
 		s, err := handler(ctx, in.Cookie, authz.Create)
 		if err != nil {

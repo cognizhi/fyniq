@@ -921,6 +921,7 @@ nemura_api | function nemura.current_org | EXECUTE
 nemura_api | function nemura.current_person | EXECUTE
 nemura_api | function nemura.has_role | EXECUTE
 nemura_api | function nemura.is_manager_of | EXECUTE
+nemura_api | function nemura.is_stranded | EXECUTE
 nemura_api | function nemura.is_subject_member | EXECUTE
 nemura_api | function nemura.letter_verification_issue | EXECUTE
 nemura_api | function nemura.letter_verification_lookup | EXECUTE
@@ -1278,9 +1279,12 @@ nemura_worker | database | CONNECT
 nemura_worker | function nemura.current_org | EXECUTE
 nemura_worker | function nemura.current_person | EXECUTE
 nemura_worker | function nemura.erase_person | EXECUTE
+nemura_worker | function nemura.grievances_for_retention | EXECUTE
+nemura_worker | function nemura.grievances_waiting | EXECUTE
 nemura_worker | function nemura.has_role | EXECUTE
 nemura_worker | function nemura.is_manager_of | EXECUTE
 nemura_worker | function nemura.member_identities | EXECUTE
+nemura_worker | function nemura.purge_grievances | EXECUTE
 nemura_worker | function nemura.reapply_erasure | EXECUTE
 nemura_worker | schema nemura | USAGE
 nemura_worker | table nemura.access_request | SELECT
