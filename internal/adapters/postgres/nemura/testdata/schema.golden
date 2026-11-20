@@ -1418,7 +1418,7 @@ ai_draft | ai_draft_applied_at_not_null | NOT NULL applied_at
 ai_draft | ai_draft_approved_hash_not_null | NOT NULL approved_hash
 ai_draft | ai_draft_hash | CHECK ((octet_length(approved_hash) = 32))
 ai_draft | ai_draft_id_not_null | NOT NULL id
-ai_draft | ai_draft_kind | CHECK ((kind = ANY (ARRAY['letter'::text, 'flex_reply'::text])))
+ai_draft | ai_draft_kind | CHECK ((kind = ANY (ARRAY['letter'::text, 'flex_reply'::text, 'job_post'::text, 'interview_kit'::text])))
 ai_draft | ai_draft_kind_not_null | NOT NULL kind
 ai_draft | ai_draft_once | UNIQUE (organisation_id, proposal_id)
 ai_draft | ai_draft_organisation_id_not_null | NOT NULL organisation_id
@@ -1446,7 +1446,7 @@ ai_proposal | ai_proposal_prompt_version_not_null | NOT NULL prompt_version
 ai_proposal | ai_proposal_rationale_length | CHECK (((rationale IS NULL) OR (length(rationale) <= 500)))
 ai_proposal | ai_proposal_state_known | CHECK ((state = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'applied'::text])))
 ai_proposal | ai_proposal_state_not_null | NOT NULL state
-ai_proposal | ai_proposal_task_known | CHECK ((task_type = ANY (ARRAY['people.draft_letter'::text, 'people.draft_fwa_reply'::text])))
+ai_proposal | ai_proposal_task_known | CHECK ((task_type = ANY (ARRAY['people.draft_letter'::text, 'people.draft_fwa_reply'::text, 'people.draft_job_post'::text, 'people.draft_interview_kit'::text])))
 ai_proposal | ai_proposal_task_type_not_null | NOT NULL task_type
 ai_proposal | ai_proposal_task_version_not_null | NOT NULL task_version
 ai_proposal | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -1459,7 +1459,7 @@ ai_settings | ai_settings_own_pay_not_null | NOT NULL own_pay
 ai_settings | ai_settings_pkey | PRIMARY KEY (organisation_id)
 ai_settings | ai_settings_route_known | CHECK ((route = ANY (ARRAY['none'::text, 'scripted'::text])))
 ai_settings | ai_settings_route_not_null | NOT NULL route
-ai_settings | ai_settings_task_types_known | CHECK ((task_types <@ ARRAY['people.draft_letter'::text, 'people.draft_fwa_reply'::text]))
+ai_settings | ai_settings_task_types_known | CHECK ((task_types <@ ARRAY['people.draft_letter'::text, 'people.draft_fwa_reply'::text, 'people.draft_job_post'::text, 'people.draft_interview_kit'::text]))
 ai_settings | ai_settings_task_types_not_null | NOT NULL task_types
 ai_settings | ai_settings_updated_at_not_null | NOT NULL updated_at
 ai_settings | ai_settings_updated_by_not_null | NOT NULL updated_by
@@ -5935,6 +5935,15 @@ BEGIN
   END IF;
   RETURN NEW;
 END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.requisition_state_for_draft(p_id uuid)
+ RETURNS text
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT r.state FROM nemura.requisition r WHERE r.organisation_id = nemura.current_org() AND r.id = p_id
 $function$
 
 CREATE OR REPLACE FUNCTION nemura.revoke_sessions_of_identity(p_issuer text, p_subject text, p_at timestamp with time zone)

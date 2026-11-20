@@ -1296,6 +1296,7 @@ nemura_executor | function nemura.current_org | EXECUTE
 nemura_executor | function nemura.current_person | EXECUTE
 nemura_executor | function nemura.has_role | EXECUTE
 nemura_executor | function nemura.is_manager_of | EXECUTE
+nemura_executor | function nemura.requisition_state_for_draft | EXECUTE
 nemura_executor | schema nemura | USAGE
 nemura_executor | table nemura.ai_proposal | SELECT
 nemura_executor | table nemura.ai_settings | SELECT

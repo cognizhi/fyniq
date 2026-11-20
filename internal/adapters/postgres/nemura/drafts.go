@@ -60,6 +60,20 @@ func RequestFactsOf(ctx context.Context, tx pgx.Tx, task string, id uuid.UUID) (
 		if to != nil {
 			f.To = day(*to)
 		}
+	case "people.draft_job_post", "people.draft_interview_kit":
+		// Only the role and the team are read, as the person who asked: never the salary range, never a candidate (NM-AI-05).
+		var state string
+		err := tx.QueryRow(ctx, `SELECT title, department, state FROM nemura.requisition WHERE id = $1`, id).Scan(&f.Title, &f.Department, &state)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return f, &assistant.Refusal{Code: assistant.CodeNotFound, Message: "There is no such requisition."}
+		}
+		if err != nil {
+			return f, err
+		}
+		if state != "requested" && state != "approved" {
+			return f, &assistant.Refusal{Code: assistant.CodeConflict, Message: "That requisition is closed: a draft is for a role still being hired for."}
+		}
+		f.Kind = "requisition"
 	default:
 		return f, &assistant.Refusal{Code: assistant.CodeUnknown, Message: task + " is not a task type of the catalogue."}
 	}
@@ -67,16 +81,48 @@ func RequestFactsOf(ctx context.Context, tx pgx.Tx, task string, id uuid.UUID) (
 }
 
 func kindOf(task string) string {
-	if task == "people.draft_letter" {
+	switch task {
+	case "people.draft_letter":
 		return "letter"
+	case "people.draft_job_post":
+		return "job_post"
+	case "people.draft_interview_kit":
+		return "interview_kit"
 	}
 	return "flex_reply"
+}
+
+// subjectOf is the ID a proposal's final text names: a request for the two drafts of P1, a requisition for the hiring drafts.
+func subjectOf(task string, final map[string]any) (uuid.UUID, error) {
+	key := "request_id"
+	if task == "people.draft_job_post" || task == "people.draft_interview_kit" {
+		key = "requisition_id"
+	}
+	s, _ := final[key].(string)
+	id, err := uuid.Parse(s)
+	if err != nil {
+		return uuid.Nil, &assistant.Refusal{Code: assistant.CodeInvalid, Message: key + ": not a record."}
+	}
+	return id, nil
 }
 
 // requestOpen says whether the request a draft is for is still open, reading nothing of the person: the executor holds no grant on the people tables.
 func requestOpen(ctx context.Context, tx pgx.Tx, task string, id uuid.UUID) error {
 	var state string
 	var err error
+	if task == "people.draft_job_post" || task == "people.draft_interview_kit" {
+		var st *string
+		if err = tx.QueryRow(ctx, "SELECT nemura.requisition_state_for_draft($1)", id).Scan(&st); err != nil {
+			return err
+		}
+		if st == nil {
+			return &assistant.Refusal{Code: assistant.CodeNotFound, Message: "There is no such requisition."}
+		}
+		if *st != "requested" && *st != "approved" {
+			return &assistant.Refusal{Code: assistant.CodeConflict, Message: "That requisition is closed: a draft is for a role still being hired for."}
+		}
+		return nil
+	}
 	if task == "people.draft_letter" {
 		err = tx.QueryRow(ctx, "SELECT state FROM nemura.letter_request WHERE id = $1", id).Scan(&state)
 		if err == nil && state != "requested" && state != "checked" {
@@ -126,9 +172,9 @@ func ApplyProposal(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, 
 	if err := assistant.Check(task, p.Final); err != nil {
 		return err
 	}
-	requestID, err := uuid.Parse(p.Final["request_id"].(string))
+	requestID, err := subjectOf(p.Task, p.Final)
 	if err != nil {
-		return &assistant.Refusal{Code: assistant.CodeInvalid, Message: "request_id: not a request."}
+		return err
 	}
 	if err := requestOpen(ctx, tx, p.Task, requestID); err != nil {
 		return err

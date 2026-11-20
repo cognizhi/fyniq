@@ -97,6 +97,10 @@ Source: PRD-001 §8.20 · Priority C · Phase P3
 - **THEN** the smaller translated amount is eliminated from both and the remainder stays with the run naming the larger side and the difference
 - **AND** nothing is posted to any entity's ledger
 
+#### Scenario: Two implementations agree (rev 0.627)
+- **WHEN** the engine and the oracle work the same hand-worked and generated cases
+- **THEN** every translated line, reserve, elimination, difference and consolidated figure agrees to the cent
+
 #### Scenario: Frozen and provisional
 - **WHEN** a run is made
 - **THEN** it keeps the figures read, the rates, the entities' ledger revisions and period states and is never changed, and a period not yet closed makes it provisional

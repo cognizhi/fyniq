@@ -1615,7 +1615,15 @@
     "pipeline.assignLabel": "Assign an interviewer to {candidate}",
     "pipeline.accessDone": "The link is made.",
     "plans.closesKets": "Closes by itself when the KETs letter is issued.",
-    "plans.closesFyniq_invitation": "Closes by itself when the person is invited to Fyniq."
+    "plans.closesFyniq_invitation": "Closes by itself when the person is invited to Fyniq.",
+    "draft.ask": "Ask the assistant to draft the post",
+    "draft.askKit": "Ask the assistant to draft the kit",
+    "draft.asked": "The assistant's draft is made and waits for the people team to approve it under Assistant. It is written from the role and the team alone.",
+    "draft.use": "Use the assistant's draft",
+    "draft.used": "The draft is in the form. Add the duties and what the work asks for, then save; the fair-wording check runs on what you write.",
+    "draft.lead": "The assistant writes a starting point from the role and the team alone: never the salary, a person or a candidate. A person approves it, then you edit it and save it as your own.",
+    "draft.failed": "The assistant could not draft that. It may be off: the Owner turns it on under Assistant.",
+    "draft.kitUsed": "The draft is in the kit's boxes. Edit it, then save the kit."
   },
   "help": {
     "signin.page": {
@@ -1853,6 +1861,10 @@
     "pipeline.access": {
       "label": "Candidate's own link",
       "tooltip": "Makes a link, for 1 to 30 days, through which the candidate sees what they gave and where they stand. It never shows the team's notes or scores. The token is shown once."
+    },
+    "draft.assistant": {
+      "label": "Assistant draft",
+      "tooltip": "The assistant writes a starting point for a job post or an interview kit from the role and the team alone. It never sees a salary, a person or a candidate, and a person approves the draft before you can use it. It never screens, ranks or scores anyone."
     }
   }
 }

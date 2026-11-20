@@ -4,7 +4,7 @@ type: task
 title: Ask to hire, get a requisition approved and publish a job post
 summary: Requisitions the Owner approves, fair-wording checks, advert dates, the careers page, candidates on a board and interview kits
 sources:
-  - docs/user-guide/nemura/hiring.md sha256:26212c5b65ac46b634057a05cf569c31199ccf970c80066d7d909d71723c6088
+  - docs/user-guide/nemura/hiring.md sha256:e646d20d9a2cb9964376aa683e23346bae71729a2941242b1b3933f4222f3cad
 data_class: general
 taint: trusted
 status: published
@@ -53,10 +53,14 @@ aliases:
 - A line manager sees, under Roles I am hiring for, the requisitions that name them as hiring manager, with where each stands, its post's dates and how many candidates are at each stage: no salary and no candidate's name. (src: docs/user-guide/nemura/hiring.md#for-the-line-manager)
 - A candidate may ask to see their data. The Recruiter, the HR administrator or the Owner makes a link under the candidate (1 to 30 days, 14 by default), shown once, and sends it themselves. With it and no sign-in the candidate sees what they gave, the role, where they stand and when their data is due for deletion, never the team's notes or scores, and may withdraw the consent to be kept for future roles. A link can be revoked at once; a lost link needs a new one. (src: docs/user-guide/nemura/hiring.md#letting-a-candidate-see-their-own-data)
 
+## Drafts from the assistant
+
+- When the Owner turns them on, the HR officer, the HR administrator and the Owner can ask the assistant to draft a job post or an interview kit for a requisition. It writes from the role and the team alone: never the salary, a person or a candidate, and it never screens, ranks or scores anyone. A person approves the draft under Assistant, then Use the assistant's draft puts it in the form for the recruiter to complete and save; the fair-wording check runs on what is saved. A title that names a criterion the guidelines ask employers not to use, or is not a plain role name, is replaced by a placeholder. (src: docs/user-guide/nemura/hiring.md#drafts-from-the-assistant)
+
 ## The careers page
 
 - The Recruiter, the HR administrator or the Owner chooses an address, the company's name and some words and switches the page on; anyone then reads /careers/<address> with no sign-in: each published post's title, team, text and day, never a salary or a person. No other company can use the address. (src: docs/user-guide/nemura/hiring.md#the-careers-page)
 
 ## When it looks wrong
 
-- A post refused for wording needs rewording or a recorded requirement; a word the check flags may be fine, and a person judges it. "Moved on" means the requisition was decided or the post published already. Only the Recruiter, the HR officer, the HR administrator and the Owner see Hiring; a line manager sees their own roles and an interviewer their candidates. A candidate's link that says it is not valid has expired or been revoked: make a new one. No interviewer to choose means nobody holds the Interviewer role yet. (src: docs/user-guide/nemura/hiring.md#common-problems)
+- A post refused for wording needs rewording or a recorded requirement; a word the check flags may be fine, and a person judges it. "Moved on" means the requisition was decided or the post published already. Only the Recruiter, the HR officer, the HR administrator and the Owner see Hiring; a line manager sees their own roles and an interviewer their candidates. An assistant draft with a placeholder where the title was means the requisition's title was not a plain role name or named a protected criterion: write the title yourself. A candidate's link that says it is not valid has expired or been revoked: make a new one. No interviewer to choose means nobody holds the Interviewer role yet. (src: docs/user-guide/nemura/hiring.md#common-problems)
