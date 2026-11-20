@@ -132,3 +132,24 @@ Source: PRD-002 §11 · Priority M · Phase P1
 #### Scenario: Withdrawn by the employee (rev 0.61)
 - **WHEN** the person a letter is about withdraws its verification
 - **THEN** a look-up says withdrawn, and the letter itself stays as issued
+
+#### Scenario: Verified by the document (rev 0.62)
+- **GIVEN** a recipient who holds the letter as a file
+- **WHEN** they choose it on the verification page
+- **THEN** only the file's SHA-256 is sent, and they learn what a look-up by reference and code tells them
+- **AND** a document that is not an issued letter, or changed by one byte, is not found
+
+#### Scenario: The disclosure link (rev 0.62)
+- **GIVEN** an issued letter whose verification stands
+- **WHEN** the person it is about makes a link for 1 to 30 days and gives it to a recipient
+- **THEN** the recipient sees the letter's facts about the person, never the company, the reference or what it is for, until the link ends or the person revokes it
+- **AND** an unknown, expired or revoked link answers alike, and every look-up is audited without the facts
+
+#### Scenario: Revoking and withdrawing (rev 0.62)
+- **WHEN** the person revokes a link
+- **THEN** the letter and its verification are unchanged
+- **AND WHEN** they withdraw the verification, no link shows facts and no new link is made
+
+#### Scenario: A limit every instance shares (rev 0.62)
+- **WHEN** two API instances each count tries for one reference
+- **THEN** together they allow 10 in an hour, because the count is kept in the database

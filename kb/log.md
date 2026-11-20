@@ -959,3 +959,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/exit-waterfall.md → equity.exit-waterfall (the waterfall over a round scenario that is not recorded, FR-EQ-29)
 
 ## [2026-11-20] compile | nemura-verify-letter: verify an issued letter (NM-LTR-05)
+
+## [2026-11-20] compile | docs/user-guide/nemura/verify-letter.md -> nemura.verify-letter (the file look-up, the disclosure link, the withdraw button)

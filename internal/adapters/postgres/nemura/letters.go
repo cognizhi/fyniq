@@ -552,7 +552,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12::jsonb, $13)`, 
 	if err := tx.QueryRow(ctx, "SELECT coalesce((SELECT company_name FROM nemura.letter_settings), (SELECT name FROM nemura.organisation WHERE organisation_id = $1))", org).Scan(&company); err != nil { // the company the letter names
 		return uuid.Nil, err
 	}
-	if _, err := tx.Exec(ctx, "SELECT nemura.letter_verification_issue($1, $2, $3, $4, $5)", org, request, id, day(at), company); err != nil { // the letter can now be verified (NM-LTR-05)
+	if _, err := tx.Exec(ctx, "SELECT nemura.letter_verification_issue($1, $2, $3, $4, $5, $6)", org, request, id, day(at), company, sum); err != nil { // the letter can now be verified (NM-LTR-05)
 		return uuid.Nil, letterError(err)
 	}
 	if err := Audit(ctx, tx, org, at, user(by), "nemura.letter.issued", audit.Object{Type: "letter_issued", ID: id}, map[string]audit.Change{"reference": {nil, ref}, "sha256": {nil, hex.EncodeToString(sum)}, "authority": {nil, authority}}, ""); err != nil {

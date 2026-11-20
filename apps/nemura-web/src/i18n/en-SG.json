@@ -1187,7 +1187,26 @@
     "tpl.block.letterhead": "Letterhead",
     "tpl.block.heading": "Heading",
     "tpl.block.paragraph": "Paragraph",
-    "tpl.block.signature": "Signature"
+    "tpl.block.signature": "Signature",
+    "verify.file": "Compare a document",
+    "verify.fileLead": "Or choose the letter as a file. Your browser sends only its fingerprint (a SHA-256), never the file.",
+    "verify.fileFailed": "That file could not be read here. Try the reference and code instead.",
+    "verify.disclosureTitle": "What the letter says about the person",
+    "verify.disclosureLead": "The person this letter is about shared these facts with you. The link stops working on {when}.",
+    "verify.disclosureNone": "This link does not work: it may have expired, or the person revoked it. Ask them for a new one.",
+    "verify.disclosureWithdrawn": "The person withdrew the verification of this letter, so its facts are not shown. Do not rely on the letter.",
+    "verify.disclosureFact": "{label}: {value}",
+    "letters.unverify": "Withdraw verification",
+    "letters.unverified": "The verification is withdrawn: anyone who looks the letter up is told so.",
+    "letters.shareDays": "Days the link works for {reference}",
+    "letters.shareDaysOption": "{days}",
+    "letters.share": "Share what it says about me",
+    "letters.shared": "Link: {url}. It shows what this letter says about you until {when}, or until you revoke it. It is shown once; copy it now.",
+    "letters.shares": "Links you made for {reference}",
+    "letters.shareLine": "Made {made}, works until {until}",
+    "letters.shareRevoked": "Revoked {when}",
+    "letters.revoke": "Revoke",
+    "letters.revokedNote": "The link is revoked. The letter and its verification are unchanged."
   },
   "help": {
     "signin.page": {
@@ -1357,6 +1376,18 @@
     "tpl.page": {
       "label": "Letter templates",
       "tooltip": "Set the letterhead, switch letter types on and write their templates. A template is a draft until the HR administrator approves it; a published version never changes."
+    },
+    "verify.file": {
+      "label": "Compare a document",
+      "tooltip": "Choose the letter as a file to learn whether it is the one the company issued. Your browser works out the file's SHA-256 and sends only that: the file never leaves your device."
+    },
+    "letters.unverify": {
+      "label": "Withdraw verification",
+      "tooltip": "Anyone who looks this letter up is told its verification is withdrawn, and any link you shared stops showing facts. The letter itself stays as issued."
+    },
+    "letters.share": {
+      "label": "Share what it says about me",
+      "tooltip": "Makes a link that shows the facts this letter states about you for the days you choose. Only you can make or revoke it, and revoking it never withdraws the letter."
     }
   }
 }

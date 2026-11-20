@@ -704,6 +704,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/letter-disclosure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read what a disclosure link shows
+         * @description PRD-002 NM-LTR-05. With no sign-in: the token in a link the person a letter is about shared. It shows the letter's type, day and company and the letter's own facts about the person, while the link lives and the letter's verification stands; a link that is unknown, expired or revoked answers found false, all alike. The token is in the body so it is never in a URL or a log. Counted against the shared limits (NM_RATE_LIMITED); every look-up is audited without the facts. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["discloseLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/letter-links/download": {
         parameters: {
             query?: never;
@@ -735,9 +755,29 @@ export interface paths {
         put?: never;
         /**
          * Verify an issued letter
-         * @description PRD-002 NM-LTR-05. With no sign-in: the reference and the verification code printed on a letter. The answer is whether the company issued it and it stands or was withdrawn, its type, the day it was issued and the company, and nothing of the person or the words. A wrong code, an unknown reference and a letter not issued yet answer alike. At most 10 tries for a reference in an hour and 300 in all in a minute (NM_RATE_LIMITED); every look-up of a found letter is audited. It is on the never-list for the AI and MCP surfaces.
+         * @description PRD-002 NM-LTR-05. With no sign-in: the reference and the verification code printed on a letter. The answer is whether the company issued it and it stands or was withdrawn, its type, the day it was issued and the company, and nothing of the person or the words. A wrong code, an unknown reference and a letter not issued yet answer alike. At most 10 tries for a reference in an hour and 300 in all in a minute, counted across every API instance (NM_RATE_LIMITED); every look-up of a found letter is audited. It is on the never-list for the AI and MCP surfaces.
          */
         post: operations["verifyLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letter-verification/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify an issued letter by its document
+         * @description PRD-002 NM-LTR-05. With no sign-in: the SHA-256 of the exact bytes of a document, which the verification page works out in the browser so the file itself never leaves the recipient's device. The answer is what the look-up by reference and code answers; a document that is not an issued letter, or that changed by one byte, is not found. At most 30 tries for one hash in an hour and 300 in all in a minute, counted across every API instance (NM_RATE_LIMITED); every look-up of a found letter is audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["verifyLetterFile"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1400,6 +1440,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/letter-disclosure-links/{id}/revocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a link to your own letter's facts
+         * @description The person revokes one of their own disclosure links: it stops showing the facts at once. It never withdraws the letter or its verification. Audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["revokeLetterDisclosureLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/letters": {
         parameters: {
             query?: never;
@@ -1420,6 +1480,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/letters/{id}/disclosure-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The links you made for your own letter
+         * @description The disclosure links of the caller's own issued letter, newest first, with their expiry and whether they were revoked. Tokens are never shown again.
+         */
+        get: operations["listLetterDisclosureLinks"];
+        put?: never;
+        /**
+         * Share your own letter's facts through a link
+         * @description PRD-002 NM-LTR-05. The person the letter is about makes a link that shows the letter's own facts to whoever holds it, for 1 to 30 days (7 by default). The token is shown once and only its hash is kept. Refused for a letter whose verification is withdrawn. Audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["createLetterDisclosureLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/letters/{id}/verification/withdrawal": {
         parameters: {
             query?: never;
@@ -1431,7 +1515,7 @@ export interface paths {
         put?: never;
         /**
          * Withdraw the verification of your own letter
-         * @description The person the letter is about withdraws its verification: a recipient who looks it up is told it is withdrawn. It never withdraws the letter, which stays as issued. Audited. It is on the never-list for the AI and MCP surfaces.
+         * @description The person the letter is about withdraws its verification: a recipient who looks it up is told it is withdrawn, and a disclosure link stops showing the facts. It never withdraws the letter, which stays as issued. Audited. It is on the never-list for the AI and MCP surfaces.
          */
         post: operations["withdrawLetterVerification"];
         delete?: never;
@@ -5437,6 +5521,50 @@ export interface components {
              */
             sha256: string;
         };
+        LetterDisclosureInputBody: {
+            /**
+             * @description The token in the link the person shared.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44.abc
+             */
+            token: string;
+        };
+        LetterDisclosureView: {
+            /**
+             * @description The company that issued it.
+             * @example Acme Pte. Ltd.
+             */
+            company?: string;
+            /**
+             * Format: date-time
+             * @description When the link stops working.
+             * @example 2026-11-27T10:00:00Z
+             */
+            expires_at?: string;
+            /** @description The letter's facts about the person, in the order the letter's catalogue lists them; empty once the verification is withdrawn. */
+            facts?: components["schemas"]["LetterFact"][] | null;
+            /**
+             * @description False for a link that is unknown, malformed, expired or revoked, all alike.
+             * @example true
+             */
+            found: boolean;
+            /**
+             * Format: date
+             * @description The day it was issued.
+             * @example 2026-11-20
+             */
+            issued_on?: string;
+            /**
+             * @description valid: the facts are shown; withdrawn: the person withdrew the letter's verification, so none are.
+             * @example valid
+             * @enum {string}
+             */
+            status?: "valid" | "withdrawn";
+            /**
+             * @description The kind of letter.
+             * @example employment_confirmation
+             */
+            type?: string;
+        };
         LetterDraftInputBody: {
             /** @description The template's blocks. */
             blocks: components["schemas"]["LetterBlock"][] | null;
@@ -5445,6 +5573,18 @@ export interface components {
              * @example Adds the department.
              */
             note?: string;
+        };
+        LetterFact: {
+            /**
+             * @description What the fact is.
+             * @example Job title
+             */
+            label: string;
+            /**
+             * @description The fact, as the letter states it.
+             * @example Product designer
+             */
+            value: string;
         };
         LetterField: {
             /**
@@ -5463,6 +5603,13 @@ export interface components {
              * @example Legal name
              */
             label: string;
+        };
+        LetterFileInputBody: {
+            /**
+             * @description The SHA-256 of the exact bytes of the document, in hexadecimal, which the page works out in the browser so the file never leaves the device.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
         };
         LetterFileOutputBody: {
             /** @description The PDF, base64. */
@@ -5592,6 +5739,13 @@ export interface components {
              */
             type: string;
         };
+        LetterRevokeOutputBody: {
+            /**
+             * @description True once the link is revoked.
+             * @example true
+             */
+            revoked: boolean;
+        };
         LetterSettings: {
             /**
              * @description Its address.
@@ -5617,6 +5771,63 @@ export interface components {
             set: boolean;
             /** @description The letterhead. */
             settings: components["schemas"]["LetterSettings"];
+        };
+        LetterShare: {
+            /**
+             * Format: date-time
+             * @description When it was made.
+             * @example 2026-11-20T10:00:00Z
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When it stops working.
+             * @example 2026-11-27T10:00:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: uuid
+             * @description The link.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e91
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When the person revoked it, when they did.
+             * @example 2026-11-21T10:00:00Z
+             */
+            revoked_at?: string;
+        };
+        LetterShareInputBody: {
+            /**
+             * Format: int64
+             * @description How many days the link works, 1 to 30; 0 or left out is 7.
+             * @example 7
+             */
+            days?: number;
+        };
+        LetterShareOutputBody: {
+            /**
+             * Format: date-time
+             * @description When the link stops working.
+             * @example 2026-11-27T10:00:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: uuid
+             * @description The link, for revoking it.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e91
+             */
+            id: string;
+            /**
+             * @description The token, shown once: the page /verify#<token> shows the letter's facts until the link expires or is revoked.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44.abc
+             */
+            token: string;
+        };
+        LetterSharesOutputBody: {
+            /** @description The links made for the letter, newest first; their tokens were shown once and are not kept. */
+            links: components["schemas"]["LetterShare"][] | null;
         };
         LetterSignInputBody: {
             /**
@@ -12151,6 +12362,66 @@ export interface operations {
             };
         };
     };
+    discloseLetter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterDisclosureInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterDisclosureView"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     downloadLetterByLink: {
         parameters: {
             query?: {
@@ -12227,6 +12498,66 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["LetterVerifyInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterVerificationView"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    verifyLetterFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterFileInputBody"];
             };
         };
         responses: {
@@ -15006,6 +15337,77 @@ export interface operations {
             };
         };
     };
+    revokeLetterDisclosureLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The disclosure link. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterRevokeOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     requestLetter: {
         parameters: {
             query?: never;
@@ -15034,6 +15436,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LetterAskOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listLetterDisclosureLinks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The issued letter. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterSharesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createLetterDisclosureLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The issued letter. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterShareInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterShareOutputBody"];
                 };
             };
             /** @description Unauthorized */
