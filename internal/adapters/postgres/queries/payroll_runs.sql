@@ -37,3 +37,11 @@ VALUES (sqlc.arg(link_id), sqlc.arg(run_id), sqlc.arg(version), sqlc.arg(code), 
 SELECT DISTINCT ON (r.run_id) r.run_id, r.version, r.code, r.refused_at FROM fyniq.payroll_run_refusal r
 WHERE NOT EXISTS (SELECT 1 FROM fyniq.payroll_run_receipt p WHERE p.run_id = r.run_id AND p.version >= r.version)
 ORDER BY r.run_id, r.version DESC, r.refused_at DESC;
+
+-- name: PayrollReceiptsOfMonth :many
+SELECT id, link_id, epoch, source_system, run_id, version, wage_month, envelope_sha256, approver_issuer, approver_subject, preparer_issuer, preparer_subject,
+       mapping_version, entry_id, totals, received_at
+FROM fyniq.payroll_run_receipt WHERE wage_month = sqlc.arg(wage_month) ORDER BY run_id, version;
+
+-- name: PayrollRefusalsOfRun :many
+SELECT run_id, version, code, refused_at FROM fyniq.payroll_run_refusal WHERE run_id = ANY(sqlc.arg(runs)::uuid[]) ORDER BY run_id, version, refused_at;

@@ -14885,6 +14885,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the pay runs received from Nemura for a month
+         * @description The versions of pay runs Fyniq received for a wage month and what became of each (FR-PPL-09, FR-PPL-11): posted or unchanged, the entry it posted, the mapping it was calculated against and its totals by account (never by person), a page at a time; and the runs it refused with the code and its plain words, which stay listed until a version posts (check C.1 #19). Read-only; no side effects. Needs the right to view pay runs.
+         */
+        get: operations["listPayrollRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people-link": {
         parameters: {
             query?: never;
@@ -50848,6 +50868,19 @@ export interface components {
              */
             outcome: "received" | "revised" | "unchanged" | "duplicate";
         };
+        PayrollRunPostLine: {
+            /**
+             * Format: uuid
+             * @description The account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f03
+             */
+            account_id: string;
+            /**
+             * @description The signed total on the account across the run's departments, a decimal string; debits positive.
+             * @example 12500.00
+             */
+            amount: string;
+        };
         PayrollRunReceipt: {
             /**
              * Format: uuid
@@ -50885,6 +50918,92 @@ export interface components {
              * @example 2
              */
             version?: number;
+        };
+        PayrollRunReceived: {
+            /**
+             * Format: uuid
+             * @description The journal entry it posted.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f02
+             */
+            entry_id?: string;
+            /**
+             * Format: int64
+             * @description The version of the account mapping it was calculated against.
+             * @example 3
+             */
+            mapping_version: number;
+            /**
+             * @description posted: the version posted a journal entry; unchanged: it changed nothing and only the version was recorded.
+             * @example posted
+             * @enum {string}
+             */
+            outcome: "posted" | "unchanged";
+            /** @description What the run has posted so far, by account: the signed total after this version, in the base currency. */
+            posted: components["schemas"]["PayrollRunPostLine"][];
+            /**
+             * Format: date-time
+             * @description When Fyniq received it.
+             * @example 2026-10-30T09:00:00+08:00
+             */
+            received_at: string;
+            /**
+             * Format: uuid
+             * @description Nemura's pay run.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+             */
+            run_id: string;
+            /**
+             * Format: int64
+             * @description The run's version.
+             * @example 1
+             */
+            version: number;
+            /**
+             * @description The month the wages are for.
+             * @example 2026-10
+             */
+            wage_month: string;
+        };
+        PayrollRunRefused: {
+            /**
+             * @description The refusal's stable code.
+             * @example PPL-14
+             */
+            code: string;
+            /**
+             * @description What the code means, in plain words, without a figure or a name.
+             * @example The run was calculated against another account mapping than Fyniq's current one
+             */
+            message: string;
+            /**
+             * Format: date-time
+             * @description When it was refused.
+             * @example 2026-10-30T09:00:00+08:00
+             */
+            refused_at: string;
+            /**
+             * Format: uuid
+             * @description Nemura's pay run.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+             */
+            run_id: string;
+            /**
+             * Format: int64
+             * @description The version refused.
+             * @example 2
+             */
+            version: number;
+        };
+        PayrollRunsPage: {
+            /** @description The versions received for the month, by run and version. */
+            items: components["schemas"]["PayrollRunReceived"][];
+            /**
+             * @description The cursor of the next page; none on the last.
+             * @example eyJhZnRlciI6IjEwMDAifQ
+             */
+            next_cursor?: string;
+            /** @description The runs refused and not posted since, whatever their month: they never reached a month. */
+            refused: components["schemas"]["PayrollRunRefused"][];
         };
         PdRequestsOutputBody: {
             /** @description The requests, oldest first. */
@@ -179415,6 +179534,106 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPayrollRuns: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description The wage month, YYYY-MM; left out, the month of the business date. */
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollRunsPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

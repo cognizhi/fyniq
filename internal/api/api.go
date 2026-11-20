@@ -610,6 +610,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerPeopleLink(a)
 	registerPeopleLinkHealth(a)
 	registerPayrollRuns(a)
+	registerPayrollRunsRead(a)
 	registerPayrollPayments(a)
 	registerSalaryBatches(a)
 	registerSalaryStates(a)

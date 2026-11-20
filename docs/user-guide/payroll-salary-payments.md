@@ -65,3 +65,8 @@ prepared, approved by another person and released like a payment batch. Fyniq ne
 - Open a person from **Payroll** to see what Nemura told Fyniq: their status, department and line manager, and whether they are held for tax clearance. Pay, bank numbers and NRIC stay in Nemura.
 - **Map to this user** says which Fyniq user the person is. You choose the user; Fyniq never matches by email, and the mapping grants no role. Only an Owner, an Administrator or the People and HR right may map a person.
 
+## A pay run from Nemura
+
+- Open **Pay runs received** on the Payroll page (Expert mode) for a wage month. Each version shows its steps: received and verified (Nemura's signature, the approver's passkey and the account mapping), then posted as a journal entry or unchanged, and what it has posted by account.
+- Fyniq sees totals by account and department, never names or salaries. A run Fyniq refused is listed with its code and plain words until a version of it posts; put right what the code says, then send the run again from Nemura or approve a new version.
+

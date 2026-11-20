@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The refusal's stable code.",
+      "examples": [
+        "PPL-14"
+      ],
+      "type": "string"
+    },
+    "message": {
+      "description": "What the code means, in plain words, without a figure or a name.",
+      "examples": [
+        "The run was calculated against another account mapping than Fyniq's current one"
+      ],
+      "type": "string"
+    },
+    "refused_at": {
+      "description": "When it was refused.",
+      "examples": [
+        "2026-10-30T09:00:00+08:00"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "run_id": {
+      "description": "Nemura's pay run.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "version": {
+      "description": "The version refused.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "run_id",
+    "version",
+    "code",
+    "message",
+    "refused_at"
+  ],
+  "title": "PayrollRunRefused",
+  "type": "object"
+}

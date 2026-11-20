@@ -4,7 +4,7 @@ type: task
 title: Pay salaries from a pay run
 summary: Prepare a salary batch, have another person approve it, release the lines free to go, and see each payment paid from the bank feed or a person's evidence
 sources:
-  - docs/user-guide/payroll-salary-payments.md sha256:948922aa461c84dd34ae4e463aaec5cdcd7249ba3b104ce88561dd62bb5d2077
+  - docs/user-guide/payroll-salary-payments.md sha256:362284d079c7a4a4c88de924164e5ef7ea4796f655cfe7b6783a170b8a496d8c
 data_class: general
 taint: trusted
 status: draft
@@ -100,4 +100,11 @@ aliases:
 - **Map to this user** says which Fyniq user the person is. A person chooses it, it is never matched by email and it grants no role; only an Owner, an Administrator or the People and HR right may map.
 
 (src: docs/user-guide/payroll-salary-payments.md#a-person-from-nemura)
+
+## A pay run from Nemura
+
+- **Pay runs received** on the Payroll page (Expert mode) shows a wage month's runs: each version's steps (received and verified, then posted or unchanged) and what it posted by account. Fyniq sees totals by account and department, never names or salaries.
+- A run Fyniq refused stays listed with its code and plain words until a version of it posts.
+
+(src: docs/user-guide/payroll-salary-payments.md#a-pay-run-from-nemura)
 

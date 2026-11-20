@@ -154,3 +154,37 @@ func (r payrollRuns) OpenRefusals(ctx context.Context) ([]storage.PayrollRunRefu
 	}
 	return out, nil
 }
+
+func (r payrollRuns) ReceiptsOfMonth(ctx context.Context, month time.Time) ([]storage.PayrollRunReceipt, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.PayrollReceiptsOfMonth(ctx, month)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.PayrollRunReceipt, 0, len(rows))
+	for _, x := range rows {
+		rc, err := toReceipt(sqlcdb.LatestPayrollReceiptRow(x))
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, rc)
+	}
+	return out, nil
+}
+
+func (r payrollRuns) RefusalsOfRuns(ctx context.Context, runs []uuid.UUID) ([]storage.PayrollRunRefusal, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.PayrollRefusalsOfRun(ctx, runs)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.PayrollRunRefusal, len(rows))
+	for i, x := range rows {
+		out[i] = storage.PayrollRunRefusal{RunID: x.RunID, Version: int(x.Version), Code: x.Code, RefusedAt: x.RefusedAt}
+	}
+	return out, nil
+}

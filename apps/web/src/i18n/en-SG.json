@@ -1195,6 +1195,10 @@
       "label": "Payroll",
       "tooltip": "Fyniq's part of payroll: where each feature lives, the state of the link to Nemura, how the month's statutory outputs are met and the latest salary payments."
     },
+    "payroll.pay-run": {
+      "label": "Pay runs from Nemura",
+      "tooltip": "The pay runs Fyniq received for a wage month: each version's steps, what it posted by account (never by person) and the runs Fyniq refused, with the code and its plain words."
+    },
     "payroll.employee": {
       "label": "Person from Nemura",
       "tooltip": "What Nemura told Fyniq about one person: status, department, line manager, any tax-clearance hold, and which Fyniq user they are. Never pay, a bank number or an NRIC."

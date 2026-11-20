@@ -152,6 +152,11 @@ export function Payroll() {
           <p className="fy-secondary">Nemura tells Fyniq when approved leave starts and ends, and nothing of its kind or reason. It moves no money.</p>
         </section>
       )}
+      <p>
+        <Link to="/payroll/runs/$month" params={{ month }}>
+          Pay runs received for {month}
+        </Link>
+      </p>
       <section aria-label="Statutory outputs" className="fy-stack fy-stack--2">
         <h2 className="fy-h2">How {month} is met</h2>
         {gate.isError && <p className="fy-secondary">The month's arrangements are not shown to your role.</p>}
