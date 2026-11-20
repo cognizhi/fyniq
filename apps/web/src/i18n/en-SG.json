@@ -2123,6 +2123,14 @@
       "label": "Issue",
       "tooltip": "Number it and post it to the ledger on its date: it adds its total to what the customer owes."
     },
+    "sales.subscriptions": {
+      "label": "Subscriptions",
+      "tooltip": "What your billing provider, such as Stripe, bills your customers, mirrored read-only: each subscription, and each invoice with the provider's attempts and the invoice Fyniq made of it. Fyniq never retries or charges."
+    },
+    "psp.post-invoices": {
+      "label": "Issue the drafts",
+      "tooltip": "Issue the invoices Fyniq drafted from your provider's, each only when its total, GST included, is the provider's to the cent. Any other waits for a person."
+    },
     "invoice.dispute": {
       "label": "Record it",
       "tooltip": "Note that the customer disputes part of this invoice, or promises to pay it on a day. Its reminders pause until the dispute is resolved or the promised day has passed."

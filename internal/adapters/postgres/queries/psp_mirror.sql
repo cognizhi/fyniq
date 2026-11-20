@@ -72,3 +72,10 @@ FROM fyniq.create_provider_invoice_draft(sqlc.arg(connector_id)::uuid, sqlc.arg(
 
 -- name: PSPInvoiceDocuments :many
 SELECT document_id::uuid AS document_id FROM fyniq.psp_invoice WHERE document_id IS NOT NULL;
+
+-- name: InsertPSPChargeInvoice :one
+INSERT INTO fyniq.psp_charge_invoice (connector_id, charge_id, provider_invoice_id, seen_at) VALUES (sqlc.arg(connector_id), sqlc.arg(charge_id), sqlc.arg(provider_invoice_id), sqlc.arg(seen_at))
+ON CONFLICT (organisation_id, connector_id, charge_id) DO NOTHING RETURNING id;
+
+-- name: PSPInvoiceOfCharge :one
+SELECT provider_invoice_id FROM fyniq.psp_charge_invoice WHERE connector_id = sqlc.arg(connector_id) AND charge_id = sqlc.arg(charge_id);

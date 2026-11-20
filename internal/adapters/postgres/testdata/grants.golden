@@ -554,6 +554,7 @@ fyniq_api       INSERT    psp_account (connector_id, created_at, created_by, dis
 fyniq_api       SELECT    psp_account
 fyniq_api       UPDATE    psp_account (dispute_loss_account_id, disputes_account_id, fee_account_id, payout_account_id, revenue_account_id, version)
 fyniq_api       SELECT    psp_balance
+fyniq_api       SELECT    psp_charge_invoice
 fyniq_api       SELECT    psp_customer
 fyniq_api       INSERT    psp_dispute_credit (amount, connector_id, created_at, created_by, credit_note_id, currency, dispute_id, refund_id)
 fyniq_api       SELECT    psp_dispute_credit
@@ -1044,6 +1045,7 @@ fyniq_readonly  SELECT    project_milestone
 fyniq_readonly  SELECT    project_task
 fyniq_readonly  SELECT    psp_account
 fyniq_readonly  SELECT    psp_balance
+fyniq_readonly  SELECT    psp_charge_invoice
 fyniq_readonly  SELECT    psp_customer
 fyniq_readonly  SELECT    psp_dispute_credit
 fyniq_readonly  SELECT    psp_dispute_loss
@@ -1418,6 +1420,8 @@ fyniq_worker    SELECT    psp_account
 fyniq_worker    UPDATE    psp_account (sweep_error, swept_at, swept_through)
 fyniq_worker    INSERT    psp_balance (amount, connector_id, currency, taken_at)
 fyniq_worker    SELECT    psp_balance
+fyniq_worker    INSERT    psp_charge_invoice (charge_id, connector_id, provider_invoice_id, seen_at)
+fyniq_worker    SELECT    psp_charge_invoice
 fyniq_worker    INSERT    psp_customer (connector_id, email, name, provider_customer_id, seen_at)
 fyniq_worker    SELECT    psp_customer
 fyniq_worker    UPDATE    psp_customer (email, name, seen_at)

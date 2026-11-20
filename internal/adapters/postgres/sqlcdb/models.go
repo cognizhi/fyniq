@@ -3258,6 +3258,15 @@ type FyniqPspBalance struct {
 	TakenAt        time.Time
 }
 
+type FyniqPspChargeInvoice struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	ConnectorID       uuid.UUID
+	ChargeID          string
+	ProviderInvoiceID string
+	SeenAt            time.Time
+}
+
 type FyniqPspCustomer struct {
 	OrganisationID     uuid.UUID
 	ID                 uuid.UUID

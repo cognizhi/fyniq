@@ -141,6 +141,10 @@ type PSPMirror interface {
 	MakeDraft(ctx context.Context, connector uuid.UUID, providerID string) (document, contact uuid.UUID, made bool, err error)
 	// Posted records that the draft of a mirrored invoice was issued.
 	Posted(ctx context.Context, id uuid.UUID) error
+	// RecordChargeInvoice records which provider invoice a charge paid, once; false when it was recorded already.
+	RecordChargeInvoice(ctx context.Context, connector uuid.UUID, charge, providerInvoice string, at time.Time) (bool, error)
+	// InvoiceOfCharge is the provider invoice a charge paid, ports.ErrNotFound when none is recorded.
+	InvoiceOfCharge(ctx context.Context, connector uuid.UUID, charge string) (string, error)
 	// Documents are the AR documents made of provider invoices: the books' record that a provider bills them, whose reminders never run (FR-PSP-03).
 	Documents(ctx context.Context) (map[uuid.UUID]bool, error)
 }

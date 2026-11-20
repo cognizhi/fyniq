@@ -13,11 +13,16 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/connector"
+	"github.com/cognizhi/fyniq/internal/domain/banking"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/paymentlink"
 	"github.com/cognizhi/fyniq/internal/domain/receivables"
 	"github.com/cognizhi/fyniq/internal/egress"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/psp"
@@ -52,7 +57,6 @@ func TestAProviderInvoiceBecomesADraftAndPostsOnlyWhenItsTotalIsTheProviders(t *
 		t.Fatal(err)
 	}
 	rt := &connector.Runtime{Catalogue: cat, Secrets: e.api.deps.Connectors.Runtime.Secrets, Egress: &egress.Guard{Local: true}, Clock: e.clock}
-	_ = rt
 	var c storage.InstalledConnector
 	m := b.Manifest
 	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
@@ -225,4 +229,41 @@ func TestAProviderInvoiceBecomesADraftAndPostsOnlyWhenItsTotalIsTheProviders(t *
 			t.Error("a provider-billed invoice is chased by the reminders")
 		}
 	}
+	// Payment succeeded (FR-PSP-07): the charge names the invoice it paid, its statement line settles that invoice's document once, and the invoice is paid.
+	paid := bt("txn_ch", "charge", "100.00", "3.30", "96.70", 11, ports.ProviderCharge, "ch_good")
+	f.txns = []ports.ProviderObject{paid}
+	charge := ports.ProviderObject{Kind: ports.ProviderCharge, ID: "ch_good", Currency: "SGD", Amount: "100.00", Created: paid.Created,
+		Links: map[ports.ProviderKind][]string{ports.ProviderInvoice: {"in_good"}}}
+	h := psp.Handler{Dispatcher: outbox.Dispatcher{Store: worker, Queue: e.queue, Clock: e.clock}, Clock: e.clock}
+	if err := worker.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := h.Handle(ctx, u, c, storage.PSPEvent{}, charge)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := (bankfeed.Syncer{Store: worker, Runtime: rt, Clock: e.clock}).Sync(ctx, e.books.Org, c.ID); err != nil {
+		t.Fatal(err)
+	}
+	if res, err := (psp.Runner{Store: worker, Runtime: rt, Clock: e.clock}).Run(ctx, e.books.Org, c.ID); err != nil || len(res.Errors) != 0 {
+		t.Fatalf("the sweep: %+v, %v", res, err)
+	}
+	auto, err := banking.AutoReconcile(ctx, journal.BankTransactions{Store: e.store, Clock: e.clock}, e.books.Org, nil, e.clock.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipts := 0
+	for _, x := range auto.Reconciled {
+		if x.Line.Reference == "txn_ch" {
+			receipts++
+		}
+	}
+	if receipts != 1 {
+		t.Fatalf("the charge's line made %d receipts: reconciled %d, left %+v", receipts, len(auto.Reconciled), auto.Left)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := paymentlink.OpenInvoice(ctx, u, *made.DocumentID, e.clock.Now()); err == nil {
+			t.Error("the provider-billed invoice still has something open after its charge settled it")
+		}
+		return nil
+	})
 }

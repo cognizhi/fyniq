@@ -137,6 +137,30 @@ func (q *Queries) GetPSPInvoice(ctx context.Context, arg GetPSPInvoiceParams) (G
 	return i, err
 }
 
+const insertPSPChargeInvoice = `-- name: InsertPSPChargeInvoice :one
+INSERT INTO fyniq.psp_charge_invoice (connector_id, charge_id, provider_invoice_id, seen_at) VALUES ($1, $2, $3, $4)
+ON CONFLICT (organisation_id, connector_id, charge_id) DO NOTHING RETURNING id
+`
+
+type InsertPSPChargeInvoiceParams struct {
+	ConnectorID       uuid.UUID
+	ChargeID          string
+	ProviderInvoiceID string
+	SeenAt            time.Time
+}
+
+func (q *Queries) InsertPSPChargeInvoice(ctx context.Context, arg InsertPSPChargeInvoiceParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertPSPChargeInvoice,
+		arg.ConnectorID,
+		arg.ChargeID,
+		arg.ProviderInvoiceID,
+		arg.SeenAt,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const insertPSPInvoice = `-- name: InsertPSPInvoice :one
 INSERT INTO fyniq.psp_invoice (connector_id, provider_invoice_id, provider_customer_id, provider_subscription_id, number, status, currency, total, amount_paid,
   attempt_count, next_attempt_on, outcome, hosted_url, finalized_on, due_on, draft_lines, seen_at)
@@ -262,6 +286,22 @@ func (q *Queries) PSPInvoiceDocuments(ctx context.Context) ([]uuid.UUID, error) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const pSPInvoiceOfCharge = `-- name: PSPInvoiceOfCharge :one
+SELECT provider_invoice_id FROM fyniq.psp_charge_invoice WHERE connector_id = $1 AND charge_id = $2
+`
+
+type PSPInvoiceOfChargeParams struct {
+	ConnectorID uuid.UUID
+	ChargeID    string
+}
+
+func (q *Queries) PSPInvoiceOfCharge(ctx context.Context, arg PSPInvoiceOfChargeParams) (string, error) {
+	row := q.db.QueryRow(ctx, pSPInvoiceOfCharge, arg.ConnectorID, arg.ChargeID)
+	var provider_invoice_id string
+	err := row.Scan(&provider_invoice_id)
+	return provider_invoice_id, err
 }
 
 const pSPInvoicesInState = `-- name: PSPInvoicesInState :many

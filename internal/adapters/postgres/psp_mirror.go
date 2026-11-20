@@ -258,3 +258,28 @@ func (m pspMirror) Documents(ctx context.Context) (map[uuid.UUID]bool, error) {
 }
 
 var _ = time.Time{}
+
+func (m pspMirror) RecordChargeInvoice(ctx context.Context, connector uuid.UUID, charge, providerInvoice string, at time.Time) (bool, error) {
+	if err := m.u.check(); err != nil {
+		return false, err
+	}
+	id, err := m.u.q.InsertPSPChargeInvoice(ctx, sqlcdb.InsertPSPChargeInvoiceParams{ConnectorID: connector, ChargeID: charge, ProviderInvoiceID: providerInvoice, SeenAt: at})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, mapError(err)
+	}
+	return true, m.u.event(ctx, "psp_charge_invoice.recorded", "psp_charge_invoice", id, nil, map[string][2]any{"charge_id": {nil, charge}, "provider_invoice_id": {nil, providerInvoice}})
+}
+
+func (m pspMirror) InvoiceOfCharge(ctx context.Context, connector uuid.UUID, charge string) (string, error) {
+	if err := m.u.check(); err != nil {
+		return "", err
+	}
+	id, err := m.u.q.PSPInvoiceOfCharge(ctx, sqlcdb.PSPInvoiceOfChargeParams{ConnectorID: connector, ChargeID: charge})
+	if err != nil {
+		return "", mapError(err)
+	}
+	return id, nil
+}

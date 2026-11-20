@@ -2542,6 +2542,12 @@ psp_balance | connector_id | uuid | not null |
 psp_balance | currency | text | not null | 
 psp_balance | amount | numeric(20,4) | not null | 
 psp_balance | taken_at | timestamp with time zone | not null | 
+psp_charge_invoice | organisation_id | uuid | not null | current_org()
+psp_charge_invoice | id | uuid | not null | uuidv7()
+psp_charge_invoice | connector_id | uuid | not null | 
+psp_charge_invoice | charge_id | text | not null | 
+psp_charge_invoice | provider_invoice_id | text | not null | 
+psp_charge_invoice | seen_at | timestamp with time zone | not null | 
 psp_customer | organisation_id | uuid | not null | current_org()
 psp_customer | id | uuid | not null | uuidv7()
 psp_customer | connector_id | uuid | not null | 
@@ -7214,6 +7220,17 @@ psp_balance | psp_balance_organisation_id_not_null | NOT NULL organisation_id
 psp_balance | psp_balance_pkey | PRIMARY KEY (organisation_id, id)
 psp_balance | psp_balance_taken_at_not_null | NOT NULL taken_at
 psp_balance | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_charge_invoice | psp_charge_invoice_charge_id_not_null | NOT NULL charge_id
+psp_charge_invoice | psp_charge_invoice_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_charge_invoice | psp_charge_invoice_connector_id_not_null | NOT NULL connector_id
+psp_charge_invoice | psp_charge_invoice_id_not_null | NOT NULL id
+psp_charge_invoice | psp_charge_invoice_lengths | CHECK ((((length(charge_id) >= 1) AND (length(charge_id) <= 255)) AND ((length(provider_invoice_id) >= 1) AND (length(provider_invoice_id) <= 255))))
+psp_charge_invoice | psp_charge_invoice_once | UNIQUE (organisation_id, connector_id, charge_id)
+psp_charge_invoice | psp_charge_invoice_organisation_id_not_null | NOT NULL organisation_id
+psp_charge_invoice | psp_charge_invoice_pkey | PRIMARY KEY (organisation_id, id)
+psp_charge_invoice | psp_charge_invoice_provider_invoice_id_not_null | NOT NULL provider_invoice_id
+psp_charge_invoice | psp_charge_invoice_seen_at_not_null | NOT NULL seen_at
+psp_charge_invoice | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 psp_customer | psp_customer_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
 psp_customer | psp_customer_connector_id_not_null | NOT NULL connector_id
 psp_customer | psp_customer_contact_fkey | FOREIGN KEY (organisation_id, contact_id) REFERENCES contact(organisation_id, id)
@@ -8838,6 +8855,8 @@ CREATE UNIQUE INDEX project_task_project_key ON fyniq.project_task USING btree (
 CREATE UNIQUE INDEX psp_account_id_key ON fyniq.psp_account USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_account_pkey ON fyniq.psp_account USING btree (organisation_id, money_account_id)
 CREATE UNIQUE INDEX psp_balance_pkey ON fyniq.psp_balance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_charge_invoice_once ON fyniq.psp_charge_invoice USING btree (organisation_id, connector_id, charge_id)
+CREATE UNIQUE INDEX psp_charge_invoice_pkey ON fyniq.psp_charge_invoice USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_customer_pkey ON fyniq.psp_customer USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_customer_provider_once ON fyniq.psp_customer USING btree (organisation_id, connector_id, provider_customer_id)
 CREATE UNIQUE INDEX psp_dispute_credit_once ON fyniq.psp_dispute_credit USING btree (organisation_id, connector_id, dispute_id)
@@ -9047,6 +9066,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_acknowledge
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_draft DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_draft', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_balance', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_charge_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_charge_invoice', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_dispute_credit DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_dispute_credit', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_dispute_loss DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_dispute_loss', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.quote_outcome DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('quote_outcome', 'id')
@@ -9605,6 +9625,8 @@ CREATE TRIGGER project_milestone_guard BEFORE INSERT OR DELETE OR UPDATE ON fyni
 CREATE TRIGGER project_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_task FOR EACH ROW EXECUTE FUNCTION project_part_guard()
 CREATE TRIGGER psp_balance_guard BEFORE DELETE OR UPDATE ON fyniq.psp_balance FOR EACH ROW EXECUTE FUNCTION psp_balance_guard()
 CREATE TRIGGER psp_balance_no_truncate BEFORE TRUNCATE ON fyniq.psp_balance FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_charge_invoice_guard BEFORE DELETE OR UPDATE ON fyniq.psp_charge_invoice FOR EACH ROW EXECUTE FUNCTION psp_charge_invoice_guard()
+CREATE TRIGGER psp_charge_invoice_no_truncate BEFORE TRUNCATE ON fyniq.psp_charge_invoice FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_customer_no_truncate BEFORE TRUNCATE ON fyniq.psp_customer FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_dispute_credit_guard BEFORE DELETE OR UPDATE ON fyniq.psp_dispute_credit FOR EACH ROW EXECUTE FUNCTION psp_dispute_credit_guard()
 CREATE TRIGGER psp_dispute_credit_no_truncate BEFORE TRUNCATE ON fyniq.psp_dispute_credit FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -9906,6 +9928,7 @@ project_milestone | tenant_isolation | * | (organisation_id = current_org()) | (
 project_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_charge_invoice | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_customer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_dispute_credit | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_dispute_loss | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10184,6 +10207,7 @@ project_milestone | enabled | forced
 project_task | enabled | forced
 psp_account | enabled | forced
 psp_balance | enabled | forced
+psp_charge_invoice | enabled | forced
 psp_customer | enabled | forced
 psp_dispute_credit | enabled | forced
 psp_dispute_loss | enabled | forced
@@ -10577,6 +10601,7 @@ project_guard() → trigger | security invoker | v | search_path=pg_catalog, fyn
 project_milestone_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b8dc234f6537bead909f4c0fcb746635
 project_part_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abaebce4c4cd3919837dd8db7382ce2a
 psp_balance_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 718c45d122dfe60b1f6507609c283752
+psp_charge_invoice_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b529b7a5d6214720ee0b83bca89111bd
 psp_dispute_credit_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3ff52623e3d9977b1183a6afe837b287
 psp_dispute_loss_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0624664dfa2f00777a7eee9eb2377308
 psp_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 795487512cdc896caeba25ce58b8402a

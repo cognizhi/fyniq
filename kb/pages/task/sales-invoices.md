@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:2f89fda4549694b6dec709dc043dd7d499db429278f3bc8271ff1a50022c25db
+  - docs/user-guide/invoices.md sha256:7ea06a4c4fedf3e655a1bea1da549fcda128cf0c6ebd952648142bb53be2bdcd
 data_class: general
 taint: trusted
 status: draft
@@ -57,6 +57,9 @@ aliases:
   - payment link
   - customer portal
   - disputed invoice
+  - Stripe subscription
+  - provider invoice
+  - billing provider
   - promise to pay
   - dispute an invoice
   - customer statement online
@@ -136,6 +139,14 @@ aliases:
 - The email's secure link opens the invoice or quote without signing in: the document as its PDF shows it, the amount due or total, and **Download the PDF**; on a sent quote still valid, the customer accepts with their name or declines, with a comment kept as a record ([[sales.quotes]]). It shows nothing else, works until it ends or is revoked, and the first opening marks the invoice **Viewed**.
 
 (src: docs/user-guide/invoices.md#what-the-customer-sees)
+
+## Subscriptions a provider bills
+
+- Name a revenue account on a Stripe provider account (Banking › Provider payouts) and Fyniq mirrors the provider's customers, subscriptions and invoices read-only on **Sales › Subscriptions** (Expert mode), with the provider's status, payment attempts and next retry beside the invoice Fyniq made.
+- An open or paid invoice becomes a draft invoice, dated the day the provider finalised it, to a contact made from the provider's customer, each line at the provider's amount spread over its service period's months. **Issue the drafts** (also done by Reconcile now) issues one only when its total, GST included, is the provider's to the cent; any other, or one with a discount or credit line, waits for a person with the reason shown.
+- The provider's charge for the invoice is received once by Reconcile now (a charge above S$500 waits for a person). Fyniq never retries or charges and its reminders skip these invoices. A provider-voided or uncollectible invoice you issued is voided or written off under Invoices. Credit notes and tiered prices are not built yet.
+
+(src: docs/user-guide/invoices.md#subscriptions-a-provider-bills)
 
 ## A disputed invoice or a promise to pay
 

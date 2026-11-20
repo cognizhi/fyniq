@@ -323,6 +323,15 @@ type Handler struct {
 // Handle implements pspevents.Handler.
 func (h Handler) Handle(ctx context.Context, u storage.UnitOfWork, c storage.InstalledConnector, ev storage.PSPEvent, obj ports.ProviderObject) (string, error) {
 	now := h.Clock.Now()
+	if on, err := revenueOf(ctx, u, c.ID); err != nil {
+		return "", err
+	} else if on && obj.Kind == ports.ProviderCharge {
+		for _, inv := range obj.Links[ports.ProviderInvoice] { // a charge that paid a provider invoice (FR-PSP-07): its line settles that invoice's document
+			if _, err := u.PSPMirror().RecordChargeInvoice(ctx, c.ID, obj.ID, inv, now); err != nil {
+				return "", err
+			}
+		}
+	}
 	switch obj.Kind {
 	case ports.ProviderInvoice, ports.ProviderCustomer, ports.ProviderSubscription: // Model B's mirror (FR-PSP-03): no sweep of money lines is needed
 		park, err := MirrorObject(ctx, u, c.ID, obj, now)

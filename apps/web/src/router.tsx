@@ -56,6 +56,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "quote-new": lazyRouteComponent(() => import("./screens/sales/QuotePage"), "QuotePage"),
   "sales-order-new": lazyRouteComponent(() => import("./screens/sales/QuotePage"), "QuotePage"),
   quote: lazyRouteComponent(() => import("./screens/sales/QuotePage"), "QuotePage"),
+  subscriptions: lazyRouteComponent(() => import("./screens/sales/Subscriptions"), "Subscriptions"),
   "recurring-invoices": lazyRouteComponent(() => import("./screens/sales/RecurringInvoices"), "RecurringInvoices"),
   "recurring-invoice-new": lazyRouteComponent(() => import("./screens/sales/RecurringInvoicePage"), "RecurringInvoicePage"),
   "recurring-invoice": lazyRouteComponent(() => import("./screens/sales/RecurringInvoicePage"), "RecurringInvoicePage"),
