@@ -163,6 +163,8 @@ export function PayRunApproval({ id, roles, member }: { id: string; roles: reado
                   </>
                 )}
                 <p className="fy-secondary">{t("approval.linked.enrol")}</p>
+                {env.fyniq_passkey === "missing" && <p role="alert" className="fy-strong">{t("approval.linked.passkeyMissing")}</p>}
+                {env.fyniq_passkey === "unknown" && <p className="fy-secondary">{t("approval.linked.passkeyUnknown")}</p>}
                 <button className="fy-btn fy-btn--primary" type="button" disabled={!env.ready} onClick={approveWithProof}>{t("approval.linked.approve", { version: String(v.version) })}</button>
               </section>
             )}

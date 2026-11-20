@@ -19,6 +19,7 @@ var auditedReads = map[string]string{
 	"getEvidenceFile":            "evidence.opened",
 	"getEvidencePreview":         "evidence.opened",
 	"getPaymentBatchFile":        "payment_batch.file_downloaded",
+	"getSalaryBatchFile":         "salary_batch.file_downloaded",
 	"getPersonalDataReport":      "personal_data.exported",
 	"getReportExportFile":        "report_export.downloaded",
 	"createTenantExportDownload": "tenant_export.download_linked",

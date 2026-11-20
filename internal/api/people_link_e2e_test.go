@@ -33,6 +33,7 @@ import (
 	napi "github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/apiclient"
 	nauthz "github.com/cognizhi/fyniq/internal/nemura/authz"
+	"github.com/cognizhi/fyniq/internal/nemura/identity"
 	"github.com/cognizhi/fyniq/internal/nemura/linkauth"
 	nout "github.com/cognizhi/fyniq/internal/nemura/outbox"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
@@ -461,6 +462,51 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 	// Each app's own tokens do work at its own door, so the two refusals above are about the audience and nothing else.
 	if status := post(nsrv.URL+"/v1/link/events", nemuraToken, fyniqHTTP.sent["/v1/link/events"]); status != http.StatusOK {
 		t.Errorf("Nemura's token for Fyniq's client at its own inbox, with Fyniq's last event again: %d (a duplicate answers 200)", status)
+	}
+
+	// One sign-in across the apps (design D7): each app tells the other what a sign-in identity may enter, signed, through the real transport and inboxes. Owen Owner signs in to both with one identity.
+	idp, owen := "https://idp.example.test", "owen"
+	if err := nst.InOrg(ctx, norg, func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.LinkIdentity(ctx, tx, norg, real, system, nowner, identity.Identity{Issuer: idp, Subject: owen, Tenant: "t"})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	accessRow, accessPayload := rowOf(nemura.KindLinkSend)
+	if !strings.Contains(string(accessPayload), nemura.TypeIdentityAccess) {
+		t.Fatalf("linking Owen's identity queued: %s", accessPayload)
+	}
+	if err := deliver(accessRow, accessPayload); err != nil {
+		t.Fatalf("Nemura's word on Owen: %v", err)
+	}
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		a, err := u.PeopleLinks().Access(ctx, idp, owen)
+		if err != nil || !a.PeopleAccess || !a.PayrollApprover {
+			t.Errorf("what Fyniq keeps of Owen: %+v %v", a, err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var told string
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		told, err = linksend.Queue(ctx, u, linksend.TypeIdentityAccess, "identity", uuid.NewString(), 0, linksend.IdentityAccess{Issuer: idp, Subject: owen, Finance: true, Passkey: false})
+		return err
+	}); err != nil || told == "" {
+		t.Fatalf("Fyniq queueing its word on Owen: %q %v", told, err)
+	}
+	if err := fsender.Work()(ctx, e.books.Org, fyniqRow(told)); err != nil {
+		t.Fatalf("Fyniq's word on Owen: %v", err)
+	}
+	ws := nemura.WorkspaceService{Store: nst, FinanceOrigin: "https://app.example.test"}
+	if u, err := ws.FinanceURL(ctx, napi.Session{Organisation: norg, Member: nowner, Issuer: idp, Subject: owen, Provider: "google"}, nil); err != nil || u != "https://app.example.test/?switch=1&provider=google" {
+		t.Errorf("Owen's switch in Nemura after Fyniq said he holds a finance role: %q %v", u, err)
+	}
+	if u, _ := ws.FinanceURL(ctx, napi.Session{Organisation: norg, Member: nsecond, Issuer: idp, Subject: "someone-else", Provider: "google"}, nil); u != "" {
+		t.Errorf("a switch for an identity Fyniq said nothing of: %q", u)
+	}
+	rl := nemura.RunLinkService{Store: nst, Clock: clock.System{}}
+	if env, _ := rl.Envelope(ctx, napi.Session{Organisation: norg, Member: nowner, Issuer: idp, Subject: owen}, uuid.New(), 1); env.FyniqPasskey != "missing" { // (there is no such run: the hint is read before it)
+		t.Errorf("Fyniq said Owen has no passkey enrolled: %q", env.FyniqPasskey)
 	}
 }
 

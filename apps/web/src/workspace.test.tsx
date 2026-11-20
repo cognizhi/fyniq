@@ -28,3 +28,15 @@ describe("the Finance | People switch", () => {
     expect(switchedIn("?switch=1", "/")).toBeNull();
   });
 });
+
+// part of FR-PPL-03 (the provider the other app named is only a hint of the shape a provider has)
+describe("switchProvider", () => {
+  it("takes only an ID of the shape a provider has", async () => {
+    const { switchProvider } = await import("./route");
+    expect(switchProvider("?switch=1&provider=google")).toBe("google");
+    expect(switchProvider("?provider=zoho-sso")).toBe("zoho-sso");
+    for (const bad of ["", "?switch=1", "?provider=", "?provider=Google", "?provider=a%2Fb", "?provider=%2F%2Fevil.example", "?provider=../x", "?provider=" + "a".repeat(64)]) {
+      expect(switchProvider(bad)).toBeNull();
+    }
+  });
+});

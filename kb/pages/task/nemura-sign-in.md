@@ -4,7 +4,7 @@ type: task
 title: Sign in to Nemura and sign out
 summary: How a person signs in to Nemura, joins with an invitation or the one-time setup code, what the page says when it is not ready, and how to sign out
 sources:
-  - docs/user-guide/nemura/sign-in.md sha256:2db930f0f414f02faf421eb4fe2cfdba01cb33a18455f20d4c39f3cf4a1533c2
+  - docs/user-guide/nemura/sign-in.md sha256:0243599e8a4c765f5062a6ed4d7376e001f6c509bd10224c30ea046928ced4b0
 data_class: general
 taint: trusted
 status: published
@@ -21,6 +21,7 @@ aliases:
   - setup code
   - recovery code
   - Owner cannot sign in
+  - Finance People switch
 ---
 
 # Sign in to Nemura and sign out
@@ -51,6 +52,14 @@ aliases:
 - The code is never in the address bar. A wrong, used or expired code returns to sign-in with a message; ask for a new one.
 
 (src: docs/user-guide/nemura/sign-in.md#joining-with-a-code)
+
+## Move between Nemura and Fyniq
+
+- When the company links Nemura to Fyniq and the person holds a role in Fyniq's finance workspace, a **Finance | People** switch shows in the header. Fyniq tells Nemura, signed, that the sign-in account holds such a role and nothing more: no role name and no email.
+- The switch is a door and never a grant: Fyniq's own sign-in and roles decide what the person sees there, and a role in one app gives nothing in the other. It opens Fyniq with the sign-in provider used here, so the sign-in page is not shown again; if the provider asks for a confirmation, give it.
+- Nemura and Fyniq use one sign-in provider for the company, so use the same account in both. If the switch does not show, Fyniq has not said the account holds a finance role: ask the Owner.
+
+(src: docs/user-guide/nemura/sign-in.md#moving-between-nemura-and-fyniq)
 
 ## Sign out
 

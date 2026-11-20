@@ -35,7 +35,7 @@ func (c *company) sessionOf(t *testing.T, member uuid.UUID, at time.Time) sessio
 	var token string
 	c.must(func(ctx context.Context, tx pgx.Tx) error {
 		var err error
-		token, err = nemura.StartSession(ctx, tx, c.org, at, member)
+		token, err = nemura.StartSession(ctx, tx, c.org, at, member, identity.Via{})
 		return err
 	})
 	s, err := store(t, "nemura_api").Authenticate(context.Background(), token, at)

@@ -215,7 +215,29 @@ func (c chartResolver) Department(code string) (uuid.UUID, bool) {
 	return id, ok
 }
 
+// payrollItemExamples gives the examples a schema's arrays of strings take on their items, and the column headers of an import's mapping, which come from a domain type that carries no documentation tags.
+func payrollItemExamples(a *API) {
+	schemas := a.OpenAPI().Components.Schemas.Map()
+	items := func(schema, field string, example any) {
+		if s := schemas[schema]; s != nil {
+			if p := s.Properties[field]; p != nil && p.Items != nil && len(p.Items.Examples) == 0 {
+				p.Items.Examples = []any{example}
+			}
+		}
+	}
+	items("PayrollArrangements", "missing", "kets")
+	items("SalaryBankMatch", "line_ids", "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c11")
+	if s := schemas["Mapping"]; s != nil {
+		for field, example := range map[string]string{"account": "Account", "department": "Department", "debit": "Debit", "credit": "Credit", "memo": "Memo"} {
+			if p := s.Properties[field]; p != nil && len(p.Examples) == 0 {
+				p.Examples = []any{example}
+			}
+		}
+	}
+}
+
 func registerPayrollOutside(a *API) {
+	defer payrollItemExamples(a)
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	register(a, authz.GetPayrollArrangements, huma.Operation{
 		OperationID: "getPayrollArrangements", Method: http.MethodGet, Path: "/v1/payroll-arrangements", Tags: []string{"People"},

@@ -14187,8 +14187,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Receive a person or bank-details event from Nemura
-         * @description Nemura's `people.person.upserted` and `people.bank_details.changed` (PRD-002 Appendix E): an envelope (NM-INT-10) whose header the link key signed, with the payload's canonical SHA-256 in it. It needs the link's client and the scope people.projection.write, and the envelope is checked against the link as Fyniq holds it: its organisations, its epoch, a signing time within 5 minutes, its signature and its digest; nothing the message carries decides who may send it. An event received before does nothing (duplicate); a version no newer than the one applied is ignored and recorded (a late version 1 never sets the manager back); a payload with a field Appendix E does not list is refused (NM-INT-05). Side effects: the projection's change and its audit event, by field name and never by value, and the inbox row (identities and a digest, never the payload). Pay and bank details are never logged. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).
+         * Receive a person, bank-details or identity event from Nemura
+         * @description Nemura's `people.person.upserted`, `people.bank_details.changed` and `identity.access.changed` (PRD-002 Appendix E; the last says whether a sign-in identity is an active member there and approves pay runs, by issuer and subject and two yes or no answers: a door and a hint, never a grant, with the version the sending event's sequence): an envelope (NM-INT-10) whose header the link key signed, with the payload's canonical SHA-256 in it. It needs the link's client and the scope people.projection.write, and the envelope is checked against the link as Fyniq holds it: its organisations, its epoch, a signing time within 5 minutes, its signature and its digest; nothing the message carries decides who may send it. An event received before does nothing (duplicate); a version no newer than the one applied is ignored and recorded (a late version 1 never sets the manager back); a payload with a field Appendix E does not list is refused (NM-INT-05). Side effects: the projection's change and its audit event, by field name and never by value, and the inbox row (identities and a digest, never the payload). Pay and bank details are never logged. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).
          */
         post: operations["receivePeopleProjectionEvent"];
         delete?: never;
@@ -42327,10 +42327,15 @@ export interface components {
             share: string;
         };
         Mapping: {
+            /** @example Account */
             account: string;
+            /** @example Credit */
             credit: string;
+            /** @example Debit */
             debit: string;
+            /** @example Department */
             department?: string;
+            /** @example Memo */
             memo?: string;
         };
         MappingNumber: {
@@ -54251,6 +54256,11 @@ export interface components {
              */
             motion?: "on" | "off";
             /**
+             * @description True when Nemura has said you approve pay runs there and you have no passkey enrolled here: its approval is signed with a passkey enrolled in Fyniq (PPL-19), so add one in your security settings. A reminder, never a grant.
+             * @example true
+             */
+            nemura_passkey_needed?: boolean;
+            /**
              * Format: uuid
              * @description The organisation your session is in; absent when you are a member of none.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
@@ -54293,7 +54303,7 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
              */
             user_id?: string;
-            /** @description Present when you may cross to Nemura: the Finance | People switch shows (FR-PPL-02). Absent when the apps are not linked or your roles are personal only (an employee who only claims has no switch: Nemura's Claims tile opens the personal workspace). */
+            /** @description Present when you may cross to Nemura: the Finance | People switch shows (FR-PPL-02). It shows while the apps are linked, you hold a role that reaches the finance workspace here, and Nemura has said that the sign-in identity you are signed in with is an active member there; it names the provider you signed in with, so Nemura does not show you its sign-in page again. Absent otherwise (an employee who only claims has no switch: Nemura's Claims tile opens the personal workspace). */
             workspace?: components["schemas"]["Workspace"];
         };
         SetConnectorSecretRequest: {

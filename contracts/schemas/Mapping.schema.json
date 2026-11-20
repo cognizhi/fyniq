@@ -3,18 +3,33 @@
   "additionalProperties": false,
   "properties": {
     "account": {
+      "examples": [
+        "Account"
+      ],
       "type": "string"
     },
     "credit": {
+      "examples": [
+        "Credit"
+      ],
       "type": "string"
     },
     "debit": {
+      "examples": [
+        "Debit"
+      ],
       "type": "string"
     },
     "department": {
+      "examples": [
+        "Department"
+      ],
       "type": "string"
     },
     "memo": {
+      "examples": [
+        "Memo"
+      ],
       "type": "string"
     }
   },
