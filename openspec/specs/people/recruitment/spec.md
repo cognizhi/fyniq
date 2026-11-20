@@ -42,6 +42,14 @@ Source: PRD-002 §12 · Priority M · Phase P2
 - **WHEN** the advert's salary changes
 - **THEN** a new advert is needed, and its 14 days start again
 
+#### Scenario: A new advert replaces the old as evidence (rev 0.70)
+- **WHEN** the occupation, salary, number of vacancies or UEN changes and a later advert is recorded
+- **THEN** the old advert is kept with what changed, the new day starts the 14 days again, and an advert closed more than 3 months ago is refused
+
+#### Scenario: The careers page (rev 0.70)
+- **WHEN** anyone reads a company's careers page that is switched on
+- **THEN** they see each published, approved post's title, team, text and day, no salary and no person, while a page that is off or unknown shows nothing
+
 #### Scenario: Old advert
 - **WHEN** an advert closed more than 3 months ago is offered as evidence
 - **THEN** it is refused

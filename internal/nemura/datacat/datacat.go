@@ -159,6 +159,8 @@ var NotPersonal = map[string]string{
 	"job_post.body":                    "the text of a job post, written to be published about a role, not about a person",
 	"job_post.requirement_note":        "why a criterion in a post is a genuine occupational requirement of the role",
 	"job_post.exemption_note":          "the evidence for an exemption from the advert, about the company's headcount or the role, never a candidate",
+	"job_advert.change_note":           "what changed in a role's occupation, salary, vacancies or UEN that needed a new advert, about the role, never a candidate",
+	"careers_page.intro":               "the words a company puts above its public list of open roles, written to be published",
 	"requisition.reason":               "whether a role is new or a replacement: two words, the person replaced is named by ID",
 	"requisition.salary_min":           "the bottom of the range offered for a role, not any person's pay",
 	"requisition.salary_max":           "the top of the range offered for a role, not any person's pay",

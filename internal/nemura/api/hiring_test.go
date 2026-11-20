@@ -15,10 +15,11 @@ import (
 func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 	const id = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01"
 	type op struct{ method, path, body string }
-	reads := []op{{"GET", "/v1/requisitions", ""}, {"POST", "/v1/fair-wording-check", `{"text":"We want a young digital native."}`}}
+	reads := []op{{"GET", "/v1/requisitions", ""}, {"GET", "/v1/careers-page", ""}, {"POST", "/v1/fair-wording-check", `{"text":"We want a young digital native."}`}}
 	writes := []op{{"POST", "/v1/requisitions", `{"title":"Data scientist","department":"Engineering","reason":"new","salary_min":"6500.00","salary_max":"8200.00","target_start":"2027-02-01"}`},
 		{"PUT", "/v1/requisitions/" + id + "/job-post", `{"title":"Data scientist","body":"You will analyse data."}`}, {"POST", "/v1/requisitions/" + id + "/job-post/publication", `{}`},
-		{"POST", "/v1/requisitions/" + id + "/job-post/advert", `{"posted_on":"2026-10-05"}`}, {"POST", "/v1/requisitions/" + id + "/job-post/exemption", `{"kind":"transferee","note":"Intra-company."}`},
+		{"POST", "/v1/requisitions/" + id + "/job-post/advert", `{"posted_on":"2026-10-05"}`}, {"POST", "/v1/requisitions/" + id + "/job-post/advert/renewal", `{"change":"salary","posted_on":"2026-11-02"}`}, {"PUT", "/v1/careers-page", `{"slug":"acme-careers","enabled":true,"company":"Acme"}`},
+		{"POST", "/v1/requisitions/" + id + "/job-post/exemption", `{"kind":"transferee","note":"Intra-company."}`},
 		{"POST", "/v1/requisitions/" + id + "/job-post/closing", ``}}
 	approves := []op{{"POST", "/v1/requisitions/" + id + "/decision", `{"approve":true}`}}
 	call := func(o op, cookie string) int {
@@ -68,5 +69,19 @@ func TestHiringOperationsFollowAppendixBsHiringRow(t *testing.T) {
 	testRoles, featuresOff = []authz.Role{authz.Owner}, true
 	if code := call(reads[0], "nemura_session=good-token"); code != 409 {
 		t.Errorf("Hiring off: %d", code)
+	}
+}
+
+// The careers page is read by anyone with no sign-in (and is the one hiring route that is), counted against a limit; everything else about it follows the Hiring row (NM-REC-02).
+// req: NM-REC-02
+// asvs: V4.2.1, V2.1.1
+func TestTheCareersPageIsPublicAndSignedOutVisitorsReadNothingElseOfHiring(t *testing.T) {
+	_, mux := testAPI(t)
+	for path, want := range map[string]int{"/v1/careers/acme-careers": 200, "/v1/careers-page": 401, "/v1/requisitions": 401, "/v1/careers/Bad_Slug": 422, "/v1/careers/ab": 422} {
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		if rec.Code != want {
+			t.Errorf("GET %s: %d, want %d", path, rec.Code, want)
+		}
 	}
 }

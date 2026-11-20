@@ -17,6 +17,7 @@ import { ReportSick } from "./pages/ReportSick";
 import { TeamLeave } from "./pages/TeamLeave";
 import { Packs } from "./pages/Packs";
 import { Policy } from "./pages/Policy";
+import { Careers } from "./pages/Careers";
 import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Join } from "./pages/Join";
@@ -2018,5 +2019,21 @@ describe("goals", () => {
     render(<Goals roles={["employee"]} />);
     expect(await screen.findByText(/Performance is switched off for this company/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Add the goal" })).toBeNull();
+  });
+});
+
+// req: NM-REC-02, QA-UI-05
+describe("careers page", () => {
+  it("lists a company's published posts with no sign-in and answers an unknown address alike", async () => {
+    answer("GET /v1/careers/acme-careers", { status: 200, body: { found: true, company: "Acme Pte. Ltd.", intro: "Come and work with us.", posts: [{ id: "p1", title: "Data scientist", department: "Engineering", body: "You will analyse data.", published_on: "2026-10-05" }] } });
+    const { container } = render(<Careers slug="acme-careers" />);
+    expect(await screen.findByText("Data scientist")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Acme Pte. Ltd.");
+    expect(screen.getByText(/Engineering/)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    cleanup();
+    answer("GET /v1/careers/nobody", { status: 200, body: { found: false, posts: [] } });
+    render(<Careers slug="nobody" />);
+    expect(await screen.findByText("There is no careers page at this address.")).toBeTruthy();
   });
 });

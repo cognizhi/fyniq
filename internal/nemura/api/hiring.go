@@ -26,20 +26,29 @@ type WordingFinding struct {
 
 // JobPost is the job post of a requisition.
 type JobPost struct {
-	ID              string           `json:"id" format:"uuid" doc:"The post." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3b01"`
-	Title           string           `json:"title" doc:"The post's title." example:"Data scientist"`
-	Body            string           `json:"body" doc:"The post's text." example:"You will analyse data and build models."`
-	State           string           `json:"state" enum:"draft,published,closed" doc:"A draft, published or closed." example:"draft"`
-	PublishedOn     string           `json:"published_on,omitempty" format:"date" doc:"The day it was published." example:"2026-10-05"`
-	ClosedOn        string           `json:"closed_on,omitempty" format:"date" doc:"The day it was closed." example:"2026-11-05"`
-	RequirementNote string           `json:"requirement_note,omitempty" doc:"The genuine occupational requirement recorded for a flagged criterion that was kept." example:"The role handles Mandarin-language contracts."`
-	AdvertPostedOn  string           `json:"advert_posted_on,omitempty" format:"date" doc:"The day the advert went up on MyCareersFuture, posted by a person: the 14 days run from it." example:"2026-10-05"`
-	AdvertReference string           `json:"advert_reference,omitempty" doc:"The advert's reference." example:"MCF-2026-0042"`
-	Exemption       string           `json:"exemption,omitempty" enum:"fewer_than_10_employees,ep_salary_22500,role_one_month_or_less,transferee,s_pass_exempt" doc:"The recorded exemption from the advert." example:"fewer_than_10_employees"`
-	ExemptionNote   string           `json:"exemption_note,omitempty" doc:"The evidence for the exemption." example:"Headcount 7 on 5 Oct."`
-	OfferFrom       string           `json:"offer_from,omitempty" format:"date" doc:"For a role that needs a pass, the first day an offer may be made: the advert's 14 consecutive days have run. Empty when no pass is needed, an exemption is recorded, or the advert is not yet recorded." example:"2026-10-19"`
-	OfferBlocked    bool             `json:"offer_blocked" doc:"A role that needs a pass has neither an advert date nor an exemption recorded, so no offer may be made yet." example:"false"`
-	Findings        []WordingFinding `json:"findings" nullable:"false" doc:"The criteria found in the current words, for the author to read."`
+	ID                string           `json:"id" format:"uuid" doc:"The post." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3b01"`
+	Title             string           `json:"title" doc:"The post's title." example:"Data scientist"`
+	Body              string           `json:"body" doc:"The post's text." example:"You will analyse data and build models."`
+	State             string           `json:"state" enum:"draft,published,closed" doc:"A draft, published or closed." example:"draft"`
+	PublishedOn       string           `json:"published_on,omitempty" format:"date" doc:"The day it was published." example:"2026-10-05"`
+	ClosedOn          string           `json:"closed_on,omitempty" format:"date" doc:"The day it was closed." example:"2026-11-05"`
+	RequirementNote   string           `json:"requirement_note,omitempty" doc:"The genuine occupational requirement recorded for a flagged criterion that was kept." example:"The role handles Mandarin-language contracts."`
+	AdvertPostedOn    string           `json:"advert_posted_on,omitempty" format:"date" doc:"The day the advert went up on MyCareersFuture, posted by a person: the 14 days run from it." example:"2026-10-05"`
+	AdvertReference   string           `json:"advert_reference,omitempty" doc:"The advert's reference." example:"MCF-2026-0042"`
+	AdvertClosedOn    string           `json:"advert_closed_on,omitempty" format:"date" doc:"The day the advert came down or expired, when it was recorded." example:"2026-10-19"`
+	AdvertUsableUntil string           `json:"advert_usable_until,omitempty" format:"date" doc:"The last day the advert can be relied on: 3 months after it came down." example:"2027-01-19"`
+	AdvertRenewals    int              `json:"advert_renewals" doc:"How many times the advert was replaced after a material change; the replaced adverts are kept as evidence." example:"0"`
+	Exemption         string           `json:"exemption,omitempty" enum:"fewer_than_10_employees,ep_salary_22500,role_one_month_or_less,transferee,s_pass_exempt" doc:"The recorded exemption from the advert." example:"fewer_than_10_employees"`
+	ExemptionNote     string           `json:"exemption_note,omitempty" doc:"The evidence for the exemption." example:"Headcount 7 on 5 Oct."`
+	OfferFrom         string           `json:"offer_from,omitempty" format:"date" doc:"For a role that needs a pass, the first day an offer may be made: the advert's 14 consecutive days have run. Empty when no pass is needed, an exemption is recorded, or the advert is not yet recorded." example:"2026-10-19"`
+	OfferBlocked      bool             `json:"offer_blocked" doc:"A role that needs a pass has neither an advert date nor an exemption recorded, so no offer may be made yet." example:"false"`
+	Findings          []WordingFinding `json:"findings" nullable:"false" doc:"The criteria found in the current words, for the author to read."`
+}
+
+// AdvertInput is an advert to record or to record anew.
+type AdvertInput struct {
+	PostedOn, Reference, ClosedOn string // the day it went up, its reference and, when known, the day it came down
+	Change, Note                  string // for a renewal: what changed (occupation, salary, vacancies or uen) and a note
 }
 
 // Requisition is a request to hire for a role.
@@ -83,7 +92,8 @@ type Hiring interface {
 	Decide(ctx context.Context, s Session, id uuid.UUID, approve bool, reason string) (Requisition, error)
 	WritePost(ctx context.Context, s Session, id uuid.UUID, title, body string) (Requisition, error)
 	Publish(ctx context.Context, s Session, id uuid.UUID, requirementNote string) (Requisition, error)
-	RecordAdvert(ctx context.Context, s Session, id uuid.UUID, postedOn, reference string) (Requisition, error)
+	RecordAdvert(ctx context.Context, s Session, id uuid.UUID, in AdvertInput) (Requisition, error)
+	RenewAdvert(ctx context.Context, s Session, id uuid.UUID, in AdvertInput) (Requisition, error)
 	RecordExemption(ctx context.Context, s Session, id uuid.UUID, kind, note string) (Requisition, error)
 	ClosePost(ctx context.Context, s Session, id uuid.UUID) (Requisition, error)
 }
@@ -131,6 +141,17 @@ type advertInput struct {
 	Body   struct {
 		PostedOn  string `json:"posted_on" format:"date" doc:"The day the advert went up on MyCareersFuture." example:"2026-10-05"`
 		Reference string `json:"reference,omitempty" maxLength:"100" doc:"The advert's reference." example:"MCF-2026-0042"`
+		ClosedOn  string `json:"closed_on,omitempty" format:"date" doc:"The day the advert came down or expired, when it already has: an advert closed more than 3 months ago cannot be used (NM_HIRING_INVALID)." example:"2026-10-19"`
+	}
+}
+type renewalInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The requisition." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01"`
+	Body   struct {
+		Change    string `json:"change" enum:"occupation,salary,vacancies,uen" doc:"What changed: the occupation, the salary, the number of vacancies or the employer's UEN, each of which needs a new advert." example:"salary"`
+		Note      string `json:"note,omitempty" maxLength:"500" doc:"What the change was." example:"The top of the range rose to 9,000."`
+		PostedOn  string `json:"posted_on" format:"date" doc:"The day the new advert went up on MyCareersFuture." example:"2026-11-02"`
+		Reference string `json:"reference,omitempty" maxLength:"100" doc:"The new advert's reference." example:"MCF-2026-0099"`
 	}
 }
 type exemptionInput struct {
@@ -166,6 +187,7 @@ func init() {
 	IdempotencyExempt["POST /v1/requisitions/{id}/decision"] = "a requisition is decided once: a second is refused (NM_HIRING_CONFLICT)"
 	IdempotencyExempt["POST /v1/requisitions/{id}/job-post/publication"] = "a post is published once: a second is refused (NM_HIRING_CONFLICT)"
 	IdempotencyExempt["POST /v1/requisitions/{id}/job-post/advert"] = "the advert's date is recorded once: a second is refused (NM_HIRING_CONFLICT)"
+	IdempotencyExempt["POST /v1/requisitions/{id}/job-post/advert/renewal"] = "a renewal needs a later day than the advert it replaces: a repeat is refused (NM_HIRING_INVALID)"
 	IdempotencyExempt["POST /v1/requisitions/{id}/job-post/exemption"] = "an exemption is recorded once: a second is refused (NM_HIRING_CONFLICT)"
 	IdempotencyExempt["POST /v1/requisitions/{id}/job-post/closing"] = "a post is closed once: a second is refused (NM_HIRING_CONFLICT)"
 	IdempotencyExempt["POST /v1/fair-wording-check"] = "it only reads: the same text gives the same findings and nothing is kept"
@@ -325,11 +347,65 @@ func (a *API) registerHiring() {
 		if err != nil {
 			return nil, err
 		}
-		r, err := a.d.Hiring.RecordAdvert(ctx, s, u, in.Body.PostedOn, in.Body.Reference)
+		r, err := a.d.Hiring.RecordAdvert(ctx, s, u, AdvertInput{PostedOn: in.Body.PostedOn, Reference: in.Body.Reference, ClosedOn: in.Body.ClosedOn})
 		if err != nil {
 			return nil, hiringError(err)
 		}
 		return &requisitionOutput{Body: r}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "renewJobAdvert", Method: http.MethodPost, Path: "/v1/requisitions/{id}/job-post/advert/renewal", Tags: []string{"Hiring"}, Summary: "Record a new advert after a material change",
+		Description: "PRD-002 NM-REC-02. A change of the occupation, the salary, the number of vacancies or the employer's UEN needs a new advert, and its 14 consecutive days start again. Records the new advert's day, archives the advert it replaces " +
+			"with what changed, and counts the renewal. Only a post that has an advert recorded and is not closed; the new day is after the old one. The Recruiter, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422, 503},
+	}, func(ctx context.Context, in *renewalInput) (*requisitionOutput, error) {
+		s, err := writer(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		u, err := id(in.ID)
+		if err != nil {
+			return nil, err
+		}
+		r, err := a.d.Hiring.RenewAdvert(ctx, s, u, AdvertInput{PostedOn: in.Body.PostedOn, Reference: in.Body.Reference, Change: in.Body.Change, Note: in.Body.Note})
+		if err != nil {
+			return nil, hiringError(err)
+		}
+		return &requisitionOutput{Body: r}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "readCareersSettings", Method: http.MethodGet, Path: "/v1/careers-page", Tags: []string{"Hiring"}, Summary: "The organisation's careers page settings",
+		Description: "PRD-002 NM-REC-02. The address, whether the page is on, the company's name and the words above the list. The Recruiter, the HR officer, the HR administrator and the Owner. It changes nothing.", Errors: []int{401, 403, 409, 503},
+	}, func(ctx context.Context, in *selfInput) (*careersSettingsOutput, error) {
+		s, err := reader(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		if a.d.Careers == nil {
+			return nil, available()
+		}
+		v, err := a.d.Careers.Settings(ctx, s)
+		if err != nil {
+			return nil, hiringError(err)
+		}
+		return &careersSettingsOutput{Body: v}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "saveCareersSettings", Method: http.MethodPut, Path: "/v1/careers-page", Tags: []string{"Hiring"}, Summary: "Choose the careers page's address and switch it on or off",
+		Description: "PRD-002 NM-REC-02. Sets the address (3 to 40 lower-case letters, digits and single hyphens, one that no other company uses), the company's name and the words above the list, and whether anyone can read the page at /careers/<address>. " +
+			"What the page shows is only each published post's title, team, text and day. The Recruiter, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 409, 422, 503},
+	}, func(ctx context.Context, in *careersSaveInput) (*careersSettingsOutput, error) {
+		s, err := writer(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		if a.d.Careers == nil {
+			return nil, available()
+		}
+		v, err := a.d.Careers.Save(ctx, s, CareersSettings{Slug: in.Body.Slug, Enabled: in.Body.Enabled, Company: in.Body.Company, Intro: in.Body.Intro})
+		if err != nil {
+			return nil, hiringError(err)
+		}
+		return &careersSettingsOutput{Body: v}, nil
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "recordJobExemption", Method: http.MethodPost, Path: "/v1/requisitions/{id}/job-post/exemption", Tags: []string{"Hiring"}, Summary: "Record an exemption from the advert",

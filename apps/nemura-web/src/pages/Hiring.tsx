@@ -27,6 +27,11 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
   const [body, setBody] = useState("");
   const [requirement, setRequirement] = useState("");
   const [advert, setAdvert] = useState("");
+  const [closedOn, setClosedOn] = useState("");
+  const [change, setChange] = useState<"occupation" | "salary" | "vacancies" | "uen">("salary");
+  const [renewOn, setRenewOn] = useState("");
+  const [renewNote, setRenewNote] = useState("");
+  const [page, setPage] = useState({ slug: "", company: "", intro: "", enabled: false });
   const [kind, setKind] = useState<(typeof exemptions)[number]>("fewer_than_10_employees");
   const [exNote, setExNote] = useState("");
   const [found, setFound] = useState<Finding[]>([]);
@@ -36,6 +41,7 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
   const load = () => {
     if (!allowed) return;
     api.GET("/v1/requisitions").then(({ data, error }) => (setOff(!data && !!error), setList(data?.requisitions ?? [])), () => setList([]));
+    api.GET("/v1/careers-page").then(({ data }) => data && setPage({ slug: data.slug ?? "", company: data.company ?? "", intro: data.intro ?? "", enabled: data.enabled }), () => undefined);
     if (recruiter) api.GET("/v1/people").then(({ data }) => setPeople(data?.people ?? []), () => setPeople([]));
   };
   useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -90,6 +96,8 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
                     <span className="fy-secondary">{t("hiring.postState", { state: t(`hiring.post.${post(r)!.state}`), on: post(r)!.published_on ?? "" })}</span>
                   )}
                   {post(r)?.advert_posted_on && <span className="fy-secondary">{t("hiring.advertOn", { on: post(r)!.advert_posted_on ?? "", from: post(r)!.offer_from ?? "" })}</span>}
+                  {post(r)?.advert_usable_until && <span className="fy-secondary">{t("hiring.advertUsable", { until: post(r)!.advert_usable_until ?? "" })}</span>}
+                  {(post(r)?.advert_renewals ?? 0) > 0 && <span className="fy-secondary">{t("hiring.advertRenewals", { n: String(post(r)!.advert_renewals) })}</span>}
                   {post(r)?.exemption && <span className="fy-secondary">{t("hiring.exemptedBy", { kind: t(`hiring.exemption.${post(r)!.exemption}`), note: post(r)!.exemption_note ?? "" })}</span>}
                   {r.pass_needed && post(r)?.offer_blocked && <span className="fy-chip">{t("hiring.offerBlocked")}</span>}
                   {recruiter && (r.state === "requested" || r.state === "approved") && <button className="fy-btn fy-btn--secondary fy-btn--sm" type="button" aria-expanded={open === r.id} onClick={() => pick(r)}>{t("hiring.workOn", { title: r.title })}</button>}
@@ -117,11 +125,22 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
                         </div>
                       )}
                       {post(r) && post(r)!.state !== "closed" && r.pass_needed && !post(r)!.advert_posted_on && (
-                        <form className="fy-stack fy-stack--2" aria-label={t("hiring.advertForm")} onSubmit={async (e) => { e.preventDefault(); done((await api.POST("/v1/requisitions/{id}/job-post/advert", { params: { path: { id: r.id } }, body: { posted_on: advert } })).error, t("hiring.advertSaved")); }}>
+                        <form className="fy-stack fy-stack--2" aria-label={t("hiring.advertForm")} onSubmit={async (e) => { e.preventDefault(); done((await api.POST("/v1/requisitions/{id}/job-post/advert", { params: { path: { id: r.id } }, body: { posted_on: advert, closed_on: closedOn || undefined } })).error, t("hiring.advertSaved")); }}>
                           <h3 className="fy-h3">{t("hiring.advertForm")}</h3>
                           <p className="fy-secondary">{t("hiring.advertLead")}</p>
                           <label className="fy-field"><span>{t("hiring.advertDay")}</span><input className="fy-input" type="date" required value={advert} onChange={(e) => setAdvert(e.target.value)} /></label>
+                          <label className="fy-field"><span>{t("hiring.advertClosed")}</span><input className="fy-input" type="date" value={closedOn} onChange={(e) => setClosedOn(e.target.value)} /></label>
                           <button className="fy-btn fy-btn--secondary" type="submit">{t("hiring.recordAdvert")}</button>
+                        </form>
+                      )}
+                      {post(r) && post(r)!.state !== "closed" && r.pass_needed && post(r)!.advert_posted_on && (
+                        <form className="fy-stack fy-stack--2" aria-label={t("hiring.renewForm")} onSubmit={async (e) => { e.preventDefault(); done((await api.POST("/v1/requisitions/{id}/job-post/advert/renewal", { params: { path: { id: r.id } }, body: { change, posted_on: renewOn, note: renewNote || undefined } })).error, t("hiring.renewed")); }}>
+                          <h3 className="fy-h3">{t("hiring.renewForm")}</h3>
+                          <p className="fy-secondary">{t("hiring.renewLead")}</p>
+                          <label className="fy-field"><span>{t("hiring.renewChange")}</span><select className="fy-input" value={change} onChange={(e) => setChange(e.target.value as typeof change)}>{(["occupation", "salary", "vacancies", "uen"] as const).map((k) => <option key={k} value={k}>{t(`hiring.change.${k}`)}</option>)}</select></label>
+                          <label className="fy-field"><span>{t("hiring.renewDay")}</span><input className="fy-input" type="date" required value={renewOn} onChange={(e) => setRenewOn(e.target.value)} /></label>
+                          <label className="fy-field"><span>{t("hiring.renewNote")}</span><input className="fy-input" maxLength={500} value={renewNote} onChange={(e) => setRenewNote(e.target.value)} /></label>
+                          <button className="fy-btn fy-btn--secondary" type="submit">{t("hiring.renew")}</button>
                         </form>
                       )}
                       {post(r) && post(r)!.state !== "closed" && r.pass_needed && !post(r)!.exemption && (
@@ -138,6 +157,22 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
                 </li>
               ))}
             </ul>
+            {!off && (
+              <form className="fy-stack fy-stack--2" aria-label={t("careers.settings")} onSubmit={async (e) => { e.preventDefault(); done((await api.PUT("/v1/careers-page", { body: { slug: page.slug, company: page.company, intro: page.intro || undefined, enabled: page.enabled } })).error, t("careers.saved")); }}>
+                <h2 className="fy-h2">{t("careers.settings")}</h2>
+                <p className="fy-secondary">{t("careers.lead")}</p>
+                {page.slug && page.enabled && <p className="fy-secondary">{t("careers.at", { path: `/careers/${page.slug}` })}</p>}
+                {recruiter && (
+                  <>
+                    <label className="fy-field"><span>{t("careers.slug")}</span><input className="fy-input" required minLength={3} maxLength={40} pattern="[a-z0-9]+(-[a-z0-9]+)*" value={page.slug} onChange={(e) => setPage({ ...page, slug: e.target.value })} /></label>
+                    <label className="fy-field"><span>{t("careers.company")}</span><input className="fy-input" required maxLength={120} value={page.company} onChange={(e) => setPage({ ...page, company: e.target.value })} /></label>
+                    <label className="fy-field"><span>{t("careers.intro")}</span><textarea className="fy-input" maxLength={1000} value={page.intro} onChange={(e) => setPage({ ...page, intro: e.target.value })} /></label>
+                    <label className="fy-field fy-row" style={{ gap: "var(--space-2)" }}><input type="checkbox" checked={page.enabled} onChange={(e) => setPage({ ...page, enabled: e.target.checked })} /><span>{t("careers.enabled")}</span></label>
+                    <button className="fy-btn fy-btn--secondary" type="submit">{t("careers.save")}</button>
+                  </>
+                )}
+              </form>
+            )}
             {recruiter && !off && (
               <form className="fy-stack fy-stack--2" onSubmit={ask} aria-label={t("hiring.ask")}>
                 <h2 className="fy-h2">{t("hiring.ask")}</h2>

@@ -164,3 +164,35 @@ func CheckPost(title, body string) error {
 	}
 	return nil
 }
+
+// AdvertChanges are the changes that need a new advert (MOM, NM-REC-02): the employer's UEN, the occupation, the salary or the number of vacancies.
+var AdvertChanges = map[string]string{"occupation": "the occupation", "salary": "the salary", "vacancies": "the number of vacancies", "uen": "the employer's UEN"}
+
+// CheckAdvertChange refuses a renewal that names no known change or no way to tell what changed.
+func CheckAdvertChange(kind, note string) error {
+	if _, ok := AdvertChanges[kind]; !ok {
+		return invalid("Choose what changed: occupation, salary, vacancies or uen.")
+	}
+	if n := len([]rune(strings.TrimSpace(note))); n > 500 {
+		return invalid("The note is at most 500 characters.")
+	}
+	return nil
+}
+
+// AdvertStaleMonths is how long an advert may have been closed or expired before it can no longer be used (NM-REC-02): more than 3 months.
+const AdvertStaleMonths = 3
+
+// AdvertUsable says whether an advert that came down on closedOn can still be relied on as of asOf: one closed or expired for more than 3 months cannot. An advert not known to have come down is usable.
+func AdvertUsable(closedOn *time.Time, asOf time.Time) bool {
+	return closedOn == nil || !asOf.After(closedOn.AddDate(0, AdvertStaleMonths, 0))
+}
+
+var slugForm = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{1,38})[a-z0-9]$`)
+
+// CheckSlug refuses a careers page address that is not 3 to 40 lower-case letters, digits and hyphens, not starting or ending with a hyphen.
+func CheckSlug(slug string) error {
+	if !slugForm.MatchString(slug) || strings.Contains(slug, "--") {
+		return invalid("The address is 3 to 40 lower-case letters, digits and single hyphens, such as acme-careers.")
+	}
+	return nil
+}

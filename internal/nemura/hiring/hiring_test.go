@@ -1,6 +1,7 @@
 package hiring_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -98,5 +99,33 @@ func TestAnOfferForAPassRoleWaitsForTheFourteenDaysOrARecordedExemption(t *testi
 	}
 	if hiring.CheckExemption("fewer_than_10_employees", "Headcount 7 on 5 Oct") != nil || hiring.CheckExemption("made_up", "x") == nil || hiring.CheckExemption("transferee", " ") == nil {
 		t.Error("an exemption is a known kind with its evidence")
+	}
+}
+
+// An advert that came down more than 3 months ago cannot be used; on the 3-month day it still can. A renewal names one of the four changes (NM-REC-02).
+// req: NM-REC-02
+func TestAnAdvertClosedOverThreeMonthsAgoCannotBeUsedAndARenewalNamesAChange(t *testing.T) {
+	closed := time.Date(2026, 10, 20, 0, 0, 0, 0, time.UTC)
+	for asOf, want := range map[string]bool{"2026-10-21": true, "2027-01-20": true, "2027-01-21": false, "2027-06-01": false} {
+		d, _ := time.Parse(time.DateOnly, asOf)
+		if got := hiring.AdvertUsable(&closed, d); got != want {
+			t.Errorf("as of %s: %v, want %v", asOf, got, want)
+		}
+	}
+	if !hiring.AdvertUsable(nil, closed) {
+		t.Error("an advert not known to have come down is usable")
+	}
+	for _, kind := range []string{"occupation", "salary", "vacancies", "uen"} {
+		if err := hiring.CheckAdvertChange(kind, ""); err != nil {
+			t.Errorf("%s: %v", kind, err)
+		}
+	}
+	if hiring.CheckAdvertChange("colour", "") == nil || hiring.CheckAdvertChange("salary", strings.Repeat("x", 501)) == nil {
+		t.Error("an unknown change or a long note")
+	}
+	for slug, ok := range map[string]bool{"acme-careers": true, "ab": false, "Acme": false, "-acme": false, "acme-": false, "acme--co": false, "a_b_c": false, "abc": true} {
+		if got := hiring.CheckSlug(slug) == nil; got != ok {
+			t.Errorf("slug %q: %v, want %v", slug, got, ok)
+		}
 	}
 }

@@ -236,6 +236,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/careers-page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The organisation's careers page settings
+         * @description PRD-002 NM-REC-02. The address, whether the page is on, the company's name and the words above the list. The Recruiter, the HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["readCareersSettings"];
+        /**
+         * Choose the careers page's address and switch it on or off
+         * @description PRD-002 NM-REC-02. Sets the address (3 to 40 lower-case letters, digits and single hyphens, one that no other company uses), the company's name and the words above the list, and whether anyone can read the page at /careers/<address>. What the page shows is only each published post's title, team, text and day. The Recruiter, the HR administrator and the Owner. It is audited.
+         */
+        put: operations["saveCareersSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/careers/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a company's careers page
+         * @description PRD-002 NM-REC-02. With no sign-in: the company's name, its words and each published, approved job post that is open (title, team, text, day published). No salary and no person are shown. An address that is unknown or whose page is switched off answers found false, alike. At most 600 reads a minute in all, counted across every API instance (NM_RATE_LIMITED). It changes nothing and is on the never-list for the AI and MCP surfaces.
+         */
+        get: operations["readCareersPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/checks": {
         parameters: {
             query?: never;
@@ -3456,6 +3500,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/requisitions/{id}/job-post/advert/renewal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a new advert after a material change
+         * @description PRD-002 NM-REC-02. A change of the occupation, the salary, the number of vacancies or the employer's UEN needs a new advert, and its 14 consecutive days start again. Records the new advert's day, archives the advert it replaces with what changed, and counts the renewal. Only a post that has an advert recorded and is not closed; the new day is after the old one. The Recruiter, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["renewJobAdvert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/requisitions/{id}/job-post/closing": {
         parameters: {
             query?: never;
@@ -4093,6 +4157,12 @@ export interface components {
         AdvertInputBody: {
             /**
              * Format: date
+             * @description The day the advert came down or expired, when it already has: an advert closed more than 3 months ago cannot be used (NM_HIRING_INVALID).
+             * @example 2026-10-19
+             */
+            closed_on?: string;
+            /**
+             * Format: date
              * @description The day the advert went up on MyCareersFuture.
              * @example 2026-10-05
              */
@@ -4267,6 +4337,103 @@ export interface components {
              *     ]
              */
             weekdays: number[] | null;
+        };
+        CareersPost: {
+            /**
+             * @description The post's text.
+             * @example You will analyse data and build models.
+             */
+            body: string;
+            /**
+             * @description The team.
+             * @example Engineering
+             */
+            department: string;
+            /**
+             * Format: uuid
+             * @description The post.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3b01
+             */
+            id: string;
+            /**
+             * Format: date
+             * @description The day it was published.
+             * @example 2026-10-05
+             */
+            published_on: string;
+            /**
+             * @description The post's title.
+             * @example Data scientist
+             */
+            title: string;
+        };
+        CareersSaveInputBody: {
+            /**
+             * @description The company's name shown on the page.
+             * @example Acme Pte. Ltd.
+             */
+            company: string;
+            /**
+             * @description Whether anyone can read the page.
+             * @example true
+             */
+            enabled: boolean;
+            /**
+             * @description The words above the list.
+             * @example We are a small team building tools for accountants.
+             */
+            intro?: string;
+            /**
+             * @description 3 to 40 lower-case letters, digits and single hyphens.
+             * @example acme-careers
+             */
+            slug: string;
+        };
+        CareersSettings: {
+            /**
+             * @description The company's name shown on the page.
+             * @example Acme Pte. Ltd.
+             */
+            company?: string;
+            /**
+             * @description False until an address was chosen.
+             * @example true
+             */
+            configured: boolean;
+            /**
+             * @description Whether anyone can read the page.
+             * @example true
+             */
+            enabled: boolean;
+            /**
+             * @description The words above the list.
+             * @example We are a small team building tools for accountants.
+             */
+            intro?: string;
+            /**
+             * @description The address: the page is at /careers/<slug>.
+             * @example acme-careers
+             */
+            slug?: string;
+        };
+        CareersView: {
+            /**
+             * @description The company's name.
+             * @example Acme Pte. Ltd.
+             */
+            company?: string;
+            /**
+             * @description False for an address that is unknown or whose page is switched off, alike.
+             * @example true
+             */
+            found: boolean;
+            /**
+             * @description The words above the list.
+             * @example We are a small team building tools for accountants.
+             */
+            intro?: string;
+            /** @description The published posts, the newest first. */
+            posts: components["schemas"]["CareersPost"][];
         };
         CarryOutputBody: {
             /**
@@ -6164,6 +6331,12 @@ export interface components {
         JobPost: {
             /**
              * Format: date
+             * @description The day the advert came down or expired, when it was recorded.
+             * @example 2026-10-19
+             */
+            advert_closed_on?: string;
+            /**
+             * Format: date
              * @description The day the advert went up on MyCareersFuture, posted by a person: the 14 days run from it.
              * @example 2026-10-05
              */
@@ -6173,6 +6346,18 @@ export interface components {
              * @example MCF-2026-0042
              */
             advert_reference?: string;
+            /**
+             * Format: int64
+             * @description How many times the advert was replaced after a material change; the replaced adverts are kept as evidence.
+             * @example 0
+             */
+            advert_renewals: number;
+            /**
+             * Format: date
+             * @description The last day the advert can be relied on: 3 months after it came down.
+             * @example 2027-01-19
+             */
+            advert_usable_until?: string;
             /**
              * @description The post's text.
              * @example You will analyse data and build models.
@@ -9534,6 +9719,30 @@ export interface components {
              */
             id: string;
         };
+        RenewalInputBody: {
+            /**
+             * @description What changed: the occupation, the salary, the number of vacancies or the employer's UEN, each of which needs a new advert.
+             * @example salary
+             * @enum {string}
+             */
+            change: "occupation" | "salary" | "vacancies" | "uen";
+            /**
+             * @description What the change was.
+             * @example The top of the range rose to 9,000.
+             */
+            note?: string;
+            /**
+             * Format: date
+             * @description The day the new advert went up on MyCareersFuture.
+             * @example 2026-11-02
+             */
+            posted_on: string;
+            /**
+             * @description The new advert's reference.
+             * @example MCF-2026-0099
+             */
+            reference?: string;
+        };
         ReplyInputBody: {
             /**
              * @description The answer.
@@ -12187,6 +12396,228 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    readCareersSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareersSettings"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    saveCareersSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CareersSaveInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareersSettings"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    readCareersPage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The company's careers address. */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareersView"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -25905,6 +26336,99 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AdvertInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Requisition"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    renewJobAdvert: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The requisition. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenewalInputBody"];
             };
         };
         responses: {
