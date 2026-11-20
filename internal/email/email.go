@@ -152,6 +152,9 @@ const (
 	// PurposeSecretaryReminder is a reminder the company secretary assistant drafted and a person approved (Appendix E
 	// sec.draft_reminder), to members, from the notifications sender. Only the executor queues one.
 	PurposeSecretaryReminder = "secretary_reminder"
+	// PurposeInvitation tells a person they were invited to the organisation (FR-ADM-01), from the notifications sender. It never
+	// carries the invitation's code: that is given in person or on a call.
+	PurposeInvitation = "invitation"
 )
 
 // fromOf is the address a message of purpose is sent from: the organisation's sender in force for it, or the

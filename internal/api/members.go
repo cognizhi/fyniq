@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"reflect"
 	"slices"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/member"
 	"github.com/cognizhi/fyniq/internal/domain/team"
+	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -94,6 +96,7 @@ type NewMemberInvitation struct {
 	Roles              []RoleName `json:"roles" minItems:"1" maxItems:"16" doc:"The roles they will hold (PRD-001 §6.2)."`
 	RolesExpireAt      *time.Time `json:"roles_expire_at,omitempty" doc:"For an external user, such as an auditor: when their roles end. Never on the Owner role." example:"2027-03-31T00:00:00Z"`
 	DepartmentValueIDs []string   `json:"department_value_ids,omitempty" maxItems:"20" doc:"For an invitation that gives the Approver role: the department values to narrow it to (FR-ADM-01, rev 0.253), fixed from the first minute. Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another set of roles is refused."`
+	Email              string     `json:"email,omitempty" format:"email" maxLength:"254" doc:"Where to tell the person they were invited (FR-ADM-01, rev 0.421): an email that names the organisation and says to ask for the one-time code, which is never in the email. It is not kept: it is used to send that one message." example:"weiling@example.sg"`
 }
 
 // TransformSchema implements huma.SchemaTransformer: an example for each department value (NFR-API-01).
@@ -569,6 +572,9 @@ func registerMembers(a *API) {
 						rs[i] = r
 					}
 					execute := map[string]any{"display_name": name, "roles": rs, "roles_expire_at": expires, "code_hash": hex.EncodeToString(hash)}
+					if email := strings.TrimSpace(b.Email); email != "" {
+						execute["email"] = email // kept with the request until it is approved, then used once
+					}
 					diff := []ApprovalDiff{{Field: "display_name", After: name}, {Field: "roles", After: strings.Join(roles, ", ")}}
 					if len(departments) > 0 { // the scope is part of what is signed
 						ids := make([]any, len(departments))
@@ -588,6 +594,9 @@ func registerMembers(a *API) {
 				inv, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: name, Roles: roles,
 					RolesExpireAt: b.RolesExpireAt, ExpiresAt: now.Add(InvitationTTL), CreatedAt: now, DepartmentValues: departments})
 				if err != nil {
+					return err
+				}
+				if err := a.mailInvitation(ctx, u, b.Email, name, inv.ExpiresAt); err != nil {
 					return err
 				}
 				out.Body = MemberInvitationCode{MemberInvitation: invitationOf(inv), Code: code}
@@ -914,4 +923,25 @@ func idStrings(ids []uuid.UUID) []string {
 		out[i] = id.String()
 	}
 	return out
+}
+
+// mailInvitation tells the person invited that they were (FR-ADM-01): the organisation's name and how to join, never the code, which
+// the inviter gives in person or on a call. Nothing is sent without an address; the address is not kept.
+func (a *API) mailInvitation(ctx context.Context, u storage.UnitOfWork, to, name string, expires time.Time) error {
+	to = strings.TrimSpace(to)
+	if to == "" || a.deps.Outbox == nil {
+		return nil
+	}
+	addr, err := mail.ParseAddress(to)
+	if err != nil || strings.ContainsAny(to, "\r\n") {
+		return invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.email", Message: "is not an email address", Fix: "Enter an address such as name@example.sg, or leave it out"}})
+	}
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return err
+	}
+	text := fmt.Sprintf("Hello %s,\n\nYou were invited to join %s on Fyniq. Ask the person who invited you for your one-time invitation code: it is given in person or on a call, "+
+		"never by email. Then sign in to Fyniq and choose \"Join with an invitation\".\n\nThe invitation works until %s.\n", name, o.Name, expires.UTC().Format("2 Jan 2006"))
+	_, err = email.Queue(ctx, *a.deps.Outbox, u, o.ID, email.PurposeInvitation, addr.Address, "You were invited to "+o.Name+" on Fyniq", text)
+	return err
 }

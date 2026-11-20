@@ -439,6 +439,7 @@ describe("A bill", () => {
       },
     });
     const { container } = renderPage(BillPage, { path: "/purchases/bills/b1", route: "/purchases/bills/$billId", session: accountant, organisation: standard });
+    fireEvent.click(await screen.findByRole("tab", { name: "Attachments" }));
     expect(await screen.findByText("No files are attached.")).toBeTruthy();
     expect(screen.getByText(/The supplier's invoice, and any other file the bill rests on/)).toBeTruthy();
     fireEvent.change(screen.getByLabelText("File"), { target: { files: [new File(["%PDF"], "AU-1182.pdf", { type: "application/pdf" })] } });
@@ -488,9 +489,11 @@ describe("A bill", () => {
     });
     const { container } = renderPage(BillPage, { path: "/purchases/bills/b1", route: "/purchases/bills/$billId", session: accountant, organisation: standard });
     expect(await screen.findByText(/differs by 0.01 SGD from the recomputation/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: "Ledger impact" }));
     expect(screen.getByRole("heading", { name: "Ledger impact" })).toBeTruthy();
     expect(screen.getByText(/This bill adds SGD 1,090.00 to what we owe Atlassian Pty Ltd/)).toBeTruthy();
     await noViolations(container);
+    fireEvent.click(screen.getByRole("tab", { name: "Details" }));
     fireEvent.click(screen.getByRole("button", { name: "Post" }));
     const ask = await screen.findByRole("button", { name: "Ask for approval" });
     expect(screen.getByText("Another person approves this bill")).toBeTruthy();

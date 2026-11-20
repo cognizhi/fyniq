@@ -365,7 +365,12 @@ var matrixBudgets = map[string]func(e *env, tok string) (response, func() bool){
 	"replaceBudget": func(e *env, tok string) (response, func() bool) {
 		f := matrixBudget(e)
 		was := matrixBudgetState(e, f)
-		r := e.call(http.MethodPut, "/v1/budgets/"+f.budget, tok, matrixBudgetBody(e, f), "If-Match", "*", "Prefer", "return=preview")
+		body := matrixBudgetBody(e, f)
+		r := e.call(http.MethodPut, "/v1/budgets/"+f.budget, tok, body, "If-Match", "*", "Prefer", "return=preview")
+		if r.Status == http.StatusUnprocessableEntity && strings.Contains(r.Raw, "BUDGET-10") { // a department's budget holder plans their department's lines only: none here
+			body["lines"] = []any{}
+			r = e.call(http.MethodPut, "/v1/budgets/"+f.budget, tok, body, "If-Match", "*", "Prefer", "return=preview")
+		}
 		return r, func() bool { return matrixBudgetState(e, f) == was }
 	},
 	"copyBudget": func(e *env, tok string) (response, func() bool) {

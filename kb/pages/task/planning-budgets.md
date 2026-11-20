@@ -4,7 +4,7 @@ type: task
 title: Budgets and Budget vs Actual
 summary: A year's budget by account and month in versions, copied, imported, approved and locked, and Budget vs Actual
 sources:
-  - docs/user-guide/budgets.md sha256:e77eb289762777c4fc6611904ed38b8e0422c84df344df205bd10ec98aa88a73
+  - docs/user-guide/budgets.md sha256:85340ab0aa9324033b6eb8d602ff6bc328a45b12ba05d8f543473b6c9f5912ff
 data_class: general
 taint: trusted
 status: draft
@@ -33,7 +33,7 @@ aliases:
 
 ## Start, copy or import one
 
-- **New budget**: a name and a financial year; then **Add a line** per account, or account and dimension value, with each month's amount, signed as the profit and loss shows them (income and costs both above zero); **Save** works the totals out. Only income and expense accounts that take postings, with at most one value of each dimension.
+- **New budget**: a name and a financial year; then **Add a line** per account, or account and dimension value, with each month's amount, signed as the profit and loss shows them (income and costs both above zero); **Save** works the totals out. Only income and expense accounts that take postings, with at most one value of each dimension.; in Expert mode, **Enter lines in a grid** opens a spreadsheet-like grid to type or paste an account code and each month's amount (a paste is shown before it is set) and adds the ready rows.
 - **Copy with growth**: the version shown into a new draft, each amount × (1 + growth) rounded once to the cent (0.05 for 5% more, −0.1 for 10% less). **Original** for another year with as many months; **Revised** for a new version of the same year, revising its recorded budget.
 - **Import XLSX**: the first sheet of an .xlsx workbook, a header row of **Account**, a column per dimension by its name and a column per month (such as 2027-01), then a row per line with the account's code, each dimension's value code and the amounts. Nothing is drafted until every row is right; each problem says its row, column and how to fix it.
 

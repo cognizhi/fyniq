@@ -4958,7 +4958,7 @@ email_message | email_message_lengths | CHECK ((((length(recipient) >= 3) AND (l
 email_message | email_message_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 email_message | email_message_organisation_id_not_null | NOT NULL organisation_id
 email_message | email_message_pkey | PRIMARY KEY (organisation_id, id)
-email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text, 'notification'::text, 'digest'::text, 'invoice'::text, 'quote'::text, 'reminder'::text, 'statement'::text, 'remittance'::text, 'secretary_reminder'::text])))
+email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text, 'notification'::text, 'digest'::text, 'invoice'::text, 'quote'::text, 'reminder'::text, 'statement'::text, 'remittance'::text, 'secretary_reminder'::text, 'invitation'::text])))
 email_message | email_message_purpose_not_null | NOT NULL purpose
 email_message | email_message_recipient_not_null | NOT NULL recipient
 email_message | email_message_remittance_send | TRIGGER DEFERRABLE INITIALLY DEFERRED

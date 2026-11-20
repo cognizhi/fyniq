@@ -33837,7 +33837,7 @@ export interface components {
              * @example test
              * @enum {string}
              */
-            purpose: "test" | "sign_in_alert" | "notification" | "digest" | "invoice" | "quote" | "reminder" | "statement" | "remittance" | "secretary_reminder";
+            purpose: "test" | "sign_in_alert" | "notification" | "digest" | "invoice" | "quote" | "reminder" | "statement" | "remittance" | "secretary_reminder" | "invitation";
             /**
              * @description Who it goes to.
              * @example accounts@example.com
@@ -44117,6 +44117,12 @@ export interface components {
              * @example Wei Ling Tan
              */
             display_name: string;
+            /**
+             * Format: email
+             * @description Where to tell the person they were invited (FR-ADM-01, rev 0.421): an email that names the organisation and says to ask for the one-time code, which is never in the email. It is not kept: it is used to send that one message.
+             * @example weiling@example.sg
+             */
+            email?: string;
             /** @description The roles they will hold (PRD-001 §6.2). */
             roles: string[] | null;
             /**
@@ -160250,7 +160256,7 @@ export interface operations {
                 /** @description Only messages with this outcome. */
                 status?: "queued" | "accepted" | "failed" | "unknown";
                 /** @description Only messages of this purpose. */
-                purpose?: "test" | "sign_in_alert" | "notification" | "digest" | "invoice" | "quote" | "reminder" | "statement" | "remittance" | "secretary_reminder";
+                purpose?: "test" | "sign_in_alert" | "notification" | "digest" | "invoice" | "quote" | "reminder" | "statement" | "remittance" | "secretary_reminder" | "invitation";
             };
             header?: never;
             path?: never;

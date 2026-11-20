@@ -35,7 +35,8 @@ joins saves those approvals.
 2. Enter the person's name and choose their roles. For someone from outside the company, such as an
    auditor, set the date their roles end. The Owner role never ends. If you choose **Approver**, tick the
    departments it acts for (see "Narrow an Approver to departments"); the other Owner approves them with the invitation.
-3. Select **Create invitation**, and confirm it's you if Fyniq asks. The code is shown once: copy
+3. Optionally enter **Their email**: Fyniq tells them they were invited and to ask you for the code. The code is never in the email, and the address is not kept (when the invitation waits for another Owner, the email goes once it is approved).
+4. Select **Create invitation**, and confirm it's you if Fyniq asks. The code is shown once: copy
    it and give it to the person in person or on a call. It works once and stops working after
    7 days.
 

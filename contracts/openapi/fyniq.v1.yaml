@@ -23836,6 +23836,7 @@ components:
             - statement
             - remittance
             - secretary_reminder
+            - invitation
           examples:
             - test
           type: string
@@ -38647,6 +38648,13 @@ components:
           examples:
             - Wei Ling Tan
           maxLength: 200
+          type: string
+        email:
+          description: "Where to tell the person they were invited (FR-ADM-01, rev 0.421): an email that names the organisation and says to ask for the one-time code, which is never in the email. It is not kept: it is used to send that one message."
+          examples:
+            - weiling@example.sg
+          format: email
+          maxLength: 254
           type: string
         roles:
           description: The roles they will hold (PRD-001 §6.2).
@@ -194827,6 +194835,7 @@ paths:
               - statement
               - remittance
               - secretary_reminder
+              - invitation
             examples:
               - notification
             type: string

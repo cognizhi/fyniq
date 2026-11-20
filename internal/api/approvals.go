@@ -1878,7 +1878,10 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		now := a.deps.Clock.Now()
 		_, err = u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: text("display_name"), Roles: roles,
 			RolesExpireAt: expires, ExpiresAt: now.Add(InvitationTTL), CreatedAt: now, DepartmentValues: departments})
-		return err
+		if err != nil {
+			return err
+		}
+		return a.mailInvitation(ctx, u, text("email"), text("display_name"), now.Add(InvitationTTL))
 	case approval.OpPolicyChange:
 		c, err := policyChangeOf(x)
 		if err != nil {

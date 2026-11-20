@@ -800,4 +800,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | shell.shortcuts: working in a grid
 
+## [2026-11-20] compile | members.invite, records.comments, accounting.journals: invitation email, grid, record tabs
+
 ## [2026-11-20] compile | payroll-approval.md -> nemura.payroll-approval (approval with proof when linked, p1-nemura-fyniq-link 3.1)
+
+## [2026-11-20] compile | planning.budgets: entering lines in a grid

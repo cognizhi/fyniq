@@ -5,6 +5,7 @@ import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
 import { CommentsOnDemand } from "../../components/RecordComments";
+import { RecordFrame } from "../../components/RecordFrame";
 import { Refusal } from "../../components/Refusal";
 import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
@@ -600,345 +601,357 @@ export function BillPage() {
   const described = (k: string) => (errors[k] ? `${id}-${k}-error` : undefined);
 
   return (
-    <div className="fy-page fy-enter">
-      <div className="fy-pagehead">
-        <div className="fy-pagehead__text">
-          <nav className="fy-breadcrumb" aria-label="Breadcrumb">
-            <span>Purchases</span>
-            <span aria-hidden="true">›</span>
-            <Link to="/purchases/bills">Bills</Link>
-          </nav>
-          <div className="fy-row fy-row--wrap">
-            <h1 className="fy-h1">{title}</h1>
-            {bill && <StateChips states={bill.states} credit={credit} />}
-          </div>
-          {bill && (
-            <p className="fy-secondary">
-              {bill.number ? `${bill.number} · ` : ""}
-              {bill.date ? `Dated ${date(bill.date)}` : "No date"}
-              {bill.due_date && !credit ? ` · due ${date(bill.due_date)}` : ""}
-              {bill.prepared_by ? ` · prepared by ${who(bill.prepared_by)}` : ""}
-              {bill.posted_by ? ` · posted by ${who(bill.posted_by)}` : ""}
-              {open ? ` · ${formatAmount(open.amount)} ${open.currency} ${credit ? "left" : "open"}` : ""}
-            </p>
-          )}
-        </div>
-        {bill && billId && (
-          <div className="fy-pagehead__actions">
-            <AskAboutThis context={{ kind: credit ? "vendor_credit" : "bill", id: billId, label: title.slice(0, 200) }} />
-          </div>
-        )}
-      </div>
-      <ReviewBanner screen={isNew || bill?.status === "draft" ? "bill-editor" : "bill-record"} />
-      {billId && (bill?.status === "posted" || bill?.status === "reversed") && roles.some((r) => auditReaders.includes(r)) && <PurgedPostings recordId={billId} />}
-      {needsApproval && problem && (
-        <div className="fy-banner fy-banner--info" role="note">
-          <Icon of={UserCheck} size={20} />
-          <div className="fy-banner__text">
-            <strong>Another person approves this bill</strong>
-            <span className="fy-small">{problem.detail} The one who prepared it never approves it.</span>
-          </div>
-          <div className="fy-banner__action">
-            <Button size="sm" variant="primary" type="button" onClick={() => void askPost()} disabled={busy} title={h("bill.ask-approval").tooltip}>
-              <Icon of={UserCheck} />
-              {h("bill.ask-approval").label}
-            </Button>
-          </div>
-        </div>
-      )}
-      {problem && !needsApproval && <Refusal problem={problem} title={failed} />}
-      {status && (
-        <p className="fy-small" role="status">
-          {status}
-        </p>
-      )}
-      {bill?.approval_asked && (
-        <div className="fy-banner fy-banner--info" role="status">
-          <Icon of={UserCheck} size={20} />
-          <div className="fy-banner__text">
-            <span className="fy-strong">Awaiting approval</span>
-            <span className="fy-small">
-              Another person approves it in the <Link to="/inbox">Inbox</Link>; it posts as they approve it.
-            </span>
-          </div>
-        </div>
-      )}
-      {bill && !form && !editing && <Checks checks={bill.checks ?? []} billId={bill.id} posted={bill.status !== "draft"} />}
-      {bill && bill.status !== "draft" && !form && !editing && (
-        <PaymentPlanCard
-          bill={bill}
-          mayPlan={mayPrepare}
-          onDone={(message) => {
-            void refresh().then(() => setStatus(message));
-          }}
-        />
-      )}
-      {bill && !form && !editing && (
-        <WithholdingCard
-          bill={bill}
-          base={base}
-          mayRecord={mayPrepare}
-          onDone={(message) => {
-            void refresh().then(() => setStatus(message));
-          }}
-        />
-      )}
-      {bill && bill.status !== "draft" && !editing && (
-        <Payments
-          bill={bill}
-          mayVoid={mayPost}
-          ask={founder}
-          onDone={(message) => {
-            void refresh().then(() => setStatus(message));
-          }}
-        />
-      )}
-      <form className="fy-stack fy-stack--6" data-enter="next" onSubmit={(e) => void save(e)} noValidate>
-        <section className="fy-card" aria-labelledby={`${id}-supp`}>
-          <div className="fy-card__head">
-            <h2 className="fy-h3" id={`${id}-supp`}>
-              Supplier and dates
-            </h2>
-          </div>
-          <div className="fy-card__body fy-form fy-form--2">
-            <div className="fy-field fy-field--full">
-              <label className="fy-label" htmlFor={`${id}-supplier`}>
-                Supplier
-              </label>
-              <select className="fy-select" id={`${id}-supplier`} value={f.supplier_id} disabled={!editable} onChange={(e) => set({ supplier_id: e.target.value })}>
-                <option value="">Choose the supplier</option>
-                {(vendors.data ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.legal_name}
-                  </option>
-                ))}
-              </select>
-              <span className="fy-help">A contact marked as a vendor. Add one under Contacts.</span>
+    <>
+      <RecordFrame
+        header={
+          <>
+          <div className="fy-pagehead">
+            <div className="fy-pagehead__text">
+              <nav className="fy-breadcrumb" aria-label="Breadcrumb">
+                <span>Purchases</span>
+                <span aria-hidden="true">›</span>
+                <Link to="/purchases/bills">Bills</Link>
+              </nav>
+              <div className="fy-row fy-row--wrap">
+                <h1 className="fy-h1">{title}</h1>
+                {bill && <StateChips states={bill.states} credit={credit} />}
+              </div>
+              {bill && (
+                <p className="fy-secondary">
+                  {bill.number ? `${bill.number} · ` : ""}
+                  {bill.date ? `Dated ${date(bill.date)}` : "No date"}
+                  {bill.due_date && !credit ? ` · due ${date(bill.due_date)}` : ""}
+                  {bill.prepared_by ? ` · prepared by ${who(bill.prepared_by)}` : ""}
+                  {bill.posted_by ? ` · posted by ${who(bill.posted_by)}` : ""}
+                  {open ? ` · ${formatAmount(open.amount)} ${open.currency} ${credit ? "left" : "open"}` : ""}
+                </p>
+              )}
             </div>
-            {askNature && (
-              <div className="fy-field fy-field--full">
-                <label className="fy-label" htmlFor={`${id}-nature`}>
-                  {h("bill.nature").label}
-                </label>
-                <select
-                  className="fy-select"
-                  id={`${id}-nature`}
-                  value={f.nature}
-                  disabled={!editable}
-                  onChange={(e) => set({ nature: e.target.value })}
-                  aria-describedby={`${id}-nature-help`}
-                >
-                  <option value="">Choose what the payment is for</option>
-                  {natures.map(([v, label]) => (
-                    <option key={v} value={v}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                <span className="fy-help" id={`${id}-nature-help`}>
-                  {supplier && nonResident(supplier) ? `${supplier.legal_name} is resident for tax in ${residenceOf(supplier)}. ` : ""}
-                  {h("bill.nature").tooltip}
-                </span>
+            {bill && billId && (
+              <div className="fy-pagehead__actions">
+                <AskAboutThis context={{ kind: credit ? "vendor_credit" : "bill", id: billId, label: title.slice(0, 200) }} />
               </div>
             )}
-            <div className="fy-field">
-              <label className="fy-label" htmlFor={`${id}-ref`}>
-                {credit ? "Their credit note number" : "Their invoice number"}
-              </label>
-              <input className="fy-input" id={`${id}-ref`} value={f.supplier_ref} maxLength={60} disabled={!editable} onChange={(e) => set({ supplier_ref: e.target.value })} />
-            </div>
-            <div className="fy-field">
-              <label className="fy-label" htmlFor={`${id}-date`}>
-                {credit ? "Credit note date" : "Invoice date"}
-              </label>
-              <input className="fy-input" id={`${id}-date`} type="date" value={f.date} disabled={!editable} onChange={(e) => set({ date: e.target.value })} />
-            </div>
-            {!credit && (
-              <div className="fy-field">
-                <label className="fy-label" htmlFor={`${id}-due`}>
-                  Due date
-                </label>
-                <input className="fy-input" id={`${id}-due`} type="date" value={f.due_date} disabled={!editable} onChange={(e) => set({ due_date: e.target.value })} aria-describedby={`${id}-due-help`} />
-                <span className="fy-help" id={`${id}-due-help`}>
-                  {bill?.due_date && !f.due_date ? `Due ${date(bill.due_date)} by the payment terms. ` : ""}Leave it blank for the supplier's terms, or the organisation's.
-                </span>
-              </div>
+          </div>
+            {status && (
+              <p className="fy-small" role="status">
+                {status}
+              </p>
             )}
-            <div className="fy-field">
-              <label className="fy-label" htmlFor={`${id}-currency`}>
-                Currency
-              </label>
-              <input
-                className="fy-input fy-mono"
-                id={`${id}-currency`}
-                value={f.currency}
-                maxLength={3}
-                disabled={!editable}
-                onChange={(e) => set({ currency: e.target.value.toUpperCase() })}
-                aria-invalid={Boolean(errors.currency) || undefined}
-                aria-describedby={described("currency")}
-              />
-              {err("currency")}
-            </div>
-            {foreign && (
-              <div className="fy-field">
-                <label className="fy-label" htmlFor={`${id}-rate`}>
-                  Rate ({base} for 1 {f.currency}, optional)
-                </label>
-                <input
-                  className="fy-input fy-num"
-                  id={`${id}-rate`}
-                  inputMode="decimal"
-                  value={f.fx_rate}
-                  disabled={!editable}
-                  onChange={(e) => set({ fx_rate: e.target.value })}
-                  aria-invalid={Boolean(errors.fx_rate) || undefined}
-                  aria-describedby={errors.fx_rate ? described("fx_rate") : `${id}-rate-help`}
+          </>
+        }
+        tabs={{
+          details: (
+            <>
+              <ReviewBanner screen={isNew || bill?.status === "draft" ? "bill-editor" : "bill-record"} />
+              {billId && (bill?.status === "posted" || bill?.status === "reversed") && roles.some((r) => auditReaders.includes(r)) && <PurgedPostings recordId={billId} />}
+              {needsApproval && problem && (
+                <div className="fy-banner fy-banner--info" role="note">
+                  <Icon of={UserCheck} size={20} />
+                  <div className="fy-banner__text">
+                    <strong>Another person approves this bill</strong>
+                    <span className="fy-small">{problem.detail} The one who prepared it never approves it.</span>
+                  </div>
+                  <div className="fy-banner__action">
+                    <Button size="sm" variant="primary" type="button" onClick={() => void askPost()} disabled={busy} title={h("bill.ask-approval").tooltip}>
+                      <Icon of={UserCheck} />
+                      {h("bill.ask-approval").label}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {problem && !needsApproval && <Refusal problem={problem} title={failed} />}
+              {bill?.approval_asked && (
+                <div className="fy-banner fy-banner--info" role="status">
+                  <Icon of={UserCheck} size={20} />
+                  <div className="fy-banner__text">
+                    <span className="fy-strong">Awaiting approval</span>
+                    <span className="fy-small">
+                      Another person approves it in the <Link to="/inbox">Inbox</Link>; it posts as they approve it.
+                    </span>
+                  </div>
+                </div>
+              )}
+              {bill && !form && !editing && <Checks checks={bill.checks ?? []} billId={bill.id} posted={bill.status !== "draft"} />}
+              {bill && bill.status !== "draft" && !form && !editing && (
+                <PaymentPlanCard
+                  bill={bill}
+                  mayPlan={mayPrepare}
+                  onDone={(message) => {
+                    void refresh().then(() => setStatus(message));
+                  }}
                 />
-                {err("fx_rate") ?? (
-                  <span className="fy-help" id={`${id}-rate-help`}>
-                    Leave it blank to take the rate for the invoice date.
-                  </span>
+              )}
+              {bill && !form && !editing && (
+                <WithholdingCard
+                  bill={bill}
+                  base={base}
+                  mayRecord={mayPrepare}
+                  onDone={(message) => {
+                    void refresh().then(() => setStatus(message));
+                  }}
+                />
+              )}
+              {bill && bill.status !== "draft" && !editing && (
+                <Payments
+                  bill={bill}
+                  mayVoid={mayPost}
+                  ask={founder}
+                  onDone={(message) => {
+                    void refresh().then(() => setStatus(message));
+                  }}
+                />
+              )}
+              <form className="fy-stack fy-stack--6" data-enter="next" onSubmit={(e) => void save(e)} noValidate>
+                <section className="fy-card" aria-labelledby={`${id}-supp`}>
+                  <div className="fy-card__head">
+                    <h2 className="fy-h3" id={`${id}-supp`}>
+                      Supplier and dates
+                    </h2>
+                  </div>
+                  <div className="fy-card__body fy-form fy-form--2">
+                    <div className="fy-field fy-field--full">
+                      <label className="fy-label" htmlFor={`${id}-supplier`}>
+                        Supplier
+                      </label>
+                      <select className="fy-select" id={`${id}-supplier`} value={f.supplier_id} disabled={!editable} onChange={(e) => set({ supplier_id: e.target.value })}>
+                        <option value="">Choose the supplier</option>
+                        {(vendors.data ?? []).map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.legal_name}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="fy-help">A contact marked as a vendor. Add one under Contacts.</span>
+                    </div>
+                    {askNature && (
+                      <div className="fy-field fy-field--full">
+                        <label className="fy-label" htmlFor={`${id}-nature`}>
+                          {h("bill.nature").label}
+                        </label>
+                        <select
+                          className="fy-select"
+                          id={`${id}-nature`}
+                          value={f.nature}
+                          disabled={!editable}
+                          onChange={(e) => set({ nature: e.target.value })}
+                          aria-describedby={`${id}-nature-help`}
+                        >
+                          <option value="">Choose what the payment is for</option>
+                          {natures.map(([v, label]) => (
+                            <option key={v} value={v}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="fy-help" id={`${id}-nature-help`}>
+                          {supplier && nonResident(supplier) ? `${supplier.legal_name} is resident for tax in ${residenceOf(supplier)}. ` : ""}
+                          {h("bill.nature").tooltip}
+                        </span>
+                      </div>
+                    )}
+                    <div className="fy-field">
+                      <label className="fy-label" htmlFor={`${id}-ref`}>
+                        {credit ? "Their credit note number" : "Their invoice number"}
+                      </label>
+                      <input className="fy-input" id={`${id}-ref`} value={f.supplier_ref} maxLength={60} disabled={!editable} onChange={(e) => set({ supplier_ref: e.target.value })} />
+                    </div>
+                    <div className="fy-field">
+                      <label className="fy-label" htmlFor={`${id}-date`}>
+                        {credit ? "Credit note date" : "Invoice date"}
+                      </label>
+                      <input className="fy-input" id={`${id}-date`} type="date" value={f.date} disabled={!editable} onChange={(e) => set({ date: e.target.value })} />
+                    </div>
+                    {!credit && (
+                      <div className="fy-field">
+                        <label className="fy-label" htmlFor={`${id}-due`}>
+                          Due date
+                        </label>
+                        <input className="fy-input" id={`${id}-due`} type="date" value={f.due_date} disabled={!editable} onChange={(e) => set({ due_date: e.target.value })} aria-describedby={`${id}-due-help`} />
+                        <span className="fy-help" id={`${id}-due-help`}>
+                          {bill?.due_date && !f.due_date ? `Due ${date(bill.due_date)} by the payment terms. ` : ""}Leave it blank for the supplier's terms, or the organisation's.
+                        </span>
+                      </div>
+                    )}
+                    <div className="fy-field">
+                      <label className="fy-label" htmlFor={`${id}-currency`}>
+                        Currency
+                      </label>
+                      <input
+                        className="fy-input fy-mono"
+                        id={`${id}-currency`}
+                        value={f.currency}
+                        maxLength={3}
+                        disabled={!editable}
+                        onChange={(e) => set({ currency: e.target.value.toUpperCase() })}
+                        aria-invalid={Boolean(errors.currency) || undefined}
+                        aria-describedby={described("currency")}
+                      />
+                      {err("currency")}
+                    </div>
+                    {foreign && (
+                      <div className="fy-field">
+                        <label className="fy-label" htmlFor={`${id}-rate`}>
+                          Rate ({base} for 1 {f.currency}, optional)
+                        </label>
+                        <input
+                          className="fy-input fy-num"
+                          id={`${id}-rate`}
+                          inputMode="decimal"
+                          value={f.fx_rate}
+                          disabled={!editable}
+                          onChange={(e) => set({ fx_rate: e.target.value })}
+                          aria-invalid={Boolean(errors.fx_rate) || undefined}
+                          aria-describedby={errors.fx_rate ? described("fx_rate") : `${id}-rate-help`}
+                        />
+                        {err("fx_rate") ?? (
+                          <span className="fy-help" id={`${id}-rate-help`}>
+                            Leave it blank to take the rate for the invoice date.
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
+        
+                <InputTaxCard id={id} tax={f.tax} onChange={(tax) => set({ tax })} editable={editable} decisions={bill?.input_tax_decisions ?? []} dirty={Boolean(form)} />
+        
+                <BillLines
+                  id={id}
+                  lines={f.lines}
+                  onChange={(lines) => set({ lines })}
+                  editable={editable}
+                  errors={errors}
+                  currency={f.currency || base}
+                  base={base}
+                  stated={foreign}
+                  spreads={!credit}
+                  shares
+                  codes={codes.data?.codes ?? []}
+                  choices={choices}
+                  byId={byId}
+                  subtitle={`As the supplier's ${credit ? "credit note" : "invoice"} states them`}
+                  footer={bill && <p className="fy-small">Total {total(bill)}{bill.currency !== base && bill.payable ? ` · ${base} ${formatAmount(bill.payable.amount)} payable` : ""}</p>}
+                />
+        
+                <div className="fy-field">
+                  <label className="fy-label" htmlFor={`${id}-notes`}>
+                    Notes
+                  </label>
+                  <textarea className="fy-textarea" id={`${id}-notes`} value={f.notes} maxLength={2000} disabled={!editable} onChange={(e) => set({ notes: e.target.value })} />
+                </div>
+        
+                {editing && (
+                  <div className="fy-field">
+                    <label className="fy-label" htmlFor={`${id}-reason`}>
+                      Why it is edited
+                    </label>
+                    <textarea
+                      className="fy-textarea"
+                      id={`${id}-reason`}
+                      value={reason}
+                      maxLength={500}
+                      onChange={(e) => {
+                        setReason(e.target.value);
+                        setReasonMissing(false);
+                      }}
+                      aria-invalid={reasonMissing || undefined}
+                      aria-describedby={reasonMissing ? `${id}-reason-error` : `${id}-reason-help`}
+                    />
+                    {reasonMissing ? (
+                      <span className="fy-error" id={`${id}-reason-error`}>
+                        Say why: the audit trail keeps the reason with the edit.
+                      </span>
+                    ) : (
+                      <span className="fy-help" id={`${id}-reason-help`}>
+                        The entry it had is reversed and the new one posted, in one go. {founder ? "In Founder mode another founder approves the edit first." : ""}
+                      </span>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-          </div>
-        </section>
-
-        <InputTaxCard id={id} tax={f.tax} onChange={(tax) => set({ tax })} editable={editable} decisions={bill?.input_tax_decisions ?? []} dirty={Boolean(form)} />
-
-        <BillLines
-          id={id}
-          lines={f.lines}
-          onChange={(lines) => set({ lines })}
-          editable={editable}
-          errors={errors}
-          currency={f.currency || base}
-          base={base}
-          stated={foreign}
-          spreads={!credit}
-          shares
-          codes={codes.data?.codes ?? []}
-          choices={choices}
-          byId={byId}
-          subtitle={`As the supplier's ${credit ? "credit note" : "invoice"} states them`}
-          footer={bill && <p className="fy-small">Total {total(bill)}{bill.currency !== base && bill.payable ? ` · ${base} ${formatAmount(bill.payable.amount)} payable` : ""}</p>}
-        />
-
-        <div className="fy-field">
-          <label className="fy-label" htmlFor={`${id}-notes`}>
-            Notes
-          </label>
-          <textarea className="fy-textarea" id={`${id}-notes`} value={f.notes} maxLength={2000} disabled={!editable} onChange={(e) => set({ notes: e.target.value })} />
-        </div>
-
-        {editing && (
-          <div className="fy-field">
-            <label className="fy-label" htmlFor={`${id}-reason`}>
-              Why it is edited
-            </label>
-            <textarea
-              className="fy-textarea"
-              id={`${id}-reason`}
-              value={reason}
-              maxLength={500}
-              onChange={(e) => {
-                setReason(e.target.value);
-                setReasonMissing(false);
-              }}
-              aria-invalid={reasonMissing || undefined}
-              aria-describedby={reasonMissing ? `${id}-reason-error` : `${id}-reason-help`}
-            />
-            {reasonMissing ? (
-              <span className="fy-error" id={`${id}-reason-error`}>
-                Say why: the audit trail keeps the reason with the edit.
-              </span>
-            ) : (
-              <span className="fy-help" id={`${id}-reason-help`}>
-                The entry it had is reversed and the new one posted, in one go. {founder ? "In Founder mode another founder approves the edit first." : ""}
-              </span>
-            )}
-          </div>
-        )}
-
-        <div className="fy-row fy-row--wrap gap-2">
-          {editable && !editing && (
-            <Button type="submit" disabled={busy} title={h("bill.save").tooltip}>
-              <Icon of={Save} />
-              {h("bill.save").label}
-            </Button>
-          )}
-          {bill?.status === "draft" && !form && mayPost && !bill.approval_asked && (
-            <Button variant="primary" type="button" onClick={() => void post()} disabled={busy || (bill.checks ?? []).some((c) => c.severity === "error")} title={h("bill.post").tooltip}>
-              <Icon of={Send} />
-              {h("bill.post").label}
-            </Button>
-          )}
-          {bill?.status === "posted" && mayPost && !editing && (
-            <>
-              {open && !credit && (
-                <Button variant="primary" type="button" onClick={() => setPaying(true)} title={h("bill.record-payment").tooltip}>
-                  <Icon of={Banknote} />
-                  {h("bill.record-payment").label}…
-                </Button>
-              )}
-              {open && credit && (
-                <>
-                  <Button variant="primary" type="button" onClick={() => setApplying(true)} title={h("credit.apply").tooltip}>
-                    <Icon of={Link2} />
-                    {h("credit.apply").label}…
-                  </Button>
-                  <Button type="button" onClick={() => setRefunding(true)} title={h("credit.refund").tooltip}>
-                    <Icon of={Banknote} />
-                    {h("credit.refund").label}…
-                  </Button>
-                </>
-              )}
-              {!settled && (
-                <>
-                  <Button type="button" onClick={() => setEditing(true)} title={h("bill.edit").tooltip}>
-                    <Icon of={Pencil} />
-                    {h("bill.edit").label}
-                  </Button>
-                  <Button type="button" onClick={() => setVoiding(true)} title={h(founder ? "bill.ask-void" : "bill.void").tooltip}>
-                    <Icon of={founder ? UserCheck : Undo2} />
-                    {h(founder ? "bill.ask-void" : "bill.void").label}…
-                  </Button>
-                </>
-              )}
+        
+                <div className="fy-row fy-row--wrap gap-2">
+                  {editable && !editing && (
+                    <Button type="submit" disabled={busy} title={h("bill.save").tooltip}>
+                      <Icon of={Save} />
+                      {h("bill.save").label}
+                    </Button>
+                  )}
+                  {bill?.status === "draft" && !form && mayPost && !bill.approval_asked && (
+                    <Button variant="primary" type="button" onClick={() => void post()} disabled={busy || (bill.checks ?? []).some((c) => c.severity === "error")} title={h("bill.post").tooltip}>
+                      <Icon of={Send} />
+                      {h("bill.post").label}
+                    </Button>
+                  )}
+                  {bill?.status === "posted" && mayPost && !editing && (
+                    <>
+                      {open && !credit && (
+                        <Button variant="primary" type="button" onClick={() => setPaying(true)} title={h("bill.record-payment").tooltip}>
+                          <Icon of={Banknote} />
+                          {h("bill.record-payment").label}…
+                        </Button>
+                      )}
+                      {open && credit && (
+                        <>
+                          <Button variant="primary" type="button" onClick={() => setApplying(true)} title={h("credit.apply").tooltip}>
+                            <Icon of={Link2} />
+                            {h("credit.apply").label}…
+                          </Button>
+                          <Button type="button" onClick={() => setRefunding(true)} title={h("credit.refund").tooltip}>
+                            <Icon of={Banknote} />
+                            {h("credit.refund").label}…
+                          </Button>
+                        </>
+                      )}
+                      {!settled && (
+                        <>
+                          <Button type="button" onClick={() => setEditing(true)} title={h("bill.edit").tooltip}>
+                            <Icon of={Pencil} />
+                            {h("bill.edit").label}
+                          </Button>
+                          <Button type="button" onClick={() => setVoiding(true)} title={h(founder ? "bill.ask-void" : "bill.void").tooltip}>
+                            <Icon of={founder ? UserCheck : Undo2} />
+                            {h(founder ? "bill.ask-void" : "bill.void").label}…
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  )}
+                  {editing && (
+                    <>
+                      <Button variant="primary" type="button" onClick={() => void sendEdit(founder)} disabled={busy} title={h(founder ? "bill.ask-edit" : "bill.post-edit").tooltip}>
+                        <Icon of={founder ? UserCheck : Send} />
+                        {h(founder ? "bill.ask-edit" : "bill.post-edit").label}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        onClick={() => {
+                          setEditing(false);
+                          setForm(null);
+                          setReason("");
+                        }}
+                        disabled={busy}
+                      >
+                        <Icon of={X} />
+                        Cancel
+                      </Button>
+                    </>
+                  )}
+                  {!isNew && bill?.status === "draft" && form && <span className="fy-small fy-muted">Save the changes to see what posting writes.</span>}
+                </div>
+              </form>
+        
+              {bill && !editing && !form && <Releases bill={bill} base={base} />}
             </>
-          )}
-          {editing && (
-            <>
-              <Button variant="primary" type="button" onClick={() => void sendEdit(founder)} disabled={busy} title={h(founder ? "bill.ask-edit" : "bill.post-edit").tooltip}>
-                <Icon of={founder ? UserCheck : Send} />
-                {h(founder ? "bill.ask-edit" : "bill.post-edit").label}
-              </Button>
-              <Button
-                variant="ghost"
-                type="button"
-                onClick={() => {
-                  setEditing(false);
-                  setForm(null);
-                  setReason("");
-                }}
-                disabled={busy}
-              >
-                <Icon of={X} />
-                Cancel
-              </Button>
-            </>
-          )}
-          {!isNew && bill?.status === "draft" && form && <span className="fy-small fy-muted">Save the changes to see what posting writes.</span>}
-        </div>
-      </form>
-
-      {bill && !editing && !form && <Releases bill={bill} base={base} />}
-      {bill && !editing && !form && <Impact bill={bill} lines={bill.ledger_impact ?? []} accounts={byId} base={base} />}
-      {bill && one.data && !editing && (
-        <EvidencePanel record={{ kind: "bill", id: bill.id, etag: one.data.etag }} draft={bill.status === "draft"} mayAttach={roles.some((r) => billAttachers.includes(r))} onChanged={setStatus} />
-      )}
-      {bill && !editing && !form && <CommentsOnDemand recordType={bill.kind === "vendor_credit" ? "vendor_credit" : "bill"} recordId={bill.id} />}
+          ),
+          ledger: bill && !editing && !form && <Impact bill={bill} lines={bill.ledger_impact ?? []} accounts={byId} base={base} />,
+          attachments: bill && one.data && !editing && (
+                <EvidencePanel record={{ kind: "bill", id: bill.id, etag: one.data.etag }} draft={bill.status === "draft"} mayAttach={roles.some((r) => billAttachers.includes(r))} onChanged={setStatus} />
+          ),
+          activity: bill && !editing && !form && <CommentsOnDemand recordType={bill.kind === "vendor_credit" ? "vendor_credit" : "bill"} recordId={bill.id} />,
+        }}
+      />
       {bill && applying && (
         <ApplyCredit
           open={applying}
@@ -990,6 +1003,6 @@ export function BillPage() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }

@@ -54,6 +54,12 @@ function page(session: Session) {
     );
   };
 }
+// openPage renders the journal and opens its Attachments tab once it is there: the files are one of the record page's tabs.
+function openPage(...args: Parameters<typeof renderPage>) {
+  const view = renderPage(...args);
+  void screen.findByRole("tab", { name: "Attachments" }).then((tab) => fireEvent.click(tab));
+  return view;
+}
 const at = { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" };
 
 // req: FR-DOC-05
@@ -80,7 +86,7 @@ describe("a journal's evidence", () => {
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
       saved.push({ name: this.download, href: this.getAttribute("href") ?? "" });
     });
-    renderPage(page(auditor), at);
+    openPage(page(auditor), at);
     fireEvent.click(await screen.findByRole("button", { name: "Show receipt.png" }));
     const picture = await screen.findByRole("img", { name: "receipt.png, as attached" });
     expect(picture.getAttribute("src")).toBe("/api/v1/evidence-downloads/ev1.signed");
@@ -101,7 +107,7 @@ describe("a journal's evidence", () => {
       "GET /v1/evidence/ev4/preview": { status: 200, body: { id: "ev4", media_type: "image/png", size_bytes: 8, source_sha256: "a".repeat(64), preview_sha256: "b".repeat(64), content_base64: "iVBORw0KGgo=" } },
       "GET /v1/evidence/ev5/preview": { status: 422, body: { type: "about:blank", title: "The file cannot be previewed", status: 422, code: "DOC-12", detail: "The PDF could not be drawn: it may be encrypted or damaged.", fix: "Save a copy of the file to open it." } },
     });
-    renderPage(page(auditor), at);
+    openPage(page(auditor), at);
     fireEvent.click(await screen.findByRole("button", { name: "Preview AU-100.pdf" }));
     const picture = await screen.findByRole("img", { name: "AU-100.pdf, first page, as attached" });
     expect(picture.getAttribute("src")).toBe("data:image/png;base64,iVBORw0KGgo=");
@@ -126,7 +132,7 @@ describe("a journal's evidence", () => {
       "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } },
       "GET /v1/journals/j1/evidence": { status: 200, body: { items: [file({ unmasked_nric: true, file_name: "staff.csv" }), file({ id: "ev2", file_name: "masked.csv" })] } },
     });
-    renderPage(page(auditor), at);
+    openPage(page(auditor), at);
     expect(await screen.findByText("staff.csv")).toBeTruthy();
     expect(screen.getAllByText("Shows an NRIC")).toHaveLength(1);
     await noViolations(document.body);
@@ -146,7 +152,7 @@ describe("a journal's evidence", () => {
         return { status: 201, body: shot };
       },
     });
-    renderPage(page(accountant), at);
+    openPage(page(accountant), at);
     const zone = await screen.findByLabelText("Drop or paste a file to attach to the journal");
     const pasted = new File(["png"], "Screenshot.png", { type: "image/png" });
     fireEvent.paste(zone, { clipboardData: { files: [pasted] } });
@@ -187,7 +193,7 @@ describe("a journal's evidence", () => {
       "GET /v1/journals/j1/evidence": () => ({ status: 200, body: { items: files } }),
       "GET /v1/evidence-rules": () => rule("required"),
     });
-    const view = renderPage(page(accountant), at);
+    const view = openPage(page(accountant), at);
     const group = await screen.findByRole("group", { name: "Rules for this activity" });
     expect(within(group).getByText("Supporting calculation or document").parentElement!.textContent).toContain("Required");
     expect(within(group).getByText("Explanation").parentElement!.textContent).toContain("Recommended");
@@ -196,7 +202,7 @@ describe("a journal's evidence", () => {
 
     // A calculation meets the required item only; an explanation meets the recommended one; a removed file meets none.
     files = [file({ evidence_type: "calculation" }), file({ id: "ev2", evidence_type: "Explanation", file_name: "why.txt" }), file({ id: "ev3", evidence_type: "calculation", state: "removed", file_name: "gone.pdf" })];
-    renderPage(page(accountant), at);
+    openPage(page(accountant), at);
     await screen.findByText("why.txt");
     const met = await screen.findByRole("group", { name: "Rules for this activity" });
     expect(within(met).getByText("Supporting calculation or document").parentElement!.textContent).toContain("Attached");
@@ -211,7 +217,7 @@ describe("a journal's evidence", () => {
       "GET /v1/journals/j1/evidence": { status: 200, body: { items: [] } },
       "GET /v1/evidence-rules": { status: 200, body: { rules: [{ key: "manual_journal", area: "journals", label: "Manual journal", level: "optional", built: true, required: [{ label: "x", types: [] }], recommended: [] }] } },
     });
-    const view = renderPage(page(accountant), at);
+    const view = openPage(page(accountant), at);
     expect(await screen.findByText("Your organisation does not ask for evidence of a manual journal.")).toBeTruthy();
     view.unmount();
     answer({
@@ -219,7 +225,7 @@ describe("a journal's evidence", () => {
       "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } },
       "GET /v1/journals/j1/evidence": { status: 200, body: { items: [] } },
     });
-    renderPage(page(accountant), at);
+    openPage(page(accountant), at);
     expect(await screen.findByText("No files are attached.")).toBeTruthy();
     expect(screen.queryByRole("group", { name: "Rules for this activity" })).toBeNull();
   });
@@ -240,7 +246,7 @@ describe("a journal's evidence", () => {
         return { status: 200, body: files[0] };
       },
     });
-    renderPage(page(accountant), at);
+    openPage(page(accountant), at);
     expect(await screen.findByText("No files are attached.")).toBeTruthy();
     // Nothing goes without the file and what it is.
     fireEvent.click(screen.getByRole("button", { name: "Attach" }));
@@ -280,7 +286,7 @@ describe("a journal's evidence", () => {
       "GET /v1/journals/j1": { status: 200, body: { ...draft, status: "posted", number: "JNL-0007" }, headers: { ETag: `"2-posted"` } },
       "GET /v1/journals/j1/evidence": { status: 200, body: { items: [file({ state: "final", retain_until: "2034-01-01T00:00:00+08:00" })] } },
     });
-    renderPage(page(auditor), at);
+    openPage(page(auditor), at);
     expect(await screen.findByText("Kept")).toBeTruthy();
     expect(screen.getByText(/Once it is posted they are kept/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Attach" })).toBeNull();
@@ -294,7 +300,7 @@ describe("a journal's evidence", () => {
       "GET /v1/journals/j1/evidence": { status: 200, body: { items: [] } },
       "POST /v1/journals/j1/evidence": problem(422, "EVIDENCE-02", "The file is not a type Fyniq keeps.", "Attach a PDF, an image or a spreadsheet."),
     });
-    renderPage(page(accountant), at);
+    openPage(page(accountant), at);
     fireEvent.change(await screen.findByLabelText("File"), { target: { files: [new File(["MZ"], "tool.exe")] } });
     fireEvent.change(screen.getByLabelText("What it is"), { target: { value: "receipt" } });
     fireEvent.click(screen.getByRole("button", { name: "Attach" }));

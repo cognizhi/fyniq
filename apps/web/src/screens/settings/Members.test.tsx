@@ -156,6 +156,20 @@ describe("Members and roles", () => {
     expect(await screen.findByText(/kai@example\.sg · Has not signed in yet/)).toBeTruthy();
   });
 
+  // req: FR-ADM-01
+  it("sends the invitation's email address when one is given, with no code in it", async () => {
+    const seen = page({ "POST /v1/members/invitations": { status: 201, body: { ...invitation, id: "i-4", display_name: "Dan Koh", code: "ZYXWV-UTSRQ" } } }, [ann]);
+    renderPage(Members, { path: "/settings/members" });
+    fireEvent.click(await screen.findByRole("button", { name: "Invite" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/Name/), { target: { value: "Dan Koh" } });
+    fireEvent.change(within(dialog).getByLabelText(/Their email/), { target: { value: "dan@example.sg" } });
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: /Owner/ }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Create invitation" }));
+    await within(dialog).findByText("ZYXWV-UTSRQ");
+    expect(seen.find((x) => x.method === "POST")?.body).toEqual({ display_name: "Dan Koh", roles: ["owner"], email: "dan@example.sg" });
+  });
+
   it("ends a role after the person confirms it's you", async () => {
     let n = 0;
     page({ "DELETE /v1/members/m-3/roles/accountant": () => (++n === 1 ? problem(403, "API-AUTHZ-05") : { status: 200, body: { ...grace, roles: [] } }) });

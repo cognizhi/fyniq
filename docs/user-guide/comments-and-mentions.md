@@ -23,7 +23,7 @@ be mentioned. An Approver who acts for some departments sees the records of thos
 
 ## Steps
 
-1. Open the record and find **Comments**: on a contact it is the **Activity** tab; on a bill, an invoice or a journal, select **Show comments**.
+1. Open the record and find **Comments**: it is the **Activity** tab of a bill, an invoice, a journal or a contact.
 2. Write in **Add a comment**, up to 2,000 characters.
 3. To mention someone, type **@** and the start of a name, choose them with the arrow keys and **Enter** (or select the name), and go on writing.
 4. Select **Add comment**. The comment is kept on the record, and each person you mentioned is told in their notifications. You are not told of your own.

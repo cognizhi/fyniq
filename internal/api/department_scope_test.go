@@ -165,3 +165,38 @@ func TestOnlyAnOwnerAndAnAdministratorSeeMembersEmails(t *testing.T) {
 		}
 	}
 }
+
+// An invitation made with an email address queues one message to it, in the founder bootstrap and once approved, that names the organisation and
+// says to ask for the code: the code is in no email, and the address is kept nowhere but in that message (FR-ADM-01, rev 0.421).
+// req: FR-ADM-01
+// asvs: V8.2.1, V8.3.1
+func TestAnInvitationEmailNeverCarriesTheCode(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	ahkow, weiling := f.as(f.ahkow), f.as(f.weiling)
+	bad := e.call(http.MethodPost, "/v1/members/invitations", ahkow, map[string]any{"display_name": "Mei", "roles": []string{"employee"}, "email": "not an address"})
+	if bad.Status != 422 {
+		t.Fatalf("an address that is none: %d %s", bad.Status, bad.Raw)
+	}
+	asked := e.call(http.MethodPost, "/v1/members/invitations", ahkow, map[string]any{"display_name": "Mei", "roles": []string{"employee"}, "email": "mei@example.sg"})
+	if asked.Status != 202 {
+		t.Fatalf("asking: %d %s", asked.Status, asked.Raw)
+	}
+	code := asked.str("invitation_code")
+	messages := func() response { return e.call(http.MethodGet, "/v1/organisation/email/messages?purpose=invitation", weiling, nil) }
+	if m := messages(); len(m.Body["items"].([]any)) != 0 {
+		t.Fatalf("an email went before the invitation was approved: %s", m.Raw)
+	}
+	if a := f.decide(weiling, asked.str("id"), "approve", hashOf(asked)); a.Status != 200 {
+		t.Fatalf("approving: %d %s", a.Status, a.Raw)
+	}
+	m := messages()
+	items, _ := m.Body["items"].([]any)
+	if len(items) != 1 || items[0].(map[string]any)["recipient"] != "mei@example.sg" || strings.Contains(m.Raw, code) {
+		t.Fatalf("the invitation's email: %s", m.Raw)
+	}
+	one := e.call(http.MethodGet, "/v1/organisation/email/messages/"+items[0].(map[string]any)["id"].(string), weiling, nil)
+	if one.Status != 200 || strings.Contains(one.Raw, code) {
+		t.Fatalf("the message: %d %s", one.Status, one.Raw)
+	}
+}

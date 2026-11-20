@@ -207,6 +207,8 @@ function Invite({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [name, setName] = useState("");
   const [roles, setRoles] = useState<Set<string>>(new Set());
   const [ends, setEnds] = useState("");
+  const [mail, setMail] = useState("");
+  const emailId = useId();
   const departments = useDepartments();
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -219,6 +221,7 @@ function Invite({ open, onClose }: { open: boolean; onClose: () => void }) {
     setRoles(new Set());
     setEnds("");
     setPicked([]);
+    setMail("");
     setProblem(null);
     setErrors({});
     setMade(null);
@@ -240,6 +243,7 @@ function Invite({ open, onClose }: { open: boolean; onClose: () => void }) {
       roles: assignable.map(([r]) => r).filter((r) => roles.has(r)),
       ...(ends ? { roles_expire_at: endOfDay(ends) } : {}),
       ...(roles.has("approver") && picked.length ? { department_value_ids: picked } : {}),
+      ...(mail.trim() ? { email: mail.trim() } : {}),
     };
     const out = await guarded(confirm, () => api.POST("/v1/members/invitations", { body }));
     setBusy(false);
@@ -289,6 +293,15 @@ function Invite({ open, onClose }: { open: boolean; onClose: () => void }) {
                 {errors.name}
               </span>
             )}
+          </div>
+          <div className="fy-field">
+            <label className="fy-label" htmlFor={emailId}>
+              Their email (optional)
+            </label>
+            <input className="fy-input" id={emailId} type="email" inputMode="email" autoComplete="off" maxLength={254} value={mail} onChange={(e) => setMail(e.target.value)} aria-describedby={`${emailId}-help`} />
+            <span className="fy-help" id={`${emailId}-help`}>
+              Fyniq tells them they were invited and to ask you for the code. The code is never in the email, and the address is not kept.
+            </span>
           </div>
           <RolePicker picked={roles} onChange={setRoles} legend="Roles" describedBy={errors.roles ? `${nameId}-roles-error` : undefined} />
           {errors.roles && (

@@ -28,6 +28,8 @@ The year's budget is read by:
 1. Select **New budget**, name it and choose its financial year.
 2. Select **Add a line** for each account, or account and dimension value, and enter each month's amount. Amounts are
    signed as the profit and loss shows them: income and costs both above zero for what you expect.
+   In Expert mode, **Enter lines in a grid** opens a spreadsheet-like grid: type, or paste an account code and a
+   month's amounts from Excel or Google Sheets, see what was read before it is set, and add the ready rows.
 3. Select **Save**. The totals by month and for the year are worked out when you save.
 
 Only income and expense accounts that take postings can be budgeted, with at most one value of each dimension.

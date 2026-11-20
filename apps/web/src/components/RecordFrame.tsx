@@ -59,7 +59,7 @@ type FrameProps = {
 
 export function RecordFrame({ header, tabs, panel, panelLabel = "Checks, suggestions and context", initial = "details", className }: FrameProps) {
   const id = useId();
-  const shown = recordTabs.filter(([key]) => tabs[key] !== undefined && tabs[key] !== null);
+  const shown = recordTabs.filter(([key]) => tabs[key] !== undefined && tabs[key] !== null && tabs[key] !== false);
   const [picked, setPicked] = useState<RecordTab>(initial);
   const [open, setOpen] = useState(savedPanel);
   const tab = shown.some(([key]) => key === picked) ? picked : (shown[0]?.[0] ?? "details");
@@ -85,7 +85,7 @@ export function RecordFrame({ header, tabs, panel, panelLabel = "Checks, suggest
     <div className={cn("fy-page fy-enter", className)}>
       {header}
       <div className="fy-row fy-row--between fy-row--wrap gap-2">
-        <div className="fy-tabs fy-grow" role="tablist" aria-label="Record">
+        <div className={cn("fy-tabs fy-grow", shown.length < 2 && "hidden")} role="tablist" aria-label="Record">
           {shown.map(([key, label], i) => (
             <button key={key} type="button" role="tab" id={`${id}-tab-${key}`} aria-selected={tab === key} aria-controls={`${id}-panel-${key}`} tabIndex={tab === key ? 0 : -1}
               onClick={() => pick(key)} onKeyDown={(e) => onKey(e, i)}>

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Copy, FlaskConical, Lock, PencilLine, Plus, Save, Send, Trash2, Upload } from "lucide-react";
+import { ClipboardPaste, Copy, FlaskConical, Lock, PencilLine, Plus, Save, Send, Trash2, Upload } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -14,6 +14,7 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts, listPeriods, postable, type Account } from "../accounting/data";
 import { DimensionFields, useDimensions, valueCodes } from "../accounting/lines";
+import { PasteBudget } from "./PasteBudget";
 import { PlanningTabs } from "./tabs";
 
 type View = components["schemas"]["BudgetView"];
@@ -57,6 +58,7 @@ export function Budgets() {
   const confirm = useConfirm();
   const [selected, setSelected] = useState<string | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
+  const [gridding, setGridding] = useState(false);
   const [name, setName] = useState("");
   const [dialog, setDialog] = useState<"new" | "copy" | "import" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -329,6 +331,18 @@ export function Budgets() {
                 <Icon of={Plus} />
                 {action("budget.add-line").label}
               </Button>
+              <Button variant="ghost" size="sm" className="fy-expert-only" onClick={() => setGridding(true)} title="Enter or paste several lines in a grid, with a preview of what a paste would set">
+                <Icon of={ClipboardPaste} />
+                Enter lines in a grid
+              </Button>
+              <PasteBudget
+                open={gridding}
+                onClose={() => setGridding(false)}
+                accounts={choices}
+                months={months}
+                scale={2}
+                onAdd={(added) => setLines([...lines.filter((l) => l.account_id || l.amounts.some((a) => a.trim())), ...added.map((x) => ({ key: lineKey(), account_id: x.account_id, dimension_value_ids: [], amounts: x.amounts }))])}
+              />
               <span className="fy-small fy-muted">The totals are worked out when you save. Amounts are signed as the P&amp;L shows them: income and costs above zero.</span>
             </div>
           )}
