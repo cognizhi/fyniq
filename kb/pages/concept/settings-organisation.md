@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, InvoiceNow, cash buffer, numbering, features, AI, terms, banking, claims, thresholds, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:149954a4e33e6fb0f6f2abfa1bb70b46249bef77dc81ffe81fd43f42eb53e9d7
+  - docs/user-guide/organisation-settings.md sha256:e8de601d48baff4f1f63e77dd202bdb5f2563539ffb168f604dc6f8ef319100a
 data_class: general
 taint: trusted
 status: draft
@@ -182,6 +182,13 @@ The calendar itself: [[compliance.calendar]].
 - Either can be changed without a second approver.
 
 (src: docs/user-guide/organisation-settings.md#approval-reminders)
+
+## Offline receipts
+
+- **Keep an offline receipt for** (72 hours recommended, 1 to 168) is how long a receipt captured with no signal waits on the phone before it is removed ([[app.mobile]]).
+- It is kept sealed on the device, removed at sign-out, never kept on a device marked as shared, and checked by Fyniq when it uploads; a change needs no second approver.
+
+(src: docs/user-guide/organisation-settings.md#offline-receipts)
 
 ## Motion
 

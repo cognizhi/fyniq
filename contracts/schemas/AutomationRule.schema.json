@@ -52,6 +52,11 @@
     "recipients": {
       "description": "The members told.",
       "items": {
+        "description": "A member's user ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"
+        ],
+        "format": "uuid",
         "type": "string"
       },
       "type": "array"

@@ -4,16 +4,25 @@
   "properties": {
     "amount_at_least": {
       "description": "A new amount; an empty string for any amount.",
+      "examples": [
+        "5000.00"
+      ],
       "pattern": "^([0-9]+(\\.[0-9]{1,4})?)?$",
       "type": "string"
     },
     "document_type": {
       "description": "A new kind of document; an empty string for any kind.",
+      "examples": [
+        "bill"
+      ],
       "maxLength": 41,
       "type": "string"
     },
     "name": {
       "description": "A new name.",
+      "examples": [
+        "Large bills"
+      ],
       "maxLength": 100,
       "minLength": 1,
       "type": "string"
@@ -21,6 +30,11 @@
     "recipients": {
       "description": "The new recipients, replacing the old.",
       "items": {
+        "description": "A member's user ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"
+        ],
+        "format": "uuid",
         "type": "string"
       },
       "maxItems": 20,
@@ -33,6 +47,9 @@
         "active",
         "paused",
         "archived"
+      ],
+      "examples": [
+        "paused"
       ],
       "type": "string"
     }

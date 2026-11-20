@@ -282,7 +282,7 @@ Source: PRD-001 §8.12 · Priority C · Phase P3
 - **WHEN** a consolidated report is produced for several entities
 - **THEN** the consolidated figures apply eliminations between the entities and currency translation
 
-#### Scenario: A frozen run (rev 0.622)
+#### Scenario: A frozen run (rev 0.623)
 - **WHEN** a consolidated report is read
 - **THEN** it is a frozen consolidation run of the parent organisation, read by holders of the whole-ledger Reports right only, and never by the AI read tools or MCP
 
