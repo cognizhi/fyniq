@@ -109,7 +109,22 @@ export function Subscriptions() {
           <Icon of={TriangleAlert} size={20} />
           <div className="fy-banner__text">
             <span className="fy-strong">The provider voided or wrote off {toFix.length === 1 ? "an invoice" : `${toFix.length} invoices`} you issued</span>
-            <span className="fy-small">Void it or write it off under Invoices: {toFix.map((i) => i.number || i.provider_invoice_id).join(", ")}.</span>
+            <span className="fy-small">
+              Fyniq does not reverse an invoice on the provider's word: open each to void it or write it off, as you decide
+              {toFix.map((i) => (
+                <span key={i.id}>
+                  {" "}
+                  {i.document_id ? (
+                    <Link to="/sales/invoices/$invoiceId" params={{ invoiceId: i.document_id }}>
+                      {i.number || i.provider_invoice_id} ({i.status === "void" ? "voided" : "uncollectible"})
+                    </Link>
+                  ) : (
+                    i.number || i.provider_invoice_id
+                  )}
+                </span>
+              ))}
+              .
+            </span>
           </div>
         </div>
       )}

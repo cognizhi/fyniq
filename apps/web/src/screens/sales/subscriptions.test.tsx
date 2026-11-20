@@ -70,6 +70,7 @@ describe("the subscriptions a provider bills", () => {
     renderPage(Subscriptions, { path: "/sales/subscriptions", session: accountant });
     expect(await screen.findByText("An invoice waits for a person")).toBeTruthy();
     expect(screen.getByText(/The provider voided or wrote off an invoice you issued/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "ACME-0004 (voided)" }).getAttribute("href")).toBe("/sales/invoices/d1");
     fireEvent.click(await screen.findByRole("button", { name: "Issue the drafts" }));
     expect(await screen.findByText("1 issued, 0 set aside for a person, 0 waiting.")).toBeTruthy();
   });
