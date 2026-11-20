@@ -112,6 +112,11 @@ Source: PRD-001 §10.6 · Priority S / M (update marking) · Phase P2 / P1 (upda
 - **THEN** it opens an assessment task listing the affected documents
 - **AND** it never re-posts history by itself (ENG-31)
 
+#### Scenario: An update with its diff (rev 0.480)
+- **WHEN** a published version is newer than the one the organisation has active
+- **THEN** a task shows the rows added, removed and changed between the two
+- **AND** a published correction to a past period opens an assessment task that re-posts nothing
+
 ### Requirement: ENG-45 Tax point and GST dates
 Every taxable document SHALL record its document date, tax point (time of supply), posting date and payment dates, and the tax point SHALL follow a named, versioned rule in the `sg-gst` pack.
 

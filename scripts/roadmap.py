@@ -207,7 +207,7 @@ BY_ID.update({
     "FR-INT-22": "p1-templates-email", "FR-UX-17": "p1-ai-assistant", "FR-UX-22": "p1-app-shell",
     "FR-ORG-05": "p1-statutory-packs", "FR-ORG-10": "p1-general-ledger-close", "CMP-02": "p1-gst",
     "FR-TAX-07": "p1-gst", "FR-PAY-07": "p1-payroll-link", "FR-PAY-11": "p1-payroll-link", "FR-PAY-15": "p1-payroll-link",
-    "FR-PAY-10": "p2-payroll-outputs", "FR-EQ-25": "p1-equity-register",
+    "FR-PAY-10": "p2-payroll-outputs", "NM-PAY-13": "p2-payroll-outputs", "NM-PAY-14": "p2-payroll-outputs", "FR-EQ-25": "p1-equity-register",
     "AUD-03": "p1-audit-explorer", "NFR-IMG-05": "p1-security-hardening", "SEC-22": "p1-security-hardening",
     "FR-ADM-08": "p1-users-roles", "AI-15": "p1-mcp-first-party", "FR-INT-02": "p1-public-api",
     "RND-RATE": "p1-multi-currency-fx", "RND-GST-EXCL": "p1-statutory-packs", "RND-GST-INCL": "p1-statutory-packs",
