@@ -693,7 +693,7 @@ const (
 	DocumentCustomerReceipt DocumentType = "customer_receipt"
 	// DocumentWriteOff writes off what is left of an invoice, for a reason, on another person's approval (FR-AR-17).
 	DocumentWriteOff DocumentType = "write_off"
-	// DocumentBadDebtRelief is a claim of GST bad debt relief for a posted bad-debt write-off (FR-AR-11, rev 0.607): made and posted at once, never edited, undone by a reversal.
+	// DocumentBadDebtRelief is a claim of GST bad debt relief for a posted bad-debt write-off (FR-AR-11, rev 0.608): made and posted at once, never edited, undone by a reversal.
 	DocumentBadDebtRelief DocumentType = "bad_debt_relief"
 	// DocumentStatement is a statement of account sent to a customer (FR-AR-08; p1-sales task 7.2): what it said, kept
 	// as it was sent. It posts nothing and is never reversed; posted is sent.
@@ -707,6 +707,9 @@ const (
 	DocumentBankAgreement DocumentType = "bank_agreement"
 	// DocumentSubscriptionFile holds a subscription contract's files as evidence (FR-AR-15, FR-DOC-05): one per contract, posted when made, it posts nothing and is never reversed (FYP24).
 	DocumentSubscriptionFile DocumentType = "subscription_file"
+	// DocumentBoardPackPDF holds a published board pack's PDF as evidence (FR-RPT-06, FR-DOC-05): one per pack, a draft with the file attached until another person approves keeping it, then
+	// posted, so the file is committed to the retention-locked store and is append-only (FR-DOC-13). It posts nothing and is never reversed (FYR12).
+	DocumentBoardPackPDF DocumentType = "board_pack_pdf"
 	// DocumentExpenseClaim is a member's claim for what they spent for the company (FR-AP-07, FR-AP-17;
 	// p1-expense-claims): its receipt and mileage lines, posted by expense_claim@1 once another person approves it.
 	DocumentExpenseClaim DocumentType = "expense_claim"

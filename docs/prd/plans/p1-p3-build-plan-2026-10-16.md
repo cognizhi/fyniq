@@ -14,7 +14,7 @@ behind the specs or the screens.
 That is all 1,414 requirements:
 - 120 belong to the P0 changes, which built them or hold them for the cloud gate;
 - the other 1,294 are spread over 66 changes below;
-- all 205 designed screens after P0 sit with the change that owns most of their requirements.
+- all 207 designed screens after P0 sit with the change that owns most of their requirements.
 
 <!-- /roadmap -->
 
@@ -763,7 +763,7 @@ Each change is planned against its sandbox, like the P1 connectors.
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | `p2-nemura-people` | Hiring, performance and KPIs, onboarding plans, letter verification, grievances, the unified HR API and pay documents from external systems, fairness in the assistant | 20 | 3 | `p1-nemura-assistant-external` | — | — | HR | — |
+| 1 | `p2-nemura-people` | Hiring, performance and KPIs, onboarding plans, letter verification, grievances, the unified HR API and pay documents from external systems, fairness in the assistant | 20 | 5 | `p1-nemura-assistant-external` | — | — | HR | — |
 
 <!-- /roadmap -->
 
@@ -854,7 +854,7 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `p2-mobile-approvals-automation` | `access/approvals`: FR-APR-06, FR-APR-07, FR-APR-08; `access/users-and-sign-in`: FR-ADM-05; `automation/rules-and-schedules`: FR-AUT-03, FR-AUT-04; `compliance/compliance-center`: CMP-04; `controls/platform-checks`: C.2 #52; `documents/templates`: FR-TPL-06; `experience/help`: FR-UX-35; `experience/modes`: FR-UX-28; `experience/navigation`: FR-UX-16; `governance/company-secretary`: FR-CS-07; `ledger/general-ledger`: FR-GL-09; `purchases/payables`: FR-AP-10, FR-AP-21<br>Screens: supplier-contracts |
 | `p2-ai-expansion` | `ai/knowledge-base`: AI-59; `ai/proposals`: AI-33 |
 | `p2-security-certification` | `data/audit-trail`: AUD-11; `security/application-security`: SEC-25 |
-| `p2-nemura-people` | `people/assistant`: NM-AI-05, people.draft_job_post, people.draft_interview_kit, people.draft_review_summary; `people/external-systems`: NM-EXT-04, NM-EXT-05; `people/letters`: NM-LTR-05; `people/onboarding`: NM-ONB-01; `people/performance`: NM-PRF-01, NM-PRF-02, NM-PRF-03, NM-PRF-04, NM-PRF-05; `people/recruitment`: NM-REC-01, NM-REC-02, NM-REC-03, NM-REC-04, NM-REC-05, NM-REC-06; `people/security`: NM-SEC-06<br>Screens: nm-goals, nm-hiring, nm-verify-letter |
+| `p2-nemura-people` | `people/assistant`: NM-AI-05, people.draft_job_post, people.draft_interview_kit, people.draft_review_summary; `people/external-systems`: NM-EXT-04, NM-EXT-05; `people/letters`: NM-LTR-05; `people/onboarding`: NM-ONB-01; `people/performance`: NM-PRF-01, NM-PRF-02, NM-PRF-03, NM-PRF-04, NM-PRF-05; `people/recruitment`: NM-REC-01, NM-REC-02, NM-REC-03, NM-REC-04, NM-REC-05, NM-REC-06; `people/security`: NM-SEC-06<br>Screens: nm-goals, nm-grievances, nm-hiring, nm-my-concerns, nm-verify-letter |
 | `p3-multi-entity` | `experience/navigation`: FR-UX-18; `ledger/general-ledger`: FR-GL-13; `organisation/multi-entity`: FR-ENT-01, FR-ENT-02, FR-ENT-03; `reporting/reports`: FR-RPT-12<br>Screens: consolidation, entity-setup, practice-dashboard |
 | `p3-saas-platform` | `ai/mcp-and-agents`: AI-47; `communication/email-and-notifications`: FR-NTF-06; `data/backup-and-recovery`: DR-05; `integrations/connectors`: FR-INT-28; `integrations/public-api`: FR-INT-05, FR-INT-19; `master-data/items`: FR-ITM-02; `platform/performance-and-scale`: NFR-SCALE-02; `platform/portability-and-cost`: NFR-PORT-06; `reporting/dashboards-and-kpis`: FR-KPI-08 |
 | `p3-countries-certification` | `compliance/pdpa`: CMP-PD-10; `documents/templates`: FR-TPL-08; `people/time`: NM-TIM-03; `purchases/payables`: FR-AP-11; `reporting/reports`: FR-RPT-11; `tax/gst-and-filings`: FR-TAX-08, FR-TAX-09<br>Screens: statement-notes |

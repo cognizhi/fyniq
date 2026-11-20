@@ -551,7 +551,7 @@ Source: PRD-001 §10.4
 - **THEN** it takes all that is left of its base amount and GST, so the uses add up to the deposit exactly, whatever order they are made and voided in
 
 ### Requirement: RND-BDR The GST of a bad debt written off
-The output tax of an invoice that a write-off of part of what the customer owed brings into GST bad debt relief SHALL be round(the output tax the invoice posted × the amount written off ÷ the amount the invoice made the customer owe, the base currency's minor units), half away from zero, at most what earlier claims left of the output tax, a write-off that completes the debt taking all that is left (rev 0.607; provisional, accountant to confirm).
+The output tax of an invoice that a write-off of part of what the customer owed brings into GST bad debt relief SHALL be round(the output tax the invoice posted × the amount written off ÷ the amount the invoice made the customer owe, the base currency's minor units), half away from zero, at most what earlier claims left of the output tax, a write-off that completes the debt taking all that is left (rev 0.608; provisional, accountant to confirm).
 
 Source: PRD-001 §10.4
 

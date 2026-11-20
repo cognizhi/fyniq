@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"go/format"
 	"os"
 	"slices"
 	"strings"
@@ -40,8 +41,13 @@ func main() {
 		fmt.Fprintln(os.Stderr, "sdkgen:", err)
 		os.Exit(1)
 	}
+	goSource, err := format.Source(goFile(ops))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "sdkgen:", err)
+		os.Exit(1)
+	}
 	files := map[string][]byte{
-		"sdk/go/fyniq/operations_gen.go":     goFile(ops),
+		"sdk/go/fyniq/operations_gen.go":     goSource,
 		"sdk/python/fyniq/operations_gen.py": pyFile(ops),
 	}
 	stale := false

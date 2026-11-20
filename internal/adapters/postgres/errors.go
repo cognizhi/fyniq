@@ -90,8 +90,8 @@ var fyCodes = map[string]string{
 	"FYP32": storage.CodeInvalid,
 	"FYP33": storage.CodeInvalid,
 	"FYP34": storage.CodeInvalid,
-	"FYT01": storage.CodeInvalid, // a claim of GST bad debt relief for a write-off that is not posted or is claimed already (001110)
-	"FYT02": storage.CodeInvalid, // a write-off with a live claim of relief reversed (001110)
+	"FYT01": storage.CodeInvalid, // a claim of GST bad debt relief for a write-off that is not posted or is claimed already (001120)
+	"FYT02": storage.CodeInvalid, // a write-off with a live claim of relief reversed (001120)
 	"FYW01": storage.CodeInvalid, // a webhook endpoint changed beyond its rules, or a webhook record deleted (001151)
 	"FYW02": storage.CodeInvalid, // a webhook delivery changed beyond its rules (001151)
 	"FYW03": storage.CodeInvalid, // a recorded webhook attempt changed or deleted (001151)
@@ -293,6 +293,8 @@ var fyCodes = map[string]string{
 	"FYR07": storage.CodeKPIAlert,           // a raised KPI alert changed or deleted (001102)
 	"FYR08": storage.CodeDashboardLayout,    // a dashboard layout changed other than as its next version, or deleted (001103)
 	"FYR09": storage.CodeCapTableGrant,      // a cap table grant changed other than by one revocation, or deleted (001104)
+	"FYR12": storage.CodeBoardPackPDF,       // a board pack's PDF kept without another person's approval, or reversed (001110)
+	"FYR13": storage.CodeBoardPackPDFKept,   // a second PDF kept for a board pack (001110)
 	"FYR11": storage.CodeCashSnapshot,       // a cash snapshot changed or deleted (001107)
 	"FYR10": storage.CodeAuditEngagement,    // an audit engagement, request or sample changed out of its course, deleted, or added while the engagement is not active (001106)
 	"FY060": storage.CodeAudit,

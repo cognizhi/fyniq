@@ -68,7 +68,9 @@ func (r *Response) Decode(v any) error { return json.Unmarshal(r.Body, v) }
 func (r *Response) ETag() string { return r.Header.Get("ETag") }
 
 // Previewed says whether the call was a preview: nothing was saved (FR-INT-14).
-func (r *Response) Previewed() bool { return strings.Contains(r.Header.Get("Preference-Applied"), "return=preview") }
+func (r *Response) Previewed() bool {
+	return strings.Contains(r.Header.Get("Preference-Applied"), "return=preview")
+}
 
 // RateLimit is the RateLimit header: what is left of the client's limit and the seconds until the window ends (FR-INT-16).
 func (r *Response) RateLimit() string { return r.Header.Get("RateLimit") }
@@ -126,7 +128,9 @@ func WithIfMatch(etag string) CallOption { return func(o *callOptions) { o.ifMat
 func WithPreview() CallOption { return func(o *callOptions) { o.preview = true } }
 
 // WithIdempotencyKey sends your own key instead of the one the client makes.
-func WithIdempotencyKey(key string) CallOption { return func(o *callOptions) { o.idempotencyKey = key } }
+func WithIdempotencyKey(key string) CallOption {
+	return func(o *callOptions) { o.idempotencyKey = key }
+}
 
 // NewKey is an Idempotency-Key: send the same one when a call is retried, so it runs at most once (FR-INT-08).
 func NewKey() string {

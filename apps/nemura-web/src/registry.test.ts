@@ -34,7 +34,7 @@ describe("the feature registry", () => {
     const app = readFileSync("src/App.tsx", "utf8");
     // The app serves the registry's routes, sign-in's own path and "/" (which sends a person to their landing); nothing else is a page.
     expect(app).not.toMatch(/path === "\/(?!sign-in"|join"|"\))/);
-    expect(routes.map((r) => r.path).sort()).toEqual(["/join", "/me", "/me/ask", "/me/ask/hr", "/me/details", "/me/leave", "/me/leave/new", "/me/leave/sick", "/me/letters/new", "/me/pay", "/me/pay/:id", "/me/requests", "/people", "/people/:id", "/people/:id/leave", "/people/directory", "/people/erasures", "/people/leave", "/people/leave/government-paid", "/people/letters", "/people/new", "/people/onboarding", "/people/payroll", "/people/payroll/runs/:id", "/people/requests", "/settings/assistant", "/settings/features", "/settings/fyniq", "/settings/letters", "/settings/packs", "/settings/policy", "/sign-in", "/verify"]);
+    expect(routes.map((r) => r.path).sort()).toEqual(["/join", "/me", "/me/ask", "/me/ask/hr", "/me/details", "/me/grievances", "/me/leave", "/me/leave/new", "/me/leave/sick", "/me/letters/new", "/me/pay", "/me/pay/:id", "/me/requests", "/people", "/people/:id", "/people/:id/leave", "/people/directory", "/people/erasures", "/people/grievances", "/people/leave", "/people/leave/government-paid", "/people/letters", "/people/new", "/people/onboarding", "/people/payroll", "/people/payroll/runs/:id", "/people/requests", "/settings/assistant", "/settings/features", "/settings/fyniq", "/settings/letters", "/settings/packs", "/settings/policy", "/sign-in", "/verify"]);
   });
 
   it("fails an entry without a mode, help key, help text or guide page", () => {

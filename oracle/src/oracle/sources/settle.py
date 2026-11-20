@@ -58,7 +58,7 @@ class OpenItem:
     gross: Decimal | None = None  # an invoice's total before the deposits it deducts
     credited: Decimal = money.ZERO  # what the credit notes linked to an invoice credit (rev 0.155)
     # An invoice's output GST in the base currency (the GST control line it posted, net of what the deposits it deducts bore), and what its
-    # GST bad debt relief claims were for and claimed (rev 0.607).
+    # GST bad debt relief claims were for and claimed (rev 0.608).
     output: Decimal = money.ZERO
     relief_written: Decimal = money.ZERO
     relief_claimed: Decimal = money.ZERO

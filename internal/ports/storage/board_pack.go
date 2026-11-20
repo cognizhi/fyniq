@@ -13,6 +13,12 @@ import (
 // CodeBoardPack is the database's refusal of a published pack changed, or any pack deleted, or a draft changed out of its course (FYR04).
 const CodeBoardPack = "STORAGE-BPACK-01"
 
+// CodeBoardPackPDF is the database's refusal of a board pack's PDF kept without another person's approval, or reversed (FYR12).
+const CodeBoardPackPDF = "STORAGE-BPACK-03"
+
+// CodeBoardPackPDFKept is the refusal of a second kept PDF for a pack (FYR13).
+const CodeBoardPackPDFKept = "STORAGE-BPACK-04"
+
 // CodeInvestorUpdate is the database's refusal of a sent update changed or any update deleted, or one sent from an unpublished pack (FYR05).
 const CodeInvestorUpdate = "STORAGE-IUPD-01"
 

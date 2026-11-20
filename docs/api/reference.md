@@ -13473,6 +13473,54 @@ A published board pack laid out as a PDF by the render service (FR-RPT-06): the 
   - `503` Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-08`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/board-packs/{id}/pdf/keeping`
+
+**See whether a board pack's PDF is kept as evidence** (`getBoardPackKeeping`)
+
+Where a published pack's PDF is as evidence (FR-RPT-06, FR-DOC-05): not kept, waiting for another person's approval, or kept (the file's name, hash and size, and once committed to the retention-locked store, until when it is kept). A draft pack is not found. Read as exportBoardPack is, by a Board viewer as well. Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards
+- **Parameters:**
+  - `id` (path, required): The pack's ID.
+- **Responses:**
+  - `200` OK [`BoardPackKeeping`](../../contracts/schemas/BoardPackKeeping.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/board-packs/{id}/pdf/keeping`
+
+**Ask to keep a published board pack's PDF as evidence** (`requestBoardPackKeeping`)
+
+Lays the published pack out as its PDF, attaches the file as generated evidence to a document of its own and asks another person to approve keeping it (FR-RPT-06, FR-DOC-05, FR-DOC-06): an Owner or Controller who did not ask, in Founder mode the other founder. The answer is 202 with an approval request. The file is the same bytes as exportBoardPack's, and its hash is in the request, so an approver signs for exactly that file. Approved, the file is committed to the retention-locked store and is append-only (FR-DOC-13); refused or lapsed, it may be asked for again. A pack keeps one PDF (BPACK-06); a correction is the next version of the pack. Only the Owner and Controller ask (BPACK-01), stepped up. Side effects: the draft document, the evidence row and file in staging, the approval request and its notification. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+
+- **Permission:** Create on Report definitions and schedules: save, share and schedule a report (rev 0.560). Another person approves it, stepped up.
+- **Parameters:**
+  - `id` (path, required): The pack's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `BPACK-01` Not a role that builds, publishes or sends.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `BPACK-06` The pack's PDF is kept; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `BPACK-01`, `BPACK-06`, `REPORT-08`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/board-packs/{id}/publish`
 
 **Publish a board pack** (`publishBoardPack`)

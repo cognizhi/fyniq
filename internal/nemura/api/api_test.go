@@ -25,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/checks"
 	"github.com/cognizhi/fyniq/internal/nemura/erasure"
 	"github.com/cognizhi/fyniq/internal/nemura/features"
+	"github.com/cognizhi/fyniq/internal/nemura/grievance"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/nemura/link"
@@ -614,7 +615,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LetterVerify: fakeLetterVerify{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LetterVerify: fakeLetterVerify{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, Grievances: fakeGrievances{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -849,6 +850,8 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		"NM_ERASURE_NOT_APPROVED":   {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeNotApproved, Message: "x."}},
 		"NM_ERASURE_ALREADY":        {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeAlready, Message: "x."}},
 		"NM_ERASURE_REGISTER":       {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeBadRegister, Message: "x."}},
+		"NM_GRIEVANCE_STATE":        {method: "POST", path: "/v1/grievances/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1/outcome", body: `{"finding":"substantiated","outcome":"The inquiry found that the remark was made."}`, signedIn: true, owner: true, err: &grievance.Refusal{Code: grievance.CodeState, Message: "x."}},
+		"NM_GRIEVANCE_NO_HANDLER":   {method: "POST", path: "/v1/grievances/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1/handover", body: `{"reason":"x"}`, signedIn: true, owner: true, err: &grievance.Refusal{Code: grievance.CodeNoHandler, Message: "x."}},
 		"NM_ERASURE_ACCESS_REQUEST": {method: "POST", path: "/v1/erasures", body: `{"person_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","reason":"x"}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeOpenAccessReq, Message: "x."}},
 		"NM_RATE_LIMITED": {method: "POST", path: "/v1/letter-verification", body: `{"reference":"RL-2026-0001","code":"AAAA-AAAA-AAAA-AAAA"}`, before: func() {
 			verifyLimiter = verifyLimit{}
@@ -1411,6 +1414,29 @@ func (f fakeErasure) Decide(context.Context, Session, []authz.Role, uuid.UUID, b
 func (f fakeErasure) List(context.Context, Session) ([]ErasureOrderView, error) {
 	return []ErasureOrderView{}, f.err
 }
+
+type fakeGrievances struct{ err error }
+
+func (f fakeGrievances) File(context.Context, Session, string, []uuid.UUID) (GrievanceFiled, error) {
+	return GrievanceFiled{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1", State: "open", Handler: "Sarah Koh"}, f.err
+}
+func (f fakeGrievances) Mine(context.Context, Session) ([]GrievanceMine, error) {
+	return []GrievanceMine{}, f.err
+}
+func (f fakeGrievances) Handled(context.Context, Session) ([]GrievanceRow, []GrievanceRow, error) {
+	return []GrievanceRow{}, []GrievanceRow{}, f.err
+}
+func (f fakeGrievances) Detail(context.Context, Session, uuid.UUID) (GrievanceDetail, error) {
+	return GrievanceDetail{About: []GrievanceSubject{}, Entries: []GrievanceEntry{}}, f.err
+}
+func (f fakeGrievances) Record(context.Context, Session, uuid.UUID, string, string) error {
+	return f.err
+}
+func (f fakeGrievances) Decide(context.Context, Session, uuid.UUID, string, string) error {
+	return f.err
+}
+func (f fakeGrievances) HandOver(context.Context, Session, uuid.UUID, string) error { return f.err }
+func (f fakeGrievances) Take(context.Context, Session, uuid.UUID) error             { return f.err }
 
 type fakeLetterVerify struct{ err error }
 

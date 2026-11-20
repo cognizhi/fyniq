@@ -2813,6 +2813,387 @@ components:
       required:
         - blocks
       type: object
+    GrievanceDetail:
+      additionalProperties: false
+      properties:
+        about:
+          description: The people it is about; empty when it is about a practice.
+          items:
+            $ref: "#/components/schemas/GrievanceSubject"
+          type: array
+        complainant:
+          description: Who filed it.
+          examples:
+            - Nurul Aziz
+          type: string
+        decided_at:
+          description: When it was written.
+          examples:
+            - "2026-12-04T10:00:00Z"
+          format: date-time
+          type: string
+        entries:
+          description: The inquiry record, oldest first.
+          items:
+            $ref: "#/components/schemas/GrievanceEntry"
+          type: array
+        filed_at:
+          description: When it was filed.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        finding:
+          description: What the outcome concludes.
+          enum:
+            - substantiated
+            - partly_substantiated
+            - not_substantiated
+            - no_finding
+          examples:
+            - not_substantiated
+          type: string
+        id:
+          description: The grievance.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+          format: uuid
+          type: string
+        outcome:
+          description: The written outcome.
+          examples:
+            - The inquiry found…
+          type: string
+        reason:
+          description: "Why it waits to be taken, in the list of grievances that wait: unrouted (nobody who is not involved could handle it) or handler_left (its handler has been deactivated or can no longer handle one)."
+          enum:
+            - unrouted
+            - handler_left
+          examples:
+            - handler_left
+          type: string
+        state:
+          description: Where it is.
+          enum:
+            - unrouted
+            - open
+            - decided
+          examples:
+            - open
+          type: string
+        summary:
+          description: What the complainant wrote.
+          examples:
+            - On 12 November…
+          type: string
+      required:
+        - complainant
+        - summary
+        - about
+        - entries
+        - id
+        - filed_at
+        - state
+      type: object
+    GrievanceDoneOutputBody:
+      additionalProperties: false
+      properties:
+        done:
+          description: True once it is recorded.
+          examples:
+            - true
+          type: boolean
+      required:
+        - done
+      type: object
+    GrievanceEntry:
+      additionalProperties: false
+      properties:
+        at:
+          description: When.
+          examples:
+            - "2026-11-21T10:00:00Z"
+          format: date-time
+          type: string
+        body:
+          description: What was recorded.
+          examples:
+            - Spoke with the complainant on the day.
+          type: string
+        by:
+          description: Who recorded it.
+          examples:
+            - Sarah Koh
+          type: string
+        id:
+          description: The entry.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea2
+          format: uuid
+          type: string
+        kind:
+          description: What kind of entry.
+          enum:
+            - note
+            - interview
+            - finding
+            - handover
+            - routing
+          examples:
+            - note
+          type: string
+      required:
+        - id
+        - kind
+        - body
+        - by
+        - at
+      type: object
+    GrievanceEntryInputBody:
+      additionalProperties: false
+      properties:
+        kind:
+          description: What kind of entry.
+          enum:
+            - note
+            - interview
+            - finding
+          examples:
+            - note
+          type: string
+        note:
+          description: What to record.
+          examples:
+            - Spoke with the complainant on the day.
+          maxLength: 4000
+          minLength: 1
+          type: string
+      required:
+        - kind
+        - note
+      type: object
+    GrievanceFileInputBody:
+      additionalProperties: false
+      properties:
+        about:
+          description: The people it is about, by person ID; leave out when it is about a practice.
+          examples:
+            - - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          items:
+            type: string
+          maxItems: 5
+          type: array
+        summary:
+          description: What happened, when and who was there.
+          examples:
+            - On 12 November my manager…
+          maxLength: 4000
+          minLength: 20
+          type: string
+      required:
+        - summary
+      type: object
+    GrievanceFiled:
+      additionalProperties: false
+      properties:
+        handler:
+          description: The name of the person handling it, when it has one.
+          examples:
+            - Sarah Koh
+          type: string
+        id:
+          description: The grievance.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+          format: uuid
+          type: string
+        state:
+          description: "open: someone is handling it; unrouted: nobody who is not involved can handle it yet, and it waits."
+          enum:
+            - open
+            - unrouted
+          examples:
+            - open
+          type: string
+      required:
+        - id
+        - state
+      type: object
+    GrievanceHandledOutputBody:
+      additionalProperties: false
+      properties:
+        assigned:
+          description: The grievances the caller handles, newest first.
+          items:
+            $ref: "#/components/schemas/GrievanceRow"
+          type: array
+        unrouted:
+          description: "Grievances that wait to be taken, each with its reason: nobody who is not involved could handle it, or its handler has left. The caller, if neither the complainant nor involved, may take one."
+          items:
+            $ref: "#/components/schemas/GrievanceRow"
+          type: array
+      required:
+        - assigned
+        - unrouted
+      type: object
+    GrievanceHandoverInputBody:
+      additionalProperties: false
+      properties:
+        reason:
+          description: Why it is passed on; it goes in the inquiry record.
+          examples:
+            - I have a conflict of interest.
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - reason
+      type: object
+    GrievanceMine:
+      additionalProperties: false
+      properties:
+        decided_at:
+          description: When the outcome was written.
+          examples:
+            - "2026-12-04T10:00:00Z"
+          format: date-time
+          type: string
+        filed_at:
+          description: When it was filed.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        finding:
+          description: What the outcome concludes, once decided.
+          enum:
+            - substantiated
+            - partly_substantiated
+            - not_substantiated
+            - no_finding
+          examples:
+            - partly_substantiated
+          type: string
+        handler:
+          description: Who handles it.
+          examples:
+            - Sarah Koh
+          type: string
+        id:
+          description: The grievance.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+          format: uuid
+          type: string
+        outcome:
+          description: The written outcome, once decided.
+          examples:
+            - The inquiry found…
+          type: string
+        state:
+          description: "unrouted: waiting for someone who is not involved to take it; open: being handled; decided: the outcome is written."
+          enum:
+            - unrouted
+            - open
+            - decided
+          examples:
+            - open
+          type: string
+      required:
+        - id
+        - filed_at
+        - state
+      type: object
+    GrievanceMineOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The caller's own grievances, newest first.
+          items:
+            $ref: "#/components/schemas/GrievanceMine"
+          type: array
+      required:
+        - items
+      type: object
+    GrievanceOutcomeInputBody:
+      additionalProperties: false
+      properties:
+        finding:
+          description: What the inquiry concludes.
+          enum:
+            - substantiated
+            - partly_substantiated
+            - not_substantiated
+            - no_finding
+          examples:
+            - partly_substantiated
+          type: string
+        outcome:
+          description: The written outcome, which the complainant reads.
+          examples:
+            - The inquiry found…
+          maxLength: 4000
+          minLength: 20
+          type: string
+      required:
+        - finding
+        - outcome
+      type: object
+    GrievanceRow:
+      additionalProperties: false
+      properties:
+        filed_at:
+          description: When it was filed.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: The grievance.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+          format: uuid
+          type: string
+        reason:
+          description: "Why it waits to be taken, in the list of grievances that wait: unrouted (nobody who is not involved could handle it) or handler_left (its handler has been deactivated or can no longer handle one)."
+          enum:
+            - unrouted
+            - handler_left
+          examples:
+            - handler_left
+          type: string
+        state:
+          description: Where it is.
+          enum:
+            - unrouted
+            - open
+            - decided
+          examples:
+            - open
+          type: string
+      required:
+        - id
+        - filed_at
+        - state
+      type: object
+    GrievanceSubject:
+      additionalProperties: false
+      properties:
+        name:
+          description: Their name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+      required:
+        - person_id
+        - name
+      type: object
     GroupsOutputBody:
       additionalProperties: false
       properties:
@@ -11252,6 +11633,446 @@ paths:
       summary: Record a claim filed on the portal
       tags:
         - Leave
+  /v1/grievances:
+    get:
+      description: "The grievances assigned to the caller, and the unrouted ones the caller, if not involved, may take: by identity, with no words. Only an HR administrator or the Owner. It changes nothing."
+      operationId: listGrievances
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceHandledOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The grievances you handle
+      tags:
+        - Grievances
+  /v1/grievances/{id}:
+    get:
+      description: The grievance with its inquiry record, for its handler or for an authorised person who is not involved and reads an unrouted one. A grievance the caller is not entitled to is not found, whoever they are, and a person it is about gets not found whatever role they hold. Reading it is audited.
+      operationId: getGrievance
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The grievance.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The grievance.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceDetail"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Read a grievance you handle
+      tags:
+        - Grievances
+  /v1/grievances/{id}/entries:
+    post:
+      description: The handler records a note, an interview or a finding in the inquiry. Entries are never changed or removed. Audited. It is on the never-list for the AI and MCP surfaces.
+      operationId: recordGrievanceEntry
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The grievance.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The grievance.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrievanceEntryInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceDoneOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Add to the inquiry record
+      tags:
+        - Grievances
+  /v1/grievances/{id}/handover:
+    post:
+      description: The handler passes it to the next eligible person (an HR administrator or the Owner who is neither the complainant nor anyone it is about, and not the caller), with a reason that goes in the inquiry record. When nobody else is eligible it is refused (NM_GRIEVANCE_NO_HANDLER). Audited. It is on the never-list for the AI and MCP surfaces.
+      operationId: handOverGrievance
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The grievance.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The grievance.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrievanceHandoverInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceDoneOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Pass a grievance to someone else
+      tags:
+        - Grievances
+  /v1/grievances/{id}/outcome:
+    post:
+      description: The handler, an HR administrator or the Owner, writes what the inquiry concludes and the outcome in words; the complainant then reads it. Once only. Audited. It is on the never-list for the AI and MCP surfaces.
+      operationId: decideGrievance
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The grievance.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The grievance.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrievanceOutcomeInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceDoneOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Write the outcome of a grievance
+      tags:
+        - Grievances
+  /v1/grievances/{id}/taking:
+    post:
+      description: An HR administrator or the Owner who is neither the complainant nor anyone it is about takes a grievance that waits (nobody could handle it at filing, or its handler has been deactivated or no longer holds a role that may handle one), and becomes its handler; the inquiry record kept so far becomes theirs to read. Audited. It is on the never-list for the AI and MCP surfaces.
+      operationId: takeGrievance
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The grievance.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The grievance.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceDoneOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Take a grievance that waits
+      tags:
+        - Grievances
   /v1/info:
     get:
       description: "Names the service and its build. It needs no sign-in and changes nothing: a client uses it to check that it is talking to Nemura's API and which version."
@@ -14279,6 +15100,117 @@ paths:
       summary: Make a formal flexible work request
       tags:
         - Leave
+  /v1/me/grievances:
+    get:
+      description: The caller's own grievances, newest first, with their state, who handles each and, once decided, the written outcome. The inquiry record is never shown to the complainant.
+      operationId: listMyGrievances
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceMineOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The grievances you filed
+      tags:
+        - Grievances
+    post:
+      description: PRD-002 NM-SEC-06. Any member who has not left files a confidential grievance, optionally naming the people it is about. It is routed to an HR administrator or the Owner who is neither the complainant nor anyone it is about; when nobody is eligible it waits (state unrouted). The people it is about can never read it. It is on the never-list for the AI and MCP surfaces.
+      operationId: fileGrievance
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrievanceFileInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievanceFiled"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: File a grievance
+      tags:
+        - Grievances
   /v1/me/leave-requests:
     post:
       description: "Asks for leave for the signed-in person: the days are counted and reserved in the ledger in the same transaction, a request beyond the balance is refused with the days left (NM_LEAVE_BALANCE), and one that overlaps leave already asked for is refused (NM_LEAVE_CONFLICT). The approver is told. It is audited."
@@ -21176,6 +22108,8 @@ tags:
     name: Self-service
   - description: Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07).
     name: Letters
+  - description: "The confidential grievance channel: filing, routing away from the people it is about, the inquiry record and the written outcome (NM-SEC-06)."
+    name: Grievances
   - description: Erasure of a former employee's personal data after its retention, by two people (NM-SEC-08).
     name: Privacy
   - description: "The link to Fyniq: the events Fyniq sends back, signed and received once (NM-INT-10, NM-INT-03)."

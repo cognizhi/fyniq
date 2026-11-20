@@ -1,7 +1,7 @@
--- A claim of GST bad debt relief (PRD-001 FR-AR-11, rev 0.607; p2-tax-filings task 3.2): a document of its own, `bad_debt_relief`, made and posted at once by the claim's
+-- A claim of GST bad debt relief (PRD-001 FR-AR-11, rev 0.608; p2-tax-filings task 3.2): a document of its own, `bad_debt_relief`, made and posted at once by the claim's
 -- person, naming one posted bad-debt write-off, the GST it claims (RND-BDR) and the F5 period it goes in, with the inputs the rule read, so the entry replays (ENG-06). It posts
 -- Dr the GST control account, Cr the account the write-off took the debt to (the rule bad_debt_relief@1), is never edited, and is undone by a reversal. Evidence (the debtor's
--- insolvency, the steps taken to recover the debt) attaches to it as to any document (FR-DOC-05). The widened check is added NOT VALID and validated by 001111.
+-- insolvency, the steps taken to recover the debt) attaches to it as to any document (FR-DOC-05). The widened check is added NOT VALID and validated by 001121.
 --
 -- Two backstops hold whatever the application does: a write-off is claimed once while a claim of it is live (a posted one), and a write-off with a live claim cannot be reversed
 -- (void the claim first), so the GST control account never holds a relief for a debt that was reinstated. Neither adds a table or a grant: the claim is a document, and the
@@ -15,7 +15,7 @@ SET LOCAL statement_timeout = '60s';
 ALTER TABLE fyniq.document DROP CONSTRAINT document_type_known;
 ALTER TABLE fyniq.document ADD CONSTRAINT document_type_known
   CHECK (type IN ('account_merge', 'acra_extract', 'asset_disposal', 'bad_debt_relief', 'bank_agreement', 'bank_transaction', 'bill',
-                  'bill_payment', 'budget', 'cash_advance', 'claim_reimbursement', 'claimant_bank_change', 'controller_entry',
+                  'bill_payment', 'board_pack_pdf', 'budget', 'cash_advance', 'claim_reimbursement', 'claimant_bank_change', 'controller_entry',
                   'corporate_detail', 'corporate_document', 'corporate_officer', 'credit_application', 'credit_note', 'customer_credit_application',
                   'customer_deposit', 'customer_receipt', 'customer_refund', 'director_confirmation', 'director_fee', 'director_pay_choice',
                   'director_repayment', 'director_settlement', 'equity_transaction', 'exempt_status', 'expense_claim', 'feasibility_study',

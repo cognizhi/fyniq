@@ -1721,6 +1721,10 @@ Source: PRD-001 §D
 - **THEN** the Owner, the Administrator, the Finance controller, the Accountant and the Bookkeeper can create or prepare (C)
 - **AND** scheduling is for the Owner, the Administrator, the Finance controller and the Accountant
 
+#### Scenario: Approving a kept board pack PDF (rev 0.607)
+- **WHEN** a published board pack's PDF is asked to be kept as evidence
+- **THEN** the Owner and the Finance controller hold the approving right (A) over it, another person than the one who asked signs, and no other role approves it
+
 #### Scenario: No access
 - **WHEN** a user saves, shares or schedules a report
 - **THEN** the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over it (—)

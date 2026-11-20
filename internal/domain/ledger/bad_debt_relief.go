@@ -10,7 +10,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/rounding"
 )
 
-// The GST bad debt relief claim's source type and rule version (FR-AR-11; the posting rule "GST bad debt relief", §10.2; rev 0.607;
+// The GST bad debt relief claim's source type and rule version (FR-AR-11; the posting rule "GST bad debt relief", §10.2; rev 0.608;
 // p2-tax-filings task 3.2). The write-off of a debt (write_off@1) took the whole of it, the GST the customer never paid
 // included, to an expense account and left the output tax on the invoice in the GST control account. When the claim is made
 // (IRAS's conditions: the sg-tax-filings pack's dates), the output tax in the part written off comes back out of it: Dr the GST

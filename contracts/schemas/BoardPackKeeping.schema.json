@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "description": "The document holding the file, once asked.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "evidence_id": {
+      "description": "The evidence file.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "file_name": {
+      "description": "The file's name.",
+      "examples": [
+        "board-pack-2026-10-v1.pdf"
+      ],
+      "type": "string"
+    },
+    "file_state": {
+      "description": "attached while it waits; final once committed to the retention-locked store.",
+      "enum": [
+        "attached",
+        "final"
+      ],
+      "examples": [
+        "final"
+      ],
+      "type": "string"
+    },
+    "kept_at": {
+      "description": "When it was approved.",
+      "examples": [
+        "2026-11-05T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "pack_id": {
+      "description": "The published pack.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "retain_until": {
+      "description": "Once final: kept until then (FR-DOC-02).",
+      "examples": [
+        "2034-01-01T00:00:00+08:00"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The SHA-256 of the file, in hexadecimal: the Download the PDF file of the pack has the same.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "size_bytes": {
+      "description": "Its size in bytes.",
+      "examples": [
+        48213
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "state": {
+      "description": "not_kept: no one has asked; waiting: another person's approval is awaited, or was refused or lapsed and may be asked again; kept: the PDF is evidence, append-only.",
+      "enum": [
+        "not_kept",
+        "waiting",
+        "kept"
+      ],
+      "examples": [
+        "kept"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "pack_id",
+    "state"
+  ],
+  "title": "BoardPackKeeping",
+  "type": "object"
+}
