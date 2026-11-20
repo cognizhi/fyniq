@@ -135,3 +135,17 @@ Source: PRD-002 §20 · Priority M · Phase P1
 #### Scenario: What it cannot reach
 - **WHEN** personal data sits in plaintext in an append-only row
 - **THEN** it stays, tied to the person's opaque ID, until the owner decides how it is shredded
+
+#### Scenario: Read by two people only (rev 0.63)
+- **GIVEN** a grievance Cam filed about Sam, handled by an HR administrator
+- **WHEN** Sam, another HR administrator, the Owner who is not the handler or anyone else reads it
+- **THEN** they find nothing, whatever role Sam holds, and only Cam and the handler read it
+- **AND** Cam never reads the inquiry record
+
+#### Scenario: Routed away from the people it is about (rev 0.63)
+- **WHEN** a grievance is about every HR administrator
+- **THEN** the Owner handles it, and when it is about everyone authorised it is unrouted and waits to be taken by an authorised person who is not involved
+
+#### Scenario: The inquiry and the outcome (rev 0.63)
+- **WHEN** the handler records notes, passes it on with a reason or writes the outcome
+- **THEN** each is audited without the words, entries are never changed, the outcome is written once and the person who raised it reads it

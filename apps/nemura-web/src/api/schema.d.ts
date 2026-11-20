@@ -520,6 +520,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/grievances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The grievances you handle
+         * @description The grievances assigned to the caller, and the unrouted ones the caller, if not involved, may take: by identity, with no words. Only an HR administrator or the Owner. It changes nothing.
+         */
+        get: operations["listGrievances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grievances/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a grievance you handle
+         * @description The grievance with its inquiry record, for its handler or for an authorised person who is not involved and reads an unrouted one. A grievance the caller is not entitled to is not found, whoever they are, and a person it is about gets not found whatever role they hold. Reading it is audited.
+         */
+        get: operations["getGrievance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grievances/{id}/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add to the inquiry record
+         * @description The handler records a note, an interview or a finding in the inquiry. Entries are never changed or removed. Audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["recordGrievanceEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grievances/{id}/handover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pass a grievance to someone else
+         * @description The handler passes it to the next eligible person (an HR administrator or the Owner who is neither the complainant nor anyone it is about, and not the caller), with a reason that goes in the inquiry record. When nobody else is eligible it is refused (NM_GRIEVANCE_NO_HANDLER). Audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["handOverGrievance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grievances/{id}/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Write the outcome of a grievance
+         * @description The handler, an HR administrator or the Owner, writes what the inquiry concludes and the outcome in words; the complainant then reads it. Once only. Audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["decideGrievance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grievances/{id}/taking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take an unrouted grievance
+         * @description An HR administrator or the Owner who is neither the complainant nor anyone it is about takes a grievance nobody could handle at filing, and becomes its handler. Audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["takeGrievance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/info": {
         parameters: {
             query?: never;
@@ -1374,6 +1494,30 @@ export interface paths {
          * @description Records the signed-in person's formal request (type, start, end and reason). Its receipt date is today and never restarts; the employer's written reply is due the country pack's months after (two). The people team is told. It is audited.
          */
         post: operations["requestFlexibleWork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/grievances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The grievances you filed
+         * @description The caller's own grievances, newest first, with their state, who handles each and, once decided, the written outcome. The inquiry record is never shown to the complainant.
+         */
+        get: operations["listMyGrievances"];
+        put?: never;
+        /**
+         * File a grievance
+         * @description PRD-002 NM-SEC-06. Any member who has not left files a confidential grievance, optionally naming the people it is about. It is routed to an HR administrator or the Owner who is neither the complainant nor anyone it is about; when nobody is eligible it waits (state unrouted). The people it is about can never read it. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["fileGrievance"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5033,6 +5177,245 @@ export interface components {
         GovListOutputBody: {
             /** @description Every block of government-paid leave, soonest claim deadline first. */
             blocks: components["schemas"]["GovBlock"][] | null;
+        };
+        GrievanceDetail: {
+            /** @description The people it is about; empty when it is about a practice. */
+            about: components["schemas"]["GrievanceSubject"][];
+            /**
+             * @description Who filed it.
+             * @example Nurul Aziz
+             */
+            complainant: string;
+            /**
+             * Format: date-time
+             * @description When it was written.
+             * @example 2026-12-04T10:00:00Z
+             */
+            decided_at?: string;
+            /** @description The inquiry record, oldest first. */
+            entries: components["schemas"]["GrievanceEntry"][];
+            /**
+             * Format: date-time
+             * @description When it was filed.
+             * @example 2026-11-20T10:00:00Z
+             */
+            filed_at: string;
+            /**
+             * @description What the outcome concludes.
+             * @example not_substantiated
+             * @enum {string}
+             */
+            finding?: "substantiated" | "partly_substantiated" | "not_substantiated" | "no_finding";
+            /**
+             * Format: uuid
+             * @description The grievance.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+             */
+            id: string;
+            /**
+             * @description The written outcome.
+             * @example The inquiry found…
+             */
+            outcome?: string;
+            /**
+             * @description Where it is.
+             * @example open
+             * @enum {string}
+             */
+            state: "unrouted" | "open" | "decided";
+            /**
+             * @description What the complainant wrote.
+             * @example On 12 November…
+             */
+            summary: string;
+        };
+        GrievanceDoneOutputBody: {
+            /**
+             * @description True once it is recorded.
+             * @example true
+             */
+            done: boolean;
+        };
+        GrievanceEntry: {
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-21T10:00:00Z
+             */
+            at: string;
+            /**
+             * @description What was recorded.
+             * @example Spoke with the complainant on the day.
+             */
+            body: string;
+            /**
+             * @description Who recorded it.
+             * @example Sarah Koh
+             */
+            by: string;
+            /**
+             * Format: uuid
+             * @description The entry.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea2
+             */
+            id: string;
+            /**
+             * @description What kind of entry.
+             * @example note
+             * @enum {string}
+             */
+            kind: "note" | "interview" | "finding" | "handover" | "routing";
+        };
+        GrievanceEntryInputBody: {
+            /**
+             * @description What kind of entry.
+             * @example note
+             * @enum {string}
+             */
+            kind: "note" | "interview" | "finding";
+            /**
+             * @description What to record.
+             * @example Spoke with the complainant on the day.
+             */
+            note: string;
+        };
+        GrievanceFileInputBody: {
+            /**
+             * @description The people it is about, by person ID; leave out when it is about a practice.
+             * @example [
+             *       "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"
+             *     ]
+             */
+            about?: string[];
+            /**
+             * @description What happened, when and who was there.
+             * @example On 12 November my manager…
+             */
+            summary: string;
+        };
+        GrievanceFiled: {
+            /**
+             * @description The name of the person handling it, when it has one.
+             * @example Sarah Koh
+             */
+            handler?: string;
+            /**
+             * Format: uuid
+             * @description The grievance.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+             */
+            id: string;
+            /**
+             * @description open: someone is handling it; unrouted: nobody who is not involved can handle it yet, and it waits.
+             * @example open
+             * @enum {string}
+             */
+            state: "open" | "unrouted";
+        };
+        GrievanceHandledOutputBody: {
+            /** @description The grievances the caller handles, newest first. */
+            assigned: components["schemas"]["GrievanceRow"][];
+            /** @description Grievances nobody who is not involved could handle: the caller, if not involved, may take one. */
+            unrouted: components["schemas"]["GrievanceRow"][];
+        };
+        GrievanceHandoverInputBody: {
+            /**
+             * @description Why it is passed on; it goes in the inquiry record.
+             * @example I have a conflict of interest.
+             */
+            reason: string;
+        };
+        GrievanceMine: {
+            /**
+             * Format: date-time
+             * @description When the outcome was written.
+             * @example 2026-12-04T10:00:00Z
+             */
+            decided_at?: string;
+            /**
+             * Format: date-time
+             * @description When it was filed.
+             * @example 2026-11-20T10:00:00Z
+             */
+            filed_at: string;
+            /**
+             * @description What the outcome concludes, once decided.
+             * @example partly_substantiated
+             * @enum {string}
+             */
+            finding?: "substantiated" | "partly_substantiated" | "not_substantiated" | "no_finding";
+            /**
+             * @description Who handles it.
+             * @example Sarah Koh
+             */
+            handler?: string;
+            /**
+             * Format: uuid
+             * @description The grievance.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+             */
+            id: string;
+            /**
+             * @description The written outcome, once decided.
+             * @example The inquiry found…
+             */
+            outcome?: string;
+            /**
+             * @description unrouted: waiting for someone who is not involved to take it; open: being handled; decided: the outcome is written.
+             * @example open
+             * @enum {string}
+             */
+            state: "unrouted" | "open" | "decided";
+        };
+        GrievanceMineOutputBody: {
+            /** @description The caller's own grievances, newest first. */
+            items: components["schemas"]["GrievanceMine"][];
+        };
+        GrievanceOutcomeInputBody: {
+            /**
+             * @description What the inquiry concludes.
+             * @example partly_substantiated
+             * @enum {string}
+             */
+            finding: "substantiated" | "partly_substantiated" | "not_substantiated" | "no_finding";
+            /**
+             * @description The written outcome, which the complainant reads.
+             * @example The inquiry found…
+             */
+            outcome: string;
+        };
+        GrievanceRow: {
+            /**
+             * Format: date-time
+             * @description When it was filed.
+             * @example 2026-11-20T10:00:00Z
+             */
+            filed_at: string;
+            /**
+             * Format: uuid
+             * @description The grievance.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea1
+             */
+            id: string;
+            /**
+             * @description Where it is.
+             * @example open
+             * @enum {string}
+             */
+            state: "unrouted" | "open" | "decided";
+        };
+        GrievanceSubject: {
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            name: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
         };
         GroupsOutputBody: {
             /** @description The pay groups by name. */
@@ -11673,6 +12056,522 @@ export interface operations {
             };
         };
     };
+    listGrievances: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrievanceHandledOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getGrievance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The grievance. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrievanceDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordGrievanceEntry: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The grievance. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrievanceEntryInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrievanceDoneOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    handOverGrievance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The grievance. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrievanceHandoverInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrievanceDoneOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideGrievance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The grievance. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrievanceOutcomeInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrievanceDoneOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    takeGrievance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The grievance. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrievanceDoneOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getInfo: {
         parameters: {
             query?: never;
@@ -15103,6 +16002,146 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyGrievances: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrievanceMineOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    fileGrievance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrievanceFileInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrievanceFiled"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

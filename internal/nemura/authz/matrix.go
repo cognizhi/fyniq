@@ -7,6 +7,7 @@ var Rows = []Row{
 	{"Own profile, balances, payslips, letters, requests", [RoleCount]string{"O", "O", "O", "O", "O", "O", "O", "O", "O", "O (as the asking person)"}},
 	{"Own file beyond routine release (NM-SEC-07)", [RoleCount]string{"C (request)", "C (request)", "C (handles)", "A", "—", "—", "—", "—", "V", "—"}},
 	{"Erasure of a former employee's data (NM-SEC-08)", [RoleCount]string{"—", "—", "—", "C/A", "—", "—", "—", "—", "C/A", "—"}},
+	{"Grievances (NM-SEC-06)", [RoleCount]string{"C (own)", "—", "—", "C/A (when assigned)", "—", "—", "—", "—", "C/A (when assigned)", "—"}},
 	{"Directory and org chart", [RoleCount]string{"V", "V", "V", "V", "V", "V", "V", "V", "V", "V"}},
 	{"People records (not restricted)", [RoleCount]string{"—", "V (reports)", "C", "C/A", "V", "—", "—", "—", "A", "V (within the asking person's rights)"}},
 	{"NRIC or FIN", [RoleCount]string{"—", "—", "M", "V", "V (statutory filings)", "—", "—", "—", "V", "—"}},

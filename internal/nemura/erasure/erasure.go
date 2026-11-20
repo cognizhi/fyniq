@@ -171,6 +171,7 @@ var Classes = map[string]Bucket{
 	"letters":                AppendOnly,
 	"access-requests":        AppendOnly, // an answered request and its decisions are kept as the record of how the obligation was met
 	"legal-holds":            AppendOnly,
+	"grievances":             AppendOnly, // a grievance is final once decided and its inquiry record is append-only; its words may name people, so a de-identification of them is left (PRD-002 NM-SEC-06, NM-SEC-08)
 }
 
 // ErrNotFound is returned for an order that does not exist.

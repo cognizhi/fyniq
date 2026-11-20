@@ -959,3 +959,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura-verify-letter: verify an issued letter (NM-LTR-05)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/verify-letter.md -> nemura.verify-letter (the file look-up, the disclosure link, the withdraw button)
+
+## [2026-11-20] compile | docs/user-guide/nemura/grievances.md -> nemura.grievances (new: the confidential grievance channel)

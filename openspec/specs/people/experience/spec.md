@@ -34,6 +34,10 @@ Source: PRD-002 §B
 - **WHEN** an Owner or an HR administrator asks for an erasure
 - **THEN** another Owner or HR administrator approves it, and no other role reads or changes one
 
+#### Scenario: Grievances (rev 0.63)
+- **WHEN** a member raises a grievance
+- **THEN** only the HR administrator or the Owner assigned to it handles it, a person it is about never reads it, and no other role reads or changes one
+
 ### Requirement: NM-ROLE-01 Roles are Nemura's own
 Nemura's roles SHALL be assigned per organisation with Appendix B's rights, SHALL never grant rights in Fyniq or the reverse, and a person with rights in both SHALL see the workspace switch.
 
