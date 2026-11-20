@@ -259,6 +259,12 @@ func (g Importer) read(ctx context.Context, key string) ([]byte, error) {
 // bank's reference. A signal the account has already (the same bank reference: the report is sent again through the day) is not recorded
 // twice, and the debits are left: an incoming-funds signal is only for money that came in. The daily MT940 closes them (FR-BNK-16).
 func Intraday(ctx context.Context, u storage.UnitOfWork, account storage.MoneyAccount, message *uuid.UUID, receivedAt time.Time, data []byte) error {
+	return IntradayOf(ctx, u, account, "", message, receivedAt, data)
+}
+
+// IntradayOf is Intraday for a report that may hold the statements of several accounts, as a bank's folder of reports does: only the statements that name identifier are the account's, and
+// a statement that names another account is left. An empty identifier takes every statement (a report emailed for one account).
+func IntradayOf(ctx context.Context, u storage.UnitOfWork, account storage.MoneyAccount, identifier string, message *uuid.UUID, receivedAt time.Time, data []byte) error {
 	sts, err := bankfile.Parse(bankfile.FormatMT942, data, nil, money.Currency{}, bankfile.DefaultLimits)
 	if err != nil {
 		var be *bankfile.Error
@@ -278,6 +284,9 @@ func Intraday(ctx context.Context, u storage.UnitOfWork, account storage.MoneyAc
 		}
 	}
 	for _, st := range sts {
+		if identifier != "" && st.Account != identifier {
+			continue
+		}
 		for _, l := range st.Lines {
 			if l.Amount.Sign() <= 0 {
 				continue

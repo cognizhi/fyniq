@@ -224,7 +224,7 @@ Source: PRD-001 §6.2
 - **THEN** it is refused
 
 ### Requirement: Auditor role
-The external Auditor SHALL read everything in scope, the audit trail and evidence, and export, through time-boxed access with an expiry date, and SHALL make no change.
+The external Auditor SHALL read everything in scope, the audit trail and evidence, and export, through time-boxed access with an expiry date, and SHALL make no change except to ask for items and draw samples inside an engagement an Owner opened for them (rev 0.574).
 
 Source: PRD-001 §6.2
 
@@ -238,7 +238,7 @@ Source: PRD-001 §6.2
 
 #### Scenario: Auditor limits
 - **GIVEN** Standard mode
-- **WHEN** the Auditor tries to make any change, or to see payroll personal data that was not explicitly granted
+- **WHEN** the Auditor tries to make any change other than their requests and samples of an engagement, or to see payroll personal data that was not explicitly granted
 - **THEN** it is refused
 
 ### Requirement: Tax agent role
@@ -1724,6 +1724,42 @@ Source: PRD-001 §D
 #### Scenario: No access
 - **WHEN** a user saves, shares or schedules a report
 - **THEN** the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over it (—)
+
+### Requirement: Permission matrix: Auditor engagement: open, confirm and close
+In Standard mode, each role SHALL hold only the rights over an auditor's engagement that the permission matrix gives it (rev 0.574): an Owner opens it and confirms it, a second Owner in Team mode, and closes it.
+
+Source: PRD-001 §D
+
+#### Scenario: Create or approve
+- **WHEN** a user opens, confirms or closes an auditor's engagement
+- **THEN** the Owner can create it and sign it (C/A, plus a second approver)
+
+#### Scenario: View
+- **WHEN** a user reads an auditor's engagement
+- **THEN** the Administrator, the Finance controller, the Accountant and the Auditor can view it (V)
+
+#### Scenario: No access
+- **WHEN** a user reads or changes an auditor's engagement
+- **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over it (—)
+
+### Requirement: Permission matrix: Auditor requests and samples: ask, answer, draw
+In Standard mode, each role SHALL hold only the rights over an auditor's requests and samples that the permission matrix gives it (rev 0.574): the Auditor asks, accepts and draws samples, and the Owner, the Finance controller and the Accountant answer.
+
+Source: PRD-001 §D
+
+#### Scenario: Create or prepare
+- **WHEN** a user asks for an item, accepts an answer or draws a sample
+- **THEN** the Auditor can create it (V/C, ask and sample)
+- **WHEN** a user answers a request
+- **THEN** the Owner, the Finance controller and the Accountant can create it (V/C, answer)
+
+#### Scenario: View
+- **WHEN** a user reads the requests and samples
+- **THEN** the Administrator can view them (V)
+
+#### Scenario: No access
+- **WHEN** a user reads or changes the requests and samples
+- **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over them (—)
 
 ### Requirement: Super admin outside the permission matrix
 The Super admin (FR-ADM-06/07) SHALL be an installation role outside the permission matrix that manages sign-in providers, installation-wide email and messaging connections and announcements to everyone, and SHALL see an organisation's data only as a member.

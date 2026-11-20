@@ -309,7 +309,7 @@ func TestAuditorReadsEverythingAndChangesNothing(t *testing.T) {
 				t.Errorf("the Auditor holds %c on %q", r, area)
 			}
 		}
-		if area != authz.OwnNotifications && area != authz.OwnDataRequests && area != authz.OwnMCPConnection && holdsRight(authz.Auditor, area, authz.Create) {
+		if area != authz.OwnNotifications && area != authz.OwnDataRequests && area != authz.OwnMCPConnection && area != authz.AuditRequests && holdsRight(authz.Auditor, area, authz.Create) { // AuditRequests: the Auditor's one C, to ask and draw samples (FR-UX-42, rev 0.574)
 			t.Errorf("the Auditor may create on %q", area)
 		}
 	}

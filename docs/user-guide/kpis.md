@@ -56,6 +56,10 @@ Accountant enters them each month:
 
 Each change is saved as a new version, with who entered it and when, in the audit trail.
 
+### Counts from recurring invoices come first
+
+When the organisation has active recurring invoices, Fyniq counts customers from them and uses that count ahead of an entry; the headcount stays as entered. A paused invoice counts for no month, and a customer with two invoices counts once. The KPIs that use the counts say **Counted from recurring invoices** instead of **Entered**.
+
 ## Common problems
 
 - **"Enter it with the other two customer counts, or clear all three."** The paying, new and lost

@@ -206,6 +206,7 @@ export const routes = [
   { kind: "route", id: "dashboards", path: "/dashboards", mode: "basic", signedIn: true, help: "reports.dashboards", guide: "reports.dashboards" },
   { kind: "route", id: "board-pack", path: "/reports/board-pack", mode: "expert", signedIn: true, help: "reports.board-pack", guide: "reports.board-pack" },
   { kind: "route", id: "investor-updates", path: "/equity/updates", mode: "expert", signedIn: true, help: "equity.updates", guide: "equity.updates" },
+  { kind: "route", id: "auditor-engagement", path: "/auditor/engagement", mode: "expert", signedIn: true, help: "audit.engagement", guide: "audit.engagement" },
   { kind: "route", id: "board-portal", path: "/board", mode: "basic", signedIn: true, help: "board.portal", guide: "equity.board-portal" },
   { kind: "route", id: "general-ledger", path: "/reports/general-ledger", mode: "expert", signedIn: true, help: "reports.general-ledger", guide: "reports.general-ledger" },
   { kind: "route", id: "chart-of-accounts", path: "/accounting/chart-of-accounts", mode: "expert", signedIn: true, help: "accounting.chart", guide: "accounting.chart" },

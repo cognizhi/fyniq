@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "drawn_at": {
+      "description": "When it was drawn.",
+      "examples": [
+        "2027-01-06T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "engagement_id": {
+      "description": "Its engagement.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The sample's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b15"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "items": {
+      "description": "The sampled lines, in the order the seed ranks them.",
+      "items": {
+        "$ref": "AuditSampleLine.schema.json"
+      },
+      "type": "array"
+    },
+    "population": {
+      "description": "How many lines the rule qualified.",
+      "examples": [
+        312
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "rule": {
+      "$ref": "AuditSampleRule.schema.json",
+      "description": "The rule it was drawn by."
+    },
+    "seed": {
+      "description": "The seed: the same seed and rule over the same ledger draw the same lines.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c9b16"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "engagement_id",
+    "rule",
+    "seed",
+    "population",
+    "items",
+    "drawn_at"
+  ],
+  "title": "AuditSampleBody",
+  "type": "object"
+}

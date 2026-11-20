@@ -100,3 +100,37 @@ func TestStatementFilesInADropFolderAreAnAccountsTransactions(t *testing.T) {
 		t.Errorf("camt.053: %+v, %v", a, err)
 	}
 }
+
+type aged struct {
+	memory
+	mod map[string]time.Time
+}
+
+func (a aged) List(ctx context.Context) ([]ports.DropFile, error) {
+	out, _ := a.memory.List(ctx)
+	for i := range out {
+		out[i].ModTime = a.mod[out[i].Name]
+	}
+	return out, nil
+}
+
+// Intraday reports are read whole, oldest first, only when they changed since the time asked; a bank with no intraday folder gives none, and a PGP-wrapped file stops the call with its
+// reason (FR-BNK-16, FR-BNK-17).
+// req: FR-BNK-16
+func TestIntradayReportsAreTheFilesThatChangedSinceTheTimeAsked(t *testing.T) {
+	ctx := context.Background()
+	now := time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC)
+	f := aged{memory: memory{"new.mt942": []byte("N"), "mid.mt942": []byte("M"), "old.mt942": []byte("O")},
+		mod: map[string]time.Time{"new.mt942": now, "mid.mt942": now.Add(-24 * time.Hour), "old.mt942": now.AddDate(0, 0, -30)}}
+	got, err := (Statements{Intraday: f}).IntradayReports(ctx, now.AddDate(0, 0, -3))
+	if err != nil || len(got) != 2 || got[0].Name != "mid.mt942" || got[1].Name != "new.mt942" || string(got[1].Data) != "N" {
+		t.Fatalf("the reports: %+v, %v", got, err)
+	}
+	if none, err := (Statements{}).IntradayReports(ctx, now); err != nil || none != nil {
+		t.Errorf("a bank with no intraday folder: %+v, %v", none, err)
+	}
+	enc := aged{memory: memory{"x.mt942.pgp": []byte("-----BEGIN PGP MESSAGE-----")}, mod: map[string]time.Time{"x.mt942.pgp": now}}
+	if _, err := (Statements{Intraday: enc}).IntradayReports(ctx, now.Add(-time.Hour)); !errors.Is(err, ErrEncrypted) {
+		t.Errorf("a PGP report: %v", err)
+	}
+}

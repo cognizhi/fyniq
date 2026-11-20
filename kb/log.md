@@ -896,6 +896,12 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | ai-proposals: the assistant proposes a know-how page, never a figure (AI-59)
 
+## [2026-11-20] compile | audit.engagement: the auditor's engagement, requests and samples (FR-UX-42)
+
+## [2026-11-20] compile | planning.cash: how the forecast did, the kept weekly projections against the cash (FR-PLN-04)
+
+## [2026-11-20] compile | reports.kpis: customer counts from recurring invoices ahead of an entry (FR-KPI-04)
+
 ## [2026-11-20] compile | contacts.and-items: emailing the portal link (FR-AR-14)
 
 ## [2026-11-20] compile | payroll-salary-payments.md -> kb (who is away)
@@ -909,3 +915,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | projects.billing: costs left out of a project's progress (FR-PRJ-11)
 
 ## [2026-11-20] compile | claims-approve-team.md -> kb (To approve for a department approver)
+
+## [2026-11-20] compile | banking.accounts: intraday reports from a drop folder (FR-BNK-17)
