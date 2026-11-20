@@ -4,7 +4,10 @@ package nemura_test
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/clock"
@@ -14,7 +17,7 @@ import (
 
 // A report of records due for deletion is listed by kind and count with no name, is reviewed once by a person, and only after that does the nightly job delete and mark it deleted; a report not reviewed by
 // its date is overdue (NM-SEC-05).
-// req: NM-SEC-05
+// req: NM-SEC-05, NM-REC-05
 // asvs: V8.3.1
 func TestADeletionReportIsListedReviewedOnceAndDeletedOnlyAfterTheReview(t *testing.T) {
 	c := newHiringCo(t)
@@ -41,12 +44,39 @@ func TestADeletionReportIsListedReviewedOnceAndDeletedOnlyAfterTheReview(t *test
 	if l2, _ := late.List(ctx, c.sess(c.owner)); len(l2) != 1 || !l2[0].Overdue {
 		t.Errorf("a report not reviewed by its date is overdue: %+v", l2)
 	}
+	// N.1 #11 and #12: the waiting report is a ⚠ for Hiring and for Records, a ✖ for Records once its date has passed, and nothing once it is reviewed.
+	checksAt := func(on time.Time) string {
+		ps, err := nemura.NewPacksService(store(t, "nemura_api"), clock.NewFrozen(on))
+		if err != nil {
+			t.Fatal(err)
+		}
+		all, err := ps.Checks(ctx, c.sess(c.owner), on)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []string
+		for _, f := range all {
+			if f.Check == 11 || f.Check == 12 {
+				got = append(got, fmt.Sprintf("#%d %s", f.Check, f.Status))
+			}
+		}
+		return strings.Join(got, ", ")
+	}
+	if got := checksAt(due); got != "#11 warn, #12 warn" {
+		t.Errorf("Checks with a report waiting: %q", got)
+	}
+	if got := checksAt(due.AddDate(0, 0, 31)); got != "#11 warn, #12 fail" {
+		t.Errorf("Checks with a report overdue: %q", got)
+	}
 	id := mustID(t, l[0].ID)
 	if err := svc.Review(ctx, c.sess(c.owner), id); err != nil {
 		t.Fatal(err)
 	}
 	if err := svc.Review(ctx, c.sess(c.owner), id); err == nil {
 		t.Error("a report reviewed twice")
+	}
+	if got := checksAt(due.AddDate(0, 0, 31)); got != "" {
+		t.Errorf("Checks after the review: %q", got)
 	}
 	if l, _ = svc.List(ctx, c.sess(c.owner)); l[0].State != "reviewed" || l[0].ReviewedBy != "Owen Owner" {
 		t.Errorf("%+v", l[0])

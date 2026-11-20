@@ -7589,6 +7589,154 @@
     "paused",
     "archived"
    ]
+  },
+  {
+   "id": "nm-hiring-candidate",
+   "file": "NmHiringCandidate",
+   "title": "Candidate, interview kit and their own link",
+   "canvas": "nemura-setup",
+   "module": "Hiring and performance",
+   "route": "/people/hiring/:role/candidates/:id",
+   "kind": "detail",
+   "phase": "P2",
+   "roles": [
+    "Recruiter",
+    "HR officer",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "NM-REC-04",
+    "NM-REC-05",
+    "NM-REC-03"
+   ],
+   "purpose": "A candidate's board position, interviewers, scores, the role's interview kit with its fair-wording check, and the link that lets the candidate see their own data.",
+   "content": [
+    "Interviewers to assign",
+    "Scores",
+    "Interview kit with findings",
+    "Make a link for the candidate, shown once",
+    "Links made and revoke"
+   ],
+   "states": [
+    "no interviewer has the role",
+    "link made",
+    "link revoked",
+    "hired: record due six months after the start"
+   ]
+  },
+  {
+   "id": "nm-my-interviews",
+   "file": "NmMyInterviews",
+   "title": "My interviews",
+   "canvas": "nemura-me",
+   "module": "Hiring and performance",
+   "route": "/me/interviews",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "Interviewer"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-REC-04"
+   ],
+   "purpose": "An interviewer's own candidates: read the application and score the kit's criteria from 1 to 5.",
+   "content": [
+    "Candidates assigned to me",
+    "Criteria and what I scored",
+    "The CV they gave",
+    "Score form"
+   ],
+   "states": [
+    "no candidate assigned",
+    "no kit yet"
+   ]
+  },
+  {
+   "id": "nm-my-hiring-roles",
+   "file": "NmMyHiringRoles",
+   "title": "Roles I am hiring for",
+   "canvas": "nemura-me",
+   "module": "Hiring and performance",
+   "route": "/me/hiring-roles",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "Line manager"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-REC-01"
+   ],
+   "purpose": "The roles that name the line manager as hiring manager, with candidate counts by stage and no salary or name.",
+   "content": [
+    "Role, team, state",
+    "Start aimed for and the post's dates",
+    "Counts by stage"
+   ],
+   "states": [
+    "no role names me",
+    "waiting for the Owner"
+   ]
+  },
+  {
+   "id": "nm-my-application",
+   "file": "NmMyApplication",
+   "title": "Your application",
+   "canvas": "nemura-setup",
+   "module": "Public",
+   "route": "/my-application",
+   "kind": "form",
+   "phase": "P2",
+   "roles": [
+    "Candidate (public)"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-REC-05"
+   ],
+   "purpose": "A candidate's own look at their data through a link the hiring team made, with the withdrawal of their consent to be kept.",
+   "content": [
+    "Role and where it stands",
+    "What they gave",
+    "Withdraw consent",
+    "When their data is deleted"
+   ],
+   "states": [
+    "link not valid",
+    "consent withdrawn",
+    "hired"
+   ]
+  },
+  {
+   "id": "nm-careers",
+   "file": "NmCareers",
+   "title": "Careers",
+   "canvas": "nemura-setup",
+   "module": "Public",
+   "route": "/careers/:slug",
+   "kind": "detail",
+   "phase": "P2",
+   "roles": [
+    "Visitor (public)"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-REC-02",
+    "NM-REC-04",
+    "NM-REC-05"
+   ],
+   "purpose": "A company's careers page: published roles with no salary and no person, and the form to apply with the separate consent to be kept.",
+   "content": [
+    "Published posts",
+    "Apply with name, email and CV text",
+    "Consent to be kept, separately"
+   ],
+   "states": [
+    "no careers page at this address",
+    "no published post"
+   ]
   }
  ]
 }

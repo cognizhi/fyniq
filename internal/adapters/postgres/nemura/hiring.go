@@ -69,12 +69,29 @@ func RequestRequisition(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.T
 			return uuid.Nil, &hiring.Refusal{Code: hiring.CodeNotFound, Message: "The person to replace is not in this organisation: choose them from the directory."}
 		}
 	}
+	// The hiring manager is chosen from the directory: a person who has a sign-in, whose member is the one who reads the role's progress.
+	var manager *uuid.UUID
+	if in.HiringManager != "" {
+		notFound := &hiring.Refusal{Code: hiring.CodeNotFound, Message: "The hiring manager is not a person with a sign-in in this organisation: choose them from the directory."}
+		u, err := uuid.Parse(in.HiringManager)
+		if err != nil {
+			return uuid.Nil, notFound
+		}
+		var m *uuid.UUID
+		if err := tx.QueryRow(ctx, `SELECT member_id FROM nemura.person WHERE id = $1`, u).Scan(&m); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, err
+		}
+		if m == nil {
+			return uuid.Nil, notFound
+		}
+		manager = m
+	}
 	id := uuid.Must(uuid.NewV7())
-	if _, err := tx.Exec(ctx, `INSERT INTO nemura.requisition (id, title, department, reason, replaces_person, salary_min, salary_max, target_start, pass_needed, requested_by, requested_at)
-VALUES ($1, $2, $3, $4, $5, $6::numeric, $7::numeric, $8, $9, $10, $11)`, id, strings.TrimSpace(in.Title), strings.TrimSpace(in.Department), in.Reason, replaces, in.SalaryMin, in.SalaryMax, day(start), in.PassNeeded, by, at); err != nil {
+	if _, err := tx.Exec(ctx, `INSERT INTO nemura.requisition (id, title, department, reason, replaces_person, salary_min, salary_max, target_start, pass_needed, requested_by, requested_at, hiring_manager)
+VALUES ($1, $2, $3, $4, $5, $6::numeric, $7::numeric, $8, $9, $10, $11, $12)`, id, strings.TrimSpace(in.Title), strings.TrimSpace(in.Department), in.Reason, replaces, in.SalaryMin, in.SalaryMax, day(start), in.PassNeeded, by, at, manager); err != nil {
 		return uuid.Nil, hiringError(err)
 	}
-	return id, Audit(ctx, tx, org, at, user(by), "nemura.requisition.requested", audit.Object{Type: "requisition", ID: id}, map[string]audit.Change{"reason": {nil, in.Reason}, "pass_needed": {nil, in.PassNeeded}}, "")
+	return id, Audit(ctx, tx, org, at, user(by), "nemura.requisition.requested", audit.Object{Type: "requisition", ID: id}, map[string]audit.Change{"reason": {nil, in.Reason}, "pass_needed": {nil, in.PassNeeded}, "hiring_manager": {nil, manager != nil}}, "")
 }
 
 func loadPost(ctx context.Context, tx pgx.Tx, req uuid.UUID, passNeeded bool) (*api.JobPost, error) {
@@ -119,9 +136,10 @@ func loadPost(ctx context.Context, tx pgx.Tx, req uuid.UUID, passNeeded bool) (*
 }
 
 const requisitionColumns = `r.id, r.title, r.department, r.reason, r.replaces_person, coalesce(p.legal_name, ''), r.salary_min::numeric(20,2)::text, r.salary_max::numeric(20,2)::text, r.target_start, r.pass_needed, r.plan_status, r.state,
-  coalesce(rb.display_name, ''), r.requested_at, coalesce(db.display_name, ''), r.decided_at, coalesce(r.decision_reason, '')`
+  coalesce(rb.display_name, ''), r.requested_at, coalesce(db.display_name, ''), r.decided_at, coalesce(r.decision_reason, ''), r.hiring_manager, coalesce(hm.display_name, '')`
 const requisitionFrom = ` FROM nemura.requisition r LEFT JOIN nemura.person p ON p.organisation_id = r.organisation_id AND p.id = r.replaces_person
-LEFT JOIN nemura.member rb ON rb.organisation_id = r.organisation_id AND rb.id = r.requested_by LEFT JOIN nemura.member db ON db.organisation_id = r.organisation_id AND db.id = r.decided_by `
+LEFT JOIN nemura.member rb ON rb.organisation_id = r.organisation_id AND rb.id = r.requested_by LEFT JOIN nemura.member db ON db.organisation_id = r.organisation_id AND db.id = r.decided_by
+LEFT JOIN nemura.member hm ON hm.organisation_id = r.organisation_id AND hm.id = r.hiring_manager `
 
 func scanRequisition(ctx context.Context, tx pgx.Tx, row pgx.Row) (api.Requisition, error) {
 	var r api.Requisition
@@ -129,8 +147,12 @@ func scanRequisition(ctx context.Context, tx pgx.Tx, row pgx.Row) (api.Requisiti
 	var start time.Time
 	var requested time.Time
 	var decided *time.Time
-	if err := row.Scan(&r.ID, &r.Title, &r.Department, &r.Reason, &replaces, &r.Replaces, &r.SalaryMin, &r.SalaryMax, &start, &r.PassNeeded, &r.PlanStatus, &r.State, &r.RequestedBy, &requested, &r.DecidedBy, &decided, &r.DecisionReason); err != nil {
+	var manager *uuid.UUID
+	if err := row.Scan(&r.ID, &r.Title, &r.Department, &r.Reason, &replaces, &r.Replaces, &r.SalaryMin, &r.SalaryMax, &start, &r.PassNeeded, &r.PlanStatus, &r.State, &r.RequestedBy, &requested, &r.DecidedBy, &decided, &r.DecisionReason, &manager, &r.HiringManager); err != nil {
 		return r, err
+	}
+	if manager != nil {
+		r.HiringManagerID = manager.String()
 	}
 	if replaces != nil {
 		r.ReplacesID = replaces.String()
@@ -500,4 +522,28 @@ func (h HiringService) ClosePost(ctx context.Context, s api.Session, id uuid.UUI
 	return h.run(ctx, s, id, func(ctx context.Context, tx pgx.Tx, at time.Time) error {
 		return CloseJobPost(ctx, tx, s.Organisation, at, s.Member, id)
 	})
+}
+
+// MyRoles is the requisitions that name the caller as hiring manager, with counts by stage: the database function returns nothing else (migration 000071), so a missed check here reads no more.
+func (h HiringService) MyRoles(ctx context.Context, s api.Session) (out []api.HiringRole, err error) {
+	err = h.Store.InOrgAs(ctx, s.Organisation, s.Member, h.Clock.Now(), func(ctx context.Context, tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, `SELECT id, title, department, state, target_start, pass_needed, coalesce(post_state, ''), published_on, closed_on, applied, screening, interview, offer, hired, not_progressing FROM nemura.my_hiring_roles()`)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var r api.HiringRole
+			var start time.Time
+			var published, closed *time.Time
+			c := &r.Candidates
+			if err := rows.Scan(&r.ID, &r.Title, &r.Department, &r.State, &start, &r.PassNeeded, &r.PostState, &published, &closed, &c.Applied, &c.Screening, &c.Interview, &c.Offer, &c.Hired, &c.NotProgressing); err != nil {
+				return err
+			}
+			r.TargetStart, r.PublishedOn, r.ClosedOn = day(start), dayOrEmpty(published), dayOrEmpty(closed)
+			out = append(out, r)
+		}
+		return rows.Err()
+	})
+	return out, err
 }
