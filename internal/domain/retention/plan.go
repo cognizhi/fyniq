@@ -21,7 +21,7 @@ type Year struct {
 // that holds earliest, the date of the books' first line not yet purged (a line before the books start counts in the
 // first year), once that year's records' retention has passed (its end plus years, at least 7: it may go from the day
 // after), every period it holds is closed and no record dated in it is on legal hold (holds are the held records'
-// dates). An earlier year is always purged first, since earliest is the first line left. ok is false when no year may
+// dates, none of them before the previous boundary; a held line before the books start is in the first year, as it is). An earlier year is always purged first, since earliest is the first line left. ok is false when no year may
 // go yet. The ledger's dates are calendar dates, read in UTC.
 func NextYear(cal period.Calendar, years int, earliest time.Time, periods []Period, holds []time.Time, now time.Time) (Year, bool) {
 	if earliest.IsZero() {
@@ -39,7 +39,7 @@ func NextYear(cal period.Calendar, years int, earliest time.Time, periods []Peri
 		}
 	}
 	for _, h := range holds {
-		if h.Before(boundary) && !h.Before(start) {
+		if h.Before(boundary) { // the caller passes none from a year already purged: its kept entries stay, held or not
 			return Year{}, false
 		}
 	}

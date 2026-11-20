@@ -302,6 +302,7 @@ Source: PRD-001 §16.2
 - **WHEN** the walkthroughs run at launch
 - **THEN** they assert the Home blocks built from what Fyniq records: the Approver's approvals with their limits, the Administrator's, Company secretary's and DPO's work on the pages they land on, and the Auditor's access and its expiry
 - **AND** the Approver's department figures (FR-PPL-06), the Auditor's requests and samples (FR-UX-42) and retention holds (AUD-11) follow after go-live
+- **AND** the DPO's block of retention holds is built (rev 0.617): the DPO's Home counts the legal holds in force
 
 ### Requirement: QA-UI-09 Needs-verification banner
 A test SHALL read the review register and assert that every page listed for a pending area shows the FR-UX-41 banner naming that area and its reviewer, in Basic and Expert mode; that no page shows it once its area is reviewed; and that excluded pages never show it.

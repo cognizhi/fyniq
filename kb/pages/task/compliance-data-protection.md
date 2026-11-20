@@ -2,16 +2,16 @@
 key: compliance.data-protection
 type: task
 title: Keep the data protection registers
-summary: The PDPA programme - the data inventory and its quarterly review, impact assessments, access requests, breaches, overseas transfers and the DPO
+summary: The PDPA programme: inventory, impact assessments, access requests, breaches, transfers, shredding, legal holds and the DPO
 sources:
-  - docs/user-guide/compliance-data-protection.md sha256:ffdae454c5570db31adf7a5f4020f28a8307b50f26d7a37fca10930cf9837e05
+  - docs/user-guide/compliance-data-protection.md sha256:861c66650116a5d9927a97570fa5c6c058cdd2db47c8a3a1fa7e38f6df40e122
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-14
+compiled_at: 2026-11-21
 aliases:
   - AI inventory
   - AI models in use
@@ -33,13 +33,18 @@ aliases:
   - shred personal data
   - anonymise a contact
   - right to be forgotten
+  - legal hold
+  - litigation hold
+  - hold a record
+  - stop the purge
+  - keep records for a dispute
 ---
 
 # Keep the data protection registers
 
 ## What it is
 
-- **Data protection** (from **Compliance**, Expert mode) holds the company's PDPA programme; the Compliance officer keeps it, the Owner and the Auditor read it, nobody else sees it ([[members.roles]]).
+- **Data protection** (from **Compliance**, Expert mode) holds the company's PDPA programme; the Compliance officer keeps it, the Owner and the Auditor read it, nobody else sees it; the Owner also places and lifts legal holds ([[members.roles]]).
 
 (src: docs/user-guide/compliance-data-protection.md#what-it-is)
 
@@ -117,6 +122,15 @@ aliases:
 - When a request is honoured or a purpose ends, **Anonymise** on the answered request (under **Requests**) replaces the contact's emails and phone and sets their address to Anonymised, keeping their name and every issued document ([[contacts.manage]]); **Anonymised contacts** lists each one. A request alone does not shred the trail's values while their retention continues.
 
 (src: docs/user-guide/compliance-data-protection.md#shredding-at-the-end-of-retention)
+
+## Legal holds
+
+- Under **Holds**, the Compliance officer or an Owner selects **Place a hold** on a financial year (every ledger entry dated in it, every audit event that occurred in it and the evidence of documents dated in it), a contact (the contact, every document that names them, a ledger entry with a line for them, and those documents' events and evidence) or one record (its source document, events, ledger entries and evidence files); each needs a reason and is in the audit trail.
+- While a hold stands, the purge after retention skips what it covers, going oldest first and stopping at the first covered event or year; the database refuses to delete a held audit event or ledger entry; a held contact's keys and every key of a held year are not shredded and the contact is not anonymised; evidence files the hold covers keep a storage hold within a night, files attached later included ([[compliance.audit-trail]]).
+- Nothing is purged until an organisation switches the purge on, and never within the 5 years' minimum.
+- **Lift** ends a hold with a reason, after the person confirms it is them; the files only that hold kept are freed the next night; a lifted hold never stands again, and a new one is placed to hold again; **Show the holds that were lifted** shows who lifted each and why.
+
+(src: docs/user-guide/compliance-data-protection.md#legal-holds)
 
 ## The Data Protection Officer
 

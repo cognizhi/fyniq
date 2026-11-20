@@ -90,6 +90,9 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := audit.PurgeAll(ctx, k.Store, k.Blobs, k.Signer, clock)
 			return err
 		},
+		retention.HoldsJob: func(ctx context.Context) error { // AUD-11: each final evidence file's storage hold equals the holds in force
+			return retention.SyncAllHolds(ctx, k.Store, k.Blobs)
+		},
 		retention.AIConversationsJob: func(ctx context.Context) error { // §11.9: the assistant's conversations past their retention
 			_, err := retention.PurgeAIConversations(ctx, k.Store, clock)
 			return err

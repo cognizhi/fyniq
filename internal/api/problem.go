@@ -451,6 +451,8 @@ var codeFacts = map[string]struct {
 	migration.CodeParallel:        {409, "The parallel month cannot start yet"},
 	migration.CodeGeneric:         {422, "The file cannot be imported"},
 	storage.CodeHeartbeatDrill:    {409, "A heartbeat drill, once recorded, never changes"},
+	storage.CodeHold:              {409, "That hold is already in force, or was lifted already"},
+	storage.CodeHeld:              {409, "A legal hold keeps that: lift the hold with a reason first"},
 	storage.CodeAssessment:        {409, "The register of security assessments is only added to, and a finding's steps follow each other"},
 	storage.CodeTransfer:          {409, "A transfer's versions follow each other and keep the flow they cover"},
 	storage.CodeShredding:         {409, "Personal data is shredded only in its approved run, after its retention"},

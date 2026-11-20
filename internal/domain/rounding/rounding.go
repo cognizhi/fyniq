@@ -36,6 +36,7 @@ const (
 	MileageName      = "RND-MILEAGE"
 	TimeName         = "RND-TIME"
 	RecogniseName    = "RND-RECOGNISE"
+	TranslateName    = "RND-TRANSLATE"
 	MarkupName       = "RND-MARKUP"
 	ShareName        = "RND-SHARE"
 	OwnershipName    = "RND-DISPLAY"
@@ -150,6 +151,13 @@ func FX(amount money.Money, rate money.Rate) (money.Money, error) {
 		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "amount", Message: err.Error()}
 	}
 	return money.FromRounded(halfAwayFromZero(&product, rate.To.MinorUnits), rate.To)
+}
+
+// Translate is RND-TRANSLATE (PRD-001 §10.4, rev 0.625; FR-ENT-06): a line translated into the group currency = round(the entity-currency amount × the month's closing or average
+// rate, the group currency's minor units), half away from zero, computed exactly before its one rounding. The translation reserve is the balancing figure and an eliminated
+// amount the smaller of two translated amounts, so neither rounds again [accountant to confirm].
+func Translate(amount money.Money, rate money.Rate) (money.Money, error) {
+	return FX(amount, rate)
 }
 
 // Line is RND-LINE (PRD-001 §10.4, rev 0.87; provisional until the accountant's sign-off): a line's amount =

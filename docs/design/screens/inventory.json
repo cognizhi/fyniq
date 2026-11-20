@@ -3521,11 +3521,12 @@
    ],
    "purpose": "Run the PDPA programme: data inventory, DPIAs, access requests, breach timers, transfers abroad and shredding at the end of retention.",
    "content": [
-    "Tabs as built (p1-pdpa-retention): Inventory, Impact assessments, Requests, Breaches, Transfers, Shredding, Data Protection Officer; the canvas shows Breaches",
+    "Tabs as built (p1-pdpa-retention): Inventory, Impact assessments, Requests, Breaches, Transfers, Shredding, Holds (p2-security-certification, AUD-11), Data Protection Officer; the canvas shows Breaches",
     "Breach register with timers: assessment within 30 days, PDPC notification within 3 calendar days after deciding it is notifiable; the Prescribed data chip; Next step",
     "Tabletop exercises of the breach runbook, twice a year",
     "Data inventory: what, why, where, who, how long, cross-border flows; DPIAs (payroll, AI assistant); access and correction requests with 30-day timers",
     "Transfers: Fyniq's flows abroad and the company's own, each assessed; Shredding: the runs waiting for approval, approved and done, and the anonymised contacts",
+    "Holds (AUD-11): the legal holds on a record, a contact or a financial year, each with its subject, reason, who placed it and when, a Held chip and Lift (reason, stepped up); Place a hold chooses a year, a contact or one record, with a reason; the lifted ones on request",
     "DPO contact, the text for the website and the published policies"
    ],
    "states": [
@@ -5798,7 +5799,7 @@
     "FR-ENT-04",
     "FR-ENT-05"
    ],
-   "purpose": "Link organisations in a group by the consent of both Owners: invite an entity, accept an invitation, see what the group may read, map accounts and end a link (an entity is an organisation, rev 0.622).",
+   "purpose": "Link organisations in a group by the consent of both Owners: invite an entity, accept an invitation, see what the group may read, map accounts and end a link (an entity is an organisation, rev 0.625).",
    "content": [
     "The group: parent, entities with their base currency, state (invited, linked, ended) and when",
     "Invite an entity: a one-time code for the entity's Owner, valid 24 hours",

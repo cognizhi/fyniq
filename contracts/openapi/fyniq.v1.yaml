@@ -7079,9 +7079,11 @@ components:
       properties:
         covered:
           description: The numbers some control's mapping names.
-          examples:
-            - - "5.15"
           items:
+            description: "A control number of Annex A: 5.1 to 5.37, 6.1 to 6.8, 7.1 to 7.14 or 8.1 to 8.34."
+            examples:
+              - "5.15"
+            pattern: ^[5-8]\.[0-9]{1,2}$
             type: string
           type: array
         total:
@@ -7092,9 +7094,11 @@ components:
           type: integer
         uncovered:
           description: "The numbers no control maps to: gaps for the statement of applicability, whose wording waits for the certification body."
-          examples:
-            - - "5.1"
           items:
+            description: "A control number of Annex A: 5.1 to 5.37, 6.1 to 6.8, 7.1 to 7.14 or 8.1 to 8.34."
+            examples:
+              - "5.15"
+            pattern: ^[5-8]\.[0-9]{1,2}$
             type: string
           type: array
       required:
@@ -39536,6 +39540,19 @@ components:
         - base
         - balance
       type: object
+    LiftRetentionHoldInput:
+      additionalProperties: false
+      properties:
+        reason:
+          description: Why it is lifted.
+          examples:
+            - The dispute is settled
+          maxLength: 500
+          minLength: 3
+          type: string
+      required:
+        - reason
+      type: object
     LikelyPaid:
       additionalProperties: false
       properties:
@@ -56679,6 +56696,175 @@ components:
         - drawn
         - left
         - unpriced_entries
+      type: object
+    RetentionHoldInput:
+      additionalProperties: false
+      properties:
+        contact_id:
+          description: For a contact.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12
+          format: uuid
+          type: string
+        document_id:
+          description: "For a record: its source document."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11
+          format: uuid
+          type: string
+        financial_year:
+          description: "For a financial year: its number in the organisation's calendar, 1 for the first."
+          examples:
+            - 1
+          format: int64
+          maximum: 200
+          minimum: 1
+          type: integer
+        kind:
+          description: What the hold names.
+          enum:
+            - record
+            - contact
+            - financial_year
+          examples:
+            - record
+          type: string
+        reason:
+          description: "Why: the dispute, claim, audit or inquiry the records are held for."
+          examples:
+            - A dispute with the supplier is open
+          maxLength: 500
+          minLength: 3
+          type: string
+      required:
+        - kind
+        - reason
+      type: object
+    RetentionHoldList:
+      additionalProperties: false
+      properties:
+        in_force:
+          description: How many stand.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        items:
+          description: The holds, the newest placed first.
+          items:
+            $ref: "#/components/schemas/RetentionHoldView"
+          type: array
+      required:
+        - items
+        - in_force
+      type: object
+    RetentionHoldView:
+      additionalProperties: false
+      properties:
+        contact_id:
+          description: A contact.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12
+          format: uuid
+          type: string
+        contact_name:
+          description: The contact's legal name.
+          examples:
+            - Acme Pte Ltd
+          type: string
+        document_id:
+          description: A record's source document.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11
+          format: uuid
+          type: string
+        document_number:
+          description: The document's number, once it has one.
+          examples:
+            - INV-0042
+          type: string
+        document_type:
+          description: The document's type.
+          examples:
+            - invoice
+          type: string
+        hold_id:
+          description: The hold.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          format: uuid
+          type: string
+        in_force:
+          description: true while it stands.
+          examples:
+            - true
+          type: boolean
+        kind:
+          description: What it names.
+          enum:
+            - record
+            - contact
+            - financial_year
+          examples:
+            - record
+          type: string
+        lift_reason:
+          description: Why it was lifted.
+          examples:
+            - The dispute is settled
+          type: string
+        lifted_at:
+          description: When.
+          examples:
+            - "2026-12-01T02:00:00Z"
+          format: date-time
+          type: string
+        lifted_by:
+          description: Who lifted it.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        placed_at:
+          description: When.
+          examples:
+            - "2026-11-09T02:00:00Z"
+          format: date-time
+          type: string
+        placed_by:
+          description: Who placed it, as records name actors.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          type: string
+        reason:
+          description: Why it was placed.
+          examples:
+            - A dispute with the supplier is open
+          type: string
+        year_ends_on:
+          description: The year's last day.
+          examples:
+            - "2026-12-31"
+          format: date
+          type: string
+        year_number:
+          description: A financial year's number in the organisation's calendar, 1 for the first.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        year_starts_on:
+          description: The year's first day.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+      required:
+        - hold_id
+        - kind
+        - reason
+        - placed_by
+        - placed_at
+        - in_force
       type: object
     RetentionRow:
       additionalProperties: false
@@ -117024,6 +117210,477 @@ paths:
       x-fyniq-permission:
         capability: Compliance Center
         right: C
+  /v1/compliance/holds:
+    get:
+      description: The holds the DPO and the Owners placed on a record, a contact or a financial year (AUD-11), the ones that stand by default, each with its subject, reason and who placed it; state=all adds the lifted ones with who lifted them and why. Read-only; no side effects.
+      operationId: listRetentionHolds
+      parameters:
+        - description: in_force, the default, lists the holds that stand; all adds the lifted ones.
+          explode: false
+          in: query
+          name: state
+          schema:
+            default: in_force
+            description: in_force, the default, lists the holds that stand; all adds the lifted ones.
+            enum:
+              - in_force
+              - all
+            examples:
+              - in_force
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RetentionHoldList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the legal holds on records
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "Holds are few and read whole: the page lists those in force, and a lifted one is rare."
+      x-fyniq-permission:
+        capability: "Retention holds: place and lift a hold on a record, a contact or a financial year; the holds in force (rev 0.617)"
+        right: V
+    post:
+      description: "The DPO or an Owner places a hold (AUD-11), with a reason, on one source document, a contact or a financial year. While it stands the purge after retention skips what it covers, the database refuses to delete it, and the evidence files it covers keep a storage-level hold (a job sets it within a day). A subject with a hold already is refused. Side effects: the hold, the audit event retention_hold.placed, and a notice to those who read the holds. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: placeRetentionHold
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RetentionHoldInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RetentionHoldView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-HOLD-01` That hold is already in force, or was lifted already; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Place a legal hold on a record, a contact or a financial year
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-HOLD-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Retention holds: place and lift a hold on a record, a contact or a financial year; the holds in force (rev 0.617)"
+        right: C
+  /v1/compliance/holds/{hold_id}/lift:
+    post:
+      description: "The DPO or an Owner, stepped up, lifts a hold (AUD-11), with a reason; a lifted hold never stands again, and a new one is placed to hold again. The purge after retention may then reach what it covered, and the evidence files it alone covered are freed within a day. Side effects: the audit event retention_hold.lifted and a notice to those who read the holds. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: liftRetentionHold
+      parameters:
+        - description: The hold.
+          in: path
+          name: hold_id
+          required: true
+          schema:
+            description: The hold.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LiftRetentionHoldInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RetentionHoldView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-HOLD-01` That hold is already in force, or was lifted already; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Lift a legal hold
+      tags:
+        - Compliance
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-HOLD-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Retention holds: place and lift a hold on a record, a contact or a financial year; the holds in force (rev 0.617)"
+        right: A
   /v1/compliance/incidents:
     get:
       description: "The incident register (SEC-32): every security incident with its severity and its steps in the runbook's order (docs/runbooks/incident-response.md): contained, assessed (with the breach register's breach when personal data was involved), notified, recovered and reviewed, which closes it. Read-only; no side effects."

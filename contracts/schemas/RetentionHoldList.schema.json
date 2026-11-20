@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "in_force": {
+      "description": "How many stand.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "items": {
+      "description": "The holds, the newest placed first.",
+      "items": {
+        "$ref": "RetentionHoldView.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "items",
+    "in_force"
+  ],
+  "title": "RetentionHoldList",
+  "type": "object"
+}

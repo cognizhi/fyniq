@@ -79,7 +79,9 @@ SELECT k.cohort, array_agg(k.id ORDER BY k.id)::uuid[] AS keys
 FROM fyniq.person_key k
 WHERE k.cohort < $1::date
   AND NOT EXISTS (SELECT 1 FROM fyniq.pd_shredding_run r WHERE r.cohort = k.cohort)
-GROUP BY k.cohort ORDER BY k.cohort
+GROUP BY k.cohort
+HAVING NOT bool_or(fyniq.hold_covers_person_key(k.organisation_id, k.person, k.cohort))
+ORDER BY k.cohort
 `
 
 type DueKeyCohortsRow struct {
@@ -87,7 +89,8 @@ type DueKeyCohortsRow struct {
 	Keys   []uuid.UUID
 }
 
-// The financial years whose keys may be shredded: their last day before the cutoff, and no run listing them yet.
+// The financial years whose keys may be shredded: their last day before the cutoff, and no run listing them yet; a year with
+// a key a legal hold covers waits until the hold is lifted (AUD-11, 001300).
 func (q *Queries) DueKeyCohorts(ctx context.Context, before time.Time) ([]DueKeyCohortsRow, error) {
 	rows, err := q.db.Query(ctx, dueKeyCohorts, before)
 	if err != nil {

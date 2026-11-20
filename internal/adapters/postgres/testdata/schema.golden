@@ -3067,6 +3067,20 @@ restore_drill | outbox | boolean | not null |
 restore_drill | findings | text | not null | 
 restore_drill | recorded_by | text | not null | 
 restore_drill | recorded_at | timestamp with time zone | not null | 
+retention_hold | organisation_id | uuid | not null | current_org()
+retention_hold | id | uuid | not null | uuidv7()
+retention_hold | kind | text | not null | 
+retention_hold | document_id | uuid | null | 
+retention_hold | contact_id | uuid | null | 
+retention_hold | year_number | integer | null | 
+retention_hold | year_starts_on | date | null | 
+retention_hold | year_ends_on | date | null | 
+retention_hold | reason | text | not null | 
+retention_hold | placed_by | text | not null | 
+retention_hold | placed_at | timestamp with time zone | not null | 
+retention_hold | lifted_by | text | null | 
+retention_hold | lifted_at | timestamp with time zone | null | 
+retention_hold | lift_reason | text | null | 
 review_log_entry | organisation_id | uuid | not null | current_org()
 review_log_entry | id | uuid | not null | uuidv7()
 review_log_entry | kind | text | not null | 
@@ -8400,6 +8414,22 @@ restore_drill | restore_drill_sign_in_not_null | NOT NULL sign_in
 restore_drill | restore_drill_texts | CHECK ((((length(btrim(restored_from)) >= 1) AND (length(btrim(restored_from)) <= 500)) AND ((length(btrim(findings)) >= 1) AND (length(btrim(findings)) <= 8000))))
 restore_drill | restore_drill_tick_not_null | NOT NULL tick
 restore_drill | restore_drill_took_minutes_not_null | NOT NULL took_minutes
+retention_hold | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+retention_hold | retention_hold_contact_fkey | FOREIGN KEY (organisation_id, contact_id) REFERENCES contact(organisation_id, id)
+retention_hold | retention_hold_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+retention_hold | retention_hold_id_not_null | NOT NULL id
+retention_hold | retention_hold_kind_known | CHECK ((kind = ANY (ARRAY['record'::text, 'contact'::text, 'financial_year'::text])))
+retention_hold | retention_hold_kind_not_null | NOT NULL kind
+retention_hold | retention_hold_lift | CHECK ((((lifted_at IS NULL) AND (lifted_by IS NULL) AND (lift_reason IS NULL)) OR ((lifted_at IS NOT NULL) AND (lifted_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((length(btrim(lift_reason)) >= 3) AND (length(btrim(lift_reason)) <= 500)) AND (lifted_at >= placed_at))))
+retention_hold | retention_hold_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+retention_hold | retention_hold_organisation_id_not_null | NOT NULL organisation_id
+retention_hold | retention_hold_pkey | PRIMARY KEY (organisation_id, id)
+retention_hold | retention_hold_placed_at_not_null | NOT NULL placed_at
+retention_hold | retention_hold_placed_by_format | CHECK ((placed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+retention_hold | retention_hold_placed_by_not_null | NOT NULL placed_by
+retention_hold | retention_hold_reason | CHECK (((length(btrim(reason)) >= 3) AND (length(btrim(reason)) <= 500)))
+retention_hold | retention_hold_reason_not_null | NOT NULL reason
+retention_hold | retention_hold_subject | CHECK ((((kind = 'record'::text) AND (document_id IS NOT NULL) AND (contact_id IS NULL) AND (year_starts_on IS NULL) AND (year_ends_on IS NULL) AND (year_number IS NULL)) OR ((kind = 'contact'::text) AND (contact_id IS NOT NULL) AND (document_id IS NULL) AND (year_starts_on IS NULL) AND (year_ends_on IS NULL) AND (year_number IS NULL)) OR ((kind = 'financial_year'::text) AND (document_id IS NULL) AND (contact_id IS NULL) AND (year_starts_on IS NOT NULL) AND (year_ends_on IS NOT NULL) AND (year_number > 0) AND (year_ends_on > year_starts_on) AND ((year_ends_on - year_starts_on) < 800))))
 review_log_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 review_log_entry | review_log_entry_actor_fkey | FOREIGN KEY (actor) REFERENCES app_user(user_id)
 review_log_entry | review_log_entry_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
@@ -9389,6 +9419,7 @@ CREATE INDEX record_comment_thread ON fyniq.record_comment USING btree (organisa
 CREATE INDEX report_export_expiring ON fyniq.report_export USING btree (organisation_id, status, expires_at)
 CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organisation_id, requested_by, requested_at DESC)
 CREATE INDEX report_schedule_due ON fyniq.report_schedule USING btree (organisation_id, next_run_on) WHERE active
+CREATE INDEX retention_hold_in_force ON fyniq.retention_hold USING btree (organisation_id) WHERE (lifted_at IS NULL)
 CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
 CREATE INDEX risk_review_risk_idx ON fyniq.risk_review USING btree (organisation_id, risk_id, reviewed_at)
 CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
@@ -9896,6 +9927,10 @@ CREATE UNIQUE INDEX report_schedule_pkey ON fyniq.report_schedule USING btree (o
 CREATE UNIQUE INDEX report_schedule_run_once ON fyniq.report_schedule_run USING btree (organisation_id, schedule_id, ran_on)
 CREATE UNIQUE INDEX report_schedule_run_pkey ON fyniq.report_schedule_run USING btree (organisation_id, id)
 CREATE UNIQUE INDEX restore_drill_pkey ON fyniq.restore_drill USING btree (organisation_id, id)
+CREATE UNIQUE INDEX retention_hold_contact_once ON fyniq.retention_hold USING btree (organisation_id, contact_id) WHERE ((lifted_at IS NULL) AND (kind = 'contact'::text))
+CREATE UNIQUE INDEX retention_hold_pkey ON fyniq.retention_hold USING btree (organisation_id, id)
+CREATE UNIQUE INDEX retention_hold_record_once ON fyniq.retention_hold USING btree (organisation_id, document_id) WHERE ((lifted_at IS NULL) AND (kind = 'record'::text))
+CREATE UNIQUE INDEX retention_hold_year_once ON fyniq.retention_hold USING btree (organisation_id, year_starts_on) WHERE ((lifted_at IS NULL) AND (kind = 'financial_year'::text))
 CREATE UNIQUE INDEX review_log_entry_approval_once ON fyniq.review_log_entry USING btree (organisation_id, approval_id)
 CREATE UNIQUE INDEX review_log_entry_pkey ON fyniq.review_log_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX review_log_review_once ON fyniq.review_log_review USING btree (organisation_id, entry_id)
@@ -10232,6 +10267,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurrin
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.report_definition DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('report_definition', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.report_export DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('report_export', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.report_schedule DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('report_schedule', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.retention_hold DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('retention_hold', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.salary_batch DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('salary_batch', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.statement_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statement_mapping', 'id')
@@ -10335,6 +10371,7 @@ CREATE TRIGGER audit_boundary_no_truncate BEFORE TRUNCATE ON fyniq.audit_boundar
 CREATE TRIGGER audit_chain_guard BEFORE DELETE OR UPDATE ON fyniq.audit_chain FOR EACH ROW EXECUTE FUNCTION audit_chain_guard()
 CREATE TRIGGER audit_chain_no_truncate BEFORE TRUNCATE ON fyniq.audit_chain FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_event_append BEFORE INSERT ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_append()
+CREATE TRIGGER audit_event_hold_guard BEFORE DELETE ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_hold_guard()
 CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_guard()
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_recovery_acknowledgement_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_recovery_acknowledgement FOR EACH ROW EXECUTE FUNCTION audit_immutable()
@@ -10520,6 +10557,7 @@ CREATE TRIGGER journal_entry_asset_depreciation BEFORE INSERT ON fyniq.journal_e
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
 CREATE TRIGGER journal_entry_bank_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = ANY (ARRAY['bank_out_release'::text, 'bank_in_release'::text])) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_bank_release()
 CREATE TRIGGER journal_entry_bill_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'bill_release'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_bill_release()
+CREATE TRIGGER journal_entry_hold_guard BEFORE DELETE ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_hold_guard()
 CREATE TRIGGER journal_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER journal_entry_invoice_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'invoice_release'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_invoice_release()
 CREATE TRIGGER journal_entry_no_truncate BEFORE TRUNCATE ON fyniq.journal_entry FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
@@ -10547,6 +10585,7 @@ CREATE TRIGGER kpi_input_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.kpi_in
 CREATE TRIGGER kpi_input_no_truncate BEFORE TRUNCATE ON fyniq.kpi_input FOR EACH STATEMENT EXECUTE FUNCTION kpi_input_guard()
 CREATE TRIGGER last_owner_guard BEFORE UPDATE OF revoked_at ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION last_owner_guard()
 CREATE TRIGGER ledger_boundary_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ledger_boundary FOR EACH ROW EXECUTE FUNCTION ledger_boundary_guard()
+CREATE TRIGGER ledger_boundary_hold_guard BEFORE INSERT ON fyniq.ledger_boundary FOR EACH ROW EXECUTE FUNCTION ledger_boundary_hold_guard()
 CREATE TRIGGER ledger_boundary_no_truncate BEFORE TRUNCATE ON fyniq.ledger_boundary FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER ledger_purged_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.ledger_purged_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER ledger_purged_entry_no_truncate BEFORE TRUNCATE ON fyniq.ledger_purged_entry FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
@@ -10688,6 +10727,7 @@ CREATE TRIGGER period_variance_explanation_no_truncate BEFORE TRUNCATE ON fyniq.
 CREATE TRIGGER person_cost_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.person_cost_rate FOR EACH ROW EXECUTE FUNCTION rate_immutable()
 CREATE TRIGGER person_cost_rate_no_truncate BEFORE TRUNCATE ON fyniq.person_cost_rate FOR EACH STATEMENT EXECUTE FUNCTION rate_immutable()
 CREATE TRIGGER person_key_guard BEFORE DELETE OR UPDATE ON fyniq.person_key FOR EACH ROW EXECUTE FUNCTION person_key_guard()
+CREATE TRIGGER person_key_hold_guard BEFORE DELETE ON fyniq.person_key FOR EACH ROW EXECUTE FUNCTION person_key_hold_guard()
 CREATE TRIGGER person_key_no_truncate BEFORE TRUNCATE ON fyniq.person_key FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER person_projection_guard BEFORE DELETE OR UPDATE ON fyniq.person_projection FOR EACH ROW EXECUTE FUNCTION person_projection_guard()
 CREATE TRIGGER person_projection_no_truncate BEFORE TRUNCATE ON fyniq.person_projection FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
@@ -10752,6 +10792,8 @@ CREATE TRIGGER report_schedule_run_guard BEFORE DELETE OR UPDATE ON fyniq.report
 CREATE TRIGGER report_schedule_run_no_truncate BEFORE TRUNCATE ON fyniq.report_schedule_run FOR EACH STATEMENT EXECUTE FUNCTION report_schedule_run_guard()
 CREATE TRIGGER restore_drill_guard BEFORE DELETE OR UPDATE ON fyniq.restore_drill FOR EACH ROW EXECUTE FUNCTION restore_drill_guard()
 CREATE TRIGGER restore_drill_no_truncate BEFORE TRUNCATE ON fyniq.restore_drill FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER retention_hold_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.retention_hold FOR EACH ROW EXECUTE FUNCTION retention_hold_guard()
+CREATE TRIGGER retention_hold_no_truncate BEFORE TRUNCATE ON fyniq.retention_hold FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_review FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER risk_immutable BEFORE DELETE OR UPDATE ON fyniq.risk FOR EACH ROW EXECUTE FUNCTION audit_immutable()
@@ -11086,6 +11128,7 @@ report_export | tenant_isolation | * | (organisation_id = current_org()) | (orga
 report_schedule | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 report_schedule_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 restore_drill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+retention_hold | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 risk | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -11397,6 +11440,7 @@ report_export | enabled | forced
 report_schedule | enabled | forced
 report_schedule_run | enabled | forced
 restore_drill | enabled | forced
+retention_hold | enabled | forced
 review_log_entry | enabled | forced
 review_log_review | enabled | forced
 risk | enabled | forced
@@ -11509,6 +11553,7 @@ audit_chain_head(OUT seq bigint, OUT head_hash bytea, OUT action text) → recor
 audit_erase_details(p_cutoff timestamp with time zone, OUT erased bigint, OUT first_seq bigint, OUT last_seq bigint) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 53b4cf12dc39db139466d3f45919b2fe
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
 audit_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 575215a6a315686b1069b99ebd4db910
+audit_event_hold_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d4d55ef148b4dd1fd737b59548180b41
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970
 audit_purge(p_last_seq bigint) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d72747db4e3930a148d3c4075dca432c
 audit_recovery_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | cc6e63a491b0b40d589054b85e13ed19
@@ -11609,6 +11654,7 @@ document_guard() → trigger | security invoker | v | search_path=pg_catalog, fy
 document_link_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88e84bdb34f498a2ef91479f46bfcd43
 document_link_route(p_hash text) → TABLE(organisation_id uuid, link_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 97397fe0fb679efd098ac3a2a47a0ab0
 document_link_token_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b39187a31e2fab3a93259dce0e8ed0aa
+document_names_contact(p_org uuid, p_document uuid, p_contact uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | aaaeb3f2895ccd6f68ceec41d56c7b2d
 document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8b251f0c6b45c478243230c7d16583bc
 document_reversed_unmatched() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 571459b9e3412b69dae28471ae2ae096
 document_search_text(p jsonb) → text | security invoker | i | search_path=pg_catalog, pg_temp | 0b762ed6001c93bd27f68c2e0082f0eb
@@ -11645,7 +11691,13 @@ forecast_keys(o jsonb, allowed text[], required text[]) → boolean | security i
 fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 849c4b9702a2ace8fe0e241dba3da8ef
 fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
 gst_forecast_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4106a7d94950228ba1d88c55435a3672
+hold_covers_entry(p_org uuid, p_entry uuid, p_posting_date date, p_source_id text) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | a320175c85df7619139d5866c9ca547b
+hold_covers_event(p_org uuid, p_object_id uuid, p_occurred timestamp with time zone) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | bc7e2246a9c323a781f944e2fed3c772
+hold_covers_person_key(p_org uuid, p_person text, p_cohort date) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | e82ec83d3f698cb5df6dbbebd6e88196
+hold_evidence(p_org uuid) → SETOF uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7bebb44a3b47dc810522cfc94f5e4456
+hold_ledger_dates(p_org uuid) → SETOF date | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9a0742149ffb39d30319592ffca3eba6
 hold_outbox(p_id uuid, p_holder text, p_until timestamp with time zone, p_why text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 590d733ae64933f87f3efe15a90efd08
+hold_scope(p_org uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | f416bc0085da98b38fd4fcec4305e9e7
 holding_movement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 266426f94189ed122e970a39b26c5104
 holding_movement_settled() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5bc31cd33b59e7587ae2fb621cac56f2
 identity_may_sign_in(p_issuer text, p_subject text) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 14bbafbe258830341b935c34136b0ae2
@@ -11684,6 +11736,7 @@ journal_entry_asset_depreciation() → trigger | security invoker | v | search_p
 journal_entry_assign() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7801ad73654e599f5c25fca619cc3a05
 journal_entry_bank_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bfca34cec43b87a069985b60c8c93215
 journal_entry_bill_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 25145c2bffdb96797993df8c57e0ab25
+journal_entry_hold_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57556421ba4859ad1bdc021bf3bc6727
 journal_entry_invoice_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b8e67db44ebd27d53b002e2006091459
 journal_entry_not_bank_agreement() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 982a9d10d570c6cc2b7bcfedbb720ef3
 journal_entry_not_purchase_order() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6d56ef74a45b5b6e0b8b17fbd51ccca8
@@ -11708,6 +11761,7 @@ last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, 
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
 ledger_boundary_carried() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8fb8f0e19c7306303d6e72d31268204c
 ledger_boundary_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 71f7d7e38bc04371b11ae2ba937ed126
+ledger_boundary_hold_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 87f0c13a08a05c93d584e300d22739da
 ledger_carrying(p_org uuid, p_date date) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | d6c568cb2e5f0f022a118d7d7e42c942
 ledger_purge(p_boundary date, p_entries uuid[]) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fd1248a553c34ca81d658cc2a7e34348
 ledger_revision_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
@@ -11786,6 +11840,7 @@ period_guard() → trigger | security definer | v | search_path=pg_catalog, fyni
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
 person_key_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1fbad8774b781c2cf93169089adca3e3
+person_key_hold_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 34be5e30693bc783e0ee681895c0c9cd
 person_projection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 659e69d17b20bb103bda3f66ab7144fe
 platform_heartbeats() → TABLE(name text, last_beat timestamp with time zone, detail text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c82582dd84a7a5a8e815aad623e9d8d7
 platform_outbox() → TABLE(pending bigint, dead bigint, oldest_pending timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02c3afdff78c9f7db854d1d98424b830
@@ -11849,6 +11904,7 @@ require_org() → uuid | security invoker | s | search_path=pg_catalog, fyniq, p
 require_passkey_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 98f44603b09487ab03360525adf3b07c
 require_super_admin(p_user uuid) → void | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c817be869461445bf3e2ff0f94e5b146
 restore_drill_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1d98519bb45029d1d91bd29635d2e5dc
+retention_hold_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e2940a3cb33460ab63f87a20ae5e6219
 review_log_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d14270820b2454b3e0adc48a2572e959
 risk_register_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 912ceee772033bee08e29ff38cf3dc48
 role_assignment_scope_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e502900abfd267f0dad280cdd03fb851

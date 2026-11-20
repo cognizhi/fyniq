@@ -10,8 +10,10 @@ evidence: "Test report; reconcile log"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p2-security-certification"
+    status: running
+    how: "test TestAHoldKeepsTheTrailFromThePurgeAndTheDatabaseRefusesIt"
+    evidence: "attack tests as the purge's own role (fyniq_worker) and the owner role: the trail's purge stops before a held event, the database refuses to delete a held audit event, a ledger boundary after a held date and a held person's key (FY361); with TestAHoldKeepsTheLedgerYearFromThePurge and TestAHeldPersonsKeysAreNotShredded; CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "p2-security-certification"
+    status: running
+    how: "job retention.holds"
+    evidence: "the nightly reconcile of the evidence files' storage-level legal holds with the holds in force (01:40 Singapore time); its heartbeat lapses and the absence alert fires when it fails; the files held and freed are in its log"

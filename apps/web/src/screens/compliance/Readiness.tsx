@@ -55,7 +55,10 @@ export function ReadinessTab() {
                       </span>
                       <span className="fy-list__meta whitespace-normal">{g.detail}</span>
                     </span>
-                    <span className="fy-chip fy-chip--warning">{statusWords[g.status]}</span>
+                    <span className="fy-chip fy-chip--warning">
+                      <Icon of={TriangleAlert} />
+                      {statusWords[g.status]}
+                    </span>
                   </li>
                 ))}
               </ul>

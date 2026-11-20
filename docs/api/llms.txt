@@ -302,6 +302,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/compliance/gst-monitor` (getGSTMonitor): Get the GST registration monitor
 - `GET /v1/compliance/heartbeat-drills` (listHeartbeatDrills): List the heartbeat drills
 - `POST /v1/compliance/heartbeat-drills` (recordHeartbeatDrill): Record a heartbeat drill
+- `GET /v1/compliance/holds` (listRetentionHolds): List the legal holds on records
+- `POST /v1/compliance/holds` (placeRetentionHold): Place a legal hold on a record, a contact or a financial year
+- `POST /v1/compliance/holds/{hold_id}/lift` (liftRetentionHold): Lift a legal hold
 - `GET /v1/compliance/incidents` (listIncidents): List the security incidents
 - `POST /v1/compliance/incidents` (openIncident): Open a security incident
 - `POST /v1/compliance/incidents/{incident_id}/steps` (stepIncident): Add an incident's next step

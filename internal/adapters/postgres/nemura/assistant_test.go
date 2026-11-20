@@ -71,7 +71,7 @@ func TestThePeopleAssistantIsOffUntilTurnedOnAndOnlyEverInsertsProposalsAHumanDe
 	}
 	letter := map[string]any{"request_id": reqID, "fields": map[string]any{"job_title": "Analyst", "purpose": secret}}
 	// Off by default.
-	if s, err := svc.Settings(ctx, owner); err != nil || s.Enabled || s.Route != "none" || len(s.TaskTypes) != 0 || s.OwnPay || len(s.Catalogue) != 2 || !strings.Contains(s.OwnPayNote, "second approver") {
+	if s, err := svc.Settings(ctx, owner); err != nil || s.Enabled || s.Route != "none" || len(s.TaskTypes) != 0 || s.OwnPay || len(s.Catalogue) != 4 || !strings.Contains(s.OwnPayNote, "second approver") {
 		t.Fatalf("default settings: %+v %v", s, err)
 	}
 	if _, err := propose("people.draft_letter", letter); aiCode(err) != assistant.CodeOff {

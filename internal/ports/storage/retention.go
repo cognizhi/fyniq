@@ -27,6 +27,73 @@ type Retention interface {
 	// carry-forward this transaction posted replaces them exactly (FY305 otherwise); it keeps their tombstones, rebuilds
 	// the balances cache, marks the purged periods and completes the boundary, and returns how many entries went.
 	PurgeLedger(ctx context.Context, boundary time.Time, entries []uuid.UUID) (int64, error)
+
+	// PlaceHold places a hold in force (AUD-11, 001300), audited as retention_hold.placed; CodeHold when the subject already
+	// has one in force or the hold is outside its rules.
+	PlaceHold(ctx context.Context, h NewHold) (Hold, error)
+	// LiftHold lifts the hold with its reason, audited as retention_hold.lifted; ErrNotFound for none, CodeHold when it was lifted already.
+	LiftHold(ctx context.Context, id uuid.UUID, by, reason string, at time.Time) (Hold, error)
+	// Holds are the organisation's holds, in force or lifted, the newest placed first.
+	Holds(ctx context.Context, inForceOnly bool) ([]Hold, error)
+	// HeldLedgerDates are the posting dates of the entries the holds in force cover (a held year gives its first day).
+	HeldLedgerDates(ctx context.Context) ([]time.Time, error)
+	// HeldEvents are the sequence numbers, from first to last inclusive, of the audit events the holds in force cover.
+	HeldEvents(ctx context.Context, first, last int64) ([]int64, error)
+	// HeldFiles are the final evidence files the holds in force cover.
+	HeldFiles(ctx context.Context) ([]HeldFile, error)
+	// FreeFiles are the final evidence files no hold in force covers (the files the reconcile may free).
+	FreeFiles(ctx context.Context) ([]HeldFile, error)
+}
+
+// CodeHold is the database's refusal of a hold outside its rules, a second one on a subject, or a lift twice (001300, FY360).
+const CodeHold = "STORAGE-HOLD-01"
+
+// CodeHeld is the database's refusal to delete a row a hold in force covers (001300, FY361).
+const CodeHeld = "STORAGE-HOLD-02"
+
+// Hold kinds (AUD-11).
+const (
+	HoldRecord        = "record"
+	HoldContact       = "contact"
+	HoldFinancialYear = "financial_year"
+)
+
+// NewHold is a hold to place: its kind and what it names, and why.
+type NewHold struct {
+	Kind       string
+	DocumentID uuid.UUID // a record: its source document
+	ContactID  uuid.UUID // a contact
+	Year       *HoldYear // a financial year
+	Reason     string
+	PlacedBy   string // "user:<id>"
+	PlacedAt   time.Time
+}
+
+// HoldYear is the financial year a hold names, with the dates it covers.
+type HoldYear struct {
+	Number           int
+	StartsOn, EndsOn time.Time
+}
+
+// Hold is a placed hold; LiftedAt is nil while it stands.
+type Hold struct {
+	ID         uuid.UUID
+	Kind       string
+	DocumentID *uuid.UUID
+	ContactID  *uuid.UUID
+	Year       *HoldYear
+	Reason     string
+	PlacedBy   string
+	PlacedAt   time.Time
+	LiftedBy   string
+	LiftedAt   *time.Time
+	LiftReason string
+}
+
+// HeldFile is an evidence file's locked key, with its evidence ID.
+type HeldFile struct {
+	EvidenceID uuid.UUID
+	LockedKey  string
 }
 
 // NewLedgerBoundary is what a ledger boundary records.
