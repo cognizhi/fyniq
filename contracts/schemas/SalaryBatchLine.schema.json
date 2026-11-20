@@ -44,6 +44,13 @@
       "format": "int64",
       "type": "integer"
     },
+    "needs_bic": {
+      "description": "True when Fyniq does not know this line's bank's BIC: fill it in when preparing the batch (bank_bics on prepareSalaryBatch), or the batch cannot be asked for approval.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "person_id": {
       "description": "The person of the employee projection.",
       "examples": [

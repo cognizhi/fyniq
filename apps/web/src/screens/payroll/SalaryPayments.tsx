@@ -161,13 +161,17 @@ function Prepare({ batch, etag, onClose, onDone }: { batch: SalaryBatch; etag: s
   const [method, setMethod] = useState<"fast" | "giro">(batch.method ?? "giro");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
+  // A bank whose BIC Fyniq does not know from its code: a person fills it in from the bank's own advice (design D26).
+  const lacking = (batch.lines ?? []).filter((l) => l.needs_bic);
+  const [bics, setBics] = useState<Record<string, string>>({});
+  const filled = Object.fromEntries(Object.entries(bics).filter(([, v]) => v.trim() !== ""));
   const run = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setProblem(null);
     const out = await api.POST("/v1/salary-batches/{batch_id}/prepare", {
       params: { path: { batch_id: batch.id }, header: { "If-Match": etag, "Idempotency-Key": newKey() } },
-      body: { money_account_id: account || accounts.data?.[0]?.account_id || "", payment_date: day, method },
+      body: { money_account_id: account || accounts.data?.[0]?.account_id || "", payment_date: day, method, ...(Object.keys(filled).length > 0 ? { bank_bics: filled } : {}) },
     });
     setBusy(false);
     if (!out.data) return setProblem(problemOf(out.error));
@@ -204,6 +208,18 @@ function Prepare({ batch, etag, onClose, onDone }: { batch: SalaryBatch; etag: s
             <option value="fast">FAST: within minutes, up to the bank's limit</option>
           </select>
         </div>
+        {lacking.length > 0 && (
+          <fieldset className="fy-field">
+            <legend className="fy-label">Banks Fyniq does not know</legend>
+            <span className="fy-hint">Fyniq looks a bank's BIC up from the code Nemura sends. For these people it has none: fill it in from the bank's own advice, 8 or 11 letters and digits.</span>
+            {lacking.map((l) => (
+              <label key={l.line_id} className="fy-row gap-2">
+                <span>{l.person_name ?? l.person_id}</span>
+                <input className="fy-input" aria-label={`BIC for ${l.person_name ?? l.person_id}`} value={bics[l.line_id] ?? ""} onChange={(e) => setBics({ ...bics, [l.line_id]: e.target.value.toUpperCase() })} maxLength={11} />
+              </label>
+            ))}
+          </fieldset>
+        )}
         <div className="fy-row justify-end gap-2">
           <Button variant="ghost" type="button" onClick={onClose} disabled={busy}>
             Not now

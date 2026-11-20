@@ -2,6 +2,18 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "bank_bics": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "The BIC of the bank of each line Fyniq could not derive it for (the line's ID to an 8 or 11 character BIC). Fyniq looks a BIC up from the bank code Nemura sends; a code it does not know needs a person to fill it in here, from the bank's own advice. Each becomes a new version of the line, so an earlier approval is stale.",
+      "examples": [
+        {
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10": "DBSSSGSG"
+        }
+      ],
+      "type": "object"
+    },
     "method": {
       "description": "FAST pays within minutes, up to the bank's limit; GIRO over the next working days.",
       "enum": [

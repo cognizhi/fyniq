@@ -322,6 +322,7 @@ var codeFacts = map[string]struct {
 	salarybatch.CodeMethod:        {422, "The method is not FAST or GIRO"},
 	salarybatch.CodeState:         {422, "The line cannot move to that state, or its source cannot give it"},
 	salarybatch.CodeLine:          {404, "There is no such line in the salary batch"},
+	salarybatch.CodeBIC:           {422, "A salary line's bank has no BIC Fyniq knows"},
 	ledger.CodePayroll:            {422, "The pay run does not fit the posting rule"},
 	storage.CodePayrollRun:        {409, "A pay run's receipt is kept once, and a payroll entry needs one"},
 	CodeNoLink:                    {409, "The organisation has no active link to the people platform"},
