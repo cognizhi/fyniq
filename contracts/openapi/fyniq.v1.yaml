@@ -48335,7 +48335,7 @@ components:
           format: int64
           type: integer
         edited:
-          description: How many of them were approved with an item changed or removed (rev 0.549, AI-33).
+          description: How many of them were approved with an item changed or removed (rev 0.551, AI-33).
           examples:
             - 2
           format: int64
@@ -87604,7 +87604,7 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/board-packs/{id}:
     get:
@@ -87936,7 +87936,7 @@ paths:
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/board-packs/{id}/publish:
     post:
@@ -88141,7 +88141,7 @@ paths:
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/break-glass:
     get:
@@ -127785,7 +127785,7 @@ paths:
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/dimension-values:
     get:
@@ -165878,7 +165878,7 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/investor-updates/{id}:
     get:
@@ -166209,7 +166209,7 @@ paths:
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/investor-updates/{id}/send:
     post:
@@ -166420,7 +166420,7 @@ paths:
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/invoices:
     get:
@@ -226923,7 +226923,7 @@ paths:
         - STORAGE-RDEF-02
         - STORAGE-RETRY-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/report-definitions/{id}:
     get:
@@ -227261,7 +227261,7 @@ paths:
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/report-definitions/{id}/archive:
     post:
@@ -227464,7 +227464,7 @@ paths:
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/report-definitions/{id}/run:
     get:
@@ -228490,7 +228490,7 @@ paths:
         - STORAGE-RETRY-01
         - STORAGE-RSCH-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/report-schedules/{id}:
     put:
@@ -228689,7 +228689,7 @@ paths:
         - STORAGE-RSCH-01
         - STORAGE-VERSION-01
       x-fyniq-permission:
-        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.546)"
+        capability: "Report definitions and schedules: save, share and schedule a report (rev 0.548)"
         right: C
   /v1/report-schedules/{id}/runs:
     get:
