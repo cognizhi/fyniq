@@ -26797,16 +26797,26 @@ export interface components {
             version: number;
         };
         AutomationRuleChange: {
-            /** @description A new amount; an empty string for any amount. */
+            /**
+             * @description A new amount; an empty string for any amount.
+             * @example 5000.00
+             */
             amount_at_least?: string;
-            /** @description A new kind of document; an empty string for any kind. */
+            /**
+             * @description A new kind of document; an empty string for any kind.
+             * @example bill
+             */
             document_type?: string;
-            /** @description A new name. */
+            /**
+             * @description A new name.
+             * @example Large bills
+             */
             name?: string;
             /** @description The new recipients, replacing the old. */
             recipients?: string[];
             /**
              * @description active or paused to turn it on or off; archived ends it for good.
+             * @example paused
              * @enum {string}
              */
             state?: "active" | "paused" | "archived";

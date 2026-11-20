@@ -28,27 +28,35 @@ import (
 // The refusals of a workflow rule (ENG-23).
 var AutomationCodes = []string{automation.CodeRule, automation.CodeOff, automation.CodeNotFound}
 
+// RuleRecipient is a member told by a rule: a user ID.
+type RuleRecipient string
+
+// Schema implements huma.SchemaProvider.
+func (RuleRecipient) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", Format: "uuid", Description: "A member's user ID.", Examples: []any{"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"}}
+}
+
 // AutomationRuleInput is a rule to make.
 type AutomationRuleInput struct {
-	Name          string   `json:"name" minLength:"1" maxLength:"100" doc:"The rule's name." example:"Large bills"`
-	DocumentType  string   `json:"document_type,omitempty" maxLength:"41" doc:"The kind of document it watches, such as bill, invoice or journal (the kinds whose postings tell people); leave it out for any kind." example:"bill"`
-	AmountAtLeast string   `json:"amount_at_least,omitempty" pattern:"^[0-9]+(\\.[0-9]{1,4})?$" doc:"Fires only when the document's debits in the base currency are at least this; leave it out for any amount." example:"5000.00"`
-	Recipients    []string `json:"recipients" nullable:"false" minItems:"1" maxItems:"20" doc:"The active members told (user IDs). Each must hold the right to view the document, which is checked every time the rule fires." `
+	Name          string          `json:"name" minLength:"1" maxLength:"100" doc:"The rule's name." example:"Large bills"`
+	DocumentType  string          `json:"document_type,omitempty" maxLength:"41" doc:"The kind of document it watches, such as bill, invoice or journal (the kinds whose postings tell people); leave it out for any kind." example:"bill"`
+	AmountAtLeast string          `json:"amount_at_least,omitempty" pattern:"^[0-9]+(\\.[0-9]{1,4})?$" doc:"Fires only when the document's debits in the base currency are at least this; leave it out for any amount." example:"5000.00"`
+	Recipients    []RuleRecipient `json:"recipients" nullable:"false" minItems:"1" maxItems:"20" doc:"The active members told (user IDs). Each must hold the right to view the document, which is checked every time the rule fires." `
 }
 
 // AutomationRule is a saved rule.
 type AutomationRule struct {
-	ID            string    `json:"id" format:"uuid" doc:"The rule's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c9a01"`
-	Name          string    `json:"name" doc:"The rule's name." example:"Large bills"`
-	Trigger       string    `json:"trigger" enum:"document.posted" doc:"What sets it off: a document of a kind is posted." example:"document.posted"`
-	DocumentType  string    `json:"document_type,omitempty" doc:"The kind of document it watches; absent for any." example:"bill"`
-	AmountAtLeast string    `json:"amount_at_least,omitempty" doc:"The debits in the base currency from which it fires, with four decimals as kept; absent for any amount." example:"5000.0000"`
-	Action        string    `json:"action" enum:"notify" doc:"What it does: tells the recipients. It is the only action: no rule posts, approves, pays or files." example:"notify"`
-	Recipients    []string  `json:"recipients" nullable:"false" doc:"The members told."`
-	State         string    `json:"state" enum:"active,paused,archived" doc:"active fires; paused does not and can be resumed; archived is final." example:"active"`
-	Version       int       `json:"version" doc:"The rule's version; it makes the ETag." example:"1"`
-	CreatedAt     time.Time `json:"created_at" doc:"When it was made." example:"2026-11-21T09:00:00Z"`
-	UpdatedAt     time.Time `json:"updated_at" doc:"When it last changed." example:"2026-11-21T09:00:00Z"`
+	ID            string          `json:"id" format:"uuid" doc:"The rule's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c9a01"`
+	Name          string          `json:"name" doc:"The rule's name." example:"Large bills"`
+	Trigger       string          `json:"trigger" enum:"document.posted" doc:"What sets it off: a document of a kind is posted." example:"document.posted"`
+	DocumentType  string          `json:"document_type,omitempty" doc:"The kind of document it watches; absent for any." example:"bill"`
+	AmountAtLeast string          `json:"amount_at_least,omitempty" doc:"The debits in the base currency from which it fires, with four decimals as kept; absent for any amount." example:"5000.0000"`
+	Action        string          `json:"action" enum:"notify" doc:"What it does: tells the recipients. It is the only action: no rule posts, approves, pays or files." example:"notify"`
+	Recipients    []RuleRecipient `json:"recipients" nullable:"false" doc:"The members told."`
+	State         string          `json:"state" enum:"active,paused,archived" doc:"active fires; paused does not and can be resumed; archived is final." example:"active"`
+	Version       int             `json:"version" doc:"The rule's version; it makes the ETag." example:"1"`
+	CreatedAt     time.Time       `json:"created_at" doc:"When it was made." example:"2026-11-21T09:00:00Z"`
+	UpdatedAt     time.Time       `json:"updated_at" doc:"When it last changed." example:"2026-11-21T09:00:00Z"`
 }
 
 // AutomationRulePage is a page of rules, oldest first.
@@ -59,11 +67,11 @@ type AutomationRulePage struct {
 
 // AutomationRuleChange changes some fields of a rule; what is left out stays.
 type AutomationRuleChange struct {
-	Name          *string   `json:"name,omitempty" minLength:"1" maxLength:"100" doc:"A new name."`
-	DocumentType  *string   `json:"document_type,omitempty" maxLength:"41" doc:"A new kind of document; an empty string for any kind."`
-	AmountAtLeast *string   `json:"amount_at_least,omitempty" pattern:"^([0-9]+(\\.[0-9]{1,4})?)?$" doc:"A new amount; an empty string for any amount."`
-	Recipients    *[]string `json:"recipients,omitempty" minItems:"1" maxItems:"20" doc:"The new recipients, replacing the old."`
-	State         *string   `json:"state,omitempty" enum:"active,paused,archived" doc:"active or paused to turn it on or off; archived ends it for good."`
+	Name          *string          `json:"name,omitempty" minLength:"1" maxLength:"100" doc:"A new name." example:"Large bills"`
+	DocumentType  *string          `json:"document_type,omitempty" maxLength:"41" doc:"A new kind of document; an empty string for any kind." example:"bill"`
+	AmountAtLeast *string          `json:"amount_at_least,omitempty" pattern:"^([0-9]+(\\.[0-9]{1,4})?)?$" doc:"A new amount; an empty string for any amount." example:"5000.00"`
+	Recipients    *[]RuleRecipient `json:"recipients,omitempty" minItems:"1" maxItems:"20" doc:"The new recipients, replacing the old."`
+	State         *string          `json:"state,omitempty" enum:"active,paused,archived" doc:"active or paused to turn it on or off; archived ends it for good." example:"paused"`
 }
 
 type (
@@ -93,9 +101,9 @@ type (
 )
 
 func automationRuleOf(r storage.AutomationRule) AutomationRule {
-	who := make([]string, len(r.Recipients))
+	who := make([]RuleRecipient, len(r.Recipients))
 	for i, u := range r.Recipients {
-		who[i] = u.String()
+		who[i] = RuleRecipient(u.String())
 	}
 	return AutomationRule{ID: r.ID.String(), Name: r.Name, Trigger: r.Trigger, DocumentType: r.DocumentType, AmountAtLeast: string(r.AmountAtLeast), Action: r.Action, Recipients: who,
 		State: r.State, Version: r.Version, CreatedAt: r.CreatedAt.UTC(), UpdatedAt: r.UpdatedAt.UTC()}
@@ -109,13 +117,13 @@ func ruleProblem(fp []automation.FieldProblem) *Problem {
 	return problem(automation.CodeRule, "The rule cannot be saved: "+fp[0].Field+" "+fp[0].Message+".", fp[0].Fix, out...)
 }
 
-func ruleIDs(ss []string) ([]uuid.UUID, error) {
+func ruleIDs(ss []RuleRecipient) ([]uuid.UUID, error) {
 	out := make([]uuid.UUID, len(ss))
 	for i, s := range ss {
-		id, err := uuid.Parse(s)
+		id, err := uuid.Parse(string(s))
 		if err != nil {
 			return nil, problem(automation.CodeRule, "A recipient is not an ID.", "Send the members' user IDs",
-				FieldProblem{Code: automation.CodeRule, Field: "body.recipients", Message: s + " is not an ID", Fix: "Send the members' user IDs"})
+				FieldProblem{Code: automation.CodeRule, Field: "body.recipients", Message: string(s) + " is not an ID", Fix: "Send the members' user IDs"})
 		}
 		out[i] = id
 	}
