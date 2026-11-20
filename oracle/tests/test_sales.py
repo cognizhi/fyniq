@@ -386,3 +386,71 @@ def test_a_deposit_whose_base_rounds_to_nothing_is_refused():
     # (test/differential/README.md, "P1 readings").
     result, ledger = p1_post(deposit("DP-1", "2026-03-01", "1021", "USD", "0.01", rate="0.0001"))
     assert result["rejected"] == ["DP-1"] and ledger.reasons == [("DP-1", "entry-rounds-to-one-line")]
+
+
+def _written_off(*amounts: str, net: str = "1000.00", code: str = "SR", currency: str = "SGD", rate: str | None = None) -> list[dict]:
+    """An invoice of ``net`` and one write-off of each amount to 6900 (bad debts), each dated in April 2026."""
+    docs = [invoice("INV-1", "2026-03-05", currency, invoice_line("4010", net, code), rate=rate)]
+    for i, amount in enumerate(amounts, 1):
+        docs.append({"type": "write_off", "id": f"WO-{i}", "version": 1, "date": "2026-04-30", "invoice": "INV-1", "amount": amount, "account": "6900"})
+    return docs
+
+
+def _claim(n: int, day: str = "2026-05-31") -> dict:
+    return {"type": "bad_debt_relief", "id": f"BDR-{n}", "version": 1, "date": day, "write_off": f"WO-{n}"}
+
+
+# req: FR-AR-11
+def test_bad_debt_relief_claims_the_output_tax_of_the_whole_debt():
+    # 1,000.00 at 9% owes 1,090.00 with 90.00 of output tax; written off in full, all 90.00 comes back: Dr 2200, Cr 6900.
+    result, ledger = p1_post(*_written_off("1090.00"), _claim(1))
+    assert lines_of(result, "BDR-1") == [("2200", "SGD", "90.00", "90.00"), ("6900", "SGD", "-90.00", "-90.00")]
+    assert ledger.reasons == []
+
+
+# req: FR-AR-11
+# req: RND-BDR
+def test_bad_debt_relief_claims_the_share_of_the_part_written_off():
+    # 545.00 of the 1,090.00 owed is a half: 90.00 × 545.00 ÷ 1,090.00 = 45.00. 10.00 of 10.90 (net 10.00): 0.90 × 10.00 ÷ 10.90 = 0.8257 -> 0.83.
+    result, _ = p1_post(*_written_off("545.00"), _claim(1))
+    assert lines_of(result, "BDR-1") == [("2200", "SGD", "45.00", "45.00"), ("6900", "SGD", "-45.00", "-45.00")]
+    result, _ = p1_post(*_written_off("10.00", net="10.00"), _claim(1))
+    assert lines_of(result, "BDR-1") == [("2200", "SGD", "0.83", "0.83"), ("6900", "SGD", "-0.83", "-0.83")]
+
+
+# req: FR-AR-11
+# req: RND-BDR
+def test_bad_debt_relief_on_a_foreign_invoice_is_in_sgd_on_its_output_tax_in_sgd():
+    # USD 100.00 at 1.5 on SR: the net is S$150.00 and the output tax S$13.50; the customer owes USD 109.00. USD 54.50 written off:
+    # 13.50 × 54.50 ÷ 109.00 = 6.75 exactly. (At 1.35: net S$135.00, output tax 12.15, and 12.15 × 54.50 ÷ 109.00 = 6.075, to 6.08.)
+    result, _ = p1_post(*_written_off("54.50", net="100.00", currency="USD", rate="1.5"), _claim(1))
+    assert lines_of(result, "BDR-1") == [("2200", "SGD", "6.75", "6.75"), ("6900", "SGD", "-6.75", "-6.75")]
+    result, _ = p1_post(*_written_off("54.50", net="100.00", currency="USD", rate="1.35"), _claim(1))
+    assert lines_of(result, "BDR-1") == [("2200", "SGD", "6.08", "6.08"), ("6900", "SGD", "-6.08", "-6.08")]
+
+
+# req: FR-AR-11
+# req: RND-BDR
+def test_the_claims_of_an_invoices_write_offs_add_up_to_its_output_tax():
+    # 1.00 at 9% owes 1.09 with 0.09 of output tax. Written off 0.30, 0.30 and 0.49: 0.09 × 0.30 ÷ 1.09 = 0.02477 -> 0.02 twice, and
+    # the third completes the debt, so it takes what is left, 0.09 - 0.04 = 0.05.
+    result, ledger = p1_post(*_written_off("0.30", "0.30", "0.49", net="1.00"), _claim(1), _claim(2), _claim(3))
+    assert [lines_of(result, f"BDR-{n}")[0][2] for n in (1, 2, 3)] == ["0.02", "0.02", "0.05"]
+    assert ledger.reasons == []
+
+
+# req: FR-AR-11
+def test_bad_debt_relief_is_refused_where_there_is_nothing_to_claim_or_it_was_claimed():
+    # Once only; no write-off posted (an amount above what is open is refused first); a zero-rated invoice bears no output tax; and an
+    # invoice a credit note credits is not claimed (the note adjusted its output tax).
+    _, ledger = p1_post(*_written_off("1090.00"), _claim(1), {**_claim(1), "id": "BDR-9"})
+    assert ledger.reasons == [("BDR-9", "claimed-twice")]
+    _, ledger = p1_post(*_written_off("99999.00"), _claim(1))
+    assert ledger.reasons == [("WO-1", "more-than-open"), ("BDR-1", "not-a-posted-write-off")]
+    _, ledger = p1_post(*_written_off("1000.00", code="ZR"), _claim(1))
+    assert ledger.reasons == [("BDR-1", "nothing-to-claim")]
+    _, ledger = p1_post(*_written_off("545.00"),
+                        invoice("CN-1", "2026-04-10", "SGD", invoice_line("4010", "10.00"), kind="credit_note", invoice="INV-1"), _claim(1))
+    assert ledger.reasons == [("BDR-1", "invoice-credited")]
+    _, ledger = p1_post(*_written_off("0.01", net="100.00"), _claim(1))  # 9.00 × 0.01 ÷ 109.00 rounds to nothing
+    assert ledger.reasons == [("BDR-1", "nothing-to-claim")]

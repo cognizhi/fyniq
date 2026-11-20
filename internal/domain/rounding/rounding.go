@@ -32,6 +32,7 @@ const (
 	DiscountName     = "RND-DISCOUNT"
 	GSTInclName      = "RND-GST-INCL"
 	DepositName      = "RND-DEPOSIT"
+	BadDebtGSTName   = "RND-BDR"
 	MileageName      = "RND-MILEAGE"
 	TimeName         = "RND-TIME"
 	RecogniseName    = "RND-RECOGNISE"
@@ -452,6 +453,60 @@ func DepositPart(left, amount, remaining money.Money) (money.Money, error) {
 		return money.Money{}, err
 	}
 	return money.FromRounded(halfAwayFromZero(&quotient, left.Currency().MinorUnits), left.Currency())
+}
+
+// BadDebtGST is RND-BDR (PRD-001 §10.4, rev 0.609; provisional until the accountant's sign-off [accountant to confirm]): the output tax of an
+// invoice that a write-off of part of what the customer owed brings into GST bad debt relief (FR-AR-11), in the base currency
+// = round(the output tax the invoice posted × the amount written off ÷ the amount the invoice made the customer owe, the base
+// currency's minor units), half away from zero, computed exactly before its one rounding. writtenBefore is what the invoice's
+// earlier claims were for, in its currency, and claimedBefore what they claimed. Claims never exceed the output tax in all: the
+// share is capped at what is left of it, and a write-off that completes the amount owed takes all that is left, so the claims
+// of one invoice add up exactly to its output tax whatever the parts.
+func BadDebtGST(output, owed, writtenBefore, written, claimedBefore money.Money) (money.Money, error) {
+	switch {
+	case owed.Currency() != written.Currency() || owed.Currency() != writtenBefore.Currency():
+		return money.Money{}, fmt.Errorf("%s: the amounts written off are in %s and %s, the debt in %s", BadDebtGSTName, written.Currency(), writtenBefore.Currency(), owed.Currency())
+	case output.Currency() != claimedBefore.Currency():
+		return money.Money{}, fmt.Errorf("%s: the output tax is in %s, what was claimed in %s", BadDebtGSTName, output.Currency(), claimedBefore.Currency())
+	case owed.Sign() <= 0 || written.Sign() <= 0 || writtenBefore.Sign() < 0 || output.Sign() < 0 || claimedBefore.Sign() < 0:
+		return money.Money{}, fmt.Errorf("%s: %s written off of %s owed, %s of output tax", BadDebtGSTName, written, owed, output)
+	}
+	total, err := writtenBefore.Add(written)
+	if err != nil {
+		return money.Money{}, err
+	}
+	c, err := total.Cmp(owed)
+	if err != nil {
+		return money.Money{}, err
+	}
+	if c > 0 {
+		return money.Money{}, fmt.Errorf("%s: %s written off in all is more than the %s owed", BadDebtGSTName, total, owed)
+	}
+	left, err := output.Sub(claimedBefore)
+	if err != nil {
+		return money.Money{}, err
+	}
+	if left.Sign() < 0 {
+		return money.Money{}, fmt.Errorf("%s: %s already claimed is more than the %s of output tax", BadDebtGSTName, claimedBefore, output)
+	}
+	if c == 0 {
+		return left, nil
+	}
+	var product, quotient apd.Decimal
+	if _, err := work.Mul(&product, output.Decimal(), written.Decimal()); err != nil {
+		return money.Money{}, err
+	}
+	if _, err := work.Quo(&quotient, &product, owed.Decimal()); err != nil {
+		return money.Money{}, err
+	}
+	share, err := money.FromRounded(halfAwayFromZero(&quotient, output.Currency().MinorUnits), output.Currency())
+	if err != nil {
+		return money.Money{}, err
+	}
+	if k, err := share.Cmp(left); err == nil && k > 0 {
+		return left, nil
+	}
+	return share, nil
 }
 
 const (

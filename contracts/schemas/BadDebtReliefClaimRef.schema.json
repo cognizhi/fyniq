@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "The day it was claimed.",
+      "examples": [
+        "2027-03-10"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "gst": {
+      "$ref": "Money.schema.json",
+      "description": "The GST it claimed, in the base currency."
+    },
+    "id": {
+      "description": "The claim.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8b01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "date",
+    "gst"
+  ],
+  "title": "BadDebtReliefClaimRef",
+  "type": "object"
+}

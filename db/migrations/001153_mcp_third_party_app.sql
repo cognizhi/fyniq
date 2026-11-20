@@ -1,4 +1,4 @@
--- Third-party AI apps registered by an Administrator (PRD-001 AI-46, rev 0.608; p2-api-third-parties task 5, design D6): the organisation's own record of each
+-- Third-party AI apps registered by an Administrator (PRD-001 AI-46, rev 0.611; p2-api-third-parties task 5, design D6): the organisation's own record of each
 -- AI app (an MCP client of another publisher) its Administrator registered by hand. The app itself is an agent-class public client with PKCE and the default read
 -- scope, recorded among the installation's registrations (mcp_client, AI-90) and unusable until an Owner adds it to the apps that may connect (mcp.clients, a dual
 -- controlled setting): this table adds what AI-46 asks for beyond that, who publishes it, what for, where it processes data, the redirect URIs an Administrator

@@ -42,7 +42,7 @@ export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeepe
 // books start, a director's pay choice or fee, or the exempt-private-company status (FR-DOC-05, FR-AP-14, FR-AP-18,
 // FR-CT-03, FR-AP-22, FR-EQ-03, FR-EQ-04, FR-EQ-11), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class" | "equity-transaction" | "instrument" | "instrument-enablement" | "pool-resolution" | "option-grant" | "option-event" | "investor-rights" | "controller-entry" | "corporate-detail" | "corporate-officer" | "nominee-entry" | "statements-approval" | "corporate-document" | "acra-extract" | "gst-forecast" | "statutory-filing";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class" | "equity-transaction" | "instrument" | "instrument-enablement" | "pool-resolution" | "option-grant" | "option-event" | "investor-rights" | "controller-entry" | "corporate-detail" | "corporate-officer" | "nominee-entry" | "statements-approval" | "corporate-document" | "acra-extract" | "gst-forecast" | "tax-paper" | "statutory-filing";
   id: string;
   etag: string;
 }
@@ -80,6 +80,7 @@ const kindsOf = {
   "corporate-document": ["Signed copy"],
   "acra-extract": ["ACRA business profile"],
   "gst-forecast": ["Signed contract", "Confirmed order", "Letter of award"],
+  "tax-paper": ["Tax computation", "Invoice of a non-deductible expense", "Capital allowance schedule", "Tax agent's note"],
   "statutory-filing": ["IRAS acknowledgement", "CPF Board acknowledgement", "ACRA acknowledgement", "AGM minutes", "working papers"],
   "director-settlement": ["loan note", "board minute", "deed of waiver", "directors' resolution", "shareholders' approval", "board resolution", "conversion agreement", "balance confirmation"],
   "owner-succession": ["board resolution", "accountant's confirmation"],
@@ -116,6 +117,7 @@ const nouns = {
   "corporate-document": "corporate document",
   "acra-extract": "ACRA extract",
   "gst-forecast": "GST forecast",
+  "tax-paper": "tax working paper",
   "statutory-filing": "filing record",
   "director-settlement": "settlement",
   "owner-succession": "succession",
@@ -183,6 +185,8 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
                           ? await api.GET("/v1/acra-extracts/{extract_id}/evidence", { params: { path: { extract_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "gst-forecast"
                           ? await api.GET("/v1/gst-forecasts/{forecast_id}/evidence", { params: { path: { forecast_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "tax-paper"
+                          ? await api.GET("/v1/tax/working-papers/{paper_id}/evidence", { params: { path: { paper_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "statutory-filing"
                           ? await api.GET("/v1/compliance/filings/{filing_id}/evidence", { params: { path: { filing_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "director-settlement"
@@ -532,6 +536,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
                           ? api.POST("/v1/acra-extracts/{extract_id}/evidence", { params: { path: { extract_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "gst-forecast"
                           ? api.POST("/v1/gst-forecasts/{forecast_id}/evidence", { params: { path: { forecast_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "tax-paper"
+                          ? api.POST("/v1/tax/working-papers/{paper_id}/evidence", { params: { path: { paper_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "statutory-filing"
                           ? api.POST("/v1/compliance/filings/{filing_id}/evidence", { params: { path: { filing_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "director-settlement"
@@ -611,6 +617,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
                         ? await api.GET("/v1/acra-extracts/{extract_id}/evidence/{evidence_id}", { params: { path: { extract_id: record.id, evidence_id: e.id } } })
                       : record.kind === "gst-forecast"
                         ? await api.GET("/v1/gst-forecasts/{forecast_id}/evidence/{evidence_id}", { params: { path: { forecast_id: record.id, evidence_id: e.id } } })
+                      : record.kind === "tax-paper"
+                        ? await api.GET("/v1/tax/working-papers/{paper_id}/evidence/{evidence_id}", { params: { path: { paper_id: record.id, evidence_id: e.id } } })
                       : record.kind === "statutory-filing"
                         ? await api.GET("/v1/compliance/filings/{filing_id}/evidence/{evidence_id}", { params: { path: { filing_id: record.id, evidence_id: e.id } } })
                       : record.kind === "director-settlement"
@@ -670,6 +678,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
                         ? api.DELETE("/v1/acra-extracts/{extract_id}/evidence/{evidence_id}", { params: { path: { extract_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "gst-forecast"
                         ? api.DELETE("/v1/gst-forecasts/{forecast_id}/evidence/{evidence_id}", { params: { path: { forecast_id: record.id, evidence_id: e.id }, header } })
+                      : record.kind === "tax-paper"
+                        ? api.DELETE("/v1/tax/working-papers/{paper_id}/evidence/{evidence_id}", { params: { path: { paper_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "statutory-filing"
                         ? api.DELETE("/v1/compliance/filings/{filing_id}/evidence/{evidence_id}", { params: { path: { filing_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "director-settlement"

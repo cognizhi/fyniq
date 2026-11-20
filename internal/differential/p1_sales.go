@@ -21,6 +21,11 @@ type issued struct {
 	date     time.Time
 	charged  money.Money
 	credited money.Money
+	// output is the output GST the invoice posted to the GST control account, in the base currency; reliefWritten and reliefClaimed are what its
+	// claims of GST bad debt relief were for (the invoice's currency) and claimed (bad_debt_relief@1).
+	output        money.Money
+	reliefWritten money.Money
+	reliefClaimed money.Money
 }
 
 // supplyRate is the GST rate a supply coded code bears on day, as invoice.Prepare and deposit.Prepare decide it: a
@@ -183,7 +188,7 @@ func (r *p1) invoice(i int, d Document, date time.Time, credit bool) (ledger.Ent
 		if err != nil || !r.fits(e) {
 			return ledger.Entry{}, false
 		}
-		r.issued[d.ID] = &issued{date: date, charged: totals.Total, credited: money.Zero(cur)}
+		r.issued[d.ID] = &issued{date: date, charged: totals.Total, credited: money.Zero(cur), output: money.Zero(r.base), reliefWritten: money.Zero(cur), reliefClaimed: money.Zero(r.base)}
 		r.keepOpen(d.ID, "invoice", e, ledger.RoleAccountsReceivable)
 		r.hold(d.ID, date, e, ledger.RoleAccountsReceivable)
 		return e, true
@@ -214,7 +219,7 @@ func (r *p1) invoice(i int, d Document, date time.Time, credit bool) (ledger.Ent
 		u.open.BaseLeft, _ = u.open.BaseLeft.Sub(u.base)
 		u.open.GSTLeft, _ = u.open.GSTLeft.Sub(u.tax)
 	}
-	r.issued[d.ID] = &issued{date: date, charged: totals.Total, credited: money.Zero(cur)}
+	r.issued[d.ID] = &issued{date: date, charged: totals.Total, credited: money.Zero(cur), output: r.outputGST(e), reliefWritten: money.Zero(cur), reliefClaimed: money.Zero(r.base)}
 	r.keepOpen(d.ID, "invoice", e, ledger.RoleAccountsReceivable)
 	r.hold(d.ID, date, e, ledger.RoleAccountsReceivable)
 	return e, true
@@ -424,5 +429,6 @@ func (r *p1) writeOff(d Document, date time.Time) (ledger.Entry, bool) {
 		return ledger.Entry{}, false
 	}
 	r.settled(date, []ledger.Settlement{s}, map[string]string{w.InvoiceID.String(): x.Invoice})
+	r.writtenOff[d.ID] = &writtenOff{invoice: x.Invoice, amount: amount, account: x.Account}
 	return e, true
 }

@@ -382,7 +382,7 @@ var Catalogue = []Definition{
 		Reason: "A tool's own limits are lower; this is the ceiling no answer to an AI app passes, and what is left out is counted and said",
 		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
 	{Key: "mcp.third_party", Group: "AI apps (MCP)", Label: "An Administrator may register an AI app of another publisher", Kind: Switch, Recommended: "false",
-		Reason: "Off until an Owner turns it on with a second approver: an Administrator then registers an app by hand, with its publisher, purpose, where it processes data and its exact redirect addresses, and it is still unusable until an Owner adds it to the apps that may connect; turning it off takes effect at once (AI-46, rev 0.608)",
+		Reason: "Off until an Owner turns it on with a second approver: an Administrator then registers an app by hand, with its publisher, purpose, where it processes data and its exact redirect addresses, and it is still unusable until an Owner adds it to the apps that may connect; turning it off takes effect at once (AI-46, rev 0.611)",
 		Guide:  guide + "ai-apps-through-mcp", Requirement: "AI-46", DualControl: true, OffAtOnce: true},
 	{Key: "mcp.tool_calls_per_day", Group: "AI apps (MCP)", Label: "Reads and proposals a person's AI app may make a day", Kind: Count, Recommended: "5000",
 		Min: "1", Max: "100000", Unit: "calls",

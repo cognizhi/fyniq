@@ -19,7 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// A third-party AI app is registered by hand and never automatically (AI-46, rev 0.608; AI-90, AI-35, AI-34, QA-MCP-01): off until an Owner turns on AI apps through MCP and
+// A third-party AI app is registered by hand and never automatically (AI-46, rev 0.611; AI-90, AI-35, AI-34, QA-MCP-01): off until an Owner turns on AI apps through MCP and
 // third-party registration, an Administrator's step-up alone registers one, the policy that checks a self-registering app checks the name and the redirects, nothing the
 // Administrator names is fetched, the app is an agent-class public client with the default read scope alone and cannot connect until an Owner approves it, it makes a data
 // inventory entry (a transfer to assess when it is outside Singapore) and appears in the access review, and removing it takes it out of the OAuth server at once.

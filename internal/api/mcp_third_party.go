@@ -18,7 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// Third-party AI apps (PRD-001 AI-46, rev 0.608; p2-api-third-parties task 5, design D6). An Administrator registers, by hand, an AI app of another publisher: its
+// Third-party AI apps (PRD-001 AI-46, rev 0.611; p2-api-third-parties task 5, design D6). An Administrator registers, by hand, an AI app of another publisher: its
 // name, who publishes it, what the organisation uses it for, where it processes data and the exact redirect addresses it signs people in on. Never automatic, never
 // by a Client ID Metadata Document: nothing the Administrator names is fetched, and the same policy that checks a client registering itself (AI-90) checks the name and the
 // redirects. The app is created as an agent-class public client with PKCE and the default read scope alone, and cannot connect until an Owner adds it to the apps that may connect
