@@ -25,7 +25,7 @@ It reads **Ready to file** when nothing is missing, **Waiting for submissions** 
   one is refused with the rule and the field to correct, and is never queued.
 - A customer on the network gets the document through its Peppol ID. A customer with no Peppol ID, or one the network does not know, goes to IRAS alone.
 - An invoice with an exempt line is not sent until the tax agent chooses ES33 or ESN33 in Settings › Organisation.
-- A document that needs no submission, such as a reverse charge supply or an import permit, is left out with its reason through the API (`createInvoiceNowExclusion`).
+- A document that needs no submission, such as a reverse charge supply or an import permit, is left out with its reason: select **Leave it out** beside it, choose the reason (a reverse charge supply, an import under a permit, a deemed supply, financial services, a supplier not registered for GST, input tax that cannot be claimed, out of scope of GST, or another reason in a few words) and select **Leave it out** again. The document is no longer waited for; the reason is kept, and the exclusion can be withdrawn through the API (`withdrawInvoiceNowExclusion`), which brings the document back.
 
 ## Submissions
 
@@ -36,7 +36,7 @@ same document UUID.
 ## When the network is down
 
 If the access point or IRAS was unavailable and the return would be late, one person with the right to prepare the return asks to file with the gap, with the reason and the
-evidence of the outage. Someone else with the right to approve (the Owner or the Finance controller) approves it, never the person who asked. The unsent documents stay queued and
+evidence of the outage. The request shows on the gate as waiting; someone else with the right to approve (the Owner or the Finance controller) selects **Approve the request**, never the person who asked. It lets nothing through before that. The unsent documents stay queued and
 are sent when service returns. The business stays responsible for complete submission.
 
 ## Invoices from suppliers

@@ -42304,6 +42304,8 @@ export interface components {
             from: string;
             /** @description What the gate waits for, in date order. */
             missing: components["schemas"]["InvoiceNowMissing"][] | null;
+            /** @description The newest request for a contingency that nobody has approved yet: it lets nothing through until someone other than its requester approves it. */
+            pending_contingency?: components["schemas"]["InvoiceNowContingency"];
             /**
              * @description Why the gate is not assessed.
              * @example The InvoiceNow requirement is not marked as applying (setting invoicenow.applies).

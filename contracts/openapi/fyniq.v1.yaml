@@ -34084,6 +34084,9 @@ components:
           type:
             - array
             - "null"
+        pending_contingency:
+          $ref: "#/components/schemas/InvoiceNowContingency"
+          description: "The newest request for a contingency that nobody has approved yet: it lets nothing through until someone other than its requester approves it."
         reason:
           description: Why the gate is not assessed.
           examples:

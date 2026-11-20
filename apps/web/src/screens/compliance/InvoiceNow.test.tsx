@@ -69,4 +69,29 @@ describe("InvoiceNow", () => {
     await screen.findByText("0195:SGUEN201912345A");
     expect(screen.queryByRole("button", { name: /Send now|Queue for|Receive now|Make the draft/ })).toBeNull();
   });
+
+  it("leaves a document out with its reason and approves another person's pending request, each with an Idempotency-Key", async () => {
+    const controller = { ...ownerSession, roles: ["accountant", "controller"] } as Session;
+    const seen = answer({
+      "GET /v1/compliance/invoicenow-gate": { status: 200, body: gate({ pending_contingency: { id: "c-1", period_from: "2026-10-01", period_to: "2026-12-31", reason: "The access point was down on 30 and 31 October", evidence: "Notice INC-1", requested_by: "user:u-2", requested_at: "2026-11-01T09:00:00Z" } }) },
+      "GET /v1/invoicenow/submissions": { status: 200, body: { items: [] } },
+      "GET /v1/invoicenow/inbound": { status: 200, body: { items: [] } },
+      "POST /v1/invoicenow/exclusions": { status: 201, body: { id: "x-1", document_id: "d-1", reason: "other", detail: "IRAS told us", recorded_by: "u", recorded_at: "2026-11-01T09:00:00Z", withdrawn: false } },
+      "POST /v1/invoicenow/contingencies/c-1/approve": { status: 200, body: { id: "c-1", approved_by: "user:u-3" } },
+    });
+    renderPage(InvoiceNow, { path: "/compliance/invoicenow", route: "/compliance/invoicenow", session: controller });
+    expect(await screen.findByText(/A request to file with the gap waits for approval/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Approve the request" }));
+    await waitFor(() => expect(seen.some((s) => s.path === "/v1/invoicenow/contingencies/c-1/approve")).toBe(true));
+    expect(seen.find((s) => s.path === "/v1/invoicenow/contingencies/c-1/approve")?.headers.get("Idempotency-Key")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Leave it out" }));
+    fireEvent.change(await screen.findByLabelText("Why it needs no submission"), { target: { value: "other" } });
+    const submit = screen.getByRole("form", { name: "Leave a document out" }).querySelector("button[type=submit]") as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText(/In a few words/), { target: { value: "IRAS told us" } });
+    fireEvent.click(submit);
+    await waitFor(() => expect(seen.some((s) => s.path === "/v1/invoicenow/exclusions")).toBe(true));
+    expect(seen.find((s) => s.path === "/v1/invoicenow/exclusions")?.body).toEqual({ document_id: "d-1", reason: "other", detail: "IRAS told us" });
+    expect(seen.find((s) => s.path === "/v1/invoicenow/exclusions")?.headers.get("Idempotency-Key")).toBeTruthy();
+  });
 });
