@@ -38,7 +38,7 @@ describe("the asset reports on the fixed asset register", () => {
   it("shows the movement schedule with its totals and says when the register ties to the ledger; axe finds nothing", async () => {
     answer({ ...base, "GET /v1/reports/fixed-asset-movement": { status: 200, body: movement() } });
     renderPage(FixedAssets, { path: "/accounting/assets", session: accountant, organisation, mode: "expert" });
-    fireEvent.click(await screen.findByRole("tab", { name: "Movement" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Movements" }));
     const table = await screen.findByRole("table", { name: "Asset movement" });
     expect(within(table).getByText("1510 Computer equipment")).toBeTruthy();
     expect(within(table).getAllByText("3,600.00").length).toBeGreaterThan(1);
@@ -50,7 +50,7 @@ describe("the asset reports on the fixed asset register", () => {
   it("says when the register does not tie", async () => {
     answer({ ...base, "GET /v1/reports/fixed-asset-movement": { status: 200, body: movement(false) } });
     renderPage(FixedAssets, { path: "/accounting/assets", session: accountant, organisation, mode: "expert" });
-    fireEvent.click(await screen.findByRole("tab", { name: "Movement" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Movements" }));
     expect(await screen.findByText("The register does not tie to the ledger")).toBeTruthy();
   });
 

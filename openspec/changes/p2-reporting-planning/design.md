@@ -99,7 +99,9 @@ The roll-forward reads the deferral schedules by customer and contract (deferred
 released, reversed and closing per month, with a check that closing equals the ledger balance of 2400 and 1210 (INV-07). The asset
 schedule is NBV, accumulated depreciation and the movement (additions, disposals, depreciation) for a period. The capital allowance
 schedule applies S19, S19A(1) and S19A(10A) from the pack `sg-capital-allowances` with IRAS's page as its source; an asset the pack cannot
-classify is listed apart, never guessed [accountant to confirm].
+classify is listed apart, never guessed [accountant to confirm]. **Recorded 20 Nov 2026:** the company's method for each asset is an election kept on the asset's own version (a
+recommended default, no new table): S19's working life is irrevocable and the system refuses to change it; the S$30,000 cap takes whole assets in purchase order and the rest are
+listed apart; amounts are in cents by ALLOC-EVEN `RND-CAPALLOW` (IRAS shows whole dollars) [accountant to confirm].
 
 ## D12. The rolling forecast and the funding plan
 

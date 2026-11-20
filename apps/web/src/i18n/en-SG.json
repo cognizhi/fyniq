@@ -1988,7 +1988,7 @@
       "tooltip": "Assets voided as registered by mistake: their depreciation reversed, their lines free to register again."
     },
     "fixed-assets.movement": {
-      "label": "Movement",
+      "label": "Movements",
       "tooltip": "For a run of months: each asset's cost and accumulated depreciation at the start, what was added, charged and taken off by disposals, and at the end, tied to the ledger."
     },
     "fixed-assets.capital-allowances": {
