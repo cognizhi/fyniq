@@ -85,6 +85,24 @@ and the **Amount received**. It posts at once, and the invoice shows **Part paid
 - An invoice in another currency paid into an account in that currency takes the rate on the bank's
   advice, or the day's rate; paid into an SGD account, enter what the account received in SGD.
 
+## A payment link on an invoice
+
+An organisation with HitPay connected under **Settings › Integrations** and a provider account set up under
+**Banking › Provider payouts** can put a payment page on an issued invoice. Open the invoice and select
+**Add a payment link** (an Accountant or an AR specialist can): Fyniq asks HitPay for a page that collects
+what is open on the invoice, with the invoice's number as its reference, and shows the link to copy or open.
+
+- The amount is always what the invoice has open, read by Fyniq when the link is made; you never type it. A
+  draft, void or paid invoice has no link, and an invoice has one live link at a time.
+- When the customer pays, HitPay's charge arrives on the provider's clearing account and **Reconcile now**
+  (or the hourly one) records the receipt on the invoice by itself, once. A payment of another amount, a
+  second payment on the same link, or one on a link you cancelled is not matched: it stays in the queue
+  with the reason **link mismatch**, for a person to decide.
+- **Cancel the link** closes it in Fyniq, with a reason, so a new one can be made. HitPay's page stays
+  payable until it expires, so a payment made on it afterwards waits for a person.
+- A foreign-currency invoice needs a provider account in that currency. The PayNow QR image of the
+  checkout and Stripe payment links are not built yet.
+
 ## Recurring invoices
 
 **Sales → Recurring** keeps invoices that repeat: a name, a schedule, the customer and the lines. A
@@ -113,6 +131,14 @@ document as its PDF shows it, the amount due or the total, and **Download the PD
 still valid, the customer accepts it with their name, or declines it, with a comment kept as a record of
 the decision. The link shows nothing else, works until it ends or is revoked, and the first time it is
 opened the invoice shows **Viewed**.
+
+## The customer portal
+
+The customer's side of the portal, opened through the private link their supplier sent them (see **Contacts**, "The customer
+portal"), is a page with no sign-in: **Your account** lists the invoices still due with a **Pay now** button where the supplier
+made a payment link, a **PDF** for each, and a **Statement of account** over a period you choose (30 days by default, never
+ending after today). It shows only that customer's invoices, is never cached or indexed, and the link ends on its date or when the
+supplier withdraws it. Where there is no Pay button, pay as the invoice says: the supplier records it when it arrives.
 
 ## Invoices above the self-approval threshold
 

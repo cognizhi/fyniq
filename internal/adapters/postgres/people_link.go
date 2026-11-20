@@ -362,3 +362,50 @@ func (r peopleLinks) SavePerson(ctx context.Context, p peoplelink.Person) error 
 	v := p.Version
 	return r.u.event(ctx, "person_projection.changed", "person_projection", p.ID, &v, map[string][2]any{"fields": {nil, fields}})
 }
+
+func peopleAccessOf(x sqlcdb.PeopleLinkAccessRow) storage.PeopleAccess {
+	return storage.PeopleAccess{ID: x.ID, Issuer: x.Issuer, Subject: x.Subject, PeopleAccess: x.PeopleAccess, PayrollApprover: x.PayrollApprover, Version: x.Version, ReceivedAt: x.ReceivedAt}
+}
+
+func (r peopleLinks) Access(ctx context.Context, issuer, subject string) (storage.PeopleAccess, error) {
+	if err := r.u.check(); err != nil {
+		return storage.PeopleAccess{}, err
+	}
+	x, err := r.u.q.PeopleLinkAccess(ctx, sqlcdb.PeopleLinkAccessParams{Issuer: issuer, Subject: subject})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.PeopleAccess{}, ports.ErrNotFound
+	}
+	if err != nil {
+		return storage.PeopleAccess{}, mapError(err)
+	}
+	return peopleAccessOf(sqlcdb.PeopleLinkAccessRow(x)), nil
+}
+
+func (r peopleLinks) AccessList(ctx context.Context) ([]storage.PeopleAccess, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.PeopleLinkAccessList(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.PeopleAccess, len(rows))
+	for i, x := range rows {
+		out[i] = peopleAccessOf(sqlcdb.PeopleLinkAccessRow(x))
+	}
+	return out, nil
+}
+
+func (r peopleLinks) SaveAccess(ctx context.Context, a storage.PeopleAccess) (bool, error) {
+	if err := r.u.check(); err != nil {
+		return false, err
+	}
+	id, err := r.u.q.SavePeopleLinkAccess(ctx, sqlcdb.SavePeopleLinkAccessParams{Issuer: a.Issuer, Subject: a.Subject, PeopleAccess: a.PeopleAccess, PayrollApprover: a.PayrollApprover, Version: a.Version, ReceivedAt: a.ReceivedAt})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil // not newer than what is held
+	}
+	if err != nil {
+		return false, mapError(err)
+	}
+	return true, r.u.event(ctx, "people_link_access.changed", "people_link_access", id, nil, map[string][2]any{"people_access": {nil, a.PeopleAccess}, "payroll_approver": {nil, a.PayrollApprover}})
+}

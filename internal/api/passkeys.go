@@ -368,7 +368,10 @@ func registerPasskeys(a *API) {
 					CredentialID: r.CredentialID, PublicKey: r.PublicKey, SignCount: r.SignCount, AAGUID: r.AAGUID, Transports: r.Transports,
 					BackupEligible: r.BackupEligible, BackupState: r.BackupState, Name: label, Now: now})
 				out.Body = passkeyOf(k)
-				return err
+				if err != nil {
+					return err
+				}
+				return a.tellNemuraAccess(ctx, u, p.UserID) // a linked Nemura learns a passkey is enrolled: what a pay run's approval is signed with
 			})
 			if err != nil {
 				return nil, err
@@ -410,7 +413,10 @@ func registerPasskeys(a *API) {
 						out.Body = passkeyOf(k)
 					}
 				}
-				return err
+				if err != nil {
+					return err
+				}
+				return a.tellNemuraAccess(ctx, u, p.UserID)
 			})
 			if err != nil {
 				return nil, err

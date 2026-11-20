@@ -4,7 +4,7 @@ type: task
 title: Review, approve or reject a change the AI proposed
 summary: Review, approve, reject or undo an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
 sources:
-  - docs/user-guide/ai-proposals.md sha256:3ac2e6e0ddbaa0a3ec119dba79c61976427445b98163307be11e705f56c5a34c
+  - docs/user-guide/ai-proposals.md sha256:1dd8527a2b83d04ab7b2733763787b72cb4d53d859addf8a13ffc4bbdc002a5d
 data_class: general
 taint: trusted
 status: draft
@@ -29,6 +29,8 @@ aliases:
   - undo what the AI did
   - AI update contact
   - ct.update_contact
+  - AI bank rule
+  - bank.rule_upsert
   - AI recurring journal
   - recur.create_template
   - AI budget draft
@@ -152,6 +154,14 @@ aliases:
 - An Accountant other than the person who asked approves it. A budget draft cannot be undone, since no function deletes one: a person edits it or leaves it.
 
 (src: docs/user-guide/ai-proposals.md#review-a-budget-the-ai-drafted)
+
+## Review a bank rule the AI proposed
+
+- Create or change a bank rule (`bank.rule_upsert`, tier 1) saves a bank rule, as Create a bank rule and Change a bank rule do: a name, its place in the order, what a line must meet (a text or pattern in the description, the direction, an amount range, the currency, the counterparty) and the ordinary account it codes lines to, with an optional contact, GST code and reference.
+- The review shows the rule's back-test: how many of the lines held its conditions would have matched, by status. A rule only suggests a coding, which a person accepts. The AI cannot make a rule apply by itself, nor code lines to a bank, receivables or payables account: applying by itself needs another person's approval after the back-test, and changing a rule stops it applying meanwhile. A rule the AI proposed is marked as such.
+- Someone who may keep bank rules, such as the bookkeeper or the accountant, approves it. **Undo this change** switches a new rule off, or puts a changed rule back as it was, while nobody has changed it since.
+
+(src: docs/user-guide/ai-proposals.md#review-a-bank-rule-the-ai-proposed)
 
 ## Approval quality
 

@@ -7,6 +7,10 @@
     "version": 1,
     "sha256": "57846e3eb6946df1dc4fe03f2b1287522bae1176e888832236d28fd8aedac83b"
   },
+  "bank.rule_upsert": {
+    "version": 1,
+    "sha256": "e1d9d7d0b6c6831ec2aa4b64d447cb24dff21f8b0b9300199ef8043c6cf2f74d"
+  },
   "ct.update_contact": {
     "version": 2,
     "sha256": "b686fd9e702bf0459a66dcb05b14c42187e8d34c3eded351be8a9f735d1a0def"

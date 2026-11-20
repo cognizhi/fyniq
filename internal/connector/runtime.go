@@ -250,6 +250,41 @@ func (r *Runtime) PaymentProvider(ctx context.Context, u storage.UnitOfWork, id 
 	return guardedPaymentProvider{PaymentProvider: pp, g: r.guard(c.ID, b.Manifest.Limits), clock: r.Clock}, c, nil
 }
 
+// LinkRequest is the authority of a payment-link connector's one write: a person with a right on Invoices asked for a payment link
+// on an issued invoice, or an invoice is sent and the organisation's setting adds one (FR-AR-13). It is a system rule, because it
+// moves no money and completes no approval: the customer pays the company, through the provider, and the AI never triggers it
+// (a request from an AI proposal is refused by checkTrigger).
+var LinkRequest = Authority{Trigger: TriggerSystem, Rule: "a person's request for a payment link on an invoice, or the sending of an invoice"}
+
+// PaymentLinks is an organisation's enabled payment-link connector id under authority a, behind its rate limit and circuit
+// breaker; ErrNotEnabled while it is paused, disabled or uninstalled. The adapter it returns makes payment requests and does
+// nothing else (FR-AR-13, FR-INT-27).
+func (r *Runtime) PaymentLinks(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, a Authority) (ports.PaymentLinks, storage.InstalledConnector, error) {
+	b, c, secrets, err := r.organisation(ctx, u, id)
+	if err != nil {
+		return nil, c, err
+	}
+	if c.State != storage.ConnectorEnabled || b.PaymentLinks == nil {
+		return nil, c, fmt.Errorf("%w: %s is %s", ErrNotEnabled, c.Connector, c.State)
+	}
+	if err := checkTrigger(b.Manifest, PaymentLink, a); err != nil {
+		return nil, c, err
+	}
+	eps, err := r.Endpoints(ctx, u, c)
+	if err != nil {
+		return nil, c, err
+	}
+	config, err := r.config(ctx, c, secrets, eps)
+	if err != nil {
+		return nil, c, err
+	}
+	pl, err := b.PaymentLinks(config)
+	if err != nil {
+		return nil, c, err
+	}
+	return guardedPaymentLinks{PaymentLinks: pl, g: r.guard(c.ID, b.Manifest.Limits), clock: r.Clock}, c, nil
+}
+
 // VerifyWebhook checks a webhook to organisation connector id with its binding, against its configuration and current
 // secrets: ErrNotEnabled for a connector that is not enabled or paused, or takes no webhook.
 func (r *Runtime) VerifyWebhook(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, h http.Header, body []byte) (storage.InstalledConnector, error) {
@@ -691,5 +726,21 @@ func (b guardedBankData) Transactions(ctx context.Context, account, cursor strin
 	}
 	out, err := b.BankData.Transactions(ctx, account, cursor, from)
 	b.g.end(err != nil, b.clock.Now())
+	return out, err
+}
+
+// guardedPaymentLinks is a payment-link adapter behind its connector's guard: a call the guard holds reaches no provider.
+type guardedPaymentLinks struct {
+	ports.PaymentLinks
+	g     *guard
+	clock ports.Clock
+}
+
+func (p guardedPaymentLinks) CreatePaymentRequest(ctx context.Context, r ports.PaymentRequest) (ports.PaymentRequestMade, error) {
+	if err := p.g.begin(p.clock.Now()); err != nil {
+		return ports.PaymentRequestMade{}, err
+	}
+	out, err := p.PaymentLinks.CreatePaymentRequest(ctx, r)
+	p.g.end(err != nil && !errors.Is(err, ports.ErrPaymentRequestRefused), p.clock.Now())
 	return out, err
 }

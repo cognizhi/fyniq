@@ -160,6 +160,17 @@ status: draft
 - An Accountant other than the person who asked approves it. A budget draft cannot be undone, since no function deletes one: you edit it
   or leave it.
 
+## Review a bank rule the AI proposed
+
+- **Create or change a bank rule** (`bank.rule_upsert`, tier 1) saves a bank rule, as **Create a bank rule** and **Change a bank rule** do: a name, its
+  place in the order, what a line must meet (a text or pattern in the description, the direction, an amount range, the currency, the counterparty) and
+  the ordinary account it codes lines to, with an optional contact, GST code and reference.
+- The review shows the rule's **back-test**: how many of the lines held its conditions would have matched, by their status. A rule only suggests a coding,
+  which you accept. The AI cannot make a rule apply by itself, and cannot code lines to a bank, receivables or payables account: letting a rule apply by itself
+  needs another person's approval after its back-test, and changing a rule stops it applying meanwhile. A rule the AI proposed is marked as such.
+- Someone who may keep bank rules, such as the bookkeeper or the accountant, approves it. **Undo this change** switches a new rule off, or puts a changed
+  rule back as it was, while nobody has changed it since.
+
 ## Approval quality
 
 - The **Approval quality** tab on the AI tasks page, for the Owner and the DPO, shows how each month's AI proposals were decided: how many were made,

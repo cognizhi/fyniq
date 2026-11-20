@@ -268,6 +268,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/compliance/incidents` (listIncidents): List the security incidents
 - `POST /v1/compliance/incidents` (openIncident): Open a security incident
 - `POST /v1/compliance/incidents/{incident_id}/steps` (stepIncident): Add an incident's next step
+- `GET /v1/compliance/invoicenow-gate` (getInvoiceNowGate): Get the InvoiceNow filing gate for a return period
 - `GET /v1/compliance/personal-data-requests` (listPersonalDataRequests): List the access and correction requests
 - `POST /v1/compliance/personal-data-requests` (createPersonalDataRequest): Record an access or correction request
 - `GET /v1/compliance/personal-data-requests/{request_id}/report` (getPersonalDataReport): Report the personal data held about a request's subject
@@ -313,6 +314,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/contacts/{contact_id}/document-templates` (listContactDocumentTemplates): List a contact's templates
 - `PUT /v1/contacts/{contact_id}/document-templates/{kind}/{document_type}` (setContactDocumentTemplate): Choose a contact's template
 - `PUT /v1/contacts/{contact_id}/member` (linkContactMember): Link a director, shareholder or investor to the member who signs in as them
+- `GET /v1/contacts/{contact_id}/portal-links` (getContactPortalLinks): Read a customer's portal links
+- `POST /v1/contacts/{contact_id}/portal-links` (createPortalLink): Make a customer's portal link
 - `GET /v1/contacts/{contact_id}/statement` (getCustomerStatement): Work out a customer's statement
 - `GET /v1/contacts/{contact_id}/summary` (getContactSummary): Get a contact's balances and activity
 - `GET /v1/contacts/{contact_id}/withholding-decisions` (listWithholdingDecisions): List a supplier's withholding decisions
@@ -614,6 +617,14 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/investor-rights/{rights_id}/evidence` (addInvestorRightsEvidence): Attach the agreements a holder's rights come from
 - `GET /v1/investor-rights/{rights_id}/evidence/{evidence_id}` (getInvestorRightsEvidence): Get a file of a holder's rights
 - `DELETE /v1/investor-rights/{rights_id}/evidence/{evidence_id}` (removeInvestorRightsEvidence): Remove a file from a holder's drafted rights
+- `POST /v1/invoicenow/contingencies` (requestInvoiceNowContingency): Ask to file a return with a gap in its InvoiceNow submissions
+- `POST /v1/invoicenow/contingencies/{contingency_id}/approve` (approveInvoiceNowContingency): Approve a contingency
+- `POST /v1/invoicenow/exclusions` (createInvoiceNowExclusion): Leave a document out of the InvoiceNow submissions
+- `POST /v1/invoicenow/exclusions/{exclusion_id}/withdraw` (withdrawInvoiceNowExclusion): Withdraw an exclusion
+- `GET /v1/invoicenow/submissions` (listInvoiceNowSubmissions): List the InvoiceNow submissions
+- `POST /v1/invoicenow/submissions` (queueInvoiceNowSubmission): Queue an invoice or credit note for InvoiceNow
+- `POST /v1/invoicenow/submissions/{submission_id}/retry` (retryInvoiceNowSubmission): Queue a failed submission again
+- `POST /v1/invoicenow/submissions/{submission_id}/send` (sendInvoiceNowSubmission): Send a queued submission and read its status
 - `GET /v1/invoices` (listInvoices): List the invoices
 - `POST /v1/invoices` (createInvoice): Save a draft invoice
 - `GET /v1/invoices/{invoice_id}` (getInvoice): Get an invoice
@@ -628,6 +639,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/invoices/{invoice_id}/evidence/{evidence_id}` (removeInvoiceEvidence): Remove evidence from a draft invoice
 - `POST /v1/invoices/{invoice_id}/issue` (issueInvoice): Issue a draft invoice
 - `POST /v1/invoices/{invoice_id}/issue-approval` (requestInvoiceIssue): Ask for approval to issue an invoice
+- `GET /v1/invoices/{invoice_id}/payment-link` (getInvoicePaymentLink): Read the payment link of an invoice
+- `POST /v1/invoices/{invoice_id}/payment-link` (createInvoicePaymentLink): Ask the payment provider for a payment link on an invoice
+- `POST /v1/invoices/{invoice_id}/payment-link/cancellation` (cancelInvoicePaymentLink): Cancel an invoice's live payment link
 - `POST /v1/invoices/{invoice_id}/void` (voidInvoice): Void an issued invoice
 - `POST /v1/invoices/{invoice_id}/void-approval` (requestInvoiceVoid): Ask for approval to void an invoice
 - `GET /v1/items` (listItems): List the items
@@ -869,7 +883,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/people-link/payroll-runs` (submitPayrollRun): Receive an approved pay run from Nemura and post it
 - `GET /v1/people-link/people` (listPeopleProjection): List the people of the employee projection
 - `POST /v1/people-link/people/{person_id}/user` (mapPersonToUser): Map a person of the projection to a Fyniq user
-- `POST /v1/people-link/projection-events` (receivePeopleProjectionEvent): Receive a person or bank-details event from Nemura
+- `POST /v1/people-link/projection-events` (receivePeopleProjectionEvent): Receive a person, bank-details or identity event from Nemura
+- `POST /v1/people-link/session-events` (receivePeopleSessionEvent): Receive a sign-out or removal from Nemura
 - `POST /v1/people-link/unlink` (requestPeopleUnlink): Ask to end the link to the people platform
 - `GET /v1/periods` (listPeriods): List the periods
 - `GET /v1/periods/{period_id}` (getPeriod): Get a period
@@ -894,6 +909,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/personal-access-tokens/{personal_access_token_id}/revoke` (revokePersonalAccessToken): Revoke a member's personal access token
 - `GET /v1/planning/summary` (getPlanningSummary): Get the planning summary for Home
 - `GET /v1/platform/version` (getPlatformVersion): Get the platform version
+- `POST /v1/portal-links/{link_id}/revoke` (revokePortalLink): Revoke a customer's portal link
 - `GET /v1/pre-incorporation-costs` (listPreIncorporationCosts): List costs paid before the books start
 - `POST /v1/pre-incorporation-costs` (recordPreIncorporationCost): Record a cost paid before the books start
 - `GET /v1/pre-incorporation-costs/{cost_id}` (getPreIncorporationCost): Get a cost paid before the books start
@@ -925,6 +941,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/public/document/accept` (acceptQuoteByLink): Accept a quote through its link
 - `POST /v1/public/document/decline` (declineQuoteByLink): Decline a quote through its link
 - `GET /v1/public/document/pdf` (getPublicDocumentPDF): Get the PDF of a quote or invoice through its link
+- `GET /v1/public/portal` (getPortal): Open a customer's portal through its link
+- `GET /v1/public/portal/invoices/{invoice_id}/pdf` (getPortalInvoicePDF): Get the PDF of one of the customer's invoices through the portal
+- `GET /v1/public/portal/statement` (getPortalStatement): Get the customer's statement of account through the portal
 - `GET /v1/purchase-orders` (listPurchaseOrders): List the purchase orders
 - `POST /v1/purchase-orders` (createPurchaseOrder): Raise a purchase order
 - `GET /v1/purchase-orders/{purchase_order_id}` (getPurchaseOrder): Get a purchase order

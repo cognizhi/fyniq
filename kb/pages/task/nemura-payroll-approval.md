@@ -4,7 +4,7 @@ type: task
 title: Read and approve a pay run in Nemura
 summary: Who approves a pay run and why not its preparer, what the approver reads and signs (with proof for Fyniq when linked) and what approving does
 sources:
-  - docs/user-guide/nemura/payroll-approval.md sha256:587aa4079f07c7b4f9cf08cd85883628baa53aadc93bce7c9321c47d2a53c83b
+  - docs/user-guide/nemura/payroll-approval.md sha256:03d9d68334b3734f2d0d8eb830eeebcbc31084818c8563c9001124ac710acb76
 data_class: personal
 taint: trusted
 status: published
@@ -39,6 +39,7 @@ aliases:
 
 - A run is then approved with proof and the plain approval is closed. The approver reads the figures Fyniq will post (the gross pay of each of Fyniq's departments, the month's CPF, SDL and self-help group funds, the deductions by kind, the claims paid with the salary and Fyniq's account mapping version), confirms with a passkey and then signs the figures' digest with the passkey they enrolled in Fyniq. Fyniq checks that signature before it posts anything, so every approver signs in to Fyniq once and adds a passkey in its security settings; that gives no Fyniq role. The page says in plain words what is missing: a person with no department, a department Fyniq does not have, no mapping yet, or someone who has not signed in once.
 - Under **What Fyniq did with it** the run shows whether it was sent and Fyniq's answer: the posting's reference, or the code and words of its refusal, with which the run waits. A refusal Fyniq's side can put right (no passkey there, a closed period) is followed by **Send it to Fyniq again**, the same approval as a new message; a refusal of the figures or the proof needs a new calculation and a new approval. (src: docs/user-guide/nemura/payroll-approval.md#when-nemura-is-linked-to-fyniq)
+- Before signing, the page says what Fyniq last said of the account signed in with: if Fyniq knows the person and says no passkey is enrolled there, sign in to Fyniq, add one in its security settings, then return; if Fyniq has said nothing, the person may have no sign-in there yet and asks its Owner for an invitation. It is a hint that saves a refused approval: Fyniq's own check after signing decides. The approval names the account signed in with, so use the same account in both apps.
 
 ## What happens next
 

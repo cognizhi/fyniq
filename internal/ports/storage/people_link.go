@@ -104,6 +104,15 @@ type PeopleLinkAskKey struct {
 	PrivateDER []byte
 }
 
+// PeopleAccess is what Nemura last said of a sign-in identity (identity.access.changed): whether it is an active member there and whether it holds a role that approves a pay run. A door and a hint, never a grant.
+type PeopleAccess struct {
+	ID                            uuid.UUID
+	Issuer, Subject               string
+	PeopleAccess, PayrollApprover bool
+	Version                       int64 // the sending event's sequence: a newer one replaces an older
+	ReceivedAt                    time.Time
+}
+
 // PeopleLinks are the link, where each feature lives, the inbox and the employee projection. Every change is audited.
 type PeopleLinks interface {
 	// Live is the link that is not unlinked, or ports.ErrNotFound.
@@ -139,6 +148,12 @@ type PeopleLinks interface {
 	SaveAskKey(ctx context.Context, k PeopleLinkAskKey) error
 	// AskKey is the live link's ask credential, or ports.ErrNotFound for a link made without one. The API's role reads it; the worker's does not.
 	AskKey(ctx context.Context, link uuid.UUID) (PeopleLinkAskKey, error)
+	// Access is what Nemura last said of an identity, or ports.ErrNotFound when it has said nothing.
+	Access(ctx context.Context, issuer, subject string) (PeopleAccess, error)
+	// AccessList is everything Nemura said of identities, oldest first.
+	AccessList(ctx context.Context) ([]PeopleAccess, error)
+	// SaveAccess keeps what Nemura said of an identity when its version is newer than the one held: false when it is not (nothing changed). Audited as people_link_access.changed with the answers and never the identity.
+	SaveAccess(ctx context.Context, a PeopleAccess) (bool, error)
 	// SavePerson writes a person's new state, audited as person_projection.changed with the names of the fields that changed, never
 	// their values. CodePeopleLink when it goes back to an older version.
 	SavePerson(ctx context.Context, p peoplelink.Person) error

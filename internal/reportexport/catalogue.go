@@ -7,7 +7,7 @@ package reportexport
 // Exported are the tables the export writes, each as tables/<name>.csv.
 var Exported = []string{
 	"access_review_attestation", "account", "accountant_review", "accountant_review_journal", "accountant_review_query",
-	"accounting_framework", "accounting_policy", "ai_budget", "ai_call", "ai_connection", "ai_connection_version", "ai_conversation", "ai_feedback", "ai_data_policy", "ai_model", "ai_model_list_read", "ai_price", "ai_price_rate", "ai_proposal", "ai_proposal_undo", "ai_proposal_view", "ai_quality_review", "ai_qualification", "ai_reservation", "ai_route", "ai_route_step", "ai_tool_call", "ai_turn", "agent_run", "allocation", "announcement", "announcement_dismissal",
+	"accounting_framework", "accounting_policy", "ai_budget", "ai_call", "ai_connection", "ai_connection_version", "ai_conversation", "ai_feedback", "ai_data_policy", "ai_model", "ai_model_list_read", "ai_price", "ai_price_rate", "ai_proposal", "ai_proposal_undo", "ai_proposal_view", "ai_quality_review", "ai_qualification", "ai_reservation", "ai_route", "ai_route_step", "ai_tool_call", "ai_turn", "agent_run", "allocation", "announcement", "announcement_dismissal", "invoicenow_submission", "invoicenow_event", "invoicenow_exclusion", "invoicenow_contingency",
 	"api_client", "approval_policy", "approval_request", "approval_signature", "audit_boundary", "audit_chain", "audit_event",
 	"audit_recovery", "audit_recovery_acknowledgement", "audit_request_detail", "balance", "bank_feed",
 	"bank_gap", "bank_line", "bank_match", "bank_reconciliation", "bank_rule", "bank_signal", "bank_statement", "compliance_task",
@@ -34,7 +34,7 @@ var Exported = []string{
 	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "role_assignment_scope", "sales_reminder",
 	"security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",
 	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "user_preference", "user_saved_item", "record_comment", "withholding_decision", "people_source", "salary_batch", "payroll_arrangement", "payroll_import", "person_projection", "payroll_mapping", "payroll_mapping_entry", "payroll_run_receipt",
-	"psp_account", "psp_balance", "psp_dispute_credit", "psp_dispute_loss", "psp_event", "psp_payout", "psp_txn",
+	"psp_account", "psp_balance", "psp_dispute_credit", "psp_dispute_loss", "psp_event", "psp_payout", "psp_txn", "payment_link", "payment_link_payment", "portal_link",
 }
 
 // Excluded are the tables the export leaves out, with why: no secret, key, token, idempotency key or job in flight
@@ -45,6 +45,7 @@ var Excluded = map[string]string{
 	"people_link_ask_key":           "the private key of the link's read-only client for the ask at release: a secret of the connection, never exported (FR-PPL-13, SEC-15)",
 	"people_link_secret":            "the link's private keys: a secret of the connection, never exported (FR-PPL-15, SEC-15)",
 	"people_link_inbox":             "the events the link received: identities and digests of another system's messages, kept to dedupe them, not the organisation's records (FR-PPL-15)",
+	"people_link_access":            "what Nemura last said of each sign-in identity (an active member there, an approver of pay runs): a hint from another system that decides a switch and a reminder, never the organisation's records or a grant (FR-PPL-02)",
 	"salary_batch_line":             "each person's payment line of a salary batch (their pay and, sealed, their account): need-to-know under FR-PPL-17, and Nemura, the payroll's system of record, holds it; the export carries the batch's header",
 	"salary_line_event":             "the states of each salary payment by person: need-to-know under FR-PPL-17; Nemura holds the payment states (FR-PPL-12)",
 	"salary_release":                "a release of a salary batch and its payment file, sealed: the file holds names and account numbers, so it never leaves in an export (FR-PPL-17, SEC-11)",
@@ -65,6 +66,7 @@ var Excluded = map[string]string{
 var Dropped = map[string]map[string]string{
 	"member_invitation": {"code_hash": "a token: the hash of an invitation's code"},
 	"document_link":     {"token_hash": "a token: the hash of a shared link's secret"},
+	"portal_link":       {"token_hash": "a token: the hash of a customer portal link's secret"},
 	"payee_bank_account": {"number_sealed": "sealed: exported in clear as the column number",
 		"number_fingerprint": "a keyed hash, under the platform's key, of the number exported in clear"},
 	"payment_batch_release": {"file_sealed": "sealed: the file exported in clear under files/payment-batch-releases/"},

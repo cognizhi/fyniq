@@ -40,10 +40,14 @@ so it works even when your company does not use Fyniq. It never asks for your NR
 - The code is never in the address bar. If it is wrong, used already or expired, you land back on sign-in
   with a message; ask for a new one.
 
+## Moving between Nemura and Fyniq
+
+When your company links Nemura to Fyniq and you hold a role in Fyniq's finance workspace, a **Finance | People** switch shows in the header. Fyniq tells Nemura, signed, that the account you signed in with holds such a role, and nothing more: no role name, no email. The switch is a door and never a grant: Fyniq's own sign-in and roles decide what you see there, and a role in one app gives you nothing in the other. It opens Fyniq with the same sign-in provider you used here, so you are not shown a sign-in page again; if your provider asks you to confirm, do so. Nemura and Fyniq use one sign-in provider for your company: use the same account in both. If the switch does not show, Fyniq has not said you hold a finance role, so ask the Owner.
+
 ## Signing out
 
 Select **Sign out** at the top of any page. It ends the session on this device only; other devices stay
-signed in until you sign out on them.
+signed in until you sign out on them. When your company links Nemura to Fyniq and you are mapped to a person there, signing out here also signs you out of Fyniq on every device, and being removed from Nemura does the same, within a minute or so. Fyniq ends nothing for a person nobody mapped, and you stay a member there with your roles and passkeys. Being removed from Fyniq ends your Nemura sessions in the same way; signing out of Fyniq on its own does not yet.
 
 ## Common problems
 

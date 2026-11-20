@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-UX-27, CMP-PD-01, FM-8, FR-INT-02, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32, AI-35, AI-43, AI-90]
+requirements: [FR-TAX-10, FR-AR-12, FR-UX-27, CMP-PD-01, FM-8, FR-INT-02, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32, AI-35, AI-43, AI-90]
 status: draft
 ---
 
@@ -80,6 +80,20 @@ or are expected to be more than $1 million in the next 12 months.
   met.
 - Taxable supplies are the standard-rated and zero-rated sales. Exempt and out-of-scope sales, and
   sales of the company's own assets, are left out.
+
+## InvoiceNow
+
+IRAS requires a GST-registered business to submit the invoice data behind its GST return through InvoiceNow, in
+phases from 1 April 2026 (new voluntary registrants) to 1 April 2031 (everyone else). Two settings tell Fyniq how
+to treat it. The sending itself is built and its screen follows; until then the filing gate answers through the API.
+
+- **The InvoiceNow requirement applies**: off until the tax agent confirms the requirement applies to the company.
+  While it is off, the filing gate is not assessed and blocks nothing. Turn it on from the day the requirement
+  starts for the company.
+- **GST category of an exempt supply**: none until the tax agent chooses. IRAS's list has two categories for an
+  exempt supply, ES33 (regulation 33, such as financial services) and ESN33 (others, such as residential
+  property), and Fyniq's code ES does not say which. An invoice with an exempt line is not sent until a category
+  is chosen.
 
 ## Cash buffer
 

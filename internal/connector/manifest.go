@@ -34,6 +34,7 @@ const (
 	Messaging       Kind = "messaging"
 	Ticketing       Kind = "ticketing"
 	PaymentProvider Kind = "payment-provider"
+	PaymentLink     Kind = "payment-link" // asks a payment provider for a payment request on an invoice: its one write (FR-AR-13)
 	BankData        Kind = "bank-data"
 	EInvoicing      Kind = "e-invoicing"
 	DocumentAI      Kind = "document-ai"
@@ -41,7 +42,7 @@ const (
 )
 
 // Kinds are every kind, in the catalogue's order.
-var Kinds = []Kind{SignIn, OutboundEmail, InboundEmail, Messaging, Ticketing, PaymentProvider, BankData, EInvoicing, DocumentAI, ModelProvider}
+var Kinds = []Kind{SignIn, OutboundEmail, InboundEmail, Messaging, Ticketing, PaymentProvider, PaymentLink, BankData, EInvoicing, DocumentAI, ModelProvider}
 
 // The scopes a connector is installed at.
 const (

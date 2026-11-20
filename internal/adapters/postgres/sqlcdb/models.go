@@ -1869,6 +1869,61 @@ type FyniqInvitationCode struct {
 	Owner    uuid.UUID
 }
 
+type FyniqInvoicenowContingency struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PeriodFrom     time.Time
+	PeriodTo       time.Time
+	Reason         string
+	Evidence       string
+	RequestedBy    string
+	RequestedAt    time.Time
+	ApprovedBy     *string
+	ApprovedAt     *time.Time
+	WithdrawnAt    *time.Time
+}
+
+type FyniqInvoicenowEvent struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	SubmissionID   uuid.UUID
+	At             time.Time
+	Status         string
+	Detail         *string
+	Actor          string
+}
+
+type FyniqInvoicenowExclusion struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	Reason         string
+	Detail         *string
+	RecordedBy     string
+	RecordedAt     time.Time
+	WithdrawnAt    *time.Time
+	WithdrawnBy    *string
+}
+
+type FyniqInvoicenowSubmission struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	DocumentUuid   uuid.UUID
+	Version        int32
+	Kind           string
+	Direction      string
+	Status         string
+	Recipient      *string
+	TransmissionID *string
+	IrasAck        *string
+	LastError      *string
+	PayloadSha256  []byte
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	CreatedBy      string
+}
+
 type FyniqIpRateWindow struct {
 	Client      string
 	Kind        string
@@ -2597,6 +2652,37 @@ type FyniqPaymentBatchRelease struct {
 	BreakGlassID   *uuid.UUID
 }
 
+type FyniqPaymentLink struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	ConnectorID       uuid.UUID
+	InvoiceID         uuid.UUID
+	ProviderRequestID string
+	Url               string
+	Reference         string
+	Currency          string
+	Amount            string
+	Status            string
+	ClosedReason      *string
+	ExpiresAt         *time.Time
+	Version           int32
+	CreatedBy         string
+	CreatedAt         time.Time
+	ClosedAt          *time.Time
+}
+
+type FyniqPaymentLinkPayment struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	LinkID            uuid.UUID
+	ConnectorID       uuid.UUID
+	ProviderPaymentID string
+	Currency          string
+	Amount            string
+	PaidAt            time.Time
+	SeenAt            time.Time
+}
+
 type FyniqPayrollArrangement struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2784,6 +2870,17 @@ type FyniqPeopleLink struct {
 	CreatedAt            time.Time
 	ChangedAt            time.Time
 	NemuraOrigin         string
+}
+
+type FyniqPeopleLinkAccess struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Issuer          string
+	Subject         string
+	PeopleAccess    bool
+	PayrollApprover bool
+	Version         int64
+	ReceivedAt      time.Time
 }
 
 type FyniqPeopleLinkAskKey struct {
@@ -2981,6 +3078,26 @@ type FyniqPolicyVersion struct {
 	FromDraft      string
 	PublishedBy    string
 	PublishedAt    time.Time
+}
+
+type FyniqPortalLink struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ContactID      uuid.UUID
+	Label          *string
+	TokenHash      string
+	ExpiresAt      time.Time
+	CreatedBy      string
+	CreatedAt      time.Time
+	FirstOpenedAt  *time.Time
+	RevokedAt      *time.Time
+	RevokedBy      *string
+}
+
+type FyniqPortalLinkToken struct {
+	TokenHash string
+	Owner     uuid.UUID
+	LinkID    uuid.UUID
 }
 
 type FyniqPracticeOrganisation struct {

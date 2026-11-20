@@ -397,8 +397,8 @@ var (
 	TakeAwaySavedItem          = Policy{Operation: "takeAwaySavedItem", Capability: OwnNotifications, Need: Create}
 	// A practice organisation (FR-UX-36; the owner's decision of 21 Nov 2026): opened by an Owner only, who holds A on the row, one at a time.
 	// The organisations a person works in and the choice of which a session is in: their own memberships, nothing else of any tenant.
-	ListMyOrganisations = Policy{Operation: "listMyOrganisations", Capability: Session, Need: View, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser: their own memberships only."}
-	SwitchMyOrganisation = Policy{Operation: "switchMyOrganisation", Capability: Session, Need: Create, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser, and an active membership of the organisation chosen."}
+	ListMyOrganisations        = Policy{Operation: "listMyOrganisations", Capability: Session, Need: View, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser: their own memberships only."}
+	SwitchMyOrganisation       = Policy{Operation: "switchMyOrganisation", Capability: Session, Need: Create, NoOrganisation: true, Note: "Needs a person signed in to Fyniq in the browser, and an active membership of the organisation chosen."}
 	CreatePracticeOrganisation = Policy{Operation: "createPracticeOrganisation", Capability: UsersAndRoles, Need: Approve,
 		Note: "An Owner of an organisation that keeps books, stepped up in the last 5 minutes, who holds no practice organisation: the database's function decides."}
 	// Comments and @mentions on a record (FR-UX-13, rev 0.382): any member may read, write and mention on a record they may see; the
@@ -634,6 +634,8 @@ var (
 	SetPayrollMapping            = Policy{Operation: "setPayrollMapping", Capability: PayRuns, Need: Create}
 	SubmitPayrollRun             = Policy{Operation: "submitPayrollRun", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.journal.submit"}
 	ReceivePeopleHoldEvent       = Policy{Operation: "receivePeopleHoldEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.holds.write"}
+	// ReceivePeopleSessionEvent is the one door by which Nemura ends sessions here (owner's decision of 21 Nov 2026): the link's client with identity.sessions.write, for a person mapped to a person of the link.
+	ReceivePeopleSessionEvent = Policy{Operation: "receivePeopleSessionEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "identity.sessions.write"}
 	// The payment lines of a posted pay run arrive as payroll.payments.ready from the link's client alone (FR-PAY-11, FR-PPL-12, FR-PPL-14).
 	ReceivePayrollPayments = Policy{Operation: "receivePayrollPayments", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.payments.submit"}
 	// A salary payment batch (FR-PAY-11, FR-PPL-17; p1-payroll-link task 6), under Appendix D's "Pay runs, employee data" row: read under any right of it (Owner, Payroll administrator, the
@@ -1161,6 +1163,19 @@ var (
 	// SettleDisputeCredit settles an issued credit note's credit against a lost dispute's money (dispute_settlement@1), as a refund
 	// is recorded: under "Invoices" with the right to post.
 	SettleDisputeCredit         = Policy{Operation: "settleDisputeCredit", Capability: Invoices, Need: Post}
+	// The payment link of an invoice (FR-AR-13, FR-PSP-02): asked for, read and cancelled under "Invoices"; asking and cancelling are
+	// the right to post. No AI or MCP route reaches them.
+	// The customer portal (FR-AR-14): a link is made, read and revoked under "Invoices" by a person with the right to post (reading: to view);
+	// the portal's own operations take a link's token, never a session, and are Public.
+	CreatePortalLink       = Policy{Operation: "createPortalLink", Capability: Invoices, Need: Post}
+	GetContactPortalLinks  = Policy{Operation: "getContactPortalLinks", Capability: Invoices, Need: View}
+	RevokePortalLink       = Policy{Operation: "revokePortalLink", Capability: Invoices, Need: Post}
+	GetPortal              = Policy{Operation: "getPortal", Capability: Invoices, Need: View, Public: true}
+	GetPortalInvoicePDF    = Policy{Operation: "getPortalInvoicePDF", Capability: Invoices, Need: View, Public: true}
+	GetPortalStatement     = Policy{Operation: "getPortalStatement", Capability: Invoices, Need: View, Public: true}
+	CreateInvoicePaymentLink = Policy{Operation: "createInvoicePaymentLink", Capability: Invoices, Need: Post}
+	GetInvoicePaymentLink    = Policy{Operation: "getInvoicePaymentLink", Capability: Invoices, Need: View}
+	CancelInvoicePaymentLink = Policy{Operation: "cancelInvoicePaymentLink", Capability: Invoices, Need: Post}
 	ResolvePaymentProviderEvent = Policy{Operation: "resolvePaymentProviderEvent", Capability: BankTransactions, Need: Create}
 	ResolveBankGap              = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
 	ListStatementMappings       = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
@@ -1757,16 +1772,25 @@ var (
 // The GST registration monitor (FR-TAX-05; p1-gst slice 2, design D4): read by whoever reads GST returns; a forecast is
 // drafted, given its evidence and recorded by whoever prepares them, the Accountant or the Tax agent.
 var (
-	GetGSTMonitor             = Policy{Operation: "getGSTMonitor", Capability: GSTReturns, Need: View}
-	ListGSTForecasts          = Policy{Operation: "listGSTForecasts", Capability: GSTReturns, Need: View}
-	CreateGSTForecast         = Policy{Operation: "createGSTForecast", Capability: GSTReturns, Need: Create}
-	GetGSTForecast            = Policy{Operation: "getGSTForecast", Capability: GSTReturns, Need: View}
-	ReplaceGSTForecast        = Policy{Operation: "replaceGSTForecast", Capability: GSTReturns, Need: Create}
-	RecordGSTForecast         = Policy{Operation: "recordGSTForecast", Capability: GSTReturns, Need: Create, Note: "A forecast with its evidence: it posts nothing."}
-	AddGSTForecastEvidence    = Policy{Operation: "addGSTForecastEvidence", Capability: GSTReturns, Need: Create}
-	ListGSTForecastEvidence   = Policy{Operation: "listGSTForecastEvidence", Capability: GSTReturns, Need: View}
-	GetGSTForecastEvidence    = Policy{Operation: "getGSTForecastEvidence", Capability: GSTReturns, Need: View}
-	RemoveGSTForecastEvidence = Policy{Operation: "removeGSTForecastEvidence", Capability: GSTReturns, Need: Create}
+	GetGSTMonitor                = Policy{Operation: "getGSTMonitor", Capability: GSTReturns, Need: View}
+	ListGSTForecasts             = Policy{Operation: "listGSTForecasts", Capability: GSTReturns, Need: View}
+	CreateGSTForecast            = Policy{Operation: "createGSTForecast", Capability: GSTReturns, Need: Create}
+	GetInvoiceNowGate            = Policy{Operation: "getInvoiceNowGate", Capability: GSTReturns, Need: View}
+	ListInvoiceNowSubmissions    = Policy{Operation: "listInvoiceNowSubmissions", Capability: GSTReturns, Need: View}
+	QueueInvoiceNowSubmission    = Policy{Operation: "queueInvoiceNowSubmission", Capability: GSTReturns, Need: Create, Note: "Sends a posted invoice or credit note's PINT-SG document to the network: it posts nothing."}
+	SendInvoiceNowSubmission     = Policy{Operation: "sendInvoiceNowSubmission", Capability: GSTReturns, Need: Create, Note: "Hands a queued submission to the access point, or reads its status."}
+	RetryInvoiceNowSubmission    = Policy{Operation: "retryInvoiceNowSubmission", Capability: GSTReturns, Need: Create}
+	CreateInvoiceNowExclusion    = Policy{Operation: "createInvoiceNowExclusion", Capability: GSTReturns, Need: Create}
+	WithdrawInvoiceNowExclusion  = Policy{Operation: "withdrawInvoiceNowExclusion", Capability: GSTReturns, Need: Create}
+	RequestInvoiceNowContingency = Policy{Operation: "requestInvoiceNowContingency", Capability: GSTReturns, Need: Create}
+	ApproveInvoiceNowContingency = Policy{Operation: "approveInvoiceNowContingency", Capability: GSTReturns, Need: Approve, Note: "Never the person who requested it: the database refuses the same person twice (FR-TAX-11)."}
+	GetGSTForecast               = Policy{Operation: "getGSTForecast", Capability: GSTReturns, Need: View}
+	ReplaceGSTForecast           = Policy{Operation: "replaceGSTForecast", Capability: GSTReturns, Need: Create}
+	RecordGSTForecast            = Policy{Operation: "recordGSTForecast", Capability: GSTReturns, Need: Create, Note: "A forecast with its evidence: it posts nothing."}
+	AddGSTForecastEvidence       = Policy{Operation: "addGSTForecastEvidence", Capability: GSTReturns, Need: Create}
+	ListGSTForecastEvidence      = Policy{Operation: "listGSTForecastEvidence", Capability: GSTReturns, Need: View}
+	GetGSTForecastEvidence       = Policy{Operation: "getGSTForecastEvidence", Capability: GSTReturns, Need: View}
+	RemoveGSTForecastEvidence    = Policy{Operation: "removeGSTForecastEvidence", Capability: GSTReturns, Need: Create}
 )
 
 // Forecasts (FR-PLN-02, FR-PLN-03, FR-PLN-08; p1-planning slice 3, design D10): read by whoever views budgets and
@@ -2066,7 +2090,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, RecordSalaryLineState, MatchSalaryBankLine, GetPayrollArrangements, SetPayrollArrangement, ListPayrollImports, ImportPayrollJournal, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, RecordSalaryLineState, MatchSalaryBankLine, GetPayrollArrangements, SetPayrollArrangement, ListPayrollImports, ImportPayrollJournal, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ReceivePeopleSessionEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,
@@ -2139,7 +2163,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid, RequestBankRuleAutoApply,
-	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, SettleDisputeCredit, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
+	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, SettleDisputeCredit, CreateInvoicePaymentLink, GetInvoicePaymentLink, CancelInvoicePaymentLink, CreatePortalLink, GetContactPortalLinks, RevokePortalLink, GetPortal, GetPortalInvoicePDF, GetPortalStatement, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
 	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
 	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
 	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,
@@ -2174,7 +2198,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
 	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
-	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
+	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetInvoiceNowGate, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
 	AddGSTForecastEvidence, ListGSTForecastEvidence, GetGSTForecastEvidence, RemoveGSTForecastEvidence, GetStatutoryCalendar,
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,

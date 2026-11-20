@@ -1,0 +1,7 @@
+case,code,want_scope,want_category,want_reason,why,source
+standard-rated supply,SR,submit,SR,,The e-Tax Guide lists SR among the codes of standard-rated supplies to submit,iras-etax-scope
+zero-rated supply,ZR,submit,ZR,,Export sales of goods and international services are submitted with ZR,iras-etax-scope
+exempt supply,ES,choose,,,Exempt supplies use ES33 or ESN33 and exempt financial services are excluded: the choice is not made by the pack,iras-etax-scope
+import permit,IM,exclude,,import_permit,"Import permits for importation of goods are an excluded transaction",iras-etax-excluded
+non-registered supplier,NR,not_reported,,unregistered_supplier,Purchases from non-GST registered suppliers are not reported in the return,iras-etax-excluded
+blocked input tax,BL,not_reported,,blocked_input_tax,Purchases where input tax is blocked are not reported in the return,iras-etax-excluded

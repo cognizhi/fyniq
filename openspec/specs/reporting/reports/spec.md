@@ -78,6 +78,12 @@ Source: PRD-001 §8.12 · Priority S · Phase P2
 - **WHEN** a built report is saved
 - **THEN** it can be shared and scheduled
 
+#### Scenario: A calculated row and a limited role (rev 0.540)
+- **WHEN** a definition has a calculated row that divides two rows and a column's divisor is zero
+- **THEN** that cell shows not available, never zero
+- **AND** a role limited to sales, purchases, payroll, a department or the board pack is refused the builder and its saved definitions
+
+
 ### Requirement: FR-RPT-05 Exports
 The system SHALL export reports as XLSX, PDF and CSV (Google Sheets in P2), and no export SHALL let text become a formula.
 
@@ -133,6 +139,12 @@ Source: PRD-001 §8.12 · Priority S · Phase P2
 - **WHEN** the board pack is published
 - **THEN** it is available as a PDF and as a web link with access control
 
+#### Scenario: Access by sign-in, commentary by a person (rev 0.540)
+- **WHEN** a pack is published for a month
+- **THEN** a Board viewer reads it only after signing in, and no link opens it without their sign-in
+- **AND** the commentary is the text a person wrote or accepted, and a correction is a new version that supersedes the first
+
+
 ### Requirement: FR-RPT-07 Scheduled reports
 The system SHALL email reports or post them to Slack on a schedule, checking permissions at send time.
 
@@ -146,6 +158,12 @@ Source: PRD-001 §8.12 · Priority S · Phase P2
 #### Scenario: Permissions checked at send time
 - **WHEN** a scheduled report is sent
 - **THEN** each recipient's permissions are checked at that time
+
+#### Scenario: Email points to the signed-in page (rev 0.540)
+- **WHEN** a scheduled report is sent to a recipient who has since lost the right to run it
+- **THEN** nothing is sent to that person and the Owner sees why
+- **AND** an email to a recipient who may run it carries the name, period and a link, and attaches no file
+
 
 ### Requirement: FR-RPT-08 Reproducible reports
 Each generated report SHALL record the ledger version (high-water mark) and parameters it used, so that re-running it "as at" that version returns identical figures.

@@ -33,6 +33,7 @@ import (
 	napi "github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/apiclient"
 	nauthz "github.com/cognizhi/fyniq/internal/nemura/authz"
+	"github.com/cognizhi/fyniq/internal/nemura/identity"
 	"github.com/cognizhi/fyniq/internal/nemura/linkauth"
 	nout "github.com/cognizhi/fyniq/internal/nemura/outbox"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
@@ -148,7 +149,7 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 	nsrv := httptest.NewServer(nmux)
 	t.Cleanup(nsrv.Close)
 	napi.New(nmux, napi.Deps{LinkAuth: &linkauth.Introspector{OAuth: s.admin, Routes: nst, Audience: apiclient.Audience, Clock: nemuraNow}, Sessions: noNemuraSessions{}, Clock: nemuraNow,
-		Link: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, LinkHolds: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, CookieNames: []string{"nemura_session"}})
+		Link: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, LinkHolds: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, LinkSync: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, CookieNames: []string{"nemura_session"}})
 
 	// The handshake. Leg 1: an Owner proposes, and Nemura makes its keys and the ID Fyniq's client will have at its OAuth server.
 	svc := nemura.LinkService{Store: nst, OAuth: s.admin, Clock: clock.System{}}
@@ -461,6 +462,86 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 	// Each app's own tokens do work at its own door, so the two refusals above are about the audience and nothing else.
 	if status := post(nsrv.URL+"/v1/link/events", nemuraToken, fyniqHTTP.sent["/v1/link/events"]); status != http.StatusOK {
 		t.Errorf("Nemura's token for Fyniq's client at its own inbox, with Fyniq's last event again: %d (a duplicate answers 200)", status)
+	}
+
+	// One sign-in across the apps (design D7): each app tells the other what a sign-in identity may enter, signed, through the real transport and inboxes. Owen Owner signs in to both with one identity.
+	idp, owen := "https://idp.example.test", "owen"
+	if err := nst.InOrg(ctx, norg, func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.LinkIdentity(ctx, tx, norg, real, system, nowner, identity.Identity{Issuer: idp, Subject: owen, Tenant: "t"})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	accessRow, accessPayload := rowOf(nemura.KindLinkSend)
+	if !strings.Contains(string(accessPayload), nemura.TypeIdentityAccess) {
+		t.Fatalf("linking Owen's identity queued: %s", accessPayload)
+	}
+	if err := deliver(accessRow, accessPayload); err != nil {
+		t.Fatalf("Nemura's word on Owen: %v", err)
+	}
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		a, err := u.PeopleLinks().Access(ctx, idp, owen)
+		if err != nil || !a.PeopleAccess || !a.PayrollApprover {
+			t.Errorf("what Fyniq keeps of Owen: %+v %v", a, err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var told string
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		told, err = linksend.Queue(ctx, u, linksend.TypeIdentityAccess, "identity", uuid.NewString(), 0, linksend.IdentityAccess{Issuer: idp, Subject: owen, Finance: true, Passkey: false})
+		return err
+	}); err != nil || told == "" {
+		t.Fatalf("Fyniq queueing its word on Owen: %q %v", told, err)
+	}
+	if err := fsender.Work()(ctx, e.books.Org, fyniqRow(told)); err != nil {
+		t.Fatalf("Fyniq's word on Owen: %v", err)
+	}
+	ws := nemura.WorkspaceService{Store: nst, FinanceOrigin: "https://app.example.test"}
+	if u, err := ws.FinanceURL(ctx, napi.Session{Organisation: norg, Member: nowner, Issuer: idp, Subject: owen, Provider: "google"}, nil); err != nil || u != "https://app.example.test/?switch=1&provider=google" {
+		t.Errorf("Owen's switch in Nemura after Fyniq said he holds a finance role: %q %v", u, err)
+	}
+	if u, _ := ws.FinanceURL(ctx, napi.Session{Organisation: norg, Member: nsecond, Issuer: idp, Subject: "someone-else", Provider: "google"}, nil); u != "" {
+		t.Errorf("a switch for an identity Fyniq said nothing of: %q", u)
+	}
+	rl := nemura.RunLinkService{Store: nst, Clock: clock.System{}}
+	if env, _ := rl.Envelope(ctx, napi.Session{Organisation: norg, Member: nowner, Issuer: idp, Subject: owen}, uuid.New(), 1); env.FyniqPasskey != "missing" { // (there is no such run: the hint is read before it)
+		t.Errorf("Fyniq said Owen has no passkey enrolled: %q", env.FyniqPasskey)
+	}
+
+	// Nemura tells Fyniq Owen signed out, through the scope identity.sessions.write the link's client was registered with: Fyniq has no user of that identity, so it answers and ends nothing.
+	var tok string
+	if err := nst.InOrg(ctx, norg, func(ctx context.Context, tx pgx.Tx) (err error) {
+		tok, err = nemura.StartSession(ctx, tx, norg, real, nowner, identity.Via{Provider: "zoho", Issuer: idp, Subject: owen})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := nst.CloseSession(ctx, tok, real); err != nil {
+		t.Fatal(err)
+	}
+	signoutRow, signoutPayload := rowOf(nemura.KindLinkSend)
+	if !strings.Contains(string(signoutPayload), nemura.TypeSessionRevoked) {
+		t.Fatalf("signing out queued: %s", signoutPayload)
+	}
+	if err := deliver(signoutRow, signoutPayload); err != nil {
+		t.Fatalf("Nemura's sign-out reaching Fyniq's door for sessions: %v", err)
+	}
+	// Fyniq's read-only client reads Nemura's log by identity with its other scope; the client that sends events cannot get a token for it.
+	page, err := asker.Sync(ctx, askKey, "")
+	if err != nil || len(page.Events) == 0 || page.HighestSequence < int64(len(page.Events)) {
+		t.Fatalf("the link's event log by identity: %+v %v", page, err)
+	}
+	for _, ev := range page.Events {
+		if ev.EventID == "" || ev.Type == "" || ev.State == "" {
+			t.Errorf("an event of the log: %+v", ev)
+		}
+	}
+	if _, err := toNemura.Token(ctx, apiclient.SyncScope); err == nil {
+		t.Error("the client that sends events got a token for the log")
+	}
+	if _, err := toFyniq.Token(ctx, "link.sync.read"); err == nil {
+		t.Error("Nemura's client got a token for a Nemura scope")
 	}
 }
 

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "The invoice's open balance when the link was made, read on the server."
+    },
+    "closed_reason": {
+      "description": "Why a closed link was closed.",
+      "examples": [
+        "The customer asked for a new link"
+      ],
+      "type": "string"
+    },
+    "connector_id": {
+      "description": "The payment-link connector that made it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "created_at": {
+      "description": "When it was made.",
+      "examples": [
+        "2026-11-20T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "When the link stops working.",
+      "examples": [
+        "2026-12-31T00:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The link's ID; empty in a preview, which saves nothing.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f90"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "invoice_id": {
+      "description": "The invoice it collects.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "payments": {
+      "description": "The charges the provider made under it, oldest first.",
+      "items": {
+        "$ref": "PaymentLinkPayment.schema.json"
+      },
+      "type": "array"
+    },
+    "reference": {
+      "description": "The invoice's number, which the provider keeps on its charges.",
+      "examples": [
+        "INV-0150"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "live until it is paid, runs out or a person cancels it.",
+      "enum": [
+        "live",
+        "paid",
+        "expired",
+        "cancelled"
+      ],
+      "examples": [
+        "live"
+      ],
+      "type": "string"
+    },
+    "url": {
+      "description": "The provider's page where the customer pays; empty in a preview.",
+      "examples": [
+        "https://securecheckout.hit-pay.com/payment-request/@cognizhi/9b2c"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "Its version, for a change.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "invoice_id",
+    "connector_id",
+    "reference",
+    "amount",
+    "status",
+    "payments"
+  ],
+  "title": "InvoicePaymentLink",
+  "type": "object"
+}

@@ -35,6 +35,7 @@ func (noSessions) Session(context.Context, []byte, time.Time, time.Duration) (st
 	return storage.Session{}, ports.ErrNotFound
 }
 func (noSessions) EndSession(context.Context, []byte, time.Time) error { return nil }
+func (noSessions) EndSessionsOfUser(context.Context, uuid.UUID, time.Time) (int, error) { return 0, nil }
 func (noSessions) UserSessions(context.Context, uuid.UUID, time.Time, time.Duration) ([]storage.Device, error) {
 	return nil, nil
 }

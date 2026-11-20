@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "connector_id": {
+      "description": "The payment-link connector to use; left out, the organisation's one enabled connector. The amount is never sent: it is the invoice's open balance.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "title": "CreatePaymentLinkInputBody",
+  "type": "object"
+}

@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:9130ca6a7e72ab9ffdfcc484a2da9f704880119284e6547983f5b4288018ae87
+  - docs/user-guide/invoices.md sha256:02ec1d98efd8d0aba356f42dc49d0f37421cbec52a9a28e2aa40d9b240453e63
 data_class: general
 taint: trusted
 status: draft
@@ -54,6 +54,12 @@ aliases:
   - settlement tolerance
   - likely paid
   - incoming-funds alert
+  - payment link
+  - customer portal
+  - customer statement online
+  - pay online
+  - HitPay link
+  - link mismatch
 ---
 
 # Invoices
@@ -100,6 +106,15 @@ aliases:
 
 (src: docs/user-guide/invoices.md#record-a-payment)
 
+## A payment link on an invoice
+
+- With HitPay connected and a provider account set up, **Add a payment link** on an issued invoice (an Accountant or an AR specialist) asks HitPay for a page that collects what is open, with the invoice's number as its reference; copy or open the link.
+- The amount is always the invoice's open balance, read when the link is made, never typed; a draft, void or paid invoice has no link, and an invoice has one live link at a time.
+- When the customer pays, **Reconcile now** records the receipt on the invoice once. Another amount, a second payment or a payment on a cancelled link stays in the queue as **link mismatch** for a person.
+- **Cancel the link** closes it here with a reason; HitPay's page stays payable until it expires. A foreign-currency invoice needs a provider account in that currency; the PayNow QR image and Stripe payment links are not built yet.
+
+(src: docs/user-guide/invoices.md#a-payment-link-on-an-invoice)
+
 ## Recurring invoices
 
 - **Sales → Recurring** keeps invoices that repeat: every week or every two weeks on the start's weekday, or every 1, 3, 6 or 12 months on a day of the month, the 29th to the 31st falling on a shorter month's last day; a start in the past makes the invoices of the dates already passed.
@@ -118,6 +133,13 @@ aliases:
 - The email's secure link opens the invoice or quote without signing in: the document as its PDF shows it, the amount due or total, and **Download the PDF**; on a sent quote still valid, the customer accepts with their name or declines, with a comment kept as a record ([[sales.quotes]]). It shows nothing else, works until it ends or is revoked, and the first opening marks the invoice **Viewed**.
 
 (src: docs/user-guide/invoices.md#what-the-customer-sees)
+
+## The customer portal
+
+- The customer's side opens through the private link their supplier sent (no sign-in): **Your account** lists the invoices still due with **Pay now** where a payment link exists, a **PDF** for each, and a **Statement of account** over a chosen period (30 days by default, never after today).
+- It shows only that customer's invoices, is never cached or indexed, and ends on its date or when the supplier withdraws it. Where there is no Pay button, pay as the invoice says; the supplier records it when it arrives.
+
+(src: docs/user-guide/invoices.md#the-customer-portal)
 
 ## Approval
 

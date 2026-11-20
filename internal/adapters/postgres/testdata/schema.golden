@@ -1468,6 +1468,49 @@ installation_connector_secret | valid_until | timestamp with time zone | null |
 installation_connector_secret | destroyed_at | timestamp with time zone | null | 
 invitation_code | code_hash | bytea | not null | 
 invitation_code | owner | uuid | not null | 
+invoicenow_contingency | organisation_id | uuid | not null | current_org()
+invoicenow_contingency | id | uuid | not null | uuidv7()
+invoicenow_contingency | period_from | date | not null | 
+invoicenow_contingency | period_to | date | not null | 
+invoicenow_contingency | reason | text | not null | 
+invoicenow_contingency | evidence | text | not null | 
+invoicenow_contingency | requested_by | text | not null | 
+invoicenow_contingency | requested_at | timestamp with time zone | not null | 
+invoicenow_contingency | approved_by | text | null | 
+invoicenow_contingency | approved_at | timestamp with time zone | null | 
+invoicenow_contingency | withdrawn_at | timestamp with time zone | null | 
+invoicenow_event | organisation_id | uuid | not null | current_org()
+invoicenow_event | id | uuid | not null | uuidv7()
+invoicenow_event | submission_id | uuid | not null | 
+invoicenow_event | at | timestamp with time zone | not null | 
+invoicenow_event | status | text | not null | 
+invoicenow_event | detail | text | null | 
+invoicenow_event | actor | text | not null | 
+invoicenow_exclusion | organisation_id | uuid | not null | current_org()
+invoicenow_exclusion | id | uuid | not null | uuidv7()
+invoicenow_exclusion | document_id | uuid | not null | 
+invoicenow_exclusion | reason | text | not null | 
+invoicenow_exclusion | detail | text | null | 
+invoicenow_exclusion | recorded_by | text | not null | 
+invoicenow_exclusion | recorded_at | timestamp with time zone | not null | 
+invoicenow_exclusion | withdrawn_at | timestamp with time zone | null | 
+invoicenow_exclusion | withdrawn_by | text | null | 
+invoicenow_submission | organisation_id | uuid | not null | current_org()
+invoicenow_submission | id | uuid | not null | uuidv7()
+invoicenow_submission | document_id | uuid | not null | 
+invoicenow_submission | document_uuid | uuid | not null | 
+invoicenow_submission | version | integer | not null | 
+invoicenow_submission | kind | text | not null | 
+invoicenow_submission | direction | text | not null | 
+invoicenow_submission | status | text | not null | 'queued'::text
+invoicenow_submission | recipient | text | null | 
+invoicenow_submission | transmission_id | text | null | 
+invoicenow_submission | iras_ack | text | null | 
+invoicenow_submission | last_error | text | null | 
+invoicenow_submission | payload_sha256 | bytea | null | 
+invoicenow_submission | created_at | timestamp with time zone | not null | 
+invoicenow_submission | updated_at | timestamp with time zone | not null | 
+invoicenow_submission | created_by | text | not null | 
 ip_rate_window | client | text | not null | 
 ip_rate_window | kind | text | not null | 
 ip_rate_window | window_start | timestamp with time zone | not null | 
@@ -2034,6 +2077,31 @@ payment_batch_release | currency | text | not null |
 payment_batch_release | minor_units | smallint | not null | 
 payment_batch_release | total | numeric(20,4) | not null | 
 payment_batch_release | break_glass_id | uuid | null | 
+payment_link | organisation_id | uuid | not null | current_org()
+payment_link | id | uuid | not null | uuidv7()
+payment_link | connector_id | uuid | not null | 
+payment_link | invoice_id | uuid | not null | 
+payment_link | provider_request_id | text | not null | 
+payment_link | url | text | not null | 
+payment_link | reference | text | not null | 
+payment_link | currency | text | not null | 
+payment_link | amount | numeric(20,4) | not null | 
+payment_link | status | text | not null | 'live'::text
+payment_link | closed_reason | text | null | 
+payment_link | expires_at | timestamp with time zone | null | 
+payment_link | version | integer | not null | 1
+payment_link | created_by | text | not null | 
+payment_link | created_at | timestamp with time zone | not null | 
+payment_link | closed_at | timestamp with time zone | null | 
+payment_link_payment | organisation_id | uuid | not null | current_org()
+payment_link_payment | id | uuid | not null | uuidv7()
+payment_link_payment | link_id | uuid | not null | 
+payment_link_payment | connector_id | uuid | not null | 
+payment_link_payment | provider_payment_id | text | not null | 
+payment_link_payment | currency | text | not null | 
+payment_link_payment | amount | numeric(20,4) | not null | 
+payment_link_payment | paid_at | timestamp with time zone | not null | 
+payment_link_payment | seen_at | timestamp with time zone | not null | 
 payroll_arrangement | organisation_id | uuid | not null | current_org()
 payroll_arrangement | id | uuid | not null | uuidv7()
 payroll_arrangement | item | text | not null | 
@@ -2181,6 +2249,14 @@ people_link | created_by | text | not null |
 people_link | created_at | timestamp with time zone | not null | 
 people_link | changed_at | timestamp with time zone | not null | 
 people_link | nemura_origin | text | not null | ''::text
+people_link_access | organisation_id | uuid | not null | current_org()
+people_link_access | id | uuid | not null | uuidv7()
+people_link_access | issuer | text | not null | 
+people_link_access | subject | text | not null | 
+people_link_access | people_access | boolean | not null | 
+people_link_access | payroll_approver | boolean | not null | 
+people_link_access | version | bigint | not null | 
+people_link_access | received_at | timestamp with time zone | not null | 
 people_link_ask_key | organisation_id | uuid | not null | current_org()
 people_link_ask_key | id | uuid | not null | uuidv7()
 people_link_ask_key | link_id | uuid | not null | 
@@ -2330,6 +2406,20 @@ policy_version | sha256 | bytea | not null |
 policy_version | from_draft | text | not null | 
 policy_version | published_by | text | not null | 
 policy_version | published_at | timestamp with time zone | not null | 
+portal_link | organisation_id | uuid | not null | current_org()
+portal_link | id | uuid | not null | uuidv7()
+portal_link | contact_id | uuid | not null | 
+portal_link | label | text | null | 
+portal_link | token_hash | text | not null | 
+portal_link | expires_at | timestamp with time zone | not null | 
+portal_link | created_by | text | not null | 
+portal_link | created_at | timestamp with time zone | not null | 
+portal_link | first_opened_at | timestamp with time zone | null | 
+portal_link | revoked_at | timestamp with time zone | null | 
+portal_link | revoked_by | text | null | 
+portal_link_token | token_hash | text | not null | 
+portal_link_token | owner | uuid | not null | 
+portal_link_token | link_id | uuid | not null | 
 practice_organisation | organisation_id | uuid | not null | 
 practice_organisation | created_by | uuid | not null | 
 practice_organisation | source_organisation_id | uuid | not null | 
@@ -3794,7 +3884,7 @@ api_client | api_client_owner_id_not_null | NOT NULL owner_id
 api_client | api_client_pkey | PRIMARY KEY (organisation_id, id)
 api_client | api_client_reason_format | CHECK (((length(revoke_reason) >= 1) AND (length(revoke_reason) <= 500)))
 api_client | api_client_revoked_together | CHECK ((((revoked_at IS NULL) = (revoked_by IS NULL)) AND ((revoked_at IS NULL) = (revoke_reason IS NULL))))
-api_client | api_client_scopes_format | CHECK ((((cardinality(scopes) >= 1) AND (cardinality(scopes) <= 16)) AND (((kind <> 'link'::text) AND (array_to_string(scopes, ' '::text) ~ '^fyniq\.(read|write)\.[a-z]+( fyniq\.(read|write)\.[a-z]+)*$'::text)) OR ((kind = 'link'::text) AND (array_to_string(scopes, ' '::text) ~ '^(people\.projection\.write|people\.availability\.write|people\.holds\.write|people\.holds\.read|payroll\.journal\.submit|payroll\.payments\.submit)( (people\.projection\.write|people\.availability\.write|people\.holds\.write|people\.holds\.read|payroll\.journal\.submit|payroll\.payments\.submit))*$'::text)))))
+api_client | api_client_scopes_format | CHECK ((((cardinality(scopes) >= 1) AND (cardinality(scopes) <= 16)) AND (((kind <> 'link'::text) AND (array_to_string(scopes, ' '::text) ~ '^fyniq\.(read|write)\.[a-z]+( fyniq\.(read|write)\.[a-z]+)*$'::text)) OR ((kind = 'link'::text) AND (array_to_string(scopes, ' '::text) ~ '^(people\.projection\.write|people\.availability\.write|people\.holds\.write|people\.holds\.read|payroll\.journal\.submit|payroll\.payments\.submit|identity\.sessions\.write)( (people\.projection\.write|people\.availability\.write|people\.holds\.write|people\.holds\.read|payroll\.journal\.submit|payroll\.payments\.submit|identity\.sessions\.write))*$'::text)))))
 api_client | api_client_scopes_not_null | NOT NULL scopes
 api_client | api_client_version_not_null | NOT NULL version
 api_client | api_client_version_positive | CHECK ((version >= 1))
@@ -5307,6 +5397,75 @@ invitation_code | invitation_code_code_hash_not_null | NOT NULL code_hash
 invitation_code | invitation_code_hash_length | CHECK ((octet_length(code_hash) = 32))
 invitation_code | invitation_code_owner_not_null | NOT NULL owner
 invitation_code | invitation_code_pkey | PRIMARY KEY (code_hash, owner)
+invoicenow_contingency | invoicenow_contingency_approved_whole | CHECK (((approved_at IS NULL) = (approved_by IS NULL)))
+invoicenow_contingency | invoicenow_contingency_approver_differs | CHECK (((approved_by IS NULL) OR (approved_by <> requested_by)))
+invoicenow_contingency | invoicenow_contingency_by_format | CHECK (((requested_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((approved_by IS NULL) OR (approved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+invoicenow_contingency | invoicenow_contingency_evidence_length | CHECK (((length(btrim(evidence)) >= 10) AND (length(btrim(evidence)) <= 4000)))
+invoicenow_contingency | invoicenow_contingency_evidence_not_null | NOT NULL evidence
+invoicenow_contingency | invoicenow_contingency_id_not_null | NOT NULL id
+invoicenow_contingency | invoicenow_contingency_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+invoicenow_contingency | invoicenow_contingency_organisation_id_not_null | NOT NULL organisation_id
+invoicenow_contingency | invoicenow_contingency_period | CHECK ((period_to >= period_from))
+invoicenow_contingency | invoicenow_contingency_period_from_not_null | NOT NULL period_from
+invoicenow_contingency | invoicenow_contingency_period_to_not_null | NOT NULL period_to
+invoicenow_contingency | invoicenow_contingency_pkey | PRIMARY KEY (organisation_id, id)
+invoicenow_contingency | invoicenow_contingency_reason_length | CHECK (((length(btrim(reason)) >= 10) AND (length(btrim(reason)) <= 1000)))
+invoicenow_contingency | invoicenow_contingency_reason_not_null | NOT NULL reason
+invoicenow_contingency | invoicenow_contingency_requested_at_not_null | NOT NULL requested_at
+invoicenow_contingency | invoicenow_contingency_requested_by_not_null | NOT NULL requested_by
+invoicenow_contingency | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+invoicenow_event | invoicenow_event_actor_format | CHECK ((actor ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+invoicenow_event | invoicenow_event_actor_not_null | NOT NULL actor
+invoicenow_event | invoicenow_event_at_not_null | NOT NULL at
+invoicenow_event | invoicenow_event_detail_length | CHECK (((detail IS NULL) OR (length(detail) <= 1000)))
+invoicenow_event | invoicenow_event_id_not_null | NOT NULL id
+invoicenow_event | invoicenow_event_organisation_id_not_null | NOT NULL organisation_id
+invoicenow_event | invoicenow_event_pkey | PRIMARY KEY (organisation_id, id)
+invoicenow_event | invoicenow_event_status_known | CHECK ((status = ANY (ARRAY['queued'::text, 'sent'::text, 'acknowledged'::text, 'failed'::text])))
+invoicenow_event | invoicenow_event_status_not_null | NOT NULL status
+invoicenow_event | invoicenow_event_submission_fkey | FOREIGN KEY (organisation_id, submission_id) REFERENCES invoicenow_submission(organisation_id, id)
+invoicenow_event | invoicenow_event_submission_id_not_null | NOT NULL submission_id
+invoicenow_exclusion | invoicenow_exclusion_by_format | CHECK (((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((withdrawn_by IS NULL) OR (withdrawn_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+invoicenow_exclusion | invoicenow_exclusion_detail_length | CHECK (((detail IS NULL) OR (length(detail) <= 500)))
+invoicenow_exclusion | invoicenow_exclusion_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+invoicenow_exclusion | invoicenow_exclusion_document_id_not_null | NOT NULL document_id
+invoicenow_exclusion | invoicenow_exclusion_id_not_null | NOT NULL id
+invoicenow_exclusion | invoicenow_exclusion_organisation_id_not_null | NOT NULL organisation_id
+invoicenow_exclusion | invoicenow_exclusion_other_says | CHECK (((reason <> 'other'::text) OR (length(btrim(COALESCE(detail, ''::text))) >= 3)))
+invoicenow_exclusion | invoicenow_exclusion_pkey | PRIMARY KEY (organisation_id, id)
+invoicenow_exclusion | invoicenow_exclusion_reason_known | CHECK ((reason = ANY (ARRAY['reverse_charge'::text, 'import_permit'::text, 'deemed_supply'::text, 'financial_services'::text, 'unregistered_supplier'::text, 'blocked_input_tax'::text, 'out_of_scope'::text, 'other'::text])))
+invoicenow_exclusion | invoicenow_exclusion_reason_not_null | NOT NULL reason
+invoicenow_exclusion | invoicenow_exclusion_recorded_at_not_null | NOT NULL recorded_at
+invoicenow_exclusion | invoicenow_exclusion_recorded_by_not_null | NOT NULL recorded_by
+invoicenow_exclusion | invoicenow_exclusion_withdrawn_whole | CHECK (((withdrawn_at IS NULL) = (withdrawn_by IS NULL)))
+invoicenow_exclusion | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+invoicenow_submission | invoicenow_submission_ack_with_status | CHECK (((status = 'acknowledged'::text) = ((iras_ack IS NOT NULL) AND ((length(iras_ack) >= 1) AND (length(iras_ack) <= 100)))))
+invoicenow_submission | invoicenow_submission_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+invoicenow_submission | invoicenow_submission_created_at_not_null | NOT NULL created_at
+invoicenow_submission | invoicenow_submission_created_by_not_null | NOT NULL created_by
+invoicenow_submission | invoicenow_submission_direction_kind | CHECK ((((kind = 'extracted_purchase'::text) = (direction = 'purchase'::text)) OR (kind = 'aggregated'::text)))
+invoicenow_submission | invoicenow_submission_direction_known | CHECK ((direction = ANY (ARRAY['sale'::text, 'purchase'::text])))
+invoicenow_submission | invoicenow_submission_direction_not_null | NOT NULL direction
+invoicenow_submission | invoicenow_submission_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+invoicenow_submission | invoicenow_submission_document_id_not_null | NOT NULL document_id
+invoicenow_submission | invoicenow_submission_document_uuid_not_null | NOT NULL document_uuid
+invoicenow_submission | invoicenow_submission_error_length | CHECK (((last_error IS NULL) OR (length(last_error) <= 1000)))
+invoicenow_submission | invoicenow_submission_id_not_null | NOT NULL id
+invoicenow_submission | invoicenow_submission_kind_known | CHECK ((kind = ANY (ARRAY['peppol'::text, 'extracted_sale'::text, 'extracted_purchase'::text, 'aggregated'::text])))
+invoicenow_submission | invoicenow_submission_kind_not_null | NOT NULL kind
+invoicenow_submission | invoicenow_submission_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+invoicenow_submission | invoicenow_submission_organisation_id_not_null | NOT NULL organisation_id
+invoicenow_submission | invoicenow_submission_peppol_recipient | CHECK (((kind <> 'peppol'::text) OR (recipient IS NOT NULL)))
+invoicenow_submission | invoicenow_submission_pkey | PRIMARY KEY (organisation_id, id)
+invoicenow_submission | invoicenow_submission_recipient_form | CHECK (((recipient IS NULL) OR (recipient ~ '^[0-9]{4}:[!-~]{1,100}$'::text)))
+invoicenow_submission | invoicenow_submission_sha | CHECK (((payload_sha256 IS NULL) OR (octet_length(payload_sha256) = 32)))
+invoicenow_submission | invoicenow_submission_status_known | CHECK ((status = ANY (ARRAY['queued'::text, 'sent'::text, 'acknowledged'::text, 'failed'::text])))
+invoicenow_submission | invoicenow_submission_status_not_null | NOT NULL status
+invoicenow_submission | invoicenow_submission_updated_at_not_null | NOT NULL updated_at
+invoicenow_submission | invoicenow_submission_version_key | UNIQUE (organisation_id, document_id, version)
+invoicenow_submission | invoicenow_submission_version_not_null | NOT NULL version
+invoicenow_submission | invoicenow_submission_version_positive | CHECK ((version > 0))
+invoicenow_submission | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ip_rate_window | ip_rate_window_client_hash | CHECK ((client ~ '^[0-9a-f]{64}$'::text))
 ip_rate_window | ip_rate_window_client_not_null | NOT NULL client
 ip_rate_window | ip_rate_window_kind_known | CHECK ((kind = ANY (ARRAY['signin'::text, 'join'::text, 'public'::text, 'setup'::text])))
@@ -6200,6 +6359,47 @@ payment_batch_release | payment_batch_release_version_fkey | FOREIGN KEY (organi
 payment_batch_release | payment_batch_release_writer_format | CHECK ((writer ~ '^[a-z0-9-]+@[0-9]+$'::text))
 payment_batch_release | payment_batch_release_writer_not_null | NOT NULL writer
 payment_batch_release | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+payment_link | payment_link_amount | CHECK (((amount <> 'NaN'::numeric) AND (amount > (0)::numeric)))
+payment_link | payment_link_amount_not_null | NOT NULL amount
+payment_link | payment_link_by_form | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+payment_link | payment_link_closed_form | CHECK (((status = 'live'::text) = (closed_at IS NULL)))
+payment_link | payment_link_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+payment_link | payment_link_connector_id_not_null | NOT NULL connector_id
+payment_link | payment_link_created_at_not_null | NOT NULL created_at
+payment_link | payment_link_created_by_not_null | NOT NULL created_by
+payment_link | payment_link_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+payment_link | payment_link_currency_not_null | NOT NULL currency
+payment_link | payment_link_id_not_null | NOT NULL id
+payment_link | payment_link_invoice_fkey | FOREIGN KEY (organisation_id, invoice_id) REFERENCES document(organisation_id, id)
+payment_link | payment_link_invoice_id_not_null | NOT NULL invoice_id
+payment_link | payment_link_lengths | CHECK ((((length(provider_request_id) >= 1) AND (length(provider_request_id) <= 255)) AND ((length(url) >= 1) AND (length(url) <= 2048)) AND ((length(reference) >= 1) AND (length(reference) <= 255)) AND ((closed_reason IS NULL) OR ((length(closed_reason) >= 1) AND (length(closed_reason) <= 500)))))
+payment_link | payment_link_organisation_id_not_null | NOT NULL organisation_id
+payment_link | payment_link_pkey | PRIMARY KEY (organisation_id, id)
+payment_link | payment_link_provider_request_id_not_null | NOT NULL provider_request_id
+payment_link | payment_link_reference_not_null | NOT NULL reference
+payment_link | payment_link_request_once | UNIQUE (organisation_id, connector_id, provider_request_id)
+payment_link | payment_link_status_known | CHECK ((status = ANY (ARRAY['live'::text, 'cancelled'::text, 'paid'::text, 'expired'::text])))
+payment_link | payment_link_status_not_null | NOT NULL status
+payment_link | payment_link_url_https | CHECK ((url ~ '^https://[^[:space:]]+$'::text))
+payment_link | payment_link_url_not_null | NOT NULL url
+payment_link | payment_link_version_not_null | NOT NULL version
+payment_link | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+payment_link_payment | payment_link_payment_amount | CHECK (((amount <> 'NaN'::numeric) AND (amount > (0)::numeric)))
+payment_link_payment | payment_link_payment_amount_not_null | NOT NULL amount
+payment_link_payment | payment_link_payment_connector_id_not_null | NOT NULL connector_id
+payment_link_payment | payment_link_payment_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+payment_link_payment | payment_link_payment_currency_not_null | NOT NULL currency
+payment_link_payment | payment_link_payment_id_not_null | NOT NULL id
+payment_link_payment | payment_link_payment_lengths | CHECK (((length(provider_payment_id) >= 1) AND (length(provider_payment_id) <= 255)))
+payment_link_payment | payment_link_payment_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES payment_link(organisation_id, id)
+payment_link_payment | payment_link_payment_link_id_not_null | NOT NULL link_id
+payment_link_payment | payment_link_payment_once | UNIQUE (organisation_id, connector_id, provider_payment_id)
+payment_link_payment | payment_link_payment_organisation_id_not_null | NOT NULL organisation_id
+payment_link_payment | payment_link_payment_paid_at_not_null | NOT NULL paid_at
+payment_link_payment | payment_link_payment_pkey | PRIMARY KEY (organisation_id, id)
+payment_link_payment | payment_link_payment_provider_payment_id_not_null | NOT NULL provider_payment_id
+payment_link_payment | payment_link_payment_seen_at_not_null | NOT NULL seen_at
+payment_link_payment | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 payroll_arrangement | payroll_arrangement_by_form | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 payroll_arrangement | payroll_arrangement_effective_from_not_null | NOT NULL effective_from
 payroll_arrangement | payroll_arrangement_evidence | CHECK (((method = 'nemura'::text) OR (evidence_id IS NOT NULL)))
@@ -6450,6 +6650,21 @@ people_link | people_link_unlinked_no_client | CHECK (((state <> 'unlinked'::tex
 people_link | people_link_version_not_null | NOT NULL version
 people_link | people_link_version_positive | CHECK ((version >= 1))
 people_link | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+people_link_access | people_link_access_id_not_null | NOT NULL id
+people_link_access | people_link_access_identity_key | UNIQUE (organisation_id, issuer, subject)
+people_link_access | people_link_access_issuer | CHECK (((char_length(issuer) >= 1) AND (char_length(issuer) <= 500)))
+people_link_access | people_link_access_issuer_not_null | NOT NULL issuer
+people_link_access | people_link_access_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+people_link_access | people_link_access_organisation_id_not_null | NOT NULL organisation_id
+people_link_access | people_link_access_payroll_approver_not_null | NOT NULL payroll_approver
+people_link_access | people_link_access_people_access_not_null | NOT NULL people_access
+people_link_access | people_link_access_pkey | PRIMARY KEY (organisation_id, id)
+people_link_access | people_link_access_received_at_not_null | NOT NULL received_at
+people_link_access | people_link_access_subject | CHECK (((char_length(subject) >= 1) AND (char_length(subject) <= 500)))
+people_link_access | people_link_access_subject_not_null | NOT NULL subject
+people_link_access | people_link_access_version | CHECK ((version >= 1))
+people_link_access | people_link_access_version_not_null | NOT NULL version
+people_link_access | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 people_link_ask_key | people_link_ask_key_ask_private_not_null | NOT NULL ask_private
 people_link_ask_key | people_link_ask_key_ask_public_not_null | NOT NULL ask_public
 people_link_ask_key | people_link_ask_key_client_id | CHECK (((char_length(nemura_ask_client_id) >= 1) AND (char_length(nemura_ask_client_id) <= 200)))
@@ -6706,6 +6921,25 @@ policy_version | policy_version_title_length | CHECK (((length(btrim(title)) >= 
 policy_version | policy_version_title_not_null | NOT NULL title
 policy_version | policy_version_version_not_null | NOT NULL version
 policy_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+portal_link | portal_link_contact_fkey | FOREIGN KEY (organisation_id, contact_id) REFERENCES contact(organisation_id, id)
+portal_link | portal_link_contact_id_not_null | NOT NULL contact_id
+portal_link | portal_link_created_at_not_null | NOT NULL created_at
+portal_link | portal_link_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+portal_link | portal_link_created_by_not_null | NOT NULL created_by
+portal_link | portal_link_expires_at_not_null | NOT NULL expires_at
+portal_link | portal_link_expires_later | CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '90 days'::interval))))
+portal_link | portal_link_id_not_null | NOT NULL id
+portal_link | portal_link_label_length | CHECK (((label IS NULL) OR ((length(label) >= 1) AND (length(label) <= 200))))
+portal_link | portal_link_organisation_id_not_null | NOT NULL organisation_id
+portal_link | portal_link_pkey | PRIMARY KEY (organisation_id, id)
+portal_link | portal_link_revoked_by | CHECK ((((revoked_at IS NULL) = (revoked_by IS NULL)) AND ((revoked_by IS NULL) OR (revoked_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+portal_link | portal_link_token_format | CHECK ((token_hash ~ '^[0-9a-f]{64}$'::text))
+portal_link | portal_link_token_hash_not_null | NOT NULL token_hash
+portal_link | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+portal_link_token | portal_link_token_link_id_not_null | NOT NULL link_id
+portal_link_token | portal_link_token_owner_not_null | NOT NULL owner
+portal_link_token | portal_link_token_pkey | PRIMARY KEY (token_hash)
+portal_link_token | portal_link_token_token_hash_not_null | NOT NULL token_hash
 practice_organisation | practice_organisation_created_at_not_null | NOT NULL created_at
 practice_organisation | practice_organisation_created_by_not_null | NOT NULL created_by
 practice_organisation | practice_organisation_one_each | UNIQUE (created_by)
@@ -7901,6 +8135,10 @@ CREATE INDEX inbound_file_message ON fyniq.inbound_file USING btree (organisatio
 CREATE INDEX inbound_message_sender ON fyniq.inbound_message USING btree (organisation_id, sender, address_id) WHERE (status = 'quarantined'::text)
 CREATE INDEX inbound_message_status ON fyniq.inbound_message USING btree (organisation_id, status, received_at)
 CREATE INDEX installation_change_pending ON fyniq.installation_change USING btree (connector) WHERE (status = 'pending'::text)
+CREATE INDEX invoicenow_contingency_period ON fyniq.invoicenow_contingency USING btree (organisation_id, period_from, period_to)
+CREATE INDEX invoicenow_event_submission ON fyniq.invoicenow_event USING btree (organisation_id, submission_id, at)
+CREATE INDEX invoicenow_submission_status ON fyniq.invoicenow_submission USING btree (organisation_id, status, created_at)
+CREATE INDEX invoicenow_submission_uuid ON fyniq.invoicenow_submission USING btree (organisation_id, document_uuid)
 CREATE INDEX ip_rate_window_start ON fyniq.ip_rate_window USING btree (window_start)
 CREATE INDEX join_domain_organisation ON fyniq.join_domain USING btree (claiming_organisation)
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
@@ -7945,6 +8183,8 @@ CREATE INDEX operation_requested ON fyniq.operation USING btree (organisation_id
 CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
 CREATE INDEX payee_bank_account_fingerprint ON fyniq.payee_bank_account USING btree (organisation_id, number_fingerprint) WHERE (state = 'in_force'::text)
 CREATE INDEX payment_batch_payment_release ON fyniq.payment_batch_payment USING btree (organisation_id, release_id)
+CREATE INDEX payment_link_invoice ON fyniq.payment_link USING btree (organisation_id, invoice_id, created_at)
+CREATE INDEX payment_link_payment_link ON fyniq.payment_link_payment USING btree (organisation_id, link_id)
 CREATE INDEX payroll_arrangement_item ON fyniq.payroll_arrangement USING btree (organisation_id, item, effective_from DESC, recorded_at DESC)
 CREATE INDEX pd_anonymisation_contact ON fyniq.pd_anonymisation USING btree (organisation_id, contact_id)
 CREATE INDEX pd_breach_step_breach ON fyniq.pd_breach_step USING btree (organisation_id, breach_id, at)
@@ -7957,6 +8197,7 @@ CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, date
 CREATE INDEX period_reopen_period ON fyniq.period_reopen USING btree (organisation_id, period_id, reopened_at)
 CREATE INDEX period_variance_explanation_period ON fyniq.period_variance_explanation USING btree (organisation_id, period_id, account_id, written_at)
 CREATE INDEX person_projection_manager ON fyniq.person_projection USING btree (organisation_id, line_manager_person_id)
+CREATE INDEX portal_link_contact ON fyniq.portal_link USING btree (organisation_id, contact_id, created_at)
 CREATE INDEX private_endpoint_serves ON fyniq.private_endpoint USING btree (serves, credential)
 CREATE INDEX project_billed_item_invoice_idx ON fyniq.project_billed_item USING btree (organisation_id, invoice_id)
 CREATE INDEX project_billed_item_project_idx ON fyniq.project_billed_item USING btree (organisation_id, project_id, kind)
@@ -8218,6 +8459,12 @@ CREATE UNIQUE INDEX installation_connector_secret_once ON fyniq.installation_con
 CREATE UNIQUE INDEX installation_connector_secret_pkey ON fyniq.installation_connector_secret USING btree (id)
 CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
 CREATE UNIQUE INDEX invitation_code_pkey ON fyniq.invitation_code USING btree (code_hash, owner)
+CREATE UNIQUE INDEX invoicenow_contingency_pkey ON fyniq.invoicenow_contingency USING btree (organisation_id, id)
+CREATE UNIQUE INDEX invoicenow_event_pkey ON fyniq.invoicenow_event USING btree (organisation_id, id)
+CREATE UNIQUE INDEX invoicenow_exclusion_live ON fyniq.invoicenow_exclusion USING btree (organisation_id, document_id) WHERE (withdrawn_at IS NULL)
+CREATE UNIQUE INDEX invoicenow_exclusion_pkey ON fyniq.invoicenow_exclusion USING btree (organisation_id, id)
+CREATE UNIQUE INDEX invoicenow_submission_pkey ON fyniq.invoicenow_submission USING btree (organisation_id, id)
+CREATE UNIQUE INDEX invoicenow_submission_version_key ON fyniq.invoicenow_submission USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX ip_rate_window_pkey ON fyniq.ip_rate_window USING btree (client, kind, window_start)
 CREATE UNIQUE INDEX item_code_key ON fyniq.item USING btree (organisation_id, code)
 CREATE UNIQUE INDEX item_pkey ON fyniq.item USING btree (organisation_id, id)
@@ -8309,6 +8556,11 @@ CREATE UNIQUE INDEX payment_batch_payment_once ON fyniq.payment_batch_payment US
 CREATE UNIQUE INDEX payment_batch_payment_pkey ON fyniq.payment_batch_payment USING btree (organisation_id, id)
 CREATE UNIQUE INDEX payment_batch_release_once ON fyniq.payment_batch_release USING btree (organisation_id, batch_id)
 CREATE UNIQUE INDEX payment_batch_release_pkey ON fyniq.payment_batch_release USING btree (organisation_id, id)
+CREATE UNIQUE INDEX payment_link_one_live ON fyniq.payment_link USING btree (organisation_id, invoice_id) WHERE (status = 'live'::text)
+CREATE UNIQUE INDEX payment_link_payment_once ON fyniq.payment_link_payment USING btree (organisation_id, connector_id, provider_payment_id)
+CREATE UNIQUE INDEX payment_link_payment_pkey ON fyniq.payment_link_payment USING btree (organisation_id, id)
+CREATE UNIQUE INDEX payment_link_pkey ON fyniq.payment_link USING btree (organisation_id, id)
+CREATE UNIQUE INDEX payment_link_request_once ON fyniq.payment_link USING btree (organisation_id, connector_id, provider_request_id)
 CREATE UNIQUE INDEX payroll_arrangement_pkey ON fyniq.payroll_arrangement USING btree (organisation_id, id)
 CREATE UNIQUE INDEX payroll_import_pkey ON fyniq.payroll_import USING btree (organisation_id, id)
 CREATE UNIQUE INDEX payroll_import_version_key ON fyniq.payroll_import USING btree (organisation_id, source_system, period, version)
@@ -8329,6 +8581,8 @@ CREATE UNIQUE INDEX pd_shredding_run_cohort_once ON fyniq.pd_shredding_run USING
 CREATE UNIQUE INDEX pd_shredding_run_pkey ON fyniq.pd_shredding_run USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_transfer_pkey ON fyniq.pd_transfer USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_transfer_version_once ON fyniq.pd_transfer USING btree (organisation_id, transfer_id, version)
+CREATE UNIQUE INDEX people_link_access_identity_key ON fyniq.people_link_access USING btree (organisation_id, issuer, subject)
+CREATE UNIQUE INDEX people_link_access_pkey ON fyniq.people_link_access USING btree (organisation_id, id)
 CREATE UNIQUE INDEX people_link_ask_key_id_key ON fyniq.people_link_ask_key USING btree (organisation_id, id)
 CREATE UNIQUE INDEX people_link_ask_key_pkey ON fyniq.people_link_ask_key USING btree (organisation_id, link_id)
 CREATE UNIQUE INDEX people_link_epoch ON fyniq.people_link USING btree (organisation_id, epoch)
@@ -8360,6 +8614,8 @@ CREATE UNIQUE INDEX policy_draft_once ON fyniq.policy_draft USING btree (organis
 CREATE UNIQUE INDEX policy_draft_pkey ON fyniq.policy_draft USING btree (organisation_id, id)
 CREATE UNIQUE INDEX policy_version_once ON fyniq.policy_version USING btree (organisation_id, key, version)
 CREATE UNIQUE INDEX policy_version_pkey ON fyniq.policy_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX portal_link_pkey ON fyniq.portal_link USING btree (organisation_id, id)
+CREATE UNIQUE INDEX portal_link_token_pkey ON fyniq.portal_link_token USING btree (token_hash)
 CREATE UNIQUE INDEX practice_organisation_one_each ON fyniq.practice_organisation USING btree (created_by)
 CREATE UNIQUE INDEX practice_organisation_pkey ON fyniq.practice_organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX private_endpoint_pkey ON fyniq.private_endpoint USING btree (id, version)
@@ -8552,6 +8808,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.operation DEFERRAB
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_payment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'payment_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_release DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'batch_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_link_payment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payment_link_payment', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payroll_arrangement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payroll_arrangement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payroll_import DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payroll_import', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payroll_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payroll_mapping', 'id')
@@ -8651,6 +8908,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fixed_as
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'message_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_contingency DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_contingency', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_exclusion DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_exclusion', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_submission DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_submission', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.join_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('join_request', 'id')
@@ -8667,10 +8927,13 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisa
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation_connector DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_connector', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.owner_succession DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('owner_succession', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.payee_bank_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'change_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.payment_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payment_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.pd_shredding_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_shredding_run', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_link_access DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link_access', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.person_projection DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('person_projection', 'person_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.portal_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('portal_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_milestone DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
@@ -8796,6 +9059,7 @@ CREATE TRIGGER bank_line_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_l
 CREATE TRIGGER bank_match_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_match FOR EACH ROW EXECUTE FUNCTION bank_match_guard()
 CREATE TRIGGER bank_match_posting BEFORE INSERT ON fyniq.bank_match FOR EACH ROW WHEN ((new.kind <> 'transfer'::text)) EXECUTE FUNCTION bank_match_posting()
 CREATE TRIGGER bank_reconciliation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_reconciliation FOR EACH ROW EXECUTE FUNCTION bank_reconciliation_guard()
+CREATE TRIGGER bank_rule_executor_guard BEFORE INSERT ON fyniq.bank_rule FOR EACH ROW EXECUTE FUNCTION bank_rule_executor_guard()
 CREATE TRIGGER bank_rule_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_rule FOR EACH ROW EXECUTE FUNCTION bank_rule_guard()
 CREATE TRIGGER bank_signal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_signal FOR EACH ROW EXECUTE FUNCTION bank_signal_guard()
 CREATE TRIGGER bank_statement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_statement FOR EACH ROW EXECUTE FUNCTION bank_statement_guard()
@@ -8925,6 +9189,14 @@ CREATE TRIGGER investor_right_guard BEFORE INSERT ON fyniq.document_version FOR 
 CREATE TRIGGER invitation_code_guard BEFORE DELETE OR UPDATE ON fyniq.invitation_code FOR EACH ROW EXECUTE FUNCTION invitation_code_guard()
 CREATE TRIGGER invitation_code_no_truncate BEFORE TRUNCATE ON fyniq.invitation_code FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER invitation_code_registered AFTER INSERT ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION invitation_code_registered()
+CREATE TRIGGER invoicenow_contingency_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_contingency FOR EACH ROW EXECUTE FUNCTION invoicenow_contingency_guard()
+CREATE TRIGGER invoicenow_contingency_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_contingency FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER invoicenow_event_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_event FOR EACH ROW EXECUTE FUNCTION invoicenow_event_guard()
+CREATE TRIGGER invoicenow_event_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_event FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER invoicenow_exclusion_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_exclusion FOR EACH ROW EXECUTE FUNCTION invoicenow_exclusion_guard()
+CREATE TRIGGER invoicenow_exclusion_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_exclusion FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER invoicenow_submission_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_submission FOR EACH ROW EXECUTE FUNCTION invoicenow_submission_guard()
+CREATE TRIGGER invoicenow_submission_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_submission FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER journal_entry_asset_depreciation BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'asset_depreciation'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_asset_depreciation()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
 CREATE TRIGGER journal_entry_bank_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = ANY (ARRAY['bank_out_release'::text, 'bank_in_release'::text])) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_bank_release()
@@ -9029,6 +9301,10 @@ CREATE TRIGGER payment_batch_payment_guard BEFORE INSERT OR DELETE OR UPDATE ON 
 CREATE TRIGGER payment_batch_payment_no_truncate BEFORE TRUNCATE ON fyniq.payment_batch_payment FOR EACH STATEMENT EXECUTE FUNCTION payment_batch_payment_guard()
 CREATE TRIGGER payment_batch_release_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.payment_batch_release FOR EACH ROW EXECUTE FUNCTION payment_batch_release_guard()
 CREATE TRIGGER payment_batch_release_no_truncate BEFORE TRUNCATE ON fyniq.payment_batch_release FOR EACH STATEMENT EXECUTE FUNCTION payment_batch_release_guard()
+CREATE TRIGGER payment_link_guard BEFORE DELETE OR UPDATE ON fyniq.payment_link FOR EACH ROW EXECUTE FUNCTION payment_link_guard()
+CREATE TRIGGER payment_link_no_truncate BEFORE TRUNCATE ON fyniq.payment_link FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER payment_link_payment_guard BEFORE DELETE OR UPDATE ON fyniq.payment_link_payment FOR EACH ROW EXECUTE FUNCTION payment_link_payment_guard()
+CREATE TRIGGER payment_link_payment_no_truncate BEFORE TRUNCATE ON fyniq.payment_link_payment FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER payroll_arrangement_guard BEFORE DELETE OR UPDATE ON fyniq.payroll_arrangement FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER payroll_arrangement_no_truncate BEFORE TRUNCATE ON fyniq.payroll_arrangement FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER payroll_import_guard BEFORE DELETE OR UPDATE ON fyniq.payroll_import FOR EACH ROW EXECUTE FUNCTION notification_append_only()
@@ -9056,6 +9332,8 @@ CREATE TRIGGER pd_shredding_run_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq
 CREATE TRIGGER pd_shredding_run_no_truncate BEFORE TRUNCATE ON fyniq.pd_shredding_run FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_transfer_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_transfer FOR EACH ROW EXECUTE FUNCTION pd_transfer_guard()
 CREATE TRIGGER pd_transfer_no_truncate BEFORE TRUNCATE ON fyniq.pd_transfer FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER people_link_access_guard BEFORE DELETE OR UPDATE ON fyniq.people_link_access FOR EACH ROW EXECUTE FUNCTION people_link_access_guard()
+CREATE TRIGGER people_link_access_no_truncate BEFORE TRUNCATE ON fyniq.people_link_access FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER people_link_ask_key_guard BEFORE DELETE OR UPDATE ON fyniq.people_link_ask_key FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER people_link_ask_key_no_truncate BEFORE TRUNCATE ON fyniq.people_link_ask_key FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER people_link_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.people_link FOR EACH ROW EXECUTE FUNCTION people_link_guard()
@@ -9089,6 +9367,10 @@ CREATE TRIGGER policy_draft_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pol
 CREATE TRIGGER policy_draft_no_truncate BEFORE TRUNCATE ON fyniq.policy_draft FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER policy_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_version FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
 CREATE TRIGGER policy_version_no_truncate BEFORE TRUNCATE ON fyniq.policy_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER portal_link_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.portal_link FOR EACH ROW EXECUTE FUNCTION portal_link_guard()
+CREATE TRIGGER portal_link_no_truncate BEFORE TRUNCATE ON fyniq.portal_link FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER portal_link_token_guard BEFORE DELETE OR UPDATE ON fyniq.portal_link_token FOR EACH ROW EXECUTE FUNCTION portal_link_token_guard()
+CREATE TRIGGER portal_link_token_no_truncate BEFORE TRUNCATE ON fyniq.portal_link_token FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER private_endpoint_append_only BEFORE DELETE OR UPDATE ON fyniq.private_endpoint FOR EACH ROW EXECUTE FUNCTION private_endpoint_append_only()
 CREATE TRIGGER project_billing_follows_invoice AFTER UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((new.type = 'invoice'::text) AND (old.status IS DISTINCT FROM new.status) AND (new.status = ANY (ARRAY['posted'::text, 'reversed'::text])))) EXECUTE FUNCTION project_billing_follows_invoice()
 CREATE TRIGGER project_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project FOR EACH ROW EXECUTE FUNCTION project_guard()
@@ -9299,6 +9581,10 @@ holding_movement | tenant_isolation | * | (organisation_id = current_org()) | (o
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_file | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoicenow_contingency | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoicenow_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoicenow_exclusion | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoicenow_submission | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 join_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9344,6 +9630,8 @@ owner_succession | tenant_isolation | * | (organisation_id = current_org()) | (o
 payee_bank_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payment_batch_payment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payment_batch_release | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+payment_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+payment_link_payment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payroll_arrangement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payroll_import | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payroll_mapping | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9358,6 +9646,7 @@ pd_request_step | tenant_isolation | * | (organisation_id = current_org()) | (or
 pd_shredding_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_transfer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+people_link_access | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link_ask_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link_inbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9374,6 +9663,7 @@ person_projection | tenant_isolation | * | (organisation_id = current_org()) | (
 policy_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_draft | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+portal_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_billed_item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_member | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9553,6 +9843,10 @@ installation_change | disabled | not forced
 installation_connector | disabled | not forced
 installation_connector_secret | disabled | not forced
 invitation_code | disabled | not forced
+invoicenow_contingency | enabled | forced
+invoicenow_event | enabled | forced
+invoicenow_exclusion | enabled | forced
+invoicenow_submission | enabled | forced
 ip_rate_window | disabled | not forced
 item | enabled | forced
 item_price | enabled | forced
@@ -9605,6 +9899,8 @@ owner_succession | enabled | forced
 payee_bank_account | enabled | forced
 payment_batch_payment | enabled | forced
 payment_batch_release | enabled | forced
+payment_link | enabled | forced
+payment_link_payment | enabled | forced
 payroll_arrangement | enabled | forced
 payroll_import | enabled | forced
 payroll_mapping | enabled | forced
@@ -9619,6 +9915,7 @@ pd_request_step | enabled | forced
 pd_shredding_run | enabled | forced
 pd_transfer | enabled | forced
 people_link | enabled | forced
+people_link_access | enabled | forced
 people_link_ask_key | enabled | forced
 people_link_inbox | enabled | forced
 people_link_key | enabled | forced
@@ -9635,6 +9932,8 @@ person_projection | enabled | forced
 policy_acknowledgement | enabled | forced
 policy_draft | enabled | forced
 policy_version | enabled | forced
+portal_link | enabled | forced
+portal_link_token | disabled | not forced
 practice_organisation | disabled | not forced
 private_endpoint | disabled | not forced
 project | enabled | forced
@@ -9777,6 +10076,7 @@ bank_line_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 bank_match_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 77572e05359c76183975bc337e3affc6
 bank_match_posting() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bc95c43cde2aa0497b302e639f3cba7d
 bank_reconciliation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a4079755bc9304c8cc9c5643218122ef
+bank_rule_executor_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2f08bac1286ac0de68608957c487f0d1
 bank_rule_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7dc2dbe6bc4742a3e7aa1ca50e74c82d
 bank_signal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 168c07c54a5e00ffbbefbe7532c5e2b6
 bank_statement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2375aff85db5cee60bba8eea6a3b5004
@@ -9903,6 +10203,10 @@ investor_right_guard() → trigger | security invoker | v | search_path=pg_catal
 invitation_code_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 25e66eda35f692c46e109756f9386ae1
 invitation_code_registered() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 493cbaf52e2913b053d4354c418ba404
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001
+invoicenow_contingency_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 138e294d1c10458554a35a3f3320cea9
+invoicenow_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d4982773ad655f19dec2dba77244a923
+invoicenow_exclusion_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7e3675d3ea2ff6349b15e6f7dfe65e1e
+invoicenow_submission_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 00d571f76ae28e8200f30472da101241
 is_owner(p_org uuid, p_membership uuid, p_now timestamp with time zone) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 97b45f40b83ee4da8c083c1ed8bd9b3b
 is_super_admin(p_user uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 74b765a558e7f7fc6d37b5f2a3be3c11
 issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1c6a399b76934acce5ae3a3dc9d8d7e8
@@ -9994,12 +10298,15 @@ payment_batch_approved() → trigger | security invoker | v | search_path=pg_cat
 payment_batch_holds() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e828989f43ccadc695506c2496db8c0a
 payment_batch_payment_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 763964fa08a7cf056831339660d84231
 payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0c2e26331f52a0ca299b3ab3aaa9b534
+payment_link_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 47ecee5d38ab8800da2a83cfc7ef2265
+payment_link_payment_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 65bffdfb141bc7c3d9a1aa535b41090b
 payroll_entry_needs_receipt() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f00c6441f4aa760f66b01d13321806f6
 payroll_mapping_slot_account() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ce65daa4649c21ec3c51f2ef94c27a8f
 pd_breach_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa943103eb58e8ba42a46bdf6d7b932a
 pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
 pd_shredding_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78959af9821f7e3f1ccf60b99d41b64
 pd_transfer_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1805c27109679636b897845585e6cb59
+people_link_access_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ab986c64b5fc11ef7075491920dff708
 people_link_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7ec37301f4fcf16ab03af14e16925399
 people_link_key_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 894d3d12ea6de23ec5bbc93b954b6124
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
@@ -10011,6 +10318,9 @@ person_projection_guard() → trigger | security invoker | v | search_path=pg_ca
 platform_heartbeats() → TABLE(name text, last_beat timestamp with time zone, detail text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c82582dd84a7a5a8e815aad623e9d8d7
 platform_outbox() → TABLE(pending bigint, dead bigint, oldest_pending timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02c3afdff78c9f7db854d1d98424b830
 policy_library_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0442aa22bfdc40bc5031d622db019681
+portal_link_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 81698cd796e371f685b22afce9a9767c
+portal_link_route(p_hash text) → TABLE(organisation_id uuid, link_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7b556b67237554010d64f299c8e30816
+portal_link_token_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3b184ecc8346504ec789d07b1f4020b1
 private_endpoint_address_ok(p_address cidr) → boolean | security invoker | i | search_path=pg_catalog, fyniq, pg_temp | 87d398986e40ebaa5d612f9346df33d1
 private_endpoint_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 495b7d8c5db1f4005355e12e03026057
 private_endpoints() → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | da8a815f6c91cfdc5f5453fba7d6e3f8

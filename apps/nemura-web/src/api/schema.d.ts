@@ -1172,6 +1172,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/link/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the link's event log by identity
+         * @description Fyniq reads here which events Nemura queued for it, to find a gap in what its inbox received and to show the link's health (PRD-001 FR-PPL-08, PRD-002 NM-INT-10, NM-INT-04). Only Fyniq's read-only link client may call it, with a bearer token for the audience nemura-api and the scope link.sync.read, for the live link at its epoch: the client that sends events cannot read it, and no session, person or ordinary API client can. It answers each event's sequence, ID, type, object, version and state, newest numbers last, and never a payload, a figure, a name or a bank detail; it changes nothing. It is on the never-list for the AI and MCP surfaces.
+         */
+        get: operations["getLinkSync"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/details": {
         parameters: {
             query?: never;
@@ -5922,6 +5942,68 @@ export interface components {
              */
             state: "none" | "proposed" | "active" | "suspended" | "unlinking" | "unlinked";
         };
+        LinkSync: {
+            /**
+             * Format: int64
+             * @description The link's epoch.
+             * @example 1
+             */
+            epoch: number;
+            /** @description The events after the cursor, oldest first. */
+            events: components["schemas"]["LinkSyncEvent"][] | null;
+            /**
+             * Format: int64
+             * @description The highest sequence Nemura has queued: a number Fyniq's inbox has not seen is a gap.
+             * @example 57
+             */
+            highest_sequence: number;
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example 41
+             */
+            next_cursor?: string;
+        };
+        LinkSyncEvent: {
+            /**
+             * Format: uuid
+             * @description The event's ID, which Fyniq's inbox dedupes by.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            event_id: string;
+            /**
+             * @description The object's ID.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            object_id: string;
+            /**
+             * @description What the event is about.
+             * @example tax_hold
+             */
+            object_type: string;
+            /**
+             * Format: int64
+             * @description The object's version the event carries.
+             * @example 2
+             */
+            object_version: number;
+            /**
+             * Format: int64
+             * @description The event's number on the link: Nemura's events are numbered 1, 2, 3 in the order they were committed.
+             * @example 41
+             */
+            sequence: number;
+            /**
+             * @description Where it stands: waiting, sent, failing, or refused by Fyniq for good.
+             * @example sent
+             * @enum {string}
+             */
+            state: "queued" | "sent" | "failed" | "refused";
+            /**
+             * @description The event type.
+             * @example people.tax_hold.changed
+             */
+            type: string;
+        };
         LinkedApprovalInput: {
             /** @description The approver's passkey assertion over the envelope's digest. */
             approval: components["schemas"]["RunProof"];
@@ -7632,6 +7714,12 @@ export interface components {
              * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
              */
             envelope_sha256?: string;
+            /**
+             * @description What Fyniq last said of the identity you are signed in with: enrolled (a passkey is enrolled in Fyniq: you can sign), missing (Fyniq knows you and has none: sign in to Fyniq and add one first) or unknown (Fyniq has not said: you may have no sign-in in Fyniq yet, or this session was made before the answer was kept). A hint before you sign; Fyniq's own check after it decides (PPL-19).
+             * @example enrolled
+             * @enum {string}
+             */
+            fyniq_passkey: "enrolled" | "missing" | "unknown";
             /** @description Why the envelope cannot be signed yet, in plain words: a department Fyniq does not have, a person with no sign-in identity, no mapping yet. */
             issues: string[] | null;
             /**
@@ -13547,6 +13635,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LinkRestoreDecisionOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLinkSync: {
+        parameters: {
+            query?: {
+                /** @description The sequence to read after: the next_cursor of the last page; absent for the first. */
+                cursor?: string;
+                /** @description How many events to return, at most. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Bearer, then the access token Fyniq's read-only link client got from Nemura's OAuth server for the audience nemura-api with the scope link.sync.read. */
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkSync"];
                 };
             };
             /** @description Unauthorized */

@@ -4,7 +4,7 @@ type: task
 title: Sign in to Nemura and sign out
 summary: How a person signs in to Nemura, joins with an invitation or the one-time setup code, what the page says when it is not ready, and how to sign out
 sources:
-  - docs/user-guide/nemura/sign-in.md sha256:2db930f0f414f02faf421eb4fe2cfdba01cb33a18455f20d4c39f3cf4a1533c2
+  - docs/user-guide/nemura/sign-in.md sha256:ad074fab24c1a9ab4da9195372ee2657645169ce5c767bb79123fe4b8a894d09
 data_class: general
 taint: trusted
 status: published
@@ -21,6 +21,7 @@ aliases:
   - setup code
   - recovery code
   - Owner cannot sign in
+  - Finance People switch
 ---
 
 # Sign in to Nemura and sign out
@@ -52,9 +53,18 @@ aliases:
 
 (src: docs/user-guide/nemura/sign-in.md#joining-with-a-code)
 
+## Move between Nemura and Fyniq
+
+- When the company links Nemura to Fyniq and the person holds a role in Fyniq's finance workspace, a **Finance | People** switch shows in the header. Fyniq tells Nemura, signed, that the sign-in account holds such a role and nothing more: no role name and no email.
+- The switch is a door and never a grant: Fyniq's own sign-in and roles decide what the person sees there, and a role in one app gives nothing in the other. It opens Fyniq with the sign-in provider used here, so the sign-in page is not shown again; if the provider asks for a confirmation, give it.
+- Nemura and Fyniq use one sign-in provider for the company, so use the same account in both. If the switch does not show, Fyniq has not said the account holds a finance role: ask the Owner.
+
+(src: docs/user-guide/nemura/sign-in.md#moving-between-nemura-and-fyniq)
+
 ## Sign out
 
-- **Sign out** is at the top of every page. It ends the session on this device only; other devices stay signed in. (src: docs/user-guide/nemura/sign-in.md#signing-out)
+- **Sign out** is at the top of every page. It ends the session on this device only; other devices stay signed in.
+- When the company links Nemura to Fyniq and the person is mapped to a person there, signing out here also signs them out of Fyniq on every device, and being removed from Nemura does the same, within a minute or so. Fyniq ends nothing for a person nobody mapped, and the person stays a member there with their roles and passkeys. Being removed from Fyniq ends their Nemura sessions in the same way; signing out of Fyniq on its own does not yet. (src: docs/user-guide/nemura/sign-in.md#signing-out)
 
 ## When it fails
 

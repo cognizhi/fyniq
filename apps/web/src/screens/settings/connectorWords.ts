@@ -19,6 +19,7 @@ export const kinds: [Kind, string][] = [
   ["inbound-email", "Inbound email"],
   ["bank-data", "Bank data"],
   ["payment-provider", "Payment providers"],
+  ["payment-link", "Payment links"],
   ["e-invoicing", "E-invoicing"],
   ["document-ai", "Document AI"],
   ["messaging", "Messaging"],

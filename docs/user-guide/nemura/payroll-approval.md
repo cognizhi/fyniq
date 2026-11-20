@@ -38,6 +38,8 @@ A run is then approved with proof, so that Fyniq can check that the people who a
 3. Sign with **the passkey you enrolled in Fyniq**. Fyniq checks your signature against it, so every approver signs in to Fyniq once and adds a passkey in its security settings. That gives you no Fyniq role.
 4. Under **What Fyniq did with it** you see whether it was sent, and Fyniq's answer: the posting's reference, or the code and words of its refusal, with which the run waits. If the refusal is about something Fyniq's side can put right (you have no passkey there, a period is closed), put it right and select **Send it to Fyniq again**: the same approval goes again as a new message. If Fyniq refused the figures or the proof, calculate the run again and approve the new version.
 
+Before you sign, the page tells you what Fyniq last said of the account you signed in with. If Fyniq knows you and says you have no passkey enrolled there, the page says so first: sign in to Fyniq, add a passkey in its security settings, then come back. If Fyniq has not said anything, you may have no sign-in in Fyniq yet: ask its Owner to invite you, then add a passkey there. This is a hint to save you a refused approval; Fyniq's own check after you sign decides. The approval names the account you signed in with, so use the same account in both apps.
+
 While the apps are linked the plain approval is closed: a run is approved with proof or not at all.
 
 ## What happens next
@@ -54,7 +56,7 @@ While the apps are linked the plain approval is closed: a run is approved with p
 - **Nobody approves the run they prepared.** Ask another Payroll administrator or the Owner.
 - **The digest you confirmed is not this version's.** Someone calculated the next version while you read: open the run again.
 - **The version has failing checks.** Resolve each, calculate the next version, then approve it.
-- **Fyniq says the approver has no passkey enrolled there (PPL-19).** Sign in to Fyniq once, add a passkey in its security settings, then select **Send it to Fyniq again**.
+- **Fyniq says the approver has no passkey enrolled there (PPL-19).** Sign in to Fyniq once, add a passkey in its security settings, then select **Send it to Fyniq again**. The page warns you of this before you sign when Fyniq has told Nemura.
 - **Your passkey did not sign the figures.** Use the passkey you enrolled in Fyniq, from Nemura's own address, and confirm with your fingerprint, face or PIN.
 
 ## Related

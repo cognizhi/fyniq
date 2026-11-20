@@ -28,6 +28,10 @@ const LinkScope = "link.events.write"
 // sends events cannot ask, and the one that asks cannot send. Like LinkScope it is outside Scopes.
 const AskScope = "link.holds.read"
 
+// SyncScope is the second scope Fyniq's read-only link client holds (the owner's decision of 21 Nov 2026): it reaches the read of the link's event log by identity, for Fyniq's gap detection and health, and
+// nothing else. The log names each event's sequence, type, object and state and never a payload, a figure, a name or a bank detail. Like AskScope it is outside Scopes, and the client that sends events holds neither.
+const SyncScope = "link.sync.read"
+
 // TokenLifespan is how long each access token lives (AI-38: at most 60 minutes).
 const TokenLifespan = time.Hour
 

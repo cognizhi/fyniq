@@ -58,6 +58,7 @@ export const routes = [
   { kind: "route", id: "install", path: "/install", mode: "basic", signedIn: false, help: "installation.setup", guide: "installation.setup" },
   // The customer's view of a quote or invoice through the secure link its email carried (FR-AR-06, FR-AR-16): no sign-in.
   { kind: "route", id: "document-view", path: "/d", mode: "basic", signedIn: false, help: "public.document", guide: "sales.invoices#what-the-customer-sees" },
+  { kind: "route", id: "customer-portal", path: "/portal", mode: "basic", signedIn: false, help: "public.portal", guide: "sales.invoices#the-customer-portal" },
   // My claims (FR-AP-14, FR-AP-18, FR-UX-39; p1-expense-claims task 8.1): a member's own claims, card lines and cash
   // advances; /me is where a person whose rights are personal only lands.
   { kind: "route", id: "personal", path: "/me", mode: "basic", signedIn: true, help: "claims.personal", guide: "claims.my-claims" },
@@ -657,6 +658,10 @@ export const actions = [
   { kind: "action", id: "invoice.save", mode: "basic", help: "invoice.save", guide: "sales.invoices#enter-an-invoice" },
   { kind: "action", id: "invoice.issue", mode: "basic", help: "invoice.issue", guide: "sales.invoices#check-and-issue-an-invoice" },
   { kind: "action", id: "invoice.ask-approval", mode: "basic", help: "invoice.ask-approval", guide: "sales.invoices#invoices-above-the-self-approval-threshold" },
+  { kind: "action", id: "contact.portal-link", mode: "basic", help: "contact.portal-link", guide: "contacts.manage#the-customer-portal" },
+  { kind: "action", id: "contact.portal-revoke", mode: "basic", help: "contact.portal-revoke", guide: "contacts.manage#the-customer-portal" },
+  { kind: "action", id: "invoice.payment-link", mode: "basic", help: "invoice.payment-link", guide: "sales.invoices#a-payment-link-on-an-invoice" },
+  { kind: "action", id: "invoice.payment-link-cancel", mode: "expert", help: "invoice.payment-link-cancel", guide: "sales.invoices#a-payment-link-on-an-invoice" },
   { kind: "action", id: "invoice.email", mode: "basic", help: "invoice.email", guide: "sales.invoices#email-an-invoice" },
   { kind: "action", id: "invoice.void", mode: "basic", help: "invoice.void", guide: "sales.invoices#void-or-edit-an-issued-invoice" },
   { kind: "action", id: "invoice.ask-void", mode: "basic", help: "invoice.ask-void", guide: "sales.invoices#void-or-edit-an-issued-invoice" },

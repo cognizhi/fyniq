@@ -17,6 +17,7 @@ var Matrix = map[string]string{ // #nosec G101 -- operation names and who may ca
 	"POST /v1/api-clients":                            "Owner, with a fresh passkey confirmation",
 	"POST /v1/link/events":                            "Fyniq's link client alone, with a bearer token for the audience nemura-api and the scope link.events.write, for the live link's epoch: no session, no person, no ordinary API client",
 	"GET /v1/link/people/{person_id}/hold":            "Fyniq's read-only link client alone, with a bearer token for the audience nemura-api and the scope link.holds.read, for the live link's epoch: no session, no person, no ordinary API client, and not the client that sends events",
+	"GET /v1/link/sync":                               "Fyniq's read-only link client alone, with a bearer token for the audience nemura-api and the scope link.sync.read, for the live link's epoch: no session, no person, no ordinary API client, and not the client that sends events; it reads each event's identity and never a payload",
 	"GET /v1/link":                                    "Owner, Administrator",
 	"POST /v1/link/proposal":                          "Owner, with a fresh passkey confirmation",
 	"POST /v1/link/approval":                          "Owner or Administrator other than the one who proposed, with a fresh passkey confirmation",

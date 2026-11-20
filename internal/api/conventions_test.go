@@ -38,8 +38,12 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "giveAIFeedback If-Match", "reviewAIFeedback Idempotency-Key", "reviewAIFeedback Prefer") // QA-AI-05: given once, reviewed once
 	want = append(want, "revokePasskey Prefer", "signOutDevice Prefer", "unlinkIdentity Prefer", "signOutOtherDevices Idempotency-Key", "signOutOtherDevices Prefer", "switchMyOrganisation Idempotency-Key", "switchMyOrganisation Prefer")
 	// An event of the link carries its own ID, which the inbox dedupes (FR-PPL-15); a preview of a signed message proves nothing.
-	want = append(want, "receivePeopleHoldEvent Idempotency-Key", "receivePeopleHoldEvent Prefer", "receivePeopleProjectionEvent Idempotency-Key", "receivePeopleProjectionEvent Prefer",
+	want = append(want, "receivePeopleHoldEvent Idempotency-Key", "receivePeopleHoldEvent Prefer", "receivePeopleSessionEvent Idempotency-Key", "receivePeopleSessionEvent Prefer", "receivePeopleProjectionEvent Idempotency-Key", "receivePeopleProjectionEvent Prefer",
 		"submitPayrollRun Idempotency-Key", "submitPayrollRun Prefer", "receivePayrollPayments Idempotency-Key", "receivePayrollPayments Prefer")
+	// A portal link carries a one-time secret, and is a record of its own (FR-AR-14, rev 0.512).
+	want = append(want, "createPortalLink Idempotency-Key", "createPortalLink Prefer", "createPortalLink If-Match")
+	// A payment link is a record of its own (FR-AR-13, rev 0.511): it changes nothing of the invoice, and a link closes once.
+	want = append(want, "createInvoicePaymentLink If-Match", "cancelInvoicePaymentLink If-Match")
 	// A preview saves nothing, so a repeat is harmless and return=preview would answer the same (rev 0.97).
 	want = append(want, "previewDocumentTemplate Idempotency-Key", "previewDocumentTemplate Prefer")
 	// A back-test saves nothing either (FR-BNK-05).

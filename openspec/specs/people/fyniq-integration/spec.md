@@ -13,7 +13,11 @@ Source: PRD-002 §E
 #### Scenario: Scopes
 - **WHEN** Nemura calls Fyniq
 - **THEN** it uses only the scopes Appendix E lists (`people.projection.write`, `payroll.journal.submit`, `payroll.payments.submit`, `people.availability.write`, `people.holds.write`)
-- **AND** Fyniq reads hold status with `people.holds.read`
+- **AND** Fyniq reads hold status with `people.holds.read`, the link's event log by identity with `link.sync.read` and ends no session but through `identity.sessions.write`, which reaches only a user mapped to a person of the link
+
+#### Scenario: Identity answers
+- **WHEN** an app tells the other what a sign-in identity may enter
+- **THEN** it sends `identity.access.changed`, an issuer, a subject and two yes or no answers, never an email or a role name, and the receiver treats it as a door and a hint, never a grant
 
 #### Scenario: Payment lines
 - **WHEN** salary payment lines go to Fyniq

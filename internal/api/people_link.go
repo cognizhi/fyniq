@@ -497,8 +497,8 @@ func registerPeopleLink(a *API) {
 	}
 	register(a, authz.ReceivePeopleProjectionEvent, byID(huma.Operation{
 		OperationID: "receivePeopleProjectionEvent", Method: http.MethodPost, Path: "/v1/people-link/projection-events", Tags: []string{"People"},
-		Summary: "Receive a person or bank-details event from Nemura",
-		Description: "Nemura's `people.person.upserted` and `people.bank_details.changed` (PRD-002 Appendix E): an envelope (NM-INT-10) whose header the link " +
+		Summary: "Receive a person, bank-details or identity event from Nemura",
+		Description: "Nemura's `people.person.upserted`, `people.bank_details.changed` and `identity.access.changed` (PRD-002 Appendix E; the last says whether a sign-in identity is an active member there and approves pay runs, by issuer and subject and two yes or no answers: a door and a hint, never a grant, with the version the sending event's sequence): an envelope (NM-INT-10) whose header the link " +
 			"key signed, with the payload's canonical SHA-256 in it. It needs the link's client and the scope people.projection.write, and the " +
 			"envelope is checked against the link as Fyniq holds it: its organisations, its epoch, a signing time within 5 minutes, its signature " +
 			"and its digest; nothing the message carries decides who may send it. An event received before does nothing (duplicate); a version " +
@@ -507,7 +507,7 @@ func registerPeopleLink(a *API) {
 			"never by value, and the inbox row (identities and a digest, never the payload). Pay and bank details are never logged. Only the " +
 			"link's client may call it; on the never-list for the AI and MCP (§9.6).",
 	}), eventCodes, func(ctx context.Context, in *peopleEventInput) (*peopleEventOutput, error) {
-		return a.receivePeopleEvent(ctx, in, peoplelink.TypePersonUpserted, peoplelink.TypeBankDetailsChange)
+		return a.receivePeopleEvent(ctx, in, peoplelink.TypePersonUpserted, peoplelink.TypeBankDetailsChange, peoplelink.TypeAccessChanged)
 	})
 	register(a, authz.ReceivePeopleHoldEvent, byID(huma.Operation{
 		OperationID: "receivePeopleHoldEvent", Method: http.MethodPost, Path: "/v1/people-link/hold-events", Tags: []string{"People"},
@@ -518,6 +518,17 @@ func registerPeopleLink(a *API) {
 			"clears a hold. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).",
 	}), eventCodes, func(ctx context.Context, in *peopleEventInput) (*peopleEventOutput, error) {
 		return a.receivePeopleEvent(ctx, in, peoplelink.TypeTaxHoldChanged)
+	})
+	register(a, authz.ReceivePeopleSessionEvent, byID(huma.Operation{
+		OperationID: "receivePeopleSessionEvent", Method: http.MethodPost, Path: "/v1/people-link/session-events", Tags: []string{"People"},
+		Summary: "Receive a sign-out or removal from Nemura",
+		Description: "Nemura's `identity.session.revoked` (PRD-002 NM-INT-12, Appendix E): a person was signed out of, or removed from, Nemura, named by sign-in issuer and subject and never an email, with a reason " +
+			"(signed_out or removed). Fyniq ends that person's sessions, and only when the identity is a user mapped to a person of the link (mapPersonToUser); it changes no membership, role or passkey, and it answers " +
+			"the same whether or not it ended any, so the call tells Nemura nothing of who has an account here. It needs the link's client and the scope identity.sessions.write (a link made before the scope existed " +
+			"is approved again to hold it), and is checked, applied once by event ID and never ordered by version, as receivePeopleProjectionEvent is. Side effects: the sessions ended, the audit event (the reason and how " +
+			"many, never the identity), and the inbox row. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).",
+	}), eventCodes, func(ctx context.Context, in *peopleEventInput) (*peopleEventOutput, error) {
+		return a.receivePeopleEvent(ctx, in, peoplelink.TypeSessionRevoked)
 	})
 }
 
@@ -561,7 +572,19 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 		}
 		entry := storage.InboxEntry{EventID: eventID, LinkID: l.ID, Epoch: env.Header.Epoch, Sequence: env.Header.Sequence, Type: env.Header.Type,
 			ObjectType: env.Header.ObjectType, ObjectID: env.Header.ObjectID, ObjectVersion: env.Header.ObjectVersion, PayloadSHA256: env.Header.PayloadSHA256, ReceivedAt: now}
-		next, ignored, perr := a.applyPeopleEvent(ctx, u, env, now)
+		var next peoplelink.Person
+		var access *storage.PeopleAccess
+		var revoke *peoplelink.SessionRevoked
+		var ignored bool
+		var perr error
+		switch env.Header.Type {
+		case peoplelink.TypeAccessChanged:
+			access, ignored, perr = a.accessOf(ctx, u, env, now)
+		case peoplelink.TypeSessionRevoked:
+			revoke, perr = revokedOf(env)
+		default:
+			next, ignored, perr = a.applyPeopleEvent(ctx, u, env, now)
+		}
 		switch {
 		case perr != nil:
 			var r *peoplelink.Refusal
@@ -588,10 +611,17 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 			receipt.Outcome = "duplicate" // nothing was saved yet: the person is written only below
 			return nil
 		}
-		if !ignored {
-			return u.PeopleLinks().SavePerson(ctx, next)
+		if ignored {
+			return nil
 		}
-		return nil
+		if access != nil {
+			_, err := u.PeopleLinks().SaveAccess(ctx, *access)
+			return err
+		}
+		if revoke != nil {
+			return a.endSessionsOf(ctx, u, l, *revoke, now)
+		}
+		return u.PeopleLinks().SavePerson(ctx, next)
 	})
 	if err != nil {
 		return nil, err
@@ -600,6 +630,23 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 		return nil, refused
 	}
 	return &peopleEventOutput{Body: receipt}, nil
+}
+
+// accessOf reads Nemura's word on an identity (identity.access.changed) strictly, and says whether it is older than the one held: its version is the sending event's sequence. Nothing but the issuer, the subject
+// and the two answers is accepted, so no role name and no email can arrive in it.
+func (a *API) accessOf(ctx context.Context, u storage.UnitOfWork, env peoplelink.Envelope, now time.Time) (*storage.PeopleAccess, bool, error) {
+	var ev peoplelink.AccessChanged
+	d := json.NewDecoder(bytes.NewReader(env.Payload))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&ev); err != nil || ev.Issuer == "" || ev.Subject == "" || len(ev.Issuer) > 500 || len(ev.Subject) > 500 || env.Header.ObjectVersion < 1 {
+		return nil, false, &peoplelink.Refusal{Code: CodeLinkMinimum, Message: "the payload has a field, or a value, that PRD-002 Appendix E does not list for " + env.Header.Type}
+	}
+	held, err := u.PeopleLinks().Access(ctx, ev.Issuer, ev.Subject)
+	if err != nil && !errors.Is(err, ports.ErrNotFound) {
+		return nil, false, err
+	}
+	version := int64(env.Header.ObjectVersion)
+	return &storage.PeopleAccess{Issuer: ev.Issuer, Subject: ev.Subject, PeopleAccess: ev.PeopleAccess, PayrollApprover: ev.PayrollApprover, Version: version, ReceivedAt: now}, err == nil && held.Version >= version, nil
 }
 
 // linkedEnvelope checks an event against the link as Fyniq holds it: the link is active, the call came through the link's own client, and the envelope's
@@ -771,7 +818,7 @@ func (a *API) executePeopleLink(ctx context.Context, u storage.UnitOfWork, r sto
 		} else if !errors.Is(err, ports.ErrNotFound) {
 			return err
 		}
-		return nil
+		return a.tellNemuraEveryone(ctx, u) // what each identity may enter, so the switch and the passkey warning are right from the first day
 	case approval.OpPeopleUnlink:
 		l, err := u.PeopleLinks().Live(ctx)
 		if err != nil {
@@ -874,4 +921,42 @@ func lineManagerOf(ctx context.Context, u storage.UnitOfWork, user uuid.UUID) (u
 		return uuid.Nil, nil
 	}
 	return mgr.UserID, nil
+}
+
+// revokedOf reads Nemura's identity.session.revoked strictly: an identity, and a reason of two.
+func revokedOf(env peoplelink.Envelope) (*peoplelink.SessionRevoked, error) {
+	var ev peoplelink.SessionRevoked
+	d := json.NewDecoder(bytes.NewReader(env.Payload))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&ev); err != nil || ev.Issuer == "" || ev.Subject == "" || len(ev.Issuer) > 500 || len(ev.Subject) > 500 || (ev.Reason != "signed_out" && ev.Reason != "removed") {
+		return nil, &peoplelink.Refusal{Code: CodeLinkMinimum, Message: "the payload has a field, or a value, that PRD-002 Appendix E does not list for " + env.Header.Type}
+	}
+	return &ev, nil
+}
+
+// endSessionsOf ends the sessions of the user behind an identity Nemura says was signed out or removed, and only when that user is mapped to a person of the link: an identity with no user here, or a user no
+// person was mapped to, is left exactly as it is, and the caller cannot tell which it was (FR-PPL-18). Nothing but sessions ends: no membership, role or passkey changes. The audit event holds the reason and the count.
+func (a *API) endSessionsOf(ctx context.Context, u storage.UnitOfWork, l storage.PeopleLinkRow, ev peoplelink.SessionRevoked, now time.Time) error {
+	sessions, ok := a.deps.Installation.(storage.Sessions)
+	if !ok || a.deps.Installation == nil {
+		return nil
+	}
+	user, err := a.deps.Installation.UserForIdentity(ctx, ev.Issuer, ev.Subject)
+	if errors.Is(err, ports.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if _, err := u.PeopleLinks().PersonOfUser(ctx, user); errors.Is(err, ports.ErrNotFound) {
+		return nil // not mapped to a person of the link: not Nemura's to sign out
+	} else if err != nil {
+		return err
+	}
+	n, err := sessions.EndSessionsOfUser(ctx, user, now)
+	if err != nil {
+		return err
+	}
+	return u.Audit().Record(ctx, storage.AuditRecord{Action: "people_link.sessions_ended", ObjectType: "people_link", ObjectID: l.ID,
+		Changes: map[string][2]any{"reason": {nil, ev.Reason}, "sessions_ended": {nil, n}}})
 }

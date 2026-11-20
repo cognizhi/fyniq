@@ -1,0 +1,71 @@
+# sg-invoicenow@2026.1: which documents of a GST return IRAS's InvoiceNow requirement makes a business submit, by GST code,
+# the reasons a document is left out, and the phases that bring each business in (PRD-001 §14.2, ENG-30, FR-AR-12,
+# FR-TAX-10; rev 0.480, p2-invoicenow). Never edit this version once it is active anywhere: a correction is
+# sg-invoicenow@2026.2 (fyniq-sg-statutory).
+id = "sg-invoicenow@2026.1"
+title = "Singapore GST InvoiceNow requirement: what is submitted for each GST code, why a document is excluded, and the phases"
+effective_from = "2026-01-01"
+review_date = "2027-03-31"
+verifier = "Claude Code against IRAS's e-Tax Guide (second edition, published 9 Mar 2026) on 20 Nov 2026 (p2-invoicenow); the tax agent's review is pending (FR-UX-41)"
+conditions = "A GST-registered business that the requirement applies to (a phase below); the codes are Fyniq's GST codes of sg-gst; a standard-rated supply or purchase is submitted and the rest as the table says; the category codes TX and ZP for purchases are the e-Tax Guide's own examples, since PINT SG's list of GST categories names the supply categories only: an access point's validator has the last word"
+
+[[sources]]
+id = "iras-etax-phases"
+title = "IRAS e-Tax Guide: Adopting GST InvoiceNow Requirement for GST-registered Businesses (Second Edition, published 9 Mar 2026)"
+url = "https://www.iras.gov.sg/docs/default-source/e-tax/etaxguide_gst_invoicenow_requirement.pdf"
+section = "5.5: the phases of mandatory participation"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "(b) From 1 Apr 2026, for all new voluntary GST registrants, regardless of incorporation date or business structure. (c) From 1 Apr 2028, (i) All new compulsory GST registrants; and (ii) For existing GST-registered businesses with total annual supplies ≤ $200,000. (d) From 1 Apr 2029, for existing GST-registered businesses with total annual supplies ≤ $1,000,000. (e) From 1 Apr 2030, for existing GST-registered businesses with total annual supplies ≤ $4,000,000. (f) From 1 Apr 2031, for existing GST-registered businesses with total annual supplies > $4,000,000."
+
+[[sources]]
+id = "iras-etax-scope"
+title = "IRAS e-Tax Guide: Adopting GST InvoiceNow Requirement for GST-registered Businesses (Second Edition, published 9 Mar 2026)"
+url = "https://www.iras.gov.sg/docs/default-source/e-tax/etaxguide_gst_invoicenow_requirement.pdf"
+section = "7.1 and 7.3: the scope, and the tables of data to submit and of excluded transactions"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "GST-registered businesses are required to submit to IRAS all invoice data that is reported in the GST return, other than the excluded transactions specified in the table \"Excluded Transactions – Excluded from Scope\" at paragraph 7.3 below"
+
+[[sources]]
+id = "iras-etax-excluded"
+title = "IRAS e-Tax Guide: Adopting GST InvoiceNow Requirement for GST-registered Businesses (Second Edition, published 9 Mar 2026)"
+url = "https://www.iras.gov.sg/docs/default-source/e-tax/etaxguide_gst_invoicenow_requirement.pdf"
+section = "7.3: Excluded Transactions, and Invoice Data Not Reported in the GST Return"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "Standard-rated purchases: Import permits for importation of goods. Non-reportable purchases: Purchases from non-GST registered suppliers; Purchases where input tax is blocked e.g. motor car expenses; Purchases that are exempted from GST; Out-of-scope purchases from GST-registered suppliers."
+
+[[sources]]
+id = "iras-etax-entire"
+title = "IRAS e-Tax Guide: Adopting GST InvoiceNow Requirement for GST-registered Businesses (Second Edition, published 9 Mar 2026)"
+url = "https://www.iras.gov.sg/docs/default-source/e-tax/etaxguide_gst_invoicenow_requirement.pdf"
+section = "7.4 and 7.8 to 7.9: an invoice with one line in scope; what may be aggregated"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "As long as the invoice or credit note has one or more line items that fall within the GST InvoiceNow Requirement, the entire invoice or credit note data must be transmitted to IRAS. Only POS, STI and PCP transactions are allowed to be submitted to IRAS on an aggregated basis."
+
+[[tables]]
+name = "codes"
+file = "codes.csv"
+description = "What Fyniq does with a document line of each GST code: submit it (with its GST category code), exclude it with a reason, not report it (it is not in the return, so nothing is submitted and no exclusion is recorded), choose (the tax agent chooses ES33 or ESN33), or none"
+
+[[tables]]
+name = "reasons"
+file = "reasons.csv"
+description = "The reasons a document that feeds the return may be left out of the submissions"
+
+[[tables]]
+name = "phases"
+file = "phases.csv"
+description = "The day each group of businesses must start to submit"
+
+[[pinned]]
+name = "codes"
+file = "pinned/codes.csv"
+description = "Hand-pinned scope for the codes the e-Tax Guide's tables name, worked from iras-etax-scope and iras-etax-excluded, not from codes.csv"
+
+[[pinned]]
+name = "phases"
+file = "pinned/phases.csv"
+description = "Hand-pinned start days of the phases, worked from iras-etax-phases, not from phases.csv"

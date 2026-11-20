@@ -75,6 +75,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
 	"github.com/cognizhi/fyniq/internal/domain/paymentfile"
+	"github.com/cognizhi/fyniq/internal/domain/paymentlink"
+	"github.com/cognizhi/fyniq/internal/domain/portal"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/planning"
 	"github.com/cognizhi/fyniq/internal/domain/project"
@@ -930,6 +932,12 @@ var codeFacts = map[string]struct {
 	CodePSPDisputeLimit:      {422, "The dispute is above the expense limit"},
 	CodePSPEventState:        {409, "The event is not waiting for a person"},
 	CodePSPCredit:            {422, "The credit cannot settle the dispute"},
+	paymentlink.CodeNotIssued: {422, "A payment link is for an issued invoice with something open"},
+	paymentlink.CodeNoAccount: {422, "No provider account collects the invoice's currency"},
+	paymentlink.CodeLive:      {409, "The invoice has a payment link already"},
+	CodeLinkConnector:         {422, "No payment-link connector is enabled"},
+	CodeLinkClosed:            {409, "The payment link is not live"},
+	portal.CodeLink:           {404, "This link does not open anything"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},
@@ -1105,6 +1113,7 @@ var codeFacts = map[string]struct {
 	storage.CodeAcraExtract:          {422, "The ACRA extract does not keep that"},
 	storage.CodeGSTForecast:          {422, "The GST forecast does not keep that"},
 	storage.CodeStatutoryFiling:      {409, "The filing record does not keep that"},
+	storage.CodeInvoiceNow:           {409, "The InvoiceNow record does not keep that"},
 	storage.CodeForecast:             {422, "The forecast does not keep that"},
 	storage.CodeBudget:               {422, "The budget does not keep that"},
 	storage.CodeFeasibility:          {422, "The feasibility study does not keep that"},
@@ -1287,6 +1296,7 @@ var storageFixes = map[string]string{
 	storage.CodeBudget:               "Send the budget as the API takes it: a name, original or revised, its year's first day, and at most 5,000 lines of an account, its dimension values and an amount for each month",
 	storage.CodeFeasibility:          "Send the study as the API takes it: a name, 1 to 10 years, a life of 1 to 50 years, its figures as decimal strings, rates at most 1, changes above -1, and a salvage no more than the investment",
 	storage.CodeForecast:             "Send the forecast as the API takes it: a name, a horizon of 12 to 60 months, its drivers as decimal strings, and its rows and scenarios within their limits",
+	storage.CodeInvoiceNow:           "Queue the document again after a failure, record one live exclusion for a document and ask someone else to approve a contingency you requested",
 	storage.CodeStatutoryFiling:      "Record the item the calendar gives once, as filed with its day and reference or as not required with the reason; withdraw a record before recording the item again",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",
 	storage.CodeDimensionFixed:       "Rename it or put it out of use: a dimension keeps its kind and place and a value its code, and neither is deleted",
@@ -1431,6 +1441,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		sme *statement.Error
 		cne *connector.Error
 		bke *banking.Error
+		plk *paymentlink.Error
 		pfe *paymentfile.Error
 		cle *claim.Error
 		dre *director.Error
@@ -1531,6 +1542,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(pye.Code, sentence(pye.Message), sentence(pye.Fix))
 	case errors.As(err, &pyp) && len(pyp) > 0:
 		return payeeProblems(pyp).(*Problem)
+	case errors.As(err, &plk):
+		return problem(plk.Code, sentence(plk.Message), sentence(plk.Fix))
 	case errors.As(err, &bke):
 		return problem(bke.Code, sentence(bke.Message), sentence(bke.Fix))
 	case errors.As(err, &pfe):

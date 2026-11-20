@@ -303,6 +303,12 @@ Source: PRD-001 §8.23 · Priority S · Phase P2
 - **THEN** each person on the distribution list receives an access-controlled link
 - **AND** read status is tracked and the update is kept in an archive
 
+#### Scenario: A notice without figures (rev 0.540)
+- **WHEN** an investor update is sent
+- **THEN** each recipient's email names the update and points to the signed-in page, with no figure in it
+- **AND** the recipient's first open is recorded as read
+
+
 ### Requirement: FR-EQ-24 Investor access
 The Board / investor viewer role SHALL see the investor updates, the board pack and their own holdings by default, and the full cap table only when an Owner grants it.
 
@@ -321,6 +327,12 @@ Source: PRD-001 §8.23 · Priority S · Phase P2
 #### Scenario: Employees see only their own grants
 - **WHEN** an employee opens equity
 - **THEN** they see only their own option grants
+
+#### Scenario: The full cap table is an Owner's grant (rev 0.540)
+- **WHEN** an Owner grants a viewer the full cap table with a reason, and later revokes it
+- **THEN** the viewer reads the full cap table only between the two, and both are audited
+- **AND** without the grant the viewer reads only their own holder's holdings
+
 
 ### Requirement: FR-EQ-25 Linked statutory checks
 Every holder change SHALL re-evaluate exempt-private-company status and flag any person who crosses the controller threshold for a register-of-controllers update (FR-TAX-07).
@@ -393,6 +405,12 @@ Source: PRD-001 §8.23 · Priority C · Phase P2
 #### Scenario: Only confirmed structures
 - **WHEN** a preference structure is used in the waterfall
 - **THEN** it is one the company's lawyer or accountant has confirmed, with hand-pinned cases and the oracle (QA-ENG-02)
+
+#### Scenario: Only the confirmed structures (rev 0.540)
+- **WHEN** a share class records a capped participating preference
+- **THEN** the waterfall refuses that class and names the structure it does not model
+- **AND** a non-participating preference of a multiple, an uncapped participating one and seniority are modelled
+
 
 ### Requirement: FR-EQ-27 Basic and Expert
 The equity features SHALL be split between Basic and Expert modes (§7.8).

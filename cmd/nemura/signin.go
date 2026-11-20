@@ -78,8 +78,8 @@ func (s sessions) MembershipsOf(ctx context.Context, who identity.Identity) ([]a
 	return out, err
 }
 
-func (s sessions) StartSession(ctx context.Context, org, member uuid.UUID, now time.Time) (string, error) {
-	return s.Store.OpenSession(ctx, org, member, now)
+func (s sessions) StartSession(ctx context.Context, org, member uuid.UUID, now time.Time, via identity.Via) (string, error) {
+	return s.Store.OpenSession(ctx, org, member, now, via)
 }
 
 func (s sessions) EndSession(ctx context.Context, token string, now time.Time) error {
@@ -88,7 +88,7 @@ func (s sessions) EndSession(ctx context.Context, token string, now time.Time) e
 
 func (s sessions) Authenticate(ctx context.Context, token string, now time.Time) (api.Session, error) {
 	got, err := s.Store.Authenticate(ctx, token, now)
-	return api.Session{ID: got.ID, Organisation: got.Organisation, Member: got.Member, StepUpAt: got.StepUpAt, Leaver: got.Leaver, LeaverUntil: got.LeaverUntil, Person: got.Person}, err
+	return api.Session{ID: got.ID, Organisation: got.Organisation, Member: got.Member, StepUpAt: got.StepUpAt, Leaver: got.Leaver, LeaverUntil: got.LeaverUntil, Person: got.Person, Provider: got.Via.Provider, Issuer: got.Via.Issuer, Subject: got.Via.Subject}, err
 }
 
 func (s sessions) RolesAt(ctx context.Context, org, member uuid.UUID, on time.Time) ([]authz.Role, error) {
@@ -127,6 +127,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 		d.LinkAuth = &linkauth.Introspector{OAuth: server, Routes: store, Audience: apiclient.Audience, Clock: deps.Clock, TTL: linkauth.MaxCache}
 		d.Link = nemura.LinkService{Store: store, OAuth: oauth, Clock: deps.Clock}
 		d.LinkHolds = nemura.LinkService{Store: store, OAuth: oauth, Clock: deps.Clock}
+		d.LinkSync = nemura.LinkService{Store: store, OAuth: oauth, Clock: deps.Clock}
 	}
 	api.New(s, d)
 	s.Handle("/", webApp(nemuraweb.Files()))

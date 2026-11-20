@@ -1,3 +1,6 @@
+import { useSignedIn } from "../../session";
+import { issuers } from "../sales/Invoices";
+import { PortalLinksCard } from "./PortalLinksCard";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { ChevronRight, History } from "lucide-react";
@@ -119,6 +122,7 @@ function Ageing({ rows, label }: { rows: Row[]; label: string }) {
 // documents, in the record page anatomy (header, tabs and a panel; FR-UX-13): the figures are Details, the documents Related and
 // the comments Activity.
 export function ContactRecord() {
+  const { session } = useSignedIn();
   const { contactId } = useParams({ strict: false }) as { contactId: string };
   const id = useId();
   const contact = useQuery({
@@ -190,6 +194,7 @@ export function ContactRecord() {
                 )}
               </>
             )}
+            {c?.customer && <PortalLinksCard contactId={contactId} mayMake={(session.roles ?? []).some((r) => issuers.includes(r))} />}
           </>
         ),
         activity: <RecordComments recordType="contact" recordId={contactId} />,

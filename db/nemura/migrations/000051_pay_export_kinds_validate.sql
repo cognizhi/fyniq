@@ -1,4 +1,4 @@
--- Validates the constraint 000048 added NOT VALID (PRD-002 NM-PAY-13, NM-PAY-14).
+-- Validates the constraint 000050 added NOT VALID (PRD-002 NM-PAY-13, NM-PAY-14).
 
 -- +goose Up
 SET LOCAL lock_timeout = '5s';

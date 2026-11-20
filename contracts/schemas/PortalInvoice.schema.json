@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "Its date.",
+      "examples": [
+        "2026-10-23"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "due_date": {
+      "description": "Its due date.",
+      "examples": [
+        "2026-11-22"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The invoice's ID, which downloads its PDF.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "INV-0150"
+      ],
+      "type": "string"
+    },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "What is still due on it."
+    },
+    "overdue": {
+      "description": "Whether it is past its due date.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "payment_url": {
+      "description": "The payment provider's page where it can be paid, when the company made one for it.",
+      "examples": [
+        "https://securecheckout.hit-pay.com/payment-request/@lumen/9b2c"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "Its total with GST."
+    }
+  },
+  "required": [
+    "id",
+    "number",
+    "date",
+    "total",
+    "open",
+    "overdue"
+  ],
+  "title": "PortalInvoice",
+  "type": "object"
+}
