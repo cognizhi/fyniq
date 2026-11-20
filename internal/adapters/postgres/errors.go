@@ -276,12 +276,14 @@ var fyCodes = map[string]string{
 	"FYR01": storage.CodeReportDefinition,   // a report definition changed other than as its next version, or deleted (001100)
 	"FYR02": storage.CodeReportSchedule,     // a report schedule changed other than as its next version, or deleted (001100)
 	"FYR03": storage.CodeReportScheduleRun,  // a recorded run of a report schedule changed or deleted (001100)
-	"FYR04": storage.CodeBoardPack,         // a published board pack changed, a pack deleted, or a draft changed out of its course (001101)
-	"FYR05": storage.CodeInvestorUpdate,    // a sent investor update changed, an update deleted, or one sent from an unpublished pack (001101)
-	"FYR06": storage.CodeInvestorRead,      // a read recorded for someone the update was not sent to, or changed (001101)
-	"FYR07": storage.CodeKPIAlert,          // a raised KPI alert changed or deleted (001102)
-	"FYR08": storage.CodeDashboardLayout,   // a dashboard layout changed other than as its next version, or deleted (001103)
+	"FYR04": storage.CodeBoardPack,          // a published board pack changed, a pack deleted, or a draft changed out of its course (001101)
+	"FYR05": storage.CodeInvestorUpdate,     // a sent investor update changed, an update deleted, or one sent from an unpublished pack (001101)
+	"FYR06": storage.CodeInvestorRead,       // a read recorded for someone the update was not sent to, or changed (001101)
+	"FYR07": storage.CodeKPIAlert,           // a raised KPI alert changed or deleted (001102)
+	"FYR08": storage.CodeDashboardLayout,    // a dashboard layout changed other than as its next version, or deleted (001103)
 	"FYR09": storage.CodeCapTableGrant,      // a cap table grant changed other than by one revocation, or deleted (001104)
+	"FYR11": storage.CodeCashSnapshot,       // a cash snapshot changed or deleted (001107)
+	"FYR10": storage.CodeAuditEngagement,    // an audit engagement, request or sample changed out of its course, deleted, or added while the engagement is not active (001106)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
@@ -349,6 +351,8 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"report_definition_name_live":               {storage.CodeReportName, "a live report already has that name"},
 	"dashboard_layout_role_once":                {storage.CodeVersion, "the role's layout was saved meanwhile"},
 	"dashboard_layout_user_once":                {storage.CodeVersion, "the person's layout was saved meanwhile"},
+	"auditor_request_number":                    {storage.CodeDuplicate, "another request took that number meanwhile"},
+	"cash_snapshot_week_once":                   {storage.CodeCashSnapshotWeek, "this week has its snapshot already"},
 	"cap_table_grant_one_live":                  {storage.CodeCapTableGrantLive, "that person holds a live grant already: revoke it first"},
 	"kpi_input_pkey":                            {storage.CodeVersion, "the month's counts were entered meanwhile"},
 	"check_state_pkey":                          {storage.CodeVersion, "another run wrote the check meanwhile"},

@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cognizhi/fyniq/internal/domain/comment"
+	"github.com/cognizhi/fyniq/internal/domain/dashboard"
 	"github.com/cognizhi/fyniq/internal/domain/payrollimport"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/preference"
-	"github.com/cognizhi/fyniq/internal/domain/dashboard"
 	"github.com/cognizhi/fyniq/internal/domain/reportdef"
 	"github.com/cognizhi/fyniq/internal/domain/salarybatch"
 	"github.com/cognizhi/fyniq/internal/domain/saveditem"
@@ -59,7 +59,6 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/dimension"
 	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/disputes"
-	"github.com/cognizhi/fyniq/internal/domain/subscription"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
@@ -92,6 +91,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/statement"
+	"github.com/cognizhi/fyniq/internal/domain/subscription"
 	"github.com/cognizhi/fyniq/internal/domain/succession"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/domain/timesheet"
@@ -534,8 +534,16 @@ var codeFacts = map[string]struct {
 	CodeReportScheduler:           {403, "Not a role that schedules reports"},
 	CodeReportRecipient:           {422, "A recipient may not read reports"},
 	storage.CodeDashboardLayout:   {409, "A dashboard layout changes only as its next version"},
+	storage.CodeCashSnapshot:      {409, "A cash snapshot is never changed or deleted"},
+	storage.CodeCashSnapshotWeek:  {409, "The week has its snapshot already"},
+	storage.CodeAuditEngagement:   {409, "An engagement, request or sample changes only in its course, and only while the engagement is active"},
 	storage.CodeCapTableGrant:     {409, "A cap table grant changes only by being revoked"},
 	storage.CodeCapTableGrantLive: {409, "That person holds a grant already"},
+	CodeAuditWindow:               {409, "The engagement is not active, or today is outside its dates"},
+	CodeAuditAuditor:              {403, "Only the engagement's own auditor does that"},
+	CodeAuditAnswer:               {403, "Only the person the request names, or an Owner, answers it"},
+	CodeAuditConfirm:              {403, "A second Owner confirms an engagement in Team mode"},
+	CodeAuditOpen:                 {422, "That member does not hold the right role for the engagement"},
 	CodeCapGrantOwner:             {403, "Only an Owner grants the full cap table"},
 	CodeCapGrantNone:              {403, "No grant of the full cap table"},
 	storage.CodeKPIAlert:          {409, "A raised alert is never changed"},
@@ -1271,33 +1279,34 @@ var codeFacts = map[string]struct {
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
 var storageFixes = map[string]string{
-	storage.CodeCapTableGrant: "A grant ends once; grant it again to open the cap table again",
+	storage.CodeAuditEngagement:   "Open a new engagement, or ask an Owner to confirm the pending one",
+	storage.CodeCapTableGrant:     "A grant ends once; grant it again to open the cap table again",
 	storage.CodeCapTableGrantLive: "Revoke that person's grant first",
-	storage.CodeDashboardLayout: "Read the layout again and save the change as its next version",
-	storage.CodeKPIAlert: "The next month is its own alert",
-	storage.CodeBoardPack:      "Read the draft again and save the change as its next edit, or publish a corrected version",
-	storage.CodeBoardPackDraft: "Open the month's draft and edit it, or publish it first",
-	storage.CodeInvestorUpdate: "Read the draft again and save the change as its next edit, or send a new update",
-	storage.CodeInvestorRead:   "Only a person the update was sent to opens it as read",
+	storage.CodeDashboardLayout:   "Read the layout again and save the change as its next version",
+	storage.CodeKPIAlert:          "The next month is its own alert",
+	storage.CodeBoardPack:         "Read the draft again and save the change as its next edit, or publish a corrected version",
+	storage.CodeBoardPackDraft:    "Open the month's draft and edit it, or publish it first",
+	storage.CodeInvestorUpdate:    "Read the draft again and save the change as its next edit, or send a new update",
+	storage.CodeInvestorRead:      "Only a person the update was sent to opens it as read",
 	storage.CodeReportName:        "Give the report another name, or archive the one that has it",
 	storage.CodeReportDefinition:  "Read the definition again and save the change as its next version",
 	storage.CodeReportSchedule:    "Read the schedule again and save the change as its next version",
 	storage.CodeReportScheduleRun: "A run is recorded once; the next run is its own record",
-	storage.CodeOverlap:       "Change the dates so they neither overlap another version nor end before they start",
-	storage.CodeOrganisation:  "Correct the value the message names and send the change again",
-	storage.CodeVersion:       "Read the record again, check what changed, and send your change with its new ETag",
-	storage.CodeMembership:    "Check the member's roles: the organisation keeps an Owner, and each role is held once",
-	storage.CodeSequence:      "Move the next number forward, or use another prefix; a number is never issued twice",
-	storage.CodeDuplicate:     "Check whether it was done already; for a new record, use a code or key not in use",
-	storage.CodeInvalid:       "Correct the value the message names and send it again",
-	storage.CodeApproval:      "Read the request again: it is signed once, by someone other than its requester, with a second factor, while it is pending",
-	storage.CodeEvidence:      "Files can be removed only while the record is a draft; add a newer file instead",
-	storage.CodeAccounting:    "Record a new version instead; another member who holds the Accountant role confirms or approves it",
-	storage.CodeVariance:      "Explain an income or expense account's variance while its period is open; a new explanation replaces the earlier one",
-	storage.CodeChecklist:     "Mark checklist tasks while the period is open; save a new template version rather than changing one",
-	storage.CodeFXRate:        "Enter rates of currencies other than the base, a monthly rate on its month's first day; withdraw a rate and enter another rather than changing one",
-	storage.CodeFXRevaluation: "Revalue the period while it is open, from its own last day; the scheduler saves only the revaluation the application worked out",
-	storage.CodeTemplate:      "Publish a new version, or roll back to an earlier one: a published version never changes and a template is never deleted",
+	storage.CodeOverlap:           "Change the dates so they neither overlap another version nor end before they start",
+	storage.CodeOrganisation:      "Correct the value the message names and send the change again",
+	storage.CodeVersion:           "Read the record again, check what changed, and send your change with its new ETag",
+	storage.CodeMembership:        "Check the member's roles: the organisation keeps an Owner, and each role is held once",
+	storage.CodeSequence:          "Move the next number forward, or use another prefix; a number is never issued twice",
+	storage.CodeDuplicate:         "Check whether it was done already; for a new record, use a code or key not in use",
+	storage.CodeInvalid:           "Correct the value the message names and send it again",
+	storage.CodeApproval:          "Read the request again: it is signed once, by someone other than its requester, with a second factor, while it is pending",
+	storage.CodeEvidence:          "Files can be removed only while the record is a draft; add a newer file instead",
+	storage.CodeAccounting:        "Record a new version instead; another member who holds the Accountant role confirms or approves it",
+	storage.CodeVariance:          "Explain an income or expense account's variance while its period is open; a new explanation replaces the earlier one",
+	storage.CodeChecklist:         "Mark checklist tasks while the period is open; save a new template version rather than changing one",
+	storage.CodeFXRate:            "Enter rates of currencies other than the base, a monthly rate on its month's first day; withdraw a rate and enter another rather than changing one",
+	storage.CodeFXRevaluation:     "Revalue the period while it is open, from its own last day; the scheduler saves only the revaluation the application worked out",
+	storage.CodeTemplate:          "Publish a new version, or roll back to an earlier one: a published version never changes and a template is never deleted",
 
 	storage.CodeSend: "Send the issued invoice or sent quote as it stands now",
 	storage.CodeLink: "Email the document again for a new link",

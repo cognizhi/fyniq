@@ -3,7 +3,7 @@ key: planning.cash
 title: Cash ahead
 mode: basic
 roles: [owner, controller, accountant, approver, auditor, tax_agent, board_viewer]
-requirements: [FR-PLN-09, FR-PLN-05, FR-PLN-08, FR-NTF-01]
+requirements: [FR-PLN-09, FR-PLN-05, FR-PLN-08, FR-NTF-01, FR-PLN-04]
 status: draft
 ---
 
@@ -63,6 +63,11 @@ with no rate for today is listed there too.
 
 In Expert mode, each line of **What moves it** has **Move to** (delay a bill, chase an invoice) and **Leave out**. The
 projection, the lowest balance and the buffer are worked out again with the change. **Reset** drops every change.
+
+## How the forecast did
+
+Each week Fyniq keeps the 13-week projection as it was that week. Four and thirteen weeks later, once that week has ended, **How the forecast did** (at the foot of the page) sets each kept projection against the money accounts' balance on the day:
+what it said the balance would be, what it was, and the **difference**. The difference is split into three causes that add to it exactly. **Receipts later** are invoices the projection expected in the window that were not settled by its end. **Timing** is bills expected in the window not paid by its end, and invoices or bills that settled earlier than expected. **Unplanned** is the rest: spend and receipts the projection did not hold, recurring occurrences and payment batches, and anything else that moved cash. A kept projection is never recalculated; the table appears once a week has ended.
 
 ## Nothing here posts
 

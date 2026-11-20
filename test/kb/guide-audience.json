@@ -160,6 +160,17 @@
     "status": "published"
   },
   {
+    "file": "auditor-engagement.md",
+    "key": "audit.engagement",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "auditor"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "bad-debts.md",
     "key": "sales.bad-debts",
     "roles": [

@@ -113,7 +113,7 @@ export function Tile({ k, kpis, to, className }: { k: KPI; kpis: KPIs; to?: stri
             {before}: {figureText(k, k.before, kpis.currency)}
           </span>
         ) : null}
-        {k.month.entered && <span className="fy-badge fy-badge--quiet">Entered</span>}
+        {k.month.entered && <span className="fy-badge fy-badge--quiet">{k.month.counts_from === "recurring invoice templates" ? "Counted from recurring invoices" : "Entered"}</span>}
       </span>
     </div>
   );

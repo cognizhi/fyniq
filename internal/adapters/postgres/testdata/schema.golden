@@ -616,6 +616,48 @@ audit_request_detail | ip | text | not null |
 audit_request_detail | user_agent | text | not null | 
 audit_request_detail | country | text | not null | ''::text
 audit_request_detail | region | text | not null | ''::text
+auditor_engagement | organisation_id | uuid | not null | current_org()
+auditor_engagement | id | uuid | not null | uuidv7()
+auditor_engagement | name | text | not null | 
+auditor_engagement | firm | text | not null | ''::text
+auditor_engagement | auditor_user_id | uuid | not null | 
+auditor_engagement | period_from | date | not null | 
+auditor_engagement | period_to | date | not null | 
+auditor_engagement | opens_on | date | not null | 
+auditor_engagement | closes_on | date | not null | 
+auditor_engagement | status | text | not null | 'pending'::text
+auditor_engagement | opened_by | text | not null | 
+auditor_engagement | opened_at | timestamp with time zone | not null | 
+auditor_engagement | confirmed_by | text | null | 
+auditor_engagement | confirmed_at | timestamp with time zone | null | 
+auditor_engagement | closed_by | text | null | 
+auditor_engagement | closed_at | timestamp with time zone | null | 
+auditor_request | organisation_id | uuid | not null | current_org()
+auditor_request | id | uuid | not null | uuidv7()
+auditor_request | engagement_id | uuid | not null | 
+auditor_request | number | integer | not null | 
+auditor_request | title | text | not null | 
+auditor_request | detail | text | not null | ''::text
+auditor_request | due_on | date | null | 
+auditor_request | assignee_user_id | uuid | not null | 
+auditor_request | status | text | not null | 'open'::text
+auditor_request | requested_by | text | not null | 
+auditor_request | requested_at | timestamp with time zone | not null | 
+auditor_request | answer | text | null | 
+auditor_request | evidence_ids | uuid[] | not null | '{}'::uuid[]
+auditor_request | answered_by | text | null | 
+auditor_request | answered_at | timestamp with time zone | null | 
+auditor_request | closed_by | text | null | 
+auditor_request | closed_at | timestamp with time zone | null | 
+auditor_sample | organisation_id | uuid | not null | current_org()
+auditor_sample | id | uuid | not null | uuidv7()
+auditor_sample | engagement_id | uuid | not null | 
+auditor_sample | rule | jsonb | not null | 
+auditor_sample | seed | text | not null | 
+auditor_sample | population | integer | not null | 
+auditor_sample | items | jsonb | not null | 
+auditor_sample | drawn_by | text | not null | 
+auditor_sample | drawn_at | timestamp with time zone | not null | 
 authz_refusal | organisation_id | uuid | not null | current_org()
 authz_refusal | id | uuid | not null | uuidv7()
 authz_refusal | user_id | uuid | not null | 
@@ -883,6 +925,14 @@ capture_sender | decision | text | not null |
 capture_sender | decided_by | text | not null | 
 capture_sender | decided_at | timestamp with time zone | not null | 
 capture_sender | kind | text | not null | 'documents'::text
+cash_snapshot | organisation_id | uuid | not null | current_org()
+cash_snapshot | id | uuid | not null | uuidv7()
+cash_snapshot | week_of | date | not null | 
+cash_snapshot | taken_on | date | not null | 
+cash_snapshot | currency | text | not null | 
+cash_snapshot | ledger_revision | bigint | not null | 
+cash_snapshot | projection | jsonb | not null | 
+cash_snapshot | taken_at | timestamp with time zone | not null | 
 check_owner | organisation_id | uuid | not null | current_org()
 check_owner | id | uuid | not null | uuidv7()
 check_owner | key | text | not null | 
@@ -4281,6 +4331,58 @@ audit_request_detail | audit_request_detail_region_length | CHECK ((length(regio
 audit_request_detail | audit_request_detail_region_not_null | NOT NULL region
 audit_request_detail | audit_request_detail_something | CHECK (((ip <> ''::text) OR (user_agent <> ''::text)))
 audit_request_detail | audit_request_detail_user_agent_not_null | NOT NULL user_agent
+auditor_engagement | auditor_engagement_auditor_user_id_not_null | NOT NULL auditor_user_id
+auditor_engagement | auditor_engagement_by_form | CHECK (((opened_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((confirmed_by IS NULL) OR (confirmed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)) AND ((closed_by IS NULL) OR (closed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+auditor_engagement | auditor_engagement_closes_on_not_null | NOT NULL closes_on
+auditor_engagement | auditor_engagement_firm_not_null | NOT NULL firm
+auditor_engagement | auditor_engagement_id_not_null | NOT NULL id
+auditor_engagement | auditor_engagement_name | CHECK ((((length(btrim(name)) >= 2) AND (length(btrim(name)) <= 120)) AND (length(firm) <= 120)))
+auditor_engagement | auditor_engagement_name_not_null | NOT NULL name
+auditor_engagement | auditor_engagement_opened_at_not_null | NOT NULL opened_at
+auditor_engagement | auditor_engagement_opened_by_not_null | NOT NULL opened_by
+auditor_engagement | auditor_engagement_opens_on_not_null | NOT NULL opens_on
+auditor_engagement | auditor_engagement_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+auditor_engagement | auditor_engagement_organisation_id_not_null | NOT NULL organisation_id
+auditor_engagement | auditor_engagement_period | CHECK (((period_from <= period_to) AND (opens_on <= closes_on) AND ((closes_on - opens_on) <= 366)))
+auditor_engagement | auditor_engagement_period_from_not_null | NOT NULL period_from
+auditor_engagement | auditor_engagement_period_to_not_null | NOT NULL period_to
+auditor_engagement | auditor_engagement_pkey | PRIMARY KEY (organisation_id, id)
+auditor_engagement | auditor_engagement_state | CHECK ((((status = 'pending'::text) AND (confirmed_at IS NULL) AND (closed_at IS NULL)) OR ((status = 'active'::text) AND (confirmed_at IS NOT NULL) AND (confirmed_by IS NOT NULL) AND (closed_at IS NULL)) OR ((status = 'closed'::text) AND (closed_at IS NOT NULL) AND (closed_by IS NOT NULL))))
+auditor_engagement | auditor_engagement_status | CHECK ((status = ANY (ARRAY['pending'::text, 'active'::text, 'closed'::text])))
+auditor_engagement | auditor_engagement_status_not_null | NOT NULL status
+auditor_engagement | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+auditor_request | auditor_request_assignee_user_id_not_null | NOT NULL assignee_user_id
+auditor_request | auditor_request_detail_not_null | NOT NULL detail
+auditor_request | auditor_request_engagement_fkey | FOREIGN KEY (organisation_id, engagement_id) REFERENCES auditor_engagement(organisation_id, id)
+auditor_request | auditor_request_engagement_id_not_null | NOT NULL engagement_id
+auditor_request | auditor_request_evidence | CHECK ((cardinality(evidence_ids) <= 20))
+auditor_request | auditor_request_evidence_ids_not_null | NOT NULL evidence_ids
+auditor_request | auditor_request_id_not_null | NOT NULL id
+auditor_request | auditor_request_number | UNIQUE (organisation_id, engagement_id, number)
+auditor_request | auditor_request_number_not_null | NOT NULL number
+auditor_request | auditor_request_organisation_id_not_null | NOT NULL organisation_id
+auditor_request | auditor_request_pkey | PRIMARY KEY (organisation_id, id)
+auditor_request | auditor_request_requested_at_not_null | NOT NULL requested_at
+auditor_request | auditor_request_requested_by_not_null | NOT NULL requested_by
+auditor_request | auditor_request_state | CHECK ((((status = 'open'::text) AND (answered_at IS NULL) AND (closed_at IS NULL)) OR ((status = 'answered'::text) AND (answered_at IS NOT NULL) AND (answered_by IS NOT NULL) AND (answer IS NOT NULL) AND (closed_at IS NULL)) OR ((status = 'closed'::text) AND (closed_at IS NOT NULL) AND (closed_by IS NOT NULL))))
+auditor_request | auditor_request_status | CHECK ((status = ANY (ARRAY['open'::text, 'answered'::text, 'closed'::text])))
+auditor_request | auditor_request_status_not_null | NOT NULL status
+auditor_request | auditor_request_text | CHECK ((((length(btrim(title)) >= 2) AND (length(btrim(title)) <= 200)) AND (length(detail) <= 2000) AND ((answer IS NULL) OR ((length(btrim(answer)) >= 1) AND (length(btrim(answer)) <= 4000)))))
+auditor_request | auditor_request_title_not_null | NOT NULL title
+auditor_request | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+auditor_sample | auditor_sample_drawn_at_not_null | NOT NULL drawn_at
+auditor_sample | auditor_sample_drawn_by_not_null | NOT NULL drawn_by
+auditor_sample | auditor_sample_engagement_fkey | FOREIGN KEY (organisation_id, engagement_id) REFERENCES auditor_engagement(organisation_id, id)
+auditor_sample | auditor_sample_engagement_id_not_null | NOT NULL engagement_id
+auditor_sample | auditor_sample_form | CHECK (((jsonb_typeof(rule) = 'object'::text) AND (jsonb_typeof(items) = 'array'::text) AND (jsonb_array_length(items) <= 200) AND (population >= jsonb_array_length(items)) AND ((length(seed) >= 1) AND (length(seed) <= 64)) AND (drawn_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+auditor_sample | auditor_sample_id_not_null | NOT NULL id
+auditor_sample | auditor_sample_items_not_null | NOT NULL items
+auditor_sample | auditor_sample_organisation_id_not_null | NOT NULL organisation_id
+auditor_sample | auditor_sample_pkey | PRIMARY KEY (organisation_id, id)
+auditor_sample | auditor_sample_population_not_null | NOT NULL population
+auditor_sample | auditor_sample_rule_not_null | NOT NULL rule
+auditor_sample | auditor_sample_seed_not_null | NOT NULL seed
+auditor_sample | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 authz_refusal | authz_refusal_id_not_null | NOT NULL id
 authz_refusal | authz_refusal_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 authz_refusal | authz_refusal_organisation_id_not_null | NOT NULL organisation_id
@@ -4698,6 +4800,21 @@ capture_sender | capture_sender_organisation_fkey | FOREIGN KEY (organisation_id
 capture_sender | capture_sender_organisation_id_not_null | NOT NULL organisation_id
 capture_sender | capture_sender_pkey | PRIMARY KEY (organisation_id, id)
 capture_sender | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+cash_snapshot | cash_snapshot_currency | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+cash_snapshot | cash_snapshot_currency_not_null | NOT NULL currency
+cash_snapshot | cash_snapshot_form | CHECK (((jsonb_typeof(projection) = 'object'::text) AND (jsonb_typeof((projection -> 'weekly'::text)) = 'array'::text) AND (jsonb_typeof((projection -> 'items'::text)) = 'array'::text) AND (jsonb_typeof((projection -> 'opening'::text)) = 'string'::text)))
+cash_snapshot | cash_snapshot_id_not_null | NOT NULL id
+cash_snapshot | cash_snapshot_ledger_revision_not_null | NOT NULL ledger_revision
+cash_snapshot | cash_snapshot_monday | CHECK (((EXTRACT(isodow FROM week_of) = (1)::numeric) AND (taken_on >= week_of) AND (taken_on < (week_of + 7))))
+cash_snapshot | cash_snapshot_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+cash_snapshot | cash_snapshot_organisation_id_not_null | NOT NULL organisation_id
+cash_snapshot | cash_snapshot_pkey | PRIMARY KEY (organisation_id, id)
+cash_snapshot | cash_snapshot_projection_not_null | NOT NULL projection
+cash_snapshot | cash_snapshot_taken_at_not_null | NOT NULL taken_at
+cash_snapshot | cash_snapshot_taken_on_not_null | NOT NULL taken_on
+cash_snapshot | cash_snapshot_week_of_not_null | NOT NULL week_of
+cash_snapshot | cash_snapshot_week_once | UNIQUE (organisation_id, week_of)
+cash_snapshot | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 check_owner | check_owner_id_key | UNIQUE (organisation_id, id)
 check_owner | check_owner_id_not_null | NOT NULL id
 check_owner | check_owner_key_format | CHECK (((key ~ '^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$'::text) AND (length(key) <= 100)))
@@ -8894,6 +9011,13 @@ CREATE UNIQUE INDEX audit_recovery_acknowledgement_pkey ON fyniq.audit_recovery_
 CREATE UNIQUE INDEX audit_recovery_epoch_key ON fyniq.audit_recovery USING btree (organisation_id, epoch)
 CREATE UNIQUE INDEX audit_recovery_pkey ON fyniq.audit_recovery USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_request_detail_pkey ON fyniq.audit_request_detail USING btree (organisation_id, id)
+CREATE UNIQUE INDEX auditor_engagement_id ON fyniq.auditor_engagement USING btree (id)
+CREATE UNIQUE INDEX auditor_engagement_pkey ON fyniq.auditor_engagement USING btree (organisation_id, id)
+CREATE UNIQUE INDEX auditor_request_id ON fyniq.auditor_request USING btree (id)
+CREATE UNIQUE INDEX auditor_request_number ON fyniq.auditor_request USING btree (organisation_id, engagement_id, number)
+CREATE UNIQUE INDEX auditor_request_pkey ON fyniq.auditor_request USING btree (organisation_id, id)
+CREATE UNIQUE INDEX auditor_sample_id ON fyniq.auditor_sample USING btree (id)
+CREATE UNIQUE INDEX auditor_sample_pkey ON fyniq.auditor_sample USING btree (organisation_id, id)
 CREATE UNIQUE INDEX authz_refusal_pkey ON fyniq.authz_refusal USING btree (organisation_id, id)
 CREATE UNIQUE INDEX authz_refusal_user_key ON fyniq.authz_refusal USING btree (organisation_id, user_id, window_start)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
@@ -8931,6 +9055,8 @@ CREATE UNIQUE INDEX capture_address_live_owner ON fyniq.capture_address USING bt
 CREATE UNIQUE INDEX capture_address_pkey ON fyniq.capture_address USING btree (organisation_id, id)
 CREATE UNIQUE INDEX capture_name_pkey ON fyniq.capture_name USING btree (local_part)
 CREATE UNIQUE INDEX capture_sender_pkey ON fyniq.capture_sender USING btree (organisation_id, id)
+CREATE UNIQUE INDEX cash_snapshot_pkey ON fyniq.cash_snapshot USING btree (organisation_id, id)
+CREATE UNIQUE INDEX cash_snapshot_week_once ON fyniq.cash_snapshot USING btree (organisation_id, week_of)
 CREATE UNIQUE INDEX check_owner_id_key ON fyniq.check_owner USING btree (organisation_id, id)
 CREATE UNIQUE INDEX check_owner_pkey ON fyniq.check_owner USING btree (organisation_id, key)
 CREATE UNIQUE INDEX check_review_item_key ON fyniq.check_review USING btree (organisation_id, key, item_kind, item_id, item_version)
@@ -9370,6 +9496,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bill_payment_plan 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.billing_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('billing_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.break_glass_use DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('break_glass', 'break_glass_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.capture_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_sender', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.cash_snapshot DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('cash_snapshot', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.check_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.check_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_entry', 'id')
@@ -9490,6 +9617,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_propo
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.announcement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('announcement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.api_client DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('api_client', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.auditor_engagement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('auditor_engagement', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.auditor_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('auditor_request', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.auditor_sample DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('auditor_sample', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_feed DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_feed', 'money_account_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_gap DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_gap', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_match DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'line_id')
@@ -9672,6 +9802,12 @@ CREATE TRIGGER audit_recovery_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.a
 CREATE TRIGGER audit_recovery_no_truncate BEFORE TRUNCATE ON fyniq.audit_recovery FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_request_detail_guard BEFORE DELETE OR UPDATE ON fyniq.audit_request_detail FOR EACH ROW EXECUTE FUNCTION audit_request_detail_guard()
 CREATE TRIGGER audit_request_detail_no_truncate BEFORE TRUNCATE ON fyniq.audit_request_detail FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER auditor_engagement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.auditor_engagement FOR EACH ROW EXECUTE FUNCTION auditor_engagement_guard()
+CREATE TRIGGER auditor_engagement_no_truncate BEFORE TRUNCATE ON fyniq.auditor_engagement FOR EACH STATEMENT EXECUTE FUNCTION auditor_engagement_guard()
+CREATE TRIGGER auditor_request_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.auditor_request FOR EACH ROW EXECUTE FUNCTION auditor_child_guard()
+CREATE TRIGGER auditor_request_no_truncate BEFORE TRUNCATE ON fyniq.auditor_request FOR EACH STATEMENT EXECUTE FUNCTION auditor_child_guard()
+CREATE TRIGGER auditor_sample_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.auditor_sample FOR EACH ROW EXECUTE FUNCTION auditor_child_guard()
+CREATE TRIGGER auditor_sample_no_truncate BEFORE TRUNCATE ON fyniq.auditor_sample FOR EACH STATEMENT EXECUTE FUNCTION auditor_child_guard()
 CREATE TRIGGER bank_agreement_guard BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN ((new.type = 'bank_agreement'::text)) EXECUTE FUNCTION bank_agreement_guard()
 CREATE TRIGGER bank_feed_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_feed FOR EACH ROW EXECUTE FUNCTION bank_feed_guard()
 CREATE TRIGGER bank_feed_no_truncate BEFORE TRUNCATE ON fyniq.bank_feed FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -9703,6 +9839,8 @@ CREATE TRIGGER capture_address_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.
 CREATE TRIGGER capture_address_no_truncate BEFORE TRUNCATE ON fyniq.capture_address FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER capture_sender_guard BEFORE DELETE OR UPDATE ON fyniq.capture_sender FOR EACH ROW EXECUTE FUNCTION capture_sender_guard()
 CREATE TRIGGER capture_sender_no_truncate BEFORE TRUNCATE ON fyniq.capture_sender FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER cash_snapshot_guard BEFORE DELETE OR UPDATE ON fyniq.cash_snapshot FOR EACH ROW EXECUTE FUNCTION cash_snapshot_guard()
+CREATE TRIGGER cash_snapshot_no_truncate BEFORE TRUNCATE ON fyniq.cash_snapshot FOR EACH STATEMENT EXECUTE FUNCTION cash_snapshot_guard()
 CREATE TRIGGER check_owner_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.check_owner FOR EACH ROW EXECUTE FUNCTION check_owner_guard()
 CREATE TRIGGER check_owner_no_truncate BEFORE TRUNCATE ON fyniq.check_owner FOR EACH STATEMENT EXECUTE FUNCTION check_owner_guard()
 CREATE TRIGGER check_review_guard BEFORE DELETE OR UPDATE ON fyniq.check_review FOR EACH ROW EXECUTE FUNCTION check_review_guard()
@@ -10175,6 +10313,9 @@ audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organi
 audit_recovery | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_recovery_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_request_detail | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+auditor_engagement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+auditor_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+auditor_sample | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 authz_refusal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | department_scope | r | ((( SELECT dept_scope() AS dept_scope) IS NULL) OR (dimension_set_id IN ( SELECT ds.id FROM dimension_set ds WHERE (ds.value_ids && ( SELECT dept_scope() AS dept_scope))))) | <nil>
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10196,6 +10337,7 @@ break_glass_use | tenant_isolation | * | (organisation_id = current_org()) | (or
 cap_table_grant | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_address | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_sender | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+cash_snapshot | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 check_owner | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 check_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 check_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10445,6 +10587,9 @@ audit_event | enabled | forced
 audit_recovery | enabled | forced
 audit_recovery_acknowledgement | enabled | forced
 audit_request_detail | enabled | forced
+auditor_engagement | enabled | forced
+auditor_request | enabled | forced
+auditor_sample | enabled | forced
 authz_refusal | enabled | forced
 balance | enabled | forced
 bank_feed | enabled | forced
@@ -10466,6 +10611,7 @@ cap_table_grant | enabled | forced
 capture_address | enabled | forced
 capture_name | disabled | not forced
 capture_sender | enabled | forced
+cash_snapshot | enabled | forced
 check_owner | enabled | forced
 check_review | enabled | forced
 check_run | enabled | forced
@@ -10763,6 +10909,8 @@ audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, f
 audit_purge(p_last_seq bigint) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d72747db4e3930a148d3c4075dca432c
 audit_recovery_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | cc6e63a491b0b40d589054b85e13ed19
 audit_request_detail_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 67a6785cc368830387635f0fb5aa797c
+auditor_child_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 73936615d90033601ab9c8a92929f74f
+auditor_engagement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9a7254df65329a945d9e3efa3bc57cc8
 balance_differences() → TABLE(account_id uuid, period_id uuid, dimension_set_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | db220537924bcf527c3806307453ed67
 balance_lines_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c1c7750d26a82cb498c82056eec78082
 balances_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | a0314e0bf5258f5fa563b982ba8175e2
@@ -10793,6 +10941,7 @@ cap_table_grant_guard() → trigger | security invoker | v | search_path=pg_cata
 capture_address_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 542a3470e64d74a54703cab8f90e82c9
 capture_route(p_local text) → TABLE(organisation_id uuid, address_id uuid, user_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 172d93473f532f3e8728708678490889
 capture_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d3ca1a62ec41cff9d93981758a2f74c
+cash_snapshot_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c1608177f8352114655002490a14237f
 change_installation_connector(p_by uuid, p_change uuid, p_step text, p_id uuid, p_version integer, p_state text, p_configuration jsonb, p_position integer, p_test_passed boolean, p_test_reason text, p_tested_at timestamp with time zone, p_manifest_version text, p_manifest_hash text, p_secret_names text[], p_consent jsonb, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 9b989ec9c61abe049b0de80a90368cbf
 check_entry_balanced() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b53334884d5e11426b962a38e77aed9
 check_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 67670ce232a94d3474e05685ff99ec02

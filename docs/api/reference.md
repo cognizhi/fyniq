@@ -21285,6 +21285,26 @@ A study's figures (FR-PLN-06, design D8), worked out on every read in exact deci
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/forecast-accuracy`
+
+**Compare the kept cash projections with the cash that came** (`getForecastAccuracy`)
+
+Each week the worker keeps the 13-week short-term projection (FR-PLN-09). This compares each with the money accounts' balance 4 and 13 weeks later, once that week has ended, and splits the difference by cause: receipts later than expected, timing and unplanned (FR-PLN-04). Read-only; no side effects. A projection is never recalculated: it is the one that was kept.
+
+- **Permission:** View on Budgets, forecasts
+- **Parameters:**
+  - `weeks` (query): Compare at 4 or 13 weeks; both when left out.
+- **Responses:**
+  - `200` OK [`ForecastAccuracyOutputBody`](../../contracts/schemas/ForecastAccuracyOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/forecasts`
 
 **List the forecasts** (`listForecasts`)

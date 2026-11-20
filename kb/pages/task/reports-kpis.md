@@ -4,7 +4,7 @@ type: task
 title: Read the start-up KPIs and enter the month's customer counts
 summary: A month's KPIs beside the month before, how each is worked out, why one shows a dash, and entering the customer counts
 sources:
-  - docs/user-guide/kpis.md sha256:f0bf371b8f5ce903d2b01db6ff5aa62b6d4fcd5a43cd8dbe165e9473a3047074
+  - docs/user-guide/kpis.md sha256:b90c4c7f334b6d0b0ca2c70281560d00d7df96c6ed82e5a76b0175308b5b1bbf
 data_class: general
 taint: trusted
 status: draft
@@ -60,6 +60,13 @@ aliases:
 - **Save** works out the KPIs that use them again and marks them **Entered**. Each change is a new version, with who entered it and when, in the audit trail.
 
 (src: docs/user-guide/kpis.md#enter-the-months-customer-counts-and-headcount)
+
+## Counts from recurring invoices come first
+
+- When the organisation has active recurring invoices, Fyniq counts the customers itself and uses that count ahead of an entry; the headcount stays as entered. A recurring invoice counts for a month while it is active now, has started by the month's last day and has not ended before it. A customer with two invoices counts once and a paused invoice counts for no month; a customer whose first invoice starts in a month is new in it, and one whose invoice ended before the month's end is lost in the month after.
+- The KPIs that use the counts are marked Counted from recurring invoices instead of Entered. Subscription schedules and billing integrations will answer ahead of the recurring invoices as they arrive.
+
+(src: docs/user-guide/kpis.md#counts-from-recurring-invoices-come-first)
 
 ## Common problems
 

@@ -116,6 +116,14 @@ fyniq_api       INSERT    audit_recovery_acknowledgement (acknowledged_at, ackno
 fyniq_api       SELECT    audit_recovery_acknowledgement
 fyniq_api       INSERT    audit_request_detail (country, id, ip, occurred_at, region, user_agent)
 fyniq_api       SELECT    audit_request_detail
+fyniq_api       INSERT    auditor_engagement (auditor_user_id, closes_on, firm, name, opened_at, opened_by, opens_on, period_from, period_to)
+fyniq_api       SELECT    auditor_engagement
+fyniq_api       UPDATE    auditor_engagement (closed_at, closed_by, confirmed_at, confirmed_by, status)
+fyniq_api       INSERT    auditor_request (assignee_user_id, detail, due_on, engagement_id, number, requested_at, requested_by, title)
+fyniq_api       SELECT    auditor_request
+fyniq_api       UPDATE    auditor_request (answer, answered_at, answered_by, closed_at, closed_by, evidence_ids, status)
+fyniq_api       INSERT    auditor_sample (drawn_at, drawn_by, engagement_id, items, population, rule, seed)
+fyniq_api       SELECT    auditor_sample
 fyniq_api       INSERT    authz_refusal (user_id, window_start)
 fyniq_api       SELECT    authz_refusal
 fyniq_api       UPDATE    authz_refusal (refused)
@@ -172,6 +180,7 @@ fyniq_api       UPDATE    capture_address (retired_at, retired_by)
 fyniq_api       EXECUTE   capture_route()
 fyniq_api       INSERT    capture_sender (address, decided_at, decided_by, decision, kind, user_id)
 fyniq_api       SELECT    capture_sender
+fyniq_api       SELECT    cash_snapshot
 fyniq_api       EXECUTE   change_installation_connector()
 fyniq_api       INSERT    check_owner (key, person_user_id, set_at, set_by)
 fyniq_api       SELECT    check_owner
@@ -913,6 +922,9 @@ fyniq_readonly  SELECT    audit_event
 fyniq_readonly  SELECT    audit_recovery
 fyniq_readonly  SELECT    audit_recovery_acknowledgement
 fyniq_readonly  SELECT    audit_request_detail
+fyniq_readonly  SELECT    auditor_engagement
+fyniq_readonly  SELECT    auditor_request
+fyniq_readonly  SELECT    auditor_sample
 fyniq_readonly  SELECT    authz_refusal
 fyniq_readonly  SELECT    balance
 fyniq_readonly  EXECUTE   balance_differences()
@@ -937,6 +949,7 @@ fyniq_readonly  SELECT    break_glass_use
 fyniq_readonly  SELECT    cap_table_grant
 fyniq_readonly  SELECT    capture_address
 fyniq_readonly  SELECT    capture_sender
+fyniq_readonly  SELECT    cash_snapshot
 fyniq_readonly  SELECT    check_owner
 fyniq_readonly  SELECT    check_review
 fyniq_readonly  SELECT    check_run
@@ -1210,6 +1223,9 @@ fyniq_worker    SELECT    audit_recovery
 fyniq_worker    SELECT    audit_recovery_acknowledgement
 fyniq_worker    INSERT    audit_request_detail (country, id, ip, occurred_at, region, user_agent)
 fyniq_worker    SELECT    audit_request_detail
+fyniq_worker    SELECT    auditor_engagement
+fyniq_worker    SELECT    auditor_request
+fyniq_worker    SELECT    auditor_sample
 fyniq_worker    DELETE    authz_refusal
 fyniq_worker    SELECT    authz_refusal (id, organisation_id, window_start)
 fyniq_worker    SELECT    balance
@@ -1248,6 +1264,8 @@ fyniq_worker    SELECT    cap_table_grant
 fyniq_worker    SELECT    capture_address
 fyniq_worker    EXECUTE   capture_route()
 fyniq_worker    SELECT    capture_sender
+fyniq_worker    INSERT    cash_snapshot (currency, ledger_revision, projection, taken_at, taken_on, week_of)
+fyniq_worker    SELECT    cash_snapshot
 fyniq_worker    SELECT    check_owner
 fyniq_worker    SELECT    check_review
 fyniq_worker    DELETE    check_run

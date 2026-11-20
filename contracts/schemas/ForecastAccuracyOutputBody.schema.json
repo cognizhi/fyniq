@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The kept projections whose window has ended, newest first, at most 52 weeks back.",
+      "items": {
+        "$ref": "ForecastAccuracyRow.schema.json"
+      },
+      "type": "array"
+    },
+    "note": {
+      "description": "How the causes are worked out.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "items",
+    "note"
+  ],
+  "title": "ForecastAccuracyOutputBody",
+  "type": "object"
+}

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "description": "An account's code; left out, any account.",
+      "examples": [
+        "6120"
+      ],
+      "type": "string"
+    },
+    "count": {
+      "description": "How many lines.",
+      "examples": [
+        25
+      ],
+      "format": "int64",
+      "maximum": 200,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "from": {
+      "description": "The first posting date.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "min_amount": {
+      "description": "The smallest line, as an absolute decimal amount in the base currency.",
+      "examples": [
+        "500.00"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "The last posting date.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "count"
+  ],
+  "title": "AuditSampleRule",
+  "type": "object"
+}

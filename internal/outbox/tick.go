@@ -154,6 +154,8 @@ var PlatformSchedules = []Schedule{
 	// Hourly, the saved reports that are due, each recipient's right checked again and told by a notification with no figure (FR-RPT-07).
 	// Daily at 08:30 Singapore time, after the month closes, the categories whose spend broke from their trend (FR-KPI-06).
 	{Job: "kpi.anomalies", Every: 24 * time.Hour, Offset: 0*time.Hour + 30*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
+	// Daily at 01:00 Singapore time (17:00 UTC), the week's 13-week cash projection, kept once a week (FR-PLN-04).
+	{Job: "cash.snapshots", Every: 24 * time.Hour, Offset: 17 * time.Hour, Lease: time.Hour, Stale: 26 * time.Hour},
 	{Job: "reports.send", Every: time.Hour, Offset: 25 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Weekly on Monday at 02:00 in Singapore (Sunday 18:00 UTC; the epoch was a Thursday), the previous week's sample of
 	// auto-reconciliations into each organisation's weekly review (FR-BNK-14, FM-3; rev 0.142).

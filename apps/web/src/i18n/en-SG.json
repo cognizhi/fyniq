@@ -1835,6 +1835,10 @@
       "label": "Investor updates",
       "tooltip": "An update built from a published board pack, sent once to the members you choose. They are told by a notification that links to the signed-in update; it carries no figure."
     },
+    "audit.engagement": {
+      "label": "Auditor engagement",
+      "tooltip": "A time-boxed engagement an Owner opens for the auditor and a second Owner confirms. While it is active the auditor asks for items and draws samples of posted lines, and the people asked answer with evidence."
+    },
     "board.portal": {
       "label": "Board and investor portal",
       "tooltip": "The published board packs, the investor updates sent to you and your own holding, after you sign in."

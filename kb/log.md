@@ -885,3 +885,9 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | compliance.invoicenow: the exclusion form and the contingency approval button
 
 ## [2026-11-20] compile | ai-proposals: the assistant proposes a know-how page, never a figure (AI-59)
+
+## [2026-11-20] compile | audit.engagement: the auditor's engagement, requests and samples (FR-UX-42)
+
+## [2026-11-20] compile | planning.cash: how the forecast did, the kept weekly projections against the cash (FR-PLN-04)
+
+## [2026-11-20] compile | reports.kpis: customer counts from recurring invoices ahead of an entry (FR-KPI-04)

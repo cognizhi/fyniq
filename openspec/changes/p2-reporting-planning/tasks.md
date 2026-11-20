@@ -33,8 +33,8 @@ guide pages compiled into the knowledge base, and the oracle's half where it pos
 ## 4. Dashboards and KPIs
 - [x] 4.1 Layouts and tiles (D9). `// req: FR-VIZ-09`, `// req: FR-KPI-05`
   Built: migration 001103, `domain/dashboard`, five operations (DASH-01 to DASH-04). Tests: `TestALayoutNamesCatalogueTilesOnceInsideTheGrid`, `TestADashboardIsTheTilesAPersonOrARoleArranged`. The tiles are the KPIs; chart tiles are **Left**.
-- [ ] 4.2 Customer count port (D10). `// req: FR-KPI-04`
-  **Left:** the `CustomerCounter` port and the recurring-invoice adapter, and the KPIs saying which source answered; the new and lost customers need a rule for templates that start and end inside a month (owner to confirm) before it is built.
+- [x] 4.2 Customer count port (D10). `// req: FR-KPI-04`
+  Built: `kpi.CustomerCounter` and its adapter over the recurring invoices (`internal/domain/kpi/counter.go`), read ahead of an entry for each month, and `counts_from` on each KPI figure (the screen badge reads Counted from recurring invoices). The rule is conservative and ours `[owner to confirm]`: see PRD FR-KPI-04. Test: `TestCustomerCountsComeFromTheRecurringInvoicesAheadOfAnEntry`. **Left:** the subscription schedules (FR-AR-15) and a billing integration answer through the same port once built; no adapter for them yet.
 - [x] 4.3 Anomaly alerts (D10). `// req: FR-KPI-06`
   Built: migration 001102, `domain/anomaly` (exact, no square root), `internal/anomalyjob`, the job `kpi.anomalies`, listKpiAlerts. Tests: `TestThreeStandardDeviationsAboveTheTrendIsAnAnomalyAndJustBelowIsNot`, `TestASpendAnomalyIsRaisedOnceForTheClosedMonth`.
 - [ ] 4.4 Benchmark packs and the comparison (D10), on a synthetic fixture. `// req: FR-KPI-07`
@@ -49,14 +49,14 @@ guide pages compiled into the knowledge base, and the oracle's half where it pos
   **Left:** the NBV movement schedule and the S19, S19A(1) and S19A(10A) capital allowance schedule from an `sg-capital-allowances` pack with IRAS's page as its source (the PRD row records the rules as confirmed on 14 Oct 2026; the page is to be fetched again, dated and quoted before a value is built) [accountant to confirm].
 
 ## 6. Planning
-- [ ] 6.1 Rolling forecast and its accuracy (D12). `// req: FR-PLN-04`
-  **Left:** the weekly snapshot job, the accuracy view at 4 and 13 weeks and the causes (receipts later than expected, unplanned spend, timing); not started.
+- [x] 6.1 Rolling forecast and its accuracy (D12). `// req: FR-PLN-04`
+  Built: migration 001107 (`cash_snapshot`, insert-only, the worker alone inserts), the daily job `cash.snapshots` (`internal/cashsnapshotjob`: one 13-week projection a week, under the Monday of the organisation's week, once something is posted), `getForecastAccuracy` (`GET /v1/forecast-accuracy`), the pure comparison `internal/domain/forecastaccuracy` (receipts later, timing, unplanned: exact, adding to the difference) and the card **How the forecast did** on Cash ahead. Tests: `TestTheCausesAddToTheDifferenceExactly`, `TestACashSnapshotIsKeptOncePerWeekByTheWorkerAndNeverChanged`, `TestTheWorkerKeepsTheWeeksProjectionAndTheAccuracyComparesItWithTheCash`. **Left:** the definition of the three causes is ours `[owner to confirm]`; no oracle half (it is a comparison, not a posting); recurring occurrences and payment batches have no settlement day and fall in the unplanned part.
 - [ ] 6.2 Funding plan (D12). `// req: FR-PLN-07`
   **Left:** planned rounds in a forecast starting from the cap table, through the round model; not started.
 
 ## 7. The Auditor's engagement
-- [ ] 7.1 Engagements, requests, samples (D13). `// req: FR-UX-42`
-  **Left:** needs an Appendix D row of its own (the Auditor writes requests and draws samples, a role that holds no C anywhere today), the engagement, request and sample tables, their operations and the screen; not started.
+- [x] 7.1 Engagements, requests, samples (D13). `// req: FR-UX-42`
+  Built: the Appendix D rows **Auditor engagement** and **Auditor requests and samples** (the Auditor's one C), migration 001106 (`auditor_engagement`, `auditor_request`, insert-only `auditor_sample`, with guards), ten operations (`/v1/audit-engagements`, `/v1/audit-requests`), the draw (`internal/domain/auditsample`: SHA-256 ranking by a stored seed, reproducible), and the screen Reports › Auditor engagement (`/auditor/engagement`). An Owner opens it and a second Owner confirms it (the same Owner in Founder mode) `[owner to confirm]`. Tests: `TestTheDrawIsReproducibleAndKeepsToTheRule`, `TestAnEngagementOnlyGoesForwardAndTakesNothingWhileNotActive`, `TestTheAuditorsEngagementIsOpenedByAnOwnerAndAskedAndSampledByTheAuditorOnly`, the matrix rows, `auditorEngagement.test.tsx`. Threat model: `docs/security/threat-models/auditor-engagement.md`; listed in `docs/security/p2-grants-for-human-review.md`. **Left:** the Claude Design canvas for the engagement is not republished; the dual control is not an approval-engine object.
 
 ## 8. Exit waterfall, allocations, shares for services
 - [ ] 8.1 The waterfall and its oracle half (D14). `// req: FR-EQ-29`, `// req: QA-ENG-02`

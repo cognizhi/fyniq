@@ -11,6 +11,7 @@ import { date } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
+import { ForecastAccuracy } from "./ForecastAccuracy";
 import { PlanningTabs } from "./tabs";
 
 type Projection = components["schemas"]["CashProjection"];
@@ -289,6 +290,7 @@ export function CashAhead() {
           </div>
         </>
       )}
+      {p && <ForecastAccuracy />}
     </div>
   );
 }

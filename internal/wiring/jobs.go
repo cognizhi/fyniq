@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
 	"github.com/cognizhi/fyniq/internal/canary"
+	"github.com/cognizhi/fyniq/internal/cashsnapshotjob"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
@@ -273,6 +274,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		anomalyjob.Job: func(ctx context.Context) error { // FR-KPI-06: a closed month's category spend above its trend
 			_, err := anomalyjob.Runner{Store: k.Store, Outbox: k.dispatcher(clock), Clock: clock}.RunAll(ctx)
+			return err
+		},
+		cashsnapshotjob.Job: func(ctx context.Context) error { // FR-PLN-04: each week's 13-week cash projection, kept for the accuracy view
+			_, err := cashsnapshotjob.Runner{Store: k.Store, Clock: clock}.RunAll(ctx)
 			return err
 		},
 		reportsend.Job: func(ctx context.Context) error { // FR-RPT-07: the saved reports that are due, each recipient's right checked again

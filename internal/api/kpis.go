@@ -23,10 +23,11 @@ import (
 
 // KPIFigure is a KPI's value for a month: its figure, or words that stand for it, or why it has none.
 type KPIFigure struct {
-	Value     string `json:"value,omitempty" doc:"The figure, rounded by RND-KPI: an amount in the base currency as a decimal string, a percentage, ratio, number of months or days to one decimal, or a whole count. Left out when the KPI has words or no value." example:"40.0"`
-	Words     string `json:"words,omitempty" doc:"Words that stand for the figure, such as Not burning for the runway when the average net burn is zero or less." example:"Not burning"`
-	Undefined string `json:"undefined,omitempty" doc:"Why it has no value, in words; never shown as 0 (FR-KPI-03)." example:"no subscription data: enter the month's customer counts"`
-	Entered   bool   `json:"entered,omitempty" doc:"true when it used the month's entered customer counts or headcount (rev 0.161)." example:"false"`
+	Value      string `json:"value,omitempty" doc:"The figure, rounded by RND-KPI: an amount in the base currency as a decimal string, a percentage, ratio, number of months or days to one decimal, or a whole count. Left out when the KPI has words or no value." example:"40.0"`
+	Words      string `json:"words,omitempty" doc:"Words that stand for the figure, such as Not burning for the runway when the average net burn is zero or less." example:"Not burning"`
+	Undefined  string `json:"undefined,omitempty" doc:"Why it has no value, in words; never shown as 0 (FR-KPI-03)." example:"no subscription data: enter the month's customer counts"`
+	Entered    bool   `json:"entered,omitempty" doc:"true when it used the month's customer counts or headcount, entered or counted (rev 0.161)." example:"false"`
+	CountsFrom string `json:"counts_from,omitempty" enum:"entered,recurring invoice templates" doc:"Where the customer counts it used came from: entered by a person, or counted from the recurring invoices active at the month's end, which come ahead of an entry (FR-KPI-04, rev 0.575); absent when it used none." example:"recurring invoice templates"`
 }
 
 // KPIItem is one KPI: its definition, its value for the month and for the month before.
@@ -74,7 +75,7 @@ type kpisInput struct {
 type kpisOutput struct{ Body KPIs }
 
 func figureOf(v kpi.Value) KPIFigure {
-	return KPIFigure{Value: v.Figure, Words: v.Words, Undefined: v.Undefined, Entered: v.Entered}
+	return KPIFigure{Value: v.Figure, Words: v.Words, Undefined: v.Undefined, Entered: v.Entered, CountsFrom: v.CountsFrom}
 }
 
 func (a *API) countsOut(ctx context.Context, u storage.UnitOfWork, x storage.KPIInput) (KPICountsOut, error) {

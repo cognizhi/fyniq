@@ -97,6 +97,16 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/assistant/conversations/{conversation_id}` (deleteAIConversation): Delete a conversation with the assistant
 - `POST /v1/assistant/conversations/{conversation_id}/turns` (askAIConversation): Ask the assistant
 - `POST /v1/assistant/conversations/{conversation_id}/turns/{turn_id}/feedback` (giveAIFeedback): Rate an answer of the assistant
+- `GET /v1/audit-engagements` (listAuditEngagements): List the auditor's engagements
+- `POST /v1/audit-engagements` (openAuditEngagement): Open an engagement for an auditor
+- `POST /v1/audit-engagements/{id}/close` (closeAuditEngagement): Close an engagement
+- `POST /v1/audit-engagements/{id}/confirm` (confirmAuditEngagement): Confirm a pending engagement
+- `GET /v1/audit-engagements/{id}/requests` (listAuditRequests): List an engagement's requests
+- `POST /v1/audit-engagements/{id}/requests` (askAuditRequest): Ask for an item
+- `GET /v1/audit-engagements/{id}/samples` (listAuditSamples): List an engagement's samples
+- `POST /v1/audit-engagements/{id}/samples` (drawAuditSample): Draw a sample from the ledger
+- `POST /v1/audit-requests/{id}/answer` (answerAuditRequest): Answer an auditor's request
+- `POST /v1/audit-requests/{id}/close` (closeAuditRequest): Accept an answer and close the request
 - `GET /v1/audit/events` (listAuditEvents): List the audit trail's events
 - `GET /v1/audit/events/{event_id}` (getAuditEvent): Get an audit event
 - `POST /v1/audit/exports` (requestAuditTrailExport): Ask for the audit trail's export
@@ -528,6 +538,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/fixed-assets/{asset_id}/disposals` (disposeFixedAsset): Sell or write off a fixed asset
 - `POST /v1/fixed-assets/{asset_id}/void` (voidFixedAsset): Void a fixed asset registered by mistake
 - `POST /v1/fixed-assets/{asset_id}/void-approval` (requestFixedAssetVoid): Ask for approval to void a fixed asset
+- `GET /v1/forecast-accuracy` (getForecastAccuracy): Compare the kept cash projections with the cash that came
 - `GET /v1/forecasts` (listForecasts): List the forecasts
 - `POST /v1/forecasts` (createForecast): Draft a forecast
 - `GET /v1/forecasts/{forecast_id}` (getForecast): Get a forecast
