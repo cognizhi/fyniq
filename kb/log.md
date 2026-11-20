@@ -1001,3 +1001,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.hiring: candidates, the board, interview kits and retention (NM-REC-04, NM-REC-05)
 
 ## [2026-11-20] compile | nemura.hiring: the hire, the person record and the pass application (NM-REC-06)
+
+## [2026-11-20] compile | nemura.erasure: the review of records due for deletion (NM-SEC-05)
+
+## [2026-11-20] compile | nemura.goals: a person's goals for the manager and the people team, and the roll-up (NM-PRF-01)
