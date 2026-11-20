@@ -4,14 +4,14 @@ type: task
 title: Plan a joiner's first weeks, invite them to Fyniq and record who is leaving in Nemura
 summary: Onboarding plans from templates for HR, the manager, IT and the joiner; the Fyniq invitation task; a leaving's dates and its leave settlement
 sources:
-  - docs/user-guide/nemura/onboarding.md sha256:74a05f8cb80df12c7c1b56706a1a7778737fe897c12533396e6ab9de65d10602
+  - docs/user-guide/nemura/onboarding.md sha256:cee44eeaf8feae581bd15510ba55ae8ac82e9c10a5e6bd07d4bbc7f33ea53480
 data_class: personal
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-sonnet-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-20
+compiled_at: 2026-11-22
 aliases:
   - offboarding
   - resignation
@@ -28,7 +28,7 @@ aliases:
 ## Onboarding plans
 
 - A plan is made for each person who joins from a template: tasks for HR, their manager, IT and the joiner, each due a number of days from the start date (key employment terms within 14 days, bank and CPF details before the first pay run, pass collection, equipment, accounts, introductions). A template is never edited; make a new one and archive the old. (src: docs/user-guide/nemura/onboarding.md#plan-a-joiners-first-weeks)
-- Each person sees the tasks that are theirs on My home: the joiner their own, a line manager those of their reports, IT an Administrator, HR administrator or Owner, and the people team HR's. A task is decided once; only the people team skips one. (src: docs/user-guide/nemura/onboarding.md#plan-a-joiners-first-weeks)
+- Each person sees the tasks that are theirs on My home: the joiner their own, a line manager those of their reports, IT an Administrator, HR administrator or Owner, and the people team HR's. A task is decided once; only the people team skips one. The KETs task and an invitation task close by themselves when the KETs letter is issued or the person is marked as invited, and are not marked done by hand. (src: docs/user-guide/nemura/onboarding.md#plan-a-joiners-first-weeks)
 
 ## What it is
 
