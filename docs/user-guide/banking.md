@@ -54,6 +54,12 @@ On step 2, a bank or wallet account also shows **Payment file**: see
   signal days (`bank.signal_expiry_days`).
 - **A connector**: an organisation connector such as Wise or Airwallex, installed and turned on under
   **Settings → Integrations**, reads the account's transactions every hour with a read-only key.
+- **A bank's SFTP folder**: the **Bank statement files over SFTP** connector reads the statement files (MT940, camt.053 or OFX) your bank leaves in its
+  SFTP folder, in the order of their names, every hour. You enter the bank's host, your user name, the folder and the host's key fingerprint
+  (`SHA256:…`, from the bank), and keep the private key as the connector's secret; a server with any other key is refused. The money account's
+  identifier is the account number the statements name. Fyniq only reads: it never writes to, renames or deletes in the bank's folder. A PGP-wrapped
+  file stops the account's sync with a plain reason, because opening it is not built yet. Against a real bank this needs the bank's onboarding and
+  a fixed outgoing address, so it is unverified until then.
 
 Setting where the data comes from, and naming the bank-ingest address, is for an Administrator. A
 source starts on a day and is never changed for the days before it, so switching from emailed reports to
