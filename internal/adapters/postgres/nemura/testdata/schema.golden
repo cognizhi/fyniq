@@ -23,6 +23,7 @@ feature_state | nemura_migrator | true | true
 flex_request | nemura_migrator | true | true
 fyniq_link | nemura_migrator | true | true
 fyniq_link_secret | nemura_migrator | true | true
+goal | nemura_migrator | true | true
 gov_claim | nemura_migrator | true | true
 gov_claim_event | nemura_migrator | true | true
 gov_leave | nemura_migrator | true | true
@@ -60,6 +61,8 @@ link_restore | nemura_migrator | true | true
 link_restore_run | nemura_migrator | true | true
 link_run_approval | nemura_migrator | true | true
 link_run_posting | nemura_migrator | true | true
+measure | nemura_migrator | true | true
+measure_update | nemura_migrator | true | true
 member | nemura_migrator | true | true
 offboarding | nemura_migrator | true | true
 onboarding_plan | nemura_migrator | true | true
@@ -351,6 +354,19 @@ fyniq_link_secret | link_id | uuid | true |
 fyniq_link_secret | link_private | bytea | true | 
 fyniq_link_secret | client_private | bytea | false | 
 fyniq_link_secret | client_public | jsonb | false | 
+goal | organisation_id | uuid | true | nemura.current_org()
+goal | id | uuid | true | uuidv7()
+goal | scope | text | true | 
+goal | person_id | uuid | false | 
+goal | team | text | false | 
+goal | parent_id | uuid | false | 
+goal | title | text | true | 
+goal | starts_on | date | true | 
+goal | due_on | date | true | 
+goal | state | text | true | 'open'::text
+goal | created_by | uuid | true | 
+goal | created_at | timestamp with time zone | true | 
+goal | closed_at | timestamp with time zone | false | 
 gov_claim | organisation_id | uuid | true | nemura.current_org()
 gov_claim | id | uuid | true | uuidv7()
 gov_claim | gov_leave_id | uuid | true | 
@@ -722,6 +738,25 @@ link_run_posting | posting_ref | text | false |
 link_run_posting | code | text | false | 
 link_run_posting | message | text | false | 
 link_run_posting | received_at | timestamp with time zone | true | 
+measure | organisation_id | uuid | true | nemura.current_org()
+measure | id | uuid | true | uuidv7()
+measure | goal_id | uuid | false | 
+measure | person_id | uuid | false | 
+measure | title | text | true | 
+measure | unit | text | true | ''::text
+measure | start_value | numeric(20,4) | true | 
+measure | target | numeric(20,4) | true | 
+measure | down | boolean | true | false
+measure | source | text | true | 'entered'::text
+measure | created_by | uuid | true | 
+measure | created_at | timestamp with time zone | true | 
+measure_update | organisation_id | uuid | true | nemura.current_org()
+measure_update | id | uuid | true | uuidv7()
+measure_update | measure_id | uuid | true | 
+measure_update | value | numeric(20,4) | true | 
+measure_update | note | text | false | 
+measure_update | by_member | uuid | true | 
+measure_update | at | timestamp with time zone | true | 
 member | organisation_id | uuid | true | nemura.current_org()
 member | id | uuid | true | uuidv7()
 member | display_name | text | true | 
@@ -1619,6 +1654,27 @@ fyniq_link_secret | fyniq_link_secret_link_private_not_null | NOT NULL link_priv
 fyniq_link_secret | fyniq_link_secret_organisation_id_not_null | NOT NULL organisation_id
 fyniq_link_secret | fyniq_link_secret_pkey | PRIMARY KEY (organisation_id, link_id)
 fyniq_link_secret | fyniq_link_secret_size | CHECK ((octet_length(link_private) = 64))
+goal | goal_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+goal | goal_closed_whole | CHECK (((state = 'open'::text) = (closed_at IS NULL)))
+goal | goal_created_at_not_null | NOT NULL created_at
+goal | goal_created_by_not_null | NOT NULL created_by
+goal | goal_dates | CHECK ((due_on >= starts_on))
+goal | goal_due_on_not_null | NOT NULL due_on
+goal | goal_id_not_null | NOT NULL id
+goal | goal_organisation_id_not_null | NOT NULL organisation_id
+goal | goal_parent_fkey | FOREIGN KEY (organisation_id, parent_id) REFERENCES nemura.goal(organisation_id, id)
+goal | goal_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+goal | goal_pkey | PRIMARY KEY (organisation_id, id)
+goal | goal_scope_known | CHECK ((scope = ANY (ARRAY['company'::text, 'team'::text, 'personal'::text])))
+goal | goal_scope_not_null | NOT NULL scope
+goal | goal_scope_whole | CHECK ((((scope = 'personal'::text) = (person_id IS NOT NULL)) AND ((scope = 'team'::text) = (team IS NOT NULL))))
+goal | goal_starts_on_not_null | NOT NULL starts_on
+goal | goal_state_known | CHECK ((state = ANY (ARRAY['open'::text, 'done'::text, 'cancelled'::text])))
+goal | goal_state_not_null | NOT NULL state
+goal | goal_team_length | CHECK (((team IS NULL) OR ((length(btrim(team)) >= 1) AND (length(btrim(team)) <= 120))))
+goal | goal_title_length | CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)))
+goal | goal_title_not_null | NOT NULL title
+goal | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 gov_claim | gov_claim_amount | CHECK (((amount > (0)::numeric) AND (amount = round(amount, 2))))
 gov_claim | gov_claim_amount_not_null | NOT NULL amount
 gov_claim | gov_claim_by_fkey | FOREIGN KEY (organisation_id, filed_by) REFERENCES nemura.member(organisation_id, id)
@@ -2180,6 +2236,36 @@ link_run_posting | link_run_posting_shape | CHECK ((((status = 'posted'::text) =
 link_run_posting | link_run_posting_status | CHECK ((status = ANY (ARRAY['posted'::text, 'refused'::text])))
 link_run_posting | link_run_posting_status_not_null | NOT NULL status
 link_run_posting | link_run_posting_version_not_null | NOT NULL version
+measure | measure_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+measure | measure_created_at_not_null | NOT NULL created_at
+measure | measure_created_by_not_null | NOT NULL created_by
+measure | measure_distance | CHECK (((target <> start_value) AND (down = (target < start_value))))
+measure | measure_down_not_null | NOT NULL down
+measure | measure_goal_fkey | FOREIGN KEY (organisation_id, goal_id) REFERENCES nemura.goal(organisation_id, id)
+measure | measure_id_not_null | NOT NULL id
+measure | measure_organisation_id_not_null | NOT NULL organisation_id
+measure | measure_owner_whole | CHECK (((goal_id IS NULL) <> (person_id IS NULL)))
+measure | measure_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+measure | measure_pkey | PRIMARY KEY (organisation_id, id)
+measure | measure_source_known | CHECK ((source = 'entered'::text))
+measure | measure_source_not_null | NOT NULL source
+measure | measure_start_value_not_null | NOT NULL start_value
+measure | measure_target_not_null | NOT NULL target
+measure | measure_title_length | CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)))
+measure | measure_title_not_null | NOT NULL title
+measure | measure_unit_length | CHECK ((length(unit) <= 30))
+measure | measure_unit_not_null | NOT NULL unit
+measure_update | measure_update_at_not_null | NOT NULL at
+measure_update | measure_update_by_fkey | FOREIGN KEY (organisation_id, by_member) REFERENCES nemura.member(organisation_id, id)
+measure_update | measure_update_by_member_not_null | NOT NULL by_member
+measure_update | measure_update_id_not_null | NOT NULL id
+measure_update | measure_update_measure_fkey | FOREIGN KEY (organisation_id, measure_id) REFERENCES nemura.measure(organisation_id, id)
+measure_update | measure_update_measure_id_not_null | NOT NULL measure_id
+measure_update | measure_update_note_length | CHECK (((note IS NULL) OR (length(note) <= 300)))
+measure_update | measure_update_organisation_id_not_null | NOT NULL organisation_id
+measure_update | measure_update_pkey | PRIMARY KEY (organisation_id, id)
+measure_update | measure_update_value_not_null | NOT NULL value
+measure_update | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 member | member_created_at_not_null | NOT NULL created_at
 member | member_display_name_length | CHECK (((length(btrim(display_name)) >= 1) AND (length(btrim(display_name)) <= 200)))
 member | member_display_name_not_null | NOT NULL display_name
@@ -3029,6 +3115,8 @@ CREATE UNIQUE INDEX fyniq_link_peer_ask_client ON nemura.fyniq_link USING btree 
 CREATE UNIQUE INDEX fyniq_link_peer_client ON nemura.fyniq_link USING btree (peer_client_id) WHERE (peer_client_id IS NOT NULL)
 CREATE UNIQUE INDEX fyniq_link_pkey ON nemura.fyniq_link USING btree (organisation_id, id)
 CREATE UNIQUE INDEX fyniq_link_secret_pkey ON nemura.fyniq_link_secret USING btree (organisation_id, link_id)
+CREATE INDEX goal_person_idx ON nemura.goal USING btree (organisation_id, person_id)
+CREATE UNIQUE INDEX goal_pkey ON nemura.goal USING btree (organisation_id, id)
 CREATE INDEX gov_claim_event_claim_idx ON nemura.gov_claim_event USING btree (organisation_id, claim_id, happened_on)
 CREATE UNIQUE INDEX gov_claim_event_pkey ON nemura.gov_claim_event USING btree (organisation_id, id)
 CREATE INDEX gov_claim_leave_idx ON nemura.gov_claim USING btree (organisation_id, gov_leave_id)
@@ -3102,6 +3190,8 @@ CREATE UNIQUE INDEX link_run_approval_once ON nemura.link_run_approval USING btr
 CREATE UNIQUE INDEX link_run_approval_pkey ON nemura.link_run_approval USING btree (organisation_id, id)
 CREATE UNIQUE INDEX link_run_posting_once ON nemura.link_run_posting USING btree (organisation_id, run_id, version, status)
 CREATE UNIQUE INDEX link_run_posting_pkey ON nemura.link_run_posting USING btree (organisation_id, id)
+CREATE UNIQUE INDEX measure_pkey ON nemura.measure USING btree (organisation_id, id)
+CREATE UNIQUE INDEX measure_update_pkey ON nemura.measure_update USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_pkey ON nemura.member USING btree (organisation_id, id)
 CREATE UNIQUE INDEX offboarding_one_active ON nemura.offboarding USING btree (organisation_id, person_id) WHERE (state = 'active'::text)
 CREATE UNIQUE INDEX offboarding_pkey ON nemura.offboarding USING btree (organisation_id, id)
@@ -3249,6 +3339,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.flex_re
 CREATE TRIGGER fyniq_link_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.fyniq_link FOR EACH ROW EXECUTE FUNCTION nemura.fyniq_link_guard()
 CREATE TRIGGER link_client_registered AFTER INSERT ON nemura.fyniq_link FOR EACH ROW EXECUTE FUNCTION nemura.link_client_registered()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.fyniq_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('fyniq_link', 'id')
+CREATE TRIGGER goal_guard BEFORE DELETE OR UPDATE ON nemura.goal FOR EACH ROW EXECUTE FUNCTION nemura.goal_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.goal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('goal', 'id')
 CREATE TRIGGER gov_claim_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_claim FOR EACH ROW EXECUTE FUNCTION nemura.gov_leave_guard('A claim')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.gov_claim DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('gov_claim', 'id')
 CREATE TRIGGER gov_claim_event_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_claim_event FOR EACH ROW EXECUTE FUNCTION nemura.gov_leave_guard('A claim event')
@@ -3299,6 +3391,9 @@ CREATE TRIGGER link_restore_run_guard BEFORE DELETE OR UPDATE ON nemura.link_res
 CREATE TRIGGER link_run_approval_guard BEFORE DELETE OR UPDATE ON nemura.link_run_approval FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.link_run_approval DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('link_run_approval', 'id')
 CREATE TRIGGER link_run_posting_guard BEFORE DELETE OR UPDATE ON nemura.link_run_posting FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
+CREATE TRIGGER measure_append_only BEFORE DELETE OR UPDATE ON nemura.measure FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('A measure')
+CREATE TRIGGER measure_update_append_only BEFORE DELETE OR UPDATE ON nemura.measure_update FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('A measure update')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.measure_update DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('measure_update', 'id')
 CREATE TRIGGER member_deactivated AFTER UPDATE OF deactivated_at ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.member_deactivated()
 CREATE TRIGGER member_no_delete BEFORE DELETE ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.members_no_delete()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('member', 'id')
@@ -3412,6 +3507,7 @@ feature_state | tenant_isolation | (organisation_id = nemura.current_org()) | (o
 flex_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 fyniq_link | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 fyniq_link_secret | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+goal | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_claim | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_claim_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_leave | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3456,6 +3552,8 @@ link_restore | tenant_isolation | (organisation_id = nemura.current_org()) | (or
 link_restore_run | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 link_run_approval | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 link_run_posting | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+measure | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+measure_update | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 offboarding | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 onboarding_plan | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3925,6 +4023,20 @@ BEGIN
      OR (NEW.state <> OLD.state AND NOT ((OLD.state, NEW.state) IN (('proposed', 'active'), ('proposed', 'unlinked'), ('active', 'suspended'), ('suspended', 'active'),
                                        ('active', 'unlinking'), ('suspended', 'unlinking'), ('unlinking', 'unlinked'), ('unlinking', 'active')))) THEN
     RAISE EXCEPTION 'A link only moves between its states, at its next version, and keeps its epoch and keys' USING ERRCODE = 'NM190';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.goal_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR OLD.state <> 'open' OR NEW.state = 'open'
+     OR (NEW.scope, NEW.person_id, NEW.team, NEW.parent_id, NEW.title, NEW.starts_on, NEW.due_on, NEW.created_by, NEW.created_at) IS DISTINCT FROM (OLD.scope, OLD.person_id, OLD.team, OLD.parent_id, OLD.title, OLD.starts_on, OLD.due_on, OLD.created_by, OLD.created_at) THEN
+    RAISE EXCEPTION 'A goal is done or cancelled once, and its words, scope and dates never change' USING ERRCODE = 'NM214';
   END IF;
   RETURN NEW;
 END

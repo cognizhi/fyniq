@@ -480,6 +480,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a goal
+         * @description Sets a company, team or personal goal with up to ten key results, each a number from a start value to a target (decimal strings; a target below the start value means lower is better). The HR administrator or the Owner sets company goals; they and any line manager set team goals; a person sets their own goals, their line manager their reports', and the HR administrator and the Owner anyone's. A personal goal may align with a goal of the company or team. A goal's words never change. It is audited.
+         */
+        post: operations["setGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/goals/{id}/closing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a goal done or cancelled
+         * @description Marks a goal done or cancelled, once, by whoever may change it. It is audited.
+         */
+        post: operations["closeGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/government-paid-claims/{id}/events": {
         parameters: {
             query?: never;
@@ -1520,6 +1560,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My goals
+         * @description PRD-002 NM-PRF-01, NM-PRF-02. The company's and the teams' goals, which every member reads so that a personal goal can align with one, and the caller's own goals and role KPIs, each key result with its progress and where it stands. Any signed-in member. It changes nothing.
+         */
+        get: operations["listMyGoals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/grievances": {
         parameters: {
             query?: never;
@@ -1862,6 +1922,26 @@ export interface paths {
          * @description Records the signed-in person's sick leave: no approval. Each working day is taken against the paid ceiling in force on that day, outpatient and hospitalisation sharing one; days beyond it are recorded as unpaid for the people team to decide on. A notice later than 48 hours after the first day is flagged and accepted. It is audited and the people team is told.
          */
         post: operations["notifySickLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/measures/{id}/updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Update a key result or KPI
+         * @description Records the value of a key result or role KPI now, with who gave it and when: the history is kept and the latest value is the measure's. By whoever may change the goal, or by the person for their own KPI. It is audited.
+         */
+        post: operations["updateMeasure"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2748,6 +2828,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people/{id}/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's goals and KPIs
+         * @description A person's personal goals and role KPIs. The person reads their own, their line manager their reports', and the HR officer, the HR administrator and the Owner anyone's; anyone else is told there is no such person. It changes nothing.
+         */
+        get: operations["listPersonGoals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people/{id}/government-paid-leave": {
         parameters: {
             query?: never;
@@ -2802,6 +2902,26 @@ export interface paths {
          * @description Ends the person's current job record the day the new one starts and starts it, so job title, department, worksite, employment type and line manager are history, never edited. A day on or before the current record's start is refused (NM_PERSON_HISTORY). The HR officer and the HR administrator. It is audited.
          */
         post: operations["changePersonJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/kpis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a role KPI
+         * @description Sets a role KPI for a person with its target, entered by a person; a KPI read from Fyniq's metrics arrives with the link. The person's line manager, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["setKPI"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5385,6 +5505,119 @@ export interface components {
              */
             reply_due: string;
         };
+        Goal: {
+            /**
+             * Format: date
+             * @description When it is due.
+             * @example 2026-12-31
+             */
+            due_on: string;
+            /**
+             * Format: uuid
+             * @description The goal.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01
+             */
+            id: string;
+            /** @description Its key results. */
+            measures: components["schemas"]["Measure"][];
+            /**
+             * Format: uuid
+             * @description The goal it aligns with.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a00
+             */
+            parent_id?: string;
+            /**
+             * @description Their legal name.
+             * @example Ben Lim
+             */
+            person?: string;
+            /**
+             * Format: uuid
+             * @description A personal goal's owner.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id?: string;
+            /**
+             * Format: int64
+             * @description The average progress of its key results, a whole percentage rounded down; 0 with none.
+             * @example 60
+             */
+            progress: number;
+            /**
+             * @description Whose goal it is.
+             * @example personal
+             * @enum {string}
+             */
+            scope: "company" | "team" | "personal";
+            /**
+             * Format: date
+             * @description When it began.
+             * @example 2026-07-01
+             */
+            starts_on: string;
+            /**
+             * @description Where it is.
+             * @example open
+             * @enum {string}
+             */
+            state: "open" | "done" | "cancelled";
+            /**
+             * @description A team goal's team.
+             * @example Engineering
+             */
+            team?: string;
+            /**
+             * @description The goal.
+             * @example 3 pilot customers live by 31 December
+             */
+            title: string;
+        };
+        GoalClosingInputBody: {
+            /**
+             * @description Done, or cancelled when it no longer applies.
+             * @example done
+             * @enum {string}
+             */
+            state: "done" | "cancelled";
+        };
+        GoalInput: {
+            /**
+             * Format: date
+             * @description When it is due: today or later.
+             * @example 2026-12-31
+             */
+            due_on: string;
+            /** @description Its key results. */
+            measures?: components["schemas"]["MeasureInput"][] | null;
+            /**
+             * Format: uuid
+             * @description The goal it aligns with.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a00
+             */
+            parent_id?: string;
+            /**
+             * Format: uuid
+             * @description For a personal goal, its owner; the caller when left out.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id?: string;
+            /**
+             * @description Whose goal it is.
+             * @example personal
+             * @enum {string}
+             */
+            scope: "company" | "team" | "personal";
+            /**
+             * @description For a team goal, the team.
+             * @example Engineering
+             */
+            team?: string;
+            /**
+             * @description The goal.
+             * @example 3 pilot customers live by 31 December
+             */
+            title: string;
+        };
         GovAsk: {
             /**
              * Format: int64
@@ -7388,6 +7621,90 @@ export interface components {
              */
             version: number;
         };
+        Measure: {
+            /**
+             * @description Its latest value, a decimal string.
+             * @example 2
+             */
+            current: string;
+            /**
+             * Format: uuid
+             * @description The measure.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4b01
+             */
+            id: string;
+            /**
+             * @description Lower is better: the target is below the start value.
+             * @example false
+             */
+            lower_is_better: boolean;
+            /**
+             * Format: int64
+             * @description How far from the start value to the target, a whole percentage rounded down.
+             * @example 66
+             */
+            progress: number;
+            /**
+             * @description Where it started, a decimal string.
+             * @example 0
+             */
+            start_value: string;
+            /**
+             * @description Done at 100%; on track when progress keeps up with the share of the period that has passed; behind otherwise; not yet for a KPI that has not reached its target.
+             * @example on_track
+             * @enum {string}
+             */
+            status: "done" | "on_track" | "behind" | "not_yet";
+            /**
+             * @description Where it should get to, a decimal string.
+             * @example 3
+             */
+            target: string;
+            /**
+             * @description What is measured.
+             * @example Pilot customers live
+             */
+            title: string;
+            /**
+             * @description Its unit.
+             * @example customers
+             */
+            unit?: string;
+        };
+        MeasureInput: {
+            /**
+             * @description Where it starts, a decimal string; 0 when left out.
+             * @example 0
+             */
+            start_value?: string;
+            /**
+             * @description Where it should get to, a decimal string; below the start value means lower is better.
+             * @example 3
+             */
+            target: string;
+            /**
+             * @description What is measured.
+             * @example Pilot customers live
+             */
+            title: string;
+            /**
+             * @description Its unit.
+             * @example customers
+             */
+            unit?: string;
+        };
+        MeasureUpdateInputBody: {
+            /**
+             * @description A note.
+             * @example Second pilot went live on Monday.
+             */
+            note?: string;
+            /**
+             * @description The value now, a decimal string.
+             * @example 2
+             */
+            value: string;
+        };
         MyDetails: {
             /**
              * @description Your home address.
@@ -7411,6 +7728,16 @@ export interface components {
              * @example 048616
              */
             postal_code?: string;
+        };
+        MyGoalsOutputBody: {
+            /** @description The company's goals. */
+            company: components["schemas"]["Goal"][];
+            /** @description The caller's role KPIs. */
+            kpis: components["schemas"]["Measure"][];
+            /** @description The caller's own goals. */
+            mine: components["schemas"]["Goal"][];
+            /** @description The teams' goals. */
+            team: components["schemas"]["Goal"][];
         };
         MyPayslipsOutputBody: {
             /**
@@ -8494,6 +8821,12 @@ export interface components {
              * @example 12
              */
             published: number;
+        };
+        PersonGoalsOutputBody: {
+            /** @description The person's goals. */
+            goals: components["schemas"]["Goal"][];
+            /** @description The person's role KPIs. */
+            kpis: components["schemas"]["Measure"][];
         };
         PersonInput: {
             /**
@@ -12767,6 +13100,178 @@ export interface operations {
             };
         };
     };
+    setGoal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    closeGoal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The goal. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalClosingInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     recordGovernmentPaidClaimEvent: {
         parameters: {
             query?: never;
@@ -16948,6 +17453,74 @@ export interface operations {
             };
         };
     };
+    listMyGoals: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyGoalsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listMyGrievances: {
         parameters: {
             query?: never;
@@ -18284,6 +18857,90 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateMeasure: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The measure. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeasureUpdateInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Measure"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22244,6 +22901,86 @@ export interface operations {
             };
         };
     };
+    listPersonGoals: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonGoalsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     recordGovernmentPaidLeave: {
         parameters: {
             query?: never;
@@ -22498,6 +23235,90 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setKPI: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeasureInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Measure"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
