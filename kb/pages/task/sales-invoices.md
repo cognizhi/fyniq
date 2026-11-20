@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:e40a942884e60bf5bc649ef65a2a8e724f4008879330cae46f09bdfbdc1a1706
+  - docs/user-guide/invoices.md sha256:cb2f1a928466ad8514133bf1d82db04c66330a201f0b9c8a6ab14eafacf3a635
 data_class: general
 taint: trusted
 status: draft
@@ -120,6 +120,7 @@ aliases:
 - The amount is always the invoice's open balance, read when the link is made, never typed; a draft, void or paid invoice has no link, and an invoice has one live link at a time.
 - When the customer pays, **Reconcile now** records the receipt on the invoice once. Another amount, a second payment or a payment on a cancelled link stays in the queue as **link mismatch** for a person, and a payment above the per-line limit (S$500 by default) waits for a person too. A link shows as Expired after its date and as Paid once the invoice has nothing open.
 - **Cancel the link** closes it here with a reason; HitPay's page stays payable until it expires. A foreign-currency invoice needs a provider account in that currency; the PayNow QR image and Stripe payment links are not built yet.
+- An invoice (or reminder) emailed while it has a live payment link ends with "You can pay this invoice online:" and the stored link, so sending asks the provider for nothing; a cancelled, paid or expired link is left out, and an Owner can switch it off (**Put an invoice's payment link in its email**). A link made automatically at issue and the link on the PDF are not built yet.
 
 (src: docs/user-guide/invoices.md#a-payment-link-on-an-invoice)
 

@@ -106,6 +106,13 @@ what is open on the invoice, with the invoice's number as its reference, and sho
 - A foreign-currency invoice needs a provider account in that currency. The PayNow QR image of the
   checkout and Stripe payment links are not built yet.
 
+**Emailing an invoice with its link.** An invoice emailed while it has a live payment link ends with a line, "You can pay this invoice online:", and the
+link. It is the link already made for the invoice, so sending an email never asks the payment provider for anything: make the link first, then
+send the invoice, and a link made after a send goes with the next one (a reminder too). A cancelled, paid or expired link is left out. An
+Owner can switch this off with **Put an invoice's payment link in its email** under organisation settings. Making a link by itself when an invoice
+is issued, and printing the link on the invoice's PDF, are not built yet.
+
+
 ## Recurring invoices
 
 **Sales → Recurring** keeps invoices that repeat: a name, a schedule, the customer and the lines. A

@@ -34,3 +34,8 @@ Decisions are in design.md. Cloud and real-account checks are tagged `[live-veri
 
 - [x] 3.1 Receipt suggestions for a card line (rev 0.549: `capture.SuggestsFor`, `listCardReceiptSuggestions`, `attachCardReceiptSuggestion`; tests `TestAReceiptIsSuggestedOnlyForTheSameAmountNearTheDate`, `TestACapturedReceiptIsSuggestedForACardLineAndAttachedByItsHolder`). Only mail to the holder's own capture address (an Employee may not upload to the inbox).
 - [x] 3.2 The daily missing-receipt reminder through the Inbox (rev 0.548: the job `notify.card_receipts`, notification `card.receipt_missing`, setting `claims.receipt_reminder_days`; test `TestACardholderIsToldOnceADayOfTheirLinesWithNoReceipt`). 
+
+## 5. The payment link in the invoice email (FR-AR-13, rev 0.578)
+
+- [x] 5.1 The email carries a live stored link: `salesmail.livePaymentLink`, the setting `invoices.payment_link_in_email`; test `TestAnInvoiceEmailCarriesItsLivePaymentLinkOnlyWhileItIsLive`. No provider call in the send path.
+- [ ] 5.2 **Left, designed:** the link made automatically when an invoice is issued: the issue enqueues a `payment_link.make` worker job; the worker asks the provider (`Runtime.PaymentLinks`, egress-guarded) and stores the link through a narrow `SECURITY DEFINER` function that checks the invoice is posted and the URL is https; the email then carries the link only once created, and a send before that goes without it. The function is a worker grant and is `needs-human-review`. The link on the invoice's PDF is a template change with its own version (FR-TPL-03).
