@@ -138,7 +138,11 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 			return a, err
 		}
 		b, err := store.RaiseLeaveAccrual(ctx, org, now) // the month-end leave accrual draft (NM-LV-09)
-		return a + b, err
+		if err != nil {
+			return a + b, err
+		}
+		c, err := store.RaiseLinkAlerts(ctx, org, now) // events for Fyniq stuck for an hour near pay day, or for 24 hours (FR-PPL-08)
+		return a + b + c, err
 	}
 	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock, Raise: raise}
 	// The events for Fyniq (NM-INT-01): sent to the API and token endpoint the deployment names, and to no other host (design D12).

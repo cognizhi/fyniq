@@ -851,3 +851,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | sales.invoices: the payment link's statuses and the per-line limit (FR-AR-13)
 
 ## [2026-11-20] compile | compliance.invoicenow: InvoiceNow page (p2-invoicenow)
+
+## [2026-11-20] compile | nemura/fyniq-link.md -> kb (alerts for events stuck for an hour near pay day and for 24 hours)

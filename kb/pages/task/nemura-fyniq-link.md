@@ -4,7 +4,7 @@ type: task
 title: Link Nemura to Fyniq and keep the link healthy
 summary: How an Owner and a second approver link Nemura to Fyniq, what is sent each way, how to read the link's health and repair a gap, and what to do after a restore
 sources:
-  - docs/user-guide/nemura/fyniq-link.md sha256:ff3cdfeba2b4dd3319803cf06e270654aa4d72a0ddea60580f3ea39d5015cf71
+  - docs/user-guide/nemura/fyniq-link.md sha256:22e123416fed80408a1df2f4ad1cb53a5c0b470d65ca765b5598b085737ff999
 data_class: personal
 taint: trusted
 status: published
@@ -37,6 +37,7 @@ aliases:
 ## The link's health
 
 - The page shows what waits, what was not delivered yet, what was sent and what Fyniq refused, with Fyniq's code and the object and version it is about, never the content. A sync failing for 24 hours warns here and on Checks. To repair a gap, send the current state again: each person's present record, bank-detail version and hold, and what failed; Fyniq ignores a version it holds, so repeating is safe. (src: docs/user-guide/nemura/fyniq-link.md#read-the-links-health)
+- The Payroll administrator and the Owner are also told, once for each oldest stuck event: after an hour while an approved pay run still waits for Fyniq's posting, and after 24 hours at any time. Nothing is told for a link that is not active. (src: docs/user-guide/nemura/fyniq-link.md#read-the-links-health)
 
 ## After a restore
 

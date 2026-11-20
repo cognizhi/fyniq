@@ -158,3 +158,52 @@ func deadOf(t *testing.T, org uuid.UUID) uuid.UUID {
 	}
 	return id
 }
+
+// Events for Fyniq that do not get through are told to the Payroll administrator and the Owner (PRD-001 FR-PPL-08, PRD-002 NM-INT-04, NM-NFR-05): after an hour while an approved pay run still waits for
+// Fyniq's posting, and after 24 hours at any time; once for each oldest stuck event and person; nothing for a link that is not active or events that were delivered.
+// part of FR-PPL-08 (Fyniq's own side cannot see Nemura's failures)
+// part of NM-INT-04
+func TestEventsForFyniqThatDoNotGetThroughAlertThePayrollAdministratorAndTheOwnerOnce(t *testing.T) {
+	ctx := context.Background()
+	standalone := newLeaveTeam(t)
+	worker := store(t, "nemura_worker")
+	if n, err := worker.RaiseLinkAlerts(ctx, standalone.c.org, today.Add(48*time.Hour)); err != nil || n != 0 {
+		t.Fatalf("a standalone organisation raised %d, %v", n, err)
+	}
+	r := newApprovedRun(t) // linked, a run approved with proof and waiting for Fyniq's posting; its events are queued and never sent
+	kinds := func() map[string]int {
+		out := map[string]int{}
+		rows, err := connect(t, db.SuperURL()).Query(ctx, `SELECT payload->>'kind' FROM nemura.outbox WHERE organisation_id = $1 AND kind = $2`, r.lt.c.org, alert.KindNotify)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var k string
+			if err := rows.Scan(&k); err != nil {
+				t.Fatal(err)
+			}
+			out[k]++
+		}
+		return out
+	}
+	if n, err := worker.RaiseLinkAlerts(ctx, r.lt.c.org, r.now.Add(30*time.Minute)); err != nil || n != 0 {
+		t.Fatalf("events stuck for half an hour raised %d, %v", n, err)
+	}
+	n, err := worker.RaiseLinkAlerts(ctx, r.lt.c.org, r.now.Add(90*time.Minute))
+	if err != nil || n == 0 {
+		t.Fatalf("events stuck for an hour and a half with a run waiting for Fyniq raised %d, %v", n, err)
+	}
+	if k := kinds(); k[alert.KindLinkNearPayDay] != n || k[alert.KindLink24Hours] != 0 {
+		t.Errorf("the notices at 90 minutes: %v", k)
+	}
+	if again, err := worker.RaiseLinkAlerts(ctx, r.lt.c.org, r.now.Add(100*time.Minute)); err != nil || again != 0 {
+		t.Errorf("a second sweep raised %d more, %v", again, err)
+	}
+	if more, err := worker.RaiseLinkAlerts(ctx, r.lt.c.org, r.now.Add(25*time.Hour)); err != nil || more != n {
+		t.Errorf("at 25 hours the 24-hour notice goes to the same people: %d, %v (want %d)", more, err, n)
+	}
+	if k := kinds(); k[alert.KindLink24Hours] != n {
+		t.Errorf("the notices at 25 hours: %v", k)
+	}
+}
