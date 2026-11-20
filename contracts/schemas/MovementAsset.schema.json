@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "additions": {
+      "$ref": "Money.schema.json",
+      "description": "The cost of it, when it was bought inside the run."
+    },
+    "asset_id": {
+      "description": "The asset; absent on a total.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "charge": {
+      "$ref": "Money.schema.json",
+      "description": "The depreciation the run posted, net of its reversals."
+    },
+    "closing_accumulated": {
+      "$ref": "Money.schema.json",
+      "description": "opening accumulated + charge - disposals, exactly."
+    },
+    "closing_cost": {
+      "$ref": "Money.schema.json",
+      "description": "opening cost + additions - disposals, exactly."
+    },
+    "closing_nbv": {
+      "$ref": "Money.schema.json",
+      "description": "Closing cost less closing accumulated depreciation."
+    },
+    "disposals": {
+      "$ref": "Money.schema.json",
+      "description": "The cost a disposal inside the run took off it."
+    },
+    "disposed_accumulated": {
+      "$ref": "Money.schema.json",
+      "description": "The accumulated depreciation a disposal inside the run took off it."
+    },
+    "name": {
+      "description": "Its name, or Total.",
+      "examples": [
+        "MacBook Pro 14, Wei Ling"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number in the register.",
+      "examples": [
+        "FA-0001"
+      ],
+      "type": "string"
+    },
+    "opening_accumulated": {
+      "$ref": "Money.schema.json",
+      "description": "Its accumulated depreciation on the day before the run."
+    },
+    "opening_cost": {
+      "$ref": "Money.schema.json",
+      "description": "Its cost on the day before the run."
+    },
+    "opening_nbv": {
+      "$ref": "Money.schema.json",
+      "description": "Opening cost less opening accumulated depreciation."
+    },
+    "purchased_on": {
+      "description": "The day it was bought.",
+      "examples": [
+        "2026-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "opening_cost",
+    "additions",
+    "disposals",
+    "closing_cost",
+    "opening_accumulated",
+    "charge",
+    "disposed_accumulated",
+    "closing_accumulated",
+    "opening_nbv",
+    "closing_nbv"
+  ],
+  "title": "MovementAsset",
+  "type": "object"
+}

@@ -3,7 +3,7 @@ key: accounting.fixed-assets
 title: Keep the fixed asset register
 mode: expert
 roles: [accountant, controller, owner, bookkeeper, auditor, tax_agent]
-requirements: [FR-FA-01, FR-FA-02, FR-FA-03, INV-07]
+requirements: [FR-FA-01, FR-FA-02, FR-FA-03, FR-FA-04, INV-07]
 status: draft            # written with the fixed asset register (P1); reviewed with the accountant's chart-of-accounts review
 ---
 
@@ -104,6 +104,24 @@ panel with **Void the asset** and a reason.
 - In Founder mode another person approves the void.
 - An asset that was sold, scrapped or lost is not voided: choose **Sell or write off**, so its gain
   or loss shows.
+
+## The movement schedule
+
+**Movement** shows, for a run of months, each asset's cost and accumulated depreciation at the start, what was added by an asset bought in the run, what the depreciation charged, what a disposal took off, and the cost and accumulated depreciation at the end, with the net book value. It is the schedule for the financial statements, by asset account.
+
+- The columns foot exactly: closing cost is opening cost plus additions less disposals, and closing accumulated depreciation is opening plus the charge less disposals.
+- The register is tied to the ledger at the end of the run. When it does not tie, the schedule says what is unexplained, such as a purchase on an asset account that is not in the register yet. It never hides the difference.
+
+## The capital allowance schedule
+
+**Capital allowances** is the tax schedule of a year of assessment: what each asset claims under the method the company elected for it. It posts nothing, and the depreciation in the books is not changed by it. Elect a method on an asset with **Capital allowance** in its side-peek (an Accountant does).
+
+- Section 19: 20% of the cost at once, the initial allowance, and the other 80% in annual allowances over a working life the company elects. A prescribed life in the Sixth Schedule of 12 years or less allows 6 or 12 years, and a prescribed life of 16 years allows 6, 12 or 16. The election is irrevocable once made.
+- Section 19A(1): a third of the cost in each of 3 years of assessment.
+- Section 19A(10A): the whole cost in one year, for an asset of at most S$5,000 each, the year's claims at most S$30,000. The cap takes whole assets in the order they were bought. One it cannot take is listed apart, to be claimed another way.
+- The year of assessment is the year after the financial year the asset was bought in ends: an asset bought in the year ending in 2026 first claims in year of assessment 2027.
+- An asset Fyniq cannot place is listed apart with the reason and is never guessed: no method elected yet, bought before year of assessment 2023, a disposal that stands, a working life that is not allowed, or over the limits of section 19A(10A). Its balancing allowance or charge, hire purchase, and the claims of computers under section 19A(2) are the tax agent's.
+- The rules come from a statutory pack with IRAS's page as its source, and the amounts are in cents. The tax agent confirms them.
 
 ## The register at the close
 

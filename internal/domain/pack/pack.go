@@ -452,6 +452,8 @@ func Load(fsys fs.FS, dir string) (Version, error) {
 		out = append(out, checkInvoiceNow(dir, v)...)
 	case "sg-tax-filings":
 		out = append(out, checkTaxFilings(dir, v)...)
+	case "sg-capital-allowances":
+		out = append(out, checkCapitalAllowances(dir, v)...)
 	case "sg-acra":
 		out = append(out, checkAcra(dir, v)...)
 	case "sg-cit":

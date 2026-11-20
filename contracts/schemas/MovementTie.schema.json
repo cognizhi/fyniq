@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "The ledger account: an asset account of the register, or 1590 Accumulated depreciation.",
+      "examples": [
+        "1510"
+      ],
+      "type": "string"
+    },
+    "account_name": {
+      "description": "Its name.",
+      "examples": [
+        "Computer equipment"
+      ],
+      "type": "string"
+    },
+    "ledger": {
+      "$ref": "Money.schema.json",
+      "description": "Its balance at the end of the run, from the balance service (ENG-04), read positive."
+    },
+    "register": {
+      "$ref": "Money.schema.json",
+      "description": "What the register and the purchases not in it yet account for."
+    },
+    "unexplained": {
+      "$ref": "Money.schema.json",
+      "description": "What is left over: zero when it ties."
+    }
+  },
+  "required": [
+    "account_code",
+    "account_name",
+    "ledger",
+    "register",
+    "unexplained"
+  ],
+  "title": "MovementTie",
+  "type": "object"
+}

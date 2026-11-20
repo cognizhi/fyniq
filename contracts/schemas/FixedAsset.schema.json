@@ -152,6 +152,10 @@
       ],
       "type": "string"
     },
+    "tax_election": {
+      "$ref": "FixedAssetTaxElection.schema.json",
+      "description": "The capital allowance claim elected for it, absent until the company elects (FR-FA-04)."
+    },
     "version": {
       "description": "The version of its content; it makes the ETag.",
       "examples": [

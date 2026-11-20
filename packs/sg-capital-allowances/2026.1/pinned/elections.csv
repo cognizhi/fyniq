@@ -1,0 +1,6 @@
+case,prescribed,want,why,source
+CA-EL-01,6,6 12,a vehicle whose Sixth Schedule life is 6 years: 6 or 12 years,iras-wl
+CA-EL-02,12,6 12,a prescribed life of 12 years: 6 or 12 years,iras-wl
+CA-EL-03,16,6 12 16,"a prescribed life of 16 years: 6, 12 or 16 years",iras-wl
+CA-EL-04,8,6 12,"a prescribed life of 8 years, which is 12 years or less: 6 or 12 years",iras-wl
+CA-EL-05,14,none,a prescribed life that is neither 12 years or less nor 16 is not one the page names: nothing is elected for it,iras-wl

@@ -1052,7 +1052,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/report-schedules/{id}` (replaceReportSchedule): Change a report's schedule
 - `GET /v1/report-schedules/{id}/runs` (listReportScheduleRuns): List a schedule's runs
 - `GET /v1/reports/budget-vs-actual` (getBudgetVsActual): Get Budget vs Actual
+- `GET /v1/reports/capital-allowances` (getCapitalAllowanceSchedule): Get the tax capital allowance schedule of a year of assessment
 - `GET /v1/reports/deferral-roll-forward` (getDeferralRollForward): Get the roll-forward of deferred revenue and prepayments
+- `GET /v1/reports/fixed-asset-movement` (getFixedAssetMovement): Get the fixed asset movement schedule
 - `GET /v1/reports/general-ledger` (getGeneralLedger): Get the general ledger report
 - `GET /v1/reports/projects` (getProjectReport): Project profitability, utilisation and realisation
 - `GET /v1/reports/projects/export` (exportProjectReport): Export the project report

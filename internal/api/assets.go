@@ -71,16 +71,24 @@ type FixedAssetDraft struct {
 	Start      string               `json:"start,omitempty" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The month depreciation starts: the purchase month when left out, or a later one when it went into use later." example:"2026-03"`
 }
 
+// FixedAssetTaxElection is the capital allowance claim a company elects for an asset (FR-FA-04, rev 0.582).
+type FixedAssetTaxElection struct {
+	Method                     string `json:"method" enum:"s19,s19a1,s19a10a" doc:"s19: the initial allowance of 20% and annual allowances over a working life; s19a1: a third a year over 3 years; s19a10a: the whole cost in one year, for an asset of at most S$5,000 within S$30,000 a year of assessment. The pack sg-capital-allowances holds the values." example:"s19a1"`
+	PrescribedWorkingLifeYears int    `json:"prescribed_working_life_years,omitempty" minimum:"1" maximum:"16" doc:"Section 19 only: the working life the Sixth Schedule of the Income Tax Act prescribes for the asset (12 or less, or 16): it decides which lives may be elected." example:"6"`
+	WorkingLifeYears           int    `json:"working_life_years,omitempty" minimum:"1" maximum:"16" doc:"Section 19 only: the years elected, 6 or 12 for a prescribed life of 12 years or less, 6, 12 or 16 for 16. The election is irrevocable once made." example:"6"`
+}
+
 // FixedAssetChange is a change of an asset: only what is sent changes.
 type FixedAssetChange struct {
-	Name                    *string `json:"name,omitempty" maxLength:"200" doc:"Its name in the register." example:"MacBook Pro 14, Arjun"`
-	Notes                   *string `json:"notes,omitempty" maxLength:"2000" doc:"Its notes." example:"Moved to Arjun, 1 Nov 2026"`
-	Residual                *Money  `json:"residual,omitempty" doc:"A new residual value: it applies to the months not posted yet."`
-	LifeMonths              *int    `json:"life_months,omitempty" minimum:"1" maximum:"600" doc:"A new useful life in months, from its start: it applies to the months not posted yet, and ends in or after the first of them." example:"48"`
-	Start                   *string `json:"start,omitempty" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"A new start month: only while none of its depreciation has posted." example:"2026-04"`
-	PurchasedOn             *string `json:"purchased_on,omitempty" format:"date" doc:"An asset bought before the books start: its purchase date, only while none of its depreciation has posted." example:"2025-03-14"`
-	Cost                    *Money  `json:"cost,omitempty" doc:"An asset bought before the books start: its cost, only while none of its depreciation has posted."`
-	AccumulatedDepreciation *Money  `json:"accumulated_depreciation,omitempty" doc:"An asset bought before the books start: its opening accumulated depreciation, only while none of its depreciation has posted."`
+	TaxElection             *FixedAssetTaxElection `json:"tax_election,omitempty" doc:"The capital allowance claim elected for the asset (FR-FA-04): it posts nothing and may be sent at any time; a section 19 election, once made, never changes."`
+	Name                    *string                `json:"name,omitempty" maxLength:"200" doc:"Its name in the register." example:"MacBook Pro 14, Arjun"`
+	Notes                   *string                `json:"notes,omitempty" maxLength:"2000" doc:"Its notes." example:"Moved to Arjun, 1 Nov 2026"`
+	Residual                *Money                 `json:"residual,omitempty" doc:"A new residual value: it applies to the months not posted yet."`
+	LifeMonths              *int                   `json:"life_months,omitempty" minimum:"1" maximum:"600" doc:"A new useful life in months, from its start: it applies to the months not posted yet, and ends in or after the first of them." example:"48"`
+	Start                   *string                `json:"start,omitempty" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"A new start month: only while none of its depreciation has posted." example:"2026-04"`
+	PurchasedOn             *string                `json:"purchased_on,omitempty" format:"date" doc:"An asset bought before the books start: its purchase date, only while none of its depreciation has posted." example:"2025-03-14"`
+	Cost                    *Money                 `json:"cost,omitempty" doc:"An asset bought before the books start: its cost, only while none of its depreciation has posted."`
+	AccumulatedDepreciation *Money                 `json:"accumulated_depreciation,omitempty" doc:"An asset bought before the books start: its opening accumulated depreciation, only while none of its depreciation has posted."`
 }
 
 // FixedAssetSource is the line an asset came from.
@@ -94,29 +102,30 @@ type FixedAssetSource struct {
 
 // FixedAsset is an asset in the register.
 type FixedAsset struct {
-	ID                      string            `json:"id" format:"uuid" doc:"Its ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1"`
-	Number                  string            `json:"number,omitempty" doc:"Its number in the register (FR-ORG-04)." example:"FA-0001"`
-	Status                  string            `json:"status" enum:"in_use,fully_depreciated,disposed,voided" doc:"in_use while it depreciates; fully_depreciated once nothing is left to post; voided once voided as registered by mistake (rev 0.151); disposed once nothing of it is left." example:"in_use"`
-	Version                 int               `json:"version" doc:"The version of its content; it makes the ETag." example:"1"`
-	Name                    string            `json:"name" doc:"Its name." example:"MacBook Pro 14, Wei Ling"`
-	AccountID               string            `json:"account_id" format:"uuid" doc:"The asset account it sits on: its category." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510"`
-	Source                  *FixedAssetSource `json:"source,omitempty" doc:"The line it was bought on; absent for one bought before the books start."`
-	PurchasedOn             string            `json:"purchased_on" format:"date" doc:"The day it was bought." example:"2026-03-14"`
-	Cost                    Money             `json:"cost" doc:"What it cost, in the base currency: what is left of it after a partial disposal."`
-	Residual                Money             `json:"residual" doc:"Its residual value."`
-	LifeMonths              int               `json:"life_months" doc:"Its useful life in months." example:"36"`
-	Method                  string            `json:"method" enum:"straight_line" doc:"How it depreciates." example:"straight_line"`
-	Start                   string            `json:"start" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The month depreciation starts." example:"2026-03"`
-	End                     string            `json:"end" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The last month it depreciates: start + life − 1." example:"2029-02"`
-	OpeningAccumulated      *Money            `json:"opening_accumulated,omitempty" doc:"Bought before the books start: the accumulated depreciation the opening balances carry for it."`
-	AccumulatedDepreciation Money             `json:"accumulated_depreciation" doc:"Its accumulated depreciation: what the opening balances carried for it and what has posted since."`
-	NetBookValue            Money             `json:"net_book_value" doc:"Cost less accumulated depreciation."`
-	DepreciatedTo           string            `json:"depreciated_to,omitempty" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The last month whose depreciation has posted." example:"2026-09"`
-	Notes                   string            `json:"notes,omitempty" doc:"Its notes." example:"Serial C02XG0FDH7JY"`
-	Depreciation            []FixedAssetMonth `json:"depreciation" nullable:"false" doc:"getFixedAsset and the commands only: its months of depreciation, in order: those posted (and reversed, by a disposal dated before them), and its current version's months to come, waiting when due by the organisation's today, projected after (ENG-05)."`
-	Checks                  []BillCheck       `json:"checks" nullable:"false" doc:"Its warnings (⚠): the bill or bank line it came from was voided or edited since; a month of depreciation waiting for its period."`
-	RecordedBy              *Person           `json:"recorded_by,omitempty" doc:"Who registered it, or saved its latest change."`
-	RecordedAt              *time.Time        `json:"recorded_at,omitempty" doc:"When." example:"2026-03-20T09:30:00Z"`
+	ID                      string                 `json:"id" format:"uuid" doc:"Its ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1"`
+	Number                  string                 `json:"number,omitempty" doc:"Its number in the register (FR-ORG-04)." example:"FA-0001"`
+	Status                  string                 `json:"status" enum:"in_use,fully_depreciated,disposed,voided" doc:"in_use while it depreciates; fully_depreciated once nothing is left to post; voided once voided as registered by mistake (rev 0.151); disposed once nothing of it is left." example:"in_use"`
+	Version                 int                    `json:"version" doc:"The version of its content; it makes the ETag." example:"1"`
+	Name                    string                 `json:"name" doc:"Its name." example:"MacBook Pro 14, Wei Ling"`
+	AccountID               string                 `json:"account_id" format:"uuid" doc:"The asset account it sits on: its category." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510"`
+	Source                  *FixedAssetSource      `json:"source,omitempty" doc:"The line it was bought on; absent for one bought before the books start."`
+	PurchasedOn             string                 `json:"purchased_on" format:"date" doc:"The day it was bought." example:"2026-03-14"`
+	Cost                    Money                  `json:"cost" doc:"What it cost, in the base currency: what is left of it after a partial disposal."`
+	Residual                Money                  `json:"residual" doc:"Its residual value."`
+	LifeMonths              int                    `json:"life_months" doc:"Its useful life in months." example:"36"`
+	Method                  string                 `json:"method" enum:"straight_line" doc:"How it depreciates." example:"straight_line"`
+	Start                   string                 `json:"start" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The month depreciation starts." example:"2026-03"`
+	End                     string                 `json:"end" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The last month it depreciates: start + life − 1." example:"2029-02"`
+	OpeningAccumulated      *Money                 `json:"opening_accumulated,omitempty" doc:"Bought before the books start: the accumulated depreciation the opening balances carry for it."`
+	AccumulatedDepreciation Money                  `json:"accumulated_depreciation" doc:"Its accumulated depreciation: what the opening balances carried for it and what has posted since."`
+	NetBookValue            Money                  `json:"net_book_value" doc:"Cost less accumulated depreciation."`
+	DepreciatedTo           string                 `json:"depreciated_to,omitempty" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The last month whose depreciation has posted." example:"2026-09"`
+	Notes                   string                 `json:"notes,omitempty" doc:"Its notes." example:"Serial C02XG0FDH7JY"`
+	TaxElection             *FixedAssetTaxElection `json:"tax_election,omitempty" doc:"The capital allowance claim elected for it, absent until the company elects (FR-FA-04)."`
+	Depreciation            []FixedAssetMonth      `json:"depreciation" nullable:"false" doc:"getFixedAsset and the commands only: its months of depreciation, in order: those posted (and reversed, by a disposal dated before them), and its current version's months to come, waiting when due by the organisation's today, projected after (ENG-05)."`
+	Checks                  []BillCheck            `json:"checks" nullable:"false" doc:"Its warnings (⚠): the bill or bank line it came from was voided or edited since; a month of depreciation waiting for its period."`
+	RecordedBy              *Person                `json:"recorded_by,omitempty" doc:"Who registered it, or saved its latest change."`
+	RecordedAt              *time.Time             `json:"recorded_at,omitempty" doc:"When." example:"2026-03-20T09:30:00Z"`
 }
 
 // FixedAssetMonth is one month of an asset's depreciation.
@@ -226,6 +235,9 @@ func (a *API) assetOf(ctx context.Context, u storage.UnitOfWork, base money.Curr
 		Depreciation: []FixedAssetMonth{}, Checks: []BillCheck{}, RecordedBy: personOf(doc.PostedBy), RecordedAt: doc.PostedAt}
 	if !posted.Last.IsZero() {
 		out.DepreciatedTo = monthText(posted.Last)
+	}
+	if x.Tax != nil {
+		out.TaxElection = &FixedAssetTaxElection{Method: x.Tax.Method, PrescribedWorkingLifeYears: x.Tax.PrescribedYears, WorkingLifeYears: x.Tax.Years}
 	}
 	left, _ := nbv.Sub(x.Residual)
 	switch {
@@ -355,6 +367,9 @@ func assetDraftOf(in FixedAssetDraft, base money.Currency) (journal.AssetDraft, 
 // assetChangeOf reads a change of an asset from the request, with every invalid field at once.
 func assetChangeOf(in FixedAssetChange) (journal.AssetChange, error) {
 	c := journal.AssetChange{Name: in.Name, Notes: in.Notes, LifeMonths: in.LifeMonths}
+	if t := in.TaxElection; t != nil {
+		c.Tax = &asset.TaxElection{Method: t.Method, PrescribedYears: t.PrescribedWorkingLifeYears, Years: t.WorkingLifeYears}
+	}
 	var fields []FieldProblem
 	for _, m := range []struct {
 		in   *Money
@@ -671,7 +686,7 @@ func registerFixedAssets(a *API) {
 			"cost and opening accumulated depreciation. Posts nothing. Side effects: the new version, audit events. Every problem comes " +
 			"back together. Needs If-Match with the asset's ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing " +
 			"and shows the asset as it would be.",
-	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, asset.CodeNotAsset, asset.CodeBadContent, asset.CodeDisposed, asset.CodeVoided}, writeCodes...),
+	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, asset.CodeNotAsset, asset.CodeBadContent, asset.CodeDisposed, asset.CodeVoided, asset.CodeTaxMethod, asset.CodeTaxFixed}, writeCodes...),
 		func(ctx context.Context, in *changeAssetInput) (*assetOutput, error) {
 			id, err := parseID("asset_id", in.AssetID)
 			if err != nil {
@@ -693,6 +708,13 @@ func registerFixedAssets(a *API) {
 				}
 				c, err := assetChangeOf(in.Body)
 				if err != nil {
+					return FixedAsset{}, err
+				}
+				today, err := orgToday(ctx, a, u)
+				if err != nil {
+					return FixedAsset{}, err
+				}
+				if err := checkTaxElection(ctx, u, today, doc, c.Tax); err != nil {
 					return FixedAsset{}, err
 				}
 				if doc, err = a.assets.Change(ctx, u, id, c); err != nil {

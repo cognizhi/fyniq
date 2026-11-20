@@ -639,19 +639,19 @@ var (
 	RevokeIntegrationClient = Policy{Operation: "revokeIntegrationClient", Capability: ConnectedApps, Need: Create}
 	// The link to the people platform (FR-PPL-01, FR-PPL-16): a person with C on "People and HR" asks, the Owner and a second approver approve; the
 	// link's client alone calls the event operations, with the scope each names (PRD-002 Appendix E).
-	GetPeopleLink                = Policy{Operation: "getPeopleLink", Capability: PeopleAndHR, Need: View}
-	FinishPeopleUnlink           = Policy{Operation: "finishPeopleUnlink", Capability: PeopleAndHR, Need: Create}
-	GetPeopleLinkHealth          = Policy{Operation: "getPeopleLinkHealth", Capability: PeopleAndHR, Need: View}
-	RepairPeopleLink             = Policy{Operation: "repairPeopleLink", Capability: PeopleAndHR, Need: Create}
-	RequestPeopleLink            = Policy{Operation: "requestPeopleLink", Capability: PeopleAndHR, Need: Create}
-	RequestPeopleUnlink          = Policy{Operation: "requestPeopleUnlink", Capability: PeopleAndHR, Need: Create}
-	ReceivePeopleProjectionEvent = Policy{Operation: "receivePeopleProjectionEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.projection.write"}
-	ListPeopleProjection         = Policy{Operation: "listPeopleProjection", Capability: PeopleAndHR, Need: View}
-	MapPersonToUser              = Policy{Operation: "mapPersonToUser", Capability: PeopleAndHR, Need: Create}
-	GetPayrollMapping            = Policy{Operation: "getPayrollMapping", Capability: PayRuns, Need: View}
-	SetPayrollMapping            = Policy{Operation: "setPayrollMapping", Capability: PayRuns, Need: Create}
-	SubmitPayrollRun             = Policy{Operation: "submitPayrollRun", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.journal.submit"}
-	ReceivePeopleHoldEvent       = Policy{Operation: "receivePeopleHoldEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.holds.write"}
+	GetPeopleLink                  = Policy{Operation: "getPeopleLink", Capability: PeopleAndHR, Need: View}
+	FinishPeopleUnlink             = Policy{Operation: "finishPeopleUnlink", Capability: PeopleAndHR, Need: Create}
+	GetPeopleLinkHealth            = Policy{Operation: "getPeopleLinkHealth", Capability: PeopleAndHR, Need: View}
+	RepairPeopleLink               = Policy{Operation: "repairPeopleLink", Capability: PeopleAndHR, Need: Create}
+	RequestPeopleLink              = Policy{Operation: "requestPeopleLink", Capability: PeopleAndHR, Need: Create}
+	RequestPeopleUnlink            = Policy{Operation: "requestPeopleUnlink", Capability: PeopleAndHR, Need: Create}
+	ReceivePeopleProjectionEvent   = Policy{Operation: "receivePeopleProjectionEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.projection.write"}
+	ListPeopleProjection           = Policy{Operation: "listPeopleProjection", Capability: PeopleAndHR, Need: View}
+	MapPersonToUser                = Policy{Operation: "mapPersonToUser", Capability: PeopleAndHR, Need: Create}
+	GetPayrollMapping              = Policy{Operation: "getPayrollMapping", Capability: PayRuns, Need: View}
+	SetPayrollMapping              = Policy{Operation: "setPayrollMapping", Capability: PayRuns, Need: Create}
+	SubmitPayrollRun               = Policy{Operation: "submitPayrollRun", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.journal.submit"}
+	ReceivePeopleHoldEvent         = Policy{Operation: "receivePeopleHoldEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.holds.write"}
 	ReceivePeopleAvailabilityEvent = Policy{Operation: "receivePeopleAvailabilityEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.availability.write"}
 	ListPeopleAvailability         = Policy{Operation: "listPeopleAvailability", Capability: PeopleAndHR, Need: View}
 	// ReceivePeopleSessionEvent is the one door by which Nemura ends sessions here (owner's decision of 21 Nov 2026): the link's client with identity.sessions.write, for a person mapped to a person of the link.
@@ -926,6 +926,9 @@ var (
 	GetFixedAsset      = Policy{Operation: "getFixedAsset", Capability: FixedAssets, Need: View}
 	RegisterFixedAsset = Policy{Operation: "registerFixedAsset", Capability: FixedAssets, Need: Create}
 	ChangeFixedAsset   = Policy{Operation: "changeFixedAsset", Capability: FixedAssets, Need: Create}
+	// The asset reports (FR-FA-04, rev 0.582): the movement schedule and the tax capital allowance schedule, read under V on "Fixed assets".
+	GetFixedAssetMovement       = Policy{Operation: "getFixedAssetMovement", Capability: FixedAssets, Need: View}
+	GetCapitalAllowanceSchedule = Policy{Operation: "getCapitalAllowanceSchedule", Capability: FixedAssets, Need: View}
 	// The purchases on asset accounts not in the register yet (FR-FA-01; design D5), read under V.
 	ListUnregisteredAssetLines = Policy{Operation: "listUnregisteredAssetLines", Capability: FixedAssets, Need: View}
 	// Disposals (FR-FA-03; design D4, D5): posted under P (the Accountant), read under V; a void is posting, in Founder mode
@@ -2229,7 +2232,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
 	ListCashAdvances, GetCashAdvance, RecordCashAdvance, RecordCashAdvanceRefund, VoidCashAdvance, RequestCashAdvanceVoid,
 	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence, ListCardReceiptSuggestions, AttachCardReceiptSuggestion, GetClaimGSTCodes,
-	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, ListUnregisteredAssetLines,
+	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, GetFixedAssetMovement, GetCapitalAllowanceSchedule, ListUnregisteredAssetLines,
 	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
 	ListDirectorAccounts, GetDirectorStatement, ExportDirectorStatement, GetMyDirectorAccount, LinkContactMember, GetRelatedParties, ExportRelatedParties,

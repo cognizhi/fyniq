@@ -79,6 +79,9 @@ type AssetChange struct {
 	PurchasedOn        *time.Time
 	Cost               *money.Money
 	OpeningAccumulated *money.Money
+	// Tax is the capital allowance claim elected for the asset (FR-FA-04): it posts nothing and changes no depreciation, so it is allowed at any time, and a section 19
+	// election is irrevocable once made.
+	Tax *asset.TaxElection
 }
 
 // CheckedAsset is an asset version as registering or changing it would save it, written nowhere.
@@ -419,6 +422,17 @@ func prepareChange(ctx context.Context, u storage.UnitOfWork, doc storage.Docume
 	}
 	if c.Notes != nil {
 		n.Notes = *c.Notes
+	}
+	if c.Tax != nil {
+		if e := asset.CheckTax(c.Tax); e != nil {
+			return CheckedAsset{}, e
+		}
+		if cur.Tax != nil && cur.Tax.Method == asset.TaxS19 && *cur.Tax != *c.Tax {
+			return CheckedAsset{}, &asset.Error{Code: asset.CodeTaxFixed, Message: fmt.Sprintf("%s was elected under section 19 over %d years, and that election is irrevocable", cmp.Or(doc.Number, "the asset"), cur.Tax.Years),
+				Fix: "Ask the tax agent: a section 19 election is made once, when the return is filed"}
+		}
+		t := *c.Tax
+		n.Tax = &t
 	}
 	if c.Residual != nil {
 		n.Residual = *c.Residual

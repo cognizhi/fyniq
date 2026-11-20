@@ -402,6 +402,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerReportExports(a)
 	registerSchedules(a)
 	registerDeferralRollForward(a)
+	registerAssetReports(a)
 	registerAccountMerges(a)
 	registerAccountEditing(a)
 	registerDimensions(a)

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "asset_id": {
+      "description": "The asset.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "cost": {
+      "$ref": "Money.schema.json",
+      "description": "The cost it was bought for."
+    },
+    "fix": {
+      "description": "What to do.",
+      "examples": [
+        "Elect a method on the asset: section 19, 19A(1) or 19A(10A)"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "MacBook Pro 14, Wei Ling"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number in the register.",
+      "examples": [
+        "FA-0001"
+      ],
+      "type": "string"
+    },
+    "purchased_on": {
+      "description": "The day it was bought.",
+      "examples": [
+        "2026-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it is listed apart: no_election, the company has not elected a method; before_pack, acquired in a basis period before YA 2023; disposed, a disposal stands and its balancing allowance or charge is the tax agent's; over_cap, elected under section 19A(10A) but over S$5,000 or past the year's S$30,000; bad_life, a working life the prescribed life does not allow; not_sgd, the base currency is not Singapore dollars.",
+      "enum": [
+        "no_election",
+        "before_pack",
+        "disposed",
+        "over_cap",
+        "bad_life",
+        "not_sgd"
+      ],
+      "examples": [
+        "no_election"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "asset_id",
+    "name",
+    "purchased_on",
+    "cost",
+    "reason",
+    "fix"
+  ],
+  "title": "CapitalAllowanceApart",
+  "type": "object"
+}

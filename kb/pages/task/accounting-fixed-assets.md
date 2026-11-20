@@ -4,14 +4,16 @@ type: task
 title: Keep the fixed asset register
 summary: How an Accountant registers assets from purchases or opening balances, how depreciation posts monthly, and how to sell, write off or void
 sources:
-  - docs/user-guide/fixed-assets.md sha256:a0f469d1f6c91868c1f6269970b4d2a7525f520ece02f9f486a17885c7085dcb
+  - docs/user-guide/fixed-assets.md sha256:cc161795289ad9308a7e1ee1000e37b3873af7e4bbb0911239754620a3b9c63c
 data_class: general
 taint: trusted
+packs:
+  - sg-capital-allowances@2026.1
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-04
+compiled_at: 2026-11-20
 aliases:
   - fixed asset
   - asset register
@@ -24,6 +26,12 @@ aliases:
   - wear and tear
   - depreciation of a laptop
   - depreciation of equipment
+  - capital allowance
+  - capital allowances
+  - section 19A
+  - movement schedule
+  - tax depreciation
+  - NBV movement
 ---
 
 # Keep the fixed asset register
@@ -88,6 +96,23 @@ aliases:
 - An asset sold, scrapped or lost is not voided but sold or written off, so its gain or loss shows.
 
 (src: docs/user-guide/fixed-assets.md#void-an-asset-registered-by-mistake)
+
+## The movement schedule
+
+- **Movement** shows, for a run of months, each asset's cost and accumulated depreciation at the start, what an asset bought in the run added, what the depreciation charged, what a disposal took off, and the cost and accumulated depreciation at the end, with the net book value, by asset account.
+- The columns foot exactly, and the register is tied to the ledger at the end of the run: what it does not explain is shown as unexplained, never hidden.
+
+(src: docs/user-guide/fixed-assets.md#the-movement-schedule)
+
+## The capital allowance schedule
+
+- **Capital allowances** is the tax schedule of a year of assessment: what each asset claims under the method elected for it with **Capital allowance** in its side-peek, which an Accountant does. It posts nothing and changes no depreciation.
+- Section 19: 20% of the cost at once, then the other 80% over a working life the company elects, 6 or 12 years for a prescribed life of 12 years or less, 6, 12 or 16 for 16 years; irrevocable once made. Section 19A(1): a third of the cost in each of 3 years of assessment. Section 19A(10A): the whole cost in one year, for an asset of at most S$5,000 each, the year's claims at most S$30,000. It takes whole assets in the order they were bought.
+- The year of assessment is the year after the financial year the asset was bought in ends.
+- An asset Fyniq cannot place is listed apart with why, never guessed: none elected, bought before year of assessment 2023, a disposal stands, a working life not allowed, or over the limits of section 19A(10A). Balancing allowances and charges, hire purchase and section 19A(2) are the tax agent's.
+- The rules come from the statutory pack with IRAS's page as its source; amounts are in cents; the tax agent confirms them.
+
+(src: docs/user-guide/fixed-assets.md#the-capital-allowance-schedule)
 
 ## At the close
 

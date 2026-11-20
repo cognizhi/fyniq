@@ -16,6 +16,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { registerGroups } from "./registerGroups";
+import { CapitalAllowances, MovementSchedule, TaxElectionDialog, methodText } from "./AssetReports";
 
 // The fixed asset register (FR-FA-01…03; p1-fixed-assets task 5.1; docs/design/screens FixedAssets): the assets with
 // their cost, accumulated depreciation and net book value; an asset's side-peek with its depreciation schedule (posted,
@@ -198,7 +199,8 @@ export function FixedAssets() {
   const base = organisation?.base_currency ?? "SGD";
   const search = useSearch({ strict: false }) as { register?: string; line?: string };
   const may = (session.roles ?? []).some((r) => assetKeepers.includes(r));
-  const [tab, setTab] = useState<"register" | "unregistered" | "voided">("register");
+  const [tab, setTab] = useState<"register" | "unregistered" | "voided" | "movement" | "allowances">("register");
+  const [electing, setElecting] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const choose = (t: typeof tab) => (setTab(t), setSelected(null));
   const [registering, setRegistering] = useState<Unregistered | "opening" | null>(null);
@@ -283,7 +285,18 @@ export function FixedAssets() {
         <button type="button" role="tab" aria-selected={tab === "voided"} onClick={() => choose("voided")} title={helpText("fixed-assets.voided").tooltip}>
           {helpText("fixed-assets.voided").label}
         </button>
+        <button type="button" role="tab" aria-selected={tab === "movement"} onClick={() => choose("movement")} title={helpText("fixed-assets.movement").tooltip}>
+          {helpText("fixed-assets.movement").label}
+        </button>
+        <button type="button" role="tab" aria-selected={tab === "allowances"} onClick={() => choose("allowances")} title={helpText("fixed-assets.capital-allowances").tooltip}>
+          {helpText("fixed-assets.capital-allowances").label}
+        </button>
       </div>
+      {tab === "movement" && <MovementSchedule />}
+      {tab === "allowances" && <CapitalAllowances onElect={may ? setElecting : undefined} />}
+      {electing && (
+        <ElectAsset id={electing} onClose={() => setElecting(null)} onDone={(s) => (setElecting(null), setSaid(s))} />
+      )}
       {tab === "register" && assets.data && items.length === 0 && (
         <div className="fy-empty fy-card fy-card--pad">
           <Icon of={PackagePlus} size={24} />
@@ -530,7 +543,7 @@ function MonthStatus({ status }: { status: string }) {
 // AssetPeek is an asset's side-peek: its figures, source, checks, depreciation schedule and disposals.
 function AssetPeek({ id, may, base, accounts, onSaid }: { id: string; may: boolean; base: string; accounts: Map<string, Account>; onSaid: (s: string) => void }) {
   const heading = useId();
-  const [dialog, setDialog] = useState<"change" | "dispose" | "void" | Disposal | null>(null);
+  const [dialog, setDialog] = useState<"change" | "dispose" | "void" | "tax" | Disposal | null>(null);
   const asset = useQuery({
     queryKey: ["fixed-assets", id],
     queryFn: async () => {
@@ -586,6 +599,14 @@ function AssetPeek({ id, may, base, accounts, onSaid }: { id: string; may: boole
           <div>
             <dt>Net book value</dt>
             <dd className="fy-num">{money(a.net_book_value)}</dd>
+          </div>
+          <div>
+            <dt>Capital allowance</dt>
+            <dd>
+              {a.tax_election
+                ? `${methodText[a.tax_election.method] ?? a.tax_election.method}${a.tax_election.working_life_years ? `, ${a.tax_election.working_life_years} years` : ""}`
+                : "Not elected yet"}
+            </dd>
           </div>
           <div>
             <dt>Bought</dt>
@@ -687,6 +708,9 @@ function AssetPeek({ id, may, base, accounts, onSaid }: { id: string; may: boole
             <Icon of={Archive} />
             {helpText("fixed-assets.dispose").label}
           </Button>
+          <Button size="sm" variant="ghost" onClick={() => setDialog("tax")} title={helpText("fixed-assets.tax-election").tooltip}>
+            {helpText("fixed-assets.tax-election").label}
+          </Button>
           <Button size="sm" variant="ghost" onClick={() => setDialog("change")} title={helpText("fixed-assets.change").tooltip}>
             <Icon of={Pencil} />
             {helpText("fixed-assets.change").label}
@@ -697,12 +721,27 @@ function AssetPeek({ id, may, base, accounts, onSaid }: { id: string; may: boole
           </Button>
         </div>
       )}
+      {dialog === "tax" && <TaxElectionDialog asset={a} onClose={() => setDialog(null)} onDone={(s) => (setDialog(null), onSaid(s))} />}
       {dialog === "change" && <ChangeDialog asset={a} base={base} onClose={() => setDialog(null)} onDone={(s) => (setDialog(null), onSaid(s))} />}
       {dialog === "dispose" && <DisposeDialog asset={a} base={base} onClose={() => setDialog(null)} onDone={(s) => (setDialog(null), onSaid(s))} />}
       {dialog && typeof dialog === "object" && <VoidDialog disposal={dialog} onClose={() => setDialog(null)} onDone={(s) => (setDialog(null), onSaid(s))} />}
       {dialog === "void" && <VoidAssetDialog asset={a} onClose={() => setDialog(null)} onDone={(s) => (setDialog(null), onSaid(s))} />}
     </aside>
   );
+}
+
+// ElectAsset reads an asset by its ID and offers its capital allowance election (from the schedule's list of assets apart).
+function ElectAsset({ id, onClose, onDone }: { id: string; onClose: () => void; onDone: (s: string) => void }) {
+  const asset = useQuery({
+    queryKey: ["fixed-assets", id],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/fixed-assets/{asset_id}", { params: { path: { asset_id: id } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+  if (!asset.data) return null;
+  return <TaxElectionDialog asset={asset.data} onClose={onClose} onDone={onDone} />;
 }
 
 // Field is a labelled input with its error under it.
