@@ -14,7 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// A provider's credit note (FR-PSP-07; rev 0.600): the worker mirrors it and may only park it; the narrow function alone makes its AR credit note, and only against
+// A provider's credit note (FR-PSP-07; rev 0.601): the worker mirrors it and may only park it; the narrow function alone makes its AR credit note, and only against
 // the AR invoice of the provider invoice it credits once that is issued, never for a credit note already made, a void one, or one the API asks for; the worker cannot
 // mark a credit note drafted or posted, change its provider, invoice or currency, set its document, delete it or make a document; the API can only move a drafted one
 // on; and another organisation sees none of it. The function's whole path (the invoice issued, the draft made once, issued only at the provider's total) is

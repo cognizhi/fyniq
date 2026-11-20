@@ -26,7 +26,7 @@ func providerCreditNote(id, invoice, total, amount string, day int, extra func(*
 	return ports.ProviderObject{Kind: ports.ProviderCreditNote, ID: id, Currency: "SGD", Amount: total, Created: porttestDay(day), CreditNote: cn}
 }
 
-// FR-PSP-07 (Model B; p1-payment-providers task 5, rev 0.600): a provider's credit note against an invoice it billed is mirrored; it becomes a draft AR credit note
+// FR-PSP-07 (Model B; p1-payment-providers task 5, rev 0.601): a provider's credit note against an invoice it billed is mirrored; it becomes a draft AR credit note
 // of that invoice's document through the database's narrow function only once the invoice is issued here (before that it waits), once, saved by psp:credit_notes;
 // the API issues it only when its total is the provider's to the cent, and a different total, a discount or an invoice that is not here parks it for a person with
 // why; a second run does nothing; and a reader cannot issue it.
