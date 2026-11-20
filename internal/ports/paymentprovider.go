@@ -84,6 +84,7 @@ type ProviderObject struct {
 	Invoice      *InvoiceData
 	Customer     *CustomerData
 	Subscription *SubscriptionData
+	CreditNote   *CreditNoteData
 }
 
 // InvoiceData is a billing provider's invoice as Fyniq mirrors it (FR-PSP-03, FR-PSP-07): its totals, its lines with their service periods, and its
@@ -114,6 +115,26 @@ type InvoiceLine struct {
 	Amount      string
 	PeriodStart time.Time
 	PeriodEnd   time.Time
+}
+
+// CreditNoteData is a billing provider's credit note against one of its invoices as Fyniq mirrors it (FR-PSP-07): its total, tax included, its lines before tax and
+// why. Unsupported says why it cannot be made into an AR credit note by the invoice rules (a credit on the customer's balance, an amount with no line, lines and
+// tax that do not add up to the total): empty when it can.
+type CreditNoteData struct {
+	InvoiceID   string
+	Number      string
+	Status      string // issued or void
+	Reason      string
+	Total       string
+	Lines       []CreditNoteLine
+	Unsupported string
+}
+
+// CreditNoteLine is a line of a provider's credit note: its description and its amount before tax.
+type CreditNoteLine struct {
+	ID          string
+	Description string
+	Amount      string
 }
 
 // CustomerData is a provider's customer.

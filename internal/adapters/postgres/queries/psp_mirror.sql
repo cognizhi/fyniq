@@ -79,3 +79,35 @@ ON CONFLICT (organisation_id, connector_id, charge_id) DO NOTHING RETURNING id;
 
 -- name: PSPInvoiceOfCharge :one
 SELECT provider_invoice_id FROM fyniq.psp_charge_invoice WHERE connector_id = sqlc.arg(connector_id) AND charge_id = sqlc.arg(charge_id);
+
+-- name: InsertPSPCreditNote :one
+INSERT INTO fyniq.psp_credit_note (connector_id, provider_credit_note_id, provider_invoice_id, number, status, currency, total, reason, issued_on, draft_lines, seen_at)
+VALUES (sqlc.arg(connector_id), sqlc.arg(provider_credit_note_id), sqlc.arg(provider_invoice_id), sqlc.narg(number), sqlc.arg(status), sqlc.arg(currency), sqlc.arg(total)::numeric,
+  sqlc.narg(reason), sqlc.narg(issued_on), sqlc.arg(draft_lines)::jsonb, sqlc.arg(seen_at))
+RETURNING id, connector_id, provider_credit_note_id, provider_invoice_id, number, status, currency, total, reason, issued_on, draft_lines, state, parked_reason, document_id, version, seen_at;
+
+-- name: GetPSPCreditNote :one
+SELECT id, connector_id, provider_credit_note_id, provider_invoice_id, number, status, currency, total, reason, issued_on, draft_lines, state, parked_reason, document_id, version, seen_at
+FROM fyniq.psp_credit_note WHERE connector_id = sqlc.arg(connector_id) AND provider_credit_note_id = sqlc.arg(provider_credit_note_id);
+
+-- name: PSPCreditNotesInState :many
+SELECT id, connector_id, provider_credit_note_id, provider_invoice_id, number, status, currency, total, reason, issued_on, draft_lines, state, parked_reason, document_id, version, seen_at
+FROM fyniq.psp_credit_note WHERE (sqlc.arg(state)::text = '' OR state = sqlc.arg(state)::text) ORDER BY seen_at, id;
+
+-- name: UpdatePSPCreditNote :one
+-- A mirrored credit note's status follows the provider; its lines and total only while it has no AR document.
+UPDATE fyniq.psp_credit_note SET number = sqlc.narg(number), status = sqlc.arg(status), reason = sqlc.narg(reason), issued_on = sqlc.narg(issued_on),
+  total = CASE WHEN document_id IS NULL THEN sqlc.arg(total)::numeric ELSE total END,
+  draft_lines = CASE WHEN document_id IS NULL THEN sqlc.arg(draft_lines)::jsonb ELSE draft_lines END,
+  seen_at = sqlc.arg(seen_at), version = version + 1
+WHERE id = sqlc.arg(id)
+RETURNING id, connector_id, provider_credit_note_id, provider_invoice_id, number, status, currency, total, reason, issued_on, draft_lines, state, parked_reason, document_id, version, seen_at;
+
+-- name: ParkPSPCreditNote :exec
+UPDATE fyniq.psp_credit_note SET state = 'parked', parked_reason = sqlc.arg(parked_reason), version = version + 1 WHERE id = sqlc.arg(id) AND state IN ('mirrored', 'drafted');
+
+-- name: PostedPSPCreditNote :exec
+UPDATE fyniq.psp_credit_note SET state = 'posted', version = version + 1 WHERE id = sqlc.arg(id) AND state = 'drafted';
+
+-- name: CreateProviderCreditNoteDraft :one
+SELECT fyniq.create_provider_credit_note_draft(sqlc.arg(connector_id)::uuid, sqlc.arg(provider_credit_note_id)::text)::uuid AS document_id;

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math/big"
 	"time"
 
 	"github.com/google/uuid"
@@ -282,4 +283,130 @@ func (m pspMirror) InvoiceOfCharge(ctx context.Context, connector uuid.UUID, cha
 		return "", mapError(err)
 	}
 	return id, nil
+}
+
+func toPSPCreditNote(r sqlcdb.GetPSPCreditNoteRow) storage.PSPCreditNote {
+	return storage.PSPCreditNote{ID: r.ID, ConnectorID: r.ConnectorID, ProviderID: r.ProviderCreditNoteID, ProviderInvoiceID: r.ProviderInvoiceID, Number: str(r.Number), Status: r.Status,
+		Currency: r.Currency, Total: storage.Decimal(r.Total), Reason: str(r.Reason), IssuedOn: nullDate(r.IssuedOn), Lines: json.RawMessage(r.DraftLines), State: r.State,
+		ParkedReason: str(r.ParkedReason), DocumentID: r.DocumentID, Version: int(r.Version), SeenAt: r.SeenAt}
+}
+
+func (m pspMirror) CreditNote(ctx context.Context, connector uuid.UUID, providerID string) (storage.PSPCreditNote, error) {
+	if err := m.u.check(); err != nil {
+		return storage.PSPCreditNote{}, err
+	}
+	r, err := m.u.q.GetPSPCreditNote(ctx, sqlcdb.GetPSPCreditNoteParams{ConnectorID: connector, ProviderCreditNoteID: providerID})
+	if err != nil {
+		return storage.PSPCreditNote{}, mapError(err)
+	}
+	return toPSPCreditNote(r), nil
+}
+
+func (m pspMirror) SaveCreditNote(ctx context.Context, n storage.NewPSPCreditNote) (storage.PSPCreditNote, bool, error) {
+	if err := m.u.check(); err != nil {
+		return storage.PSPCreditNote{}, false, err
+	}
+	lines := []byte(n.Lines)
+	if len(lines) == 0 {
+		lines = []byte("[]")
+	}
+	before, err := m.CreditNote(ctx, n.ConnectorID, n.ProviderID)
+	if errors.Is(err, ports.ErrNotFound) {
+		r, err := m.u.q.InsertPSPCreditNote(ctx, sqlcdb.InsertPSPCreditNoteParams{ConnectorID: n.ConnectorID, ProviderCreditNoteID: n.ProviderID, ProviderInvoiceID: n.ProviderInvoiceID,
+			Number: opt(n.Number), Status: n.Status, Currency: n.Currency, Total: string(n.Total), Reason: opt(n.Reason), IssuedOn: pgDate(n.IssuedOn), DraftLines: lines, SeenAt: n.SeenAt})
+		if err != nil {
+			return storage.PSPCreditNote{}, false, mapError(err)
+		}
+		c := toPSPCreditNote(sqlcdb.GetPSPCreditNoteRow(r))
+		return c, true, m.u.event(ctx, "psp_credit_note.mirrored", "psp_credit_note", c.ID, nil, map[string][2]any{"provider_credit_note_id": {nil, c.ProviderID},
+			"provider_invoice_id": {nil, c.ProviderInvoiceID}, "status": {nil, c.Status}, "total": {nil, string(c.Total)}, "currency": {nil, c.Currency}})
+	}
+	if err != nil {
+		return storage.PSPCreditNote{}, false, err
+	}
+	if before.Status == n.Status && before.Number == n.Number && before.Reason == n.Reason && dayOf(before.IssuedOn) == dayOf(n.IssuedOn) &&
+		(before.DocumentID != nil || (sameAmount(before.Total, n.Total) && jsonSame(before.Lines, lines))) {
+		return before, false, nil
+	}
+	r, err := m.u.q.UpdatePSPCreditNote(ctx, sqlcdb.UpdatePSPCreditNoteParams{ID: before.ID, Number: opt(n.Number), Status: n.Status, Reason: opt(n.Reason), IssuedOn: pgDate(n.IssuedOn),
+		Total: string(n.Total), DraftLines: lines, SeenAt: n.SeenAt})
+	if err != nil {
+		return storage.PSPCreditNote{}, false, mapError(err)
+	}
+	c := toPSPCreditNote(sqlcdb.GetPSPCreditNoteRow(r))
+	v := c.Version
+	return c, true, m.u.event(ctx, "psp_credit_note.changed", "psp_credit_note", c.ID, &v, map[string][2]any{"status": {before.Status, c.Status}})
+}
+
+func (m pspMirror) CreditNotes(ctx context.Context, state string) ([]storage.PSPCreditNote, error) {
+	if err := m.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := m.u.q.PSPCreditNotesInState(ctx, state)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.PSPCreditNote, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toPSPCreditNote(sqlcdb.GetPSPCreditNoteRow(r)))
+	}
+	return out, nil
+}
+
+func (m pspMirror) ParkCreditNote(ctx context.Context, id uuid.UUID, why string) error {
+	if err := m.u.check(); err != nil {
+		return err
+	}
+	if len(why) > 500 {
+		why = why[:500]
+	}
+	if err := m.u.q.ParkPSPCreditNote(ctx, sqlcdb.ParkPSPCreditNoteParams{ID: id, ParkedReason: &why}); err != nil {
+		return mapError(err)
+	}
+	return m.u.event(ctx, "psp_credit_note.parked", "psp_credit_note", id, nil, map[string][2]any{"state": {nil, storage.PSPInvoiceParked}, "reason": {nil, why}})
+}
+
+func (m pspMirror) MakeCreditDraft(ctx context.Context, connector uuid.UUID, providerID string) (uuid.UUID, error) {
+	if err := m.u.check(); err != nil {
+		return uuid.Nil, err
+	}
+	docID, err := m.u.q.CreateProviderCreditNoteDraft(ctx, sqlcdb.CreateProviderCreditNoteDraftParams{ConnectorID: connector, ProviderCreditNoteID: providerID})
+	if err != nil {
+		return uuid.Nil, mapError(err)
+	}
+	doc, err := m.u.q.GetDocument(ctx, docID)
+	if err != nil {
+		return uuid.Nil, mapError(err)
+	}
+	payload, err := jsonValue(doc.Payload)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	v := int(doc.CurrentVersion)
+	if err := m.u.event(ctx, "document.created", "document", docID, &v, map[string][2]any{"type": {nil, doc.Type}, "status": {nil, doc.Status}, "payload": {nil, payload}}); err != nil {
+		return uuid.Nil, err
+	}
+	cn, err := m.CreditNote(ctx, connector, providerID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	cv := cn.Version
+	return docID, m.u.event(ctx, "psp_credit_note.drafted", "psp_credit_note", cn.ID, &cv, map[string][2]any{"state": {storage.PSPInvoiceMirrored, storage.PSPInvoiceDrafted}, "document_id": {nil, docID.String()}})
+}
+
+func (m pspMirror) CreditNotePosted(ctx context.Context, id uuid.UUID) error {
+	if err := m.u.check(); err != nil {
+		return err
+	}
+	if err := m.u.q.PostedPSPCreditNote(ctx, id); err != nil {
+		return mapError(err)
+	}
+	return m.u.event(ctx, "psp_credit_note.posted", "psp_credit_note", id, nil, map[string][2]any{"state": {storage.PSPInvoiceDrafted, storage.PSPInvoicePosted}})
+}
+
+// sameAmount says whether two decimal strings are the same number, whatever their trailing zeros ("30.0000" as the database keeps it, "30.00" as the provider's reading gives it).
+func sameAmount(a, b storage.Decimal) bool {
+	x, ok1 := new(big.Rat).SetString(string(a))
+	y, ok2 := new(big.Rat).SetString(string(b))
+	return ok1 && ok2 && x.Cmp(y) == 0
 }

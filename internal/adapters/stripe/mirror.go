@@ -130,6 +130,69 @@ func invoiceData(doc map[string]any, cur string) (*ports.InvoiceData, error) {
 	return inv, nil
 }
 
+// creditNoteData reads a credit note against an invoice (Stripe's "The Credit Note object" and its line item, retrieved 21 Nov 2026, [live-verify]): its
+// lines' amounts before tax, its tax, its total. A credit note the invoice rules cannot take is still mirrored, with why in Unsupported.
+func creditNoteData(doc map[string]any, cur string) (*ports.CreditNoteData, error) {
+	cn := &ports.CreditNoteData{InvoiceID: str(doc, "invoice"), Number: str(doc, "number"), Status: str(doc, "status"), Reason: str(doc, "reason")}
+	n, err := minor(doc, "total")
+	if err != nil {
+		return nil, err
+	}
+	if cn.Total, err = Decimal(n, cur); err != nil {
+		return nil, err
+	}
+	lines, more := listOf(doc, "lines")
+	var sum, tax int64
+	var why []string
+	for _, x := range lines {
+		l, _ := x.(map[string]any)
+		amt, err := minor(l, "amount")
+		if err != nil {
+			return nil, err
+		}
+		amount, err := Decimal(amt, cur)
+		if err != nil {
+			return nil, err
+		}
+		if amt < 0 {
+			why = append(why, "a negative line")
+		}
+		if d, _ := l["discount_amounts"].([]any); len(d) > 0 {
+			why = append(why, "a discount")
+		}
+		sum += amt
+		cn.Lines = append(cn.Lines, ports.CreditNoteLine{ID: str(l, "id"), Description: str(l, "description"), Amount: amount})
+	}
+	if more {
+		why = append(why, "more lines than one page")
+	}
+	taxes, _ := doc["total_taxes"].([]any)
+	for _, x := range taxes {
+		if t, _ := x.(map[string]any); t != nil {
+			amt, err := minor(t, "amount")
+			if err != nil {
+				return nil, err
+			}
+			tax += amt
+		}
+	}
+	if len(lines) == 0 {
+		why = append(why, "no lines")
+	} else if sum+tax != n && len(why) == 0 {
+		why = append(why, "lines and tax that do not add up to its total")
+	}
+	seen := map[string]bool{}
+	var uniq []string
+	for _, w := range why {
+		if !seen[w] {
+			seen[w] = true
+			uniq = append(uniq, w)
+		}
+	}
+	cn.Unsupported = strings.Join(uniq, ", ")
+	return cn, nil
+}
+
 // customerData reads a customer.
 func customerData(doc map[string]any) *ports.CustomerData {
 	return &ports.CustomerData{Name: str(doc, "name"), Email: str(doc, "email")}

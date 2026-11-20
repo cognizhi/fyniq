@@ -40,6 +40,7 @@ export const registry: Entry[] = [
   { kind: "route", id: "payroll-hr", path: "/people/payroll", signedIn: true, screen: "nm-payroll-hr", mode: "expert", help: "payroll.page", guide: "nemura.payroll-records" },
   { kind: "route", id: "payrun-approval", path: "/people/payroll/runs/:id", signedIn: true, screen: "nm-payrun-approval", mode: "expert", help: "approval.page", guide: "nemura.payroll-approval" },
   { kind: "route", id: "ask-assistant", path: "/me/ask", signedIn: true, screen: "nm-ask", mode: "basic", help: "askai.page", guide: "nemura.ask-assistant" },
+  { kind: "route", id: "erasures", path: "/people/erasures", signedIn: true, screen: "nm-erasures", mode: "expert", help: "erasure.page", guide: "nemura.erasure" },
   { kind: "route", id: "fyniq-link", path: "/settings/fyniq", signedIn: true, screen: "nm-fyniq-link", mode: "expert", help: "link.page", guide: "nemura.fyniq-link" },
   { kind: "route", id: "assistant", path: "/settings/assistant", signedIn: true, screen: "nm-assistant", mode: "expert", help: "assistant.page", guide: "nemura.assistant" },
   { kind: "route", id: "my-pay", path: "/me/pay", signedIn: true, screen: "nm-my-pay", mode: "basic", help: "mypay.page", guide: "nemura.my-pay" },

@@ -121,6 +121,41 @@ type NewPSPInvoice struct {
 	SeenAt                 time.Time
 }
 
+// PSPCreditNote is a provider's credit note against one of its invoices as mirrored, with the AR credit note made of it (FR-PSP-07). Its states are an invoice's.
+type PSPCreditNote struct {
+	ID                uuid.UUID
+	ConnectorID       uuid.UUID
+	ProviderID        string
+	ProviderInvoiceID string
+	Number            string
+	Status            string // issued or void
+	Currency          string
+	Total             Decimal
+	Reason            string
+	IssuedOn          *time.Time
+	Lines             json.RawMessage
+	State             string
+	ParkedReason      string
+	DocumentID        *uuid.UUID
+	Version           int
+	SeenAt            time.Time
+}
+
+// NewPSPCreditNote mirrors a credit note: its lines and total are changed only while it has no document.
+type NewPSPCreditNote struct {
+	ConnectorID       uuid.UUID
+	ProviderID        string
+	ProviderInvoiceID string
+	Number            string
+	Status            string
+	Currency          string
+	Total             Decimal
+	Reason            string
+	IssuedOn          *time.Time
+	Lines             json.RawMessage
+	SeenAt            time.Time
+}
+
 // PSPMirror is the organisation's mirror of a billing provider. Each change is audited in the same transaction (AUD-01).
 type PSPMirror interface {
 	// SaveCustomer mirrors a customer: made, or its name and email changed; false when nothing changed.
@@ -141,6 +176,18 @@ type PSPMirror interface {
 	MakeDraft(ctx context.Context, connector uuid.UUID, providerID string) (document, contact uuid.UUID, made bool, err error)
 	// Posted records that the draft of a mirrored invoice was issued.
 	Posted(ctx context.Context, id uuid.UUID) error
+	// SaveCreditNote mirrors a provider credit note: made, or its status (and, while it has no document, its lines and total) changed; false when nothing changed.
+	SaveCreditNote(ctx context.Context, n NewPSPCreditNote) (PSPCreditNote, bool, error)
+	CreditNote(ctx context.Context, connector uuid.UUID, providerID string) (PSPCreditNote, error)
+	// CreditNotes are the mirrored credit notes in a state ("" for every one), oldest first.
+	CreditNotes(ctx context.Context, state string) ([]PSPCreditNote, error)
+	// ParkCreditNote sets a mirrored or drafted credit note aside with why, for a person.
+	ParkCreditNote(ctx context.Context, id uuid.UUID, why string) error
+	// MakeCreditDraft is the database's create_provider_credit_note_draft: the draft AR credit note of a mirrored credit note, once, against the AR invoice of the
+	// provider invoice it credits, which must be issued. The audit events of what it made are recorded here.
+	MakeCreditDraft(ctx context.Context, connector uuid.UUID, providerID string) (document uuid.UUID, err error)
+	// CreditNotePosted records that the draft of a mirrored credit note was issued.
+	CreditNotePosted(ctx context.Context, id uuid.UUID) error
 	// RecordChargeInvoice records which provider invoice a charge paid, once; false when it was recorded already.
 	RecordChargeInvoice(ctx context.Context, connector uuid.UUID, charge, providerInvoice string, at time.Time) (bool, error)
 	// InvoiceOfCharge is the provider invoice a charge paid, ports.ErrNotFound when none is recorded.

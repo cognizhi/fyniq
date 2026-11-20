@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "description": "The AR credit note made of it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The mirror's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5003"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "number": {
+      "description": "The provider's credit note number.",
+      "examples": [
+        "ACME-0001-CN-01"
+      ],
+      "type": "string"
+    },
+    "parked_reason": {
+      "description": "Why a parked credit note waits.",
+      "examples": [
+        "Not made into a credit note: it has a discount (FR-PSP-07). A person decides it."
+      ],
+      "type": "string"
+    },
+    "provider": {
+      "description": "The provider's connector.",
+      "examples": [
+        "stripe"
+      ],
+      "type": "string"
+    },
+    "provider_credit_note_id": {
+      "description": "The provider's ID.",
+      "examples": [
+        "cn_1Q9"
+      ],
+      "type": "string"
+    },
+    "provider_invoice_id": {
+      "description": "The provider's invoice it credits.",
+      "examples": [
+        "in_1Q9"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "The reason the provider gives.",
+      "examples": [
+        "order_change"
+      ],
+      "type": "string"
+    },
+    "seen_at": {
+      "description": "When Fyniq last read it.",
+      "examples": [
+        "2026-11-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "state": {
+      "description": "mirrored: read, no AR credit note yet; drafted: its AR credit note made, not issued; posted: issued; parked: for a person.",
+      "enum": [
+        "mirrored",
+        "drafted",
+        "posted",
+        "parked"
+      ],
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "The provider's status of the credit note.",
+      "enum": [
+        "issued",
+        "void"
+      ],
+      "examples": [
+        "issued"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "The provider's total, tax included."
+    }
+  },
+  "required": [
+    "id",
+    "provider",
+    "provider_credit_note_id",
+    "provider_invoice_id",
+    "status",
+    "total",
+    "state",
+    "seen_at"
+  ],
+  "title": "PaymentProviderCreditNote",
+  "type": "object"
+}

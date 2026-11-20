@@ -13,6 +13,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createProviderCreditNoteDraft = `-- name: CreateProviderCreditNoteDraft :one
+SELECT fyniq.create_provider_credit_note_draft($1::uuid, $2::text)::uuid AS document_id
+`
+
+type CreateProviderCreditNoteDraftParams struct {
+	ConnectorID          uuid.UUID
+	ProviderCreditNoteID string
+}
+
+func (q *Queries) CreateProviderCreditNoteDraft(ctx context.Context, arg CreateProviderCreditNoteDraftParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createProviderCreditNoteDraft, arg.ConnectorID, arg.ProviderCreditNoteID)
+	var document_id uuid.UUID
+	err := row.Scan(&document_id)
+	return document_id, err
+}
+
 const createProviderInvoiceDraft = `-- name: CreateProviderInvoiceDraft :one
 SELECT d.document_id::uuid AS document_id, d.contact_id::uuid AS contact_id, d.contact_made::boolean AS contact_made
 FROM fyniq.create_provider_invoice_draft($1::uuid, $2::text) AS d
@@ -33,6 +49,59 @@ func (q *Queries) CreateProviderInvoiceDraft(ctx context.Context, arg CreateProv
 	row := q.db.QueryRow(ctx, createProviderInvoiceDraft, arg.ConnectorID, arg.ProviderInvoiceID)
 	var i CreateProviderInvoiceDraftRow
 	err := row.Scan(&i.DocumentID, &i.ContactID, &i.ContactMade)
+	return i, err
+}
+
+const getPSPCreditNote = `-- name: GetPSPCreditNote :one
+SELECT id, connector_id, provider_credit_note_id, provider_invoice_id, number, status, currency, total, reason, issued_on, draft_lines, state, parked_reason, document_id, version, seen_at
+FROM fyniq.psp_credit_note WHERE connector_id = $1 AND provider_credit_note_id = $2
+`
+
+type GetPSPCreditNoteParams struct {
+	ConnectorID          uuid.UUID
+	ProviderCreditNoteID string
+}
+
+type GetPSPCreditNoteRow struct {
+	ID                   uuid.UUID
+	ConnectorID          uuid.UUID
+	ProviderCreditNoteID string
+	ProviderInvoiceID    string
+	Number               *string
+	Status               string
+	Currency             string
+	Total                string
+	Reason               *string
+	IssuedOn             pgtype.Date
+	DraftLines           []byte
+	State                string
+	ParkedReason         *string
+	DocumentID           *uuid.UUID
+	Version              int32
+	SeenAt               time.Time
+}
+
+func (q *Queries) GetPSPCreditNote(ctx context.Context, arg GetPSPCreditNoteParams) (GetPSPCreditNoteRow, error) {
+	row := q.db.QueryRow(ctx, getPSPCreditNote, arg.ConnectorID, arg.ProviderCreditNoteID)
+	var i GetPSPCreditNoteRow
+	err := row.Scan(
+		&i.ID,
+		&i.ConnectorID,
+		&i.ProviderCreditNoteID,
+		&i.ProviderInvoiceID,
+		&i.Number,
+		&i.Status,
+		&i.Currency,
+		&i.Total,
+		&i.Reason,
+		&i.IssuedOn,
+		&i.DraftLines,
+		&i.State,
+		&i.ParkedReason,
+		&i.DocumentID,
+		&i.Version,
+		&i.SeenAt,
+	)
 	return i, err
 }
 
@@ -161,6 +230,82 @@ func (q *Queries) InsertPSPChargeInvoice(ctx context.Context, arg InsertPSPCharg
 	return id, err
 }
 
+const insertPSPCreditNote = `-- name: InsertPSPCreditNote :one
+INSERT INTO fyniq.psp_credit_note (connector_id, provider_credit_note_id, provider_invoice_id, number, status, currency, total, reason, issued_on, draft_lines, seen_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7::numeric,
+  $8, $9, $10::jsonb, $11)
+RETURNING id, connector_id, provider_credit_note_id, provider_invoice_id, number, status, currency, total, reason, issued_on, draft_lines, state, parked_reason, document_id, version, seen_at
+`
+
+type InsertPSPCreditNoteParams struct {
+	ConnectorID          uuid.UUID
+	ProviderCreditNoteID string
+	ProviderInvoiceID    string
+	Number               *string
+	Status               string
+	Currency             string
+	Total                string
+	Reason               *string
+	IssuedOn             pgtype.Date
+	DraftLines           []byte
+	SeenAt               time.Time
+}
+
+type InsertPSPCreditNoteRow struct {
+	ID                   uuid.UUID
+	ConnectorID          uuid.UUID
+	ProviderCreditNoteID string
+	ProviderInvoiceID    string
+	Number               *string
+	Status               string
+	Currency             string
+	Total                string
+	Reason               *string
+	IssuedOn             pgtype.Date
+	DraftLines           []byte
+	State                string
+	ParkedReason         *string
+	DocumentID           *uuid.UUID
+	Version              int32
+	SeenAt               time.Time
+}
+
+func (q *Queries) InsertPSPCreditNote(ctx context.Context, arg InsertPSPCreditNoteParams) (InsertPSPCreditNoteRow, error) {
+	row := q.db.QueryRow(ctx, insertPSPCreditNote,
+		arg.ConnectorID,
+		arg.ProviderCreditNoteID,
+		arg.ProviderInvoiceID,
+		arg.Number,
+		arg.Status,
+		arg.Currency,
+		arg.Total,
+		arg.Reason,
+		arg.IssuedOn,
+		arg.DraftLines,
+		arg.SeenAt,
+	)
+	var i InsertPSPCreditNoteRow
+	err := row.Scan(
+		&i.ID,
+		&i.ConnectorID,
+		&i.ProviderCreditNoteID,
+		&i.ProviderInvoiceID,
+		&i.Number,
+		&i.Status,
+		&i.Currency,
+		&i.Total,
+		&i.Reason,
+		&i.IssuedOn,
+		&i.DraftLines,
+		&i.State,
+		&i.ParkedReason,
+		&i.DocumentID,
+		&i.Version,
+		&i.SeenAt,
+	)
+	return i, err
+}
+
 const insertPSPInvoice = `-- name: InsertPSPInvoice :one
 INSERT INTO fyniq.psp_invoice (connector_id, provider_invoice_id, provider_customer_id, provider_subscription_id, number, status, currency, total, amount_paid,
   attempt_count, next_attempt_on, outcome, hosted_url, finalized_on, due_on, draft_lines, seen_at)
@@ -262,6 +407,67 @@ func (q *Queries) InsertPSPInvoice(ctx context.Context, arg InsertPSPInvoicePara
 		&i.SeenAt,
 	)
 	return i, err
+}
+
+const pSPCreditNotesInState = `-- name: PSPCreditNotesInState :many
+SELECT id, connector_id, provider_credit_note_id, provider_invoice_id, number, status, currency, total, reason, issued_on, draft_lines, state, parked_reason, document_id, version, seen_at
+FROM fyniq.psp_credit_note WHERE ($1::text = '' OR state = $1::text) ORDER BY seen_at, id
+`
+
+type PSPCreditNotesInStateRow struct {
+	ID                   uuid.UUID
+	ConnectorID          uuid.UUID
+	ProviderCreditNoteID string
+	ProviderInvoiceID    string
+	Number               *string
+	Status               string
+	Currency             string
+	Total                string
+	Reason               *string
+	IssuedOn             pgtype.Date
+	DraftLines           []byte
+	State                string
+	ParkedReason         *string
+	DocumentID           *uuid.UUID
+	Version              int32
+	SeenAt               time.Time
+}
+
+func (q *Queries) PSPCreditNotesInState(ctx context.Context, state string) ([]PSPCreditNotesInStateRow, error) {
+	rows, err := q.db.Query(ctx, pSPCreditNotesInState, state)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PSPCreditNotesInStateRow
+	for rows.Next() {
+		var i PSPCreditNotesInStateRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ConnectorID,
+			&i.ProviderCreditNoteID,
+			&i.ProviderInvoiceID,
+			&i.Number,
+			&i.Status,
+			&i.Currency,
+			&i.Total,
+			&i.Reason,
+			&i.IssuedOn,
+			&i.DraftLines,
+			&i.State,
+			&i.ParkedReason,
+			&i.DocumentID,
+			&i.Version,
+			&i.SeenAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const pSPInvoiceDocuments = `-- name: PSPInvoiceDocuments :many
@@ -435,6 +641,20 @@ func (q *Queries) PSPSubscriptions(ctx context.Context) ([]PSPSubscriptionsRow, 
 	return items, nil
 }
 
+const parkPSPCreditNote = `-- name: ParkPSPCreditNote :exec
+UPDATE fyniq.psp_credit_note SET state = 'parked', parked_reason = $1, version = version + 1 WHERE id = $2 AND state IN ('mirrored', 'drafted')
+`
+
+type ParkPSPCreditNoteParams struct {
+	ParkedReason *string
+	ID           uuid.UUID
+}
+
+func (q *Queries) ParkPSPCreditNote(ctx context.Context, arg ParkPSPCreditNoteParams) error {
+	_, err := q.db.Exec(ctx, parkPSPCreditNote, arg.ParkedReason, arg.ID)
+	return err
+}
+
 const parkPSPInvoice = `-- name: ParkPSPInvoice :exec
 UPDATE fyniq.psp_invoice SET state = 'parked', parked_reason = $1, version = version + 1 WHERE id = $2 AND state IN ('mirrored', 'drafted')
 `
@@ -449,6 +669,15 @@ func (q *Queries) ParkPSPInvoice(ctx context.Context, arg ParkPSPInvoiceParams) 
 	return err
 }
 
+const postedPSPCreditNote = `-- name: PostedPSPCreditNote :exec
+UPDATE fyniq.psp_credit_note SET state = 'posted', version = version + 1 WHERE id = $1 AND state = 'drafted'
+`
+
+func (q *Queries) PostedPSPCreditNote(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, postedPSPCreditNote, id)
+	return err
+}
+
 const postedPSPInvoice = `-- name: PostedPSPInvoice :exec
 UPDATE fyniq.psp_invoice SET state = 'posted', version = version + 1 WHERE id = $1 AND state = 'drafted'
 `
@@ -456,6 +685,79 @@ UPDATE fyniq.psp_invoice SET state = 'posted', version = version + 1 WHERE id = 
 func (q *Queries) PostedPSPInvoice(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, postedPSPInvoice, id)
 	return err
+}
+
+const updatePSPCreditNote = `-- name: UpdatePSPCreditNote :one
+UPDATE fyniq.psp_credit_note SET number = $1, status = $2, reason = $3, issued_on = $4,
+  total = CASE WHEN document_id IS NULL THEN $5::numeric ELSE total END,
+  draft_lines = CASE WHEN document_id IS NULL THEN $6::jsonb ELSE draft_lines END,
+  seen_at = $7, version = version + 1
+WHERE id = $8
+RETURNING id, connector_id, provider_credit_note_id, provider_invoice_id, number, status, currency, total, reason, issued_on, draft_lines, state, parked_reason, document_id, version, seen_at
+`
+
+type UpdatePSPCreditNoteParams struct {
+	Number     *string
+	Status     string
+	Reason     *string
+	IssuedOn   pgtype.Date
+	Total      string
+	DraftLines []byte
+	SeenAt     time.Time
+	ID         uuid.UUID
+}
+
+type UpdatePSPCreditNoteRow struct {
+	ID                   uuid.UUID
+	ConnectorID          uuid.UUID
+	ProviderCreditNoteID string
+	ProviderInvoiceID    string
+	Number               *string
+	Status               string
+	Currency             string
+	Total                string
+	Reason               *string
+	IssuedOn             pgtype.Date
+	DraftLines           []byte
+	State                string
+	ParkedReason         *string
+	DocumentID           *uuid.UUID
+	Version              int32
+	SeenAt               time.Time
+}
+
+// A mirrored credit note's status follows the provider; its lines and total only while it has no AR document.
+func (q *Queries) UpdatePSPCreditNote(ctx context.Context, arg UpdatePSPCreditNoteParams) (UpdatePSPCreditNoteRow, error) {
+	row := q.db.QueryRow(ctx, updatePSPCreditNote,
+		arg.Number,
+		arg.Status,
+		arg.Reason,
+		arg.IssuedOn,
+		arg.Total,
+		arg.DraftLines,
+		arg.SeenAt,
+		arg.ID,
+	)
+	var i UpdatePSPCreditNoteRow
+	err := row.Scan(
+		&i.ID,
+		&i.ConnectorID,
+		&i.ProviderCreditNoteID,
+		&i.ProviderInvoiceID,
+		&i.Number,
+		&i.Status,
+		&i.Currency,
+		&i.Total,
+		&i.Reason,
+		&i.IssuedOn,
+		&i.DraftLines,
+		&i.State,
+		&i.ParkedReason,
+		&i.DocumentID,
+		&i.Version,
+		&i.SeenAt,
+	)
+	return i, err
 }
 
 const updatePSPInvoice = `-- name: UpdatePSPInvoice :one
