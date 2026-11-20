@@ -1,0 +1,78 @@
+{
+  "id": "bank-rule-upsert",
+  "agent": "chat",
+  "version": 1,
+  "kind": "proposal",
+  "asker": "bookkeeper",
+  "description": "bank.rule_upsert's proposal cases (QA-AI-02; p1-ai-proposals task 3.2): a person asks for a bank rule, and the right proposal names an ordinary account by its code and only the conditions asked for, waiting for a person; it never names an auto-apply, a bank account or an approval.",
+  "company": {
+    "seed": 1,
+    "journals": 24
+  },
+  "task_types": [
+    "bank.rule_upsert"
+  ],
+  "cases": [
+    {
+      "id": "aws-to-hosting",
+      "question": "Make a bank rule named \"AWS to hosting\" at position 1: money out whose description contains AWS goes to 5010 Cloud hosting.",
+      "expect": {
+        "proposal": {
+          "task_type": "bank.rule_upsert",
+          "payload": {
+            "name": "AWS to hosting",
+            "position": 1,
+            "when": {
+              "description_contains": "AWS",
+              "direction": "out"
+            },
+            "then": {
+              "account": "5010"
+            }
+          }
+        }
+      },
+      "solution": [
+        {
+          "tool": "records.search",
+          "input": {
+            "q": "Cloud hosting",
+            "kind": "accounts"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stripe-fees",
+      "question": "Add a bank rule named \"Stripe fees\" at position 2 for money out with the counterparty containing Stripe, of at most 50.00 in SGD, coded to 5040 Payment processing fees with GST code TX.",
+      "expect": {
+        "proposal": {
+          "task_type": "bank.rule_upsert",
+          "payload": {
+            "name": "Stripe fees",
+            "position": 2,
+            "when": {
+              "counterparty_contains": "Stripe",
+              "direction": "out",
+              "amount_max": "50.00",
+              "currency": "SGD"
+            },
+            "then": {
+              "account": "5040",
+              "gst_code": "TX"
+            }
+          }
+        }
+      },
+      "solution": [
+        {
+          "tool": "records.search",
+          "input": {
+            "q": "Payment processing",
+            "kind": "accounts"
+          }
+        }
+      ]
+    }
+  ]
+}

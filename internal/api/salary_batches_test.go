@@ -369,7 +369,7 @@ func (w *salaryWorld) holdInProjection(t *testing.T, person uuid.UUID, held bool
 func (w *salaryWorld) preparedBatch(t *testing.T) (id string, tag string, asked response, lines map[string]uuid.UUID) {
 	t.Helper()
 	e := w.e
-	refA, refB := uuid.New(), uuid.New()
+	refA, refB := orderedRefs()
 	got := w.payments(w.run, w.line(refA, w.ana, "Ana Lim", "9000.11", 1), w.line(refB, w.cai, "Cai Yu", "7000.33", 1))
 	if got.Status != http.StatusOK || got.str("outcome") != "received" {
 		t.Fatalf("the lines: %d %s", got.Status, got.Raw)
@@ -816,7 +816,7 @@ func TestThePayrollGoLiveGateHoldsAPayRunUntilItsArrangementsAreRecorded(t *test
 func (w *salaryWorld) preparedBatchWithoutAsking(t *testing.T) (id, tag string, _ response, lines map[string]uuid.UUID) {
 	t.Helper()
 	e := w.e
-	refA, refB := uuid.New(), uuid.New()
+	refA, refB := orderedRefs()
 	got := w.payments(w.run, w.line(refA, w.ana, "Ana Lim", "9000.11", 1), w.line(refB, w.cai, "Cai Yu", "7000.33", 1))
 	if got.Status != http.StatusOK {
 		t.Fatalf("the lines: %d %s", got.Status, got.Raw)
@@ -828,6 +828,17 @@ func (w *salaryWorld) preparedBatchWithoutAsking(t *testing.T) (id, tag string, 
 		t.Fatalf("preparing: %d %s", prep.Status, prep.Raw)
 	}
 	return id, prep.Header.Get("ETag"), response{}, map[string]uuid.UUID{"ana": refA, "cai": refB}
+}
+
+// orderedRefs are two line IDs in the order a batch lists its lines: both lines of a submission share one transaction's timestamp, so the
+// listing breaks the tie by line ID, and an instruction ID's ordinal (SB0001-R1-L02) follows it. The test names the second line's, so the
+// IDs it makes must sort the way it expects (they were random, and the test failed one run in two).
+func orderedRefs() (first, second uuid.UUID) {
+	first, second = uuid.New(), uuid.New()
+	if second.String() < first.String() {
+		first, second = second, first
+	}
+	return first, second
 }
 
 func csvOf(rows ...string) string {

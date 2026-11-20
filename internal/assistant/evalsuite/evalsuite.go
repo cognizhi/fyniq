@@ -42,6 +42,9 @@ type Suite struct {
 	Kind        string  `json:"kind"`
 	Description string  `json:"description"`
 	Company     Company `json:"company"`
+	// Asker is the role the person who asks holds, when the cases' proposals need a right the founders' Owner and Controller do not hold (a journal or a
+	// budget is an Accountant's): a role of the roles table, the founder as Owner and Controller when left out.
+	Asker string `json:"asker,omitempty"`
 	// TaskTypes are what the organisation turns on for a proposal suite: the task types its turns may propose.
 	TaskTypes []string `json:"task_types,omitempty"`
 	// Plant are records made through the public API before the cases, as an Accountant: the injections, identity

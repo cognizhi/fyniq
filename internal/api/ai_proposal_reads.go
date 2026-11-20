@@ -76,6 +76,10 @@ type AIProposalDetail struct {
 	DecidedAt     string           `json:"decided_at,omitempty" format:"date-time" example:"2026-11-15T10:00:00Z"`
 	ApprovedItems []ProposalItem   `json:"approved_items,omitempty" doc:"The items approved, when an approval chose some."`
 	Execution     any              `json:"execution,omitempty" doc:"What the executor did: its run, the records and entries it made, or the error." example:"{\"records\":[\"task:0193a3c2\"]}"`
+	CanUndo       bool             `json:"can_undo" doc:"Whether you may undo it now (AI-31): it executed, its task type can be undone, it was not undone already and you hold the right its command needs." example:"false"`
+	UndoneAt      string           `json:"undone_at,omitempty" format:"date-time" doc:"When it was undone, if it was." example:"2026-11-15T11:00:00Z"`
+	UndoneBy      string           `json:"undone_by,omitempty" format:"uuid" doc:"Who undid it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
+	UndoReason    string           `json:"undo_reason,omitempty" doc:"Why it was undone." example:"It was the wrong branch"`
 	YouMayApprove bool             `json:"you_may_approve" doc:"Whether you may sign its approval request now." example:"true"`
 }
 
@@ -359,7 +363,12 @@ func (a *API) proposalDetail(ctx context.Context, u storage.UnitOfWork, p authn.
 		d.DecidedAt = pr.DecidedAt.UTC().Format(time.RFC3339)
 	}
 	if len(pr.Execution) > 0 {
-		_ = json.Unmarshal(pr.Execution, &d.Execution)
+		// What the undo needs (the values the executor replaced) is for the undo alone: a review shows what was done, not the old values again.
+		var shown map[string]json.RawMessage
+		if json.Unmarshal(pr.Execution, &shown) == nil {
+			delete(shown, "undo")
+			d.Execution = shown
+		}
 	}
 	if pr.Status == storage.ProposalPending && pr.ApprovalRequest != nil {
 		may, err := a.mayDecideProposal(ctx, u, p, *pr.ApprovalRequest)
@@ -367,6 +376,19 @@ func (a *API) proposalDetail(ctx context.Context, u storage.UnitOfWork, p authn.
 			return d, err
 		}
 		d.YouMayApprove = may
+	}
+	if pr.Status == storage.ProposalExecuted {
+		undone, was, err := u.AIProposalTrail().UndoOf(ctx, pr.ID)
+		if err != nil {
+			return d, err
+		}
+		if was {
+			d.UndoneAt, d.UndoneBy, d.UndoReason = undone.UndoneAt.UTC().Format(time.RFC3339), undone.UndoneBy.String(), undone.Reason
+		} else if tt, ok := a.catalogue().Get(pr.TaskType); ok && !p.AI() && p.UserID != uuid.Nil {
+			if cmd, built := a.commands()[tt.Command]; built && proposal.Undoable(cmd) {
+				d.CanUndo = authz.Decide(cmd.Policy(), p.Roles, false).Allowed
+			}
+		}
 	}
 	return d, nil
 }

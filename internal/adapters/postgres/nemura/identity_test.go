@@ -208,7 +208,7 @@ func TestSessionsAreOpaqueExpireAndEndWithTheMember(t *testing.T) {
 	var token string
 	c.must(func(ctx context.Context, tx pgx.Tx) error {
 		var err error
-		token, err = nemura.StartSession(ctx, tx, c.org, at, c.hr)
+		token, err = nemura.StartSession(ctx, tx, c.org, at, c.hr, identity.Via{})
 		return err
 	})
 	s, err := api.Authenticate(ctx, token, at.Add(time.Hour))
@@ -257,7 +257,7 @@ func TestSessionsAreOpaqueExpireAndEndWithTheMember(t *testing.T) {
 	var second string
 	c.must(func(ctx context.Context, tx pgx.Tx) error {
 		var err error
-		second, err = nemura.StartSession(ctx, tx, c.org, at, c.hr)
+		second, err = nemura.StartSession(ctx, tx, c.org, at, c.hr, identity.Via{})
 		if err != nil {
 			return err
 		}
@@ -279,7 +279,7 @@ func TestSessionsAreOpaqueExpireAndEndWithTheMember(t *testing.T) {
 		t.Errorf("a deactivated member still holds %v", got)
 	}
 	if err := c.do(func(ctx context.Context, tx pgx.Tx) error {
-		_, err := nemura.StartSession(ctx, tx, c.org, at, c.hr)
+		_, err := nemura.StartSession(ctx, tx, c.org, at, c.hr, identity.Via{})
 		return err
 	}); refusalCode(err) != identity.CodeSignInRefused {
 		t.Errorf("a deactivated member signed in: %v", err)

@@ -462,6 +462,11 @@ Source: PRD-001 §8.5 · Priority S · Phase P2
 - **THEN** it is not yet eligible on 2 Jan 2027 and is eligible from 10 Mar 2027
 - **AND** it is past the five years from the supply from 1 Jan 2031, and the claim posts the GST in the written-off part to the GST input control and the bad-debt expense
 
+#### Scenario: The relief's dates from the pack (rev 0.513)
+- **GIVEN** a standard-rated invoice of 15 Jan 2026 written off on 10 Mar 2027
+- **WHEN** the relief is read on 10 Mar 2027
+- **THEN** a claim may be made from 10 Mar 2027 and until 14 Jan 2031, and a debtor insolvent before 15 Jan 2027 would not wait for the twelve months
+
 ### Requirement: FR-AR-17 Write-off of a receivable or payable residual
 The system SHALL write off a receivable or payable residual only by a reason-coded, approval-gated write-off with evidence, posted to the account the reason names.
 
@@ -533,6 +538,16 @@ Source: PRD-001 §8.5 · Priority S · Phase P2
 #### Scenario: Payouts and fees matched automatically
 - **WHEN** the provider pays out the collected payments
 - **THEN** the payouts and fees are matched automatically
+
+#### Scenario: A payment link from the invoice (rev 0.510)
+- **GIVEN** an issued invoice with S$5,450.00 open and a HitPay connector enabled
+- **WHEN** a person with a right on Invoices asks for a payment link
+- **THEN** the link is for the open balance read on the server, whatever the client sends, with the invoice number as the reference
+- **AND** a second live link for the invoice, or a link on a draft, void or paid invoice, is refused
+
+#### Scenario: The link is not the AI's (rev 0.510)
+- **WHEN** an AI client or an MCP tool tries to create a payment link
+- **THEN** it has no such tool and the capability is never triggered by it
 
 ### Requirement: FR-AR-14 Customer portal
 The system SHALL offer a customer portal where a customer views and pays their invoices and downloads statements.

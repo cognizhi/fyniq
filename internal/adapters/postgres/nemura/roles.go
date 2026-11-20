@@ -140,8 +140,12 @@ func GrantRole(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, gran
 VALUES ($1, $2, $3, $4, $5, $6)`, id, subject, string(role), from.Format(time.DateOnly), granter, approval); err != nil {
 		return uuid.Nil, err
 	}
-	return id, Audit(ctx, tx, org, at, user(granter), "nemura.role.granted", audit.Object{Type: "role_assignment", ID: id},
-		map[string]audit.Change{"member": {nil, subject.String()}, "role": {nil, string(role)}, "effective_from": {nil, from.Format(time.DateOnly)}}, "")
+	if err := Audit(ctx, tx, org, at, user(granter), "nemura.role.granted", audit.Object{Type: "role_assignment", ID: id},
+		map[string]audit.Change{"member": {nil, subject.String()}, "role": {nil, string(role)}, "effective_from": {nil, from.Format(time.DateOnly)}}, ""); err != nil {
+		return uuid.Nil, err
+	}
+	_, err = QueueAccessEvents(ctx, tx, org, at, subject) // Fyniq is told whether the person now approves pay runs
+	return id, err
 }
 
 // EndRole ends a grant on a day: history is kept, and nobody ends their own Owner role.
@@ -153,8 +157,11 @@ func EndRole(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by uui
 	if tag.RowsAffected() == 0 {
 		return errors.New("there is no open role assignment with that ID")
 	}
-	return Audit(ctx, tx, org, at, user(by), "nemura.role.revoked", audit.Object{Type: "role_assignment", ID: assignment},
-		map[string]audit.Change{"effective_to": {nil, on.Format(time.DateOnly)}}, "")
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.role.revoked", audit.Object{Type: "role_assignment", ID: assignment},
+		map[string]audit.Change{"effective_to": {nil, on.Format(time.DateOnly)}}, ""); err != nil {
+		return err
+	}
+	return queueAccessOfAssignment(ctx, tx, org, at, assignment)
 }
 
 // RestrictedRefusal is the plain refusal of a restricted field the person may not see (NM_RESTRICTED_FIELD).

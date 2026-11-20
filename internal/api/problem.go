@@ -75,6 +75,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
 	"github.com/cognizhi/fyniq/internal/domain/paymentfile"
+	"github.com/cognizhi/fyniq/internal/domain/paymentlink"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/planning"
 	"github.com/cognizhi/fyniq/internal/domain/project"
@@ -930,6 +931,11 @@ var codeFacts = map[string]struct {
 	CodePSPDisputeLimit:      {422, "The dispute is above the expense limit"},
 	CodePSPEventState:        {409, "The event is not waiting for a person"},
 	CodePSPCredit:            {422, "The credit cannot settle the dispute"},
+	paymentlink.CodeNotIssued: {422, "A payment link is for an issued invoice with something open"},
+	paymentlink.CodeNoAccount: {422, "No provider account collects the invoice's currency"},
+	paymentlink.CodeLive:      {409, "The invoice has a payment link already"},
+	CodeLinkConnector:         {422, "No payment-link connector is enabled"},
+	CodeLinkClosed:            {409, "The payment link is not live"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},
@@ -1433,6 +1439,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		sme *statement.Error
 		cne *connector.Error
 		bke *banking.Error
+		plk *paymentlink.Error
 		pfe *paymentfile.Error
 		cle *claim.Error
 		dre *director.Error
@@ -1533,6 +1540,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(pye.Code, sentence(pye.Message), sentence(pye.Fix))
 	case errors.As(err, &pyp) && len(pyp) > 0:
 		return payeeProblems(pyp).(*Problem)
+	case errors.As(err, &plk):
+		return problem(plk.Code, sentence(plk.Message), sentence(plk.Fix))
 	case errors.As(err, &bke):
 		return problem(bke.Code, sentence(bke.Message), sentence(bke.Fix))
 	case errors.As(err, &pfe):

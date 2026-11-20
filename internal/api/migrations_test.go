@@ -352,7 +352,7 @@ var pastPolicy = map[string]string{"queueInvoiceNowSubmission": CodeNotFound, "s
 	"uploadMigrationParallelWorkbook": migration.CodeCommit, "decideMigrationParallelDifference": migration.CodeCommit,
 	"signMigrationParallel": migration.CodeCommit, "getMigrationParallelReport": CodeNotFound,
 	"uploadMigrationArchivePDF": migration.CodeCommit, "archiveMigration": migration.CodeParallel,
-	"prepareDisputeLoss": CodePSPDisputeState, "settleDisputeCredit": CodePSPDisputeState, "resolvePaymentProviderEvent": CodePSPEventState,
+	"createInvoicePaymentLink": CodeLinkConnector, "getInvoicePaymentLink": CodeNotFound, "cancelInvoicePaymentLink": CodeLinkClosed, "prepareDisputeLoss": CodePSPDisputeState, "settleDisputeCredit": CodePSPDisputeState, "resolvePaymentProviderEvent": CodePSPEventState,
 	"addExpenseClaimEvidenceFromMessage": CodeMessageFile,
 	"getSalaryBatch":                     CodeNotFound, "prepareSalaryBatch": CodeNotFound, "requestSalaryBatchApproval": CodeNotFound, "releaseSalaryBatch": CodeNotFound, "getSalaryBatchFile": CodeNotFound, "cancelSalaryBatch": CodeNotFound, "recordSalaryLineState": CodeNotFound, "matchSalaryBankLine": CodeNotFound, "setPayrollArrangement": salarybatch.CodeState, "importPayrollJournal": payrollimport.CodeAccount} // the matrix member has no mail at an address of their own; a salary batch is made by Nemura's lines, which the matrix sends none of
 

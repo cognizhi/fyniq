@@ -136,15 +136,21 @@ func TestRemovingAMemberTellsNemuraToEndTheirSessions(t *testing.T) {
 	}
 }
 
-// The Finance | People switch is a door and never a grant (PRD-001 FR-PPL-02; PRD-002 NM-UX-03): while the link is active, a person whose roles reach the books is told where Nemura is (the origin the link was approved
-// with), and nobody else is: an employee who only claims, an approver alone and a client that is not a person see no switch; what is behind the door is Nemura's own decision.
+// The Finance | People switch is a door and never a grant (PRD-001 FR-PPL-02; PRD-002 NM-UX-03): while the link is active, a person whose roles reach the books and whom Nemura says is a member there is told where
+// Nemura is (the origin the link was approved with), and nobody else is: an employee who only claims, an approver alone and a client that is not a person see no switch, and neither does a person Nemura has said
+// nothing of; what is behind the door is Nemura's own decision.
 // part of FR-PPL-02 (the landing of an HR-only person is Nemura's)
 // asvs: V8.2.1, V4.2.1
 func TestTheSwitchShowsOnlyForRolesThatReachTheBooksWhileLinked(t *testing.T) {
 	w := payrollWorld(t)
 	e := w.e
+	// Nemura says these identities are members there (identity.access.changed): one per session below.
 	as := func(r authz.Role) string {
-		return e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{r}})
+		who := peoplelink.Party{Issuer: "urn:fyniq:test", Subject: "switch-" + string(r)}
+		if r := w.nemuraSays(peoplelink.TypeAccessChanged, "identity", uuid.NewString(), 100+len(r), map[string]any{"issuer": who.Issuer, "subject": who.Subject, "people_access": true, "payroll_approver": false}, nil); r.Status != http.StatusOK {
+			t.Fatalf("Nemura's word: %d %s", r.Status, r.Raw)
+		}
+		return e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{r}, Via: authn.ViaSession, Issuer: who.Issuer, Subject: who.Subject})
 	}
 	for _, r := range []authz.Role{authz.Owner, authz.Administrator, authz.Accountant, authz.PayrollAdmin, authz.Bookkeeper} {
 		got := e.call(http.MethodGet, "/v1/session", as(r), nil)

@@ -34,7 +34,7 @@ var Exported = []string{
 	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "role_assignment_scope", "sales_reminder",
 	"security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",
 	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "user_preference", "user_saved_item", "record_comment", "withholding_decision", "people_source", "salary_batch", "payroll_arrangement", "payroll_import", "person_projection", "payroll_mapping", "payroll_mapping_entry", "payroll_run_receipt",
-	"psp_account", "psp_balance", "psp_dispute_credit", "psp_dispute_loss", "psp_event", "psp_payout", "psp_txn",
+	"psp_account", "psp_balance", "psp_dispute_credit", "psp_dispute_loss", "psp_event", "psp_payout", "psp_txn", "payment_link", "payment_link_payment",
 }
 
 // Excluded are the tables the export leaves out, with why: no secret, key, token, idempotency key or job in flight
@@ -45,6 +45,7 @@ var Excluded = map[string]string{
 	"people_link_ask_key":           "the private key of the link's read-only client for the ask at release: a secret of the connection, never exported (FR-PPL-13, SEC-15)",
 	"people_link_secret":            "the link's private keys: a secret of the connection, never exported (FR-PPL-15, SEC-15)",
 	"people_link_inbox":             "the events the link received: identities and digests of another system's messages, kept to dedupe them, not the organisation's records (FR-PPL-15)",
+	"people_link_access":            "what Nemura last said of each sign-in identity (an active member there, an approver of pay runs): a hint from another system that decides a switch and a reminder, never the organisation's records or a grant (FR-PPL-02)",
 	"salary_batch_line":             "each person's payment line of a salary batch (their pay and, sealed, their account): need-to-know under FR-PPL-17, and Nemura, the payroll's system of record, holds it; the export carries the batch's header",
 	"salary_line_event":             "the states of each salary payment by person: need-to-know under FR-PPL-17; Nemura holds the payment states (FR-PPL-12)",
 	"salary_release":                "a release of a salary batch and its payment file, sealed: the file holds names and account numbers, so it never leaves in an export (FR-PPL-17, SEC-11)",

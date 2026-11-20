@@ -7612,6 +7612,12 @@ export interface components {
              * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
              */
             envelope_sha256?: string;
+            /**
+             * @description What Fyniq last said of the identity you are signed in with: enrolled (a passkey is enrolled in Fyniq: you can sign), missing (Fyniq knows you and has none: sign in to Fyniq and add one first) or unknown (Fyniq has not said: you may have no sign-in in Fyniq yet, or this session was made before the answer was kept). A hint before you sign; Fyniq's own check after it decides (PPL-19).
+             * @example enrolled
+             * @enum {string}
+             */
+            fyniq_passkey: "enrolled" | "missing" | "unknown";
             /** @description Why the envelope cannot be signed yet, in plain words: a department Fyniq does not have, a person with no sign-in identity, no mapping yet. */
             issues: string[] | null;
             /**

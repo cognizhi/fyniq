@@ -57,6 +57,17 @@ func (e *env) pspVersion(m uuid.UUID) int {
 }
 
 var matrixPaymentProviders = map[string]func(e *env, tok string) (response, func() bool){
+	// The payment link of an invoice (FR-AR-13): no payment-link connector is enabled in the matrix's organisation, so a role the policy allows is
+	// answered PSP-12 (create), PSP-13 (cancel) or not found (read), past its policy; any other role is answered 403 and nothing is asked of a provider.
+	"createInvoicePaymentLink": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/invoices/"+uuid.NewString()+"/payment-link", tok, map[string]any{}), nil
+	},
+	"getInvoicePaymentLink": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/invoices/"+uuid.NewString()+"/payment-link", tok, nil), nil
+	},
+	"cancelInvoicePaymentLink": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/invoices/"+uuid.NewString()+"/payment-link/cancellation", tok, map[string]any{"reason": "Not needed"}), nil
+	},
 	"listPaymentProviderAccounts": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/payment-providers/accounts", tok, nil), nil
 	},

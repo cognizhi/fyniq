@@ -973,6 +973,8 @@
     "approval.linked.deductions": "Deductions by kind: {list}.",
     "approval.linked.digest": "Digest of these figures, which your passkey signs: {digest}",
     "approval.linked.enrol": "Sign with the passkey you enrolled in Fyniq. If you have not enrolled one, sign in to Fyniq once and add a passkey in its security settings: Fyniq cannot verify an approval without it.",
+    "approval.linked.passkeyMissing": "Fyniq knows you and says you have no passkey enrolled there. Sign in to Fyniq, add a passkey in its security settings, then come back: Fyniq will refuse this approval until you have one.",
+    "approval.linked.passkeyUnknown": "Fyniq has not said whether you have a passkey enrolled there. If you have never signed in to Fyniq, ask its Owner to invite you, then add a passkey there: Fyniq will refuse an approval it cannot check.",
     "approval.linked.approve": "Confirm, sign the figures and approve version {version}",
     "approval.linked.signFailed": "The passkey did not sign the figures. Try again with the passkey you enrolled in Fyniq, and confirm with your fingerprint, face or PIN.",
     "approval.linked.done": "Approved with proof. Nemura is sending it to Fyniq: its answer shows below.",

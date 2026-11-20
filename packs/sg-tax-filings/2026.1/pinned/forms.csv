@@ -1,0 +1,5 @@
+case,revenue,want_form,want_optional,why,source
+at the Lite limit,200000.00,C-S (Lite),C-S,"$200,000 or below may file Form C-S (Lite), and Form C-S too",iras-form-cs
+a cent above the Lite limit,200000.01,C-S,,"above $200,000 the company files Form C-S",iras-form-cs
+at the C-S limit,5000000.00,C-S,,"$5 million or below may file Form C-S",iras-form-cs
+a cent above the C-S limit,5000000.01,C,,"above $5 million the company files Form C",iras-form-cs

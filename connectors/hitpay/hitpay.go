@@ -52,5 +52,16 @@ func Binding() (connector.Binding, error) {
 			}
 			return adapter.Verify(salt, h, body)
 		},
+		PaymentLinks: func(c connector.Config) (ports.PaymentLinks, error) {
+			key, err := c.Secret("api_key")
+			if err != nil {
+				return nil, err
+			}
+			base := adapter.ProductionBase
+			if c.String("environment", "production") == "sandbox" {
+				base = adapter.SandboxBase
+			}
+			return &adapter.Linker{Base: base, Key: key, HTTP: c.HTTP}, nil
+		},
 		ParseEvent: adapter.ParseEvent}, nil
 }

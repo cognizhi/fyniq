@@ -19,6 +19,13 @@ what Fyniq received from Nemura, and records how each month's statutory payroll 
 - Linking Nemura, changing where a feature lives and unlinking need the Owner and a second approver; they are asked for through the API today.
 - While payroll lives in Nemura, a provider's payroll journal or a file import is not taken: the pay run posts through the link, so it is never posted from two sources.
 
+## People who approve pay runs in Nemura
+
+- A pay run approved in Nemura while the apps are linked is signed with **a passkey enrolled in Fyniq**. Nemura tells Fyniq, signed, which sign-in accounts approve pay runs there (an account and a yes or no, never a role name or an email).
+- A person Nemura says approves pay runs, and who has no passkey in Fyniq, sees a reminder at the top of every page: **Add a passkey to approve pay runs in Nemura**. It gives them no role in Fyniq. A person with no sign-in in Fyniq at all needs an invitation first.
+- Fyniq also tells Nemura, for each sign-in account, whether it holds a role in the finance workspace and whether it has a passkey, so Nemura's **Finance | People** switch and its warning before an approval are right. Both are hints, never grants.
+- The **Finance | People** switch in Fyniq's header shows only to a person who holds a role in the finance workspace here and whom Nemura says is an active member there. It opens Nemura with the sign-in provider the person used, so they are not asked to choose one again.
+
 ## How the month's payroll outputs are met
 
 - Before a pay run that pays a person can be approved for payment, five things are recorded as evidence: itemised payslips, key employment terms, CPF, SDL and SHG submission and payment, and where they apply

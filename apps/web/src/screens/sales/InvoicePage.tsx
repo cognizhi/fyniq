@@ -23,6 +23,7 @@ import { who } from "../accounting/Journals";
 import { InvoiceLines, lineKey, newLine, type Errors, type Line } from "./InvoiceLines";
 import { issuers, preparers, StateChips, total, type Invoice } from "./Invoices";
 import { Checks, EmailDialog, Sends, Totals } from "./parts";
+import { PaymentLinkCard } from "./PaymentLinkCard";
 import { RecordReceipt } from "./Receipts";
 import { auditReaders, PurgedPostings } from "../compliance/PurgedPostings";
 import { AskAboutThis } from "../../components/ai/AskAboutThis";
@@ -547,6 +548,7 @@ export function InvoicePage() {
                 </div>
               )}
               {invoice && !form && !editing && <Checks checks={invoice.checks ?? []} />}
+              {invoice && invoiceId && !credit && invoice.status === "posted" && invoice.open && !/^0(\.0+)?$/.test(invoice.open.amount) && !editing && <PaymentLinkCard invoiceId={invoiceId} mayAsk={mayIssue} />}
               <form className="fy-stack fy-stack--6" data-enter="next" onSubmit={(e) => void save(e)} noValidate>
                 <section className="fy-card" aria-labelledby={`${id}-cust`}>
                   <div className="fy-card__head">

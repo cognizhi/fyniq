@@ -40,11 +40,19 @@ type QueuedEvent struct {
 	ObjectID      string `json:"object_id"`
 	ObjectVersion int    `json:"object_version"`
 	CorrelationID string `json:"correlation_id"`
+	// Payload is kept only for an event that is an identity and two yes or no answers (identity.access.changed): it carries no pay, bank or personal figure and is not in any source row to rebuild it from.
+	Payload json.RawMessage `json:"payload,omitempty"`
 }
 
 // QueueLinkEvent queues an event about an object for Fyniq in the transaction that changed the object, when the link is active; with no live link it does nothing and says so (false), so a
 // standalone Nemura never queues one. The sequence is the link's next number and is taken here, under the link row's lock, so events leave in the order they were committed.
 func QueueLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, typ, objectType, objectID string, version int) (bool, error) {
+	return queueLinkEvent(ctx, tx, org, at, typ, objectType, objectID, version, nil)
+}
+
+// queueLinkEvent is QueueLinkEvent for a type that keeps its payload in the row (an identity's access): a version of 0 is the event's own sequence, which rises with every event of the link, so a newer
+// answer about an identity always has a higher version than an older one.
+func queueLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, typ, objectType, objectID string, version int, payload any) (bool, error) {
 	l, err := LiveLink(ctx, tx)
 	if err != nil {
 		if noLink(err) {
@@ -59,7 +67,16 @@ func QueueLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time,
 	if err := tx.QueryRow(ctx, `UPDATE nemura.fyniq_link SET sequence = sequence + 1, version = version + 1, changed_at = $2 WHERE id = $1 RETURNING sequence`, l.ID, at).Scan(&seq); err != nil {
 		return false, err
 	}
+	if version <= 0 {
+		version = int(seq)
+	}
 	q := QueuedEvent{EventID: uuid.NewString(), Sequence: seq, Type: typ, ObjectType: objectType, ObjectID: objectID, ObjectVersion: version, CorrelationID: uuid.NewString()}
+	if payload != nil {
+		var err error
+		if q.Payload, err = json.Marshal(payload); err != nil {
+			return false, err
+		}
+	}
 	raw, err := json.Marshal(q)
 	if err != nil {
 		return false, err
@@ -117,6 +134,12 @@ func linkPayload(ctx context.Context, tx pgx.Tx, q QueuedEvent, now time.Time) (
 			return nil, fmt.Errorf("the run event %s names a version that was not approved with proof", q.EventID)
 		}
 		return sub, nil
+	case TypeIdentityAccess:
+		var ev AccessEvent
+		if err := json.Unmarshal(q.Payload, &ev); err != nil || ev.Issuer == "" || ev.Subject == "" {
+			return nil, fmt.Errorf("the access event %s names no identity", q.EventID)
+		}
+		return ev, nil
 	case "people.tax_hold.changed":
 		person, err := uuid.Parse(q.ObjectID)
 		if err != nil {
@@ -137,7 +160,7 @@ func linkPayload(ctx context.Context, tx pgx.Tx, q QueuedEvent, now time.Time) (
 // linkRoute is where an event type goes on Fyniq's API and the scope its token needs (contracts/peoplelink/README.md).
 func linkRoute(typ string) (path, scope string, ok bool) {
 	switch typ {
-	case TypePersonUpserted, TypeBankDetailsChanged:
+	case TypePersonUpserted, TypeBankDetailsChanged, TypeIdentityAccess:
 		return "/v1/people-link/projection-events", "people.projection.write", true
 	case "people.tax_hold.changed":
 		return "/v1/people-link/hold-events", "people.holds.write", true

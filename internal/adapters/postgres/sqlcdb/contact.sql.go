@@ -783,3 +783,113 @@ func (q *Queries) UpdateContact(ctx context.Context, arg UpdateContactParams) (U
 	)
 	return i, err
 }
+
+const updateContactAIFields = `-- name: UpdateContactAIFields :one
+UPDATE fyniq.contact SET
+  billing_email = CASE WHEN $1::boolean THEN $2 ELSE billing_email END,
+  phone = CASE WHEN $3::boolean THEN $4 ELSE phone END,
+  address = CASE WHEN $5::boolean THEN $6 ELSE address END,
+  payment_terms_days = CASE WHEN $7::boolean THEN $8::smallint ELSE payment_terms_days END,
+  default_account_id = CASE WHEN $9::boolean THEN $10::uuid ELSE default_account_id END,
+  default_gst_code = CASE WHEN $11::boolean THEN $12 ELSE default_gst_code END,
+  version = version + 1
+WHERE id = $13 AND version = $14
+RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, is_investor, individual, member_user_id, is_active, version
+`
+
+type UpdateContactAIFieldsParams struct {
+	SetBillingEmail     bool
+	BillingEmail        *string
+	SetPhone            bool
+	Phone               *string
+	SetAddress          bool
+	Address             *string
+	SetPaymentTermsDays bool
+	PaymentTermsDays    *int16
+	SetDefaultAccountID bool
+	DefaultAccountID    *uuid.UUID
+	SetDefaultGstCode   bool
+	DefaultGstCode      *string
+	ID                  uuid.UUID
+	Version             int32
+}
+
+type UpdateContactAIFieldsRow struct {
+	ID               uuid.UUID
+	LegalName        string
+	IsCustomer       bool
+	IsVendor         bool
+	UenOrTaxID       *string
+	PeppolID         *string
+	BillingEmail     *string
+	RemittanceEmail  *string
+	Phone            *string
+	Address          *string
+	Country          *string
+	TaxResidence     *string
+	Currency         *string
+	PaymentTermsDays *int16
+	DiscountPercent  string
+	DiscountDays     *int16
+	DefaultAccountID *uuid.UUID
+	DefaultGstCode   *string
+	CustomerGroupID  *uuid.UUID
+	IsDirector       bool
+	IsShareholder    bool
+	IsInvestor       bool
+	Individual       bool
+	MemberUserID     *uuid.UUID
+	IsActive         bool
+	Version          int32
+}
+
+// The six details ct.update_contact changes, by the executor and by the undo of it, and no other column (000960): a field not set keeps
+// what it holds; an empty value sets none. At the version read.
+func (q *Queries) UpdateContactAIFields(ctx context.Context, arg UpdateContactAIFieldsParams) (UpdateContactAIFieldsRow, error) {
+	row := q.db.QueryRow(ctx, updateContactAIFields,
+		arg.SetBillingEmail,
+		arg.BillingEmail,
+		arg.SetPhone,
+		arg.Phone,
+		arg.SetAddress,
+		arg.Address,
+		arg.SetPaymentTermsDays,
+		arg.PaymentTermsDays,
+		arg.SetDefaultAccountID,
+		arg.DefaultAccountID,
+		arg.SetDefaultGstCode,
+		arg.DefaultGstCode,
+		arg.ID,
+		arg.Version,
+	)
+	var i UpdateContactAIFieldsRow
+	err := row.Scan(
+		&i.ID,
+		&i.LegalName,
+		&i.IsCustomer,
+		&i.IsVendor,
+		&i.UenOrTaxID,
+		&i.PeppolID,
+		&i.BillingEmail,
+		&i.RemittanceEmail,
+		&i.Phone,
+		&i.Address,
+		&i.Country,
+		&i.TaxResidence,
+		&i.Currency,
+		&i.PaymentTermsDays,
+		&i.DiscountPercent,
+		&i.DiscountDays,
+		&i.DefaultAccountID,
+		&i.DefaultGstCode,
+		&i.CustomerGroupID,
+		&i.IsDirector,
+		&i.IsShareholder,
+		&i.IsInvestor,
+		&i.Individual,
+		&i.MemberUserID,
+		&i.IsActive,
+		&i.Version,
+	)
+	return i, err
+}

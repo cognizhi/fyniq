@@ -276,6 +276,7 @@
               "sg-cit",
               "sg-deadlines",
               "sg-acra",
+              "sg-tax-filings",
               "sg-invoicenow"
             ],
             "type": "string"
@@ -295,8 +296,8 @@
       "scopes": [
         "fyniq.read.compliance"
       ],
-      "version": 4,
-      "sha256": "8f86c8f11e0298330dbb7bdba74550c776a193ca8984afd66428ed382a0afc45"
+      "version": 5,
+      "sha256": "f4ee9f6117bd784ebf60fb09454b6fcbea407d8c9b04a89ce9a22f7325ec8695"
     },
     {
       "name": "records.get",

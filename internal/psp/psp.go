@@ -276,6 +276,9 @@ func (r Runner) mirror(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, 
 		} else if isNew {
 			res.Transactions++
 		}
+		if err := recordLinkPayment(ctx, u, id, t, now); err != nil {
+			return err
+		}
 	}
 	for _, po := range payouts {
 		amount := po.Amount
@@ -334,4 +337,30 @@ func (h Handler) Handle(ctx context.Context, u storage.UnitOfWork, c storage.Ins
 		return "", err
 	}
 	return "", QueueRun(ctx, h.Dispatcher, u, o.ID, c.ID, now)
+}
+
+// recordLinkPayment notes that a charge was made under one of the organisation's payment links (FR-PSP-02): the provider's
+// charge names the payment request it was made under, and a link of that request in the charge's currency takes it as a payment.
+// Only the mirror is written; the receipt is auto-reconcile's, which also checks the amount against what the invoice has open.
+func recordLinkPayment(ctx context.Context, u storage.UnitOfWork, connector uuid.UUID, t ports.ProviderObject, now time.Time) error {
+	if t.Category != storage.PSPCatCharge || t.Amount == "" {
+		return nil
+	}
+	for _, request := range t.Links[ports.ProviderInvoice] {
+		link, err := u.PaymentLinks().ByRequest(ctx, connector, request)
+		if errors.Is(err, ports.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("charge %s: %w", t.ID, err)
+		}
+		if link.Currency != t.Currency {
+			continue // a charge in another currency than the link asked for is no payment of it: a person looks at the line
+		}
+		if _, _, err := u.PaymentLinks().RecordPayment(ctx, storage.NewPaymentLinkPayment{LinkID: link.ID, ConnectorID: connector, ProviderPaymentID: t.ID,
+			Currency: t.Currency, Amount: storage.Decimal(t.Amount), PaidAt: t.Created, SeenAt: now}); err != nil {
+			return fmt.Errorf("charge %s under link %s: %w", t.ID, link.ID, err)
+		}
+	}
+	return nil
 }

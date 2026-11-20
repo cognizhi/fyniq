@@ -291,6 +291,7 @@ const (
 	TypePayrollPaymentStatus = "payroll.payments.status"
 	TypeDepartmentChanged    = "people.department.changed"
 	TypeSessionRevoked       = "identity.session.revoked"
+	// TypeIdentityAccess (identity.access.changed) is also what Fyniq sends: whether an identity holds a role in the finance workspace and has a passkey enrolled (link_access.go).
 )
 
 // ReceiveLinkEvent verifies and applies one event Fyniq sent (NM-INT-10): the envelope against the link as Nemura holds it (organisations, epoch, a 5-minute window, Fyniq's signature,
@@ -371,6 +372,14 @@ func ReceiveLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Ti
 		var ev sessionRevokedEvent
 		if applyErr = strict(&ev); applyErr == nil {
 			applyErr = applySessionRevoked(ctx, sp, org, now, ev)
+		}
+	case TypeIdentityAccess:
+		var ev identityAccessEvent
+		if applyErr = strict(&ev); applyErr == nil {
+			var o string
+			if o, applyErr = applyIdentityAccess(ctx, sp, org, now, ev, env.Header.ObjectVersion); applyErr == nil {
+				outcome = o
+			}
 		}
 	case TypeReplayRequested:
 		var ev replayRequest

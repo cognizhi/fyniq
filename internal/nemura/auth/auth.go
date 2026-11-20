@@ -69,7 +69,7 @@ type Store interface {
 	SetupDone(ctx context.Context) (bool, error)
 	MembershipsOf(ctx context.Context, who identity.Identity) ([]Membership, error)
 	// StartSession opens a session for a member and returns its token (only its hash is kept).
-	StartSession(ctx context.Context, org, member uuid.UUID, now time.Time) (string, error)
+	StartSession(ctx context.Context, org, member uuid.UUID, now time.Time, via identity.Via) (string, error)
 	// EndSession ends the session a token opens, if any.
 	EndSession(ctx context.Context, token string, now time.Time) error
 	// FirstRun makes the first organisation and its Owner with the setup code's hash; AcceptInvitation links the identity to the invited
@@ -272,7 +272,7 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// The first organisation the person joined; choosing among several is the web app's organisation switcher.
-	token, err := f.Store.StartSession(r.Context(), memberships[0].Organisation, memberships[0].Member, f.Clock.Now())
+	token, err := f.Store.StartSession(r.Context(), memberships[0].Organisation, memberships[0].Member, f.Clock.Now(), identity.Via{Provider: provider, Issuer: signed.Issuer, Subject: signed.Subject})
 	if err != nil {
 		// A deactivated member, a refusal: the same plain answer for all (it tells an attacker nothing).
 		f.fail(w, r, CodeNoMembership, "session refused", nil)

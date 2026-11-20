@@ -103,6 +103,10 @@
       "label": "Items to keep",
       "tooltip": "Clear any item you disagree with: the approval covers only the items you keep, and nothing else changes."
     },
+    "ai-proposal.undo": {
+      "label": "Undo this change",
+      "tooltip": "Puts back what the change replaced, as you, with a reason, once. It works only while nobody has changed the same record since."
+    },
     "ai-proposal.rationale": {
       "label": "The AI's reasons",
       "tooltip": "Why the AI proposes it, in its own words. Check them against Fyniq's summary, which says what really happens."
@@ -2110,6 +2114,14 @@
     "invoice.issue": {
       "label": "Issue",
       "tooltip": "Number it and post it to the ledger on its date: it adds its total to what the customer owes."
+    },
+    "invoice.payment-link": {
+      "label": "Add a payment link",
+      "tooltip": "Ask your payment provider for a page where the customer pays what is open on this invoice. When they pay, Fyniq matches the provider's line to the invoice by itself."
+    },
+    "invoice.payment-link-cancel": {
+      "label": "Cancel the link",
+      "tooltip": "Close the link here so a new one can be made. The provider's page stays payable until it expires; a payment on it waits for a person in Banking."
     },
     "invoice.ask-approval": {
       "label": "Ask for approval",

@@ -165,6 +165,30 @@ func SnapshotLinkEvents(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.T
 		return 0, err
 	}
 	n := 0
+	members, err := tx.Query(ctx, `SELECT id FROM nemura.member ORDER BY created_at, id`)
+	if err != nil {
+		return 0, err
+	}
+	var ids []uuid.UUID
+	for members.Next() {
+		var id uuid.UUID
+		if err := members.Scan(&id); err != nil {
+			members.Close()
+			return 0, err
+		}
+		ids = append(ids, id)
+	}
+	members.Close()
+	if err := members.Err(); err != nil {
+		return 0, err
+	}
+	for _, m := range ids { // what each identity may enter, so Fyniq's switch and its passkey prompt are right from the first day
+		k, err := QueueAccessEvents(ctx, tx, org, at, m)
+		if err != nil {
+			return n, err
+		}
+		n += k
+	}
 	for _, p := range persons {
 		if ok, err := QueuePersonEvent(ctx, tx, org, at, p); err != nil {
 			return n, err

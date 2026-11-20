@@ -70,3 +70,11 @@ A captured file is read by the model on a person's request and drafted by a pers
 | C7 | A bank account number, IBAN or NRIC/FIN in a document reaches the model | The model is given masked text only (`capture.MaskText`): numbers after a bank word, IBANs, NRIC/FIN with a right check letter and any run of nine digits or more that is not a UEN, an amount or a date are hidden first; a photo, and a PDF whose text cannot be extracted, are not read at all; the file as captured is kept unmasked as evidence and flagged (FR-DOC-09) | `TestTheMaskerHidesBankAndIdentityNumbersAndKeepsWhatABillNeeds`, `TestADocumentIsCapturedReadAndDraftedByAPerson`, `TestADocumentThatCannotBeReadSaysWhy` |
 | C8 | A supplier's bank details are set by the AI | Never: a payee's bank details are on the never-list (§9.6); the person keys them, and the draft bill has no field for them | the never-list tests (CTL-AI-04) |
 | C6 | A captured file is shown or served as a page | It is downloaded as an attachment with nosniff and no-store, never inline | `TestADocumentIsCapturedReadAndDraftedByAPerson` |
+
+**The capture evals (task 4.2, QA-AI-02, AI-18).** C1 and C7 are also measured on a model's own readings, not only on the pipeline: `evals/capture/capture.json`
+holds synthetic documents, among them a document with a plain instruction to the AI (right outcome: screening stops it before any model), one with a subtler
+instruction (a right reading holds the document's figures and none of the injected words), and one with a bank and an identity number (a right reading holds
+neither). Each reading is judged field by field: what the document prints exactly, null for what it does not, so an invented figure fails.
+`TestTheCaptureSuites` checks the judge on a right and a wrong reading of every case and replays each recorded model; recording a model is
+`[live-verify]` (a developer's key).
+

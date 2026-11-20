@@ -2,9 +2,9 @@
 key: ai.proposals
 type: task
 title: Review, approve or reject a change the AI proposed
-summary: Review, approve or reject an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
+summary: Review, approve, reject or undo an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
 sources:
-  - docs/user-guide/ai-proposals.md sha256:78518f580d96876e20981ce604beae7622722586470679e8a4c43fb0bc84c24f
+  - docs/user-guide/ai-proposals.md sha256:1dd8527a2b83d04ab7b2733763787b72cb4d53d859addf8a13ffc4bbdc002a5d
 data_class: general
 taint: trusted
 status: draft
@@ -25,6 +25,16 @@ aliases:
   - AI suggested task
   - sec.create_task
   - AI drafted reminder
+  - undo an AI change
+  - undo what the AI did
+  - AI update contact
+  - ct.update_contact
+  - AI bank rule
+  - bank.rule_upsert
+  - AI recurring journal
+  - recur.create_template
+  - AI budget draft
+  - plan.propose_budget
   - sec.draft_reminder
 ---
 
@@ -113,6 +123,45 @@ aliases:
 - A bill is out of date, and drafts nothing, if the supplier changed after the review. A supplier that is not an active supplier, an account that cannot be costed, a GST code that is not a purchase code and a category that is not a claim category are refused with the reason.
 
 (src: docs/user-guide/ai-proposals.md#review-a-bill-or-an-expense-claim-the-ai-drafted)
+
+## Review a contact change the AI proposed
+
+- Update a contact's details (`ct.update_contact`, tier 2) changes up to six details of a customer or supplier company, as Change a contact does: the billing email, phone, address, payment terms, default category and default GST code. The review shows each detail before and after.
+- It never changes a legal name, UEN or tax ID, Peppol ID, remittance email, country, tax residence, currency, discount terms, customer group or any bank detail, and never the record of a person (an individual, a director, a shareholder, an investor or a member who signs in): a person makes those changes. The AI cannot clear a detail.
+- It is tier 2: someone other than the person who asked approves it, and that person must be able to change contacts themselves, such as the AR or AP specialist or the accountant. If the contact changed after the review, nothing is changed and the proposal is out of date.
+
+(src: docs/user-guide/ai-proposals.md#review-a-contact-change-the-ai-proposed)
+
+## Undo a change the AI made
+
+- A change that changes or posts a record can be undone from the proposal's review with **Undo this change**: you say why, and Fyniq puts back what it replaced, as you, keeping who, when and why in the audit trail. You need the right the change itself needs.
+- It works once, and only while nobody has changed the same record since; otherwise it is refused and says so, and a person corrects it by hand. A posted entry is undone by a reversing entry, never an edit, and needs the period to be open.
+- A draft the AI made is not undone: it posts nothing, so a person edits or ignores it; a message sent cannot be unsent. The proposal stays **Executed**, and the review then says **Undone**, when and why.
+
+(src: docs/user-guide/ai-proposals.md#undo-a-change-the-ai-made)
+
+## Review a recurring journal the AI proposed
+
+- Add a recurring journal (`recur.create_template`, tier 2) adds a recurring journal, as Add a recurring journal does: a name, the memo and balancing lines, whether each draft reverses on the first day of the next month, and a schedule of every 1, 3, 6 or 12 months on a day of the month. The scheduler then makes a draft journal on each occurrence, which a person posts under the usual approvals: nothing recurring posts by itself.
+- Its lines keep to income, cost, prepayment, deferred revenue and depreciation accounts in the base currency: never a bank, equity, sub-ledger, tax, payroll or director's account. Its monthly equivalent is limited to S$5,000. A recurring bill or invoice is made by a person.
+- It is tier 2: an Accountant other than the person who asked approves it. If an account it names changed after the review, nothing is made and the proposal is out of date. **Undo this change** pauses the template; drafts the scheduler already made stay for a person to post or ignore.
+
+(src: docs/user-guide/ai-proposals.md#review-a-recurring-journal-the-ai-proposed)
+
+## Review a budget the AI drafted
+
+- Draft a budget version (`plan.propose_budget`, tier 2) drafts a budget for a financial year, as Draft a budget does: income and expense accounts with twelve monthly amounts, for the whole company. It is only a draft: not approved or recorded; a person asks for its approval, which records and locks it. A line for one department or project is a person's.
+- An Accountant other than the person who asked approves it. A budget draft cannot be undone, since no function deletes one: a person edits it or leaves it.
+
+(src: docs/user-guide/ai-proposals.md#review-a-budget-the-ai-drafted)
+
+## Review a bank rule the AI proposed
+
+- Create or change a bank rule (`bank.rule_upsert`, tier 1) saves a bank rule, as Create a bank rule and Change a bank rule do: a name, its place in the order, what a line must meet (a text or pattern in the description, the direction, an amount range, the currency, the counterparty) and the ordinary account it codes lines to, with an optional contact, GST code and reference.
+- The review shows the rule's back-test: how many of the lines held its conditions would have matched, by status. A rule only suggests a coding, which a person accepts. The AI cannot make a rule apply by itself, nor code lines to a bank, receivables or payables account: applying by itself needs another person's approval after the back-test, and changing a rule stops it applying meanwhile. A rule the AI proposed is marked as such.
+- Someone who may keep bank rules, such as the bookkeeper or the accountant, approves it. **Undo this change** switches a new rule off, or puts a changed rule back as it was, while nobody has changed it since.
+
+(src: docs/user-guide/ai-proposals.md#review-a-bank-rule-the-ai-proposed)
 
 ## Approval quality
 

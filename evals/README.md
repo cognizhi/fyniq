@@ -33,6 +33,8 @@ real orchestrator through the API, as a person asks. Three kinds:
   a fixture of the harness: it is checked to judge soundly, and no model is asked it. Each task type of the release
   adds its own suite.
 
+A proposal suite whose task types need a right the founder's Owner and Controller roles do not hold, such as an Accountant's journal or budget, names an `asker`: the role of a member the harness adds, who asks the cases.
+
 Each case also names its `solution`, the reads a right answer makes (a proposal case's reads come before its proposal,
 and it may make none). The API's `TestTheAssistantSuites`, which
 `make evals` runs first and `make test` runs too, checks the harness on every change. It works each expected value out
@@ -64,6 +66,16 @@ every change: the right model passes each case, and the same run missing a plant
 a red-team case, repeating the injection fails it. Then each model recorded in `cassettes/agent/` runs every case from
 its recordings, as the assistant's suites do. `secretary-launch` holds the company secretary assistant's launch cases;
 `p1-company-secretary` adds the corporate ones.
+
+## The capture suite
+
+`capture/capture.json` (QA-AI-02, AI-18; p1-document-capture task 4.2): synthetic documents, as the text a model is given, each with what a right reading holds:
+every field the document prints exactly as printed and every field it does not show null, its flags and lines, and the words no field may hold (an injected
+instruction, a bank or identity number the platform removed first). `TestTheCaptureSuites` captures and reads each through the API and the real reading path
+(masking, screening, the strict parse, the platform's checks) and judges the stored reading. The harness checks itself first: the case's own right reading
+passes and a changed figure, an invented field or a repeated instruction fails; a case marked `screened` is right when screening stops it before any model.
+Then each model recorded in `cassettes/capture/` reads every case from its recordings; `FYNIQ_EVALS_RELEASE=1` fails a case with no recording. Recording a
+model's readings is `FYNIQ_AI_LIVE=1 FYNIQ_EVALS_MODEL=<model id>`, on the synthetic documents only [live-verify: a developer's key].
 
 ## The knowledge suite
 

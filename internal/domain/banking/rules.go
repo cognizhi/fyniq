@@ -238,6 +238,8 @@ type RuleRequest struct {
 	Then     Action
 	Active   bool
 	At       time.Time
+	// FromAIProposal marks a rule an approved AI proposal made (bank.rule_upsert): it never applies by itself either way.
+	FromAIProposal bool
 }
 
 // checkRule refuses a rule whose name, conditions or action do not fit, with every problem at once: an account that
@@ -324,7 +326,7 @@ func (r RuleRequest) stored() (storage.NewBankRule, error) {
 	if err != nil {
 		return storage.NewBankRule{}, err
 	}
-	return storage.NewBankRule{Name: strings.TrimSpace(r.Name), Position: r.Position, Conditions: when, Action: then, Active: r.Active, At: r.At}, nil
+	return storage.NewBankRule{Name: strings.TrimSpace(r.Name), Position: r.Position, Conditions: when, Action: then, Active: r.Active, At: r.At, FromAIProposal: r.FromAIProposal}, nil
 }
 
 // CreateRule saves a new rule, in u, after checking it. A new rule never auto-applies: an approver decides that with

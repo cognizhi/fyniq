@@ -104,6 +104,8 @@ type UnitOfWork interface {
 	PSPEvents() PSPEvents
 	// PSP is the payment providers' accounts, transactions, payouts and balances (FR-PSP-06).
 	PSP() PSPLedger
+	// PaymentLinks are the payment links on invoices and the payments made under them (FR-AR-13, FR-PSP-02).
+	PaymentLinks() PaymentLinks
 	Notifications() Notifications
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates

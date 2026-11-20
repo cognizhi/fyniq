@@ -528,6 +528,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerRemittanceAgain(a)
 	registerInvoices(a)
 	registerInvoiceDocuments(a)
+	registerPaymentLinks(a)
 	registerDocumentSends(a)
 	registerSalesReminders(a)
 	registerStatements(a)
@@ -592,6 +593,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerPersonalTokens(a)
 	a.registerInternal(mux)
 	approvalEnumsAreExtensible(a.API)
+	messagePurposesAreExtensible(a.API)
 	return a
 }
 
