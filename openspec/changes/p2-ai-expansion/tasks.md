@@ -11,5 +11,6 @@
 
 ## 3. kb.propose_page (AI-59)
 - [ ] 3.1 The task type, its schema and `proposal.NoFigures` (D2). `// req: AI-59`
+  **Left:** waits for the owner's confirmation of D2 (a new write path from the AI to the organisation's knowledge) and a review of the executor's grant.
 - [ ] 3.2 The executor's grant on `kb_note` and its attack test (needs-human-review). `// req: AI-59`, `// req: SEC-03`
 - [ ] 3.3 Evals and the red-team case: a figure never becomes a page. `// req: AI-59`, `// req: CTL-AI-05`
