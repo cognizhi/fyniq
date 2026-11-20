@@ -4,7 +4,7 @@ type: task
 title: Pay salaries from a pay run
 summary: Prepare a salary batch, have another person approve it, release the lines free to go, and see each payment paid from the bank feed or a person's evidence
 sources:
-  - docs/user-guide/payroll-salary-payments.md sha256:0826f0cdcb32f31a3e5c107f80da3c9e0fefe2c6c9b946da985bb8f178b325e8
+  - docs/user-guide/payroll-salary-payments.md sha256:1030953ad4e188667599c7879c621b2c52c42a05313b77d0afda9df87cb44065
 data_class: general
 taint: trusted
 status: draft
@@ -71,6 +71,7 @@ aliases:
 ## What became of a payment
 
 - A line is **paid** only when the bank feed shows its debit, matched to the lines it paid, or a person records the outcome with a file of evidence; a posted journal or a payment file is never payment.
+- **Match a bank debit** pays released lines from the bank feed: choose the batch's bank-account debit waiting in the Categorise queue and tick the lines it paid; their amounts must make the debit exactly. It posts to Salaries payable as categorising does, and each paid line goes to Nemura.
 - Someone who did not prepare or approve the pay run in Nemura records it as sent, accepted, paid, rejected, returned or unknown, with the day and the evidence.
 - An unknown outcome blocks paying that person again in the run until it is resolved as paid, rejected or returned.
 - Each outcome goes back to Nemura.
