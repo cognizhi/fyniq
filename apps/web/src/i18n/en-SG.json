@@ -3155,6 +3155,10 @@
       "label": "Record",
       "tooltip": "Make this the company's plan: Home and the alerts read the latest recorded forecast. It changes no more."
     },
+    "planning.funding-plan": {
+      "label": "What the planned equity rounds do to ownership",
+      "tooltip": "Each Equity funding row with a pre-money valuation, taken in the order of its days through the equity register's round model over the cap table fully diluted today: its price, the shares its money buys and each holder before and after. A sandbox: nothing is posted."
+    },
     "forecast.without-funding": {
       "label": "Without the funding planned",
       "tooltip": "None of the funding planned is received yet, so runway and the cash-out month are shown without it first."

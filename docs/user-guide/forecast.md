@@ -69,6 +69,22 @@ These are the workbook's simplifications, kept as it had them [accountant to con
 - what customers owed and what the company owed at the start are collected and paid 60% in the first month and 40% in
   the second.
 
+## The funding plan
+
+Give an **Equity** row of the funding plan an **Equity pre-money**, the valuation the round is planned at, and the page
+shows **What the planned equity rounds do to ownership** below the results. It starts from the cap table of the equity
+register as it stands today (fully diluted, with the options the pool still holds) and takes each Equity row in the order of
+its month through the same round model as **Equity › Model a round**: the pre-money valuation divided by the shares
+fully diluted before the round is its price per share, the money buys whole shares of it, and each holder's share before
+and after, and the points they lose, follow. A second round dilutes the holders as the first left them.
+
+- A round with no pre-money valuation, or one the model refuses, is listed with why and passes the cap table through
+  unchanged.
+- SAFEs, loans and grants are listed apart: they issue no shares in the plan. A SAFE converts at the next priced round
+  under its cap and discount, which a funding row does not hold, so it is not modelled [accountant to confirm].
+- It uses the rows as the forecast holds them, before any scenario's levers, and plans no option pool top-up.
+- It shows every holder's ownership, so only people who may read the whole cap table see it. It posts and saves nothing.
+
 ## Compare the scenarios
 
 **Compare the scenarios** sets every scenario's cash-out month, runway, minimum cash, funding gap and break-even side by

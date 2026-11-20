@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cap_table_on": {
+      "description": "The day of the register's cap table the plan starts from: the organisation's today.",
+      "examples": [
+        "2026-11-21"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "currency": {
+      "description": "The base currency every amount is in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "forecast_id": {
+      "description": "The forecast.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "notes": {
+      "description": "What the plan does not model.",
+      "items": {
+        "examples": [
+          "A SAFE converts at the next priced round under its cap and discount, which a funding row does not hold: it is listed, not modelled [accountant to confirm]."
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "other": {
+      "description": "The funding rows that issue no shares in the plan: SAFEs, loans and grants.",
+      "items": {
+        "$ref": "FundingPlanOther.schema.json"
+      },
+      "type": "array"
+    },
+    "rounds": {
+      "description": "The planned equity rounds in the order of their days; each dilutes the holders as the one before left them.",
+      "items": {
+        "$ref": "FundingPlanRound.schema.json"
+      },
+      "type": "array"
+    },
+    "shares_fully_diluted": {
+      "description": "The shares fully diluted on that day.",
+      "examples": [
+        "1000000"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "forecast_id",
+    "currency",
+    "cap_table_on",
+    "shares_fully_diluted",
+    "rounds",
+    "other",
+    "notes"
+  ],
+  "title": "FundingPlan",
+  "type": "object"
+}

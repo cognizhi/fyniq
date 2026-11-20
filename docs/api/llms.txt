@@ -546,6 +546,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/forecasts/{forecast_id}` (getForecast): Get a forecast
 - `PUT /v1/forecasts/{forecast_id}` (replaceForecast): Change a drafted forecast
 - `GET /v1/forecasts/{forecast_id}/comparison` (compareForecastScenarios): Compare a forecast's scenarios
+- `GET /v1/forecasts/{forecast_id}/funding-plan` (getForecastFundingPlan): Model a forecast's planned equity rounds on the cap table
 - `POST /v1/forecasts/{forecast_id}/record` (recordForecast): Record a forecast
 - `GET /v1/forecasts/{forecast_id}/results` (getForecastResults): Work a forecast out
 - `POST /v1/forecasts:run` (runForecast): Work a plan out without saving it

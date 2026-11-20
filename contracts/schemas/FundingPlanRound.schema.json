@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "holders": {
+      "description": "Each holder before and after, then the new investors; empty when the round was not modelled.",
+      "items": {
+        "$ref": "FundingPlanHolder.schema.json"
+      },
+      "type": "array"
+    },
+    "modelled": {
+      "description": "False when the round could not be modelled, which why says; the cap table passes through it unchanged.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "month": {
+      "description": "The month its money arrives; its first day is the round's day.",
+      "examples": [
+        "2027-06"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "new_shares": {
+      "description": "The shares the money buys, whole shares of the price (RND-SHARE).",
+      "examples": [
+        "250000"
+      ],
+      "type": "string"
+    },
+    "planned": {
+      "$ref": "Money.schema.json",
+      "description": "The money planned."
+    },
+    "post_money": {
+      "$ref": "Money.schema.json",
+      "description": "The post-money valuation: the shares fully diluted after, at the price."
+    },
+    "pre_money": {
+      "$ref": "Money.schema.json",
+      "description": "The pre-money valuation planned."
+    },
+    "price_per_share": {
+      "$ref": "Money.schema.json",
+      "description": "The price per share: the pre-money valuation divided by the shares fully diluted before, cut down to 4 decimals."
+    },
+    "raised": {
+      "$ref": "Money.schema.json",
+      "description": "What those shares cost: at most the money planned, the rest buying no whole share."
+    },
+    "row": {
+      "description": "The funding row of the forecast it is.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "why": {
+      "description": "Why it was not modelled.",
+      "examples": [
+        "No pre-money valuation is planned, so the round has no price to model: add one to the funding row"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "row",
+    "month",
+    "planned",
+    "modelled",
+    "holders"
+  ],
+  "title": "FundingPlanRound",
+  "type": "object"
+}

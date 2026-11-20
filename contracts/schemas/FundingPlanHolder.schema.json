@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "after": {
+      "description": "Their percentage fully diluted after the round.",
+      "examples": [
+        "56.00"
+      ],
+      "type": "string"
+    },
+    "before": {
+      "description": "Their percentage fully diluted before the round, to 2 decimals (RND-DISPLAY); empty when they held nothing.",
+      "examples": [
+        "70.00"
+      ],
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The holder; absent for the new investors the plan does not name.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_name": {
+      "description": "Their name, or New investors.",
+      "examples": [
+        "Lion Rock Ventures Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "points_lost": {
+      "description": "The percentage points the round took from them, exact, to 2 decimals; negative for a gain.",
+      "examples": [
+        "14.00"
+      ],
+      "type": "string"
+    },
+    "shares_after": {
+      "description": "Their shares fully diluted after the round.",
+      "examples": [
+        "700000"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "holder_name",
+    "before",
+    "after",
+    "points_lost",
+    "shares_after"
+  ],
+  "title": "FundingPlanHolder",
+  "type": "object"
+}

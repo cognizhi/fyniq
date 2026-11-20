@@ -123,6 +123,8 @@ type ForecastFunding struct {
 	Rate   string `json:"rate,omitempty" doc:"A loan's yearly interest rate, as a fraction." example:"0.055"`
 	Tenor  int    `json:"tenor,omitempty" minimum:"0" maximum:"360" doc:"A loan's months of equal repayments, from the month after it is drawn." example:"36"`
 	Notes  string `json:"notes,omitempty" maxLength:"200" doc:"Notes." example:"SME working-capital loan"`
+	// PreMoney is the valuation an equity round is planned at (rev 0.601): the funding plan prices the round with it through the equity register's round model.
+	PreMoney string `json:"pre_money,omitempty" doc:"For an Equity row: the pre-money valuation the round is planned at, which the funding plan divides by the shares fully diluted before the round to price it (FR-PLN-07)." example:"4000000.00"`
 }
 
 // ForecastTax is what the tax estimate needs beyond the sg-cit pack.
@@ -292,6 +294,9 @@ func Check(p ForecastPlan, cur money.Currency) ledger.Problems {
 	}
 	for i, f := range p.Funding {
 		at := fmt.Sprintf("funding[%d]", i)
+		if f.PreMoney != "" && f.Type != planning.FundingEquity {
+			add(at+".pre_money", "only an equity round has a pre-money valuation", "Leave it out, or make the row an equity round")
+		}
 		switch f.Type {
 		case planning.FundingEquity, planning.FundingSAFE, planning.FundingGrant:
 			if f.Rate != "" || f.Tenor != 0 {
@@ -307,6 +312,12 @@ func Check(p ForecastPlan, cur money.Currency) ledger.Problems {
 		}
 		month(at+".month", f.Month)
 		amount(at+".amount", f.Amount)
+		if f.PreMoney != "" {
+			amount(at+".pre_money", f.PreMoney)
+			if strings.Trim(f.PreMoney, "0.") == "" {
+				add(at+".pre_money", "a valuation of nothing prices no share", "Enter the pre-money valuation, such as 4000000.00, or leave it out")
+			}
+		}
 	}
 	t := p.Tax
 	if t.StartUpYears < 0 || t.StartUpYears > MaxStartUp {

@@ -8713,6 +8713,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/forecasts/{forecast_id}/funding-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Model a forecast's planned equity rounds on the cap table
+         * @description A sandbox (FR-PLN-07): each Equity funding row of the forecast that has a pre-money valuation, taken in the order of its days through the equity register's round model (FR-EQ-21) over the cap table fully diluted the day before, starting from the register's cap table of today: the pre-money valuation divided by the shares fully diluted before the round gives its price (cut down to 4 decimals), the money buys whole shares of it, and each holder's part before and after gives the dilution in percentage points. A round with no valuation, or one the model refuses, is listed with why; SAFEs, loans and grants are listed apart, as they issue no shares in the plan. The rows are the forecast's own, before any scenario's levers. It reads the whole cap table, so it needs the right to. Nothing is posted or saved. Read-only.
+         */
+        get: operations["getForecastFundingPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/forecasts/{forecast_id}/record": {
         parameters: {
             query?: never;
@@ -39641,6 +39661,11 @@ export interface components {
              */
             notes?: string;
             /**
+             * @description For an Equity row: the pre-money valuation the round is planned at, which the funding plan divides by the shares fully diluted before the round to price it (FR-PLN-07).
+             * @example 4000000.00
+             */
+            pre_money?: string;
+            /**
              * @description A loan's yearly interest rate, as a fraction.
              * @example 0.055
              */
@@ -40490,6 +40515,135 @@ export interface components {
              * @example 2026-10-31
              */
             through: string;
+        };
+        FundingPlan: {
+            /**
+             * Format: date
+             * @description The day of the register's cap table the plan starts from: the organisation's today.
+             * @example 2026-11-21
+             */
+            cap_table_on: string;
+            /**
+             * @description The base currency every amount is in.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: uuid
+             * @description The forecast.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01
+             */
+            forecast_id: string;
+            /** @description What the plan does not model. */
+            notes: string[];
+            /** @description The funding rows that issue no shares in the plan: SAFEs, loans and grants. */
+            other: components["schemas"]["FundingPlanOther"][];
+            /** @description The planned equity rounds in the order of their days; each dilutes the holders as the one before left them. */
+            rounds: components["schemas"]["FundingPlanRound"][];
+            /**
+             * @description The shares fully diluted on that day.
+             * @example 1000000
+             */
+            shares_fully_diluted: string;
+        };
+        FundingPlanHolder: {
+            /**
+             * @description Their percentage fully diluted after the round.
+             * @example 56.00
+             */
+            after: string;
+            /**
+             * @description Their percentage fully diluted before the round, to 2 decimals (RND-DISPLAY); empty when they held nothing.
+             * @example 70.00
+             */
+            before: string;
+            /**
+             * Format: uuid
+             * @description The holder; absent for the new investors the plan does not name.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+             */
+            holder_id?: string;
+            /**
+             * @description Their name, or New investors.
+             * @example Lion Rock Ventures Pte. Ltd.
+             */
+            holder_name: string;
+            /**
+             * @description The percentage points the round took from them, exact, to 2 decimals; negative for a gain.
+             * @example 14.00
+             */
+            points_lost: string;
+            /**
+             * @description Their shares fully diluted after the round.
+             * @example 700000
+             */
+            shares_after: string;
+        };
+        FundingPlanOther: {
+            /** @description The amount. */
+            amount: components["schemas"]["Money"];
+            /**
+             * @description The month its money arrives.
+             * @example 2027-02
+             */
+            month: string;
+            /**
+             * Format: int64
+             * @description The funding row of the forecast it is.
+             * @example 1
+             */
+            row: number;
+            /**
+             * @description Its kind.
+             * @example Loan
+             * @enum {string}
+             */
+            type: "SAFE" | "Loan" | "Grant";
+            /**
+             * @description Why the cap table does not change by it.
+             * @example A loan or a grant issues no shares
+             */
+            why: string;
+        };
+        FundingPlanRound: {
+            /** @description Each holder before and after, then the new investors; empty when the round was not modelled. */
+            holders: components["schemas"]["FundingPlanHolder"][];
+            /**
+             * @description False when the round could not be modelled, which why says; the cap table passes through it unchanged.
+             * @example true
+             */
+            modelled: boolean;
+            /**
+             * @description The month its money arrives; its first day is the round's day.
+             * @example 2027-06
+             */
+            month: string;
+            /**
+             * @description The shares the money buys, whole shares of the price (RND-SHARE).
+             * @example 250000
+             */
+            new_shares?: string;
+            /** @description The money planned. */
+            planned: components["schemas"]["Money"];
+            /** @description The post-money valuation: the shares fully diluted after, at the price. */
+            post_money?: components["schemas"]["Money"];
+            /** @description The pre-money valuation planned. */
+            pre_money?: components["schemas"]["Money"];
+            /** @description The price per share: the pre-money valuation divided by the shares fully diluted before, cut down to 4 decimals. */
+            price_per_share?: components["schemas"]["Money"];
+            /** @description What those shares cost: at most the money planned, the rest buying no whole share. */
+            raised?: components["schemas"]["Money"];
+            /**
+             * Format: int64
+             * @description The funding row of the forecast it is.
+             * @example 0
+             */
+            row: number;
+            /**
+             * @description Why it was not modelled.
+             * @example No pre-money valuation is planned, so the round has no price to model: add one to the funding row
+             */
+            why?: string;
         };
         GSTCode: {
             /**
@@ -132418,6 +132572,93 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getForecastFundingPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The forecast. */
+                forecast_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundingPlan"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
