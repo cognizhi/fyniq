@@ -17,6 +17,9 @@ SET method = sqlc.arg(method), estimated_cost = sqlc.narg(estimated_cost)::numer
 WHERE project_id = sqlc.arg(project_id) AND version = sqlc.arg(version)
 RETURNING project_id, method, COALESCE(estimated_cost::text, '')::text AS estimated_cost, excluded_cost::text AS excluded_cost, COALESCE(excluded_reason, '')::text AS excluded_reason, version, set_by, set_at;
 
+-- name: CreateProjectRevenueDraft :one
+SELECT fyniq.create_project_revenue_draft(sqlc.arg(project_id)::uuid, sqlc.arg(month)::date, sqlc.arg(payload)::jsonb, sqlc.arg(adjustment)::numeric, sqlc.arg(earned)::numeric)::uuid AS id;
+
 -- name: ProjectRevenueRunsOf :many
 SELECT id, project_id, month, journal_id, adjustment::text AS adjustment, earned::text AS earned, created_by, created_at
 FROM fyniq.project_revenue_run WHERE project_id = sqlc.arg(project_id) ORDER BY month;

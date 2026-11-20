@@ -49930,6 +49930,9 @@ components:
         contract_liability:
           $ref: "#/components/schemas/Money"
           description: "The contract liability after the journal: invoiced and not yet earned."
+        converted_at:
+          $ref: "#/components/schemas/ProjectRevenueRate"
+          description: "For a project in another currency: the rate the fee, the estimate and the costs left out were converted into the base currency at, with its date; the figures above are in the base currency."
         cost_to_date:
           $ref: "#/components/schemas/Money"
           description: "What progress is measured by: the project's costs posted to the end of the month (direct and payroll-tagged) less those left out as not showing progress."
@@ -49984,6 +49987,36 @@ components:
         - contract_asset
         - contract_liability
         - nothing_to_propose
+      type: object
+    ProjectRevenueRate:
+      additionalProperties: false
+      properties:
+        currency:
+          description: The project's currency.
+          examples:
+            - USD
+          type: string
+        rate:
+          description: Base currency per one unit.
+          examples:
+            - "1.3472"
+          type: string
+        rate_date:
+          description: The date the rate is of.
+          examples:
+            - "2026-10-30"
+          format: date
+          type: string
+        source:
+          description: Where it came from.
+          examples:
+            - MAS daily feed of 2026-10-30
+          type: string
+      required:
+        - currency
+        - rate
+        - rate_date
+        - source
       type: object
     ProjectRevenueRun:
       additionalProperties: false
@@ -228065,7 +228098,7 @@ paths:
         right: V
   /v1/projects/{project_id}/revenue-election:
     put:
-      description: "The accountant's choice for a fixed-fee project in the base currency (FR-PRJ-11): over_time with the estimated total cost above nothing, or milestone, which is the default. Changing it needs If-Match with the election's ETag; the first election needs none. It posts nothing; the month's journal is proposed with proposeProjectRevenueJournal. Side effects: the election and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      description: "The accountant's choice for a fixed-fee project (FR-PRJ-11): over_time with the estimated total cost above nothing, or milestone, which is the default. Changing it needs If-Match with the election's ETag; the first election needs none. It posts nothing; the month's journal is proposed with proposeProjectRevenueJournal. Side effects: the election and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
       operationId: setProjectRevenueElection
       parameters:
         - description: The project's ID.

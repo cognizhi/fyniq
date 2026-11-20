@@ -46,6 +46,14 @@ type ProjectRevenue struct {
 }
 
 // ProjectRevenuePosition is the working of one month.
+// ProjectRevenueRate is the rate a foreign-currency project was converted at.
+type ProjectRevenueRate struct {
+	Currency string `json:"currency" doc:"The project's currency." example:"USD"`
+	Rate     string `json:"rate" doc:"Base currency per one unit." example:"1.3472"`
+	RateDate string `json:"rate_date" format:"date" doc:"The date the rate is of." example:"2026-10-30"`
+	Source   string `json:"source" doc:"Where it came from." example:"MAS daily feed of 2026-10-30"`
+}
+
 type ProjectRevenuePosition struct {
 	Fee         Money  `json:"fee" doc:"The fixed fee: the total of the project's milestones."`
 	Estimate    Money  `json:"estimated_cost" doc:"The estimated total cost."`
@@ -61,6 +69,8 @@ type ProjectRevenuePosition struct {
 	Asset       Money  `json:"contract_asset" doc:"The contract asset after the journal: earned and not yet invoiced."`
 	Liability   Money  `json:"contract_liability" doc:"The contract liability after the journal: invoiced and not yet earned."`
 	NothingToDo bool   `json:"nothing_to_propose" doc:"The journal would move nothing." example:"false"`
+	// ConvertedAt is set for a project in another currency.
+	ConvertedAt *ProjectRevenueRate `json:"converted_at,omitempty" doc:"For a project in another currency: the rate the fee, the estimate and the costs left out were converted into the base currency at, with its date; the figures above are in the base currency."`
 }
 
 func revMoney(m money.Money) Money { return Money{Amount: m.String(), Currency: m.Currency().Code} }
@@ -136,9 +146,13 @@ type projectRevenueRunOutput struct {
 
 func positionOf(r projectrevenue.Report) *ProjectRevenuePosition {
 	p := r.Position
-	return &ProjectRevenuePosition{Fee: revMoney(r.Fee), Estimate: revMoney(r.Estimate), CostToDate: revMoney(r.CostToDate), CostPosted: revMoney(r.CostPosted), CostLeftOut: revMoney(r.Excluded), Progress: p.Progress, Overrun: p.Overrun, Earned: revMoney(p.Earned),
+	out := &ProjectRevenuePosition{Fee: revMoney(r.Fee), Estimate: revMoney(r.Estimate), CostToDate: revMoney(r.CostToDate), CostPosted: revMoney(r.CostPosted), CostLeftOut: revMoney(r.Excluded), Progress: p.Progress, Overrun: p.Overrun, Earned: revMoney(p.Earned),
 		Invoiced: revMoney(r.Billed), Held: revMoney(r.Held), Adjustment: revMoney(p.Adjustment), Asset: revMoney(p.Asset), Liability: revMoney(p.Liability),
 		NothingToDo: p.AssetChange.IsZero() && p.LiabilityChange.IsZero()}
+	if r.Rate != nil {
+		out.ConvertedAt = &ProjectRevenueRate{Currency: r.Rate.Currency, Rate: r.Rate.Rate, RateDate: dateOf(r.Rate.Of), Source: r.Rate.Source}
+	}
+	return out
 }
 
 func registerProjectRevenue(a *API) {
@@ -213,7 +227,7 @@ func registerProjectRevenue(a *API) {
 	register(a, authz.SetProjectRevenueElection, huma.Operation{
 		OperationID: "setProjectRevenueElection", Method: http.MethodPut, Path: "/v1/projects/{project_id}/revenue-election", Tags: []string{"Projects"},
 		Summary: "Elect a fixed-fee project's revenue over time, or back to milestones",
-		Description: "The accountant's choice for a fixed-fee project in the base currency (FR-PRJ-11): over_time with the estimated total cost above nothing, or milestone, which is the default. " +
+		Description: "The accountant's choice for a fixed-fee project (FR-PRJ-11): over_time with the estimated total cost above nothing, or milestone, which is the default. " +
 			"Changing it needs If-Match with the election's ETag; the first election needs none. It posts nothing; the month's journal is proposed with proposeProjectRevenueJournal. " +
 			"Side effects: the election and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, append(append([]string{projectrevenue.CodeProject, projectrevenue.CodeEstimate, CodeStale}, writes...), CodeIfMatchRequired),
@@ -231,13 +245,8 @@ func registerProjectRevenue(a *API) {
 				if err != nil {
 					return ProjectRevenue{}, err
 				}
-				org, err := u.Organisation(ctx)
-				if err != nil {
-					return ProjectRevenue{}, err
-				}
-				if pr.BillingMethod != storage.BillingFixedFee || pr.Currency != org.BaseCurrency {
-					return ProjectRevenue{}, problem(projectrevenue.CodeProject, "Revenue over time is for a fixed-fee project in the organisation's base currency "+org.BaseCurrency+".",
-						"Bill the project as a fixed fee in "+org.BaseCurrency+" first")
+				if pr.BillingMethod != storage.BillingFixedFee {
+					return ProjectRevenue{}, problem(projectrevenue.CodeProject, "Revenue over time is for a fixed-fee project.", "Bill the project as a fixed fee first")
 				}
 				var est *storage.Decimal
 				switch in.Body.Method {

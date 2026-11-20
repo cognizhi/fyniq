@@ -107,6 +107,9 @@ func encode(d Draft) ([]byte, error) {
 	return json.Marshal(p)
 }
 
+// EncodeDraft is a draft as a document version stores it, for the one caller that makes a draft by a database function instead of by CreateIn.
+func EncodeDraft(d Draft) ([]byte, error) { return encode(d) }
+
 // linesOf are journal lines as a document version stores them.
 func linesOf(lines []ledger.JournalLine) []payloadLine {
 	var out []payloadLine

@@ -12,6 +12,31 @@ import (
 	"github.com/google/uuid"
 )
 
+const createProjectRevenueDraft = `-- name: CreateProjectRevenueDraft :one
+SELECT fyniq.create_project_revenue_draft($1::uuid, $2::date, $3::jsonb, $4::numeric, $5::numeric)::uuid AS id
+`
+
+type CreateProjectRevenueDraftParams struct {
+	ProjectID  uuid.UUID
+	Month      time.Time
+	Payload    []byte
+	Adjustment string
+	Earned     string
+}
+
+func (q *Queries) CreateProjectRevenueDraft(ctx context.Context, arg CreateProjectRevenueDraftParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createProjectRevenueDraft,
+		arg.ProjectID,
+		arg.Month,
+		arg.Payload,
+		arg.Adjustment,
+		arg.Earned,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getProjectRevenueElection = `-- name: GetProjectRevenueElection :one
 SELECT project_id, method, COALESCE(estimated_cost::text, '')::text AS estimated_cost, excluded_cost::text AS excluded_cost, COALESCE(excluded_reason, '')::text AS excluded_reason, version, set_by, set_at
 FROM fyniq.project_revenue_election WHERE project_id = $1

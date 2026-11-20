@@ -8,11 +8,15 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/projectrevenue"
+	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -198,4 +202,134 @@ var matrixProjectRevenue = map[string]func(e *env, tok string) (response, func()
 		e.projectsOn()
 		return e.call(http.MethodPost, "/v1/projects/"+uuid.NewString()+"/revenue-journals", tok, map[string]any{"month": "2026-10-01"}, "Idempotency-Key", uuid.NewString()), nil
 	},
+}
+
+// FR-PRJ-11: a fixed-fee project in another currency is worked in the base currency at the rate of the month's day: its fee (the milestones) and its estimate convert under RND-FX, the costs and
+// the revenue held are already in the base currency, so progress is one ratio. Without a rate for the day the month is refused in plain words.
+// req: FR-PRJ-11
+func TestAForeignCurrencyProjectIsWorkedAtTheRateOfTheMonth(t *testing.T) {
+	e := newEnv(t)
+	e.projectsOn()
+	customer := e.customer()
+	e.revenueBooks()
+	acc := e.as(authz.Accountant)
+	wei := e.joinedIn(e.books.Org, "Wei Usd", "approver")
+	p := e.call(http.MethodPost, "/v1/projects", acc, map[string]any{"code": "REV-USD", "name": "Fixed in dollars", "currency": "USD", "billing_method": "fixed_fee", "customer_id": customer,
+		"people": []map[string]any{{"user_id": wei.String(), "manager": true}}})
+	if p.Status != 201 {
+		t.Fatalf("the project: %d %s", p.Status, p.Raw)
+	}
+	pid := p.str("id")
+	for _, m := range []struct{ name, amount string }{{"Design", "480.00"}, {"Build", "320.00"}} {
+		if r := e.call(http.MethodPost, "/v1/project-milestones", acc, map[string]any{"project_id": pid, "name": m.name, "amount": m.amount}, "Idempotency-Key", uuid.NewString()); r.Status != 201 {
+			t.Fatalf("a milestone: %d %s", r.Status, r.Raw)
+		}
+	}
+	url := "/v1/projects/" + pid + "/revenue"
+	if r := e.call(http.MethodPut, url+"-election", acc, map[string]any{"method": "over_time", "estimated_cost": "480.00"}, "Idempotency-Key", uuid.NewString()); r.Status != 200 {
+		t.Fatalf("electing: %d %s", r.Status, r.Raw)
+	}
+	bank, sales, rent := e.books.Bank.ID.String(), e.books.Sales.ID.String(), e.books.Rent.ID.String()
+	post := func(debit, credit, amount string) {
+		line := func(acct, amt string) map[string]any {
+			return map[string]any{"account_id": acct, "amount": map[string]any{"amount": amt, "currency": "SGD"}, "dimension_value_ids": []string{pid}}
+		}
+		r := e.call(http.MethodPost, "/v1/journals", acc, map[string]any{"date": "2026-10-14", "memo": "x", "lines": []map[string]any{line(debit, amount), line(credit, "-"+amount)}})
+		if x := e.call(http.MethodPost, "/v1/journals/"+r.str("id")+"/post", acc, nil, "If-Match", r.Header.Get("ETag")); r.Status != 201 || x.Status != 200 {
+			t.Fatalf("a journal: %d %s / %d %s", r.Status, r.Raw, x.Status, x.Raw)
+		}
+	}
+	post(bank, sales, "400.00")
+	post(rent, bank, "300.00")
+	// No USD rate: the month is refused with what to do.
+	if g := e.call(http.MethodGet, url+"?month=2026-10-01", acc, nil); g.Body["position"] != nil || !strings.Contains(g.str("problem"), "no USD exchange rate") {
+		t.Fatalf("with no rate: %s", g.Raw)
+	}
+	if r := e.call(http.MethodPost, "/v1/fx/rates", acc, map[string]any{"kind": "day", "currency": "USD", "on": "2026-10-15", "quote": "0.8", "quote_form": "foreign-per-base", "note": "Bank's rate"}); r.Status != http.StatusCreated {
+		t.Fatalf("the USD rate: %d %s", r.Status, r.Raw)
+	}
+	g := e.call(http.MethodGet, url+"?month=2026-10-01", acc, nil)
+	pos, _ := g.Body["position"].(map[string]any)
+	amount := func(k string) any { return pos[k].(map[string]any)["amount"] }
+	conv, _ := pos["converted_at"].(map[string]any)
+	if g.Status != 200 || pos == nil || conv["currency"] != "USD" || conv["rate"] != "1.25" || amount("fee") != "1000.00" || amount("estimated_cost") != "600.00" || pos["progress"] != "50.0" ||
+		amount("earned") != "500.00" || amount("adjustment") != "100.00" || amount("contract_asset") != "100.00" {
+		t.Fatalf("the month at the day's rate: %d %s", g.Status, g.Raw)
+	}
+	if made := e.call(http.MethodPost, url+"-journals", acc, map[string]any{"month": "2026-10-01"}, "Idempotency-Key", uuid.NewString()); made.Status != 201 {
+		t.Errorf("proposing: %d %s", made.Status, made.Raw)
+	}
+}
+
+// FR-PRJ-11 (rev 0.587): the platform's month-end job proposes the previous month's journal of a project elected for revenue over time as a draft only, through the database's narrow function (the
+// worker holds no right to create documents and posts nothing): the draft carries the project on every line and the run is recorded; the next day it proposes nothing more; a project whose month has
+// nothing to move or whose election is for milestones is left alone.
+// req: FR-PRJ-11
+// asvs: V4.2.1
+func TestTheMonthEndJobProposesTheDraftAndOnlyTheDraft(t *testing.T) {
+	e := newEnv(t)
+	e.projectsOn()
+	customer := e.customer()
+	e.revenueBooks()
+	acc := e.as(authz.Accountant)
+	wei := e.joinedIn(e.books.Org, "Wei Job", "approver")
+	p := e.call(http.MethodPost, "/v1/projects", acc, map[string]any{"code": "REV-JOB", "name": "Fixed by the job", "currency": "SGD", "billing_method": "fixed_fee", "customer_id": customer,
+		"people": []map[string]any{{"user_id": wei.String(), "manager": true}}})
+	if p.Status != 201 {
+		t.Fatalf("the project: %d %s", p.Status, p.Raw)
+	}
+	pid := p.str("id")
+	if r := e.call(http.MethodPost, "/v1/project-milestones", acc, map[string]any{"project_id": pid, "name": "All", "amount": "1000.00"}, "Idempotency-Key", uuid.NewString()); r.Status != 201 {
+		t.Fatalf("a milestone: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPut, "/v1/projects/"+pid+"/revenue-election", acc, map[string]any{"method": "over_time", "estimated_cost": "600.00"}, "Idempotency-Key", uuid.NewString()); r.Status != 200 {
+		t.Fatalf("electing: %d %s", r.Status, r.Raw)
+	}
+	bank, sales, rent := e.books.Bank.ID.String(), e.books.Sales.ID.String(), e.books.Rent.ID.String()
+	for _, j := range []struct{ debit, credit, amount string }{{bank, sales, "400.00"}, {rent, bank, "300.00"}} {
+		line := func(acct, amt string) map[string]any {
+			return map[string]any{"account_id": acct, "amount": map[string]any{"amount": amt, "currency": "SGD"}, "dimension_value_ids": []string{pid}}
+		}
+		r := e.call(http.MethodPost, "/v1/journals", acc, map[string]any{"date": "2026-10-14", "memo": "x", "lines": []map[string]any{line(j.debit, j.amount), line(j.credit, "-"+j.amount)}})
+		if x := e.call(http.MethodPost, "/v1/journals/"+r.str("id")+"/post", acc, nil, "If-Match", r.Header.Get("ETag")); r.Status != 201 || x.Status != 200 {
+			t.Fatalf("a journal: %d %s / %d %s", r.Status, r.Raw, x.Status, x.Raw)
+		}
+	}
+	worker, err := postgres.Open(context.Background(), db.URL("fyniq_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer worker.Close()
+	job := func(on time.Time) int {
+		t.Helper()
+		n, err := projectrevenue.MonthEndIn(context.Background(), worker, clock.NewFrozen(on), e.books.Org)
+		if err != nil {
+			t.Fatalf("the job on %s: %v", on.Format(time.DateOnly), err)
+		}
+		return n
+	}
+	// Within October nothing has ended; on 2 November October is proposed once.
+	if n := job(porttest.Day(10, 20)); n != 0 {
+		t.Errorf("in the month: %d drafts", n)
+	}
+	if n := job(porttest.Day(11, 2)); n != 1 {
+		t.Fatalf("on 2 November: %d drafts, want 1", n)
+	}
+	if n := job(porttest.Day(11, 3)); n != 0 {
+		t.Errorf("the next day: %d drafts", n)
+	}
+	g := e.call(http.MethodGet, "/v1/projects/"+pid+"/revenue?month=2026-10-01", acc, nil)
+	runs, _ := g.Body["runs"].([]any)
+	if len(runs) != 1 || runs[0].(map[string]any)["adjustment"].(map[string]any)["amount"] != "100.00" {
+		t.Fatalf("the run: %s", g.Raw)
+	}
+	j := e.call(http.MethodGet, "/v1/journals/"+runs[0].(map[string]any)["journal_id"].(string), acc, nil)
+	if j.Status != 200 || j.str("status") != "draft" || len(j.Body["lines"].([]any)) != 2 {
+		t.Fatalf("the draft: %d %s", j.Status, j.Raw)
+	}
+	for _, l := range j.Body["lines"].([]any) {
+		if v, _ := l.(map[string]any)["dimension_value_ids"].([]any); len(v) != 1 || v[0] != pid {
+			t.Errorf("a line without the project: %v", l)
+		}
+	}
 }

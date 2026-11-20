@@ -8,10 +8,12 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/projectreport"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -49,6 +51,15 @@ type Report struct {
 	Position                 Position
 	Asset, Liability, Income storage.Account // the accounts the journal posts to
 	Runs                     []storage.ProjectRevenueRun
+	Rate                     *Rate // the rate the fee, estimate and costs left out were converted at, for a project in another currency
+}
+
+// Rate is a project currency's rate into the base currency, as the cascade found it.
+type Rate struct {
+	Currency string
+	Rate     string
+	Source   string
+	Of       time.Time
 }
 
 func accountOf(ctx context.Context, u storage.UnitOfWork, key string, day time.Time) (storage.Account, error) {
@@ -81,8 +92,12 @@ func Of(ctx context.Context, u storage.UnitOfWork, project uuid.UUID, month, tod
 	if err != nil {
 		return r, err
 	}
-	if pr.BillingMethod != storage.BillingFixedFee || pr.Currency != base.Code {
-		return r, &Error{CodeProject, "Revenue over time is for a fixed-fee project in the organisation's base currency " + base.Code + ".", "Bill the project as a fixed fee in " + base.Code + ", or keep recognising each milestone as it is invoiced"}
+	if pr.BillingMethod != storage.BillingFixedFee {
+		return r, &Error{CodeProject, "Revenue over time is for a fixed-fee project.", "Bill the project as a fixed fee, or keep recognising its revenue as it is invoiced"}
+	}
+	pc, err := money.Lookup(pr.Currency)
+	if err != nil {
+		return r, err
 	}
 	if r.Election, err = u.ProjectRevenue().Election(ctx, project); errors.Is(err, ports.ErrNotFound) || (err == nil && r.Election.Method != storage.RevenueOverTime) {
 		return r, &Error{CodeProject, "The project is not elected for revenue over time.", "Elect it first, with its estimated total cost"}
@@ -93,8 +108,29 @@ func Of(ctx context.Context, u storage.UnitOfWork, project uuid.UUID, month, tod
 		return r, &Error{CodeMonth, "The month is the first day of a month that has begun.", "Choose a month up to this one"}
 	}
 	r.Month = month
-	if r.Estimate, err = money.ParseStored(string(*r.Election.EstimatedCost), base); err != nil {
-		return r, &Error{CodeEstimate, "The estimated total cost is not an amount in " + base.Code + ".", "Elect the project again with its estimated total cost"}
+	// A project in another currency has its fee, its estimate and what is left out measured in that currency, and the ledger is in the base currency: for the working they are converted at the
+	// rate of the month's last day (or today's, in the month under way), under RND-FX, so progress is cost over estimate in one currency and the fee is re-measured each month at the day's rate
+	// [accountant to confirm]. A month with no rate is refused.
+	toBase := func(m money.Money) (money.Money, error) { return m, nil }
+	if pc != base {
+		on := month.AddDate(0, 1, -1)
+		if on.After(today) {
+			on = today
+		}
+		found, err := fx.Lookup(ctx, u, base, pc, on)
+		if err != nil {
+			return r, &Error{CodeEstimate, "There is no " + pc.Code + " exchange rate for " + on.Format("2 Jan 2006") + ", so the project's fee cannot be measured in " + base.Code + ".", "Enter the " + pc.Code + " rate for the day or the month in Accounting › Currencies"}
+		}
+		rate := found.Rate
+		r.Rate = &Rate{Currency: pc.Code, Rate: rate.String(), Source: rate.Source, Of: found.Of}
+		toBase = func(m money.Money) (money.Money, error) { return rounding.FX(m, rate) }
+	}
+	est, err := money.ParseStored(string(*r.Election.EstimatedCost), pc)
+	if err != nil {
+		return r, &Error{CodeEstimate, "The estimated total cost is not an amount in " + pc.Code + ".", "Elect the project again with its estimated total cost"}
+	}
+	if r.Estimate, err = toBase(est); err != nil {
+		return r, err
 	}
 	ms, err := u.Billing().Milestones(ctx, project)
 	if err != nil {
@@ -105,8 +141,11 @@ func Of(ctx context.Context, u storage.UnitOfWork, project uuid.UUID, month, tod
 		if m.Kind != storage.MilestoneFixedFee {
 			continue
 		}
-		a, err := money.ParseStored(string(m.Amount), base)
+		a, err := money.ParseStored(string(m.Amount), pc)
 		if err != nil {
+			return r, err
+		}
+		if a, err = toBase(a); err != nil {
 			return r, err
 		}
 		if r.Fee, err = r.Fee.Add(a); err != nil {
@@ -156,7 +195,11 @@ func Of(ctx context.Context, u storage.UnitOfWork, project uuid.UUID, month, tod
 	if r.CostPosted, err = l.DirectCosts.Add(l.PayrollTagged); err != nil {
 		return r, err
 	}
-	if r.Excluded, err = money.ParseStored(string(r.Election.ExcludedCost), base); err != nil {
+	ex, err := money.ParseStored(string(r.Election.ExcludedCost), pc)
+	if err != nil {
+		return r, err
+	}
+	if r.Excluded, err = toBase(ex); err != nil {
 		return r, err
 	}
 	if c, _ := r.Excluded.Cmp(r.CostPosted); c > 0 {
@@ -178,33 +221,65 @@ func Of(ctx context.Context, u storage.UnitOfWork, project uuid.UUID, month, tod
 // Propose makes the month's journal as a draft for a person to approve and records the run: Dr or Cr the contract asset and the contract liability by what the position moves
 // them by, and the opposite on the revenue account, every line carrying the project. Nothing is posted here.
 func Propose(ctx context.Context, u storage.UnitOfWork, project uuid.UUID, month, today, now time.Time) (Report, storage.Document, error) {
-	r, err := Of(ctx, u, project, month, today)
+	r, draft, err := prepare(ctx, u, project, month, today)
 	if err != nil {
 		return r, storage.Document{}, err
+	}
+	doc, err := journal.CreateIn(ctx, u, draft)
+	if err != nil {
+		return r, storage.Document{}, err
+	}
+	if _, err = u.ProjectRevenue().Record(ctx, storage.NewProjectRevenueRun{ProjectID: project, Month: month, JournalID: doc.ID,
+		Adjustment: storage.Decimal(r.Position.Adjustment.String()), Earned: storage.Decimal(r.Position.Earned.String()), At: now}); err != nil {
+		return r, storage.Document{}, err
+	}
+	return r, doc, nil
+}
+
+// ProposeByFunction is Propose for the platform's month-end job, which holds no right to create documents: the same draft, made and recorded by the database's narrow function
+// create_project_revenue_draft, which refuses anything that is not the proposal's own shape. It posts nothing.
+func ProposeByFunction(ctx context.Context, u storage.UnitOfWork, project uuid.UUID, month, today time.Time) (Report, uuid.UUID, error) {
+	r, draft, err := prepare(ctx, u, project, month, today)
+	if err != nil {
+		return r, uuid.Nil, err
+	}
+	payload, err := journal.EncodeDraft(draft)
+	if err != nil {
+		return r, uuid.Nil, err
+	}
+	doc, err := u.ProjectRevenue().DraftByFunction(ctx, project, month, payload, storage.Decimal(r.Position.Adjustment.String()), storage.Decimal(r.Position.Earned.String()))
+	return r, doc, err
+}
+
+// prepare works the month out and builds its draft journal.
+func prepare(ctx context.Context, u storage.UnitOfWork, project uuid.UUID, month, today time.Time) (Report, journal.Draft, error) {
+	r, err := Of(ctx, u, project, month, today)
+	if err != nil {
+		return r, journal.Draft{}, err
 	}
 	for _, run := range r.Runs {
 		if run.Month.Equal(month) {
-			return r, storage.Document{}, &Error{CodeMonth, "A journal is proposed for " + month.Format("January 2006") + " already.", "Open it from the project; reverse it if it was wrong"}
+			return r, journal.Draft{}, &Error{CodeMonth, "A journal is proposed for " + month.Format("January 2006") + " already.", "Open it from the project; reverse it if it was wrong"}
 		}
 		if run.Month.After(month) {
-			return r, storage.Document{}, &Error{CodeMonth, "A later month is proposed already, so months go in order.", "Choose a month after " + run.Month.Format("January 2006")}
+			return r, journal.Draft{}, &Error{CodeMonth, "A later month is proposed already, so months go in order.", "Choose a month after " + run.Month.Format("January 2006")}
 		}
 	}
 	if r.Position.AssetChange.IsZero() && r.Position.LiabilityChange.IsZero() {
-		return r, storage.Document{}, &Error{CodeNothing, "The journal would move nothing this month.", "Nothing is proposed until the progress or the invoicing changes"}
+		return r, journal.Draft{}, &Error{CodeNothing, "The journal would move nothing this month.", "Nothing is proposed until the progress or the invoicing changes"}
 	}
 	if r.Asset, err = accountOf(ctx, u, SettingAsset, month); err != nil {
-		return r, storage.Document{}, err
+		return r, journal.Draft{}, err
 	}
 	if r.Liability, err = accountOf(ctx, u, SettingLiability, month); err != nil {
-		return r, storage.Document{}, err
+		return r, journal.Draft{}, err
 	}
 	if r.Income, err = accountOf(ctx, u, SettingRevenue, month); err != nil {
-		return r, storage.Document{}, err
+		return r, journal.Draft{}, err
 	}
 	pj, err := u.Projects().Get(ctx, project)
 	if err != nil {
-		return r, storage.Document{}, err
+		return r, journal.Draft{}, err
 	}
 	tag := []uuid.UUID{project}
 	var lines []ledger.JournalLine
@@ -218,18 +293,10 @@ func Propose(ctx context.Context, u storage.UnitOfWork, project uuid.UUID, month
 	add(r.Liability, r.Position.LiabilityChange.Neg(), "Contract liability")
 	adj, err := r.Position.AssetChange.Sub(r.Position.LiabilityChange)
 	if err != nil {
-		return r, storage.Document{}, err
+		return r, journal.Draft{}, err
 	}
 	add(r.Income, adj.Neg(), "Revenue recognised over time")
 	end := month.AddDate(0, 1, -1)
 	memo := "Revenue over time for " + pj.Code + ", " + month.Format("January 2006") + ": " + r.Position.Progress + "% of the estimated cost (cost-to-cost)"
-	doc, err := journal.CreateIn(ctx, u, journal.Draft{Date: end, Memo: memo, Lines: lines})
-	if err != nil {
-		return r, storage.Document{}, err
-	}
-	if _, err = u.ProjectRevenue().Record(ctx, storage.NewProjectRevenueRun{ProjectID: project, Month: month, JournalID: doc.ID,
-		Adjustment: storage.Decimal(r.Position.Adjustment.String()), Earned: storage.Decimal(r.Position.Earned.String()), At: now}); err != nil {
-		return r, storage.Document{}, err
-	}
-	return r, doc, nil
+	return r, journal.Draft{Date: end, Memo: memo, Lines: lines}, nil
 }

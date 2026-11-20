@@ -144,3 +144,36 @@ func optStr(s string) *string {
 	}
 	return &s
 }
+
+func (p projectRevenue) DraftByFunction(ctx context.Context, project uuid.UUID, month time.Time, payload []byte, adjustment, earned storage.Decimal) (uuid.UUID, error) {
+	if err := p.u.check(); err != nil {
+		return uuid.Nil, err
+	}
+	doc, err := p.u.q.CreateProjectRevenueDraft(ctx, sqlcdb.CreateProjectRevenueDraftParams{ProjectID: project, Month: month, Payload: payload, Adjustment: string(adjustment), Earned: string(earned)})
+	if err != nil {
+		return uuid.Nil, mapError(err)
+	}
+	row, err := p.u.q.GetDocument(ctx, doc)
+	if err != nil {
+		return uuid.Nil, mapError(err)
+	}
+	pl, err := jsonValue(row.Payload)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	v := int(row.CurrentVersion)
+	if err := p.u.event(ctx, "document.created", "document", doc, &v, map[string][2]any{"type": {nil, row.Type}, "status": {nil, row.Status}, "payload": {nil, pl}}); err != nil {
+		return uuid.Nil, err
+	}
+	runs, err := p.Runs(ctx, project)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	for _, r := range runs {
+		if r.JournalID == doc {
+			return doc, p.u.event(ctx, "project_revenue_run.created", "project_revenue_run", r.ID, nil, map[string][2]any{"project_id": {nil, r.ProjectID.String()},
+				"month": {nil, r.Month.Format(time.DateOnly)}, "journal_id": {nil, r.JournalID.String()}, "adjustment": {nil, string(r.Adjustment)}, "earned": {nil, string(r.Earned)}})
+		}
+	}
+	return doc, errors.New("the run of the draft is not there")
+}

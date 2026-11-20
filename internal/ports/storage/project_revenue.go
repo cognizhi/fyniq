@@ -58,6 +58,9 @@ type ProjectRevenue interface {
 	Elections(ctx context.Context) ([]ProjectRevenueElection, error)
 	// Runs are a project's runs, oldest month first.
 	Runs(ctx context.Context, project uuid.UUID) ([]ProjectRevenueRun, error)
+	// DraftByFunction makes a month's draft journal and its run through the database's narrow function, for the platform's own job, which holds no right to create documents: only a draft of the
+	// proposal's own shape, for an over-time project whose month has no run (CodeInvalid otherwise). It posts nothing. The payload is the journal's document version.
+	DraftByFunction(ctx context.Context, project uuid.UUID, month time.Time, payload []byte, adjustment, earned Decimal) (uuid.UUID, error)
 	// Record notes a month's run; CodeInvalid when the project's month has one already.
 	Record(ctx context.Context, n NewProjectRevenueRun) (ProjectRevenueRun, error)
 }
