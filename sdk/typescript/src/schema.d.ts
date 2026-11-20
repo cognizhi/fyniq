@@ -44956,9 +44956,8 @@ export interface components {
             /**
              * @description file and email: the format its statements come in; mt942 is the bank's intraday report, whose lines become pending signals, never statement lines (FR-BNK-16).
              * @example csv
-             * @enum {string}
              */
-            report_format?: "csv" | "xlsx" | "ofx" | "camt053" | "mt940" | "mt940_sap" | "mt942";
+            report_format?: string;
             /** @description email: the bank's registered addresses, the only senders accepted for it. */
             senders: string[];
             /**

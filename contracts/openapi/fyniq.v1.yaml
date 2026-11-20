@@ -38980,7 +38980,10 @@ components:
           type: string
         report_format:
           description: "file and email: the format its statements come in; mt942 is the bank's intraday report, whose lines become pending signals, never statement lines (FR-BNK-16)."
-          enum:
+          examples:
+            - csv
+          type: string
+          x-extensible-enum:
             - csv
             - xlsx
             - ofx
@@ -38988,9 +38991,6 @@ components:
             - mt940
             - mt940_sap
             - mt942
-          examples:
-            - csv
-          type: string
         senders:
           description: "email: the bank's registered addresses, the only senders accepted for it."
           items:
