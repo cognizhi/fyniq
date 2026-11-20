@@ -46,6 +46,7 @@ var EvidenceActivities = []EvidenceActivity{
 		storage.DocumentAcraExtract}},
 	{"filing", "Statutory filings and payments", authz.StatutoryCalendar, []storage.DocumentType{storage.DocumentStatutoryFiling}},
 	{"gst_forecast", "GST forecasts", authz.GSTReturns, []storage.DocumentType{storage.DocumentGSTForecast}},
+	{"tax_paper", "Tax working papers", authz.GSTReturns, []storage.DocumentType{storage.DocumentTaxWorkingPaper}},
 	{"corporate", "The corporate profile", authz.CorporateProfile, []storage.DocumentType{storage.DocumentCorporateDetail, storage.DocumentCorporateOfficer,
 		storage.DocumentNomineeEntry, storage.DocumentStatementsApproval, storage.DocumentCorporateDocument}},
 }

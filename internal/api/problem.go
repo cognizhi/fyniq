@@ -95,6 +95,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/statement"
 	"github.com/cognizhi/fyniq/internal/domain/subscription"
 	"github.com/cognizhi/fyniq/internal/domain/succession"
+	"github.com/cognizhi/fyniq/internal/domain/taxfilings"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/domain/timesheet"
 	"github.com/cognizhi/fyniq/internal/domain/writeoff"
@@ -776,6 +777,9 @@ var codeFacts = map[string]struct {
 	writeoff.CodeNotPosted:        {409, "The write-off is not posted"},
 	writeoff.CodeVoidDate:         {422, "The void is dated before the write-off"},
 	writeoff.CodeTooLong:          {422, "The explanation is missing or too long"},
+	taxfilings.CodePaper:          {422, "The working paper does not fit"},
+	taxfilings.CodeNoEvidence:     {422, "The paper has adjustments and no evidence"},
+	taxfilings.CodeRecorded:       {409, "The paper is recorded, so it changes no more"},
 	reliefclaim.CodeNotClaim:      {404, "Not a claim of GST bad debt relief"},
 	reliefclaim.CodeBadClaim:      {422, "The saved claim cannot be read"},
 	reliefclaim.CodeWriteOff:      {422, "Not a posted bad-debt write-off"},
@@ -1536,6 +1540,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		re  *receipt.Error
 		we  *writeoff.Error
 		rce *reliefclaim.Error
+		tpe *taxfilings.Error
 		bpe *billpayment.Error
 		cre *credits.Error
 		poe *purchaseorder.Error
@@ -1601,6 +1606,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(re.Code, sentence(re.Message), sentence(re.Fix))
 	case errors.As(err, &we):
 		return problem(we.Code, sentence(we.Message), sentence(we.Fix))
+	case errors.As(err, &tpe):
+		return problem(tpe.Code, sentence(tpe.Message), sentence(tpe.Fix))
 	case errors.As(err, &rce):
 		return problem(rce.Code, sentence(rce.Message), sentence(rce.Fix))
 	case errors.As(err, &bpe):
