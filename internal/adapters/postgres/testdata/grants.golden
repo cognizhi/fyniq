@@ -547,6 +547,7 @@ fyniq_api       UPDATE    project_milestone (accepted_on, changed_at, version)
 fyniq_api       INSERT    project_task (billable, name, project_id)
 fyniq_api       SELECT    project_task
 fyniq_api       UPDATE    project_task (billable, changed_at, is_active, name, version)
+fyniq_api       EXECUTE   projection_department()
 fyniq_api       INSERT    psp_account (connector_id, created_at, created_by, dispute_loss_account_id, disputes_account_id, fee_account_id, money_account_id, payout_account_id)
 fyniq_api       SELECT    psp_account
 fyniq_api       UPDATE    psp_account (dispute_loss_account_id, disputes_account_id, fee_account_id, payout_account_id, version)
