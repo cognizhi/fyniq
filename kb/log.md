@@ -895,3 +895,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | ai-proposals: the assistant proposes a know-how page, never a figure (AI-59)
 
 ## [2026-11-20] compile | contacts.and-items: emailing the portal link (FR-AR-14)
+
+## [2026-11-20] compile | payroll-salary-payments.md -> kb (who is away)

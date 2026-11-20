@@ -22,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/link"
 	"github.com/cognizhi/fyniq/internal/nemura/outbox"
@@ -396,5 +397,115 @@ func TestThePeopleEventsCarryExactlyTheContractsFields(t *testing.T) {
 	}
 	if got, want := tags(nemura.TaxHoldEvent{}), fields("people.tax_hold.changed"); !same(got, want) {
 		t.Errorf("the hold event's fields %v are not the contract's %v", got, want)
+	}
+}
+
+// Approved leave goes to Fyniq as who is away, and nothing else (PRD-002 Appendix E leave.taken.changed; design D27): standalone, a decision queues nothing; linked, an approval queues one event at version 1 of
+// the entry, a refusal none, and the cancellation of an approved request a tombstone at version 2; its payload carries the entry, the person, the dates, the half days and the days, and no leave type, note or
+// reason; and a repair asks again at the version each entry has now.
+// req: NM-INT-01
+// asvs: V8.2.1, V14.2.4
+func TestApprovedLeaveIsQueuedWithItsDecisionAndCarriesNoTypeOrReason(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-10-15").Add(9 * time.Hour) // the leave service reads the 2026 public holidays
+	packs, err := nemura.NewPacksService(store(t, "nemura_api"), clock.NewFrozen(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := nemura.LeaveRequestService{Store: store(t, "nemura_api"), Clock: clock.NewFrozen(now), Packs: packs}
+	ben := api.Session{Organisation: lt.c.org, Member: lt.benLogin}
+	ana := api.Session{Organisation: lt.c.org, Member: lt.c.owner}
+	scope := api.LeaveScope{Reports: true, Decide: true}
+	decide := func(from, to string, approve bool, note string) uuid.UUID {
+		t.Helper()
+		id, _, err := svc.Apply(ctx, ben, api.LeaveAsk{Type: "annual", From: from, To: to, Note: note})
+		if err != nil {
+			t.Fatal(err)
+		}
+		reason := ""
+		if !approve {
+			reason = "Busy week, ask again"
+		}
+		if err := svc.Decide(ctx, ana, scope, uuid.MustParse(id), approve, reason); err != nil {
+			t.Fatal(err)
+		}
+		return uuid.MustParse(id)
+	}
+	// Standalone: nothing is queued.
+	decide("2026-12-21", "2026-12-23", true, "Family trip")
+	if n := len(queuedRows(t, lt)); n != 0 {
+		t.Fatalf("a standalone organisation queued %d events", n)
+	}
+	linked(t, lt, today.Add(10*time.Hour), &fakeOAuth{}) // the link's roles are dated from the tests' fixed day
+	after := func() int { return len(queuedRows(t, lt)) }
+	base := after() // the snapshot of what existed when the link began: leave that had already ended is not in it
+	count := func(typ string, version int) (n int) {
+		lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+			return tx.QueryRow(ctx, `SELECT count(*) FROM nemura.link_event WHERE type = $1 AND object_version = $2`, typ, version).Scan(&n)
+		})
+		return n
+	}
+	if count(nemura.TypeLeaveTaken, 1) != 0 {
+		t.Fatalf("the snapshot told Fyniq of leave that had ended: %d", count(nemura.TypeLeaveTaken, 1))
+	}
+	refused := decide("2026-12-28", "2026-12-29", false, "")
+	if after() != base {
+		t.Errorf("a refusal queued an event")
+	}
+	approved := decide("2026-12-14", "2026-12-15", true, "Medical appointment")
+	if after() != base+1 {
+		t.Fatalf("an approval queued %d events", after()-base)
+	}
+	var ev nemura.LeaveTakenEvent
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var ok bool
+		var err error
+		if ev, ok, err = nemura.LeaveEventOf(ctx, tx, approved); !ok || err != nil {
+			t.Errorf("the payload of an approved request: %v %v", ok, err)
+		}
+		if _, ok, _ := nemura.LeaveEventOf(ctx, tx, refused); ok {
+			t.Error("a refused request has a payload to send")
+		}
+		return nil
+	})
+	raw, _ := json.Marshal(ev)
+	var keys map[string]any
+	_ = json.Unmarshal(raw, &keys)
+	want := []string{"cancelled", "days", "end_date", "entry_id", "person_id", "start_date", "start_half", "end_half"}
+	if len(keys) != len(want) || ev.StartDate != "2026-12-14" || ev.EndDate != "2026-12-15" || ev.Cancelled || ev.PersonID != lt.ben {
+		t.Errorf("the payload: %s", raw)
+	}
+	for _, k := range want {
+		if _, ok := keys[k]; !ok {
+			t.Errorf("the payload lacks %q: %s", k, raw)
+		}
+	}
+	for _, leak := range []string{"annual", "Medical", "appointment", "Family", "reason", "type", "note"} {
+		if strings.Contains(string(raw), leak) {
+			t.Errorf("the payload carries %q: %s", leak, raw)
+		}
+	}
+	// The person cancels an approved request that has not started: a tombstone at the next version.
+	if err := svc.Cancel(ctx, ben, approved); err != nil {
+		t.Fatal(err)
+	}
+	if after() != base+2 || count(nemura.TypeLeaveTaken, 1) != 1 || count(nemura.TypeLeaveTaken, 2) != 1 {
+		t.Errorf("the cancellation of approved leave did not queue its tombstone: %d, version 2: %d", after()-base, count(nemura.TypeLeaveTaken, 2))
+	}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		if ev, ok, _ := nemura.LeaveEventOf(ctx, tx, approved); !ok || !ev.Cancelled {
+			t.Errorf("the tombstone: %+v %v", ev, ok)
+		}
+		return nil
+	})
+	// A repair asks again at the version each entry has now: the entry told of, no new version.
+	before := after()
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		_, err := nemura.RequeueCurrent(ctx, tx, lt.c.org, now, lt.ben)
+		return err
+	})
+	if got := after() - before; got < 1 || count(nemura.TypeLeaveTaken, 3) != 0 {
+		t.Errorf("a repair queued %d events and moved a version", got)
 	}
 }

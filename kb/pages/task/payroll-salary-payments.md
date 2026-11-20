@@ -4,7 +4,7 @@ type: task
 title: Pay salaries from a pay run
 summary: Prepare a salary batch, have another person approve it, release the lines free to go, and see each payment paid from the bank feed or a person's evidence
 sources:
-  - docs/user-guide/payroll-salary-payments.md sha256:39e17fcd8bf74e4ec5f604a935ce509444934e0f290c2159099524501bc54b4b
+  - docs/user-guide/payroll-salary-payments.md sha256:948922aa461c84dd34ae4e463aaec5cdcd7249ba3b104ce88561dd62bb5d2077
 data_class: general
 taint: trusted
 status: draft
@@ -90,7 +90,7 @@ aliases:
 ## Payroll in the books
 
 - **Payroll** in the sidebar, when the organisation has payroll switched on, shows Fyniq's part of payroll on one page: where each feature lives, the link's state with a warning when it is not delivering everything, whether every statutory output of the month has a recorded arrangement, and the latest salary batches.
-- Each part is read on its own, so a role that may not see one still sees the others. Linking, unlinking and recording arrangements are in Settings › People and HR.
+- **Away in the next 30 days** lists approved leave Nemura told Fyniq of, by person and dates, with no leave type or reason; it moves no money. Each part is read on its own, so a role that may not see one still sees the others. Linking, unlinking and recording arrangements are in Settings › People and HR.
 
 (src: docs/user-guide/payroll-salary-payments.md#payroll-in-the-books)
 

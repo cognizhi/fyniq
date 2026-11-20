@@ -451,3 +451,49 @@ func (r peopleLinks) ProjectionDepartment(ctx context.Context, user uuid.UUID) (
 	d, err := r.u.q.ProjectionDepartmentOfUser(ctx, user)
 	return d, mapError(err)
 }
+
+func (r peopleLinks) SaveLeave(ctx context.Context, l storage.PeopleLeave) (bool, error) {
+	if err := r.u.check(); err != nil {
+		return false, err
+	}
+	id, err := r.u.q.SavePeopleLeave(ctx, sqlcdb.SavePeopleLeaveParams{EntryID: l.EntryID, PersonID: l.PersonID, StartDate: l.Start, EndDate: l.End, StartHalf: l.StartHalf, EndHalf: l.EndHalf,
+		Days: l.Days, Cancelled: l.Cancelled, Version: l.Version, Epoch: int32(l.Epoch), ReceivedAt: l.ReceivedAt}) // #nosec G115 -- an epoch is small
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil // not newer than what is held
+	}
+	if err != nil {
+		return false, mapError(err)
+	}
+	v := int(l.Version)
+	return true, r.u.event(ctx, "people_leave.changed", "people_leave", id, &v, map[string][2]any{"version": {nil, l.Version}, "cancelled": {nil, l.Cancelled}})
+}
+
+func (r peopleLinks) LeaveOf(ctx context.Context, entry uuid.UUID) (storage.PeopleLeave, error) {
+	if err := r.u.check(); err != nil {
+		return storage.PeopleLeave{}, err
+	}
+	x, err := r.u.q.PeopleLeaveOf(ctx, entry)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.PeopleLeave{}, ports.ErrNotFound
+	}
+	if err != nil {
+		return storage.PeopleLeave{}, mapError(err)
+	}
+	return storage.PeopleLeave{EntryID: x.EntryID, PersonID: x.PersonID, Start: x.StartDate, End: x.EndDate, StartHalf: x.StartHalf, EndHalf: x.EndHalf, Days: x.Days, Cancelled: x.Cancelled,
+		Version: x.Version, Epoch: int(x.Epoch), ReceivedAt: x.ReceivedAt}, nil
+}
+
+func (r peopleLinks) LeaveBetween(ctx context.Context, from, to time.Time) ([]storage.PeopleLeave, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.PeopleLeaveBetween(ctx, sqlcdb.PeopleLeaveBetweenParams{FromDate: from, ToDate: to})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.PeopleLeave, len(rows))
+	for i, x := range rows {
+		out[i] = storage.PeopleLeave{EntryID: x.EntryID, PersonID: x.PersonID, Start: x.StartDate, End: x.EndDate, StartHalf: x.StartHalf, EndHalf: x.EndHalf, Days: x.Days, Version: x.Version, Epoch: int(x.Epoch), ReceivedAt: x.ReceivedAt}
+	}
+	return out, nil
+}

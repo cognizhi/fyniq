@@ -908,6 +908,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/payroll-mapping` (setPayrollMapping): Set the next version of the account mapping
 - `GET /v1/people-link` (getPeopleLink): Show the link to the people platform and where each feature lives
 - `POST /v1/people-link` (requestPeopleLink): Ask to link the organisation to a Nemura organisation
+- `GET /v1/people-link/availability` (listPeopleAvailability): List who is away
+- `POST /v1/people-link/availability-events` (receivePeopleAvailabilityEvent): Receive approved leave from Nemura
 - `GET /v1/people-link/health` (getPeopleLinkHealth): Show how the link to the people platform stands
 - `POST /v1/people-link/hold-events` (receivePeopleHoldEvent): Receive a tax-clearance hold event from Nemura
 - `POST /v1/people-link/payroll-payments` (receivePayrollPayments): Receive the payment lines of a posted pay run from Nemura

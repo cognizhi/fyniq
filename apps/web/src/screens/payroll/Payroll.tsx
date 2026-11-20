@@ -60,6 +60,15 @@ export function Payroll() {
       return r.data.items ?? [];
     },
   });
+  const away = useQuery({
+    queryKey: ["people-availability"],
+    enabled: link.data?.state === "active",
+    queryFn: async () => {
+      const r = await api.GET("/v1/people-link/availability", { params: { query: { page_size: 20 } } });
+      if (r.error) throw r.error;
+      return r.data.items ?? [];
+    },
+  });
   const state = link.data?.state ?? "none";
   const nearly = health.data && health.data.reachable && (health.data.failing > 0 || health.data.refused > 0 || health.data.missing.length > 0);
   return (
@@ -127,6 +136,20 @@ export function Payroll() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+      {away.data && away.data.length > 0 && (
+        <section aria-label="Away in the next 30 days" className="fy-stack fy-stack--2">
+          <h2 className="fy-h2">Away in the next 30 days</h2>
+          <ul className="fy-stack fy-stack--1">
+            {away.data.map((x) => (
+              <li key={x.entry_id}>
+                {x.person_name ?? x.person_id}: {date(x.start_date)}
+                {x.start_date === x.end_date ? "" : ` to ${date(x.end_date)}`}, {x.days} day(s)
+              </li>
+            ))}
+          </ul>
+          <p className="fy-secondary">Nemura tells Fyniq when approved leave starts and ends, and nothing of its kind or reason. It moves no money.</p>
         </section>
       )}
       <section aria-label="Statutory outputs" className="fy-stack fy-stack--2">

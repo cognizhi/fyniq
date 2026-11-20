@@ -471,6 +471,7 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"kpi_alert.mean":                          func(t *testing.T, b porttest.Books, v string) error { return rawKPIAlert(t, b, "mean", v) },
 	"psp_dispute_loss.amount":                 func(t *testing.T, b porttest.Books, v string) error { return rawPSPDisputeLoss(t, b, v) },
 	"payment_batch_release.total":             func(t *testing.T, b porttest.Books, v string) error { return rawRelease(t, b, v) },
+	"people_leave.days":                       func(t *testing.T, b porttest.Books, v string) error { return rawLeave(t, b, v) },
 	"salary_batch_line.amount":                func(t *testing.T, b porttest.Books, v string) error { return rawSalaryLine(t, b, v) },
 	"salary_line_event.amount":                func(t *testing.T, b porttest.Books, v string) error { return rawSalaryEvent(t, b, v) },
 	"salary_release.total":                    func(t *testing.T, b porttest.Books, v string) error { return rawSalaryRelease(t, b, v) },
@@ -1744,6 +1745,21 @@ func rawSalaryLine(t *testing.T, b porttest.Books, value string) error {
 	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.salary_batch_line (batch_id, line_ref, line_version, person_id, amount, bank_detail_id, bank_detail_version, bank_detail_digest, sealed, event_id, created_at)
 VALUES ($1, $2, 1, $3, $4::numeric, $5, 1, repeat('a', 64), $6, $7, now())`, uuid.New(), uuid.New(), uuid.New(), value, uuid.New(), make([]byte, 64), uuid.New())
+		return err
+	})
+}
+
+func rawLeave(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq_api")) // closes at once, as the test holds many connections
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.people_leave (entry_id, person_id, start_date, end_date, days, version, epoch, received_at)
+VALUES ($1, $2, '2026-12-01', '2026-12-02', $3::numeric, 1, 1, now())`, uuid.New(), uuid.New(), value)
 		return err
 	})
 }

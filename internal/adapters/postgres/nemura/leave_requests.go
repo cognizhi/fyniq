@@ -269,6 +269,11 @@ func DecideLeave(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by
 	if err := Audit(ctx, tx, org, at, user(by), "nemura.leave."+state, audit.Object{Type: "leave_request", ID: request}, map[string]audit.Change{"state": {"pending", state}}, reason); err != nil {
 		return err
 	}
+	if approve { // a linked organisation tells Fyniq who is away, in the same transaction (design D27)
+		if _, err := QueueLeaveEvent(ctx, tx, org, at, request); err != nil {
+			return err
+		}
+	}
 	return notice(ctx, tx, "leave_"+state, r.person, request, "leave-decided")
 }
 
@@ -303,7 +308,14 @@ func CancelLeave(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by
 	if _, err := AppendLeave(ctx, tx, org, at, by, r.person, r.typ, r.year, &request, leave.Entry{Kind: leave.Release, Amount: days, Source: "request:" + request.String()}, ""); err != nil {
 		return err
 	}
-	return Audit(ctx, tx, org, at, user(by), "nemura.leave.cancelled", audit.Object{Type: "leave_request", ID: request}, map[string]audit.Change{"state": {r.state, "cancelled"}}, "")
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.leave.cancelled", audit.Object{Type: "leave_request", ID: request}, map[string]audit.Change{"state": {r.state, "cancelled"}}, ""); err != nil {
+		return err
+	}
+	if r.state == "approved" { // Fyniq was told of it: it is told of the tombstone
+		_, err := QueueLeaveEvent(ctx, tx, org, at, request)
+		return err
+	}
+	return nil
 }
 
 // SettleLeave turns the reservation of each approved request whose last day is before on into a use, once: the days are taken. It returns how many requests and days

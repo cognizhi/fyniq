@@ -22,9 +22,13 @@ describe("payroll in the books", () => {
       "GET /v1/people-link/health": { status: 200, body: { state: "active", reachable: true, checked_at: "2026-11-21T09:00:00Z", nemura_highest_sequence: 9, received_highest_sequence: 9, waiting: 0, failing: 1, refused: 0, missing: [], requested: [] } },
       "GET /v1/payroll-arrangements": { status: 200, body: { month: "2026-11", in_force: [], missing: ["payslips", "kets"], met: false } },
       "GET /v1/salary-batches": { status: 200, body: { items: [batch] } },
+      "GET /v1/people-link/availability": { status: 200, body: { items: [{ entry_id: "e1", person_id: "p1", person_name: "Ana Lim", start_date: "2026-12-21", end_date: "2026-12-24", start_half: false, end_half: false, days: "4.00" }] } },
+      "GET /v1/people-link/people": { status: 200, body: { items: [{ person_id: "p1", display_name: "Ana Lim", held: false, removed: false }] } },
     });
     renderPage(Payroll, { path: "/payroll", session: payroll });
     expect(await screen.findByText("Payroll in the books")).toBeTruthy();
+    const awayList = await screen.findByRole("region", { name: "Away in the next 30 days" });
+    expect(within(awayList).getByText(/Ana Lim: 21 Dec 2026 to 24 Dec 2026, 4.00 day\(s\)/)).toBeTruthy();
     const where = await screen.findByRole("region", { name: "What lives in Nemura" });
     expect(within(where).getByText(/Payroll: Nemura/)).toBeTruthy();
     expect(within(where).getByText(/People records: Manual journal/)).toBeTruthy();

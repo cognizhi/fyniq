@@ -19,7 +19,58 @@ import (
 const (
 	TypePersonUpserted     = "people.person.upserted"
 	TypeBankDetailsChanged = "people.bank_details.changed"
+	TypeLeaveTaken         = "leave.taken.changed"
 )
+
+// LeaveTakenEvent is the payload of leave.taken.changed, and the whole of it: the entry, the person, the dates, the half days and the days, and a tombstone when the leave was cancelled. Never the leave's type, a
+// reason, a note or a balance (Appendix E; design D27). Fyniq refuses a field it does not list, so a test pins this list to Fyniq's. Appendix E says hours; Nemura counts leave in days, so it sends days
+// [owner to confirm].
+type LeaveTakenEvent struct {
+	EntryID   uuid.UUID `json:"entry_id"`
+	PersonID  uuid.UUID `json:"person_id"`
+	StartDate string    `json:"start_date"`
+	EndDate   string    `json:"end_date"`
+	StartHalf bool      `json:"start_half"`
+	EndHalf   bool      `json:"end_half"`
+	Days      string    `json:"days"`
+	Cancelled bool      `json:"cancelled"`
+}
+
+// QueueLeaveEvent queues the state a leave request is in now, when the link is active: approved, or cancelled after it was approved (a tombstone). Its version is the entry's own counter, which goes up with each
+// word, so Fyniq keeps the newest. Called in the transaction of the decision or the cancellation; nothing is queued standalone.
+func QueueLeaveEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, request uuid.UUID) (bool, error) {
+	if !linkActive(ctx, tx) {
+		return false, nil
+	}
+	var v int
+	if err := tx.QueryRow(ctx, `INSERT INTO nemura.link_object_version (object_type, object_id, version) VALUES ('leave_request', $1, 1)
+ON CONFLICT (organisation_id, object_type, object_id) DO UPDATE SET version = nemura.link_object_version.version + 1 RETURNING version`, request.String()).Scan(&v); err != nil {
+		return false, err
+	}
+	return QueueLinkEvent(ctx, tx, org, at, TypeLeaveTaken, "leave_request", request.String(), v)
+}
+
+// LeaveEventOf is leaveEventAt for the people who write the contract's test: the payload a leave request would send, and whether it is one Fyniq is told of.
+func LeaveEventOf(ctx context.Context, tx pgx.Tx, request uuid.UUID) (LeaveTakenEvent, bool, error) {
+	return leaveEventAt(ctx, tx, request)
+}
+
+// leaveEventAt reads the payload from the leave request and nothing else: false when the request is not one Fyniq is told of (pending or refused).
+func leaveEventAt(ctx context.Context, tx pgx.Tx, request uuid.UUID) (LeaveTakenEvent, bool, error) {
+	var ev LeaveTakenEvent
+	var from, to time.Time
+	var state string
+	err := tx.QueryRow(ctx, `SELECT person_id, start_date, end_date, start_half, end_half, days::text, state FROM nemura.leave_request WHERE id = $1`, request).
+		Scan(&ev.PersonID, &from, &to, &ev.StartHalf, &ev.EndHalf, &ev.Days, &state)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ev, false, nil
+	}
+	if err != nil || (state != "approved" && state != "cancelled") {
+		return ev, false, err
+	}
+	ev.EntryID, ev.StartDate, ev.EndDate, ev.Cancelled = request, from.Format(time.DateOnly), to.Format(time.DateOnly), state == "cancelled"
+	return ev, true, nil
+}
 
 // PersonEvent is the payload of people.person.upserted, and the whole of it: what accounting needs of a person and nothing else. Never an NRIC or FIN, a date of birth, a salary, a bank account,
 // a classification, a leaving reason, medical, disciplinary or review data (NM-INT-05). Fyniq refuses a field it does not list (PPL-09), so a field added here without the contract is refused
@@ -210,6 +261,69 @@ func SnapshotLinkEvents(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.T
 			} else if sent {
 				n++
 			}
+		}
+	}
+	// Approved leave that has not ended, so who is away reaches Fyniq from the first day (design D27).
+	lrows, err := tx.Query(ctx, `SELECT id FROM nemura.leave_request WHERE state = 'approved' AND end_date >= $1 ORDER BY start_date, id`, at.Format(time.DateOnly))
+	if err != nil {
+		return n, err
+	}
+	var requests []uuid.UUID
+	for lrows.Next() {
+		var id uuid.UUID
+		if err := lrows.Scan(&id); err != nil {
+			lrows.Close()
+			return n, err
+		}
+		requests = append(requests, id)
+	}
+	lrows.Close()
+	if err := lrows.Err(); err != nil {
+		return n, err
+	}
+	for _, r := range requests {
+		if ok, err := QueueLeaveEvent(ctx, tx, org, at, r); err != nil {
+			return n, err
+		} else if ok {
+			n++
+		}
+	}
+	return n, nil
+}
+
+// requeueLeave queues the leave entries of a person again at the version each has now, for repair and replay: no version moves, so Fyniq applies what it missed and ignores what it holds.
+func requeueLeave(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, person, request uuid.UUID) (int, error) {
+	if !linkActive(ctx, tx) {
+		return 0, nil
+	}
+	rows, err := tx.Query(ctx, `SELECT l.id::text, v.version FROM nemura.leave_request l JOIN nemura.link_object_version v ON v.object_type = 'leave_request' AND v.object_id = l.id::text
+WHERE ($1::uuid = '00000000-0000-0000-0000-000000000000' OR l.person_id = $1) AND ($2::uuid = '00000000-0000-0000-0000-000000000000' OR l.id = $2) AND l.state IN ('approved', 'cancelled')`, person, request)
+	if err != nil {
+		return 0, err
+	}
+	type entry struct {
+		id      string
+		version int
+	}
+	var all []entry
+	for rows.Next() {
+		var e entry
+		if err := rows.Scan(&e.id, &e.version); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		all = append(all, e)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, e := range all {
+		if ok, err := QueueLinkEvent(ctx, tx, org, at, TypeLeaveTaken, "leave_request", e.id, e.version); err != nil {
+			return n, err
+		} else if ok {
+			n++
 		}
 	}
 	return n, nil

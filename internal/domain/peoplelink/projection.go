@@ -1,6 +1,8 @@
 package peoplelink
 
 import (
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,7 +17,34 @@ const (
 	TypeAccessChanged = "identity.access.changed"
 	// TypeSessionRevoked is what Nemura says when a person was signed out of, or removed from, Nemura (NM-INT-12, FR-PPL-18): Fyniq ends that person's sessions when they are mapped to a person of the link.
 	TypeSessionRevoked = "identity.session.revoked"
+	// TypeLeaveTaken is what Nemura says of approved leave (PRD-002 Appendix E, design D27): the person, the dates and the days, a tombstone when it is cancelled, and never the leave's type or reason. It informs, and moves no money.
+	TypeLeaveTaken = "leave.taken.changed"
 )
+
+// LeaveTaken is the payload of leave.taken.changed from Nemura, and the whole of it. The object is the leave entry, its version orders the words about it, and Cancelled is the tombstone: a newer version of the
+// same entry. Appendix E lists no leave type, reason, balance or note, and an unlisted field is refused.
+type LeaveTaken struct {
+	EntryID   uuid.UUID `json:"entry_id"`
+	PersonID  uuid.UUID `json:"person_id"`
+	StartDate string    `json:"start_date"`
+	EndDate   string    `json:"end_date"`
+	StartHalf bool      `json:"start_half"`
+	EndHalf   bool      `json:"end_half"`
+	Days      string    `json:"days"`
+	Cancelled bool      `json:"cancelled"`
+}
+
+var leaveDaysRE = regexp.MustCompile(`^[0-9]{1,3}(\.[0-9]{1,2})?$`)
+
+// Check says whether the payload is in shape: the IDs, two dates in order not more than a year apart, and days above zero.
+func (l LeaveTaken) Check() error {
+	from, e1 := time.Parse(time.DateOnly, l.StartDate)
+	to, e2 := time.Parse(time.DateOnly, l.EndDate)
+	if l.EntryID == uuid.Nil || l.PersonID == uuid.Nil || e1 != nil || e2 != nil || to.Before(from) || to.Sub(from) > 365*24*time.Hour || !leaveDaysRE.MatchString(l.Days) || strings.Trim(l.Days, "0.") == "" {
+		return &Refusal{Code: CodeMalformed, Message: "the leave's entry, person, dates or days are not in shape"}
+	}
+	return nil
+}
 
 // SessionRevoked is the payload of identity.session.revoked from Nemura, and the whole of it: the identity by issuer and subject (never an email) and why. Its object version is 1: it is not version-ordered,
 // and a repeat of the same event ID does nothing.

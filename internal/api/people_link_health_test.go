@@ -415,3 +415,82 @@ func TestADirectorsRepaymentInAPaymentBatchIsHeldLikeAnyPaymentToAPerson(t *test
 		t.Errorf("after Nemura lifts the hold: %v", err)
 	}
 }
+
+// Approved leave informs and moves nothing (PRD-001 FR-PPL-06; PRD-002 Appendix E leave.taken.changed; design D27): Nemura's word on an entry, signed by the link and sent as the link's client, is kept by (epoch,
+// version); a newer version changes the dates and a tombstone takes the entry off the list; an older word arriving late, a field Appendix E does not list (a leave type, a reason), a person Fyniq does not know,
+// an entry that changes its person and a header that names another object are refused or ignored; the list shows the person's name and the dates and never a type or a reason; and the audit event names the
+// entry and its version and never a date.
+// req: FR-PPL-06
+// asvs: V8.2.1, V4.2.1, V16.3.2
+func TestApprovedLeaveIsKeptByVersionAndInformsWhoIsAway(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	person, entry := uuid.NewString(), uuid.NewString()
+	if r := w.nemuraSays(peoplelink.TypePersonUpserted, "person", person, 1, map[string]any{"person_id": person, "display_name": "Ana Lim", "work_email": "ana@example.com", "status": "active", "deleted": false}, nil); r.Status != http.StatusOK {
+		t.Fatalf("the person: %d %s", r.Status, r.Raw)
+	}
+	say := func(version int, payload map[string]any, edit func(*peoplelink.Header)) response {
+		return w.nemuraSaysTo("/v1/people-link/availability-events", peoplelink.TypeLeaveTaken, "leave_request", entry, version, payload, edit)
+	}
+	leave := func(edit func(map[string]any)) map[string]any {
+		m := map[string]any{"entry_id": entry, "person_id": person, "start_date": "2099-12-21", "end_date": "2099-12-24", "start_half": false, "end_half": true, "days": "3.50", "cancelled": false}
+		if edit != nil {
+			edit(m)
+		}
+		return m
+	}
+	if r := say(1, leave(nil), nil); r.Status != http.StatusOK || r.str("outcome") != "applied" {
+		t.Fatalf("the leave: %d %s", r.Status, r.Raw)
+	}
+	admin := e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{authz.Administrator}})
+	list := func() response {
+		return e.call(http.MethodGet, "/v1/people-link/availability?from=2099-12-01&to=2099-12-31", admin, nil)
+	}
+	if r := list(); r.Status != http.StatusOK || !strings.Contains(r.Raw, "Ana Lim") || !strings.Contains(r.Raw, "2099-12-21") || !strings.Contains(r.Raw, `"days":"3.50"`) || strings.Contains(r.Raw, "annual") || strings.Contains(r.Raw, "reason") {
+		t.Fatalf("who is away: %d %s", r.Status, r.Raw)
+	}
+	// A newer version moves the dates; an older word arriving late changes nothing.
+	if r := say(2, leave(func(m map[string]any) { m["end_date"] = "2099-12-23" }), nil); r.str("outcome") != "applied" {
+		t.Fatalf("a newer version: %d %s", r.Status, r.Raw)
+	}
+	if r := say(1, leave(func(m map[string]any) { m["end_date"] = "2099-12-30" }), nil); r.str("outcome") != "ignored_older" {
+		t.Errorf("an older version arriving late: %d %s", r.Status, r.Raw)
+	}
+	if r := list(); !strings.Contains(r.Raw, "2099-12-23") || strings.Contains(r.Raw, "2099-12-30") {
+		t.Errorf("the list after a newer and a late older version: %s", r.Raw)
+	}
+	// What Appendix E does not list is refused; so is a person nobody knows, and a header for another object.
+	for what, r := range map[string]response{
+		"a leave type":       say(3, leave(func(m map[string]any) { m["type"] = "annual" }), nil),
+		"a reason":           say(3, leave(func(m map[string]any) { m["reason"] = "medical" }), nil),
+		"a person not known": say(3, leave(func(m map[string]any) { m["person_id"] = uuid.NewString() }), nil),
+		"dates out of order": say(3, leave(func(m map[string]any) { m["end_date"] = "2099-12-01" }), nil),
+		"no days":            say(3, leave(func(m map[string]any) { m["days"] = "0.00" }), nil),
+		"another object":     say(3, leave(nil), func(h *peoplelink.Header) { h.ObjectID = uuid.NewString() }),
+	} {
+		if r.Status < 400 || r.Status > 499 {
+			t.Errorf("%s: %d %s", what, r.Status, r.Raw)
+		}
+	}
+	// A tombstone takes the entry off the list.
+	if r := say(3, leave(func(m map[string]any) { m["cancelled"] = true }), nil); r.str("outcome") != "applied" {
+		t.Fatalf("the tombstone: %d %s", r.Status, r.Raw)
+	}
+	if r := list(); strings.Contains(r.Raw, "Ana Lim") {
+		t.Errorf("a cancelled entry is listed: %s", r.Raw)
+	}
+	// The audit event names the entry and its version, never a date or a name.
+	var hit []string
+	_ = e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		evs, err := u.Audit().Events(ctx, 0, 100000)
+		for _, ev := range evs {
+			if strings.Contains(ev.Body, "people_leave.changed") && (strings.Contains(ev.Body, "2099-12") || strings.Contains(ev.Body, "Ana")) {
+				hit = append(hit, ev.Body)
+			}
+		}
+		return err
+	})
+	if len(hit) > 0 {
+		t.Errorf("an audit event of leave holds a date or a name: %v", hit)
+	}
+}

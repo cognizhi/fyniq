@@ -58,7 +58,7 @@ prepared, approved by another person and released like a payment batch. Fyniq ne
 ## Payroll in the books
 
 - **Payroll** in the sidebar (when the organisation has switched payroll on) is Fyniq's part of payroll on one page: where each feature lives (People records, Payroll, Leave, Letters), the state of the link to Nemura and a warning when it is not delivering everything, whether every statutory output of the month has a recorded arrangement, and the latest salary batches.
-- Each part is read on its own, so a role that may not see one part still sees the others. Linking, unlinking and recording arrangements are in **Settings › People and HR**.
+- **Away in the next 30 days** lists approved leave Nemura told Fyniq of, by person and dates; Nemura sends no leave type or reason, and it moves no money. Each part is read on its own, so a role that may not see one part still sees the others. Linking, unlinking and recording arrangements are in **Settings › People and HR**.
 
 ## A person from Nemura
 

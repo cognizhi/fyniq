@@ -38,7 +38,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "giveAIFeedback If-Match", "reviewAIFeedback Idempotency-Key", "reviewAIFeedback Prefer") // QA-AI-05: given once, reviewed once
 	want = append(want, "revokePasskey Prefer", "signOutDevice Prefer", "unlinkIdentity Prefer", "signOutOtherDevices Idempotency-Key", "signOutOtherDevices Prefer", "switchMyOrganisation Idempotency-Key", "switchMyOrganisation Prefer")
 	// An event of the link carries its own ID, which the inbox dedupes (FR-PPL-15); a preview of a signed message proves nothing.
-	want = append(want, "receivePeopleHoldEvent Idempotency-Key", "receivePeopleHoldEvent Prefer", "receivePeopleSessionEvent Idempotency-Key", "receivePeopleSessionEvent Prefer", "receivePeopleProjectionEvent Idempotency-Key", "receivePeopleProjectionEvent Prefer",
+	want = append(want, "receivePeopleHoldEvent Idempotency-Key", "receivePeopleHoldEvent Prefer", "receivePeopleSessionEvent Idempotency-Key", "receivePeopleSessionEvent Prefer", "receivePeopleAvailabilityEvent Idempotency-Key", "receivePeopleAvailabilityEvent Prefer", "receivePeopleProjectionEvent Idempotency-Key", "receivePeopleProjectionEvent Prefer",
 		"submitPayrollRun Idempotency-Key", "submitPayrollRun Prefer", "receivePayrollPayments Idempotency-Key", "receivePayrollPayments Prefer")
 	// Posting the provider's drafts does nothing twice by its state (FR-PSP-07, rev 0.524).
 	want = append(want, "postPaymentProviderInvoices Idempotency-Key")

@@ -504,6 +504,9 @@ fyniq_api       SELECT    pd_shredding_run
 fyniq_api       UPDATE    pd_shredding_run (approved_at, approved_by, status, version)
 fyniq_api       INSERT    pd_transfer (assessed_by, assessed_on, basis, countries, data, evidence, flow, next_review_on, purpose, recipient, saved_at, saved_by, state, transfer_id, version)
 fyniq_api       SELECT    pd_transfer
+fyniq_api       INSERT    people_leave (cancelled, days, end_date, end_half, entry_id, epoch, id, person_id, received_at, start_date, start_half, version)
+fyniq_api       SELECT    people_leave
+fyniq_api       UPDATE    people_leave (cancelled, days, end_date, end_half, epoch, received_at, start_date, start_half, version)
 fyniq_api       INSERT    people_link (approval_id, changed_at, client_id, created_at, created_by, epoch, id, link_key, nemura_organisation_id, nemura_origin, state)
 fyniq_api       SELECT    people_link
 fyniq_api       UPDATE    people_link (changed_at, client_id, state, version)
@@ -1065,6 +1068,7 @@ fyniq_readonly  SELECT    pd_request
 fyniq_readonly  SELECT    pd_request_step
 fyniq_readonly  SELECT    pd_shredding_run
 fyniq_readonly  SELECT    pd_transfer
+fyniq_readonly  SELECT    people_leave
 fyniq_readonly  SELECT    people_link
 fyniq_readonly  SELECT    people_link_access
 fyniq_readonly  SELECT    people_link_inbox
@@ -1449,6 +1453,7 @@ fyniq_worker    INSERT    pd_shredding_run (cohort, keys, listed_at)
 fyniq_worker    SELECT    pd_shredding_run
 fyniq_worker    UPDATE    pd_shredding_run (register, version)
 fyniq_worker    SELECT    pd_transfer
+fyniq_worker    SELECT    people_leave
 fyniq_worker    SELECT    people_link
 fyniq_worker    SELECT    people_link_access
 fyniq_worker    SELECT    people_link_inbox

@@ -114,6 +114,18 @@ type PeopleAccess struct {
 	ReceivedAt                    time.Time
 }
 
+// PeopleLeave is approved leave as Nemura told Fyniq (leave.taken.changed): the person, the dates and the days, and never the leave's type or reason. It informs and moves no money.
+type PeopleLeave struct {
+	EntryID, PersonID  uuid.UUID
+	Start, End         time.Time
+	StartHalf, EndHalf bool
+	Days               string
+	Cancelled          bool
+	Version            int64 // the entry's version in Nemura
+	Epoch              int   // the link's epoch it came in
+	ReceivedAt         time.Time
+}
+
 // PeopleLinks are the link, where each feature lives, the inbox and the employee projection. Every change is audited.
 type PeopleLinks interface {
 	// Live is the link that is not unlinked, or ports.ErrNotFound.
@@ -164,6 +176,12 @@ type PeopleLinks interface {
 	AccessList(ctx context.Context) ([]PeopleAccess, error)
 	// SaveAccess keeps what Nemura said of an identity when its version is newer than the one held: false when it is not (nothing changed). Audited as people_link_access.changed with the answers and never the identity.
 	SaveAccess(ctx context.Context, a PeopleAccess) (bool, error)
+	// SaveLeave keeps what Nemura said of an entry of approved leave when its (epoch, version) is newer than the one held: false when it is not. Audited as people_leave.changed with the entry and its version, never a date.
+	SaveLeave(ctx context.Context, l PeopleLeave) (bool, error)
+	// LeaveOf is the entry as held, or ports.ErrNotFound.
+	LeaveOf(ctx context.Context, entry uuid.UUID) (PeopleLeave, error)
+	// LeaveBetween is the leave that overlaps the range, a cancelled entry not among it, by start date.
+	LeaveBetween(ctx context.Context, from, to time.Time) ([]PeopleLeave, error)
 	// SavePerson writes a person's new state, audited as person_projection.changed with the names of the fields that changed, never
 	// their values. CodePeopleLink when it goes back to an older version.
 	SavePerson(ctx context.Context, p peoplelink.Person) error

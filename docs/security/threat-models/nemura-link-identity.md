@@ -43,3 +43,9 @@ Trust boundaries: **Nemura ↔ link** (token, scope, link key signature, epoch, 
 
 A live link made before the two scopes existed must be approved again to hold them; a mapped member of two Fyniq organisations signs in again in both when Nemura ends their sessions (sessions are the user's own);
 Nemura's side sends every member's identities to Fyniq (it does not know Fyniq's mapping): owner to confirm; whether a real provider re-uses its session without a prompt is `[live-verify]`.
+
+## Addendum: who is away (leave.taken.changed, design D27)
+
+- **Asset:** approved leave dates of a named person, which are personal data (PDPA). **Boundary:** Nemura to Fyniq through the link's client with the scope `people.availability.write`, the envelope signed with the link key. **What crosses:** the entry, the person, the dates, the half days and the days, and a tombstone; never the leave's type, a note, a reason or a balance, so nothing medical or family-related can be read from it. A field Appendix E does not list is refused.
+- **Threats:** a forged or replayed event (the signature, the epoch, the five-minute window and the event ID dedupe hold as for every event); an older word arriving late changing a newer one (kept by (epoch, version)); an entry changing its person (refused by the API and the database); a person Fyniq does not know (refused); another organisation reading the table (row-level security); a deletion (the table has no delete). Nothing in it grants a right, posts an entry or decides an approval.
+- **Residual:** dates of leave are visible to People and HR's View on the Payroll page, as the projection already is. `[owner to confirm]` whether an approver's absence should ever inform the approvals page: it would touch who may approve, so it is a separate change.

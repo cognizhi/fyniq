@@ -401,3 +401,57 @@ WHERE m.user_id = $1 AND ra.role = 'approver' AND ra.revoked_at IS NULL`, user).
 	}
 	check("a link that is suspended", scoped, 2)
 }
+
+// Another organisation's projection, and the API's own role, cannot narrow or widen an Approver's scope here (design D23): a person of another organisation's link mapped to the same user changes nothing in this
+// one (row-level security), the function that reads the projection is the API's alone to execute, and the worker, which holds no right to a scope, cannot read it.
+// req: FR-ADM-01
+// asvs: V8.2.1, V4.2.1
+func TestAttackAnotherOrganisationsProjectionNarrowsNothingHere(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "accountant"}})
+	s := store(t, "fyniq_api")
+	b := porttest.NewBooks(t, s, "Department projection home Pte Ltd")
+	other := porttest.NewBooks(t, s, "Department projection elsewhere Pte Ltd")
+	now := clock.System{}.Now()
+	approver := joined(t, b.Org, 94, []string{"approver"}, now)
+	// The same user is mapped to a person of Operations in the other organisation's active link.
+	if err := s.Do(ctx, other.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		dept, err := u.Dimensions().Create(ctx, storage.NewDimension{Kind: storage.DimensionDepartment, Name: "Department"})
+		if err != nil {
+			return err
+		}
+		v, err := u.Dimensions().CreateValue(ctx, storage.NewDimensionValue{DimensionID: dept.ID, Code: "OPS", Name: "Operations"})
+		if err != nil {
+			return err
+		}
+		if _, err := u.PeopleLinks().Link(ctx, storage.PeopleLinkRow{NemuraOrganisationID: uuid.New(), LinkKey: make([]byte, 32), ApprovalID: uuid.New(), CreatedBy: "user:" + uuid.NewString(), CreatedAt: now}); err != nil {
+			return err
+		}
+		return u.PeopleLinks().SavePerson(ctx, peoplelink.Person{ID: uuid.New(), Version: 1, DisplayName: "Elsewhere", Status: "active", UserID: approver, DepartmentValue: v.ID, UpdatedAt: now})
+	}); err != nil {
+		// A person of another organisation's link cannot name this organisation's user at all: the database refuses it, which is the same fence from the other side.
+		t.Logf("the other organisation could not map this user: %v", err)
+	}
+	for _, who := range []struct {
+		org uuid.UUID
+		fn  string
+	}{{b.Org, "here"}, {other.Org, "there"}} {
+		var d uuid.UUID
+		if err := s.Do(ctx, who.org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			d, err = u.PeopleLinks().ProjectionDepartment(ctx, approver)
+			return err
+		}); err != nil {
+			t.Fatalf("%s: %v", who.fn, err)
+		}
+		if who.org == b.Org && d != uuid.Nil {
+			t.Errorf("the other organisation's projection gave %s a department: %v", who.fn, d)
+		}
+	}
+	// The function is the API's: the worker and the read-only role cannot call it.
+	for _, role := range []string{"fyniq_worker", "fyniq_readonly"} {
+		err := asOrg(ctx, conn(t, role), b.Org, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, "SELECT fyniq.projection_department($1)", approver)
+			return err
+		})
+		wantState(t, role+" calls the projection's function", err, "42501")
+	}
+}

@@ -2986,6 +2986,22 @@ type FyniqPdTransfer struct {
 	SavedAt        time.Time
 }
 
+type FyniqPeopleLeave struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	EntryID        uuid.UUID
+	PersonID       uuid.UUID
+	StartDate      time.Time
+	EndDate        time.Time
+	StartHalf      bool
+	EndHalf        bool
+	Days           string
+	Cancelled      bool
+	Version        int64
+	Epoch          int32
+	ReceivedAt     time.Time
+}
+
 type FyniqPeopleLink struct {
 	OrganisationID       uuid.UUID
 	ID                   uuid.UUID

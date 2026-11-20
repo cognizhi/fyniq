@@ -2339,6 +2339,19 @@ pd_transfer | next_review_on | date | not null |
 pd_transfer | state | text | not null | 
 pd_transfer | saved_by | text | not null | 
 pd_transfer | saved_at | timestamp with time zone | not null | 
+people_leave | organisation_id | uuid | not null | current_org()
+people_leave | id | uuid | not null | uuidv7()
+people_leave | entry_id | uuid | not null | 
+people_leave | person_id | uuid | not null | 
+people_leave | start_date | date | not null | 
+people_leave | end_date | date | not null | 
+people_leave | start_half | boolean | not null | false
+people_leave | end_half | boolean | not null | false
+people_leave | days | numeric(8,2) | not null | 
+people_leave | cancelled | boolean | not null | false
+people_leave | version | bigint | not null | 
+people_leave | epoch | integer | not null | 
+people_leave | received_at | timestamp with time zone | not null | 
 people_link | organisation_id | uuid | not null | current_org()
 people_link | id | uuid | not null | uuidv7()
 people_link | state | text | not null | 
@@ -7025,6 +7038,26 @@ pd_transfer | pd_transfer_version_not_null | NOT NULL version
 pd_transfer | pd_transfer_version_once | UNIQUE (organisation_id, transfer_id, version)
 pd_transfer | pd_transfer_version_positive | CHECK ((version > 0))
 pd_transfer | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+people_leave | people_leave_cancelled_not_null | NOT NULL cancelled
+people_leave | people_leave_dates | CHECK (((end_date >= start_date) AND ((end_date - start_date) < 366)))
+people_leave | people_leave_days | CHECK (((days <> 'NaN'::numeric) AND (days > (0)::numeric) AND (days <= (366)::numeric)))
+people_leave | people_leave_days_not_null | NOT NULL days
+people_leave | people_leave_end_date_not_null | NOT NULL end_date
+people_leave | people_leave_end_half_not_null | NOT NULL end_half
+people_leave | people_leave_entry_id_not_null | NOT NULL entry_id
+people_leave | people_leave_epoch_not_null | NOT NULL epoch
+people_leave | people_leave_id_key | UNIQUE (organisation_id, id)
+people_leave | people_leave_id_not_null | NOT NULL id
+people_leave | people_leave_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+people_leave | people_leave_organisation_id_not_null | NOT NULL organisation_id
+people_leave | people_leave_person_id_not_null | NOT NULL person_id
+people_leave | people_leave_pkey | PRIMARY KEY (organisation_id, entry_id)
+people_leave | people_leave_received_at_not_null | NOT NULL received_at
+people_leave | people_leave_start_date_not_null | NOT NULL start_date
+people_leave | people_leave_start_half_not_null | NOT NULL start_half
+people_leave | people_leave_version | CHECK (((version >= 1) AND (epoch >= 1)))
+people_leave | people_leave_version_not_null | NOT NULL version
+people_leave | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 people_link | people_link_approval_id_not_null | NOT NULL approval_id
 people_link | people_link_changed_at_not_null | NOT NULL changed_at
 people_link | people_link_created_at_not_null | NOT NULL created_at
@@ -8793,6 +8826,7 @@ CREATE INDEX payroll_run_refusal_run ON fyniq.payroll_run_refusal USING btree (o
 CREATE INDEX pd_anonymisation_contact ON fyniq.pd_anonymisation USING btree (organisation_id, contact_id)
 CREATE INDEX pd_breach_step_breach ON fyniq.pd_breach_step USING btree (organisation_id, breach_id, at)
 CREATE INDEX pd_request_step_request ON fyniq.pd_request_step USING btree (organisation_id, request_id, at)
+CREATE INDEX people_leave_between ON fyniq.people_leave USING btree (organisation_id, start_date, end_date)
 CREATE INDEX people_link_inbox_object ON fyniq.people_link_inbox USING btree (organisation_id, object_type, object_id, object_version)
 CREATE INDEX people_link_replay_link ON fyniq.people_link_replay USING btree (organisation_id, link_id, asked_at)
 CREATE INDEX people_source_latest ON fyniq.people_source USING btree (organisation_id, feature, set_at)
@@ -9209,6 +9243,8 @@ CREATE UNIQUE INDEX pd_shredding_run_cohort_once ON fyniq.pd_shredding_run USING
 CREATE UNIQUE INDEX pd_shredding_run_pkey ON fyniq.pd_shredding_run USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_transfer_pkey ON fyniq.pd_transfer USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_transfer_version_once ON fyniq.pd_transfer USING btree (organisation_id, transfer_id, version)
+CREATE UNIQUE INDEX people_leave_id_key ON fyniq.people_leave USING btree (organisation_id, id)
+CREATE UNIQUE INDEX people_leave_pkey ON fyniq.people_leave USING btree (organisation_id, entry_id)
 CREATE UNIQUE INDEX people_link_access_identity_key ON fyniq.people_link_access USING btree (organisation_id, issuer, subject)
 CREATE UNIQUE INDEX people_link_access_pkey ON fyniq.people_link_access USING btree (organisation_id, id)
 CREATE UNIQUE INDEX people_link_ask_key_id_key ON fyniq.people_link_ask_key USING btree (organisation_id, id)
@@ -9592,6 +9628,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.owner_su
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.payee_bank_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'change_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.payment_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payment_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.pd_shredding_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_shredding_run', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_leave DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_leave', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_link_access DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link_access', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
@@ -10021,6 +10058,8 @@ CREATE TRIGGER pd_shredding_run_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq
 CREATE TRIGGER pd_shredding_run_no_truncate BEFORE TRUNCATE ON fyniq.pd_shredding_run FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_transfer_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_transfer FOR EACH ROW EXECUTE FUNCTION pd_transfer_guard()
 CREATE TRIGGER pd_transfer_no_truncate BEFORE TRUNCATE ON fyniq.pd_transfer FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER people_leave_guard BEFORE DELETE OR UPDATE ON fyniq.people_leave FOR EACH ROW EXECUTE FUNCTION people_leave_guard()
+CREATE TRIGGER people_leave_no_truncate BEFORE TRUNCATE ON fyniq.people_leave FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER people_link_access_guard BEFORE DELETE OR UPDATE ON fyniq.people_link_access FOR EACH ROW EXECUTE FUNCTION people_link_access_guard()
 CREATE TRIGGER people_link_access_no_truncate BEFORE TRUNCATE ON fyniq.people_link_access FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER people_link_ask_key_guard BEFORE DELETE OR UPDATE ON fyniq.people_link_ask_key FOR EACH ROW EXECUTE FUNCTION notification_append_only()
@@ -10366,6 +10405,7 @@ pd_request | tenant_isolation | * | (organisation_id = current_org()) | (organis
 pd_request_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_shredding_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_transfer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+people_leave | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link_access | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link_ask_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10656,6 +10696,7 @@ pd_request | enabled | forced
 pd_request_step | enabled | forced
 pd_shredding_run | enabled | forced
 pd_transfer | enabled | forced
+people_leave | enabled | forced
 people_link | enabled | forced
 people_link_access | enabled | forced
 people_link_ask_key | enabled | forced
@@ -11070,6 +11111,7 @@ pd_breach_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
 pd_shredding_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78959af9821f7e3f1ccf60b99d41b64
 pd_transfer_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1805c27109679636b897845585e6cb59
+people_leave_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e0dd78ecc0093f6704b9f36669c45e9e
 people_link_access_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cb7c1862cac32e3b301d2e2b8eb18df4
 people_link_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7ec37301f4fcf16ab03af14e16925399
 people_link_key_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 894d3d12ea6de23ec5bbc93b954b6124
