@@ -2,7 +2,7 @@
 
 The TypeScript SDK of the Fyniq API (PRD-001 FR-INT-17): a client typed from the `/v1` contract, with the
 conventions of §8.18.1 built in. It is generated from `contracts/openapi/fyniq.v1.yaml`; never hand-write a client.
-The web app takes its types from it. The Go and Python SDKs are P2, and so is publishing to a registry
+The web app takes its types from it. The Go (`sdk/go`) and Python (`sdk/python`) SDKs are beside it; publishing to a registry is P2
 (`private` stays `true` until then; `pnpm pack` makes the tarball that would be published).
 
 ```ts
