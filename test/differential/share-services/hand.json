@@ -1,0 +1,540 @@
+[
+ {
+  "name": "one tranche over a year: 12,000 shares at 0.50 is 6,000.00, 500.00 a month",
+  "currency": "SGD",
+  "minor_units": 2,
+  "fair_value": "0.50",
+  "service_start": "2026-01-01",
+  "tranches": [
+   {
+    "shares": 12000,
+    "vest_on": "2026-12-31"
+   }
+  ],
+  "want": {
+   "tranches": [
+    {
+     "months": 12,
+     "total": "6000.00",
+     "parts": [
+      "500.00",
+      "500.00",
+      "500.00",
+      "500.00",
+      "500.00",
+      "500.00",
+      "500.00",
+      "500.00",
+      "500.00",
+      "500.00",
+      "500.00",
+      "500.00"
+     ]
+    }
+   ],
+   "months": [
+    {
+     "month": "2026-01",
+     "expense": "500.00"
+    },
+    {
+     "month": "2026-02",
+     "expense": "500.00"
+    },
+    {
+     "month": "2026-03",
+     "expense": "500.00"
+    },
+    {
+     "month": "2026-04",
+     "expense": "500.00"
+    },
+    {
+     "month": "2026-05",
+     "expense": "500.00"
+    },
+    {
+     "month": "2026-06",
+     "expense": "500.00"
+    },
+    {
+     "month": "2026-07",
+     "expense": "500.00"
+    },
+    {
+     "month": "2026-08",
+     "expense": "500.00"
+    },
+    {
+     "month": "2026-09",
+     "expense": "500.00"
+    },
+    {
+     "month": "2026-10",
+     "expense": "500.00"
+    },
+    {
+     "month": "2026-11",
+     "expense": "500.00"
+    },
+    {
+     "month": "2026-12",
+     "expense": "500.00"
+    }
+   ],
+   "total": "6000.00"
+  }
+ },
+ {
+  "name": "1,000 shares at 0.1234 over three months: 123.40 by cumulative rounding",
+  "currency": "SGD",
+  "minor_units": 2,
+  "fair_value": "0.1234",
+  "service_start": "2026-01-01",
+  "tranches": [
+   {
+    "shares": 1000,
+    "vest_on": "2026-03-31"
+   }
+  ],
+  "want": {
+   "tranches": [
+    {
+     "months": 3,
+     "total": "123.40",
+     "parts": [
+      "41.13",
+      "41.14",
+      "41.13"
+     ]
+    }
+   ],
+   "months": [
+    {
+     "month": "2026-01",
+     "expense": "41.13"
+    },
+    {
+     "month": "2026-02",
+     "expense": "41.14"
+    },
+    {
+     "month": "2026-03",
+     "expense": "41.13"
+    }
+   ],
+   "total": "123.40"
+  }
+ },
+ {
+  "name": "graded vesting: two tranches each over its own months",
+  "currency": "SGD",
+  "minor_units": 2,
+  "fair_value": "1.00",
+  "service_start": "2026-01-01",
+  "tranches": [
+   {
+    "shares": 2400,
+    "vest_on": "2026-06-30"
+   },
+   {
+    "shares": 2400,
+    "vest_on": "2026-12-31"
+   }
+  ],
+  "want": {
+   "tranches": [
+    {
+     "months": 6,
+     "total": "2400.00",
+     "parts": [
+      "400.00",
+      "400.00",
+      "400.00",
+      "400.00",
+      "400.00",
+      "400.00"
+     ]
+    },
+    {
+     "months": 12,
+     "total": "2400.00",
+     "parts": [
+      "200.00",
+      "200.00",
+      "200.00",
+      "200.00",
+      "200.00",
+      "200.00",
+      "200.00",
+      "200.00",
+      "200.00",
+      "200.00",
+      "200.00",
+      "200.00"
+     ]
+    }
+   ],
+   "months": [
+    {
+     "month": "2026-01",
+     "expense": "600.00"
+    },
+    {
+     "month": "2026-02",
+     "expense": "600.00"
+    },
+    {
+     "month": "2026-03",
+     "expense": "600.00"
+    },
+    {
+     "month": "2026-04",
+     "expense": "600.00"
+    },
+    {
+     "month": "2026-05",
+     "expense": "600.00"
+    },
+    {
+     "month": "2026-06",
+     "expense": "600.00"
+    },
+    {
+     "month": "2026-07",
+     "expense": "200.00"
+    },
+    {
+     "month": "2026-08",
+     "expense": "200.00"
+    },
+    {
+     "month": "2026-09",
+     "expense": "200.00"
+    },
+    {
+     "month": "2026-10",
+     "expense": "200.00"
+    },
+    {
+     "month": "2026-11",
+     "expense": "200.00"
+    },
+    {
+     "month": "2026-12",
+     "expense": "200.00"
+    }
+   ],
+   "total": "4800.00"
+  }
+ },
+ {
+  "name": "yen have no minor unit: 3,300 over seven months",
+  "currency": "JPY",
+  "minor_units": 0,
+  "fair_value": "33",
+  "service_start": "2026-01-01",
+  "tranches": [
+   {
+    "shares": 100,
+    "vest_on": "2026-07-31"
+   }
+  ],
+  "want": {
+   "tranches": [
+    {
+     "months": 7,
+     "total": "3300",
+     "parts": [
+      "471",
+      "472",
+      "471",
+      "472",
+      "471",
+      "472",
+      "471"
+     ]
+    }
+   ],
+   "months": [
+    {
+     "month": "2026-01",
+     "expense": "471"
+    },
+    {
+     "month": "2026-02",
+     "expense": "472"
+    },
+    {
+     "month": "2026-03",
+     "expense": "471"
+    },
+    {
+     "month": "2026-04",
+     "expense": "472"
+    },
+    {
+     "month": "2026-05",
+     "expense": "471"
+    },
+    {
+     "month": "2026-06",
+     "expense": "472"
+    },
+    {
+     "month": "2026-07",
+     "expense": "471"
+    }
+   ],
+   "total": "3300"
+  }
+ },
+ {
+  "name": "a half cent rounds away from zero once: 3 shares at 0.125 is 0.38",
+  "currency": "SGD",
+  "minor_units": 2,
+  "fair_value": "0.125",
+  "service_start": "2026-05-01",
+  "tranches": [
+   {
+    "shares": 3,
+    "vest_on": "2026-05-15"
+   }
+  ],
+  "want": {
+   "tranches": [
+    {
+     "months": 1,
+     "total": "0.38",
+     "parts": [
+      "0.38"
+     ]
+    }
+   ],
+   "months": [
+    {
+     "month": "2026-05",
+     "expense": "0.38"
+    }
+   ],
+   "total": "0.38"
+  }
+ },
+ {
+  "name": "the service crosses a year end",
+  "currency": "SGD",
+  "minor_units": 2,
+  "fair_value": "2.50",
+  "service_start": "2026-11-01",
+  "tranches": [
+   {
+    "shares": 1000,
+    "vest_on": "2027-02-28"
+   }
+  ],
+  "want": {
+   "tranches": [
+    {
+     "months": 4,
+     "total": "2500.00",
+     "parts": [
+      "625.00",
+      "625.00",
+      "625.00",
+      "625.00"
+     ]
+    }
+   ],
+   "months": [
+    {
+     "month": "2026-11",
+     "expense": "625.00"
+    },
+    {
+     "month": "2026-12",
+     "expense": "625.00"
+    },
+    {
+     "month": "2027-01",
+     "expense": "625.00"
+    },
+    {
+     "month": "2027-02",
+     "expense": "625.00"
+    }
+   ],
+   "total": "2500.00"
+  }
+ },
+ {
+  "name": "a tranche vesting mid-month counts that month whole",
+  "currency": "SGD",
+  "minor_units": 2,
+  "fair_value": "1.00",
+  "service_start": "2026-01-01",
+  "tranches": [
+   {
+    "shares": 300,
+    "vest_on": "2026-03-10"
+   }
+  ],
+  "want": {
+   "tranches": [
+    {
+     "months": 3,
+     "total": "300.00",
+     "parts": [
+      "100.00",
+      "100.00",
+      "100.00"
+     ]
+    }
+   ],
+   "months": [
+    {
+     "month": "2026-01",
+     "expense": "100.00"
+    },
+    {
+     "month": "2026-02",
+     "expense": "100.00"
+    },
+    {
+     "month": "2026-03",
+     "expense": "100.00"
+    }
+   ],
+   "total": "300.00"
+  }
+ },
+ {
+  "name": "a fair value of six decimals keeps them until the one rounding",
+  "currency": "SGD",
+  "minor_units": 2,
+  "fair_value": "0.000123",
+  "service_start": "2026-01-01",
+  "tranches": [
+   {
+    "shares": 1000000,
+    "vest_on": "2026-04-30"
+   }
+  ],
+  "want": {
+   "tranches": [
+    {
+     "months": 4,
+     "total": "123.00",
+     "parts": [
+      "30.75",
+      "30.75",
+      "30.75",
+      "30.75"
+     ]
+    }
+   ],
+   "months": [
+    {
+     "month": "2026-01",
+     "expense": "30.75"
+    },
+    {
+     "month": "2026-02",
+     "expense": "30.75"
+    },
+    {
+     "month": "2026-03",
+     "expense": "30.75"
+    },
+    {
+     "month": "2026-04",
+     "expense": "30.75"
+    }
+   ],
+   "total": "123.00"
+  }
+ },
+ {
+  "name": "three decimals: 1 dinar of 0.001 units a share",
+  "currency": "KWD",
+  "minor_units": 3,
+  "fair_value": "0.0015",
+  "service_start": "2026-01-01",
+  "tranches": [
+   {
+    "shares": 1000,
+    "vest_on": "2026-02-28"
+   }
+  ],
+  "want": {
+   "tranches": [
+    {
+     "months": 2,
+     "total": "1.500",
+     "parts": [
+      "0.750",
+      "0.750"
+     ]
+    }
+   ],
+   "months": [
+    {
+     "month": "2026-01",
+     "expense": "0.750"
+    },
+    {
+     "month": "2026-02",
+     "expense": "0.750"
+    }
+   ],
+   "total": "1.500"
+  }
+ },
+ {
+  "name": "two tranches landing on the same months add",
+  "currency": "SGD",
+  "minor_units": 2,
+  "fair_value": "1.00",
+  "service_start": "2026-01-01",
+  "tranches": [
+   {
+    "shares": 100,
+    "vest_on": "2026-02-28"
+   },
+   {
+    "shares": 1,
+    "vest_on": "2026-02-28"
+   }
+  ],
+  "want": {
+   "tranches": [
+    {
+     "months": 2,
+     "total": "100.00",
+     "parts": [
+      "50.00",
+      "50.00"
+     ]
+    },
+    {
+     "months": 2,
+     "total": "1.00",
+     "parts": [
+      "0.50",
+      "0.50"
+     ]
+    }
+   ],
+   "months": [
+    {
+     "month": "2026-01",
+     "expense": "50.50"
+    },
+    {
+     "month": "2026-02",
+     "expense": "50.50"
+    }
+   ],
+   "total": "101.00"
+  }
+ }
+]

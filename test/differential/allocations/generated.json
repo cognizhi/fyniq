@@ -1,0 +1,5026 @@
+[
+ {
+  "amount": "-57.10",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 0",
+  "targets": [
+   "1"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "-57.10"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "57.42",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 1",
+  "targets": [
+   "59.65"
+  ],
+  "want": {
+   "parts": [
+    "34.25"
+   ],
+   "unallocated": "23.17"
+  }
+ },
+ {
+  "amount": "9863",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 2",
+  "targets": [
+   "6861998.962635",
+   "1304451.491624"
+  ],
+  "unplaced": "19483.096389",
+  "want": {
+   "parts": [
+    "8268",
+    "1572"
+   ],
+   "unallocated": "23"
+  }
+ },
+ {
+  "amount": "4171367159628.18",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 3",
+  "targets": [
+   "12",
+   "2",
+   "1"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "3128525369721.14",
+    "521420894953.52",
+    "260710447476.76"
+   ],
+   "unallocated": "260710447476.76"
+  }
+ },
+ {
+  "amount": "6302",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 4",
+  "targets": [
+   "3.24",
+   "40.25",
+   "27.25",
+   "4.51",
+   "9.8"
+  ],
+  "want": {
+   "parts": [
+    "204",
+    "2537",
+    "1717",
+    "284",
+    "618"
+   ],
+   "unallocated": "942"
+  }
+ },
+ {
+  "amount": "-952961.15",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 5",
+  "targets": [
+   "6642717.505832",
+   "7740935.122067",
+   "8383755.616235",
+   "6078031.848478"
+  ],
+  "want": {
+   "parts": [
+    "-219454.15",
+    "-255735.76",
+    "-276972.49",
+    "-200798.75"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "158245.66",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 6",
+  "targets": [
+   "0",
+   "3",
+   "2"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.00",
+    "94947.40",
+    "63298.26"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-7.833",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 7",
+  "targets": [
+   "5.01",
+   "46.42",
+   "26.57"
+  ],
+  "want": {
+   "parts": [
+    "-0.393",
+    "-3.636",
+    "-2.081"
+   ],
+   "unallocated": "-1.723"
+  }
+ },
+ {
+  "amount": "-775550038.514",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 8",
+  "targets": [
+   "8701604.818995",
+   "8983495.538852"
+  ],
+  "unplaced": "64487.105083",
+  "want": {
+   "parts": [
+    "-380207707.171",
+    "-392524633.358"
+   ],
+   "unallocated": "-2817697.985"
+  }
+ },
+ {
+  "amount": "6",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 9",
+  "targets": [
+   "3",
+   "0"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "6",
+    "0"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "-0.80",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 10",
+  "targets": [
+   "18.69",
+   "57.37",
+   "2.54",
+   "2.09",
+   "11.57"
+  ],
+  "want": {
+   "parts": [
+    "-0.15",
+    "-0.46",
+    "-0.02",
+    "-0.02",
+    "-0.09"
+   ],
+   "unallocated": "-0.06"
+  }
+ },
+ {
+  "amount": "10",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 11",
+  "targets": [
+   "1282788.984212",
+   "775294.321155",
+   "8956651.667819",
+   "1009042.731923"
+  ],
+  "unplaced": "80072.555563",
+  "want": {
+   "parts": [
+    "1",
+    "1",
+    "7",
+    "1"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "0.00",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 12",
+  "targets": [
+   "2",
+   "1",
+   "678748",
+   "833537"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.00",
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "4468",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 13",
+  "targets": [
+   "13.3",
+   "5.44",
+   "65.72",
+   "1.28",
+   "5.54"
+  ],
+  "want": {
+   "parts": [
+    "594",
+    "243",
+    "2936",
+    "57",
+    "248"
+   ],
+   "unallocated": "390"
+  }
+ },
+ {
+  "amount": "-3425",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 14",
+  "targets": [
+   "8892690.244698",
+   "3168820.822698",
+   "4347545.44332",
+   "1768818.676739"
+  ],
+  "want": {
+   "parts": [
+    "-1676",
+    "-597",
+    "-819",
+    "-333"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "0.09",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 15",
+  "targets": [
+   "3",
+   "5"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.03",
+    "0.06"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-0.943",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 16",
+  "targets": [
+   "22.84"
+  ],
+  "want": {
+   "parts": [
+    "-0.215"
+   ],
+   "unallocated": "-0.728"
+  }
+ },
+ {
+  "amount": "-407249049.558",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 17",
+  "targets": [
+   "4712053.403058",
+   "1209604.581127",
+   "5945037.234972",
+   "9305858.332084",
+   "4295032.311239"
+  ],
+  "unplaced": "10692.567902",
+  "want": {
+   "parts": [
+    "-75318247.075",
+    "-19334521.261",
+    "-95026466.178",
+    "-148746390.829",
+    "-68652512.427"
+   ],
+   "unallocated": "-170911.788"
+  }
+ },
+ {
+  "amount": "35809145311.892",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 18",
+  "targets": [
+   "5",
+   "0",
+   "5",
+   "0"
+  ],
+  "unplaced": "542",
+  "want": {
+   "parts": [
+    "324358200.289",
+    "0.000",
+    "324358200.289",
+    "0.000"
+   ],
+   "unallocated": "35160428911.314"
+  }
+ },
+ {
+  "amount": "0.002",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 19",
+  "targets": [
+   "38.97",
+   "43.78",
+   "2.42"
+  ],
+  "want": {
+   "parts": [
+    "0.001",
+    "0.001",
+    "0.000"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "1.683",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 20",
+  "targets": [
+   "6584897.305916"
+  ],
+  "want": {
+   "parts": [
+    "1.683"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "89.47",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 21",
+  "targets": [
+   "3",
+   "2",
+   "100"
+  ],
+  "unplaced": "198",
+  "want": {
+   "parts": [
+    "0.89",
+    "0.59",
+    "29.53"
+   ],
+   "unallocated": "58.46"
+  }
+ },
+ {
+  "amount": "39039106",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 22",
+  "targets": [
+   "30.64",
+   "6.59",
+   "20.32",
+   "14.4"
+  ],
+  "want": {
+   "parts": [
+    "11961582",
+    "2572677",
+    "7932747",
+    "5621631"
+   ],
+   "unallocated": "10950469"
+  }
+ },
+ {
+  "amount": "3404",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 23",
+  "targets": [
+   "7530050.559195",
+   "5635701.003492",
+   "3814528.157127"
+  ],
+  "unplaced": "82497.560571",
+  "want": {
+   "parts": [
+    "1502",
+    "1124",
+    "761"
+   ],
+   "unallocated": "17"
+  }
+ },
+ {
+  "amount": "8.419",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 24",
+  "targets": [
+   "739901",
+   "12",
+   "0"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "8.419",
+    "0.000",
+    "0.000"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "0.91",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 25",
+  "targets": [
+   "7.86",
+   "8.48",
+   "6.86"
+  ],
+  "want": {
+   "parts": [
+    "0.07",
+    "0.08",
+    "0.06"
+   ],
+   "unallocated": "0.70"
+  }
+ },
+ {
+  "amount": "721957.02",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 26",
+  "targets": [
+   "4019960.210884",
+   "1090546.769132",
+   "6959168.293217"
+  ],
+  "unplaced": "31073.40429",
+  "want": {
+   "parts": [
+    "239839.58",
+    "65064.39",
+    "415199.14"
+   ],
+   "unallocated": "1853.91"
+  }
+ },
+ {
+  "amount": "194309.12",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 27",
+  "targets": [
+   "434098",
+   "1",
+   "0",
+   "0"
+  ],
+  "unplaced": "653",
+  "want": {
+   "parts": [
+    "194016.82",
+    "0.45",
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "291.85"
+  }
+ },
+ {
+  "amount": "2.802",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 28",
+  "targets": [
+   "66.16"
+  ],
+  "want": {
+   "parts": [
+    "1.854"
+   ],
+   "unallocated": "0.948"
+  }
+ },
+ {
+  "amount": "-7",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 29",
+  "targets": [
+   "9062071.6342",
+   "1994229.092849"
+  ],
+  "want": {
+   "parts": [
+    "-6",
+    "-1"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "94992.578",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 30",
+  "targets": [
+   "1",
+   "1",
+   "11067",
+   "5",
+   "100"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "8.498",
+    "8.498",
+    "94049.281",
+    "42.491",
+    "849.817"
+   ],
+   "unallocated": "33.993"
+  }
+ },
+ {
+  "amount": "-52",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 31",
+  "targets": [
+   "1.22",
+   "1.33",
+   "3.69",
+   "22.7",
+   "31.79"
+  ],
+  "want": {
+   "parts": [
+    "-1",
+    "-1",
+    "-2",
+    "-12",
+    "-16"
+   ],
+   "unallocated": "-20"
+  }
+ },
+ {
+  "amount": "30390.730",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 32",
+  "targets": [
+   "2811670.377549"
+  ],
+  "want": {
+   "parts": [
+    "30390.730"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "0.05",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 33",
+  "targets": [
+   "0",
+   "0"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "0.05"
+  }
+ },
+ {
+  "amount": "-95",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 34",
+  "targets": [
+   "94.38"
+  ],
+  "want": {
+   "parts": [
+    "-90"
+   ],
+   "unallocated": "-5"
+  }
+ },
+ {
+  "amount": "706545205.60",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 35",
+  "targets": [
+   "4939516.524272",
+   "8489473.508507"
+  ],
+  "want": {
+   "parts": [
+    "259884898.99",
+    "446660306.61"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "5267010924860.98",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 36",
+  "targets": [
+   "3",
+   "473509",
+   "0",
+   "100"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "33362821.84",
+    "5265865467978.00",
+    "0.00",
+    "1112094061.14"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "6864291993301.44",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 37",
+  "targets": [
+   "39.45",
+   "40.43",
+   "0.98",
+   "3.69",
+   "0.73",
+   "13.75"
+  ],
+  "want": {
+   "parts": [
+    "2707963191357.42",
+    "2775233252891.77",
+    "67270061534.36",
+    "253292374552.82",
+    "50109331551.10",
+    "943840149078.95"
+   ],
+   "unallocated": "66583632335.02"
+  }
+ },
+ {
+  "amount": "-3.03",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 38",
+  "targets": [
+   "9943260.42962",
+   "7717082.915501",
+   "5646206.25391"
+  ],
+  "unplaced": "43301.771105",
+  "want": {
+   "parts": [
+    "-1.29",
+    "-1.00",
+    "-0.73"
+   ],
+   "unallocated": "-0.01"
+  }
+ },
+ {
+  "amount": "1671501453133.03",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 39",
+  "targets": [
+   "3"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "1671501453133.03"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "774417.60",
+  "currency": "SGD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 40",
+  "targets": [
+   "31.36"
+  ],
+  "want": {
+   "parts": [
+    "242857.36"
+   ],
+   "unallocated": "531560.24"
+  }
+ },
+ {
+  "amount": "285699573587633",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 41",
+  "targets": [
+   "6712668.70513",
+   "7182042.174719",
+   "9720130.810276",
+   "445401.325922",
+   "1993507.946454",
+   "641352.205859"
+  ],
+  "want": {
+   "parts": [
+    "71841137851969",
+    "76864523574406",
+    "104027963862800",
+    "4766828136559",
+    "21335162732037",
+    "6863957429862"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "1.831",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 42",
+  "targets": [
+   "0"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "0.000"
+   ],
+   "unallocated": "1.831"
+  }
+ },
+ {
+  "amount": "-1907234392.62",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 43",
+  "targets": [
+   "86.43",
+   "8.97"
+  ],
+  "want": {
+   "parts": [
+    "-1648422685.54",
+    "-171078925.02"
+   ],
+   "unallocated": "-87732782.06"
+  }
+ },
+ {
+  "amount": "0.891",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 44",
+  "targets": [
+   "1680695.021874",
+   "7767408.388519",
+   "5024731.609575"
+  ],
+  "want": {
+   "parts": [
+    "0.104",
+    "0.478",
+    "0.309"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "-1.36",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 45",
+  "targets": [
+   "2",
+   "5",
+   "0",
+   "0",
+   "5"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "-0.17",
+    "-0.43",
+    "0.00",
+    "0.00",
+    "-0.42"
+   ],
+   "unallocated": "-0.34"
+  }
+ },
+ {
+  "amount": "-77.66",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 46",
+  "targets": [
+   "19.87",
+   "2.24",
+   "1.96",
+   "4.43",
+   "15.76",
+   "53.3"
+  ],
+  "want": {
+   "parts": [
+    "-15.43",
+    "-1.74",
+    "-1.52",
+    "-3.44",
+    "-12.24",
+    "-41.39"
+   ],
+   "unallocated": "-1.90"
+  }
+ },
+ {
+  "amount": "5592",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 47",
+  "targets": [
+   "7666551.813276",
+   "9622815.505263",
+   "4656282.123356"
+  ],
+  "unplaced": "63771.597631",
+  "want": {
+   "parts": [
+    "1948",
+    "2445",
+    "1183"
+   ],
+   "unallocated": "16"
+  }
+ },
+ {
+  "amount": "89996158310",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 48",
+  "targets": [
+   "2",
+   "0",
+   "2",
+   "12"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "10587783331",
+    "0",
+    "10587783331",
+    "63526699983"
+   ],
+   "unallocated": "5293891665"
+  }
+ },
+ {
+  "amount": "936326399395.546",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 49",
+  "targets": [
+   "56.21",
+   "11.33",
+   "1.53"
+  ],
+  "want": {
+   "parts": [
+    "526309069100.237",
+    "106085781051.515",
+    "14325793910.752"
+   ],
+   "unallocated": "289605755333.042"
+  }
+ },
+ {
+  "amount": "-0.02",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 50",
+  "targets": [
+   "2095335.993572"
+  ],
+  "want": {
+   "parts": [
+    "-0.02"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "2.963",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 51",
+  "targets": [
+   "5",
+   "100",
+   "553508"
+  ],
+  "unplaced": "931",
+  "want": {
+   "parts": [
+    "0.000",
+    "0.001",
+    "2.957"
+   ],
+   "unallocated": "0.005"
+  }
+ },
+ {
+  "amount": "0.75",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 52",
+  "targets": [
+   "9.46",
+   "34.4",
+   "18.53"
+  ],
+  "want": {
+   "parts": [
+    "0.07",
+    "0.26",
+    "0.14"
+   ],
+   "unallocated": "0.28"
+  }
+ },
+ {
+  "amount": "-445435286074318",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 53",
+  "targets": [
+   "4206786.745478"
+  ],
+  "want": {
+   "parts": [
+    "-445435286074318"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "70165538",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 54",
+  "targets": [
+   "5",
+   "5",
+   "2",
+   "1",
+   "3"
+  ],
+  "unplaced": "584",
+  "want": {
+   "parts": [
+    "584713",
+    "584713",
+    "233885",
+    "116942",
+    "350828"
+   ],
+   "unallocated": "68294457"
+  }
+ },
+ {
+  "amount": "0.09",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 55",
+  "targets": [
+   "9.58",
+   "20.08",
+   "5.02",
+   "1.22",
+   "53.86"
+  ],
+  "want": {
+   "parts": [
+    "0.01",
+    "0.02",
+    "0.00",
+    "0.00",
+    "0.05"
+   ],
+   "unallocated": "0.01"
+  }
+ },
+ {
+  "amount": "-867731429443.583",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 56",
+  "targets": [
+   "8304329.279512",
+   "9654722.982772",
+   "5893553.761527"
+  ],
+  "want": {
+   "parts": [
+    "-302102315742.263",
+    "-351228145317.097",
+    "-214400968384.223"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "5",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 57",
+  "targets": [
+   "1",
+   "1"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "3",
+    "2"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "922330789.539",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 58",
+  "targets": [
+   "3.09",
+   "1.71",
+   "4.54",
+   "25.96",
+   "2.55"
+  ],
+  "want": {
+   "parts": [
+    "28500021.397",
+    "15771856.501",
+    "41873817.845",
+    "239437072.964",
+    "23519435.133"
+   ],
+   "unallocated": "573228585.699"
+  }
+ },
+ {
+  "amount": "58.55",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 59",
+  "targets": [
+   "6775965.076582",
+   "7219194.547195",
+   "1980658.731881"
+  ],
+  "want": {
+   "parts": [
+    "24.83",
+    "26.46",
+    "7.26"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-955734616329.728",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 60",
+  "targets": [
+   "387088"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "-955734616329.728"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "-0.22",
+  "currency": "SGD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 61",
+  "targets": [
+   "28.51",
+   "10.22",
+   "17.09"
+  ],
+  "want": {
+   "parts": [
+    "-0.06",
+    "-0.02",
+    "-0.04"
+   ],
+   "unallocated": "-0.10"
+  }
+ },
+ {
+  "amount": "-11.21",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 62",
+  "targets": [
+   "5176957.570152",
+   "9794890.362117",
+   "9084127.800368",
+   "5759167.286597"
+  ],
+  "unplaced": "33769.040968",
+  "want": {
+   "parts": [
+    "-1.95",
+    "-3.68",
+    "-3.41",
+    "-2.16"
+   ],
+   "unallocated": "-0.01"
+  }
+ },
+ {
+  "amount": "0.001",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 63",
+  "targets": [
+   "1",
+   "5",
+   "12",
+   "12",
+   "12"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "0.000",
+    "0.000",
+    "0.001",
+    "0.000",
+    "0.000"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "2",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 64",
+  "targets": [
+   "45.09",
+   "1.55"
+  ],
+  "want": {
+   "parts": [
+    "1",
+    "0"
+   ],
+   "unallocated": "1"
+  }
+ },
+ {
+  "amount": "-5450",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 65",
+  "targets": [
+   "4793086.507337",
+   "8217733.550737",
+   "5594831.416065",
+   "97614.082439",
+   "6973996.777612",
+   "9913117.175964"
+  ],
+  "unplaced": "69519.850795",
+  "want": {
+   "parts": [
+    "-732",
+    "-1256",
+    "-855",
+    "-15",
+    "-1066",
+    "-1515"
+   ],
+   "unallocated": "-11"
+  }
+ },
+ {
+  "amount": "-0.009",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 66",
+  "targets": [
+   "5",
+   "0",
+   "100",
+   "12",
+   "0",
+   "5"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.000",
+    "0.000",
+    "-0.008",
+    "-0.001",
+    "0.000",
+    "0.000"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "-0.06",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 67",
+  "targets": [
+   "3.14",
+   "16.2",
+   "3.46",
+   "58.16"
+  ],
+  "want": {
+   "parts": [
+    "0.00",
+    "-0.01",
+    "0.00",
+    "-0.04"
+   ],
+   "unallocated": "-0.01"
+  }
+ },
+ {
+  "amount": "-0.00",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 68",
+  "targets": [
+   "4249055.417776",
+   "2042762.386297",
+   "6994925.782731",
+   "7671694.509423"
+  ],
+  "unplaced": "837.649886",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.00",
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-0.002",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 69",
+  "targets": [
+   "0",
+   "623552",
+   "694757"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "0.000",
+    "-0.001",
+    "-0.001"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "-0.099",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 70",
+  "targets": [
+   "14.38"
+  ],
+  "want": {
+   "parts": [
+    "-0.014"
+   ],
+   "unallocated": "-0.085"
+  }
+ },
+ {
+  "amount": "751139.97",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 71",
+  "targets": [
+   "8235135.79992",
+   "9109591.565889",
+   "5566770.598339"
+  ],
+  "want": {
+   "parts": [
+    "269984.08",
+    "298652.59",
+    "182503.30"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "0.001",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 72",
+  "targets": [
+   "0",
+   "1",
+   "3",
+   "0"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.000",
+    "0.000",
+    "0.001",
+    "0.000"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "447422496798",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 73",
+  "targets": [
+   "13.57",
+   "1.74",
+   "25.24",
+   "3.2"
+  ],
+  "want": {
+   "parts": [
+    "60715232815",
+    "7785151444",
+    "112929438192",
+    "14317519898"
+   ],
+   "unallocated": "251675154449"
+  }
+ },
+ {
+  "amount": "3676959534969.33",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 74",
+  "targets": [
+   "8760149.615582",
+   "5578331.247619",
+   "7201677.668464",
+   "4208372.887229",
+   "7458093.801891"
+  ],
+  "unplaced": "53168.103982",
+  "want": {
+   "parts": [
+    "968458082172.94",
+    "616699510723.54",
+    "796164820155.87",
+    "465246932333.77",
+    "824512312803.16"
+   ],
+   "unallocated": "5877876780.05"
+  }
+ },
+ {
+  "amount": "0.00",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 75",
+  "targets": [
+   "926461",
+   "316550",
+   "780138",
+   "100",
+   "3"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.00",
+    "0.00",
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "8441267090.02",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 76",
+  "targets": [
+   "64.79",
+   "27.65"
+  ],
+  "want": {
+   "parts": [
+    "5469096947.62",
+    "2334010350.39"
+   ],
+   "unallocated": "638159792.01"
+  }
+ },
+ {
+  "amount": "-0.10",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 77",
+  "targets": [
+   "6051459.444438",
+   "4489331.896132",
+   "6608852.654875"
+  ],
+  "want": {
+   "parts": [
+    "-0.03",
+    "-0.03",
+    "-0.04"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-0.01",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 78",
+  "targets": [
+   "0",
+   "0",
+   "100",
+   "5",
+   "1"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.00",
+    "-0.01",
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "343220559235642",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 79",
+  "targets": [
+   "86.63"
+  ],
+  "want": {
+   "parts": [
+    "297331970465837"
+   ],
+   "unallocated": "45888588769805"
+  }
+ },
+ {
+  "amount": "1",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 80",
+  "targets": [
+   "2774713.915588"
+  ],
+  "want": {
+   "parts": [
+    "1"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "0.15",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 81",
+  "targets": [
+   "12",
+   "5"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "0.10",
+    "0.04"
+   ],
+   "unallocated": "0.01"
+  }
+ },
+ {
+  "amount": "-33",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 82",
+  "targets": [
+   "33.47",
+   "47.84",
+   "3.59"
+  ],
+  "want": {
+   "parts": [
+    "-11",
+    "-16",
+    "-1"
+   ],
+   "unallocated": "-5"
+  }
+ },
+ {
+  "amount": "9141549511.43",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 83",
+  "targets": [
+   "8507941.814444",
+   "3814614.17007"
+  ],
+  "want": {
+   "parts": [
+    "6311658996.30",
+    "2829890515.13"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-495207.44",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 84",
+  "targets": [
+   "0",
+   "5",
+   "839198",
+   "100",
+   "12",
+   "100"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "0.00",
+    "-2.95",
+    "-495078.83",
+    "-59.00",
+    "-7.08",
+    "-58.99"
+   ],
+   "unallocated": "-0.59"
+  }
+ },
+ {
+  "amount": "34.88",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 85",
+  "targets": [
+   "54.63"
+  ],
+  "want": {
+   "parts": [
+    "19.05"
+   ],
+   "unallocated": "15.83"
+  }
+ },
+ {
+  "amount": "-0.10",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 86",
+  "targets": [
+   "3186468.938868",
+   "9403405.113764",
+   "9378426.139862",
+   "758130.40819"
+  ],
+  "unplaced": "69499.250294",
+  "want": {
+   "parts": [
+    "-0.02",
+    "-0.04",
+    "-0.04",
+    "0.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "12.80",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 87",
+  "targets": [
+   "3"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "12.80"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-0.73",
+  "currency": "SGD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 88",
+  "targets": [
+   "24.02",
+   "15.72",
+   "41.36",
+   "5.51"
+  ],
+  "want": {
+   "parts": [
+    "-0.18",
+    "-0.11",
+    "-0.30",
+    "-0.04"
+   ],
+   "unallocated": "-0.10"
+  }
+ },
+ {
+  "amount": "-0.99",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 89",
+  "targets": [
+   "2339229.892514",
+   "1826650.581906",
+   "7569381.8931"
+  ],
+  "want": {
+   "parts": [
+    "-0.20",
+    "-0.15",
+    "-0.64"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "9570628955049.18",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 90",
+  "targets": [
+   "0",
+   "482281",
+   "100",
+   "551470"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.00",
+    "4464601284972.47",
+    "925726139.94",
+    "5105101943936.77"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-6910",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 91",
+  "targets": [
+   "10.44",
+   "10.76",
+   "0.76",
+   "62.44"
+  ],
+  "want": {
+   "parts": [
+    "-721",
+    "-744",
+    "-52",
+    "-4315"
+   ],
+   "unallocated": "-1078"
+  }
+ },
+ {
+  "amount": "3200",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 92",
+  "targets": [
+   "2619728.644049",
+   "1960766.746807",
+   "74905.150139",
+   "7853602.136621"
+  ],
+  "want": {
+   "parts": [
+    "670",
+    "502",
+    "19",
+    "2009"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "0.002",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 93",
+  "targets": [
+   "5",
+   "0",
+   "3",
+   "100",
+   "5",
+   "0"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "0.000",
+    "0.000",
+    "0.000",
+    "0.002",
+    "0.000",
+    "0.000"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "-33781470462",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 94",
+  "targets": [
+   "1.99"
+  ],
+  "want": {
+   "parts": [
+    "-672251262"
+   ],
+   "unallocated": "-33109219200"
+  }
+ },
+ {
+  "amount": "0.028",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 95",
+  "targets": [
+   "7199415.320794"
+  ],
+  "want": {
+   "parts": [
+    "0.028"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "59.51",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 96",
+  "targets": [
+   "280486",
+   "12",
+   "12",
+   "0",
+   "2",
+   "12"
+  ],
+  "unplaced": "103",
+  "want": {
+   "parts": [
+    "59.48",
+    "0.01",
+    "0.00",
+    "0.00",
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "0.02"
+  }
+ },
+ {
+  "amount": "6299",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 97",
+  "targets": [
+   "39.08"
+  ],
+  "want": {
+   "parts": [
+    "2462"
+   ],
+   "unallocated": "3837"
+  }
+ },
+ {
+  "amount": "620285679612.61",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 98",
+  "targets": [
+   "840410.056574",
+   "7857331.602811",
+   "8301018.537196",
+   "6731051.380671",
+   "1564919.70537"
+  ],
+  "want": {
+   "parts": [
+    "20608810477.99",
+    "192680057310.58",
+    "203560293536.66",
+    "165061045065.75",
+    "38375473221.63"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "991528464609.962",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 99",
+  "targets": [
+   "3",
+   "2"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "330509488203.321",
+    "220339658802.214"
+   ],
+   "unallocated": "440679317604.427"
+  }
+ },
+ {
+  "amount": "-169690765997310",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 100",
+  "targets": [
+   "27.91"
+  ],
+  "want": {
+   "parts": [
+    "-47360692789849"
+   ],
+   "unallocated": "-122330073207461"
+  }
+ },
+ {
+  "amount": "3630095249925.81",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 101",
+  "targets": [
+   "1506287.867365"
+  ],
+  "unplaced": "96062.471314",
+  "want": {
+   "parts": [
+    "3412467486261.73"
+   ],
+   "unallocated": "217627763664.08"
+  }
+ },
+ {
+  "amount": "79.65",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 102",
+  "targets": [
+   "0",
+   "100"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "0.00",
+    "78.86"
+   ],
+   "unallocated": "0.79"
+  }
+ },
+ {
+  "amount": "71390.139",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 103",
+  "targets": [
+   "6.6",
+   "17.97",
+   "0.63",
+   "14.27",
+   "1.1",
+   "48.19"
+  ],
+  "want": {
+   "parts": [
+    "4711.749",
+    "12828.808",
+    "449.758",
+    "10187.373",
+    "785.291",
+    "34402.908"
+   ],
+   "unallocated": "8024.252"
+  }
+ },
+ {
+  "amount": "737638853.730",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 104",
+  "targets": [
+   "419410.194335"
+  ],
+  "unplaced": "71873.44368",
+  "want": {
+   "parts": [
+    "629724320.236"
+   ],
+   "unallocated": "107914533.494"
+  }
+ },
+ {
+  "amount": "9121765068.28",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 105",
+  "targets": [
+   "0",
+   "3"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "0.00",
+    "3909327886.41"
+   ],
+   "unallocated": "5212437181.87"
+  }
+ },
+ {
+  "amount": "9520593491.37",
+  "currency": "SGD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 106",
+  "targets": [
+   "7.41",
+   "3.64"
+  ],
+  "want": {
+   "parts": [
+    "705475977.71",
+    "346549603.09"
+   ],
+   "unallocated": "8468567910.57"
+  }
+ },
+ {
+  "amount": "-693610.22",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 107",
+  "targets": [
+   "2782700.730328"
+  ],
+  "unplaced": "52323.042727",
+  "want": {
+   "parts": [
+    "-680808.99"
+   ],
+   "unallocated": "-12801.23"
+  }
+ },
+ {
+  "amount": "22946473",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 108",
+  "targets": [
+   "0",
+   "12"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0",
+    "22946473"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "0.15",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 109",
+  "targets": [
+   "1.51"
+  ],
+  "want": {
+   "parts": [
+    "0.00"
+   ],
+   "unallocated": "0.15"
+  }
+ },
+ {
+  "amount": "56357.527",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 110",
+  "targets": [
+   "4602566.09248"
+  ],
+  "want": {
+   "parts": [
+    "56357.527"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "3.888",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 111",
+  "targets": [
+   "2",
+   "0",
+   "281545"
+  ],
+  "unplaced": "762",
+  "want": {
+   "parts": [
+    "0.000",
+    "0.000",
+    "3.877"
+   ],
+   "unallocated": "0.011"
+  }
+ },
+ {
+  "amount": "0.72",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 112",
+  "targets": [
+   "75.88",
+   "10.42"
+  ],
+  "want": {
+   "parts": [
+    "0.55",
+    "0.07"
+   ],
+   "unallocated": "0.10"
+  }
+ },
+ {
+  "amount": "-0.05",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 113",
+  "targets": [
+   "3828179.994346",
+   "9672589.592133",
+   "6155579.934785",
+   "6243549.059723",
+   "3952011.298398"
+  ],
+  "want": {
+   "parts": [
+    "-0.01",
+    "-0.01",
+    "-0.01",
+    "-0.01",
+    "-0.01"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "26106.248",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 114",
+  "targets": [
+   "0",
+   "0",
+   "1",
+   "5",
+   "1",
+   "2"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "0.000",
+    "0.000",
+    "2008.173",
+    "10040.864",
+    "2008.173",
+    "4016.346"
+   ],
+   "unallocated": "8032.692"
+  }
+ },
+ {
+  "amount": "-0.010",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 115",
+  "targets": [
+   "21.3",
+   "2.28",
+   "12.79"
+  ],
+  "want": {
+   "parts": [
+    "-0.002",
+    "0.000",
+    "-0.001"
+   ],
+   "unallocated": "-0.007"
+  }
+ },
+ {
+  "amount": "21.76",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 116",
+  "targets": [
+   "3562668.430699",
+   "901490.142011",
+   "7847057.461547",
+   "2856576.927235",
+   "6755440.375113",
+   "927987.809374"
+  ],
+  "unplaced": "41935.223907",
+  "want": {
+   "parts": [
+    "3.39",
+    "0.86",
+    "7.46",
+    "2.71",
+    "6.42",
+    "0.88"
+   ],
+   "unallocated": "0.04"
+  }
+ },
+ {
+  "amount": "3503791124828.85",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 117",
+  "targets": [
+   "198041",
+   "12",
+   "3",
+   "0",
+   "0"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "3503455004302.89",
+    "212286647.98",
+    "53071661.99",
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "70762215.99"
+  }
+ },
+ {
+  "amount": "7380212224.18",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 118",
+  "targets": [
+   "6.19",
+   "47.82"
+  ],
+  "want": {
+   "parts": [
+    "456835136.68",
+    "3529217485.60"
+   ],
+   "unallocated": "3394159601.90"
+  }
+ },
+ {
+  "amount": "-817739.06",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 119",
+  "targets": [
+   "8716329.462293"
+  ],
+  "unplaced": "16562.68945",
+  "want": {
+   "parts": [
+    "-816188.15"
+   ],
+   "unallocated": "-1550.91"
+  }
+ },
+ {
+  "amount": "-561643868022718",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 120",
+  "targets": [
+   "12",
+   "1"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "-396454495074860",
+    "-33037874589572"
+   ],
+   "unallocated": "-132151498358286"
+  }
+ },
+ {
+  "amount": "65",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 121",
+  "targets": [
+   "24.82",
+   "21.22"
+  ],
+  "want": {
+   "parts": [
+    "16",
+    "14"
+   ],
+   "unallocated": "35"
+  }
+ },
+ {
+  "amount": "0.06",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 122",
+  "targets": [
+   "9442898.950734",
+   "4676034.639099",
+   "4750752.191468",
+   "6928038.246672"
+  ],
+  "unplaced": "19861.976653",
+  "want": {
+   "parts": [
+    "0.02",
+    "0.01",
+    "0.01",
+    "0.02"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-106731146388",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 123",
+  "targets": [
+   "100"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "-102626102296"
+   ],
+   "unallocated": "-4105044092"
+  }
+ },
+ {
+  "amount": "875984063.225",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 124",
+  "targets": [
+   "23.76",
+   "23.48",
+   "9.25"
+  ],
+  "want": {
+   "parts": [
+    "208133813.422",
+    "205681058.045",
+    "81028525.849"
+   ],
+   "unallocated": "381140665.909"
+  }
+ },
+ {
+  "amount": "-9005153659.27",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 125",
+  "targets": [
+   "1739050.599638",
+   "9330161.826151"
+  ],
+  "want": {
+   "parts": [
+    "-1414772548.27",
+    "-7590381111.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "811608899281258",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 126",
+  "targets": [
+   "832041",
+   "3",
+   "5",
+   "5",
+   "5"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "811591341679950",
+    "2926266885",
+    "4877111475",
+    "4877111474",
+    "4877111474"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "45",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 127",
+  "targets": [
+   "24.34",
+   "35.1"
+  ],
+  "want": {
+   "parts": [
+    "11",
+    "16"
+   ],
+   "unallocated": "18"
+  }
+ },
+ {
+  "amount": "147356.75",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 128",
+  "targets": [
+   "869090.118728",
+   "5111704.198497",
+   "7352227.717261",
+   "2959534.135143"
+  ],
+  "want": {
+   "parts": [
+    "7860.42",
+    "46232.41",
+    "66496.65",
+    "26767.27"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-93413578914",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 129",
+  "targets": [
+   "100"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "-89820748956"
+   ],
+   "unallocated": "-3592829958"
+  }
+ },
+ {
+  "amount": "0.053",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 130",
+  "targets": [
+   "17.63",
+   "11.55",
+   "1.41",
+   "1.1",
+   "21.44",
+   "4.26"
+  ],
+  "want": {
+   "parts": [
+    "0.009",
+    "0.006",
+    "0.001",
+    "0.001",
+    "0.011",
+    "0.002"
+   ],
+   "unallocated": "0.023"
+  }
+ },
+ {
+  "amount": "388785800482639",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 131",
+  "targets": [
+   "2383444.841111"
+  ],
+  "want": {
+   "parts": [
+    "388785800482639"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "0.088",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 132",
+  "targets": [
+   "243343",
+   "0",
+   "100"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.088",
+    "0.000",
+    "0.000"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "4",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 133",
+  "targets": [
+   "62.39",
+   "5.24",
+   "1.19",
+   "26.17",
+   "3.57"
+  ],
+  "want": {
+   "parts": [
+    "3",
+    "0",
+    "0",
+    "1",
+    "0"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "-83.27",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 134",
+  "targets": [
+   "799256.363198",
+   "4619673.185708"
+  ],
+  "unplaced": "51440.530354",
+  "want": {
+   "parts": [
+    "-12.17",
+    "-70.32"
+   ],
+   "unallocated": "-0.78"
+  }
+ },
+ {
+  "amount": "172727016333",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 135",
+  "targets": [
+   "100",
+   "1",
+   "0",
+   "3",
+   "100",
+   "100"
+  ],
+  "unplaced": "92",
+  "want": {
+   "parts": [
+    "43617933418",
+    "436179334",
+    "0",
+    "1308538003",
+    "43617933417",
+    "43617933417"
+   ],
+   "unallocated": "40128498744"
+  }
+ },
+ {
+  "amount": "-35",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 136",
+  "targets": [
+   "11.07",
+   "18.24",
+   "10.83"
+  ],
+  "want": {
+   "parts": [
+    "-4",
+    "-6",
+    "-4"
+   ],
+   "unallocated": "-21"
+  }
+ },
+ {
+  "amount": "-229012092937980",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 137",
+  "targets": [
+   "9930348.891822",
+   "9487757.072809",
+   "4312461.548594",
+   "757472.030945",
+   "5154751.519406",
+   "4396912.629424"
+  ],
+  "unplaced": "23384.066042",
+  "want": {
+   "parts": [
+    "-66763471339055",
+    "-63787849178598",
+    "-28993432772280",
+    "-5092616863621",
+    "-34656295471072",
+    "-29561212150021"
+   ],
+   "unallocated": "-157215163333"
+  }
+ },
+ {
+  "amount": "9846567593071.11",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 138",
+  "targets": [
+   "0",
+   "2"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.00",
+    "9846567593071.11"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "0.06",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 139",
+  "targets": [
+   "79.09"
+  ],
+  "want": {
+   "parts": [
+    "0.05"
+   ],
+   "unallocated": "0.01"
+  }
+ },
+ {
+  "amount": "0.52",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 140",
+  "targets": [
+   "8882619.553023",
+   "9412149.92195",
+   "4607339.062432"
+  ],
+  "unplaced": "60838.822228",
+  "want": {
+   "parts": [
+    "0.20",
+    "0.21",
+    "0.11"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "8382",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 141",
+  "targets": [
+   "2",
+   "398261",
+   "100",
+   "2"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0",
+    "8380",
+    "2",
+    "0"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "-95694.548",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 142",
+  "targets": [
+   "30.03",
+   "26.03",
+   "5.75",
+   "7.14"
+  ],
+  "want": {
+   "parts": [
+    "-28737.073",
+    "-24909.291",
+    "-5502.436",
+    "-6832.591"
+   ],
+   "unallocated": "-29713.157"
+  }
+ },
+ {
+  "amount": "121713144950.174",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 143",
+  "targets": [
+   "9116251.654432",
+   "2487420.187144"
+  ],
+  "want": {
+   "parts": [
+    "95622116358.251",
+    "26091028591.923"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "0.032",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 144",
+  "targets": [
+   "847123",
+   "0",
+   "100",
+   "1"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.032",
+    "0.000",
+    "0.000",
+    "0.000"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "96113.727",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 145",
+  "targets": [
+   "74.48"
+  ],
+  "want": {
+   "parts": [
+    "71585.504"
+   ],
+   "unallocated": "24528.223"
+  }
+ },
+ {
+  "amount": "0.003",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 146",
+  "targets": [
+   "5374554.583761",
+   "1596839.55035"
+  ],
+  "want": {
+   "parts": [
+    "0.002",
+    "0.001"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "9845518741143.47",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 147",
+  "targets": [
+   "0",
+   "592601",
+   "0",
+   "100",
+   "0"
+  ],
+  "unplaced": "847",
+  "want": {
+   "parts": [
+    "0.00",
+    "9829810312763.86",
+    "0.00",
+    "1658756956.66",
+    "0.00"
+   ],
+   "unallocated": "14049671422.95"
+  }
+ },
+ {
+  "amount": "-0.070",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 148",
+  "targets": [
+   "38.29",
+   "12.31",
+   "12.02"
+  ],
+  "want": {
+   "parts": [
+    "-0.027",
+    "-0.009",
+    "-0.008"
+   ],
+   "unallocated": "-0.026"
+  }
+ },
+ {
+  "amount": "226749673311.406",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 149",
+  "targets": [
+   "7226860.478749",
+   "1146461.526256",
+   "5681454.101622",
+   "6064530.305668"
+  ],
+  "unplaced": "93950.033216",
+  "want": {
+   "parts": [
+    "81069977865.312",
+    "12860855807.347",
+    "63733810776.572",
+    "68031109648.477"
+   ],
+   "unallocated": "1053919213.698"
+  }
+ },
+ {
+  "amount": "272525318361",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 150",
+  "targets": [
+   "399144",
+   "0",
+   "5",
+   "2",
+   "12"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "272512346264",
+    "0",
+    "3413710",
+    "1365484",
+    "8192903"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "6604665338540.28",
+  "currency": "SGD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 151",
+  "targets": [
+   "34.33",
+   "11.25",
+   "1.44",
+   "10.89"
+  ],
+  "want": {
+   "parts": [
+    "2267381610720.88",
+    "743024850585.78",
+    "95107180874.98",
+    "719248055367.04"
+   ],
+   "unallocated": "2779903640991.60"
+  }
+ },
+ {
+  "amount": "466174352302",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 152",
+  "targets": [
+   "5291780.48198",
+   "9657577.421231",
+   "6176290.800023"
+  ],
+  "want": {
+   "parts": [
+    "116772382868",
+    "213111320859",
+    "136290648575"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "47.48",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 153",
+  "targets": [
+   "5",
+   "100",
+   "951043"
+  ],
+  "unplaced": "794",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.00",
+    "47.44"
+   ],
+   "unallocated": "0.04"
+  }
+ },
+ {
+  "amount": "68251.729",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 154",
+  "targets": [
+   "18.43",
+   "48.03",
+   "7.76"
+  ],
+  "want": {
+   "parts": [
+    "12578.794",
+    "32781.305",
+    "5296.334"
+   ],
+   "unallocated": "17595.296"
+  }
+ },
+ {
+  "amount": "-4304",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 155",
+  "targets": [
+   "1712410.030257"
+  ],
+  "unplaced": "54036.542383",
+  "want": {
+   "parts": [
+    "-4172"
+   ],
+   "unallocated": "-132"
+  }
+ },
+ {
+  "amount": "64121.688",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 156",
+  "targets": [
+   "3",
+   "100",
+   "1",
+   "353689",
+   "2"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "0.544",
+    "18.124",
+    "0.181",
+    "64102.295",
+    "0.363"
+   ],
+   "unallocated": "0.181"
+  }
+ },
+ {
+  "amount": "28714.218",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 157",
+  "targets": [
+   "32.46",
+   "4.29",
+   "16.96",
+   "6.13",
+   "20.87"
+  ],
+  "want": {
+   "parts": [
+    "9320.635",
+    "1231.840",
+    "4869.931",
+    "1760.182",
+    "5992.657"
+   ],
+   "unallocated": "5538.973"
+  }
+ },
+ {
+  "amount": "0.78",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 158",
+  "targets": [
+   "7557281.259762"
+  ],
+  "unplaced": "91428.084754",
+  "want": {
+   "parts": [
+    "0.77"
+   ],
+   "unallocated": "0.01"
+  }
+ },
+ {
+  "amount": "96.64",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 159",
+  "targets": [
+   "3",
+   "0",
+   "0",
+   "12"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "19.33",
+    "0.00",
+    "0.00",
+    "77.31"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "3419",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 160",
+  "targets": [
+   "20.51",
+   "30.42",
+   "34.7"
+  ],
+  "want": {
+   "parts": [
+    "701",
+    "1040",
+    "1187"
+   ],
+   "unallocated": "491"
+  }
+ },
+ {
+  "amount": "2",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 161",
+  "targets": [
+   "7985692.122141",
+   "4153732.831143"
+  ],
+  "want": {
+   "parts": [
+    "1",
+    "1"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "339225897.291",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 162",
+  "targets": [
+   "0",
+   "3",
+   "0",
+   "12",
+   "0"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "0.000",
+    "63604855.742",
+    "0.000",
+    "254419422.968",
+    "0.000"
+   ],
+   "unallocated": "21201618.581"
+  }
+ },
+ {
+  "amount": "0.002",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 163",
+  "targets": [
+   "51.86"
+  ],
+  "want": {
+   "parts": [
+    "0.001"
+   ],
+   "unallocated": "0.001"
+  }
+ },
+ {
+  "amount": "469269.26",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 164",
+  "targets": [
+   "9997827.270263",
+   "793995.93612",
+   "8998073.539873",
+   "8630757.287231"
+  ],
+  "unplaced": "69076.541927",
+  "want": {
+   "parts": [
+    "164679.44",
+    "13078.32",
+    "148211.98",
+    "142161.72"
+   ],
+   "unallocated": "1137.80"
+  }
+ },
+ {
+  "amount": "0.09",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 165",
+  "targets": [
+   "0",
+   "548535",
+   "100",
+   "12"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.09",
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-185197388.76",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 166",
+  "targets": [
+   "31.19",
+   "43.06"
+  ],
+  "want": {
+   "parts": [
+    "-57763065.55",
+    "-79745995.60"
+   ],
+   "unallocated": "-47688327.61"
+  }
+ },
+ {
+  "amount": "6.878",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 167",
+  "targets": [
+   "6104057.817761",
+   "2874263.895882",
+   "3134639.959226"
+  ],
+  "unplaced": "67481.636139",
+  "want": {
+   "parts": [
+    "3.447",
+    "1.623",
+    "1.770"
+   ],
+   "unallocated": "0.038"
+  }
+ },
+ {
+  "amount": "0.57",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 168",
+  "targets": [
+   "5",
+   "100",
+   "0"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.03",
+    "0.54",
+    "0.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "54.50",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 169",
+  "targets": [
+   "72.8",
+   "15.85"
+  ],
+  "want": {
+   "parts": [
+    "39.68",
+    "8.64"
+   ],
+   "unallocated": "6.18"
+  }
+ },
+ {
+  "amount": "-65.51",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 170",
+  "targets": [
+   "3469500.402367",
+   "2381306.975055"
+  ],
+  "unplaced": "23457.403073",
+  "want": {
+   "parts": [
+    "-38.69",
+    "-26.56"
+   ],
+   "unallocated": "-0.26"
+  }
+ },
+ {
+  "amount": "0.01",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 171",
+  "targets": [
+   "2",
+   "12",
+   "0",
+   "12"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.01",
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "0.92",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 172",
+  "targets": [
+   "30.18",
+   "36.53",
+   "23.83"
+  ],
+  "want": {
+   "parts": [
+    "0.28",
+    "0.33",
+    "0.22"
+   ],
+   "unallocated": "0.09"
+  }
+ },
+ {
+  "amount": "-0.005",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 173",
+  "targets": [
+   "6672356.22164",
+   "5804986.703316",
+   "7307550.51569",
+   "9468729.92968",
+   "4900879.150504",
+   "1840365.996664"
+  ],
+  "unplaced": "10864.496256",
+  "want": {
+   "parts": [
+    "-0.001",
+    "-0.001",
+    "-0.001",
+    "-0.001",
+    "-0.001",
+    "0.000"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "0.081",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 174",
+  "targets": [
+   "0",
+   "100",
+   "2",
+   "2"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "0.000",
+    "0.077",
+    "0.002",
+    "0.001"
+   ],
+   "unallocated": "0.001"
+  }
+ },
+ {
+  "amount": "0.76",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 175",
+  "targets": [
+   "32.68",
+   "13.17"
+  ],
+  "want": {
+   "parts": [
+    "0.25",
+    "0.10"
+   ],
+   "unallocated": "0.41"
+  }
+ },
+ {
+  "amount": "-0.31",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 176",
+  "targets": [
+   "1061898.654099",
+   "715946.316024"
+  ],
+  "unplaced": "31855.28425",
+  "want": {
+   "parts": [
+    "-0.18",
+    "-0.12"
+   ],
+   "unallocated": "-0.01"
+  }
+ },
+ {
+  "amount": "0.56",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 177",
+  "targets": [
+   "270616",
+   "5",
+   "0",
+   "5"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.56",
+    "0.00",
+    "0.00",
+    "0.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-131630043277",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 178",
+  "targets": [
+   "31.15",
+   "7.78",
+   "49.21"
+  ],
+  "want": {
+   "parts": [
+    "-41002758481",
+    "-10240817367",
+    "-64775144296"
+   ],
+   "unallocated": "-15611323133"
+  }
+ },
+ {
+  "amount": "5.409",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 179",
+  "targets": [
+   "3523423.605078",
+   "1180513.224529",
+   "5458674.920167",
+   "4841006.907211"
+  ],
+  "want": {
+   "parts": [
+    "1.270",
+    "0.426",
+    "1.968",
+    "1.745"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "2744182201.10",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 180",
+  "targets": [
+   "1",
+   "2",
+   "3"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "392026028.73",
+    "784052057.46",
+    "1176078086.18"
+   ],
+   "unallocated": "392026028.73"
+  }
+ },
+ {
+  "amount": "2",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 181",
+  "targets": [
+   "37.43",
+   "6.48",
+   "29.17",
+   "13.67"
+  ],
+  "want": {
+   "parts": [
+    "1",
+    "0",
+    "1",
+    "0"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "71634605",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 182",
+  "targets": [
+   "9063419.423925",
+   "5040049.046134",
+   "4001786.259993",
+   "5319824.753728",
+   "5188714.6757"
+  ],
+  "want": {
+   "parts": [
+    "22690261",
+    "12617758",
+    "10018468",
+    "13318176",
+    "12989942"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "8689937697939.07",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 183",
+  "targets": [
+   "5",
+   "0",
+   "12"
+  ],
+  "unplaced": "351",
+  "want": {
+   "parts": [
+    "118069805678.52",
+    "0.00",
+    "283367533628.45"
+   ],
+   "unallocated": "8288500358632.10"
+  }
+ },
+ {
+  "amount": "-0.677",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 184",
+  "targets": [
+   "17.47"
+  ],
+  "want": {
+   "parts": [
+    "-0.118"
+   ],
+   "unallocated": "-0.559"
+  }
+ },
+ {
+  "amount": "551352566182.747",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 185",
+  "targets": [
+   "2696526.335763"
+  ],
+  "want": {
+   "parts": [
+    "551352566182.747"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "0.061",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 186",
+  "targets": [
+   "3",
+   "0",
+   "2",
+   "1"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.031",
+    "0.000",
+    "0.020",
+    "0.010"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "-4969673988495.11",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 187",
+  "targets": [
+   "5.32",
+   "14.68",
+   "0.37",
+   "40.31",
+   "8.93"
+  ],
+  "want": {
+   "parts": [
+    "-264386656187.94",
+    "-729548141511.08",
+    "-18387793757.43",
+    "-2003275584762.38",
+    "-443791887172.61"
+   ],
+   "unallocated": "-1510283925103.67"
+  }
+ },
+ {
+  "amount": "-33.70",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 188",
+  "targets": [
+   "2742710.78701"
+  ],
+  "want": {
+   "parts": [
+    "-33.70"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "945990349395189",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 189",
+  "targets": [
+   "12",
+   "100",
+   "12",
+   "3",
+   "0",
+   "0"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "89384914903482",
+    "744874290862354",
+    "89384914903482",
+    "22346228725871",
+    "0",
+    "0"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "239263657.032",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 190",
+  "targets": [
+   "12.08",
+   "3.99",
+   "27.34"
+  ],
+  "want": {
+   "parts": [
+    "28903049.769",
+    "9546619.916",
+    "65414683.833"
+   ],
+   "unallocated": "135399303.514"
+  }
+ },
+ {
+  "amount": "1059562888961.51",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 191",
+  "targets": [
+   "9367693.179747",
+   "4682040.650713",
+   "9372579.85833"
+  ],
+  "want": {
+   "parts": [
+    "423769409816.60",
+    "211803009045.98",
+    "423990470098.93"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-6.016",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 192",
+  "targets": [
+   "1",
+   "0",
+   "0",
+   "0",
+   "2",
+   "3"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "-0.860",
+    "0.000",
+    "0.000",
+    "0.000",
+    "-1.719",
+    "-2.578"
+   ],
+   "unallocated": "-0.859"
+  }
+ },
+ {
+  "amount": "31.97",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 193",
+  "targets": [
+   "0.85",
+   "16.97",
+   "47.47",
+   "7.78",
+   "21.42"
+  ],
+  "want": {
+   "parts": [
+    "0.27",
+    "5.42",
+    "15.18",
+    "2.49",
+    "6.85"
+   ],
+   "unallocated": "1.76"
+  }
+ },
+ {
+  "amount": "-0.000",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 194",
+  "targets": [
+   "9143343.936843",
+   "1651843.256687",
+   "7211014.936147"
+  ],
+  "want": {
+   "parts": [
+    "0.000",
+    "0.000",
+    "0.000"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "28653.534",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 195",
+  "targets": [
+   "3",
+   "807782",
+   "0",
+   "100",
+   "992208",
+   "3"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "0.048",
+    "12858.090",
+    "0.000",
+    "1.592",
+    "15793.741",
+    "0.047"
+   ],
+   "unallocated": "0.016"
+  }
+ },
+ {
+  "amount": "116889.26",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 196",
+  "targets": [
+   "7.29",
+   "24.61",
+   "5.37",
+   "52.61"
+  ],
+  "want": {
+   "parts": [
+    "8521.23",
+    "28766.45",
+    "6276.95",
+    "61495.44"
+   ],
+   "unallocated": "11829.19"
+  }
+ },
+ {
+  "amount": "-141034616600072",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 197",
+  "targets": [
+   "121999.742969",
+   "4427664.23936",
+   "3961067.029502",
+   "1425300.47414",
+   "52868.430448"
+  ],
+  "unplaced": "77917.995083",
+  "want": {
+   "parts": [
+    "-1709198192140",
+    "-62030915222824",
+    "-55493957946205",
+    "-19968246935366",
+    "-740678820659"
+   ],
+   "unallocated": "-1091619482878"
+  }
+ },
+ {
+  "amount": "0.05",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 198",
+  "targets": [
+   "1",
+   "12",
+   "3",
+   "0"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.04",
+    "0.01",
+    "0.00"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "9828398575.66",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 199",
+  "targets": [
+   "12.58",
+   "59.42"
+  ],
+  "want": {
+   "parts": [
+    "1236412540.82",
+    "5840034433.66"
+   ],
+   "unallocated": "2751951601.18"
+  }
+ },
+ {
+  "amount": "-0.07",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 200",
+  "targets": [
+   "6257103.93467",
+   "557319.052582",
+   "1560942.766245",
+   "9822401.193923"
+  ],
+  "want": {
+   "parts": [
+    "-0.02",
+    "0.00",
+    "-0.01",
+    "-0.04"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "75.34",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 201",
+  "targets": [
+   "12",
+   "18934",
+   "1",
+   "326879"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.00",
+    "4.13",
+    "0.00",
+    "71.21"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-83.15",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 202",
+  "targets": [
+   "47.16",
+   "22.07"
+  ],
+  "want": {
+   "parts": [
+    "-39.21",
+    "-18.35"
+   ],
+   "unallocated": "-25.59"
+  }
+ },
+ {
+  "amount": "2133474848401.53",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 203",
+  "targets": [
+   "5871098.673074",
+   "4126472.329611",
+   "6808556.906189",
+   "5641590.593756",
+   "5256004.605594",
+   "7825975.334603"
+  ],
+  "want": {
+   "parts": [
+    "352545670255.07",
+    "247784960573.66",
+    "408837832852.40",
+    "338764249748.01",
+    "315610717810.11",
+    "469931417162.28"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "0.07",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 204",
+  "targets": [
+   "1",
+   "0"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "0.01",
+    "0.00"
+   ],
+   "unallocated": "0.06"
+  }
+ },
+ {
+  "amount": "5647988268.84",
+  "currency": "SGD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 205",
+  "targets": [
+   "39.99",
+   "30.55",
+   "1.75",
+   "4.19"
+  ],
+  "want": {
+   "parts": [
+    "2258630508.71",
+    "1725460416.13",
+    "98839794.71",
+    "236650708.46"
+   ],
+   "unallocated": "1328406840.83"
+  }
+ },
+ {
+  "amount": "-57.10",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 206",
+  "targets": [
+   "7763600.334419"
+  ],
+  "want": {
+   "parts": [
+    "-57.10"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-477303263060",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 207",
+  "targets": [
+   "0",
+   "5",
+   "0"
+  ],
+  "unplaced": "174",
+  "want": {
+   "parts": [
+    "0",
+    "-13332493382",
+    "0"
+   ],
+   "unallocated": "-463970769678"
+  }
+ },
+ {
+  "amount": "0.51",
+  "currency": "SGD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 208",
+  "targets": [
+   "25.77",
+   "0.48"
+  ],
+  "want": {
+   "parts": [
+    "0.13",
+    "0.00"
+   ],
+   "unallocated": "0.38"
+  }
+ },
+ {
+  "amount": "0.11",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 209",
+  "targets": [
+   "5006886.871611",
+   "8301635.977116",
+   "8590191.011636",
+   "5693285.932013",
+   "1934524.934657",
+   "3856994.066945"
+  ],
+  "unplaced": "53972.306043",
+  "want": {
+   "parts": [
+    "0.02",
+    "0.03",
+    "0.03",
+    "0.02",
+    "0.00",
+    "0.01"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "60",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 210",
+  "targets": [
+   "36978",
+   "0"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "60",
+    "0"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "-3236403142.85",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 211",
+  "targets": [
+   "14.93",
+   "6.45",
+   "10.15",
+   "64.99"
+  ],
+  "want": {
+   "parts": [
+    "-483194989.23",
+    "-208748002.71",
+    "-328494919.00",
+    "-2103338402.54"
+   ],
+   "unallocated": "-112626829.37"
+  }
+ },
+ {
+  "amount": "9.409",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 212",
+  "targets": [
+   "709461.068711",
+   "7138243.178543",
+   "7009704.253015",
+   "3885071.297238",
+   "8718971.402566",
+   "5187036.859163"
+  ],
+  "want": {
+   "parts": [
+    "0.204",
+    "2.057",
+    "2.020",
+    "1.120",
+    "2.513",
+    "1.495"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "35.10",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 213",
+  "targets": [
+   "0",
+   "0",
+   "3",
+   "5",
+   "2",
+   "12"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.00",
+    "4.79",
+    "7.98",
+    "3.19",
+    "19.14"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-0.75",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 214",
+  "targets": [
+   "1.41",
+   "2.31",
+   "24.3",
+   "12.52",
+   "9.84"
+  ],
+  "want": {
+   "parts": [
+    "-0.01",
+    "-0.02",
+    "-0.18",
+    "-0.10",
+    "-0.07"
+   ],
+   "unallocated": "-0.37"
+  }
+ },
+ {
+  "amount": "-0.93",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 215",
+  "targets": [
+   "3276524.806172",
+   "3414978.156672",
+   "1355461.919455",
+   "7980816.193415",
+   "7695729.152698"
+  ],
+  "unplaced": "67916.42856",
+  "want": {
+   "parts": [
+    "-0.13",
+    "-0.14",
+    "-0.05",
+    "-0.31",
+    "-0.30"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "48",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 216",
+  "targets": [
+   "3",
+   "100"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "1",
+    "46"
+   ],
+   "unallocated": "1"
+  }
+ },
+ {
+  "amount": "-0.252",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 217",
+  "targets": [
+   "21.02",
+   "24.79",
+   "29.92"
+  ],
+  "want": {
+   "parts": [
+    "-0.053",
+    "-0.063",
+    "-0.075"
+   ],
+   "unallocated": "-0.061"
+  }
+ },
+ {
+  "amount": "0.09",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 218",
+  "targets": [
+   "4028467.588526",
+   "1859539.288143",
+   "4447501.070801",
+   "4969851.686682",
+   "5154841.7238",
+   "6899013.810896"
+  ],
+  "want": {
+   "parts": [
+    "0.01",
+    "0.01",
+    "0.01",
+    "0.02",
+    "0.02",
+    "0.02"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-24",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 219",
+  "targets": [
+   "1",
+   "2",
+   "100",
+   "0"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "0",
+    "-1",
+    "-22",
+    "0"
+   ],
+   "unallocated": "-1"
+  }
+ },
+ {
+  "amount": "-8",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 220",
+  "targets": [
+   "43.6"
+  ],
+  "want": {
+   "parts": [
+    "-3"
+   ],
+   "unallocated": "-5"
+  }
+ },
+ {
+  "amount": "-867713.41",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 221",
+  "targets": [
+   "3500284.691731",
+   "9025137.50355",
+   "8028422.053102",
+   "3538787.685176"
+  ],
+  "want": {
+   "parts": [
+    "-126065.26",
+    "-325046.80",
+    "-289149.38",
+    "-127451.97"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "919454.89",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 222",
+  "targets": [
+   "3",
+   "12"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "172397.79",
+    "689591.17"
+   ],
+   "unallocated": "57465.93"
+  }
+ },
+ {
+  "amount": "93621351.249",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 223",
+  "targets": [
+   "18.72",
+   "13.83",
+   "1.52",
+   "16.7",
+   "3.49"
+  ],
+  "want": {
+   "parts": [
+    "17525916.954",
+    "12947832.878",
+    "1423044.539",
+    "15634765.658",
+    "3267385.159"
+   ],
+   "unallocated": "42822406.061"
+  }
+ },
+ {
+  "amount": "0.04",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 224",
+  "targets": [
+   "6107174.62025"
+  ],
+  "want": {
+   "parts": [
+    "0.04"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "-22008.676",
+  "currency": "KWD",
+  "key": "weights",
+  "minor_units": 3,
+  "name": "generated 225",
+  "targets": [
+   "100",
+   "5",
+   "2",
+   "100"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "-10632.211",
+    "-531.610",
+    "-212.644",
+    "-10632.211"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "0.002",
+  "currency": "KWD",
+  "key": "percent",
+  "minor_units": 3,
+  "name": "generated 226",
+  "targets": [
+   "5.03",
+   "10.4",
+   "50.11",
+   "9.11"
+  ],
+  "want": {
+   "parts": [
+    "0.000",
+    "0.000",
+    "0.001",
+    "0.000"
+   ],
+   "unallocated": "0.001"
+  }
+ },
+ {
+  "amount": "-41851810",
+  "currency": "JPY",
+  "key": "quantity",
+  "minor_units": 0,
+  "name": "generated 227",
+  "targets": [
+   "1585324.065542",
+   "3853811.479104",
+   "261884.352632"
+  ],
+  "want": {
+   "parts": [
+    "-11638037",
+    "-28291251",
+    "-1922522"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "33324250",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 228",
+  "targets": [
+   "0",
+   "12"
+  ],
+  "unplaced": "0",
+  "want": {
+   "parts": [
+    "0",
+    "33324250"
+   ],
+   "unallocated": "0"
+  }
+ },
+ {
+  "amount": "8228182272.97",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 229",
+  "targets": [
+   "7.5",
+   "13.57",
+   "38.14"
+  ],
+  "want": {
+   "parts": [
+    "617113670.47",
+    "1116564334.44",
+    "3138228718.91"
+   ],
+   "unallocated": "3356275549.15"
+  }
+ },
+ {
+  "amount": "-0.002",
+  "currency": "KWD",
+  "key": "quantity",
+  "minor_units": 3,
+  "name": "generated 230",
+  "targets": [
+   "903184.255151",
+   "2222044.511606",
+   "5187912.806503",
+   "5334262.467815",
+   "6006223.156035",
+   "4149467.161686"
+  ],
+  "unplaced": "62360.031431",
+  "want": {
+   "parts": [
+    "0.000",
+    "0.000",
+    "0.000",
+    "-0.001",
+    "-0.001",
+    "0.000"
+   ],
+   "unallocated": "0.000"
+  }
+ },
+ {
+  "amount": "-0.06",
+  "currency": "USD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 231",
+  "targets": [
+   "12",
+   "3",
+   "3",
+   "0",
+   "100"
+  ],
+  "unplaced": "4",
+  "want": {
+   "parts": [
+    "-0.01",
+    "0.00",
+    "0.00",
+    "0.00",
+    "-0.05"
+   ],
+   "unallocated": "0.00"
+  }
+ },
+ {
+  "amount": "497188179479",
+  "currency": "JPY",
+  "key": "percent",
+  "minor_units": 0,
+  "name": "generated 232",
+  "targets": [
+   "99.54"
+  ],
+  "want": {
+   "parts": [
+    "494901113853"
+   ],
+   "unallocated": "2287065626"
+  }
+ },
+ {
+  "amount": "-10.56",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 233",
+  "targets": [
+   "1951129.162768",
+   "7548726.030071",
+   "6631841.272891"
+  ],
+  "unplaced": "27027.689201",
+  "want": {
+   "parts": [
+    "-1.28",
+    "-4.93",
+    "-4.33"
+   ],
+   "unallocated": "-0.02"
+  }
+ },
+ {
+  "amount": "0.05",
+  "currency": "SGD",
+  "key": "weights",
+  "minor_units": 2,
+  "name": "generated 234",
+  "targets": [
+   "3",
+   "3",
+   "100"
+  ],
+  "unplaced": "367",
+  "want": {
+   "parts": [
+    "0.00",
+    "0.00",
+    "0.01"
+   ],
+   "unallocated": "0.04"
+  }
+ },
+ {
+  "amount": "1465307727588.85",
+  "currency": "USD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 235",
+  "targets": [
+   "69.82"
+  ],
+  "want": {
+   "parts": [
+    "1023077855402.54"
+   ],
+   "unallocated": "442229872186.31"
+  }
+ },
+ {
+  "amount": "7432165584365.06",
+  "currency": "SGD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 236",
+  "targets": [
+   "4501371.047064",
+   "3734383.1754",
+   "1782720.762991",
+   "734373.385649"
+  ],
+  "unplaced": "70168.868498",
+  "want": {
+   "parts": [
+    "3091091350758.73",
+    "2564400804378.69",
+    "1224194289625.09",
+    "504294179900.51"
+   ],
+   "unallocated": "48184959702.04"
+  }
+ },
+ {
+  "amount": "-40",
+  "currency": "JPY",
+  "key": "weights",
+  "minor_units": 0,
+  "name": "generated 237",
+  "targets": [
+   "1",
+   "12",
+   "5",
+   "2"
+  ],
+  "unplaced": "1",
+  "want": {
+   "parts": [
+    "-2",
+    "-23",
+    "-9",
+    "-4"
+   ],
+   "unallocated": "-2"
+  }
+ },
+ {
+  "amount": "-0.19",
+  "currency": "SGD",
+  "key": "percent",
+  "minor_units": 2,
+  "name": "generated 238",
+  "targets": [
+   "15.71",
+   "47.96",
+   "13.76"
+  ],
+  "want": {
+   "parts": [
+    "-0.03",
+    "-0.09",
+    "-0.03"
+   ],
+   "unallocated": "-0.04"
+  }
+ },
+ {
+  "amount": "0.05",
+  "currency": "USD",
+  "key": "quantity",
+  "minor_units": 2,
+  "name": "generated 239",
+  "targets": [
+   "3054080.310416",
+   "2943403.34392",
+   "3811660.165764",
+   "7244142.663044"
+  ],
+  "want": {
+   "parts": [
+    "0.01",
+    "0.01",
+    "0.01",
+    "0.02"
+   ],
+   "unallocated": "0.00"
+  }
+ }
+]
