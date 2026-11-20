@@ -47,6 +47,8 @@ link_event | nemura_migrator | true | true
 link_inbox | nemura_migrator | true | true
 link_mapping | nemura_migrator | true | true
 link_object_version | nemura_migrator | true | true
+link_restore | nemura_migrator | true | true
+link_restore_run | nemura_migrator | true | true
 link_run_approval | nemura_migrator | true | true
 link_run_posting | nemura_migrator | true | true
 member | nemura_migrator | true | true
@@ -567,6 +569,25 @@ link_object_version | organisation_id | uuid | true | nemura.current_org()
 link_object_version | object_type | text | true | 
 link_object_version | object_id | text | true | 
 link_object_version | version | integer | true | 
+link_restore | organisation_id | uuid | true | nemura.current_org()
+link_restore | id | uuid | true | uuidv7()
+link_restore | link_id | uuid | true | 
+link_restore | recorded_at | timestamp with time zone | true | 
+link_restore | recorded_by | text | true | 
+link_restore | last_sequence_queued | bigint | true | 
+link_restore | last_sequence_sent | bigint | true | 
+link_restore | last_fyniq_sequence | bigint | true | 
+link_restore | state | text | true | 'open'::text
+link_restore | reconciled_at | timestamp with time zone | false | 
+link_restore | reconciled_by | uuid | false | 
+link_restore_run | organisation_id | uuid | true | nemura.current_org()
+link_restore_run | restore_id | uuid | true | 
+link_restore_run | run_id | uuid | true | 
+link_restore_run | version | integer | true | 
+link_restore_run | outcome | text | false | 
+link_restore_run | reference | text | false | 
+link_restore_run | decided_by | uuid | false | 
+link_restore_run | decided_at | timestamp with time zone | false | 
 link_run_approval | organisation_id | uuid | true | nemura.current_org()
 link_run_approval | id | uuid | true | uuidv7()
 link_run_approval | run_id | uuid | true | 
@@ -1786,6 +1807,31 @@ link_object_version | link_object_version_organisation_id_not_null | NOT NULL or
 link_object_version | link_object_version_pkey | PRIMARY KEY (organisation_id, object_type, object_id)
 link_object_version | link_object_version_positive | CHECK ((version >= 1))
 link_object_version | link_object_version_version_not_null | NOT NULL version
+link_restore | link_restore_id_not_null | NOT NULL id
+link_restore | link_restore_last_fyniq_sequence_not_null | NOT NULL last_fyniq_sequence
+link_restore | link_restore_last_sequence_queued_not_null | NOT NULL last_sequence_queued
+link_restore | link_restore_last_sequence_sent_not_null | NOT NULL last_sequence_sent
+link_restore | link_restore_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES nemura.fyniq_link(organisation_id, id)
+link_restore | link_restore_link_id_not_null | NOT NULL link_id
+link_restore | link_restore_organisation_id_not_null | NOT NULL organisation_id
+link_restore | link_restore_pkey | PRIMARY KEY (organisation_id, id)
+link_restore | link_restore_reconciled_whole | CHECK (((state = 'reconciled'::text) = ((reconciled_at IS NOT NULL) AND (reconciled_by IS NOT NULL))))
+link_restore | link_restore_reconciler_fkey | FOREIGN KEY (organisation_id, reconciled_by) REFERENCES nemura.member(organisation_id, id)
+link_restore | link_restore_recorded_at_not_null | NOT NULL recorded_at
+link_restore | link_restore_recorded_by_not_null | NOT NULL recorded_by
+link_restore | link_restore_state | CHECK ((state = ANY (ARRAY['open'::text, 'reconciled'::text])))
+link_restore | link_restore_state_not_null | NOT NULL state
+link_restore_run | link_restore_run_decider_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
+link_restore_run | link_restore_run_organisation_id_not_null | NOT NULL organisation_id
+link_restore_run | link_restore_run_outcome | CHECK (((outcome IS NULL) OR (outcome = ANY (ARRAY['posted'::text, 'not_posted'::text]))))
+link_restore_run | link_restore_run_pkey | PRIMARY KEY (organisation_id, restore_id, run_id, version)
+link_restore_run | link_restore_run_reference | CHECK (((outcome = 'posted'::text) = (reference IS NOT NULL)))
+link_restore_run | link_restore_run_restore_fkey | FOREIGN KEY (organisation_id, restore_id) REFERENCES nemura.link_restore(organisation_id, id)
+link_restore_run | link_restore_run_restore_id_not_null | NOT NULL restore_id
+link_restore_run | link_restore_run_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES nemura.pay_run(organisation_id, id)
+link_restore_run | link_restore_run_run_id_not_null | NOT NULL run_id
+link_restore_run | link_restore_run_version_not_null | NOT NULL version
+link_restore_run | link_restore_run_whole | CHECK (((outcome IS NULL) = ((decided_by IS NULL) AND (decided_at IS NULL))))
 link_run_approval | link_run_approval_approved_at_not_null | NOT NULL approved_at
 link_run_approval | link_run_approval_approver_fkey | FOREIGN KEY (organisation_id, approver_member_id) REFERENCES nemura.member(organisation_id, id)
 link_run_approval | link_run_approval_approver_issuer_not_null | NOT NULL approver_issuer
@@ -2617,6 +2663,9 @@ CREATE INDEX link_inbox_object ON nemura.link_inbox USING btree (organisation_id
 CREATE UNIQUE INDEX link_inbox_pkey ON nemura.link_inbox USING btree (organisation_id, id)
 CREATE UNIQUE INDEX link_mapping_pkey ON nemura.link_mapping USING btree (organisation_id, mapping_version)
 CREATE UNIQUE INDEX link_object_version_pkey ON nemura.link_object_version USING btree (organisation_id, object_type, object_id)
+CREATE UNIQUE INDEX link_restore_one_open ON nemura.link_restore USING btree (organisation_id) WHERE (state = 'open'::text)
+CREATE UNIQUE INDEX link_restore_pkey ON nemura.link_restore USING btree (organisation_id, id)
+CREATE UNIQUE INDEX link_restore_run_pkey ON nemura.link_restore_run USING btree (organisation_id, restore_id, run_id, version)
 CREATE UNIQUE INDEX link_run_approval_once ON nemura.link_run_approval USING btree (organisation_id, run_id, version)
 CREATE UNIQUE INDEX link_run_approval_pkey ON nemura.link_run_approval USING btree (organisation_id, id)
 CREATE UNIQUE INDEX link_run_posting_once ON nemura.link_run_posting USING btree (organisation_id, run_id, version, status)
@@ -2785,6 +2834,8 @@ CREATE TRIGGER link_department_guard BEFORE DELETE OR UPDATE ON nemura.link_depa
 CREATE TRIGGER link_event_guard BEFORE DELETE OR UPDATE ON nemura.link_event FOR EACH ROW EXECUTE FUNCTION nemura.link_event_guard()
 CREATE TRIGGER link_inbox_guard BEFORE DELETE OR UPDATE ON nemura.link_inbox FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
 CREATE TRIGGER link_mapping_guard BEFORE DELETE OR UPDATE ON nemura.link_mapping FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
+CREATE TRIGGER link_restore_guard BEFORE DELETE OR UPDATE ON nemura.link_restore FOR EACH ROW EXECUTE FUNCTION nemura.link_restore_guard()
+CREATE TRIGGER link_restore_run_guard BEFORE DELETE OR UPDATE ON nemura.link_restore_run FOR EACH ROW EXECUTE FUNCTION nemura.link_restore_guard()
 CREATE TRIGGER link_run_approval_guard BEFORE DELETE OR UPDATE ON nemura.link_run_approval FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.link_run_approval DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('link_run_approval', 'id')
 CREATE TRIGGER link_run_posting_guard BEFORE DELETE OR UPDATE ON nemura.link_run_posting FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
@@ -2912,6 +2963,8 @@ link_event | tenant_isolation | (organisation_id = nemura.current_org()) | (orga
 link_inbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 link_mapping | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 link_object_version | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+link_restore | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+link_restore_run | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 link_run_approval | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 link_run_posting | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3604,6 +3657,27 @@ AS $function$
 BEGIN
   INSERT INTO nemura.identity_directory (issuer, subject, tenant, organisation_id, member_id)
   VALUES (p_issuer, p_subject, p_tenant, nemura.require_org(), p_member);
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.link_restore_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'A restore is kept as it was recorded' USING ERRCODE = 'NM193';
+  END IF;
+  IF TG_TABLE_NAME = 'link_restore' THEN
+    IF (NEW.id, NEW.link_id, NEW.recorded_at, NEW.recorded_by, NEW.last_sequence_queued, NEW.last_sequence_sent, NEW.last_fyniq_sequence) IS DISTINCT FROM
+       (OLD.id, OLD.link_id, OLD.recorded_at, OLD.recorded_by, OLD.last_sequence_queued, OLD.last_sequence_sent, OLD.last_fyniq_sequence) OR OLD.state <> 'open' THEN
+      RAISE EXCEPTION 'A restore is kept as it was recorded: it is only reconciled, once' USING ERRCODE = 'NM193';
+    END IF;
+  ELSIF (NEW.restore_id, NEW.run_id, NEW.version) IS DISTINCT FROM (OLD.restore_id, OLD.run_id, OLD.version) OR OLD.outcome IS NOT NULL THEN
+    RAISE EXCEPTION 'A run held by a restore is decided once' USING ERRCODE = 'NM193';
+  END IF;
+  RETURN NEW;
 END
 $function$
 

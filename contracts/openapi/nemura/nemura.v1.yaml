@@ -3753,6 +3753,99 @@ components:
         - signature
         - payload
       type: object
+    LinkEventView:
+      additionalProperties: false
+      properties:
+        attempts:
+          description: How many times it was tried.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        code:
+          description: The stable code of the last failure or refusal.
+          examples:
+            - PPL-19
+          type: string
+        event_id:
+          description: The event's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          format: uuid
+          type: string
+        object_id:
+          description: The object's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          type: string
+        object_type:
+          description: The kind of object it is about.
+          examples:
+            - person
+          type: string
+        object_version:
+          description: The object's version.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        queued_at:
+          description: When it was queued.
+          examples:
+            - "2026-11-25T09:00:00Z"
+          format: date-time
+          type: string
+        sequence:
+          description: The link's running number.
+          examples:
+            - 41
+          format: int64
+          type: integer
+        state:
+          description: "queued: waiting; sent: Fyniq took it; failed: not delivered yet, tried again; refused: Fyniq refused it for good."
+          enum:
+            - queued
+            - sent
+            - failed
+            - refused
+          examples:
+            - sent
+          type: string
+        type:
+          description: The event type.
+          examples:
+            - people.person.upserted
+          type: string
+      required:
+        - event_id
+        - sequence
+        - type
+        - object_type
+        - object_id
+        - object_version
+        - state
+        - attempts
+        - queued_at
+      type: object
+    LinkEventsOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The events, oldest first, by identity.
+          items:
+            $ref: "#/components/schemas/LinkEventView"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: The sequence number to pass as cursor for the next page; absent on the last.
+          examples:
+            - 91
+          format: int64
+          type: integer
+      required:
+        - items
+      type: object
     LinkHeader:
       additionalProperties: false
       properties:
@@ -3876,6 +3969,113 @@ components:
         - correlation_id
         - payload_sha256
       type: object
+    LinkHealthView:
+      additionalProperties: false
+      properties:
+        epoch:
+          description: The link's epoch.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        failed:
+          description: Events not delivered yet, tried again.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        failing_over_24_hours:
+          description: "True when the sync has failed for 24 hours (a warning on Checks, N.1 #7)."
+          examples:
+            - false
+          type: boolean
+        failing_since:
+          description: "When the sync began failing: the oldest waiting event, when nothing was sent since."
+          examples:
+            - "2026-11-24T09:00:00Z"
+          format: date-time
+          type: string
+        last_fyniq_sequence:
+          description: The highest Fyniq sequence number received.
+          examples:
+            - 12
+          format: int64
+          type: integer
+        last_sent:
+          description: When an event was last sent.
+          examples:
+            - "2026-11-25T09:00:01Z"
+          format: date-time
+          type: string
+        last_sequence_queued:
+          description: "The checkpoint: the highest sequence number queued."
+          examples:
+            - 41
+          format: int64
+          type: integer
+        last_sequence_sent:
+          description: The highest sent.
+          examples:
+            - 41
+          format: int64
+          type: integer
+        oldest_waiting:
+          description: When the oldest event not yet sent was queued.
+          examples:
+            - "2026-11-25T09:00:00Z"
+          format: date-time
+          type: string
+        queued:
+          description: Events waiting to be sent.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        refused:
+          description: Events Fyniq refused for good.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        restore:
+          $ref: "#/components/schemas/LinkRestoreView"
+          description: "A restore not reconciled yet: the link is held."
+        sent:
+          description: Events Fyniq took.
+          examples:
+            - 120
+          format: int64
+          type: integer
+        state:
+          description: The link's state.
+          enum:
+            - none
+            - proposed
+            - active
+            - suspended
+            - unlinking
+          examples:
+            - active
+          type: string
+        undelivered:
+          description: The newest events that failed or were refused, at most 50.
+          items:
+            $ref: "#/components/schemas/LinkEventView"
+          type:
+            - array
+            - "null"
+      required:
+        - state
+        - queued
+        - failed
+        - sent
+        - refused
+        - failing_over_24_hours
+        - last_sequence_queued
+        - last_sequence_sent
+        - last_fyniq_sequence
+        - undelivered
+      type: object
     LinkHoldAnswer:
       additionalProperties: false
       properties:
@@ -3944,6 +4144,167 @@ components:
       required:
         - event_id
         - outcome
+      type: object
+    LinkRepairInputBody:
+      additionalProperties: false
+      properties:
+        person_id:
+          description: Repair one person; empty repairs everyone and sends again what failed.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+      type: object
+    LinkRepairOutputBody:
+      additionalProperties: false
+      properties:
+        queued:
+          description: How many events were queued.
+          examples:
+            - 12
+          format: int64
+          type: integer
+      required:
+        - queued
+      type: object
+    LinkRestoreDecisionInputBody:
+      additionalProperties: false
+      properties:
+        posted:
+          description: True if Fyniq's own record shows the run posted; false if it does not.
+          examples:
+            - true
+          type: boolean
+        reference:
+          description: Fyniq's posting reference, required when posted.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
+          maxLength: 200
+          type: string
+        run_id:
+          description: The run the restore holds.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+          format: uuid
+          type: string
+        version:
+          description: The version.
+          examples:
+            - 2
+          format: int64
+          minimum: 1
+          type: integer
+      required:
+        - run_id
+        - version
+        - posted
+      type: object
+    LinkRestoreDecisionOutputBody:
+      additionalProperties: false
+      properties:
+        resumed:
+          description: "True when this decision was the last: the restore is reconciled and the link resumed."
+          examples:
+            - false
+          type: boolean
+      required:
+        - resumed
+      type: object
+    LinkRestoreRun:
+      additionalProperties: false
+      properties:
+        outcome:
+          description: Empty until decided against Fyniq's own record.
+          enum:
+            - posted
+            - not_posted
+            - ""
+          examples:
+            - posted
+          type: string
+        reference:
+          description: Fyniq's posting reference, for a run decided as posted.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
+          type: string
+        run_id:
+          description: The run.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+          format: uuid
+          type: string
+        version:
+          description: The version approved with proof.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - run_id
+        - version
+      type: object
+    LinkRestoreView:
+      additionalProperties: false
+      properties:
+        id:
+          description: The restore.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e11
+          format: uuid
+          type: string
+        last_fyniq_sequence:
+          description: The highest Fyniq sequence number it received.
+          examples:
+            - 12
+          format: int64
+          type: integer
+        last_sequence_queued:
+          description: The highest sequence number the restored database knows it queued.
+          examples:
+            - 41
+          format: int64
+          type: integer
+        last_sequence_sent:
+          description: The highest it knows it sent.
+          examples:
+            - 40
+          format: int64
+          type: integer
+        recorded_at:
+          description: When the deployment's recovery recorded it.
+          examples:
+            - "2026-11-25T09:00:00Z"
+          format: date-time
+          type: string
+        recorded_by:
+          description: The two operators who ran the recovery.
+          examples:
+            - Ana Tan, Ben Lim
+          type: string
+        runs:
+          description: The runs approved with proof whose answer the restored database does not hold.
+          items:
+            $ref: "#/components/schemas/LinkRestoreRun"
+          type:
+            - array
+            - "null"
+        state:
+          description: "open: the link is held until every run below is decided."
+          enum:
+            - open
+            - reconciled
+          examples:
+            - open
+          type: string
+      required:
+        - id
+        - recorded_at
+        - recorded_by
+        - last_sequence_queued
+        - last_sequence_sent
+        - last_fyniq_sequence
+        - state
+        - runs
       type: object
     LinkState:
       additionalProperties: false
@@ -6017,6 +6378,125 @@ components:
         - asked_at
         - due_on
       type: object
+    ReceiptApproval:
+      additionalProperties: false
+      properties:
+        approved_at:
+          description: When it was approved.
+          examples:
+            - "2026-11-25T09:00:00Z"
+          format: date-time
+          type: string
+        envelope_sha256:
+          description: The digest of the figures the approver signed.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        mapping_version:
+          description: Fyniq's mapping version it was calculated against.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        version:
+          description: The version.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - version
+        - envelope_sha256
+        - mapping_version
+        - approved_at
+      type: object
+    ReceiptPayment:
+      additionalProperties: false
+      properties:
+        instruction_id:
+          description: The bank instruction's ID.
+          examples:
+            - INSTR-1
+          type: string
+        person_id:
+          description: The person paid.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          format: uuid
+          type: string
+        recorded_at:
+          description: When it was recorded.
+          examples:
+            - "2026-11-25T09:00:00Z"
+          format: date-time
+          type: string
+        source:
+          description: Where the state came from.
+          enum:
+            - fyniq
+            - manual
+          examples:
+            - fyniq
+          type: string
+        state:
+          description: The state (NM-PAY-10).
+          examples:
+            - paid
+          type: string
+      required:
+        - person_id
+        - state
+        - source
+        - recorded_at
+      type: object
+    ReceiptSubmission:
+      additionalProperties: false
+      properties:
+        code:
+          description: The stable code of a failure or refusal.
+          examples:
+            - PPL-19
+          type: string
+        event_id:
+          description: The event.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          format: uuid
+          type: string
+        sequence:
+          description: The link's running number.
+          examples:
+            - 41
+          format: int64
+          type: integer
+        settled_at:
+          description: When it was sent or refused.
+          examples:
+            - "2026-11-25T09:00:01Z"
+          format: date-time
+          type: string
+        state:
+          description: Where it stands.
+          enum:
+            - queued
+            - sent
+            - failed
+            - refused
+          examples:
+            - sent
+          type: string
+        version:
+          description: The version sent.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - event_id
+        - sequence
+        - version
+        - state
+      type: object
     Record:
       additionalProperties: false
       properties:
@@ -7106,6 +7586,50 @@ components:
         - authenticator_data
         - client_data
         - signature
+      type: object
+    RunReceiptView:
+      additionalProperties: false
+      properties:
+        approvals:
+          description: The proof kept for each version approved while linked.
+          items:
+            $ref: "#/components/schemas/ReceiptApproval"
+          type:
+            - array
+            - "null"
+        payments:
+          description: The payment instructions and outcomes, without an amount or a name.
+          items:
+            $ref: "#/components/schemas/ReceiptPayment"
+          type:
+            - array
+            - "null"
+        postings:
+          description: Fyniq's answers.
+          items:
+            $ref: "#/components/schemas/RunPosting"
+          type:
+            - array
+            - "null"
+        run_id:
+          description: The run.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+          format: uuid
+          type: string
+        submissions:
+          description: Each sending of an approved version.
+          items:
+            $ref: "#/components/schemas/ReceiptSubmission"
+          type:
+            - array
+            - "null"
+      required:
+        - run_id
+        - approvals
+        - submissions
+        - postings
+        - payments
       type: object
     RunRetryInputBody:
       additionalProperties: false
@@ -11927,6 +12451,81 @@ paths:
       tags:
         - Link
   /v1/link/events:
+    get:
+      description: "The events Nemura queued for Fyniq after a sequence number, oldest first, with their state: for the people team to see what was sent and what was not. By identity only: the event's ID, number, type, object, version, state and Fyniq's code; never a payload. Cursor-paged. Only an Owner or an Administrator. It changes nothing."
+      operationId: listLinkEvents
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: "Return the events queued after this sequence number: pass the next_cursor of the last page."
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: "Return the events queued after this sequence number: pass the next_cursor of the last page."
+            examples:
+              - 41
+            format: int64
+            minimum: 0
+            type: integer
+        - description: How many to return, at most 200; 50 when absent.
+          explode: false
+          in: query
+          name: limit
+          schema:
+            description: How many to return, at most 200; 50 when absent.
+            examples:
+              - 50
+            format: int64
+            maximum: 200
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkEventsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The events queued for Fyniq after a sequence number
+      tags:
+        - Link
     post:
       description: "Fyniq's link calls this with its client's bearer token and a signed envelope (PRD-002 NM-INT-10) carrying payroll.run.posted or payroll.payments.status. Nemura checks the token (the audience nemura-api, the scope link.events.write, and that the client is the live link's), then the envelope against the link: both organisations, the epoch, a signing time within five minutes, Fyniq's signature and the payload's digest. A payment's state goes through the one function of the payment events and a run's posting answer is kept for the run to show. Each event is applied once by its ID: a repeat answers duplicate. A refusal after the signature held is kept, by code and never with the payload. Only Fyniq's link client may call it: no session, no person and no ordinary API client; it changes only what the event says. It is on the never-list for the AI and MCP surfaces."
       operationId: receiveLinkEvent
@@ -11989,6 +12588,59 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Service Unavailable
       summary: Receive an event from Fyniq
+      tags:
+        - Link
+  /v1/link/health:
+    get:
+      description: "Events by state, the oldest waiting, the last sent, whether the sync has failed for 24 hours (a warning on Checks), the checkpoint (the highest sequence number queued, sent and received), the newest events that failed or were refused, with Fyniq's codes, and a restore that is not reconciled yet. By identity only: never a payload. Only an Owner or an Administrator. It changes nothing."
+      operationId: getLinkHealth
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkHealthView"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The link's health
       tags:
         - Link
   /v1/link/people/{person_id}/hold:
@@ -12123,6 +12775,136 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Service Unavailable
       summary: Start the link to Fyniq
+      tags:
+        - Link
+  /v1/link/repairs:
+    post:
+      description: "Repairs a gap (PRD-002 NM-INT-10): queues the current state of one person, or of everyone, for Fyniq again at the version it has now (Fyniq ignores a version it holds and applies one it missed), and queues again each object whose newest event failed or was refused. It is repair and never a change, and it needs an active link. Audited by its scope and number. Only an Owner or an Administrator. It is on the never-list for the AI and MCP surfaces."
+      operationId: repairLink
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkRepairInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkRepairOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Send the current state to Fyniq again
+      tags:
+        - Link
+  /v1/link/restore/decisions:
+    post:
+      description: "After Nemura's database was restored the link is held and each run approved with proof whose answer the restored database lacks is unknown (PRD-002 NM-INT-13). An Owner or an Administrator, with a passkey confirmed in the last five minutes, decides each against Fyniq's own record: posted (with Fyniq's reference) or not posted (the same approval is then sent again). When the last is decided the restore is reconciled, the link resumes and the current state is sent again. Audited. It is on the never-list for the AI and MCP surfaces."
+      operationId: decideLinkRestoreRun
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkRestoreDecisionInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkRestoreDecisionOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Decide a run a restore holds
       tags:
         - Link
   /v1/me/details:
@@ -15121,6 +15903,75 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Service Unavailable
       summary: Publish a run version's payslips
+      tags:
+        - Payroll
+  /v1/payroll/runs/{id}/receipt:
+    get:
+      description: "The run's receipt (PRD-002 NM-INT-13): the proof kept for each version approved while linked (its digest, the mapping version, when), each sending and where it stands, Fyniq's answers and the payment instructions and outcomes. No figure, no name and no account: it is what two databases are reconciled by. The Payroll administrator and the Owner. It changes nothing."
+      operationId: getPayRunReceipt
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The run.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The run.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunReceiptView"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: What Nemura kept of a run's life with Fyniq
       tags:
         - Payroll
   /v1/payroll/runs/{id}/submission:

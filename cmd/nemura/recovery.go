@@ -45,3 +45,33 @@ func ownerRecovery(ctx context.Context, getenv func(string) string, args []strin
 	fmt.Println(code)
 	return nil
 }
+
+// linkRestore is the deployment's step after a restore of Nemura's database and before it opens (NM-INT-13; docs/runbooks): two named operators record the restore, which suspends the link and lists the
+// runs whose answer from Fyniq the restored database does not hold, to be decided against Fyniq's own record by an Owner or an Administrator before anything is sent or paid.
+func linkRestore(ctx context.Context, getenv func(string) string, args []string, clock ports.Clock) error {
+	if len(args) != 2 {
+		return errors.New(`usage: NEMURA_ROLE=migrate nemura link-restore <organisation id> "<name>, <name>"`)
+	}
+	org, err := uuid.Parse(args[0])
+	if err != nil {
+		return fmt.Errorf("the organisation ID %q is not an ID", args[0])
+	}
+	operators, err := identity.Operators(args[1])
+	if err != nil {
+		return err
+	}
+	url, err := databaseURL(role.Migrate, getenv)
+	if err != nil {
+		return err
+	}
+	held, linked, err := nemura.RecordLinkRestore(ctx, url, org, operators, clock.Now())
+	if err != nil {
+		return err
+	}
+	if !linked {
+		fmt.Fprintln(os.Stderr, "That organisation has no link to Fyniq past its proposal: nothing to reconcile.")
+		return nil
+	}
+	fmt.Fprintf(os.Stderr, "The link is suspended. %d run(s) approved with proof have no answer from Fyniq in the restored database: an Owner or an Administrator decides each on the link's page against Fyniq's own record, and the link resumes.\n", held)
+	return nil
+}

@@ -400,6 +400,13 @@ nemura_api | column nemura.link_object_version.object_id | INSERT
 nemura_api | column nemura.link_object_version.object_type | INSERT
 nemura_api | column nemura.link_object_version.version | INSERT
 nemura_api | column nemura.link_object_version.version | UPDATE
+nemura_api | column nemura.link_restore.reconciled_at | UPDATE
+nemura_api | column nemura.link_restore.reconciled_by | UPDATE
+nemura_api | column nemura.link_restore.state | UPDATE
+nemura_api | column nemura.link_restore_run.decided_at | UPDATE
+nemura_api | column nemura.link_restore_run.decided_by | UPDATE
+nemura_api | column nemura.link_restore_run.outcome | UPDATE
+nemura_api | column nemura.link_restore_run.reference | UPDATE
 nemura_api | column nemura.link_run_approval.approved_at | INSERT
 nemura_api | column nemura.link_run_approval.approver_issuer | INSERT
 nemura_api | column nemura.link_run_approval.approver_member_id | INSERT
@@ -898,6 +905,8 @@ nemura_api | table nemura.link_event | SELECT
 nemura_api | table nemura.link_inbox | SELECT
 nemura_api | table nemura.link_mapping | SELECT
 nemura_api | table nemura.link_object_version | SELECT
+nemura_api | table nemura.link_restore | SELECT
+nemura_api | table nemura.link_restore_run | SELECT
 nemura_api | table nemura.link_run_approval | SELECT
 nemura_api | table nemura.link_run_posting | SELECT
 nemura_api | table nemura.member | SELECT
@@ -1051,6 +1060,8 @@ nemura_readonly | table nemura.link_event | SELECT
 nemura_readonly | table nemura.link_inbox | SELECT
 nemura_readonly | table nemura.link_mapping | SELECT
 nemura_readonly | table nemura.link_object_version | SELECT
+nemura_readonly | table nemura.link_restore | SELECT
+nemura_readonly | table nemura.link_restore_run | SELECT
 nemura_readonly | table nemura.link_run_approval | SELECT
 nemura_readonly | table nemura.link_run_posting | SELECT
 nemura_readonly | table nemura.member | SELECT
@@ -1208,6 +1219,8 @@ nemura_worker | table nemura.link_event | SELECT
 nemura_worker | table nemura.link_inbox | SELECT
 nemura_worker | table nemura.link_mapping | SELECT
 nemura_worker | table nemura.link_object_version | SELECT
+nemura_worker | table nemura.link_restore | SELECT
+nemura_worker | table nemura.link_restore_run | SELECT
 nemura_worker | table nemura.link_run_approval | SELECT
 nemura_worker | table nemura.link_run_posting | SELECT
 nemura_worker | table nemura.member | SELECT

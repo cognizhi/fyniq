@@ -59,6 +59,7 @@ While the apps are linked the plain approval is closed: a run is approved with p
 
 ## Related
 
+- [Link Nemura to Fyniq and keep the link healthy](fyniq-link.md)
 - [Set up pay groups and record each person's pay](payroll-records.md)
 - [Read your payslips](my-pay.md)
 - [Pay a leaver's final pay and hold it for tax clearance](payroll-final-pay.md)

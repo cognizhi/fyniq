@@ -4,7 +4,7 @@ type: task
 title: Read and approve a pay run in Nemura
 summary: Who approves a pay run and why not its preparer, what the approver reads and signs (with proof for Fyniq when linked) and what approving does
 sources:
-  - docs/user-guide/nemura/payroll-approval.md sha256:e10a5933f490058b2d4e97ec29febee04e5ea7e98df2777c198af4dd33b0be7b
+  - docs/user-guide/nemura/payroll-approval.md sha256:6a06d76b74dd44e2af466dfbe9bd774fe9b12057750e4ff511e122fe6c7d97ce
 data_class: personal
 taint: trusted
 status: published
@@ -47,4 +47,4 @@ aliases:
 
 ## When it looks wrong
 
-- Fyniq says the approver has no passkey enrolled there (PPL-19): sign in to Fyniq once, add a passkey, then send the approval again. A passkey that did not sign the figures is the wrong one: use the passkey enrolled in Fyniq, from Nemura's own address. Nobody approves their own run: ask another approver. A digest that is not this version's means the next version was calculated while you read: open the run again. A version with failing checks is resolved and recalculated first. See [[nemura.payroll-records]]. (src: docs/user-guide/nemura/payroll-approval.md#common-problems)
+- Fyniq says the approver has no passkey enrolled there (PPL-19): sign in to Fyniq once, add a passkey, then send the approval again. A passkey that did not sign the figures is the wrong one: use the passkey enrolled in Fyniq, from Nemura's own address (the link itself: [[nemura.fyniq-link]]). Nobody approves their own run: ask another approver. A digest that is not this version's means the next version was calculated while you read: open the run again. A version with failing checks is resolved and recalculated first. See [[nemura.payroll-records]]. (src: docs/user-guide/nemura/payroll-approval.md#common-problems)
