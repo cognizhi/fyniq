@@ -153,6 +153,11 @@ channels:
     messages:
       fyniq.reports.scheduled.v1:
         $ref: '#/components/messages/fyniq.reports.scheduled.v1'
+  fyniq.retention.hold.v1:
+    address: fyniq.retention.hold.v1
+    messages:
+      fyniq.retention.hold.v1:
+        $ref: '#/components/messages/fyniq.retention.hold.v1'
   fyniq.security.alert.v1:
     address: fyniq.security.alert.v1
     messages:
@@ -428,6 +433,13 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.reports.scheduled.v1.schema.json'
+    fyniq.retention.hold.v1:
+      name: fyniq.retention.hold.v1
+      title: fyniq.retention.hold.v1
+      summary: "Fires when: A legal hold was placed or lifted"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.retention.hold.v1.schema.json'
     fyniq.security.alert.v1:
       name: fyniq.security.alert.v1
       title: fyniq.security.alert.v1

@@ -18424,6 +18424,79 @@ Records a heartbeat drill (NFR-OBS-02, CTL-RES-05 Q): where and how long the tic
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-HEARTBEAT-DRILL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/compliance/holds`
+
+**List the legal holds on records** (`listRetentionHolds`)
+
+The holds the DPO and the Owners placed on a record, a contact or a financial year (AUD-11), the ones that stand by default, each with its subject, reason and who placed it; state=all adds the lifted ones with who lifted them and why. Read-only; no side effects.
+
+- **Permission:** View on Retention holds: place and lift a hold on a record, a contact or a financial year; the holds in force (rev 0.617)
+- **Parameters:**
+  - `state` (query): in_force, the default, lists the holds that stand; all adds the lifted ones.
+- **Responses:**
+  - `200` OK [`RetentionHoldList`](../../contracts/schemas/RetentionHoldList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/compliance/holds`
+
+**Place a legal hold on a record, a contact or a financial year** (`placeRetentionHold`)
+
+The DPO or an Owner places a hold (AUD-11), with a reason, on one source document, a contact or a financial year. While it stands the purge after retention skips what it covers, the database refuses to delete it, and the evidence files it covers keep a storage-level hold (a job sets it within a day). A subject with a hold already is refused. Side effects: the hold, the audit event retention_hold.placed, and a notice to those who read the holds. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Retention holds: place and lift a hold on a record, a contact or a financial year; the holds in force (rev 0.617)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`RetentionHoldInput`](../../contracts/schemas/RetentionHoldInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`RetentionHoldView`](../../contracts/schemas/RetentionHoldView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-HOLD-01` That hold is already in force, or was lifted already; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-HOLD-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/compliance/holds/{hold_id}/lift`
+
+**Lift a legal hold** (`liftRetentionHold`)
+
+The DPO or an Owner, stepped up, lifts a hold (AUD-11), with a reason; a lifted hold never stands again, and a new one is placed to hold again. The purge after retention may then reach what it covered, and the evidence files it alone covered are freed within a day. Side effects: the audit event retention_hold.lifted and a notice to those who read the holds. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Approve on Retention holds: place and lift a hold on a record, a contact or a financial year; the holds in force (rev 0.617)
+- **Parameters:**
+  - `hold_id` (path, required): The hold.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`LiftRetentionHoldInput`](../../contracts/schemas/LiftRetentionHoldInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`RetentionHoldView`](../../contracts/schemas/RetentionHoldView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-HOLD-01` That hold is already in force, or was lifted already; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-HOLD-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/compliance/incidents`
 
 **List the security incidents** (`listIncidents`)

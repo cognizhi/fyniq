@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact_id": {
+      "description": "A contact.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "contact_name": {
+      "description": "The contact's legal name.",
+      "examples": [
+        "Acme Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "document_id": {
+      "description": "A record's source document.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "document_number": {
+      "description": "The document's number, once it has one.",
+      "examples": [
+        "INV-0042"
+      ],
+      "type": "string"
+    },
+    "document_type": {
+      "description": "The document's type.",
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "hold_id": {
+      "description": "The hold.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "in_force": {
+      "description": "true while it stands.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "kind": {
+      "description": "What it names.",
+      "enum": [
+        "record",
+        "contact",
+        "financial_year"
+      ],
+      "examples": [
+        "record"
+      ],
+      "type": "string"
+    },
+    "lift_reason": {
+      "description": "Why it was lifted.",
+      "examples": [
+        "The dispute is settled"
+      ],
+      "type": "string"
+    },
+    "lifted_at": {
+      "description": "When.",
+      "examples": [
+        "2026-12-01T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "lifted_by": {
+      "description": "Who lifted it.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "placed_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-09T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "placed_by": {
+      "description": "Who placed it, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it was placed.",
+      "examples": [
+        "A dispute with the supplier is open"
+      ],
+      "type": "string"
+    },
+    "year_ends_on": {
+      "description": "The year's last day.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "year_number": {
+      "description": "A financial year's number in the organisation's calendar, 1 for the first.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "year_starts_on": {
+      "description": "The year's first day.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "hold_id",
+    "kind",
+    "reason",
+    "placed_by",
+    "placed_at",
+    "in_force"
+  ],
+  "title": "RetentionHoldView",
+  "type": "object"
+}

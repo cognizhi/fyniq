@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact_id": {
+      "description": "For a contact.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e12"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "document_id": {
+      "description": "For a record: its source document.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "financial_year": {
+      "description": "For a financial year: its number in the organisation's calendar, 1 for the first.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 200,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "kind": {
+      "description": "What the hold names.",
+      "enum": [
+        "record",
+        "contact",
+        "financial_year"
+      ],
+      "examples": [
+        "record"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why: the dispute, claim, audit or inquiry the records are held for.",
+      "examples": [
+        "A dispute with the supplier is open"
+      ],
+      "maxLength": 500,
+      "minLength": 3,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "reason"
+  ],
+  "title": "RetentionHoldInput",
+  "type": "object"
+}

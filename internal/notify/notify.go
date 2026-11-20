@@ -85,6 +85,7 @@ var Catalogue = []Type{
 	{Key: ControlFailedType, Label: "A control of the Compliance Center failed or fell overdue", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: PDRequestType, Label: "Someone asked to see or correct their personal data", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: BreachType, Label: "A personal-data breach was recorded, or decided notifiable", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
+	{Key: HoldType, Label: "A legal hold was placed or lifted", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: ShreddingDueType, Label: "A year's personal data waits to be shredded", Category: Security, Severity: "warning", Actionable: true, Email: storage.EmailImmediate, Locked: true},
 	{Key: "approval.requested", Label: "An approval waits for you", Category: Approvals, Severity: "info", Actionable: true, Email: storage.EmailImmediate},
 	{Key: "approval.decided", Label: "Your request was decided", Category: Approvals, Severity: "info", Email: storage.EmailImmediate},
@@ -144,6 +145,10 @@ const PDRequestType = "pdpa.request_received"
 // BreachType is the critical notice of a personal-data breach (CMP-PD-05, rev 0.244): when it is recorded, its 30 days of
 // assessment start; when it is decided notifiable, the PDPC's 3 calendar days do.
 const BreachType = "pdpa.breach"
+
+// HoldType is the notice to those who read the retention holds that one was placed or lifted (AUD-11, rev 0.617): the purge after
+// retention keeps what a hold covers, so a lift is a change that can lead to deletion.
+const HoldType = "retention.hold"
 
 // ShreddingDueType is the notice to the DPO that a financial year's person keys wait for their approval to be shredded,
 // its records' retention having ended (§11.8, rev 0.244).
