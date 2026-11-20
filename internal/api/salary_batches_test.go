@@ -1082,7 +1082,7 @@ func TestPayLinesToReviewListsTheBatchesWithLinesThatWait(t *testing.T) {
 // a malformed BIC and a line that already has one are refused, and the file Fyniq writes carries the BIC.
 // req: FR-PPL-12
 // part of FR-PAY-11
-// asvs: V8.2.1, V5.1.3
+// asvs: V8.2.1, V8.3.1
 func TestABankCodeGivesTheBICAndAnUnknownBankNeedsAPersonToFillItIn(t *testing.T) {
 	w := newSalaryWorld(t)
 	e := w.e
