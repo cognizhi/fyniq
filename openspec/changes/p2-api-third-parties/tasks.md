@@ -23,7 +23,7 @@ Decisions are in design.md. Cloud and real-account checks are tagged `[live-veri
 
 ## 4. SDKs (FR-INT-17)
 
-- [ ] 4.1 `sdk/go` and `sdk/python` generated, with the conventions layer, and a staleness check in `make api-check`.
+- [x] 4.1 Built (rev 0.606): `cmd/sdkgen` writes `sdk/go/fyniq/operations_gen.go` and `sdk/python/fyniq/operations_gen.py` from the contract (the 337 operations a client's scopes can reach), the hand-written conventions are `client.go` and `client.py`, `make api-check` fails while they are stale and `make sdk-test` runs `TestAWriteKeepsItsIdempotencyKeyAcrossRetries`, `TestRefusalsAreProblemsAndListsArePaged`, `TestOnlyTheOperationsAClientsScopesReachAreHere` and the Python equivalents. Design D8 amended in building: no external generator (a download was not available, and a 1,100-operation typed client would be tens of megabytes), so the clients take and return JSON. **Left:** typed models, registry publication `[owner to confirm]`, a sandbox run.
 
 ## 5. Third-party MCP clients (AI-46)
 
