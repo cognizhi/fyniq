@@ -355,5 +355,20 @@
 `create_practice_organisation` (migration 000711: security definer, migrator-owned, fixed search_path; one registry row per person; both rules in the database), the API's
 `POST /v1/organisation/practice`, `GET /v1/session/organisations` and `POST /v1/session/organisation` (migration 000712: a session's choice, checked against the membership at every
 request), the Practice card in Settings › Organisation and a banner on every page of a practice organisation. Guide `practice-organisation.md`, compiled into `settings.practice`.
-Tests as the PRD row lists. **Left:** deleting an organisation (a practice one stays until the organisation's own delete exists), the sample company's data in it, the tour and guide-page entry points (4.2),
+Tests as the PRD row lists. **Left:** deleting an organisation (a practice one stays until the organisation's own delete exists; **blocked on an owner decision, see the next paragraph**), the sample company's data in it, the tour and guide-page entry points (4.2),
 and the organisation switcher in the header for someone who is not an Owner.)
+
+**Deleting a practice organisation (FR-UX-36 follow-up; checked 21 Nov 2026; owner to decide).** The repository has no organisation delete, and what it has for tenant
+export (`tenant_exports.go`, `reportexport.WriteTenant`) and retention (the purge of the ledger, `ledger_purge`, and the audit trail's purge behind a signed boundary, the
+shredding by register) is built to keep append-only history, not to remove a tenant. A delete that removes an organisation's rows must pass the append-only
+triggers of hundreds of tables (the ledger, the audit trail and its hash chain, document versions, approvals) and the foreign keys between them, which means
+weakening each immutability trigger for one organisation, or a second, flag-guarded erasure path in each of them. That weakens INV-02, INV-03 and AUD-01 and
+is not built without the owner's decision. Options: **(A, recommended)** close, then shred: the Owner exports the practice organisation (the existing
+full tenant export, approved by a second person), confirms by step-up and a typed confirmation, and the organisation is closed: its memberships and sessions
+end, it leaves every list, the person's one-at-a-time slot is freed, the event is in the installation trail, and its personal values are shredded by the register
+that exists; its append-only rows stay until the retention purge (a practice organisation holds nothing the law makes us keep, so its retention period can be
+set short). Pros: no immutability weakened, all existing gates hold; cons: rows remain for a while. **(B)** hard delete through one security-definer function that
+deletes every table of the organisation in dependency order under a session flag each immutability trigger honours only for a practice organisation, only after
+its tenant export is ready and downloaded; pros: gone; cons: a flag in hundreds of triggers, the audit chain must tolerate the removal (a signed tombstone), a
+second reviewer on every trigger. **(C)** practice organisations in a separate schema or database that is dropped: cleanest erasure, a large change to tenancy.
+

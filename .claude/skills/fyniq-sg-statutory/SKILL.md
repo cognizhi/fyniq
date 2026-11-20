@@ -61,6 +61,7 @@ payslip.
 | `sg-levy` | Foreign worker levy rates by pass type and tier | Month |
 | `sg-cit` | Rate, SUTE/PTE tiers and conditions, rebate and cap per YA, Form C-S / C-S Lite thresholds | Year of Assessment |
 | `sg-deadlines` | Rules that give each obligation's date from its anchor (FY end, GST period end, month end, calendar year end, a GST forecast): months forward with month ends kept, a day of the month, days; one-off extensions; Singapore's public holidays for the next-working-day roll (CMP-02, `pack.DueOn`) | The date the rule gives, and the organisation's settings (AGM route, overseas branch register) |
+| `sg-tax-filings` | The periods of GST bad debt relief (12 months after the supply or insolvency, 5 years to claim, 7 before 2007) and the revenue limits of Form C-S (Lite) and Form C-S (FR-AR-11, FR-TAX-06; `pack.BadDebtRelief`, `pack.FilingForm`) | The dates the rule gives, and the form for a revenue |
 
 **Layout** (PRD-001 ENG-30, rev 0.37): `packs/<pack>/<year>.<n>/`, as `packs/sg-gst/2026.1/` shows:
 

@@ -12,9 +12,11 @@ command -v mise >/dev/null 2>&1 && mise="mise exec --"
 # beside cmd/evals's; FYNIQ_EVALS_RELEASE=1 fails a case with no recording (the release gate).
 # Then the scheduled agents' suites (evals/<suite>/agent.json, QA-AI-07): each case a run of the agent on its business
 # date, through the worker, the API's model step and the AI service.
+# Then the document capture's suite (evals/<suite>/capture.json, QA-AI-02, AI-18): synthetic documents captured and read through the inbox's
+# reading path, each reading judged field by field.
 # Then the knowledge suite (evals/knowledge/knowledge.json, QA-AI-06's retrieval half): the release's own knowledge base asked
 # 100 or more golden questions through the tools, recall per category, citations and the revoked reader.
 mkdir -p .data/evals
-rm -f .data/evals/assistant.json .data/evals/agent.json .data/evals/knowledge.json
-FYNIQ_EVALS_OUT="$PWD/.data/evals" $mise go test -tags local ./internal/api/ -run '^(TestTheAssistantSuites|TestTheAgentSuites|TestTheKnowledgeSuite.*)$' -count=1
+rm -f .data/evals/assistant.json .data/evals/agent.json .data/evals/capture.json .data/evals/knowledge.json
+FYNIQ_EVALS_OUT="$PWD/.data/evals" $mise go test -tags local ./internal/api/ -run '^(TestTheAssistantSuites|TestTheAgentSuites|TestTheCaptureSuites|TestTheKnowledgeSuite.*)$' -count=1
 exec $mise go run -tags local ./cmd/evals "$@"

@@ -1,0 +1,56 @@
+# sg-tax-filings@2026.1: the rules of two filings the books support: the periods of GST bad debt relief and the revenue limits that
+# decide which form a company files for corporate income tax (PRD-001 FR-AR-11, FR-TAX-06; ENG-30; rev 0.513, p2-tax-filings).
+# Never edit this version once it is active anywhere: a correction is sg-tax-filings@2026.2 (fyniq-sg-statutory).
+id = "sg-tax-filings@2026.1"
+title = "Singapore tax filings: GST bad debt relief periods and the revenue limits of Form C-S (Lite) and Form C-S"
+effective_from = "2026-01-01"
+review_date = "2027-03-31"
+verifier = "Claude Code against IRAS's pages, as their text came back from a search on 20 Nov 2026 (p2-tax-filings); the tax agent's review is pending (FR-UX-41)"
+conditions = "GST bad debt relief for a GST-registered business that supplied goods or services for money, accounted for and paid the GST, wrote the debt off, took reasonable steps to recover it and supplied at no more than open market value; the form limits for a company incorporated in Singapore whose income is taxed at the prevailing rate and that claims none of the reliefs that bar Form C-S"
+
+[[sources]]
+id = "iras-bdr"
+title = "IRAS: Bad Debt Relief"
+url = "https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/claiming-gst-(input-tax)/common-scenarios---do-i-claim-gst/bad-debt-relief"
+section = "Conditions for claiming bad debt relief; the time limit"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "A period of 12 months beginning with the date of supply has elapsed or the debtor has become insolvent before the period of 12 months has elapsed. You must claim within 5 years from the date of your supply."
+
+[[sources]]
+id = "iras-bdr-checklist"
+title = "IRAS: Goods and Services Tax Bad Debt Relief: Checklist for Self-Review of Eligibility of Claim"
+url = "https://www.iras.gov.sg/media/docs/default-source/uploadedfiles/bad-debt-relief-(checklist-for-self-review-of-eligibility-of-claim).pdf"
+section = "The time limit for claims"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "7 years for supplies made prior to 01 Jan 2007, or 5 years for supplies made on/after to 01 Jan 2007"
+
+[[sources]]
+id = "iras-form-cs"
+title = "IRAS: Overview of Form C-S, Form C-S (Lite) and Form C"
+url = "https://www.iras.gov.sg/taxes/corporate-income-tax/form-c-s-form-c-s-(lite)-form-c-filing/overview-of-form-c-s-form-c-s-(lite)-form-c"
+section = "Who can file Form C-S and Form C-S (Lite)"
+kind = "official guidance"
+retrieved = "2026-11-20"
+quote = "The annual revenue condition is $5 million or below for Form C-S and $200,000 or below for Form C-S (Lite)."
+
+[[tables]]
+name = "relief"
+file = "relief.csv"
+description = "The periods of bad debt relief: months_after_supply, the months after the date of supply before a claim, unless the debtor is insolvent sooner; claim_years, the years from the date of supply within which it is claimed, for a supply made on or after the row's effective_from (an earlier row is for earlier supplies)"
+
+[[tables]]
+name = "forms"
+file = "forms.csv"
+description = "The most annual revenue, in Singapore dollars, with which a company may file each form: Form C-S (Lite) and Form C-S; above the last, Form C"
+
+[[pinned]]
+name = "relief"
+file = "pinned/relief.csv"
+description = "Hand-pinned eligibility and claim dates worked from iras-bdr and iras-bdr-checklist, not from relief.csv"
+
+[[pinned]]
+name = "forms"
+file = "pinned/forms.csv"
+description = "Hand-pinned forms at each limit worked from iras-form-cs, not from forms.csv"
