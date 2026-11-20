@@ -2523,6 +2523,10 @@
       "label": "Complete",
       "tooltip": "Say what a payment with your company card was for: the category of its receipt, or personal spend that you refund."
     },
+    "card-line.suggestions": {
+      "label": "Suggested receipts",
+      "tooltip": "Receipts in your own inbox that the model read as the same amount near this line's date. Nothing is attached until you choose Attach; the model's reading is only a suggestion."
+    },
     "card-line.attach-evidence": {
       "label": "Attach",
       "tooltip": "Attach the receipt for a payment with your company card. It is kept, and never deleted, for as long as the records are."

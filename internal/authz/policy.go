@@ -905,6 +905,9 @@ var (
 	CompleteCardLine     = Policy{Operation: "completeCardLine", Capability: ExpenseClaims, Need: Create}
 	AddCardLineEvidence  = Policy{Operation: "addCardLineEvidence", Capability: ExpenseClaims, Need: Create}
 	ListCardLineEvidence = Policy{Operation: "listCardLineEvidence", Capability: ExpenseClaims, Need: Create}
+	// FR-AP-08 (rev 0.549): the holder's own captured receipts of the line's amount near its date, and attaching one. The AI and MCP clients hold neither.
+	ListCardReceiptSuggestions   = Policy{Operation: "listCardReceiptSuggestions", Capability: ExpenseClaims, Need: Create, Note: "The holder's own read captures of the line's amount near its date; never another member's or the organisation's."}
+	AttachCardReceiptSuggestion = Policy{Operation: "attachCardReceiptSuggestion", Capability: ExpenseClaims, Need: Create, Note: "Attaches one of the holder's own suggested captures as the receipt of the card line's document, then dismisses the capture."}
 	// The fixed asset register (FR-FA-01…03; p1-fixed-assets design D5), under Appendix D's "Fixed assets" row: read under
 	// V; registered and changed under C (the Accountant), which posts nothing.
 	ListFixedAssets    = Policy{Operation: "listFixedAssets", Capability: FixedAssets, Need: View}
@@ -2184,7 +2187,7 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	ListExpenseClaims, GetExpenseClaim, CreateExpenseClaim, ReplaceExpenseClaim, SubmitExpenseClaim, WithdrawExpenseClaim,
 	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
 	ListCashAdvances, GetCashAdvance, RecordCashAdvance, RecordCashAdvanceRefund, VoidCashAdvance, RequestCashAdvanceVoid,
-	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence, GetClaimGSTCodes,
+	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence, ListCardReceiptSuggestions, AttachCardReceiptSuggestion, GetClaimGSTCodes,
 	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, ListUnregisteredAssetLines,
 	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,

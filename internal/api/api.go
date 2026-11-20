@@ -591,6 +591,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerFixedAssets(a)
 	registerDisposals(a)
 	registerCards(a)
+	registerCardReceiptSuggestions(a)
 	registerMileage(a)
 	registerClaimCategories(a)
 	registerClaimEvidence(a)
