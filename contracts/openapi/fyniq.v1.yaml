@@ -19022,6 +19022,7 @@ components:
             examples:
               - JPY
             type: string
+          maxItems: 50
           type: array
         mrr:
           $ref: "#/components/schemas/Money"
