@@ -41,7 +41,7 @@ func TestTheDependenciesAreEnforcedAndEveryRefusalIsPlain(t *testing.T) {
 		{"leave can be held elsewhere under payroll", Switches{"leave": {State: On}, "payroll": {State: External, System: "Acme"}}, "leave", External, "Other HR", ""},
 		{"onboarding needs letters", on(), "onboarding", On, "", CodeRequired},
 		{"onboarding with letters", on("letters"), "onboarding", On, "", ""},
-		{"hiring is later", on(), "hiring", On, "", CodeUnavailable},
+		{"hiring on", on(), "hiring", On, "", ""},
 		{"time is later", on(), "time", On, "", CodeUnavailable},
 		{"an unknown feature", on(), "magic", On, "", CodeInvalid},
 		{"an unknown state", on(), "leave", "maybe", "", CodeInvalid},
