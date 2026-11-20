@@ -61,6 +61,8 @@ var PlatformSchedules = []Schedule{
 	// approved shredded, register first (§11.8, rev 0.244).
 	{Job: "pdpa.shred", Every: 24 * time.Hour, Offset: 17*time.Hour + 50*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
 	{Job: "idempotency.purge", Every: time.Hour, Offset: 30 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Every tick, the webhook deliveries that are due, each signed afresh at the attempt (FR-INT-12; p2-api-third-parties design D3).
+	{Job: "webhooks.deliver", Every: TickInterval, Lease: 4 * time.Minute, Stale: 30 * time.Minute},
 	{Job: "ratelimit.purge", Every: time.Hour, Offset: 45 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Each hour, the heartbeats of every job checked: a missing or late one is logged for the alert (NFR-OBS-02).
 	{Job: "heartbeats.check", Every: time.Hour, Offset: 55 * time.Minute, Lease: 15 * time.Minute, Stale: 3 * time.Hour},

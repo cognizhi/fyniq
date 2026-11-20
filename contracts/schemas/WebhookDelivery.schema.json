@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "attempts": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "created_at": {
+      "examples": [
+        "2026-11-21T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "delivered_at": {
+      "examples": [
+        "2026-11-21T09:00:01Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "endpoint_id": {
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5101"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "event_type": {
+      "examples": [
+        "fyniq.ledger.posted.v1"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5201"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "last_attempt_at": {
+      "examples": [
+        "2026-11-21T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "last_error": {
+      "description": "Why the last attempt failed, in a few words.",
+      "examples": [
+        "the endpoint answered 503"
+      ],
+      "type": "string"
+    },
+    "last_status": {
+      "description": "The status of the last answer; none when the connection failed.",
+      "examples": [
+        200
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "message_id": {
+      "description": "The webhook-id of every attempt: the same each time, so a receiver deduplicates on it.",
+      "examples": [
+        "msg_2c4e6a8b0d1f4a3e9b7c5d3f1a2b4c6d"
+      ],
+      "type": "string"
+    },
+    "next_attempt_at": {
+      "description": "When a pending delivery is next tried.",
+      "examples": [
+        "2026-11-21T09:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "replays": {
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "state": {
+      "description": "pending: to send or retry; delivered: the endpoint answered 2xx; dead: its three days of retries are used up, and a person may replay it.",
+      "enum": [
+        "pending",
+        "delivered",
+        "dead"
+      ],
+      "examples": [
+        "delivered"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "endpoint_id",
+    "event_type",
+    "message_id",
+    "state",
+    "attempts",
+    "replays",
+    "created_at"
+  ],
+  "title": "WebhookDelivery",
+  "type": "object"
+}

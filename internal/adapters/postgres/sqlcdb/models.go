@@ -4384,6 +4384,58 @@ type FyniqWebauthnCredential struct {
 	RevokedAt      *time.Time
 }
 
+type FyniqWebhookAttempt struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DeliveryID     uuid.UUID
+	Number         int32
+	At             time.Time
+	Status         *int32
+	Error          *string
+	DurationMs     int32
+}
+
+type FyniqWebhookDelivery struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	EndpointID     uuid.UUID
+	EventID        uuid.UUID
+	EventType      string
+	MessageID      string
+	Payload        []byte
+	State          string
+	Attempts       int32
+	Replays        int32
+	NextAttemptAt  time.Time
+	FirstAttemptAt *time.Time
+	LastAttemptAt  *time.Time
+	LastStatus     *int32
+	LastError      *string
+	DeliveredAt    *time.Time
+	CreatedAt      time.Time
+}
+
+type FyniqWebhookEndpoint struct {
+	OrganisationID       uuid.UUID
+	ID                   uuid.UUID
+	Url                  string
+	Label                string
+	EventTypes           []string
+	State                string
+	SecretSealed         []byte
+	SecretHint           string
+	PreviousSecretSealed []byte
+	PreviousSecretUntil  *time.Time
+	ChallengeHash        *string
+	VerifiedAt           *time.Time
+	FailureRun           int32
+	PausedReason         *string
+	Version              int32
+	CreatedBy            string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+}
+
 type FyniqWithholdingDecision struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

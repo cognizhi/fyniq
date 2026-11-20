@@ -373,12 +373,21 @@ var (
 	// (FM-1).
 	RequestAccountMerge = Policy{Operation: "requestAccountMerge", Capability: ChartOfAccounts, Need: Create}
 	// The dimensions and their values (FR-DIM-01) share the chart's row of Appendix D: "Chart of accounts, dimensions".
-	ListDimensions                = Policy{Operation: "listDimensions", Capability: DimensionValues, Need: View}
-	CreateDimension               = Policy{Operation: "createDimension", Capability: ChartOfAccounts, Need: Create}
-	ReplaceDimension              = Policy{Operation: "replaceDimension", Capability: ChartOfAccounts, Need: Create}
-	ListDimensionValues           = Policy{Operation: "listDimensionValues", Capability: DimensionValues, Need: View}
-	CreateDimensionValue          = Policy{Operation: "createDimensionValue", Capability: ChartOfAccounts, Need: Create}
-	ReplaceDimensionValue         = Policy{Operation: "replaceDimensionValue", Capability: ChartOfAccounts, Need: Create}
+	ListDimensions        = Policy{Operation: "listDimensions", Capability: DimensionValues, Need: View}
+	CreateDimension       = Policy{Operation: "createDimension", Capability: ChartOfAccounts, Need: Create}
+	ReplaceDimension      = Policy{Operation: "replaceDimension", Capability: ChartOfAccounts, Need: Create}
+	ListDimensionValues   = Policy{Operation: "listDimensionValues", Capability: DimensionValues, Need: View}
+	CreateDimensionValue  = Policy{Operation: "createDimensionValue", Capability: ChartOfAccounts, Need: Create}
+	ReplaceDimensionValue = Policy{Operation: "replaceDimensionValue", Capability: ChartOfAccounts, Need: Create}
+	// Webhook endpoints (FR-INT-12, rev 0.602): an organisation integration, an Administrator's to make and change, read by those who view integrations; never the AI.
+	ListWebhookEndpoints          = Policy{Operation: "listWebhookEndpoints", Capability: Integrations, Need: View}
+	GetWebhookEndpoint            = Policy{Operation: "getWebhookEndpoint", Capability: Integrations, Need: View}
+	CreateWebhookEndpoint         = Policy{Operation: "createWebhookEndpoint", Capability: Integrations, Need: Create}
+	ChangeWebhookEndpoint         = Policy{Operation: "changeWebhookEndpoint", Capability: Integrations, Need: Create}
+	RollWebhookSecret             = Policy{Operation: "rollWebhookSecret", Capability: Integrations, Need: Create}
+	VerifyWebhookEndpoint         = Policy{Operation: "verifyWebhookEndpoint", Capability: Integrations, Need: Create}
+	ListWebhookDeliveries         = Policy{Operation: "listWebhookDeliveries", Capability: Integrations, Need: View}
+	ReplayWebhookDelivery         = Policy{Operation: "replayWebhookDelivery", Capability: Integrations, Need: Create}
 	SendTestEmail                 = Policy{Operation: "sendTestEmail", Capability: Integrations, Need: Create}
 	GetEmailMessage               = Policy{Operation: "getEmailMessage", Capability: Integrations, Need: View}
 	GetEmailSettings              = Policy{Operation: "getEmailSettings", Capability: Integrations, Need: View}
@@ -1645,11 +1654,11 @@ var (
 // own holding (Appendix D, "own holding"); the whole table if granted, and an Employee's own grants, arrive with the
 // option pool (FR-EQ-19).
 var (
-	GetCapTable    = Policy{Operation: "getCapTable", Capability: CapTable, Need: View, Unqualified: true}
+	GetCapTable = Policy{Operation: "getCapTable", Capability: CapTable, Need: View, Unqualified: true}
 	// The exit waterfall sandbox (FR-EQ-29, rev 0.591) shows every holder's proceeds, so it is read under the whole cap table's unqualified V: a Board viewer's "own holding" is not it.
 	GetExitWaterfall = Policy{Operation: "getExitWaterfall", Capability: CapTable, Need: View, Unqualified: true}
-	ExportCapTable = Policy{Operation: "exportCapTable", Capability: CapTable, Need: View, Unqualified: true}
-	GetMyHolding   = Policy{Operation: "getMyHolding", Capability: CapTable, Need: View, Unqualified: true,
+	ExportCapTable   = Policy{Operation: "exportCapTable", Capability: CapTable, Need: View, Unqualified: true}
+	GetMyHolding     = Policy{Operation: "getMyHolding", Capability: CapTable, Need: View, Unqualified: true,
 		Qualified: []string{"own holding; all if granted"}}
 )
 
@@ -2158,10 +2167,10 @@ var (
 )
 
 var (
-	ListBoardPacks       = Policy{Operation: "listBoardPacks", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
-	GetBoardPack         = Policy{Operation: "getBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	ListBoardPacks = Policy{Operation: "listBoardPacks", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	GetBoardPack   = Policy{Operation: "getBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
 	// The PDF of a published pack (FR-RPT-06): read as the pack is, by whoever reads published packs; a draft has none.
-	ExportBoardPack = Policy{Operation: "exportBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	ExportBoardPack      = Policy{Operation: "exportBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
 	CreateBoardPackDraft = Policy{Operation: "createBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	EditBoardPackDraft   = Policy{Operation: "editBoardPackDraft", Capability: ReportDefinitions, Need: Create}
 	PublishBoardPack     = Policy{Operation: "publishBoardPack", Capability: ReportDefinitions, Need: Create}
@@ -2214,7 +2223,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, ListPayrollRuns, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, RecordSalaryLineState, MatchSalaryBankLine, GetPayrollArrangements, SetPayrollArrangement, ListPayrollImports, ImportPayrollJournal, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, GetPeopleLinkHealth, RepairPeopleLink, FinishPeopleUnlink, RequestPeopleLink, RequestPeopleUnlink, RequestPeopleSourceChange, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ReceivePeopleAvailabilityEvent, ListPeopleAvailability, ReceivePeopleSessionEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(ListWebhookEndpoints, GetWebhookEndpoint, CreateWebhookEndpoint, ChangeWebhookEndpoint, RollWebhookSecret, VerifyWebhookEndpoint, ListWebhookDeliveries, ReplayWebhookDelivery, UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, ListPayrollRuns, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, RecordSalaryLineState, MatchSalaryBankLine, GetPayrollArrangements, SetPayrollArrangement, ListPayrollImports, ImportPayrollJournal, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, GetPeopleLinkHealth, RepairPeopleLink, FinishPeopleUnlink, RequestPeopleLink, RequestPeopleUnlink, RequestPeopleSourceChange, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ReceivePeopleAvailabilityEvent, ListPeopleAvailability, ReceivePeopleSessionEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,

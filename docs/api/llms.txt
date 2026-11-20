@@ -1175,6 +1175,14 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/timesheet/{week_start}` (getTimesheet): Read the caller's own week of time
 - `PUT /v1/timesheet/{week_start}` (saveTimesheet): Save the caller's week of time
 - `POST /v1/timesheet/{week_start}/submit` (submitTimesheet): Submit the caller's week for approval
+- `POST /v1/webhook-deliveries/{delivery_id}/replay` (replayWebhookDelivery): Replay a dead webhook delivery
+- `GET /v1/webhook-endpoints` (listWebhookEndpoints): List the organisation's webhook endpoints
+- `POST /v1/webhook-endpoints` (createWebhookEndpoint): Add a webhook endpoint
+- `GET /v1/webhook-endpoints/{endpoint_id}` (getWebhookEndpoint): Read a webhook endpoint
+- `PATCH /v1/webhook-endpoints/{endpoint_id}` (changeWebhookEndpoint): Change a webhook endpoint
+- `GET /v1/webhook-endpoints/{endpoint_id}/deliveries` (listWebhookDeliveries): List an endpoint's deliveries
+- `POST /v1/webhook-endpoints/{endpoint_id}/roll-secret` (rollWebhookSecret): Roll a webhook endpoint's signing secret
+- `POST /v1/webhook-endpoints/{endpoint_id}/verify` (verifyWebhookEndpoint): Verify a webhook endpoint
 - `GET /v1/write-offs` (listWriteOffs): List the write-offs
 - `POST /v1/write-offs` (createWriteOff): Save a draft write-off
 - `GET /v1/write-offs/{write_off_id}` (getWriteOff): Get a write-off
