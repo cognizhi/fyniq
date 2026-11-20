@@ -85,6 +85,6 @@ CREATE POLICY tenant_isolation ON fyniq.integration_task
   USING (organisation_id = fyniq.current_org()) WITH CHECK (organisation_id = fyniq.current_org());
 
 REVOKE ALL ON fyniq.integration_task FROM PUBLIC;
-GRANT SELECT ON fyniq.integration_task TO fyniq_api, fyniq_readonly;
+GRANT SELECT ON fyniq.integration_task TO fyniq_api, fyniq_worker, fyniq_readonly; -- the worker reads it for the full tenant export (FR-MIG-04)
 GRANT INSERT (client_id, external_ref, title, detail, due_on, link_url, created_by, created_at, updated_at) ON fyniq.integration_task TO fyniq_api;
 GRANT UPDATE (title, detail, due_on, link_url, status, closed_at, version, updated_at) ON fyniq.integration_task TO fyniq_api;
