@@ -42297,6 +42297,8 @@ components:
           description: What the provider reports it charged.
         paid_at:
           description: When the provider says it was paid.
+          examples:
+            - "2026-11-21T02:00:00Z"
           format: date-time
           type: string
         provider_payment_id:
@@ -165378,7 +165380,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-11` The invoice has a payment link already; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-11` The invoice has a payment link already; `STORAGE-LOCK-01` Another change is in progress."
         "413":
           content:
             application/problem+json:
@@ -165458,9 +165460,10 @@ paths:
         - PSP-10
         - PSP-11
         - PSP-12
-        - STORAGE-DUPLICATE-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        If-Match: A payment link is a record of its own and changes nothing of the invoice, whose open balance the server reads in the same transaction (FR-AR-13).
       x-fyniq-permission:
         capability: Invoices, credit notes
         right: P
@@ -165642,6 +165645,8 @@ paths:
         - PSP-13
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        If-Match: "The link is closed once, from live, in one transaction that reads its version: there is no stale write to guard against (FR-AR-13)."
       x-fyniq-permission:
         capability: Invoices, credit notes
         right: P

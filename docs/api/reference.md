@@ -7023,14 +7023,14 @@ Asks the organisation's payment-link connector (HitPay) for a payment request fo
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
-  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-11` The invoice has a payment link already; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-11` The invoice has a payment link already; `STORAGE-LOCK-01` Another change is in progress.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
   - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PSP-09` A payment link is for an issued invoice with something open; `PSP-10` No provider account collects the invoice's currency; `PSP-12` No payment-link connector is enabled.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PSP-09`, `PSP-10`, `PSP-11`, `PSP-12`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PSP-09`, `PSP-10`, `PSP-11`, `PSP-12`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/invoices/{invoice_id}/payment-link/cancellation`
 

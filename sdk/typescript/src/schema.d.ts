@@ -46896,6 +46896,7 @@ export interface components {
             /**
              * Format: date-time
              * @description When the provider says it was paid.
+             * @example 2026-11-21T02:00:00Z
              */
             paid_at: string;
             /**
@@ -138072,7 +138073,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-11` The invoice has a payment link already; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-11` The invoice has a payment link already; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;

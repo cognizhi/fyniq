@@ -28,7 +28,7 @@ const (
 type PaymentLinkPayment struct {
 	ProviderPaymentID string    `json:"provider_payment_id" doc:"The provider's charge, the reference of its statement line." example:"90f28b43-2cff-4f86-a29e-15697424b3e7"`
 	Amount            Money     `json:"amount" doc:"What the provider reports it charged."`
-	PaidAt            time.Time `json:"paid_at" doc:"When the provider says it was paid."`
+	PaidAt            time.Time `json:"paid_at" doc:"When the provider says it was paid." example:"2026-11-21T02:00:00Z"`
 }
 
 // InvoicePaymentLink is the payment link of an invoice (FR-AR-13).
@@ -119,7 +119,7 @@ func registerPaymentLinks(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	writes := append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeNotFound}, locks...)
 
-	register(a, authz.CreateInvoicePaymentLink, huma.Operation{
+	register(a, authz.CreateInvoicePaymentLink, exempt(huma.Operation{
 		OperationID: "createInvoicePaymentLink", Method: http.MethodPost, Path: "/v1/invoices/{invoice_id}/payment-link", Tags: []string{"Sales"},
 		Summary: "Ask the payment provider for a payment link on an invoice", DefaultStatus: http.StatusCreated,
 		Description: "Asks the organisation's payment-link connector (HitPay) for a payment request for an issued invoice's open balance, read on the server in the " +
@@ -127,7 +127,7 @@ func registerPaymentLinks(a *API) {
 			"under it arrives, auto-reconcile records the receipt once. It is refused for a draft, void or paid invoice, when no provider account collects the " +
 			"invoice's currency, and when the invoice has a live link. It is the connector's one write at the provider and a person's alone: the AI and MCP have no tool " +
 			"for it. Side effects: one payment request at the provider; the audit event. Idempotent with Idempotency-Key; Prefer: return=preview runs the checks and asks the provider nothing.",
-	}, append([]string{paymentlink.CodeNotIssued, paymentlink.CodeNoAccount, paymentlink.CodeLive, CodeLinkConnector}, writes...),
+	}, "If-Match", "A payment link is a record of its own and changes nothing of the invoice, whose open balance the server reads in the same transaction (FR-AR-13)."), append([]string{paymentlink.CodeNotIssued, paymentlink.CodeNoAccount, paymentlink.CodeLive, CodeLinkConnector}, writes...),
 		func(ctx context.Context, in *createPaymentLinkInput) (*paymentLinkOutput, error) {
 			id, err := parseID("invoice_id", in.InvoiceID)
 			if err != nil {
@@ -193,13 +193,13 @@ func registerPaymentLinks(a *API) {
 		return &getPaymentLinkOutput{Body: out}, nil
 	})
 
-	register(a, authz.CancelInvoicePaymentLink, huma.Operation{
+	register(a, authz.CancelInvoicePaymentLink, exempt(huma.Operation{
 		OperationID: "cancelInvoicePaymentLink", Method: http.MethodPost, Path: "/v1/invoices/{invoice_id}/payment-link/cancellation", Tags: []string{"Sales"},
 		Summary: "Cancel an invoice's live payment link",
 		Description: "Closes the invoice's live link in Fyniq with a reason, so a new one can be made (FR-AR-13). Fyniq asks the provider nothing: the request stays payable " +
 			"at the provider until it expires [live-verify: provider-side cancellation], and a charge under a cancelled link is never reconciled by itself: a person decides the line. " +
 			"Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
-	}, append([]string{CodeLinkClosed}, writes...), func(ctx context.Context, in *cancelPaymentLinkInput) (*paymentLinkOutput, error) {
+	}, "If-Match", "The link is closed once, from live, in one transaction that reads its version: there is no stale write to guard against (FR-AR-13)."), append([]string{CodeLinkClosed}, writes...), func(ctx context.Context, in *cancelPaymentLinkInput) (*paymentLinkOutput, error) {
 		id, err := parseID("invoice_id", in.InvoiceID)
 		if err != nil {
 			return nil, err

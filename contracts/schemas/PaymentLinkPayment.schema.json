@@ -8,6 +8,9 @@
     },
     "paid_at": {
       "description": "When the provider says it was paid.",
+      "examples": [
+        "2026-11-21T02:00:00Z"
+      ],
       "format": "date-time",
       "type": "string"
     },
