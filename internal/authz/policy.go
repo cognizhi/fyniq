@@ -80,7 +80,7 @@ const (
 	ReportDefinitions   Capability = "Report definitions and schedules: save, share and schedule a report (rev 0.560)"
 	AuditEngagements    Capability = "Auditor engagement: open, confirm and close (rev 0.574)"
 	AuditRequests       Capability = "Auditor requests and samples: ask, answer, draw (rev 0.574)"
-	IntegrationTasks    Capability = "Tasks made by integrations: an API client's own tasks, with the scope `fyniq.write.tasks` (rev 0.607)"
+	IntegrationTasks    Capability = "Tasks made by integrations: an API client's own tasks, with the scope `fyniq.write.tasks` (rev 0.609)"
 )
 
 // WholeRow are the qualifiers that limit what a role does on a row, not which of its records it sees: an approval or
@@ -385,7 +385,7 @@ var (
 	CreateDimensionValue  = Policy{Operation: "createDimensionValue", Capability: ChartOfAccounts, Need: Create}
 	ReplaceDimensionValue = Policy{Operation: "replaceDimensionValue", Capability: ChartOfAccounts, Need: Create}
 	// Webhook endpoints (FR-INT-12, rev 0.605): an organisation integration, an Administrator's to make and change, read by those who view integrations; never the AI.
-	// Tasks made by integrations (FR-INT-24, rev 0.607): an API client with fyniq.write.tasks makes tasks of its own and updates only those, never a
+	// Tasks made by integrations (FR-INT-24, rev 0.609): an API client with fyniq.write.tasks makes tasks of its own and updates only those, never a
 	// compliance task (a statutory or agent task), never the AI; a person with a view reads them.
 	CreateIntegrationTask = Policy{Operation: "createIntegrationTask", Capability: IntegrationTasks, Need: Create}
 	UpdateIntegrationTask = Policy{Operation: "updateIntegrationTask", Capability: IntegrationTasks, Need: Create}

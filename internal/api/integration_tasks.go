@@ -17,7 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// Tasks made by integrations (PRD-001 FR-INT-24, rev 0.607; p2-api-third-parties task 2, design D5). A ticketing system or another API client holding the scope
+// Tasks made by integrations (PRD-001 FR-INT-24, rev 0.609; p2-api-third-parties task 2, design D5). A ticketing system or another API client holding the scope
 // fyniq.write.tasks asks a person to do something: it makes tasks of its own, with a reference it chooses, and updates only those, finishing one once (done or
 // cancelled). A task is not a compliance task (AI-65): no operation here reads, closes, dismisses or edits a statutory or agent task, and the client's database role
 // cannot write that table. A person who may view the row (Appendix D) reads every client's tasks; a client reads only its own. Never the AI, never the MCP surface.
