@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "on": {
+      "description": "The day it happened, not after today.",
+      "examples": [
+        "2026-11-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reason": {
+      "description": "An acceptance's reason: why the risk is taken.",
+      "examples": [
+        "The affected page is retired next month"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "step": {
+      "description": "fixed, then retested; or accepted, before the retest, with a reason.",
+      "enum": [
+        "fixed",
+        "retested",
+        "accepted"
+      ],
+      "examples": [
+        "fixed"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "step",
+    "on"
+  ],
+  "title": "SecurityFindingStepInput",
+  "type": "object"
+}

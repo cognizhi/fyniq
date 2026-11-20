@@ -315,6 +315,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/compliance/policies/{key}/draft` (savePolicyDraft): Save a policy's draft
 - `POST /v1/compliance/policies/{key}/versions` (publishPolicyVersion): Publish a policy's next version
 - `POST /v1/compliance/policies/{key}/versions/{version}/acknowledgements` (acknowledgePolicyVersion): Acknowledge a policy
+- `GET /v1/compliance/readiness` (getReadiness): Get the readiness of each framework
 - `GET /v1/compliance/restore-drills` (listRestoreDrills): List the restore drills
 - `POST /v1/compliance/restore-drills` (recordRestoreDrill): Record a restore drill
 - `GET /v1/compliance/reviews` (listComplianceReviews): List the recurring reviews and attestations
@@ -326,6 +327,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/compliance/secretary/runs` (listAgentRuns): List the assistant's runs
 - `POST /v1/compliance/secretary/runs` (runCompanySecretary): Run the assistant now
 - `GET /v1/compliance/secretary/runs/{run_id}` (getAgentRun): Get a run's report
+- `GET /v1/compliance/security-assessments` (listSecurityAssessments): List the security assessments
+- `POST /v1/compliance/security-assessments` (createSecurityAssessment): Record a security assessment
+- `POST /v1/compliance/security-assessments/{assessment_id}/findings` (addSecurityFinding): Add a finding to a security assessment
+- `POST /v1/compliance/security-findings/{finding_id}/steps` (stepSecurityFinding): Record the next step of a finding
 - `GET /v1/compliance/shredding-runs` (listShreddingRuns): List the shredding runs
 - `POST /v1/compliance/shredding-runs/{run_id}/approval` (approveShreddingRun): Approve a shredding run
 - `GET /v1/compliance/tasks` (listComplianceTasks): List the compliance tasks

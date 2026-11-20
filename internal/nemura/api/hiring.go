@@ -53,36 +53,39 @@ type AdvertInput struct {
 
 // Requisition is a request to hire for a role.
 type Requisition struct {
-	ID             string   `json:"id" format:"uuid" doc:"The requisition." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01"`
-	Title          string   `json:"title" doc:"The role." example:"Data scientist"`
-	Department     string   `json:"department" doc:"The team." example:"Engineering"`
-	Reason         string   `json:"reason" enum:"new,replacement" doc:"A new role or a replacement." example:"replacement"`
-	ReplacesID     string   `json:"replaces_person_id,omitempty" format:"uuid" doc:"The person a replacement replaces." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
-	Replaces       string   `json:"replaces,omitempty" doc:"Their legal name." example:"Chen Yu"`
-	SalaryMin      string   `json:"salary_min" doc:"The bottom of the range in Singapore dollars, as a decimal string." example:"6500.00"`
-	SalaryMax      string   `json:"salary_max" doc:"The top of the range in Singapore dollars, as a decimal string." example:"8200.00"`
-	TargetStart    string   `json:"target_start" format:"date" doc:"The start date aimed for." example:"2027-02-01"`
-	PassNeeded     bool     `json:"pass_needed" doc:"An Employment Pass or S Pass application is expected, so the Fair Consideration Framework may apply." example:"false"`
-	PlanStatus     string   `json:"plan_status" enum:"unknown,in_plan,not_in_plan" doc:"Whether the role is in Fyniq's plan; unknown until the link tells Nemura." example:"unknown"`
-	State          string   `json:"state" enum:"requested,approved,rejected,filled,cancelled" doc:"Where it is." example:"requested"`
-	RequestedBy    string   `json:"requested_by" doc:"Who asked." example:"Rita Recruiter"`
-	RequestedAt    string   `json:"requested_at" format:"date-time" doc:"When." example:"2026-10-01T10:00:00Z"`
-	DecidedBy      string   `json:"decided_by,omitempty" doc:"The Owner who decided." example:"Owen Owner"`
-	DecidedAt      string   `json:"decided_at,omitempty" format:"date-time" doc:"When." example:"2026-10-02T10:00:00Z"`
-	DecisionReason string   `json:"decision_reason,omitempty" doc:"Why." example:"In the plan for Q1."`
-	JobPost        *JobPost `json:"job_post,omitempty" doc:"Its job post, once one is written."`
+	ID              string   `json:"id" format:"uuid" doc:"The requisition." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01"`
+	Title           string   `json:"title" doc:"The role." example:"Data scientist"`
+	Department      string   `json:"department" doc:"The team." example:"Engineering"`
+	Reason          string   `json:"reason" enum:"new,replacement" doc:"A new role or a replacement." example:"replacement"`
+	ReplacesID      string   `json:"replaces_person_id,omitempty" format:"uuid" doc:"The person a replacement replaces." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Replaces        string   `json:"replaces,omitempty" doc:"Their legal name." example:"Chen Yu"`
+	SalaryMin       string   `json:"salary_min" doc:"The bottom of the range in Singapore dollars, as a decimal string." example:"6500.00"`
+	SalaryMax       string   `json:"salary_max" doc:"The top of the range in Singapore dollars, as a decimal string." example:"8200.00"`
+	TargetStart     string   `json:"target_start" format:"date" doc:"The start date aimed for." example:"2027-02-01"`
+	PassNeeded      bool     `json:"pass_needed" doc:"An Employment Pass or S Pass application is expected, so the Fair Consideration Framework may apply." example:"false"`
+	PlanStatus      string   `json:"plan_status" enum:"unknown,in_plan,not_in_plan" doc:"Whether the role is in Fyniq's plan; unknown until the link tells Nemura." example:"unknown"`
+	State           string   `json:"state" enum:"requested,approved,rejected,filled,cancelled" doc:"Where it is." example:"requested"`
+	RequestedBy     string   `json:"requested_by" doc:"Who asked." example:"Rita Recruiter"`
+	RequestedAt     string   `json:"requested_at" format:"date-time" doc:"When." example:"2026-10-01T10:00:00Z"`
+	DecidedBy       string   `json:"decided_by,omitempty" doc:"The Owner who decided." example:"Owen Owner"`
+	DecidedAt       string   `json:"decided_at,omitempty" format:"date-time" doc:"When." example:"2026-10-02T10:00:00Z"`
+	DecisionReason  string   `json:"decision_reason,omitempty" doc:"Why." example:"In the plan for Q1."`
+	HiringManagerID string   `json:"hiring_manager_id,omitempty" format:"uuid" doc:"The member who will manage the hire." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1a02"`
+	HiringManager   string   `json:"hiring_manager,omitempty" doc:"Their name." example:"Mia Manager"`
+	JobPost         *JobPost `json:"job_post,omitempty" doc:"Its job post, once one is written."`
 }
 
 // RequisitionInput is a requisition to ask for.
 type RequisitionInput struct {
-	Title       string `json:"title" minLength:"1" maxLength:"120" doc:"The role." example:"Data scientist"`
-	Department  string `json:"department" minLength:"1" maxLength:"120" doc:"The team." example:"Engineering"`
-	Reason      string `json:"reason" enum:"new,replacement" doc:"A new role or a replacement." example:"replacement"`
-	ReplacesID  string `json:"replaces_person_id,omitempty" format:"uuid" doc:"The person a replacement replaces." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
-	SalaryMin   string `json:"salary_min" pattern:"^[0-9]{1,9}(\\.[0-9]{1,2})?$" doc:"The bottom of the range in Singapore dollars, as a decimal string." example:"6500.00"`
-	SalaryMax   string `json:"salary_max" pattern:"^[0-9]{1,9}(\\.[0-9]{1,2})?$" doc:"The top of the range in Singapore dollars, as a decimal string." example:"8200.00"`
-	TargetStart string `json:"target_start" format:"date" doc:"The start date aimed for." example:"2027-02-01"`
-	PassNeeded  bool   `json:"pass_needed,omitempty" doc:"An Employment Pass or S Pass application is expected." example:"false"`
+	Title         string `json:"title" minLength:"1" maxLength:"120" doc:"The role." example:"Data scientist"`
+	Department    string `json:"department" minLength:"1" maxLength:"120" doc:"The team." example:"Engineering"`
+	Reason        string `json:"reason" enum:"new,replacement" doc:"A new role or a replacement." example:"replacement"`
+	ReplacesID    string `json:"replaces_person_id,omitempty" format:"uuid" doc:"The person a replacement replaces." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	SalaryMin     string `json:"salary_min" pattern:"^[0-9]{1,9}(\\.[0-9]{1,2})?$" doc:"The bottom of the range in Singapore dollars, as a decimal string." example:"6500.00"`
+	SalaryMax     string `json:"salary_max" pattern:"^[0-9]{1,9}(\\.[0-9]{1,2})?$" doc:"The top of the range in Singapore dollars, as a decimal string." example:"8200.00"`
+	TargetStart   string `json:"target_start" format:"date" doc:"The start date aimed for." example:"2027-02-01"`
+	PassNeeded    bool   `json:"pass_needed,omitempty" doc:"An Employment Pass or S Pass application is expected." example:"false"`
+	HiringManager string `json:"hiring_manager_id,omitempty" format:"uuid" doc:"The person in the directory, with a sign-in, who will manage the hire and then reads the role's progress as counts by stage under My roles; chosen once, when the requisition is asked for." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1a02"`
 }
 
 // Hiring is the requisitions and job posts behind the API.
@@ -96,6 +99,8 @@ type Hiring interface {
 	RenewAdvert(ctx context.Context, s Session, id uuid.UUID, in AdvertInput) (Requisition, error)
 	RecordExemption(ctx context.Context, s Session, id uuid.UUID, kind, note string) (Requisition, error)
 	ClosePost(ctx context.Context, s Session, id uuid.UUID) (Requisition, error)
+	// MyRoles is the requisitions that name the caller as hiring manager, as counts by stage (migration 000071).
+	MyRoles(ctx context.Context, s Session) ([]HiringRole, error)
 }
 
 type requisitionsOutput struct {
@@ -196,7 +201,7 @@ func init() {
 func (a *API) registerHiring() {
 	available := func() error { return Err(CodeUnavailable, "Hiring is not set up in this deployment.") }
 	// who is what the caller may do on Hiring (P2) in Appendix B: Create (the Recruiter, the HR administrator and the Owner), View (the HR officer) and Approve (the Owner).
-	type rights struct{ create, view, approve, interviewer, people bool }
+	type rights struct{ create, view, approve, interviewer, lineManager, people bool }
 	rightsOf := func(ctx context.Context, s Session) (rights, error) {
 		held, err := a.d.Sessions.RolesAt(ctx, s.Organisation, s.Member, a.d.Clock.Now())
 		if err != nil {
@@ -206,6 +211,9 @@ func (a *API) registerHiring() {
 		for _, h := range held {
 			if h == authz.Interviewer {
 				r.interviewer = true // an interviewer reads the candidates assigned to them and scores them: the database scopes it (migration 000069)
+			}
+			if h == authz.LineManager {
+				r.lineManager = true // a line manager reads the requisitions that name them as counts by stage, through one narrow function (migration 000071)
 			}
 			if h == authz.LineManager || h == authz.Interviewer {
 				continue // their rights are View with a condition (own roles; assigned candidates only) that needs the pipeline and the line: until it exists they read nothing here
@@ -255,10 +263,13 @@ func (a *API) registerHiring() {
 	interviewer := func(ctx context.Context, c string) (Session, error) {
 		return gate(ctx, c, func(r rights) bool { return r.interviewer }, "Only an interviewer scores a candidate, and only one assigned to them.")
 	}
+	lineManager := func(ctx context.Context, c string) (Session, error) {
+		return gate(ctx, c, func(r rights) bool { return r.lineManager || r.view }, "Only a line manager and the hiring team read the roles a person is hiring for.")
+	}
 	hirer := func(ctx context.Context, c string) (Session, error) {
 		return gate(ctx, c, func(r rights) bool { return r.create && r.people }, "Only the HR administrator and the Owner hire a candidate: it makes a person record.")
 	}
-	defer func() { a.registerPipeline(hiringOrInterviewer, writer, interviewer, hirer) }()
+	defer func() { a.registerPipeline(hiringOrInterviewer, writer, interviewer, hirer, lineManager) }()
 	id := func(raw string) (uuid.UUID, error) {
 		u, err := uuid.Parse(raw)
 		if err != nil {

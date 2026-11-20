@@ -236,6 +236,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/candidate-access-links/{id}/revocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a candidate's access link
+         * @description PRD-002 NM-REC-05 (rev 0.74). A link stops working at once; it is revoked once. The Recruiter, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["revokeCandidateAccessLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/candidate-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read what a candidate's access link shows
+         * @description PRD-002 NM-REC-05 (rev 0.74). With no sign-in: the token of a link the hiring team gave a candidate. It shows what they gave, the role, where they stand and whether they consent to be kept for future roles, never the team's notes or scores; a link that is unknown, expired or revoked answers found false, all alike. The token is in the body so it is never in a URL or a log. Counted against shared limits (NM_RATE_LIMITED); every look-up is audited without the data. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["readCandidateData"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/candidate-data/consent-withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw the consent to be kept for future roles, as the candidate
+         * @description PRD-002 NM-REC-05 (rev 0.74). With no sign-in: a candidate with a live link withdraws their consent to be kept for future roles, once and only after it was given. Their data is then listed for deletion six months from the withdrawal if they are not progressing. Counted against the shared limits; audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["withdrawCandidateConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/candidates/{id}": {
         parameters: {
             query?: never;
@@ -250,6 +310,30 @@ export interface paths {
         get: operations["getCandidate"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/candidates/{id}/access-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The links made for a candidate
+         * @description PRD-002 NM-REC-05 (rev 0.74). The links made for the candidate, the newest first, with when each expires or was revoked and never its token. The Recruiter, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listCandidateAccessLinks"];
+        put?: never;
+        /**
+         * Make a link for a candidate to look at their own data
+         * @description PRD-002 NM-REC-05 (rev 0.74): an access request under the PDPA. The hiring team makes a link that works for 1 to 30 days (14 by default); the token is shown once and only its hash is kept. With it the candidate sees what they gave and where they stand, never the team's notes or scores, and can withdraw the consent to be kept for future roles. The Recruiter, the HR administrator and the Owner. It is audited and is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["createCandidateAccessLink"];
         delete?: never;
         options?: never;
         head?: never;
@@ -976,6 +1060,26 @@ export interface paths {
          * @description Names the service and its build. It needs no sign-in and changes nothing: a client uses it to check that it is talking to Nemura's API and which version.
          */
         get: operations["getInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interviewers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The members who can be assigned to interview
+         * @description PRD-002 NM-REC-04 (rev 0.74). The members who hold the Interviewer role today, for the page that assigns them to a candidate. The Recruiter, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listInterviewers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1862,6 +1966,46 @@ export interface paths {
          * @description PRD-002 NM-SEC-06. Any member who has not left files a confidential grievance, optionally naming the people it is about. It is routed to an HR administrator or the Owner who is neither the complainant nor anyone it is about; when nobody is eligible it waits (state unrouted). The people it is about can never read it. It is on the never-list for the AI and MCP surfaces.
          */
         post: operations["fileGrievance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/hiring-roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The roles you are hiring for
+         * @description PRD-002 NM-REC-01 (rev 0.74). A line manager's own roles: the requisitions that name them as hiring manager, each with where it stands, its post's dates and how many candidates are at each stage. It shows no salary and no candidate: the database returns nothing else. A line manager, or the hiring team. It changes nothing and is on the never-list for the AI and MCP surfaces.
+         */
+        get: operations["listMyHiringRoles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/interviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The candidates assigned to you to interview
+         * @description PRD-002 NM-REC-04 (rev 0.74). An interviewer's own page: the candidates assigned to them, with the role, the stage, the scorecard's criteria and the criteria they have scored. The database returns only the candidates assigned to the caller. An interviewer. It changes nothing and is on the never-list for the AI and MCP surfaces.
+         */
+        get: operations["listMyInterviews"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4749,6 +4893,75 @@ export interface components {
              */
             stage_reason?: string;
         };
+        CandidateAccessCreateInputBody: {
+            /**
+             * Format: int64
+             * @description How many days the link works: 1 to 30, 14 by default.
+             * @example 14
+             */
+            days?: number;
+        };
+        CandidateAccessCreated: {
+            /**
+             * Format: date-time
+             * @description When it stops working.
+             * @example 2026-12-04T10:00:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: uuid
+             * @description The link.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01
+             */
+            id: string;
+            /**
+             * @description The page the candidate opens; the token goes after a # so it is never sent in a URL.
+             * @example /my-application
+             */
+            path: string;
+            /**
+             * @description The token, shown once; the candidate opens the careers site's /my-application page and pastes it, or follows a link that carries it after the #.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d0001.xxxxxxxxxx
+             */
+            token: string;
+        };
+        CandidateAccessLink: {
+            /**
+             * Format: date-time
+             * @description When it was made.
+             * @example 2026-11-20T10:00:00Z
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When it stops working.
+             * @example 2026-12-04T10:00:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: uuid
+             * @description The link.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When it was revoked.
+             * @example 2026-11-21T10:00:00Z
+             */
+            revoked_at?: string;
+        };
+        CandidateAccessLinksOutputBody: {
+            /** @description The links made for the candidate, the newest first, with no token. */
+            links: components["schemas"]["CandidateAccessLink"][];
+        };
+        CandidateAccessRevokedOutputBody: {
+            /**
+             * @description The link no longer works.
+             * @example true
+             */
+            revoked: boolean;
+        };
         CandidateAssignInputBody: {
             /**
              * Format: uuid
@@ -4851,6 +5064,86 @@ export interface components {
              * @example Strong on forecasting.
              */
             body: string;
+        };
+        CandidateOwnInputBody: {
+            /**
+             * @description The token of the link the hiring team gave the candidate. It is in the body so it is never in a URL or a log.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d0001.xxxxxxxxxx
+             */
+            token: string;
+        };
+        CandidateOwnView: {
+            /**
+             * Format: date-time
+             * @description When they applied.
+             * @example 2026-11-01T10:00:00Z
+             */
+            applied_at?: string;
+            /**
+             * @description How they came.
+             * @example careers_page
+             * @enum {string}
+             */
+            applied_via?: "careers_page" | "recruiter";
+            /**
+             * @description They consent to be kept for future roles, and have not withdrawn it.
+             * @example false
+             */
+            consent_future: boolean;
+            /**
+             * @description The consent to be kept for future roles was withdrawn.
+             * @example false
+             */
+            consent_withdrawn: boolean;
+            /**
+             * @description The CV they gave, as text.
+             * @example Five years in FP&A.
+             */
+            cv?: string;
+            /**
+             * @description The email address they gave.
+             * @example chen.yu@example.com
+             */
+            email?: string;
+            /**
+             * @description False when the link is unknown, expired or revoked, all alike.
+             * @example true
+             */
+            found: boolean;
+            /**
+             * Format: date-time
+             * @description When this link stops working.
+             * @example 2026-12-04T10:00:00Z
+             */
+            link_expires_at?: string;
+            /**
+             * @description The name they gave.
+             * @example Chen Yu
+             */
+            name?: string;
+            /**
+             * Format: date
+             * @description The day their data is due for deletion, six months after the decision (or, for a hire, after the start date); empty while they are progressing or have consented to be kept.
+             * @example 2027-05-02
+             */
+            retention_until?: string;
+            /**
+             * @description The role they applied for.
+             * @example Data scientist
+             */
+            role?: string;
+            /**
+             * @description Where they are.
+             * @example interview
+             * @enum {string}
+             */
+            stage?: "applied" | "screening" | "interview" | "offer" | "hired" | "not_progressing";
+            /**
+             * Format: date-time
+             * @description When that last changed.
+             * @example 2026-11-02T10:00:00Z
+             */
+            stage_at?: string;
         };
         CandidatePassInputBody: {
             /**
@@ -6907,6 +7200,65 @@ export interface components {
              */
             start_date: string;
         };
+        HiringRole: {
+            /** @description How many candidates stand at each stage. */
+            candidates: components["schemas"]["StageCounts"];
+            /**
+             * Format: date
+             * @description The day the post was closed.
+             * @example 2026-12-02
+             */
+            closed_on?: string;
+            /**
+             * @description The team.
+             * @example Engineering
+             */
+            department: string;
+            /**
+             * Format: uuid
+             * @description The requisition.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+             */
+            id: string;
+            /**
+             * @description An Employment Pass or S Pass application is expected.
+             * @example false
+             */
+            pass_needed: boolean;
+            /**
+             * @description Where its job post is, once one is written.
+             * @example published
+             * @enum {string}
+             */
+            post_state?: "draft" | "published" | "closed";
+            /**
+             * Format: date
+             * @description The day the post was published.
+             * @example 2026-11-02
+             */
+            published_on?: string;
+            /**
+             * @description Where the requisition is.
+             * @example approved
+             * @enum {string}
+             */
+            state: "requested" | "approved" | "rejected" | "filled" | "cancelled";
+            /**
+             * Format: date
+             * @description The start date aimed for.
+             * @example 2027-02-01
+             */
+            target_start: string;
+            /**
+             * @description The role.
+             * @example Data scientist
+             */
+            title: string;
+        };
+        HiringRolesOutputBody: {
+            /** @description The requisitions that name the caller as hiring manager, the newest first. */
+            roles: components["schemas"]["HiringRole"][];
+        };
         IR8AParticulars: {
             /**
              * @description The first address line: a real address, never NIL or N.A. (B8).
@@ -6980,6 +7332,23 @@ export interface components {
              * @example The role is about the Mandarin market.
              */
             requirement_note?: string;
+        };
+        Interviewer: {
+            /**
+             * Format: uuid
+             * @description The member.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1a01
+             */
+            member_id: string;
+            /**
+             * @description Their name.
+             * @example Ian Interviewer
+             */
+            name: string;
+        };
+        InterviewersOutputBody: {
+            /** @description The members who hold the Interviewer role today. */
+            interviewers: components["schemas"]["Interviewer"][];
         };
         Item: {
             /**
@@ -8687,6 +9056,44 @@ export interface components {
             mine: components["schemas"]["Goal"][];
             /** @description The teams' goals. */
             team: components["schemas"]["Goal"][];
+        };
+        MyInterview: {
+            /**
+             * Format: uuid
+             * @description The candidate.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01
+             */
+            candidate_id: string;
+            /** @description The scorecard's criteria; empty until the recruiter saves the kit. */
+            criteria: string[];
+            /**
+             * @description The candidate's name.
+             * @example Chen Yu
+             */
+            name: string;
+            /**
+             * Format: uuid
+             * @description The role's requisition.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+             */
+            requisition_id: string;
+            /**
+             * @description The role.
+             * @example Data scientist
+             */
+            requisition_title: string;
+            /** @description The criteria the caller has scored. */
+            scored: string[];
+            /**
+             * @description Where they are on the board.
+             * @example interview
+             * @enum {string}
+             */
+            stage: "applied" | "screening" | "interview" | "offer" | "hired" | "not_progressing";
+        };
+        MyInterviewsOutputBody: {
+            /** @description The candidates assigned to the caller, the latest stage change first. */
+            interviews: components["schemas"]["MyInterview"][];
         };
         MyPayslipsOutputBody: {
             /**
@@ -10606,6 +11013,17 @@ export interface components {
              */
             department: string;
             /**
+             * @description Their name.
+             * @example Mia Manager
+             */
+            hiring_manager?: string;
+            /**
+             * Format: uuid
+             * @description The member who will manage the hire.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1a02
+             */
+            hiring_manager_id?: string;
+            /**
              * Format: uuid
              * @description The requisition.
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
@@ -10698,6 +11116,12 @@ export interface components {
              * @example Engineering
              */
             department: string;
+            /**
+             * Format: uuid
+             * @description The person in the directory, with a sign-in, who will manage the hire and then reads the role's progress as counts by stage under My roles; chosen once, when the requisition is asked for.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1a02
+             */
+            hiring_manager_id?: string;
             /**
              * @description An Employment Pass or S Pass application is expected.
              * @example false
@@ -11870,6 +12294,44 @@ export interface components {
              * @example true
              */
             setup_done: boolean;
+        };
+        StageCounts: {
+            /**
+             * Format: int64
+             * @description Applied.
+             * @example 4
+             */
+            applied: number;
+            /**
+             * Format: int64
+             * @description Hired.
+             * @example 0
+             */
+            hired: number;
+            /**
+             * Format: int64
+             * @description At interview.
+             * @example 1
+             */
+            interview: number;
+            /**
+             * Format: int64
+             * @description Not progressing.
+             * @example 3
+             */
+            not_progressing: number;
+            /**
+             * Format: int64
+             * @description With an offer.
+             * @example 0
+             */
+            offer: number;
+            /**
+             * Format: int64
+             * @description In screening.
+             * @example 2
+             */
+            screening: number;
         };
         TaxHoldInput: {
             /**
@@ -13158,6 +13620,233 @@ export interface operations {
             };
         };
     };
+    revokeCandidateAccessLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The link. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateAccessRevokedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    readCandidateData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateOwnInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateOwnView"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    withdrawCandidateConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateOwnInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateOwnView"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getCandidate: {
         parameters: {
             query?: never;
@@ -13180,6 +13869,188 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Candidate"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCandidateAccessLinks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The candidate. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateAccessLinksOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createCandidateAccessLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The candidate. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateAccessCreateInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateAccessCreated"];
                 };
             };
             /** @description Unauthorized */
@@ -16196,6 +17067,83 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listInterviewers: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewersOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -19787,6 +20735,160 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyHiringRoles: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HiringRolesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyInterviews: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyInterviewsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

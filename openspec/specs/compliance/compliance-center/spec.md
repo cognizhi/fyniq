@@ -153,7 +153,7 @@ Source: PRD-001 §14.7 · Priority S · Phase P2
 #### Scenario: Never a certificate (rev 0.617)
 - **WHEN** readiness is shown
 - **THEN** it says nothing is certified
-- **AND** the Owner, the Finance controller, the Auditor and the DPO can read it
+- **AND** everyone with a right on the Compliance Center can read it
 
 ### Requirement: Control registry as code
 Every control SHALL live in the repository's control registry (`compliance/controls/*.yaml`) with its ID, description, owner, framework mappings, the automated check that proves it, its frequency and the evidence it produces.

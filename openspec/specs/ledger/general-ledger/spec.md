@@ -514,7 +514,7 @@ Source: PRD-001 §8.8 · Priority C · Phase P3
 - **WHEN** eliminations are run
 - **THEN** the intercompany amounts are eliminated
 
-#### Scenario: Both halves (rev 0.623)
+#### Scenario: Both halves (rev 0.625)
 - **WHEN** an entity posts a journal on its intercompany accounts and records it as an intercompany transaction with its counterparty
 - **THEN** the counterparty sees the offer, with no free text, and posts its mirror as a draft in its own books through the journal command and its approvals
 - **AND** a difference between the two sides shows at consolidation and is never plugged

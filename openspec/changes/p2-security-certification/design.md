@@ -48,15 +48,17 @@ A held contact is also refused by erasure and shredding (the PDPA allows keeping
 ## D4. Security assessments (SEC-25)
 
 `security_assessment` (kind `penetration_test`, `vulnerability_assessment` or `other`; the tester; whether independent; scope; dates; summary;
-the report's SHA-256 and where it is kept) and `security_finding` (reference, title, severity, found, due, fixed, retested, or accepted by an
-Owner with a reason). The report itself stays outside Fyniq `[owner to confirm]`: it describes how to break the system, and the register
+the report's SHA-256 and where it is kept), `security_finding` (reference, title, severity, found, due) and `security_finding_step` (fixed, retested,
+or accepted by an Owner with a reason): all three are only ever added (FY362), so a finding's state is its last step. The report itself stays outside Fyniq `[owner to confirm]`: it describes how to break the system, and the register
 needs only to show it exists and has not changed. Not chosen: attaching it as evidence on a document (the evidence store takes a document's
 files, and a report is no document of the books).
 
 - **Due dates** follow CTL-RES-04's SLA (Critical 7 days, High 30) and add Medium 90 and Low 180 `[owner to confirm]`, from the day found.
-- **The control CTL-CHG-12** (verification `security-assessments`): passes while an independent assessment ended within 12 months and no
-  Critical or High finding is open past its due date; overdue 12 months after the last; fails with an overdue finding; not assessed while none
-  is recorded. Before the first external customer it must pass: the gate arrives with `p3-saas-platform` (a planned check naming it).
+- **The control CTL-CHG-12** (the review `security-assessments`, read like the drills' reviews, the installation's own organisation only): signed
+  while an independent assessment ended within 12 months and no Critical or High finding is open past its due day (or unretested 30 days after
+  its fix); due from 30 days before the 12 months end; overdue after them and while a finding is overdue; with none recorded it waits
+  without failing. A review maps to a control's pass or overdue only, so "fails" and "not assessed" of the first draft are overdue and
+  pass-with-a-waiting-note, until the gate of `p3-saas-platform` makes the missing test fail. Before the first external customer it must pass: the gate arrives with `p3-saas-platform` (a planned check naming it).
 - **Writes** are the Owner's (an Administrator would be an Owner's second hand on a row the Owner approves, which the Owner rule forbids without an approval-engine row); the register is read by the Administrator, Controller, Auditor and DPO. A finding moves
   forward only (open, fixed, retested; or accepted), enforced by a guard.
 - The test itself and staging's nightly DAST need a firm and a cloud staging: `[live-verify]`.
@@ -71,6 +73,5 @@ the titles are the standard's text, not an official public page, so the statemen
 
 ## D6. Surfaces
 
-Holds: a tab on Compliance › Data protection (the DPO's page; the plan row says no new screen). Assessments: a tab on Compliance › Controls'
-neighbour page `Security assessments` (one screen, `security-assessments`, inventoried). Readiness: a panel on Compliance › Controls. All
+Holds: a tab on Compliance › Data protection (the DPO's page; the plan row says no new screen). Assessments: a tab on Compliance › Controls (the drills' neighbour). Readiness: a panel on Compliance › Controls. All
 tagged Expert, with help keys, guide pages, knowledge pages and design fragments.

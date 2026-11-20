@@ -1,12 +1,12 @@
 # organisation/multi-entity Specification
 
 ## Purpose
-How legal entities, each its own Fyniq organisation, are linked in a group by the consent of both Owners and consolidated, and how an accounting firm manages many client organisations (rev 0.623: an entity is an organisation, not a level inside one). Derived from PRD-001 §8.20.
+How legal entities, each its own Fyniq organisation, are linked in a group by the consent of both Owners and consolidated, and how an accounting firm manages many client organisations (rev 0.625: an entity is an organisation, not a level inside one). Derived from PRD-001 §8.20.
 
 ## Requirements
 
 ### Requirement: FR-ENT-01 Several legal entities per organisation
-The system SHALL let several legal entities, each an organisation with its own base currency, chart of accounts, tax packs and periods, belong to one group (rev 0.623: an entity is an organisation).
+The system SHALL let several legal entities, each an organisation with its own base currency, chart of accounts, tax packs and periods, belong to one group (rev 0.625: an entity is an organisation).
 
 Source: PRD-001 §8.20 · Priority C · Phase P3
 
@@ -44,7 +44,7 @@ Source: PRD-001 §8.20 · Priority C · Phase P3
 - **THEN** it shows the client organisations they manage
 
 ### Requirement: FR-ENT-04 Groups and the link between organisations
-The system SHALL link organisations in a group only by the consent of both Owners, read-only and narrow, with each side able to end the link at once (rev 0.623).
+The system SHALL link organisations in a group only by the consent of both Owners, read-only and narrow, with each side able to end the link at once (rev 0.625).
 
 Source: PRD-001 §8.20 · Priority C · Phase P3
 
@@ -64,7 +64,7 @@ Source: PRD-001 §8.20 · Priority C · Phase P3
 - **AND** an organisation belongs to one group at a time and a sandbox, a practice or the installation's organisation is never an entity
 
 ### Requirement: FR-ENT-05 Account mapping and translation rates
-The system SHALL map each entity account to an account of the parent's chart and keep the group's own translation rates, a closing and an average per month and currency (rev 0.623).
+The system SHALL map each entity account to an account of the parent's chart and keep the group's own translation rates, a closing and an average per month and currency (rev 0.625).
 
 Source: PRD-001 §8.20 · Priority C · Phase P3
 
@@ -79,7 +79,7 @@ Source: PRD-001 §8.20 · Priority C · Phase P3
 - **AND** a month with no rate blocks the run and the entity's own FX rates are never borrowed
 
 ### Requirement: FR-ENT-06 The consolidation run
-The system SHALL translate each entity's figures into the group currency, eliminate mirror accounts pair by pair and freeze the result, showing every difference and plugging none (rev 0.623).
+The system SHALL translate each entity's figures into the group currency, eliminate mirror accounts pair by pair and freeze the result, showing every difference and plugging none (rev 0.625).
 
 Source: PRD-001 §8.20 · Priority C · Phase P3
 
@@ -99,7 +99,7 @@ Source: PRD-001 §8.20 · Priority C · Phase P3
 - **AND** after a link ends its runs stay marked as link ended
 
 ### Requirement: FR-ENT-07 Accountant-firm mode and the practice dashboard
-The system SHALL let a firm's Owner invite clients that accept by their own Owner, and show the firm's people a dashboard of counts without money for the clients where they already hold a role (rev 0.623).
+The system SHALL let a firm's Owner invite clients that accept by their own Owner, and show the firm's people a dashboard of counts without money for the clients where they already hold a role (rev 0.625).
 
 Source: PRD-001 §8.20 · Priority C · Phase P3
 

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "on": {
+      "description": "The day it happened.",
+      "examples": [
+        "2026-11-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reason": {
+      "description": "An acceptance's reason.",
+      "examples": [
+        "The affected page is retired next month"
+      ],
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-12T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "description": "Who recorded it, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "step": {
+      "description": "fixed, then retested; or accepted by an Owner, with a reason.",
+      "enum": [
+        "fixed",
+        "retested",
+        "accepted"
+      ],
+      "examples": [
+        "fixed"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "step",
+    "on",
+    "recorded_by",
+    "recorded_at"
+  ],
+  "title": "FindingStepView",
+  "type": "object"
+}

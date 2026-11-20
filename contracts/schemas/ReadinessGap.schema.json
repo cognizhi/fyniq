@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "control": {
+      "description": "What the control holds.",
+      "examples": [
+        "Security Command Center high and critical findings fixed within SLA"
+      ],
+      "type": "string"
+    },
+    "detail": {
+      "description": "In plain words, why.",
+      "examples": [
+        "The verification has not run for this organisation yet."
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The control's ID.",
+      "examples": [
+        "CTL-RES-04"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "Why it is a gap: it fails, is overdue, or is not assessed yet.",
+      "enum": [
+        "fail",
+        "overdue",
+        "not_assessed"
+      ],
+      "examples": [
+        "not_assessed"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "control",
+    "status",
+    "detail"
+  ],
+  "title": "ReadinessGap",
+  "type": "object"
+}

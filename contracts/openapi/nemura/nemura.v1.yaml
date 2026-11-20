@@ -1080,6 +1080,103 @@ components:
         - applied_at
         - consent_future
       type: object
+    CandidateAccessCreateInputBody:
+      additionalProperties: false
+      properties:
+        days:
+          description: "How many days the link works: 1 to 30, 14 by default."
+          examples:
+            - 14
+          format: int64
+          maximum: 30
+          minimum: 1
+          type: integer
+      type: object
+    CandidateAccessCreated:
+      additionalProperties: false
+      properties:
+        expires_at:
+          description: When it stops working.
+          examples:
+            - "2026-12-04T10:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: The link.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01
+          format: uuid
+          type: string
+        path:
+          description: "The page the candidate opens; the token goes after a # so it is never sent in a URL."
+          examples:
+            - /my-application
+          type: string
+        token:
+          description: "The token, shown once; the candidate opens the careers site's /my-application page and pastes it, or follows a link that carries it after the #."
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d0001.xxxxxxxxxx
+          type: string
+      required:
+        - id
+        - token
+        - expires_at
+        - path
+      type: object
+    CandidateAccessLink:
+      additionalProperties: false
+      properties:
+        created_at:
+          description: When it was made.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        expires_at:
+          description: When it stops working.
+          examples:
+            - "2026-12-04T10:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: The link.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01
+          format: uuid
+          type: string
+        revoked_at:
+          description: When it was revoked.
+          examples:
+            - "2026-11-21T10:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - id
+        - created_at
+        - expires_at
+      type: object
+    CandidateAccessLinksOutputBody:
+      additionalProperties: false
+      properties:
+        links:
+          description: The links made for the candidate, the newest first, with no token.
+          items:
+            $ref: "#/components/schemas/CandidateAccessLink"
+          type: array
+      required:
+        - links
+      type: object
+    CandidateAccessRevokedOutputBody:
+      additionalProperties: false
+      properties:
+        revoked:
+          description: The link no longer works.
+          examples:
+            - true
+          type: boolean
+      required:
+        - revoked
+      type: object
     CandidateAssignInputBody:
       additionalProperties: false
       properties:
@@ -1227,6 +1324,106 @@ components:
           type: string
       required:
         - body
+      type: object
+    CandidateOwnInputBody:
+      additionalProperties: false
+      properties:
+        token:
+          description: The token of the link the hiring team gave the candidate. It is in the body so it is never in a URL or a log.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d0001.xxxxxxxxxx
+          maxLength: 200
+          minLength: 8
+          type: string
+      required:
+        - token
+      type: object
+    CandidateOwnView:
+      additionalProperties: false
+      properties:
+        applied_at:
+          description: When they applied.
+          examples:
+            - "2026-11-01T10:00:00Z"
+          format: date-time
+          type: string
+        applied_via:
+          description: How they came.
+          enum:
+            - careers_page
+            - recruiter
+          examples:
+            - careers_page
+          type: string
+        consent_future:
+          description: They consent to be kept for future roles, and have not withdrawn it.
+          examples:
+            - false
+          type: boolean
+        consent_withdrawn:
+          description: The consent to be kept for future roles was withdrawn.
+          examples:
+            - false
+          type: boolean
+        cv:
+          description: The CV they gave, as text.
+          examples:
+            - Five years in FP&A.
+          type: string
+        email:
+          description: The email address they gave.
+          examples:
+            - chen.yu@example.com
+          type: string
+        found:
+          description: False when the link is unknown, expired or revoked, all alike.
+          examples:
+            - true
+          type: boolean
+        link_expires_at:
+          description: When this link stops working.
+          examples:
+            - "2026-12-04T10:00:00Z"
+          format: date-time
+          type: string
+        name:
+          description: The name they gave.
+          examples:
+            - Chen Yu
+          type: string
+        retention_until:
+          description: The day their data is due for deletion, six months after the decision (or, for a hire, after the start date); empty while they are progressing or have consented to be kept.
+          examples:
+            - "2027-05-02"
+          format: date
+          type: string
+        role:
+          description: The role they applied for.
+          examples:
+            - Data scientist
+          type: string
+        stage:
+          description: Where they are.
+          enum:
+            - applied
+            - screening
+            - interview
+            - offer
+            - hired
+            - not_progressing
+          examples:
+            - interview
+          type: string
+        stage_at:
+          description: When that last changed.
+          examples:
+            - "2026-11-02T10:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - found
+        - consent_future
+        - consent_withdrawn
       type: object
     CandidatePassInputBody:
       additionalProperties: false
@@ -4203,6 +4400,91 @@ components:
         - start_date
         - pass_needed
       type: object
+    HiringRole:
+      additionalProperties: false
+      properties:
+        candidates:
+          $ref: "#/components/schemas/StageCounts"
+          description: How many candidates stand at each stage.
+        closed_on:
+          description: The day the post was closed.
+          examples:
+            - "2026-12-02"
+          format: date
+          type: string
+        department:
+          description: The team.
+          examples:
+            - Engineering
+          type: string
+        id:
+          description: The requisition.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+          format: uuid
+          type: string
+        pass_needed:
+          description: An Employment Pass or S Pass application is expected.
+          examples:
+            - false
+          type: boolean
+        post_state:
+          description: Where its job post is, once one is written.
+          enum:
+            - draft
+            - published
+            - closed
+          examples:
+            - published
+          type: string
+        published_on:
+          description: The day the post was published.
+          examples:
+            - "2026-11-02"
+          format: date
+          type: string
+        state:
+          description: Where the requisition is.
+          enum:
+            - requested
+            - approved
+            - rejected
+            - filled
+            - cancelled
+          examples:
+            - approved
+          type: string
+        target_start:
+          description: The start date aimed for.
+          examples:
+            - "2027-02-01"
+          format: date
+          type: string
+        title:
+          description: The role.
+          examples:
+            - Data scientist
+          type: string
+      required:
+        - id
+        - title
+        - department
+        - state
+        - target_start
+        - pass_needed
+        - candidates
+      type: object
+    HiringRolesOutputBody:
+      additionalProperties: false
+      properties:
+        roles:
+          description: The requisitions that name the caller as hiring manager, the newest first.
+          items:
+            $ref: "#/components/schemas/HiringRole"
+          type: array
+      required:
+        - roles
+      type: object
     IR8AParticulars:
       additionalProperties: false
       properties:
@@ -4311,6 +4593,35 @@ components:
         - questions
         - criteria
         - findings
+      type: object
+    Interviewer:
+      additionalProperties: false
+      properties:
+        member_id:
+          description: The member.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1a01
+          format: uuid
+          type: string
+        name:
+          description: Their name.
+          examples:
+            - Ian Interviewer
+          type: string
+      required:
+        - member_id
+        - name
+      type: object
+    InterviewersOutputBody:
+      additionalProperties: false
+      properties:
+        interviewers:
+          description: The members who hold the Interviewer role today.
+          items:
+            $ref: "#/components/schemas/Interviewer"
+          type: array
+      required:
+        - interviewers
       type: object
     Item:
       additionalProperties: false
@@ -6775,6 +7086,73 @@ components:
         - team
         - mine
         - kpis
+      type: object
+    MyInterview:
+      additionalProperties: false
+      properties:
+        candidate_id:
+          description: The candidate.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01
+          format: uuid
+          type: string
+        criteria:
+          description: The scorecard's criteria; empty until the recruiter saves the kit.
+          items:
+            type: string
+          type: array
+        name:
+          description: The candidate's name.
+          examples:
+            - Chen Yu
+          type: string
+        requisition_id:
+          description: The role's requisition.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d3a01
+          format: uuid
+          type: string
+        requisition_title:
+          description: The role.
+          examples:
+            - Data scientist
+          type: string
+        scored:
+          description: The criteria the caller has scored.
+          items:
+            type: string
+          type: array
+        stage:
+          description: Where they are on the board.
+          enum:
+            - applied
+            - screening
+            - interview
+            - offer
+            - hired
+            - not_progressing
+          examples:
+            - interview
+          type: string
+      required:
+        - candidate_id
+        - name
+        - stage
+        - requisition_id
+        - requisition_title
+        - criteria
+        - scored
+      type: object
+    MyInterviewsOutputBody:
+      additionalProperties: false
+      properties:
+        interviews:
+          description: The candidates assigned to the caller, the latest stage change first.
+          items:
+            $ref: "#/components/schemas/MyInterview"
+          type: array
+      required:
+        - interviews
       type: object
     MyPayslipsOutputBody:
       additionalProperties: false
@@ -9531,6 +9909,17 @@ components:
           examples:
             - Engineering
           type: string
+        hiring_manager:
+          description: Their name.
+          examples:
+            - Mia Manager
+          type: string
+        hiring_manager_id:
+          description: The member who will manage the hire.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1a02
+          format: uuid
+          type: string
         id:
           description: The requisition.
           examples:
@@ -9656,6 +10045,12 @@ components:
             - Engineering
           maxLength: 120
           minLength: 1
+          type: string
+        hiring_manager_id:
+          description: The person in the directory, with a sign-in, who will manage the hire and then reads the role's progress as counts by stage under My roles; chosen once, when the requisition is asked for.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1a02
+          format: uuid
           type: string
         pass_needed:
           description: An Employment Pass or S Pass application is expected.
@@ -11352,6 +11747,53 @@ components:
         - providers
         - setup_done
       type: object
+    StageCounts:
+      additionalProperties: false
+      properties:
+        applied:
+          description: Applied.
+          examples:
+            - 4
+          format: int64
+          type: integer
+        hired:
+          description: Hired.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        interview:
+          description: At interview.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        not_progressing:
+          description: Not progressing.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        offer:
+          description: With an offer.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        screening:
+          description: In screening.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - applied
+        - screening
+        - interview
+        - offer
+        - hired
+        - not_progressing
+      type: object
     TaxHoldInput:
       additionalProperties: false
       properties:
@@ -12704,6 +13146,181 @@ paths:
       summary: Approve or refuse a bank account change
       tags:
         - People
+  /v1/candidate-access-links/{id}/revocation:
+    post:
+      description: PRD-002 NM-REC-05 (rev 0.74). A link stops working at once; it is revoked once. The Recruiter, the HR administrator and the Owner. It is audited.
+      operationId: revokeCandidateAccessLink
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The link.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The link.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d6a01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateAccessRevokedOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Revoke a candidate's access link
+      tags:
+        - Hiring
+  /v1/candidate-data:
+    post:
+      description: "PRD-002 NM-REC-05 (rev 0.74). With no sign-in: the token of a link the hiring team gave a candidate. It shows what they gave, the role, where they stand and whether they consent to be kept for future roles, never the team's notes or scores; a link that is unknown, expired or revoked answers found false, all alike. The token is in the body so it is never in a URL or a log. Counted against shared limits (NM_RATE_LIMITED); every look-up is audited without the data. It is on the never-list for the AI and MCP surfaces."
+      operationId: readCandidateData
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateOwnInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateOwnView"
+          description: OK
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Too Many Requests
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Read what a candidate's access link shows
+      tags:
+        - Hiring
+  /v1/candidate-data/consent-withdrawal:
+    post:
+      description: "PRD-002 NM-REC-05 (rev 0.74). With no sign-in: a candidate with a live link withdraws their consent to be kept for future roles, once and only after it was given. Their data is then listed for deletion six months from the withdrawal if they are not progressing. Counted against the shared limits; audited. It is on the never-list for the AI and MCP surfaces."
+      operationId: withdrawCandidateConsent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateOwnInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateOwnView"
+          description: OK
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Too Many Requests
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Withdraw the consent to be kept for future roles, as the candidate
+      tags:
+        - Hiring
   /v1/candidates/{id}:
     get:
       description: PRD-002 NM-REC-04. The profile with the CV, every move, the hiring team's notes (never an interviewer's view), the scores (an interviewer's own only) and the interviewers assigned. The hiring team, and an interviewer for a candidate assigned to them; any other is told there is none. It changes nothing.
@@ -12777,6 +13394,161 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Service Unavailable
       summary: A candidate
+      tags:
+        - Hiring
+  /v1/candidates/{id}/access-links:
+    get:
+      description: PRD-002 NM-REC-05 (rev 0.74). The links made for the candidate, the newest first, with when each expires or was revoked and never its token. The Recruiter, the HR administrator and the Owner. It changes nothing.
+      operationId: listCandidateAccessLinks
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The candidate.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The candidate.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateAccessLinksOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The links made for a candidate
+      tags:
+        - Hiring
+    post:
+      description: "PRD-002 NM-REC-05 (rev 0.74): an access request under the PDPA. The hiring team makes a link that works for 1 to 30 days (14 by default); the token is shown once and only its hash is kept. With it the candidate sees what they gave and where they stand, never the team's notes or scores, and can withdraw the consent to be kept for future roles. The Recruiter, the HR administrator and the Owner. It is audited and is on the never-list for the AI and MCP surfaces."
+      operationId: createCandidateAccessLink
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The candidate.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The candidate.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d4a01
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateAccessCreateInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateAccessCreated"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Make a link for a candidate to look at their own data
       tags:
         - Hiring
   /v1/candidates/{id}/future-consent:
@@ -15334,6 +16106,65 @@ paths:
       summary: What this service is
       tags:
         - Platform
+  /v1/interviewers:
+    get:
+      description: PRD-002 NM-REC-04 (rev 0.74). The members who hold the Interviewer role today, for the page that assigns them to a candidate. The Recruiter, the HR administrator and the Owner. It changes nothing.
+      operationId: listInterviewers
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewersOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The members who can be assigned to interview
+      tags:
+        - Hiring
   /v1/leave-calendar:
     get:
       description: "Shows who is away in a month: the caller's own leave, their reports' with its type for a line manager, everyone's for the people team, and the others in their team (the same manager or department) as Away with no type. Sick leave is shown as such to the person and to the HR officer and the HR administrator only, and as Away to everyone else. Each person's public holidays are those they observe by their working pattern. It changes nothing."
@@ -18505,6 +19336,124 @@ paths:
       summary: File a grievance
       tags:
         - Grievances
+  /v1/me/hiring-roles:
+    get:
+      description: "PRD-002 NM-REC-01 (rev 0.74). A line manager's own roles: the requisitions that name them as hiring manager, each with where it stands, its post's dates and how many candidates are at each stage. It shows no salary and no candidate: the database returns nothing else. A line manager, or the hiring team. It changes nothing and is on the never-list for the AI and MCP surfaces."
+      operationId: listMyHiringRoles
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HiringRolesOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The roles you are hiring for
+      tags:
+        - Hiring
+  /v1/me/interviews:
+    get:
+      description: "PRD-002 NM-REC-04 (rev 0.74). An interviewer's own page: the candidates assigned to them, with the role, the stage, the scorecard's criteria and the criteria they have scored. The database returns only the candidates assigned to the caller. An interviewer. It changes nothing and is on the never-list for the AI and MCP surfaces."
+      operationId: listMyInterviews
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyInterviewsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: The candidates assigned to you to interview
+      tags:
+        - Hiring
   /v1/me/leave-requests:
     post:
       description: "Asks for leave for the signed-in person: the days are counted and reserved in the ledger in the same transaction, a request beyond the balance is refused with the days left (NM_LEAVE_BALANCE), and one that overlaps leave already asked for is refused (NM_LEAVE_CONFLICT). The approver is told. It is audited."

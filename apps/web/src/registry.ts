@@ -278,6 +278,10 @@ export const actions = [
   { kind: "action", id: "compliance.restore-drills", mode: "expert", help: "compliance.restore-drills", guide: "compliance.controls#restore-drills" },
   { kind: "action", id: "restore-drills.checks", mode: "expert", help: "restore-drills.checks", guide: "compliance.controls#restore-drills" },
   // The heartbeat drill register, a tab of Compliance › Controls (NFR-OBS-02, CTL-RES-05): Expert, as Controls is.
+  { kind: "action", id: "compliance.security-assessments", mode: "expert", help: "compliance.security-assessments", guide: "compliance.controls#security-assessments" },
+  { kind: "action", id: "compliance.readiness", mode: "expert", help: "compliance.readiness", guide: "compliance.controls#readiness-by-framework" },
+  { kind: "action", id: "compliance.assessment-record", mode: "expert", help: "compliance.assessment-record", guide: "compliance.controls#security-assessments" },
+  { kind: "action", id: "compliance.finding-step", mode: "expert", help: "compliance.finding-step", guide: "compliance.controls#security-assessments" },
   { kind: "action", id: "compliance.heartbeat-drills", mode: "expert", help: "compliance.heartbeat-drills", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "heartbeat-drills.minutes", mode: "expert", help: "heartbeat-drills.minutes", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "shell.saved", mode: "basic", help: "shell.saved", guide: "home.overview#favourites-and-saved-views" },
