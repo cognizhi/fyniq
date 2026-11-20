@@ -165,6 +165,8 @@ var Operations = map[string]Operation{
 	"getStatutoryValues":                   {ID: "getStatutoryValues", Method: "GET", Path: "/v1/statutory-values", Summary: "Get the statutory values in force on a day", PathParams: nil, Query: []string{"name", "on", "pack"}, Body: false, Scopes: []string{"fyniq.read.compliance"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getSubscriptionContract":              {ID: "getSubscriptionContract", Method: "GET", Path: "/v1/subscription-contracts/{contract_id}", Summary: "Read a subscription contract with its amendments and schedule", PathParams: []string{"contract_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.sales", "fyniq.write.sales"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getSupplierRefund":                    {ID: "getSupplierRefund", Method: "GET", Path: "/v1/supplier-refunds/{refund_id}", Summary: "Get a refund from a supplier", PathParams: []string{"refund_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.purchases", "fyniq.write.purchases"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
+	"getTaxWorkingPaper":                   {ID: "getTaxWorkingPaper", Method: "GET", Path: "/v1/tax/working-papers/{paper_id}", Summary: "Get a stored tax working paper", PathParams: []string{"paper_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.compliance"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
+	"getTaxWorkingPaperEvidence":           {ID: "getTaxWorkingPaperEvidence", Method: "GET", Path: "/v1/tax/working-papers/{paper_id}/evidence/{evidence_id}", Summary: "Get a tax working paper's file", PathParams: []string{"paper_id", "evidence_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.compliance"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getTopExpenses":                       {ID: "getTopExpenses", Method: "GET", Path: "/v1/reports/top-expenses", Summary: "Get the top expenses", PathParams: nil, Query: []string{"as_at_revision", "from", "to"}, Body: false, Scopes: []string{"fyniq.read.reports"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getWriteOff":                          {ID: "getWriteOff", Method: "GET", Path: "/v1/write-offs/{write_off_id}", Summary: "Get a write-off", PathParams: []string{"write_off_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.sales", "fyniq.write.sales"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"getYearEnd":                           {ID: "getYearEnd", Method: "GET", Path: "/v1/periods/{period_id}/year-end", Summary: "Get the year end of a period's financial year", PathParams: []string{"period_id"}, Query: nil, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: false, Preview: false, IdempotencyKey: false, IfMatch: false},
@@ -247,6 +249,8 @@ var Operations = map[string]Operation{
 	"listStatutoryPacks":                   {ID: "listStatutoryPacks", Method: "GET", Path: "/v1/statutory-packs", Summary: "List the statutory pack versions", PathParams: nil, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.compliance"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listSubscriptionContractEvidence":     {ID: "listSubscriptionContractEvidence", Method: "GET", Path: "/v1/subscription-contracts/{contract_id}/evidence", Summary: "List a subscription contract's files", PathParams: []string{"contract_id"}, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.sales", "fyniq.write.sales"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listSubscriptionContracts":            {ID: "listSubscriptionContracts", Method: "GET", Path: "/v1/subscription-contracts", Summary: "List subscription contracts", PathParams: nil, Query: []string{"contact_id", "cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.sales", "fyniq.write.sales"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
+	"listTaxWorkingPaperEvidence":          {ID: "listTaxWorkingPaperEvidence", Method: "GET", Path: "/v1/tax/working-papers/{paper_id}/evidence", Summary: "List a tax working paper's files", PathParams: []string{"paper_id"}, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.compliance"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
+	"listTaxWorkingPapers":                 {ID: "listTaxWorkingPapers", Method: "GET", Path: "/v1/tax/working-papers", Summary: "List the stored tax working papers", PathParams: nil, Query: []string{"cursor", "financial_year_end", "page_size"}, Body: false, Scopes: []string{"fyniq.read.compliance"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listUnregisteredAssetLines":           {ID: "listUnregisteredAssetLines", Method: "GET", Path: "/v1/fixed-assets/unregistered", Summary: "List purchases not in the register yet", PathParams: nil, Query: []string{"cursor", "document_id", "page_size"}, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listWaitingReversals":                 {ID: "listWaitingReversals", Method: "GET", Path: "/v1/journals/waiting-reversals", Summary: "List the automatic reversals that wait", PathParams: nil, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.accounting", "fyniq.write.accounting"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
 	"listWithholdingDecisions":             {ID: "listWithholdingDecisions", Method: "GET", Path: "/v1/contacts/{contact_id}/withholding-decisions", Summary: "List a supplier's withholding decisions", PathParams: []string{"contact_id"}, Query: []string{"cursor", "page_size"}, Body: false, Scopes: []string{"fyniq.read.purchases", "fyniq.write.purchases"}, Paged: true, Preview: false, IdempotencyKey: false, IfMatch: false},
@@ -1142,6 +1146,16 @@ func (c *Client) GetSupplierRefund(ctx context.Context, refundID string, opts ..
 	return c.Do(ctx, Operations["getSupplierRefund"], []string{refundID}, nil, opts)
 }
 
+// GetTaxWorkingPaper: Get a stored tax working paper (GET /v1/tax/working-papers/{paper_id}; scopes fyniq.read.compliance).
+func (c *Client) GetTaxWorkingPaper(ctx context.Context, paperID string, opts ...CallOption) (*Response, error) {
+	return c.Do(ctx, Operations["getTaxWorkingPaper"], []string{paperID}, nil, opts)
+}
+
+// GetTaxWorkingPaperEvidence: Get a tax working paper's file (GET /v1/tax/working-papers/{paper_id}/evidence/{evidence_id}; scopes fyniq.read.compliance).
+func (c *Client) GetTaxWorkingPaperEvidence(ctx context.Context, paperID string, evidenceID string, opts ...CallOption) (*Response, error) {
+	return c.Do(ctx, Operations["getTaxWorkingPaperEvidence"], []string{paperID, evidenceID}, nil, opts)
+}
+
 // GetTopExpenses: Get the top expenses (GET /v1/reports/top-expenses; scopes fyniq.read.reports).
 func (c *Client) GetTopExpenses(ctx context.Context, opts ...CallOption) (*Response, error) {
 	return c.Do(ctx, Operations["getTopExpenses"], []string{}, nil, opts)
@@ -1550,6 +1564,16 @@ func (c *Client) ListSubscriptionContractEvidence(ctx context.Context, contractI
 // ListSubscriptionContracts: List subscription contracts (GET /v1/subscription-contracts; scopes fyniq.read.sales, fyniq.write.sales).
 func (c *Client) ListSubscriptionContracts(ctx context.Context, opts ...CallOption) (*Response, error) {
 	return c.Do(ctx, Operations["listSubscriptionContracts"], []string{}, nil, opts)
+}
+
+// ListTaxWorkingPaperEvidence: List a tax working paper's files (GET /v1/tax/working-papers/{paper_id}/evidence; scopes fyniq.read.compliance).
+func (c *Client) ListTaxWorkingPaperEvidence(ctx context.Context, paperID string, opts ...CallOption) (*Response, error) {
+	return c.Do(ctx, Operations["listTaxWorkingPaperEvidence"], []string{paperID}, nil, opts)
+}
+
+// ListTaxWorkingPapers: List the stored tax working papers (GET /v1/tax/working-papers; scopes fyniq.read.compliance).
+func (c *Client) ListTaxWorkingPapers(ctx context.Context, opts ...CallOption) (*Response, error) {
+	return c.Do(ctx, Operations["listTaxWorkingPapers"], []string{}, nil, opts)
 }
 
 // ListUnregisteredAssetLines: List purchases not in the register yet (GET /v1/fixed-assets/unregistered; scopes fyniq.read.accounting, fyniq.write.accounting).

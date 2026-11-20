@@ -473,6 +473,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerInvoiceNow(a)
 	registerTaxFilings(a)
 	registerReliefClaims(a)
+	registerTaxPapers(a)
 	registerCalendar(a)
 	registerForecasts(a)
 	registerBudgets(a)

@@ -1163,6 +1163,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/tax/bad-debt-relief/claims/{claim_id}` (getBadDebtReliefClaim): Get a claim of GST bad debt relief
 - `POST /v1/tax/bad-debt-relief/claims/{claim_id}/void` (voidBadDebtReliefClaim): Void a claim of GST bad debt relief
 - `POST /v1/tax/working-paper` (workTaxPaper): Work out a financial year's tax-adjusted profit
+- `GET /v1/tax/working-papers` (listTaxWorkingPapers): List the stored tax working papers
+- `POST /v1/tax/working-papers` (createTaxWorkingPaper): Draft a tax working paper
+- `GET /v1/tax/working-papers/{paper_id}` (getTaxWorkingPaper): Get a stored tax working paper
+- `PUT /v1/tax/working-papers/{paper_id}` (replaceTaxWorkingPaper): Change a drafted tax working paper
+- `GET /v1/tax/working-papers/{paper_id}/evidence` (listTaxWorkingPaperEvidence): List a tax working paper's files
+- `POST /v1/tax/working-papers/{paper_id}/evidence` (addTaxWorkingPaperEvidence): Attach what supports a tax working paper's adjustments
+- `GET /v1/tax/working-papers/{paper_id}/evidence/{evidence_id}` (getTaxWorkingPaperEvidence): Get a tax working paper's file
+- `DELETE /v1/tax/working-papers/{paper_id}/evidence/{evidence_id}` (removeTaxWorkingPaperEvidence): Remove a file from a drafted tax working paper
+- `POST /v1/tax/working-papers/{paper_id}/record` (recordTaxWorkingPaper): Record a tax working paper
 - `GET /v1/team-mode` (getTeamMode): Get the team mode
 - `PATCH /v1/team-mode` (switchTeamMode): Ask to switch the team mode
 - `GET /v1/tenant-export-downloads/{token}` (getTenantExportDownload): Save the full export through its link

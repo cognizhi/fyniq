@@ -10,7 +10,8 @@
 
 - [x] 2.2 The form selector and the ECI and filing deadlines (D2). `// req: FR-TAX-06`
   (Built: `pack.FilingForm` and `sg-tax-filings@2026.1`'s limits; the deadlines are `sg-deadlines`'s. The thresholds are quoted from IRAS's overview page as a search returned its text on 20 Nov 2026: read the page again at the next review.)
-- [ ] 2.3 Store, API, matrix rows. `// req: FR-TAX-06`, `// req: QA-SEC-03`
+- [x] 2.3 Store, API, matrix rows. `// req: FR-TAX-06`, `// req: QA-SEC-03`
+  (Built, rev 0.610, 21 Nov 2026: the document `tax_working_paper` (migration 001122) so the evidence table can attach, `taxfilings.Stored` (draft, revise, record with the figures kept, evidence required when there are adjustments), nine operations with matrix rows (`TestATaxWorkingPaperKeepsItsAdjustmentsWithEvidenceAndIsRecorded`), and the Kept papers section of the page. **Left of 2.4:** the ECI and Form C-S data pack.)
 - [ ] 2.4 Screen `filing-packs`. `// req: QA-UI-05`
 
 ## 3. Bad-debt relief

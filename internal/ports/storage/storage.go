@@ -695,6 +695,9 @@ const (
 	DocumentWriteOff DocumentType = "write_off"
 	// DocumentBadDebtRelief is a claim of GST bad debt relief for a posted bad-debt write-off (FR-AR-11, rev 0.609): made and posted at once, never edited, undone by a reversal.
 	DocumentBadDebtRelief DocumentType = "bad_debt_relief"
+	// DocumentTaxWorkingPaper is a financial year's tax-adjusted profit working paper as the tax agent keeps it: the adjustments with their reasons, a draft to attach evidence to, then recorded
+	// with the figures it worked out (FR-TAX-06, rev 0.608).
+	DocumentTaxWorkingPaper DocumentType = "tax_working_paper"
 	// DocumentStatement is a statement of account sent to a customer (FR-AR-08; p1-sales task 7.2): what it said, kept
 	// as it was sent. It posts nothing and is never reversed; posted is sent.
 	DocumentStatement DocumentType = "statement"

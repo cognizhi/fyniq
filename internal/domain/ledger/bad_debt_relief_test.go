@@ -87,6 +87,21 @@ func TestTheBadDebtReliefRuleRefusesWhatCannotPost(t *testing.T) {
 	if _, err := PostBadDebtRelief(bad, s); !slices.Equal(codes(err), []string{CodePaymentAmount}) || !strings.Contains(err.Error(), "accounted for in SGD") {
 		t.Errorf("output tax in another currency: %v", err)
 	}
+	// the claim is not credited to the accounts the rule posts to by itself, and its memo is at most MaxMemo characters
+	for _, a := range []Account{gstControl, deferredRev} {
+		if _, err := PostBadDebtRelief(relief(t, sgd, "0.90", "10.90", "0.00", "10.00", "0.00", a), s); !slices.Equal(codes(err), []string{CodeRuleAccount}) {
+			t.Errorf("a claim credited to %s: %v", a.Code, err)
+		}
+	}
+	long := relief(t, sgd, "0.90", "10.90", "0.00", "10.00", "0.00", software)
+	long.Memo = strings.Repeat("x", MaxMemo)
+	if _, err := PostBadDebtRelief(long, s); err != nil {
+		t.Errorf("a memo of %d characters: %v", MaxMemo, err)
+	}
+	long.Memo += "x"
+	if _, err := PostBadDebtRelief(long, s); !slices.Equal(codes(err), []string{CodeTooLong}) {
+		t.Errorf("a memo of %d characters: %v", MaxMemo+1, err)
+	}
 	noGST := selling()
 	delete(noGST.Accounts, gstControl.ID)
 	if _, err := PostBadDebtRelief(relief(t, sgd, "0.90", "10.90", "0.00", "10.00", "0.00", software), noGST); !slices.Equal(codes(err), []string{CodeSystemRole}) {

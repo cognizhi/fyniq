@@ -93,3 +93,34 @@ describe("the bad debt relief queue", () => {
     expect(screen.queryByRole("button", { name: /Claim relief/ })).toBeNull();
   });
 });
+
+// req: FR-TAX-06
+// req: FR-DOC-05
+describe("the kept tax working paper", () => {
+  it("keeps the adjustments as a draft, shows the draft with its evidence and records it; axe finds nothing", async () => {
+    const draft = { id: "p-1", status: "draft", version: 1, evidence: 1, checks: [], paper: { financial_year_end: "2026-12-31", scheme: "pte", adjustments: [{ kind: "non_deductible", amount: "400.00", reason: "Fines" }] },
+      figures: { ...paper, tax_payable_rounded: "59.50" } };
+    const seen = answer({
+      "GET /v1/statutory-packs/updates": { status: 200, body: { items: [] } },
+      "GET /v1/tax/working-papers": { status: 200, body: { items: [draft] } },
+      "GET /v1/tax/working-papers/p-1/evidence": { status: 200, body: { items: [] } },
+      "POST /v1/tax/working-papers": { status: 201, body: draft },
+      "POST /v1/tax/working-papers/p-1/record": { status: 200, body: { ...draft, status: "recorded" } },
+    });
+    renderPage(FilingPack, { path: "/compliance/filing-packs", route: "/compliance/filing-packs", session: taxAgent });
+    expect(await screen.findByText(/Year ending 2026-12-31/)).toBeTruthy();
+    expect(screen.getByText(/tax payable S\$59.50/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Financial year ends"), { target: { value: "2026-12-31" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add an adjustment" }));
+    fireEvent.change(screen.getByLabelText("Adjustment 1 amount (negative takes off)"), { target: { value: "400.00" } });
+    fireEvent.change(screen.getByLabelText("Adjustment 1 reason"), { target: { value: "Fines" } });
+    fireEvent.click(screen.getByRole("button", { name: "Keep as a draft paper" }));
+    expect(await screen.findByText(/Kept as a draft for the year ending 2026-12-31/)).toBeTruthy();
+    expect(seen.find((s) => s.method === "POST" && s.path === "/v1/tax/working-papers")?.body).toEqual({ financial_year_end: "2026-12-31", scheme: "pte", cash_grant_eligible: false,
+      adjustments: [{ kind: "non_deductible", amount: "400.00", reason: "Fines" }] });
+    await noViolations(document.body);
+    fireEvent.click(screen.getByRole("button", { name: "Record the paper for the year ending 2026-12-31" }));
+    expect(await screen.findByText(/Recorded: the paper for the year ending 2026-12-31/)).toBeTruthy();
+    expect(seen.some((s) => s.method === "POST" && s.path === "/v1/tax/working-papers/p-1/record")).toBe(true);
+  });
+});
