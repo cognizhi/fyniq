@@ -309,3 +309,72 @@ func TestTheProjectionOnlyNarrowsAnApproversScopeInTheAPIToo(t *testing.T) {
 		t.Errorf("an unscoped role was narrowed: %+v", got)
 	}
 }
+
+// Unlinking settles work in flight first, then ends (PRD-001 FR-PPL-16): an approved unlink leaves the link unlinking while events for Nemura wait; finishing refuses with PPL-31 and the counts (never a name or
+// a figure) until nothing is in flight, refuses a link that is not unlinking, and then ends the link at its epoch (a later link starts one higher); the page's answer shows what is in flight.
+// part of FR-PPL-16 (the forms are the page's)
+// asvs: V8.2.1, V8.3.1
+func TestFinishingAnUnlinkWaitsForWorkInFlightAndThenEndsTheLink(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	ctx := context.Background()
+	admin := e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{authz.Administrator}})
+	finish := func() response {
+		return e.call(http.MethodPost, "/v1/people-link/unlink/finish", admin, nil, "Idempotency-Key", uuid.NewString())
+	}
+	if r := finish(); r.Status != http.StatusConflict && r.Status != http.StatusUnprocessableEntity && r.problemCode() != storage.CodePeopleLink {
+		t.Errorf("finishing a link that is not unlinking: %d %s", r.Status, r.Raw)
+	}
+	if err := e.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		l, err := u.PeopleLinks().Live(ctx)
+		if err != nil {
+			return err
+		}
+		_, err = u.PeopleLinks().SetState(ctx, l.ID, l.Version, storage.LinkUnlinking, l.ClientID, e.clock.Now())
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	r := finish() // the mapping's event for Nemura waits in the outbox
+	if r.problemCode() != CodeLinkInFlight || !strings.Contains(r.Raw, "1 wait of events") {
+		t.Fatalf("finishing with events waiting: %d %s", r.Status, r.Raw)
+	}
+	if got := e.call(http.MethodGet, "/v1/people-link", admin, nil); got.Status != http.StatusOK || got.Body["in_flight"] == nil || got.str("state") != "unlinking" {
+		t.Errorf("the page's answer while unlinking: %d %s", got.Status, got.Raw)
+	}
+	// The events go out (the worker finishes each), and the link ends.
+	for i := 0; i < 50; i++ {
+		var more bool
+		if err := e.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			row, err := u.Outbox().Waiting(ctx, linksend.Kind)
+			if err != nil || row == nil {
+				return err
+			}
+			more = true
+			if row.State == storage.OutboxPending {
+				if err := u.Outbox().MarkDispatched(ctx, row.ID, "test-task", e.clock.Now().Add(time.Hour)); err != nil {
+					return err
+				}
+			}
+			if _, ok, err := u.Outbox().Lease(ctx, row.ID, "test", e.clock.Now(), e.clock.Now().Add(time.Minute)); err != nil || !ok {
+				if err == nil {
+					err = errors.New("the waiting row could not be leased")
+				}
+				return err
+			}
+			return u.Outbox().Finish(ctx, row.ID, "test", storage.OutboxDone, "")
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if !more {
+			break
+		}
+	}
+	done := finish()
+	if done.Status != http.StatusOK || done.str("state") != "unlinked" {
+		t.Fatalf("finishing with nothing in flight: %d %s", done.Status, done.Raw)
+	}
+	if again := finish(); again.Status == http.StatusOK {
+		t.Errorf("an ended link was finished again: %s", again.Raw)
+	}
+}

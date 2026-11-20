@@ -25,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/apiclient"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
+	"github.com/cognizhi/fyniq/internal/linksend"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -84,20 +85,21 @@ type PeopleLinkInbox struct {
 
 // PeopleLink is the organisation's link to the people platform and where each feature lives.
 type PeopleLink struct {
-	State                string             `json:"state" enum:"none,active,suspended,unlinking,unlinked" doc:"none: never linked; unlinked is final, and a later link starts at a higher epoch." example:"active"`
-	Epoch                int                `json:"epoch,omitempty" doc:"The link's epoch: every event carries it and an earlier one is refused (FR-PPL-16)." example:"1"`
-	NemuraOrganisationID string             `json:"nemura_organisation_id,omitempty" format:"uuid" doc:"The Nemura organisation it is linked to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
-	ClientID             string             `json:"client_id,omitempty" format:"uuid" doc:"The API client Nemura calls with: its scopes are Appendix E's and no other." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
-	Version              int                `json:"version,omitempty" doc:"The link's version." example:"1"`
-	LinkedAt             *time.Time         `json:"linked_at,omitempty" doc:"When it was linked." example:"2026-11-20T09:00:00Z"`
-	OAuthClientID        string             `json:"oauth_client_id,omitempty" doc:"The ID the link's client has at Fyniq's OAuth server: what Nemura signs its token request as. Give it to Nemura when it approves the link." example:"4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11"`
-	FyniqLinkKey         string             `json:"fyniq_link_key,omitempty" doc:"Fyniq's Ed25519 public key for what Fyniq sends (payroll.run.posted, payroll.payments.status), 32 bytes as base64url without padding: Nemura checks every event against it. Give it to Nemura when it approves the link." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"`
-	FyniqClientKey       map[string]any     `json:"fyniq_client_public_key,omitempty" doc:"The public half of the key Fyniq's own client signs its token request to Nemura's OAuth server with, as a JWK: Nemura registers it for Fyniq's client. Never the private key."`
-	FyniqAskKey          map[string]any     `json:"fyniq_ask_client_public_key,omitempty" doc:"The public half of the key Fyniq's read-only client signs its token request with, as a JWK: Nemura registers it for the client that asks whether a person is held at the release of a payment. Never the private key."`
-	NemuraAskClientID    string             `json:"nemura_ask_client_id,omitempty" doc:"The ID Fyniq's read-only client has at Nemura's OAuth server, as Nemura chose it when it proposed the link." example:"fyniq-ask-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
-	NemuraClientID       string             `json:"nemura_client_id,omitempty" doc:"The ID Fyniq's client has at Nemura's OAuth server, as Nemura chose it when it proposed the link." example:"fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
-	Sources              []PeopleLinkSource `json:"sources" nullable:"false" doc:"Where each feature lives now."`
-	Inbox                []PeopleLinkInbox  `json:"inbox" nullable:"false" doc:"The events received, by outcome."`
+	State                string              `json:"state" enum:"none,active,suspended,unlinking,unlinked" doc:"none: never linked; unlinked is final, and a later link starts at a higher epoch." example:"active"`
+	InFlight             *PeopleLinkInFlight `json:"in_flight,omitempty" doc:"While the link is unlinking: the work it must settle before it ends (FR-PPL-16)."`
+	Epoch                int                 `json:"epoch,omitempty" doc:"The link's epoch: every event carries it and an earlier one is refused (FR-PPL-16)." example:"1"`
+	NemuraOrganisationID string              `json:"nemura_organisation_id,omitempty" format:"uuid" doc:"The Nemura organisation it is linked to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	ClientID             string              `json:"client_id,omitempty" format:"uuid" doc:"The API client Nemura calls with: its scopes are Appendix E's and no other." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	Version              int                 `json:"version,omitempty" doc:"The link's version." example:"1"`
+	LinkedAt             *time.Time          `json:"linked_at,omitempty" doc:"When it was linked." example:"2026-11-20T09:00:00Z"`
+	OAuthClientID        string              `json:"oauth_client_id,omitempty" doc:"The ID the link's client has at Fyniq's OAuth server: what Nemura signs its token request as. Give it to Nemura when it approves the link." example:"4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11"`
+	FyniqLinkKey         string              `json:"fyniq_link_key,omitempty" doc:"Fyniq's Ed25519 public key for what Fyniq sends (payroll.run.posted, payroll.payments.status), 32 bytes as base64url without padding: Nemura checks every event against it. Give it to Nemura when it approves the link." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"`
+	FyniqClientKey       map[string]any      `json:"fyniq_client_public_key,omitempty" doc:"The public half of the key Fyniq's own client signs its token request to Nemura's OAuth server with, as a JWK: Nemura registers it for Fyniq's client. Never the private key."`
+	FyniqAskKey          map[string]any      `json:"fyniq_ask_client_public_key,omitempty" doc:"The public half of the key Fyniq's read-only client signs its token request with, as a JWK: Nemura registers it for the client that asks whether a person is held at the release of a payment. Never the private key."`
+	NemuraAskClientID    string              `json:"nemura_ask_client_id,omitempty" doc:"The ID Fyniq's read-only client has at Nemura's OAuth server, as Nemura chose it when it proposed the link." example:"fyniq-ask-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
+	NemuraClientID       string              `json:"nemura_client_id,omitempty" doc:"The ID Fyniq's client has at Nemura's OAuth server, as Nemura chose it when it proposed the link." example:"fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
+	Sources              []PeopleLinkSource  `json:"sources" nullable:"false" doc:"Where each feature lives now."`
+	Inbox                []PeopleLinkInbox   `json:"inbox" nullable:"false" doc:"The events received, by outcome."`
 }
 
 // PeopleLinkRequest asks to link the organisation to a Nemura organisation.
@@ -180,6 +182,20 @@ type (
 
 // linkFeatures are the features People and HR settings place.
 var linkFeatures = []string{storage.FeatureRecords, storage.FeaturePayroll, storage.FeatureLeave, storage.FeatureLetters}
+
+// CodeLinkInFlight is the refusal to end a link while work is in flight (FR-PPL-16).
+const CodeLinkInFlight = "PPL-31"
+
+type finishUnlinkInput struct {
+	KeyHeader
+	PreferHeader
+}
+
+type peopleLinkWriteOutput struct {
+	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
+	Body     PeopleLink
+}
 
 func peopleLinkOut(l storage.PeopleLinkRow, ok bool, sources []storage.PeopleSource, inbox []storage.InboxCount) PeopleLink {
 	out := PeopleLink{State: "none", Sources: []PeopleLinkSource{}, Inbox: []PeopleLinkInbox{}}
@@ -339,6 +355,42 @@ func registerPeopleLink(a *API) {
 		return &personUserOutput{Replayed: replayedHeader(resp.Replayed), Applied: applied(resp), Body: resp.Body}, nil
 	})
 
+	register(a, authz.FinishPeopleUnlink, huma.Operation{
+		OperationID: "finishPeopleUnlink", Method: http.MethodPost, Path: "/v1/people-link/unlink/finish", Tags: []string{"People"},
+		Summary: "Finish unlinking from the people platform",
+		Description: "An approved unlink settles work in flight first (FR-PPL-16): salary payments not yet paid, rejected or returned, payments with an unknown outcome and events for Nemura waiting hold the link in unlinking. " +
+			"When nothing is left this ends the link: its client is revoked, its state is unlinked and a later link starts at a higher epoch. While anything is in flight it refuses with PPL-31 and the counts, and changes nothing. " +
+			"Needs People and HR's right. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for the AI and MCP (§9.6).",
+	}, append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeLinkInFlight, storage.CodePeopleLink}, locks...), func(ctx context.Context, in *finishUnlinkInput) (*peopleLinkWriteOutput, error) {
+		now := a.deps.Clock.Now()
+		resp, err := write(ctx, a, in.IdempotencyKey, in.Prefer, struct{}{}, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (PeopleLink, error) {
+			l, err := u.PeopleLinks().Live(ctx)
+			if errors.Is(err, ports.ErrNotFound) || (err == nil && l.State != storage.LinkUnlinking) {
+				return PeopleLink{}, problem(storage.CodePeopleLink, "The link is not unlinking: ask to unlink first.", "Ask to unlink in Settings, People and HR; the Owner and a second approver approve it")
+			}
+			if err != nil {
+				return PeopleLink{}, err
+			}
+			f, err := a.peopleLinkInFlight(ctx, u)
+			if err != nil {
+				return PeopleLink{}, err
+			}
+			if f.Total() > 0 {
+				return PeopleLink{}, problem(CodeLinkInFlight, fmt.Sprintf("Work is still in flight: %d salary batch(es) with a payment not settled, %d unknown outcome(s) and %d wait of events for Nemura.", f.SalaryBatches, f.UnknownOutcomes, f.EventsWaiting),
+					"Record what became of each payment, let the events go out, then finish unlinking")
+			}
+			p, _ := authn.From(ctx)
+			if err := a.endPeopleLink(ctx, u, l, "user:"+p.UserID.String(), "unlinking finished", now); err != nil {
+				return PeopleLink{}, err
+			}
+			return peopleLinkOut(storage.PeopleLinkRow{ID: l.ID, State: storage.LinkUnlinked, Epoch: l.Epoch}, true, nil, nil), nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &peopleLinkWriteOutput{Replayed: replayedHeader(resp.Replayed), Applied: applied(resp), Body: resp.Body}, nil
+	})
+
 	register(a, authz.GetPeopleLink, huma.Operation{
 		OperationID: "getPeopleLink", Method: http.MethodGet, Path: "/v1/people-link", Tags: []string{"People"},
 		Summary: "Show the link to the people platform and where each feature lives",
@@ -366,6 +418,13 @@ func registerPeopleLink(a *API) {
 				return err
 			}
 			out = peopleLinkOut(l, true, sources, inbox)
+			if l.State == storage.LinkUnlinking {
+				f, err := a.peopleLinkInFlight(ctx, u)
+				if err != nil {
+					return err
+				}
+				out.InFlight = &f
+			}
 			// What Nemura needs to complete its half of the link: Fyniq's public keys and the client's ID at Fyniq's OAuth server. Never a private key.
 			if keys, err := u.PeopleLinks().Keys(ctx, l.ID); err == nil {
 				out.FyniqLinkKey, out.NemuraClientID = base64.RawURLEncoding.EncodeToString(keys.LinkPublic), keys.NemuraClientID
@@ -835,20 +894,12 @@ func (a *API) executePeopleLink(ctx context.Context, u storage.UnitOfWork, r sto
 		}
 		// Settle first: runs approved and not posted, salary payments with an unknown outcome, open holds and events waiting hold the link in
 		// unlinking (FR-PPL-16). None exists until payroll arrives; each will count itself here.
-		if inFlight := a.peopleLinkInFlight(ctx, u); inFlight > 0 {
-			return nil
-		}
-		client, err := u.APIClients().Get(ctx, l.ClientID)
-		if err != nil {
+		if f, err := a.peopleLinkInFlight(ctx, u); err != nil {
 			return err
+		} else if f.Total() > 0 {
+			return nil // the link stays unlinking; finishPeopleUnlink ends it once nothing is in flight
 		}
-		if _, err := u.APIClients().Revoke(ctx, client.ID, client.Version, "user:"+r.RequestedBy.String(), "The link ended: "+str("reason"), now); err != nil {
-			return err
-		}
-		if _, err := u.PeopleLinks().SetState(ctx, l.ID, l.Version, storage.LinkUnlinked, uuid.Nil, now); err != nil {
-			return err
-		}
-		return a.removeOAuthClient(ctx, u, client.ClientID)
+		return a.endPeopleLink(ctx, u, l, "user:"+r.RequestedBy.String(), str("reason"), now)
 	}
 	return fmt.Errorf("people link: no operation %q", r.Operation)
 }
@@ -892,8 +943,81 @@ func newAskKey(link uuid.UUID, nemuraClient string) (storage.PeopleLinkAskKey, e
 	return storage.PeopleLinkAskKey{LinkID: link, ClientID: nemuraClient, Public: jwk, PrivateDER: der}, nil
 }
 
-// peopleLinkInFlight is the work a link must settle before it ends (FR-PPL-16).
-func (a *API) peopleLinkInFlight(context.Context, storage.UnitOfWork) int { return 0 }
+// PeopleLinkInFlight is the work a link must settle before it ends (FR-PPL-16), by count: never a person, a figure or a payload.
+type PeopleLinkInFlight struct {
+	SalaryBatches   int `json:"salary_batches" doc:"Salary batches not cancelled with a payment not yet paid, rejected or returned." example:"1"`
+	UnknownOutcomes int `json:"unknown_outcomes" doc:"Payments whose outcome is unknown: record whether each was paid, rejected or returned." example:"0"`
+	EventsWaiting   int `json:"events_waiting" doc:"1 when events for Nemura wait to be delivered, else 0: the link keeps delivering them while it is unlinking." example:"0"`
+}
+
+// Total is how many kinds of work are in flight.
+func (f PeopleLinkInFlight) Total() int { return f.SalaryBatches + f.UnknownOutcomes + f.EventsWaiting }
+
+// peopleLinkInFlight counts the work a link must settle before it ends: salary payments not yet in a final state, payments with an unknown outcome and events for Nemura waiting in the outbox. (A pay run approved
+// and not posted is Nemura's side to settle; open holds stay in Nemura, which is their authority, and the projection keeps them.)
+func (a *API) peopleLinkInFlight(ctx context.Context, u storage.UnitOfWork) (PeopleLinkInFlight, error) {
+	var out PeopleLinkInFlight
+	batches, err := u.SalaryBatches().List(ctx)
+	if err != nil {
+		return out, err
+	}
+	for _, b := range batches {
+		if b.Status == storage.SalaryCancelled {
+			continue
+		}
+		lines, err := u.SalaryBatches().Lines(ctx, b.ID)
+		if err != nil {
+			return out, err
+		}
+		events, err := u.SalaryBatches().Events(ctx, b.ID)
+		if err != nil {
+			return out, err
+		}
+		latest := map[uuid.UUID]string{}
+		for _, e := range events { // in order: the last of a line is its state
+			latest[e.LineRef] = e.State
+		}
+		open, seen := false, map[uuid.UUID]bool{}
+		for _, l := range lines {
+			if seen[l.LineRef] {
+				continue
+			}
+			seen[l.LineRef] = true
+			switch latest[l.LineRef] {
+			case "unknown":
+				out.UnknownOutcomes++
+				open = true
+			case "paid", "rejected", "returned":
+			default:
+				open = true
+			}
+		}
+		if open {
+			out.SalaryBatches++
+		}
+	}
+	if row, err := u.Outbox().Waiting(ctx, linksend.Kind); err != nil {
+		return out, err
+	} else if row != nil {
+		out.EventsWaiting = 1
+	}
+	return out, nil
+}
+
+// endPeopleLink ends the link: its client is revoked, its state moves to unlinked and the OAuth server's client is removed. Nothing in flight is the caller's to check.
+func (a *API) endPeopleLink(ctx context.Context, u storage.UnitOfWork, l storage.PeopleLinkRow, by, reason string, now time.Time) error {
+	client, err := u.APIClients().Get(ctx, l.ClientID)
+	if err != nil {
+		return err
+	}
+	if _, err := u.APIClients().Revoke(ctx, client.ID, client.Version, by, "The link ended: "+reason, now); err != nil {
+		return err
+	}
+	if _, err := u.PeopleLinks().SetState(ctx, l.ID, l.Version, storage.LinkUnlinked, uuid.Nil, now); err != nil {
+		return err
+	}
+	return a.removeOAuthClient(ctx, u, client.ClientID)
+}
 
 // peopleLinkDependencies are the link's state and epoch: what a request to link or unlink depends on, "none" before a link exists.
 func peopleLinkDependencies(ctx context.Context, u storage.UnitOfWork) (int, map[string]any, error) {

@@ -35,6 +35,10 @@
       ],
       "type": "string"
     },
+    "in_flight": {
+      "$ref": "PeopleLinkInFlight.schema.json",
+      "description": "While the link is unlinking: the work it must settle before it ends (FR-PPL-16)."
+    },
     "inbox": {
       "description": "The events received, by outcome.",
       "items": {
