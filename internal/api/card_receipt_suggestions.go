@@ -21,7 +21,7 @@ import (
 
 // ------------------------------------------------------------------ receipt suggestions for a card line (FR-AP-08, p2-bank-feeds-payments task 3.1)
 //
-// A receipt the holder captured themselves (uploaded, pasted, or mailed to their own address) and the model read is suggested for a line of their own card
+// A receipt mailed to the holder's own capture address and read by the model is suggested for a line of their own card
 // when its total is the line's amount to the cent and its date is near the booking (capture.SuggestsFor). It is only a suggestion: the holder attaches it,
 // once the line is completed, and the capture is then dismissed with the reason. Nothing of another member's or of the organisation's inbox is shown.
 
@@ -61,9 +61,10 @@ type attachSuggestionInput struct {
 	Body CardReceiptAttach
 }
 
-// theHoldersOwn is whether the holder captured the document or it arrived at their own address.
+// theHoldersOwn is whether the document arrived at the holder's own capture address: only those are the holder's to be offered. (An upload or paste has no
+// owner, and an Employee may not upload to the inbox.)
 func theHoldersOwn(c storage.DocumentCapture, p authn.Principal) bool {
-	return (c.OwnerUserID != nil && *c.OwnerUserID == p.UserID) || c.CapturedBy == "user:"+p.Subject
+	return c.OwnerUserID != nil && *c.OwnerUserID == p.UserID
 }
 
 // suggestedFor is whether read capture c is a suggestion for line, and what it read.

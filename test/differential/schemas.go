@@ -43,3 +43,8 @@ var PayrollRunSchema []byte
 //
 //go:embed part-month.schema.json
 var PartMonthSchema []byte
+
+// SubscriptionSchema is subscription.schema.json: one hand-worked set of subscription contracts and the contracted MRR on given days (FR-AR-15, FR-KPI-02).
+//
+//go:embed subscription.schema.json
+var SubscriptionSchema []byte

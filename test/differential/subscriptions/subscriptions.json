@@ -1,0 +1,335 @@
+[
+ {
+  "name": "one contract through an upgrade, a downgrade, a cancellation and a renewal",
+  "contracts": [
+   {
+    "id": "K1",
+    "currency": "SGD",
+    "starts_on": "2026-01-15",
+    "ends_on": "2026-12-31",
+    "mrr": "100.00",
+    "amendments": [
+     {
+      "kind": "upgrade",
+      "effective_on": "2026-04-01",
+      "mrr": "150.00"
+     },
+     {
+      "kind": "downgrade",
+      "effective_on": "2026-07-01",
+      "mrr": "120.00"
+     },
+     {
+      "kind": "cancel",
+      "effective_on": "2026-09-10",
+      "mrr": "0.00"
+     },
+     {
+      "kind": "renew",
+      "effective_on": "2026-11-01",
+      "mrr": "130.00"
+     }
+    ]
+   }
+  ],
+  "checks": [
+   {
+    "on": "2026-01-14",
+    "want": []
+   },
+   {
+    "on": "2026-01-15",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "100.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-03-31",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "100.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-04-01",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "150.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-06-30",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "150.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-07-01",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "120.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-09-09",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "120.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-09-10",
+    "want": []
+   },
+   {
+    "on": "2026-10-31",
+    "want": []
+   },
+   {
+    "on": "2026-11-01",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "130.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2027-03-01",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "130.00",
+      "active": 1
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "name": "the agreed end is the last day when nothing renews it",
+  "contracts": [
+   {
+    "id": "K1",
+    "currency": "SGD",
+    "starts_on": "2026-03-01",
+    "ends_on": "2026-08-31",
+    "mrr": "80.00",
+    "amendments": [
+     {
+      "kind": "upgrade",
+      "effective_on": "2026-05-01",
+      "mrr": "90.00"
+     }
+    ]
+   }
+  ],
+  "checks": [
+   {
+    "on": "2026-08-31",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "90.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-09-01",
+    "want": []
+   },
+   {
+    "on": "2026-02-28",
+    "want": []
+   }
+  ]
+ },
+ {
+  "name": "two currencies and several contracts are summed as written, never converted",
+  "contracts": [
+   {
+    "id": "A",
+    "currency": "SGD",
+    "starts_on": "2026-01-01",
+    "mrr": "100.50"
+   },
+   {
+    "id": "B",
+    "currency": "USD",
+    "starts_on": "2026-02-01",
+    "mrr": "60.00",
+    "amendments": [
+     {
+      "kind": "cancel",
+      "effective_on": "2026-06-01",
+      "mrr": "0.00"
+     }
+    ]
+   },
+   {
+    "id": "C",
+    "currency": "SGD",
+    "starts_on": "2026-03-15",
+    "mrr": "40.25",
+    "amendments": [
+     {
+      "kind": "upgrade",
+      "effective_on": "2026-04-01",
+      "mrr": "45.75"
+     }
+    ]
+   },
+   {
+    "id": "D",
+    "currency": "SGD",
+    "starts_on": "2026-12-01",
+    "mrr": "500.00"
+   }
+  ],
+  "checks": [
+   {
+    "on": "2026-01-31",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "100.50",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-03-14",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "100.50",
+      "active": 1
+     },
+     {
+      "currency": "USD",
+      "mrr": "60.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-03-15",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "140.75",
+      "active": 2
+     },
+     {
+      "currency": "USD",
+      "mrr": "60.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-04-01",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "146.25",
+      "active": 2
+     },
+     {
+      "currency": "USD",
+      "mrr": "60.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-06-01",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "146.25",
+      "active": 2
+     }
+    ]
+   },
+   {
+    "on": "2026-12-01",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "646.25",
+      "active": 3
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "name": "a contract cancelled on its first day and a zero-value contract are not in force or add nothing",
+  "contracts": [
+   {
+    "id": "A",
+    "currency": "SGD",
+    "starts_on": "2026-05-01",
+    "mrr": "70.00",
+    "amendments": [
+     {
+      "kind": "cancel",
+      "effective_on": "2026-05-01",
+      "mrr": "0.00"
+     }
+    ]
+   },
+   {
+    "id": "B",
+    "currency": "SGD",
+    "starts_on": "2026-05-01",
+    "mrr": "0.00"
+   }
+  ],
+  "checks": [
+   {
+    "on": "2026-05-01",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "0.00",
+      "active": 1
+     }
+    ]
+   },
+   {
+    "on": "2026-05-31",
+    "want": [
+     {
+      "currency": "SGD",
+      "mrr": "0.00",
+      "active": 1
+     }
+    ]
+   }
+  ]
+ }
+]

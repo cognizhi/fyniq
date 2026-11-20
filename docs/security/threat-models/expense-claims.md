@@ -60,6 +60,11 @@ receipt store** (the evidence upload's checks).
 | T12 | Submitting, approving, recording and voiding need a person signed in: a claim is a person's own (CLAIM-09 for any other principal), approving needs step-up, and the AI holds no write on claims or payments (§9.6); it drafts a claim only through a proposal (Appendix D) | `TestAuthorisationMatrix`, `TestExpenseClaimsAreApprovedByAnother` |
 | T13 | Every recording takes an Idempotency-Key: a retry gets the saved answer and records nothing; bank import matches a bank line to money recorded by hand rather than posting it again, and refuses to record money a recorded document already holds | The API conventions' idempotency tests, `TestReimbursementsPayClaimsBack`, `TestCashAdvancesSettledByClaims` |
 
+| T-R1 | Receipt suggestions (FR-AP-08, rev 0.549) read only captures that arrived at the caller's own capture address (`OwnerUserID` is the caller), only for a line of the caller's own card (another member's line is a 404), and never another member's or the organisation's inbox; a suggestion is a pure match on the amount, currency and date, labelled the model's reading, and nothing is attached by itself | `TestACapturedReceiptIsSuggestedForACardLineAndAttachedByItsHolder`, `TestAReceiptIsSuggestedOnlyForTheSameAmountNearTheDate`, `matrixCards` |
+| T-R2 | Attaching takes a capture that is a current suggestion for the line (re-checked on the server, not trusted from the request), once the line is completed, copies the file to the evidence staging area as a draft claim's receipt is, and dismisses the capture; a capture that is no suggestion, or another member's, is a 404 | same test |
+| T-R3 | The daily reminder tells a cardholder only of their own card, in one notice with counts and the oldest date, no amounts or merchants | `TestACardholderIsToldOnceADayOfTheirLinesWithNoReceipt` |
+
+
 ## 4. What remains
 
 - Claims are routed to someone who approves expense claims, not to the claimant's line manager, until the people records
