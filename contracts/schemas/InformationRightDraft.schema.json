@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "days": {
+      "description": "The days after the period's end that it is due; the calendar raises one task for each period.",
+      "examples": [
+        45
+      ],
+      "format": "int64",
+      "maximum": 365,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "kind": {
+      "description": "What is owed: the accounts for each month, for each quarter of the financial year or for each financial year, or the board pack for each month.",
+      "enum": [
+        "monthly_accounts",
+        "quarterly_accounts",
+        "annual_accounts",
+        "board_pack"
+      ],
+      "examples": [
+        "quarterly_accounts"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "days"
+  ],
+  "title": "InformationRightDraft",
+  "type": "object"
+}

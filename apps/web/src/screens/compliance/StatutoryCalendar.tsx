@@ -256,6 +256,7 @@ function Row({ it, mayRecord, expert, onRecord, onWithdraw }: { it: Item; mayRec
           {it.rolled ? ", moved to the next working day" : ""}
           {it.filing?.outcome === "filed" ? `. Filed on ${date(it.filing.filed_on)}, ${it.filing.reference}` : ""}
           {it.filing?.outcome === "not_required" ? `. Not required: ${it.filing.reason}` : ""}
+          {it.delivery ? `. Delivered on ${date(it.delivery.sent_on)}: ${it.delivery.title}` : ""}
         </span>
         {expert && it.why && <span className="fy-small fy-muted whitespace-normal">{it.why}{it.source ? ` (${it.source})` : ""}</span>}
       </span>

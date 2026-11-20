@@ -22,6 +22,10 @@
       ],
       "type": "string"
     },
+    "delivery": {
+      "$ref": "StatutoryDelivery.schema.json",
+      "description": "For an investor's information right (FR-EQ-28): the update or pack that was delivered and closed the task, kept as its evidence."
+    },
     "due_on": {
       "description": "Its due day; absent while not assessed.",
       "examples": [
@@ -80,7 +84,8 @@
         "register_nominee_central",
         "financial_year",
         "sg-deadlines",
-        "sg-acra"
+        "sg-acra",
+        "investor_information"
       ],
       "examples": [
         "eci"

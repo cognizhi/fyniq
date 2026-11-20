@@ -22,6 +22,26 @@ const cal = (deadlines: unknown[]) => ({ from: today(), to: addDays(today(), 364
 // req: FR-TAX-07
 // req: CMP-02
 // req: QA-UI-04
+// req: FR-EQ-28
+describe("an investor's information tasks on the statutory calendar", () => {
+  it("shows what was delivered and when for a closed task, and leaves an open one linked to the updates", async () => {
+    answer({
+      "GET /v1/compliance/calendar": { status: 200, body: cal([
+        item("investor_information:h-1:quarterly_accounts:2026-09-30", "Send Lion Rock quarterly accounts for the quarter ended 30 Sep 2026", soon, "filed",
+          { area: "corporate", register: true, link: "/equity/updates", delivery: { kind: "update", id: "u-1", title: "Q3 2026 investor update", sent_on: "2026-11-02" } }),
+        item("investor_information:h-1:board_pack:2026-10-31", "Send Lion Rock the board pack for the month ended 31 Oct 2026", later, "open",
+          { area: "corporate", register: true, link: "/equity/updates" }),
+      ]) },
+    });
+    renderPage(StatutoryCalendar, { path: "/compliance/calendar", route: "/compliance/calendar" });
+    const done = (await screen.findByText(/Send Lion Rock quarterly accounts/)).closest("li")!;
+    expect(within(done).getByText(/Delivered on 2 Nov 2026: Q3 2026 investor update/)).toBeTruthy();
+    const open = screen.getByText(/Send Lion Rock the board pack/).closest("li")!;
+    expect(within(open).getByRole("link", { name: /Open its record/ }).getAttribute("href")).toBe("/equity/updates");
+    expect(within(open).queryByRole("button", { name: /Record as filed/ })).toBeNull();
+  });
+});
+
 describe("the statutory calendar", () => {
   it("lists what is not assessed first, then each month's deadlines with their status; axe finds nothing", async () => {
     answer({

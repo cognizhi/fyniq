@@ -285,6 +285,12 @@ Source: PRD-001 §8.23 · Priority S · Phase P2
 - **WHEN** the information is delivered
 - **THEN** the delivered pack is kept as the task's evidence
 
+#### Scenario: A task for each period the rights cover (rev 0.600)
+- **GIVEN** an investor's recorded rights list monthly accounts, quarterly accounts, annual accounts or the board pack, each with the days after the period's end it is due
+- **WHEN** the statutory calendar is read
+- **THEN** it holds one task for each month, quarter or financial year the right covers from the day the rights apply, due that many days after the period's end
+- **AND** the task is closed, with the update or pack as its evidence, when it reaches a member who signs in as the holder; a holder no member signs in as is told so
+
 ### Requirement: FR-EQ-23 Investor updates
 The system SHALL build a monthly or quarterly investor update from the board pack (FR-RPT-06) and send it to a distribution list as access-controlled links.
 

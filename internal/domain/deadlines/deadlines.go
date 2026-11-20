@@ -63,6 +63,8 @@ type Item struct {
 	Link       string  // where in the web app it is done, for a register's item
 	Register   bool    // from a register's own record (design D7): done there, never recorded here
 	Pack       string  // the pack version it was read with
+	// Delivery is the update or pack that closed an investor's information task (FR-EQ-28); nil for any other item.
+	Delivery *Delivery
 }
 
 // Calendar is the calendar from one day to another.
@@ -219,6 +221,12 @@ func Read(ctx context.Context, u storage.UnitOfWork, from, to, today time.Time) 
 		return out, err
 	}
 	registers = append(registers, lodgements...)
+	// The investors' information rights (FR-EQ-28): a task for each period, closed by the update or pack that is delivered.
+	information, err := investorItems(ctx, u, today, to)
+	if err != nil {
+		return out, err
+	}
+	registers = append(registers, information...)
 	for _, it := range items {
 		if it.Status != NotAssessed {
 			if f, ok := filings[it.Key]; ok {

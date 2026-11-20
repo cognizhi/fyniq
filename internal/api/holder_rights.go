@@ -51,17 +51,24 @@ func (ControllerGround) Schema(huma.Registry) *huma.Schema {
 			"the board's votes; influence: significant influence or control.", Examples: []any{"shares"}}
 }
 
+// InformationRightDraft is one information right of a holder: what is owed and the days after its period's end it is due (FR-EQ-28).
+type InformationRightDraft struct {
+	Kind string `json:"kind" enum:"monthly_accounts,quarterly_accounts,annual_accounts,board_pack" doc:"What is owed: the accounts for each month, for each quarter of the financial year or for each financial year, or the board pack for each month." example:"quarterly_accounts"`
+	Days int    `json:"days" minimum:"1" maximum:"365" doc:"The days after the period's end that it is due; the calendar raises one task for each period." example:"45"`
+}
+
 // InvestorRightsDraft is a holder's rights from the agreements, as drafted (FR-EQ-22).
 type InvestorRightsDraft struct {
-	From          string          `json:"from" format:"date" doc:"The day the agreements give the rights from." example:"2026-06-18"`
-	BoardSeats    int             `json:"board_seats" minimum:"0" maximum:"20" doc:"The directors the holder may appoint." example:"0"`
-	Observer      bool            `json:"observer" doc:"A board observer seat." example:"false"`
-	BoardMajority bool            `json:"board_majority" doc:"The right to appoint or remove directors holding a majority of the board's votes: a ground for being a registrable controller (FR-EQ-25)." example:"false"`
-	Information   string          `json:"information,omitempty" maxLength:"1000" doc:"The information rights: what and when." example:"Quarterly management accounts within 45 days; annual accounts within 120 days"`
-	ProRata       bool            `json:"pro_rata" doc:"A pro-rata right in later rounds." example:"true"`
-	Consents      []ConsentMatter `json:"consents" nullable:"false" maxItems:"20" doc:"The matters that need the holder's consent; any could amount to significant influence, so a person weighs them (FR-EQ-25)."`
-	Agreements    string          `json:"agreements" maxLength:"500" doc:"The agreements the rights come from." example:"Side letter of 18 Jun 2026"`
-	Note          string          `json:"note,omitempty" maxLength:"1000" doc:"A note." example:"The pro-rata right lapses on a listing"`
+	From              string                  `json:"from" format:"date" doc:"The day the agreements give the rights from." example:"2026-06-18"`
+	BoardSeats        int                     `json:"board_seats" minimum:"0" maximum:"20" doc:"The directors the holder may appoint." example:"0"`
+	Observer          bool                    `json:"observer" doc:"A board observer seat." example:"false"`
+	BoardMajority     bool                    `json:"board_majority" doc:"The right to appoint or remove directors holding a majority of the board's votes: a ground for being a registrable controller (FR-EQ-25)." example:"false"`
+	Information       string                  `json:"information,omitempty" maxLength:"1000" doc:"The information rights: what and when." example:"Quarterly management accounts within 45 days; annual accounts within 120 days"`
+	InformationRights []InformationRightDraft `json:"information_rights,omitempty" nullable:"false" maxItems:"8" doc:"The information rights as structured data (FR-EQ-28), each kind once: each becomes a task on the statutory calendar for every period it covers, closed when the update or pack is delivered to the holder."`
+	ProRata           bool                    `json:"pro_rata" doc:"A pro-rata right in later rounds." example:"true"`
+	Consents          []ConsentMatter         `json:"consents" nullable:"false" maxItems:"20" doc:"The matters that need the holder's consent; any could amount to significant influence, so a person weighs them (FR-EQ-25)."`
+	Agreements        string                  `json:"agreements" maxLength:"500" doc:"The agreements the rights come from." example:"Side letter of 18 Jun 2026"`
+	Note              string                  `json:"note,omitempty" maxLength:"1000" doc:"A note." example:"The pro-rata right lapses on a listing"`
 }
 
 // InvestorRightsNew is new investor rights: their holder and the rights.
@@ -280,6 +287,9 @@ func rightsIn(holder string, d InvestorRightsDraft) (equity.InvestorRights, erro
 	for _, c := range d.Consents {
 		r.Consents = append(r.Consents, strings.TrimSpace(string(c)))
 	}
+	for _, x := range d.InformationRights {
+		r.InformationRights = append(r.InformationRights, equity.InformationRight{Kind: x.Kind, Days: x.Days})
+	}
 	if len(fields) > 0 {
 		return r, invalid(fields)
 	}
@@ -291,6 +301,9 @@ func rightsDraftOf(r equity.InvestorRights) InvestorRightsDraft {
 		Information: r.Information, ProRata: r.ProRata, Consents: []ConsentMatter{}, Agreements: r.Agreements, Note: r.Note}
 	for _, c := range r.Consents {
 		out.Consents = append(out.Consents, ConsentMatter(c))
+	}
+	for _, x := range r.InformationRights {
+		out.InformationRights = append(out.InformationRights, InformationRightDraft{Kind: x.Kind, Days: x.Days})
 	}
 	return out
 }

@@ -4,7 +4,7 @@ type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
 summary: The cap table at any day, holders (last 4 only), share classes, equity transactions with ACRA, SAFE conversions, the option pool and round modelling
 sources:
-  - docs/user-guide/equity-register.md sha256:2cad9655309fb7eeee065587ba8eb21cd75834d4af569aa1c7bb4738685a0e17
+  - docs/user-guide/equity-register.md sha256:b155bd5b5e61f2fdd8b8f4d638c07645ab66705daa724cdcaba487f506b3867d
 data_class: general
 taint: trusted
 status: published
@@ -212,6 +212,7 @@ aliases:
   never the holder. Later rights supersede them.
 - A board majority, or any consent matter, **could confer control**: the controller test names the
   holder for the company secretary to weigh.
+- Besides the words, record **Information they are owed** as a list: monthly accounts, quarterly accounts, annual accounts or the board pack, each with the days after the period's end it is due, each kind named once. Once the rights are recorded, the statutory calendar raises a task for every period they cover ([[compliance.calendar]]).
 
 (src: docs/user-guide/equity-register.md#record-an-investors-rights)
 

@@ -3,7 +3,7 @@ key: compliance.calendar
 title: The statutory calendar
 mode: basic
 roles: [owner, administrator, controller, accountant, auditor, tax_agent, dpo, company_secretary]
-requirements: [FR-TAX-07, CMP-02, FR-DOC-06, FR-EQ-09, FR-EQ-25, FR-NTF-01]
+requirements: [FR-EQ-28, FR-TAX-07, CMP-02, FR-DOC-06, FR-EQ-09, FR-EQ-25, FR-NTF-01]
 status: draft
 ---
 
@@ -33,6 +33,12 @@ Nothing due before 7 Nov 2026, the day the calendar's rules were read, is in the
 - **Applying to register for GST**, while the GST registration monitor finds a test met.
 - **The registers' own deadlines**: a controller to enter or to lodge, and share lodgements. Each opens
   its record, where it is done.
+- **Investors' information rights**: for each holder whose recorded rights list information they are
+  owed, one task for every month, quarter or financial year it covers, due the days after the period's
+  end that the agreement allows. The task closes by itself when the update (or, for the board pack,
+  the published pack) reaches the holder's member, and shows what was delivered and on which day. A
+  holder no member signs in as cannot be sent an update through Fyniq, which the task says. Quarterly
+  and annual accounts are delivered by the quarterly update of the period's last month.
 
 What the calendar holds follows Settings › Organisation: **Pays staff**, **Annual general meeting**
 and **Keeps a branch register outside Singapore** ([Organisation settings](organisation-settings.md)).

@@ -643,6 +643,10 @@
       "label": "Registrable controller",
       "tooltip": "Whether the holder is a registrable controller: more than 25% of the shares or votes, or rights that confer control."
     },
+    "equity.information-rights": {
+      "label": "Information they are owed",
+      "tooltip": "What the agreements owe the holder and the days after each period's end it is due: the statutory calendar raises a task for every period and closes it when the update or pack reaches them."
+    },
     "investor-rights.draft": {
       "label": "Record rights",
       "tooltip": "Record the rights the agreements give the holder. Another Owner or the Controller approves them, never the holder."

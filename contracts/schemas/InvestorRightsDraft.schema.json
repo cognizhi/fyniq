@@ -56,6 +56,14 @@
       "maxLength": 1000,
       "type": "string"
     },
+    "information_rights": {
+      "description": "The information rights as structured data (FR-EQ-28), each kind once: each becomes a task on the statutory calendar for every period it covers, closed when the update or pack is delivered to the holder.",
+      "items": {
+        "$ref": "InformationRightDraft.schema.json"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
     "note": {
       "description": "A note.",
       "examples": [
