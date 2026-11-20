@@ -881,3 +881,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.payroll-approval: the IR8A file and the CPF and IR8A buttons (p2-payroll-outputs)
 
 ## [2026-11-20] compile | compliance.invoicenow: the exclusion form and the contingency approval button
+
+## [2026-11-20] compile | ai-proposals: the assistant proposes a know-how page, never a figure (AI-59)
