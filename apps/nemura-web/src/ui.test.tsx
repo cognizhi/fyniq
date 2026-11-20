@@ -1975,7 +1975,11 @@ describe("hiring", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Approve Data scientist" }));
     expect(await screen.findByText("Approved.")).toBeTruthy();
     expect(bodies.get("POST /v1/requisitions/r1/decision")).toEqual({ approve: true });
-    expect(screen.queryByRole("button", { name: "Send the requisition" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send the requisition" })).not.toBeNull(); // the Owner may ask too (rev 0.69)
+    cleanup();
+    render(<Hiring roles={["hr_officer"]} />);
+    expect((await screen.findAllByText(/Data scientist/)).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "Send the requisition" })).toBeNull(); // the HR officer only reads
     cleanup();
     render(<Hiring roles={["employee"]} />);
     expect(await screen.findByText(/Only the Recruiter, the HR officer/)).toBeTruthy();
