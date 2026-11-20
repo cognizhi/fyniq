@@ -20,8 +20,10 @@ compiled into the knowledge base, and the oracle's half where it calculates. Loa
 - [ ] 3.3 Screen `entity-setup`, help, guide and kb. `// req: QA-UI-05`
 
 ## 4. Consolidation
-- [ ] 4.1 Mapping and rates (store, API). `// req: FR-ENT-05`
-- [ ] 4.2 The run: read, translate, eliminate, freeze; API and matrix rows. `// req: FR-ENT-06`, `// req: FR-RPT-12`
+- [x] 4.1 Mapping and rates (store, API). `// req: FR-ENT-05`
+  Built (rev 0.629): migration 001351, `Consolidations`, mapGroupAccount, listGroupMappings, addGroupRate, listGroupRates, getGroupPairs, setGroupPairs, listGroupEntityAccounts, matrix rows `matrixConsolidation`. Test: `TestAParentConsolidatesItsEntityAndTheRunStaysFrozen`.
+- [x] 4.2 The run: read, translate, eliminate, freeze; API and matrix rows. `// req: FR-ENT-06`, `// req: FR-RPT-12`
+  Built (rev 0.629): `groupconsol.Prepare` and `Freeze`, runConsolidation, listConsolidations, getConsolidation. **Left:** a domain unit test of `groupconsol` of its own (the API test covers one currency, no translation, no elimination; the engine's own cases cover those), and an API test of a foreign-currency run with rates.
 - [ ] 4.3 Screen `consolidation`, help, guide and kb. `// req: QA-UI-05`
 
 ## 5. Intercompany
@@ -34,3 +36,15 @@ compiled into the knowledge base, and the oracle's half where it calculates. Loa
 
 ## 7. The switcher
 - [ ] 7.1 Group label and "All entities". `// req: FR-UX-18`
+
+## Where the build stopped (21 Nov 2026, paused for budget)
+
+Built and integrated: the plan and decisions (1.1), the calculation with its oracle half and a full `make differential` (2.1, 2.2), the link with its attack tests (3.1, 3.2), the set-up and the run (4.1, 4.2).
+
+**Left, in this order:**
+- 3.3 and 4.3: the screens `entity-setup` (the group page: invite, accept, end, mapping) and `consolidation` (the frozen run with the entity columns, the eliminations, the rates and the differences banner), their help keys, guide pages and knowledge-base pages (kb-schema@2); adapt `docs/design/screens/src/EntitySetup.html` and `Consolidation.html` (they still show the superseded "create with dual approval" and an entity inside an organisation); Basic or Expert tags (Expert); the web client is generated, rebuild the web app after `make openapi`.
+- 5.1, 5.2 intercompany (FR-GL-13): `intercompany_transaction` rows in both tenants, the offers function `group_intercompany_offers()` (design D3 point 2: no free text), the mirror as a draft journal, the reconciliation list.
+- 6.1, 6.2 accountant-firm mode (FR-ENT-03, FR-ENT-07): firm mode, the client invitation through the same registry (`kind = 'firm'` is already allowed), the engagement row in the client, the practice dashboard through the caller's own rights in each client, the screen `practice-dashboard`.
+- 7.1 the switcher group label and *All entities* (FR-UX-18).
+- A parent's own-account mapping needs a screen too; until then the API does it.
+- Not verified: the full authorisation matrix, `make scan`, `make images`, the browser journeys and the visual snapshots; `make test` of the whole tree; the pre-existing failures of `TestEveryNumericColumnHasPrecisionAndRefusesNaN` (automation_rule) and `TestTheTenantExportCataloguesEveryTable` (sandbox_organisation) on dev/integration come from other changes.
