@@ -4,12 +4,14 @@ package postgres_test
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
@@ -251,13 +253,26 @@ func TestAttackSoftLockRecordsAreKeptAndOnlyTheAPIWritesThem(t *testing.T) {
 	wantState(t, "an exception with no audit event", run("fyniq_api", ins, pass.ID, period.ID, entry, ann, now), "FY061")
 }
 
-// rawAutomationRule inserts a workflow rule whose amount is v, as the API role, for the NaN and range attacks on its numeric column (FR-AUT-03).
+var rawRuleCalls atomic.Uint32
+
+// rawAutomationRule inserts a workflow rule whose amount is v, as the API role, for the NaN and range attacks on its numeric column (FR-AUT-03). It closes what it opens: the attack
+// calls it once for each value, and the test's database allows few connections.
 func rawAutomationRule(t *testing.T, b porttest.Books, v string) error {
 	t.Helper()
 	ctx := context.Background()
 	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
-	maker := founder(t, store(t, "fyniq_api"), b.Org, 41, now)
-	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+	st, err := postgres.Open(ctx, db.URL("fyniq_api"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	maker := founder(t, st, b.Org, byte(100+rawRuleCalls.Add(1)), now)
+	c, err := pgx.Connect(ctx, db.URL("fyniq_api"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.automation_rule (name, trigger, document_type, amount_at_least, action, recipients, created_by, created_at, updated_at)
 			VALUES ('x', 'document.posted', NULL, $1::numeric, 'notify', $2, $3, $4, $4)`, v, []uuid.UUID{maker}, maker, now)
 		return err
