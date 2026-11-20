@@ -4,7 +4,11 @@
   "properties": {
     "activity": {
       "description": "The kind of record.",
-      "enum": [
+      "examples": [
+        "bill"
+      ],
+      "type": "string",
+      "x-extensible-enum": [
         "bill",
         "invoice",
         "journal",
@@ -19,11 +23,7 @@
         "gst_forecast",
         "corporate",
         "board_pack"
-      ],
-      "examples": [
-        "bill"
-      ],
-      "type": "string"
+      ]
     },
     "date": {
       "description": "Its date.",

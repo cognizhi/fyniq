@@ -61,7 +61,11 @@
     },
     "obligation": {
       "description": "What is due: the register_ ones are a register's own, done and checked on their record: the corporate profile's lodgements are done once a version with the day lodged is recorded.",
-      "enum": [
+      "examples": [
+        "eci"
+      ],
+      "type": "string",
+      "x-extensible-enum": [
         "gst_f5",
         "cpf",
         "ir8a_ais",
@@ -86,11 +90,7 @@
         "sg-deadlines",
         "sg-acra",
         "investor_information"
-      ],
-      "examples": [
-        "eci"
-      ],
-      "type": "string"
+      ]
     },
     "reason": {
       "description": "Why it is not assessed.",

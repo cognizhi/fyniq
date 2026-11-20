@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronRight, CircleCheck, Download, Eye, FileSearch, TriangleAlert } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
-import type { components } from "../../api/schema";
+import type { components, operations } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
 import { Button } from "../../components/ui/button";
 import { date, dateTime } from "../../format/date";
@@ -13,10 +13,12 @@ import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { openEvidence, pictures, previewEvidence, type Shown } from "./JournalEvidence";
 
 type Found = components["schemas"]["EvidenceFound"];
-type Activity = NonNullable<Found["record"]["activity"]>;
+// The record's activity is an extensible enum (a kind added later is shown by its own name); the filter's is the closed list this release knows.
+type Activity = string;
+type ActivityFilter = NonNullable<NonNullable<operations["searchEvidence"]["parameters"]["query"]>["activity"]>;
 
 // The kinds of record, as a filter names them.
-const activities: Record<Activity, string> = {
+const activities: Record<string, string> = {
   bill: "Bills and vendor credits",
   invoice: "Invoices and credit notes",
   journal: "Journals",
@@ -109,7 +111,7 @@ export function EvidenceSearch() {
       const { data, error } = await api.GET("/v1/evidence", {
         params: {
           query: {
-            activity: (applied.activity || undefined) as Activity | undefined,
+            activity: (applied.activity || undefined) as ActivityFilter | undefined,
             evidence_type: applied.evidenceType.trim() || undefined,
             from: applied.from || undefined,
             to: applied.to || undefined,

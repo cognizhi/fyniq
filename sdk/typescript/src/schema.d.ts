@@ -38399,9 +38399,8 @@ export interface components {
             /**
              * @description The kind of record.
              * @example bill
-             * @enum {string}
              */
-            activity: "bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "filing" | "gst_forecast" | "corporate" | "board_pack";
+            activity: string;
             /**
              * Format: date
              * @description Its date.
@@ -60176,7 +60175,7 @@ export interface components {
         };
         SearchEvidenceOutputBody: {
             /** @description The kinds of record you may search. */
-            activities: ("bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "filing" | "gst_forecast" | "tax_paper" | "corporate" | "board_pack")[];
+            activities: string[];
             /** @description The files on this page, newest record date first. */
             items: components["schemas"]["EvidenceFound"][];
             /**
@@ -62081,9 +62080,8 @@ export interface components {
             /**
              * @description What is due: the register_ ones are a register's own, done and checked on their record: the corporate profile's lodgements are done once a version with the day lodged is recorded.
              * @example eci
-             * @enum {string}
              */
-            obligation: "gst_f5" | "cpf" | "ir8a_ais" | "eci" | "form_cs" | "annual_return" | "agm" | "statements_to_members" | "gst_register_retrospective" | "gst_register_prospective" | "register_controller_entry" | "register_controller_central" | "register_controller_notice" | "register_share_lodgement" | "register_officer_appointment" | "register_officer_cessation" | "register_detail_change" | "register_nominee_informs" | "register_nominee_entry" | "register_nominee_central" | "financial_year" | "sg-deadlines" | "sg-acra" | "investor_information";
+            obligation: string;
             /**
              * @description Why it is not assessed.
              * @example The books start and the first financial year's end are not set: set them in Settings › Organisation
