@@ -586,9 +586,19 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/fx/rates:bulk` (bulkCreateFxRates): Enter up to 250 exchange rates
 - `GET /v1/group` (getEntityGroup): Read this organisation's place in a group
 - `POST /v1/group/accept` (acceptGroupInvitation): Accept an invitation into a group, as the entity's Owner
+- `GET /v1/group/consolidations` (listConsolidations): List the consolidation runs
+- `POST /v1/group/consolidations` (runConsolidation): Run a consolidation of the group
+- `GET /v1/group/consolidations/{run_id}` (getConsolidation): Read a consolidation run
 - `POST /v1/group/end` (endGroupLink): End a link of the group, as either Owner
 - `POST /v1/group/entities` (inviteGroupEntity): Invite an organisation to be an entity of this group
+- `GET /v1/group/entities/{entity_id}/accounts` (listGroupEntityAccounts): List an entity's accounts, to map them
 - `POST /v1/group/entities/{entity_id}/withdraw` (withdrawGroupInvitation): Withdraw an invitation nobody accepted
+- `GET /v1/group/mappings` (listGroupMappings): List the account mappings of the group
+- `POST /v1/group/mappings` (mapGroupAccount): Map an account of an entity to this organisation's chart
+- `GET /v1/group/pairs` (getGroupPairs): Read the elimination pairs
+- `PUT /v1/group/pairs` (setGroupPairs): Set the elimination pairs
+- `GET /v1/group/rates` (listGroupRates): List the group's translation rates
+- `POST /v1/group/rates` (addGroupRate): Enter the closing and average rate of a month
 - `GET /v1/gst-forecasts` (listGSTForecasts): List the GST forecasts
 - `POST /v1/gst-forecasts` (createGSTForecast): Draft a GST forecast
 - `GET /v1/gst-forecasts/{forecast_id}` (getGSTForecast): Get a GST forecast

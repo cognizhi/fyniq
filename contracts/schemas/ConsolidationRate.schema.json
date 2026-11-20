@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "average": {
+      "description": "The average rate.",
+      "examples": [
+        "0.3058000000"
+      ],
+      "type": "string"
+    },
+    "closing": {
+      "description": "The closing rate.",
+      "examples": [
+        "0.3056000000"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "The entity's currency.",
+      "examples": [
+        "MYR"
+      ],
+      "type": "string"
+    },
+    "month": {
+      "description": "The month.",
+      "examples": [
+        "2026-09"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Its source.",
+      "examples": [
+        "MAS daily rates"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "month",
+    "closing",
+    "average",
+    "note"
+  ],
+  "title": "ConsolidationRate",
+  "type": "object"
+}

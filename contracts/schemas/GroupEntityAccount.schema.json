@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The entity's account code.",
+      "examples": [
+        "2210"
+      ],
+      "type": "string"
+    },
+    "has_figures": {
+      "description": "true when it has a movement; only such an account needs a mapping.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "mapped": {
+      "description": "true when it is mapped.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "SST payable"
+      ],
+      "type": "string"
+    },
+    "suggested_group_account_id": {
+      "description": "The parent's account with the same code, when it has one.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6002"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "type": {
+      "description": "Its type.",
+      "enum": [
+        "asset",
+        "liability",
+        "equity",
+        "revenue",
+        "expense"
+      ],
+      "examples": [
+        "liability"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "type",
+    "has_figures",
+    "mapped"
+  ],
+  "title": "GroupEntityAccount",
+  "type": "object"
+}

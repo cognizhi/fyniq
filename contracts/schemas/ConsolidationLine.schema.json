@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "description": "The account's code on the parent's chart.",
+      "examples": [
+        "4000"
+      ],
+      "type": "string"
+    },
+    "amount": {
+      "description": "In the group currency, a debit positive.",
+      "examples": [
+        "228400.00"
+      ],
+      "type": "string"
+    },
+    "counterparty": {
+      "description": "For an intercompany account, the other source's key.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c01"
+      ],
+      "type": "string"
+    },
+    "entity": {
+      "description": "The source's key.",
+      "examples": [
+        "parent"
+      ],
+      "type": "string"
+    },
+    "section": {
+      "description": "balance: an asset or liability at the closing rate; equity: at each month's closing rate; result: the run's months at the average rates; brought_forward: earlier months' result.",
+      "enum": [
+        "balance",
+        "equity",
+        "result",
+        "brought_forward"
+      ],
+      "examples": [
+        "result"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "entity",
+    "account",
+    "section",
+    "amount"
+  ],
+  "title": "ConsolidationLine",
+  "type": "object"
+}

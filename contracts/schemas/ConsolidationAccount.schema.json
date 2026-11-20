@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The account's code.",
+      "examples": [
+        "4000"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Revenue"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "Its type.",
+      "enum": [
+        "asset",
+        "liability",
+        "equity",
+        "revenue",
+        "expense"
+      ],
+      "examples": [
+        "revenue"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "type"
+  ],
+  "title": "ConsolidationAccount",
+  "type": "object"
+}
