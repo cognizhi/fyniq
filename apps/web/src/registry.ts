@@ -452,6 +452,7 @@ export const actions = [
   { kind: "action", id: "email.release", mode: "expert", help: "email.release", guide: "settings.integrations#email-senders-domains-and-suppressions" },
   { kind: "action", id: "people.arrange", mode: "expert", help: "people.arrange", guide: "settings.people#how-the-months-payroll-outputs-are-met" },
   { kind: "action", id: "people.link", mode: "expert", help: "people.link", guide: "settings.people#link-or-unlink-nemura" },
+  { kind: "action", id: "people.source", mode: "expert", help: "people.source", guide: "settings.people#link-or-unlink-nemura" },
   { kind: "action", id: "people.unlink", mode: "expert", help: "people.unlink", guide: "settings.people#link-or-unlink-nemura" },
   { kind: "action", id: "people.health", mode: "expert", help: "people.health", guide: "settings.people#link-health" },
   // Safety information, never hidden in Basic mode (§7.8): a person Nemura says approves pay runs is told, on every page, that they have no passkey here.

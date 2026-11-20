@@ -24,6 +24,10 @@ what Fyniq received from Nemura, and records how each month's statutory payroll 
 - **Link Nemura** asks to link this organisation with what Nemura's own link page shows once an Owner there has proposed the link: its organisation ID, its web address, the two client IDs, its link key and its client key, and a date within a year when the client expires. Nothing is linked by asking: the Owner and a second approver approve it here, and another Owner or Administrator approves Nemura's half there.
 - **Ask to unlink Nemura** gives a reason and needs the same two approvers. Work in flight settles first: salary payments not yet paid, rejected or returned, payments with an unknown outcome and events waiting for Nemura. While any is left the link stays **unlinking** and the page counts them; when nothing is left, **Finish unlinking** ends the link. Both sides keep their data, and a later link starts at a higher epoch.
 
+## Move where a feature lives
+
+- **Move where a feature lives** asks to move one feature (People records, Payroll, Leave, Letters) to Nemura, an external system or none (posted by manual journal), from a date today or later, with a reason. The Owner and a second approver approve it; nothing moves by asking. Moving a feature to Nemura needs an active link, and moving payroll away does not end the link or touch any posted entry.
+
 ## Link health
 
 - While the link is active, **Link health** shows how it stands, by identity only: how many events Nemura has queued for Fyniq, the highest number Fyniq's inbox holds, and how many events wait to be delivered, fail or were refused. Nothing in it is a payload, a name or a figure.

@@ -4,7 +4,7 @@ type: task
 title: People and HR: where payroll lives and how its outputs are met
 summary: See where payroll lives, the Nemura link's state, how a month's statutory outputs are met, and how a provider's payroll journal becomes a draft
 sources:
-  - docs/user-guide/settings-people.md sha256:5370b81be4d4d17cd8147d781b383b81e6f3d87b9725dee2bf8d60dec7295db4
+  - docs/user-guide/settings-people.md sha256:0c5d0f1b1f9ff638a940a1289522b0230133b3b11efae4a1530208925c172964
 data_class: general
 taint: trusted
 status: draft
@@ -47,6 +47,12 @@ aliases:
 - **Ask to unlink Nemura** needs a reason and the same two approvers. Work in flight settles first: salary payments not yet settled, payments with an unknown outcome and events waiting for Nemura. While any is left the link stays unlinking and the page counts them; **Finish unlinking** ends it when nothing is left. Both sides keep their data, and a later link starts at a higher epoch.
 
 (src: docs/user-guide/settings-people.md#link-or-unlink-nemura)
+
+## Move where a feature lives
+
+- **Move where a feature lives** asks to move one feature (People records, Payroll, Leave, Letters) to Nemura, an external system or none, from a date today or later, with a reason. The Owner and a second approver approve it; nothing moves by asking. Moving to Nemura needs an active link; moving payroll away does not end the link or touch any posted entry.
+
+(src: docs/user-guide/settings-people.md#move-where-a-feature-lives)
 
 ## Link health
 

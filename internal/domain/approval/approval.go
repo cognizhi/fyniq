@@ -351,6 +351,9 @@ const (
 	OpPeopleLink = "people_link.link"
 	// OpPeopleUnlink ends the link: work in flight settles first, then the link's client is revoked (FR-PPL-16).
 	OpPeopleUnlink = "people_link.unlink"
+	// OpPeopleSource moves where one feature of People and HR lives (Nemura, an external system, or none) from a date (FR-PPL-16; design D29). It is dual controlled like the link, because moving payroll to or
+	// from Nemura changes where the books' people data comes from.
+	OpPeopleSource = "people_link.source"
 	// OpSalaryBatchApprove approves a salary batch for release, or approves it again after a line or a bank detail changed (FR-PAY-11, FR-PPL-14).
 	OpSalaryBatchApprove = "salary_batch.approve"
 	// OpAPIClientReclass reclasses a personal access token from agent to integration (FR-INT-02).
@@ -424,6 +427,7 @@ var Operations = map[string]string{
 	OpAPIClientCreate:          ObjectAPIClient,
 	OpPeopleLink:               ObjectPeopleLink,
 	OpPeopleUnlink:             ObjectPeopleLink,
+	OpPeopleSource:             ObjectPeopleLink,
 	OpSalaryBatchApprove:       ObjectSalaryBatch,
 	OpAPIClientReclass:         ObjectAPIClient,
 	OpAIProposalExecute:        ObjectAIProposal,

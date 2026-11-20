@@ -120,6 +120,14 @@ type PeopleUnlinkRequest struct {
 	Reason string `json:"reason" minLength:"1" maxLength:"500" doc:"Why the link ends, for the access review." example:"The company moved to another payroll provider."`
 }
 
+// PeopleSourceChangeRequest asks to move where one feature lives.
+type PeopleSourceChangeRequest struct {
+	Feature       string `json:"feature" enum:"records,payroll,leave,letters" doc:"The feature that moves." example:"payroll"`
+	Source        string `json:"source" enum:"nemura,external,none" doc:"Where it lives from the date: nemura (the link must be active), external (a payroll provider's file), or none (posted by manual journal)." example:"external"`
+	EffectiveFrom string `json:"effective_from" format:"date" doc:"The first day it applies, today or later." example:"2026-12-01"`
+	Reason        string `json:"reason" minLength:"1" maxLength:"500" doc:"Why it moves, for the access review." example:"Payroll moves to a provider from December."`
+}
+
 // PeopleLinkHeader is the header of an envelope (PRD-002 NM-INT-10): what the event says about itself, signed with the link key.
 type PeopleLinkHeader struct {
 	EventID            string `json:"event_id" format:"uuid" doc:"The event's ID: a repeat does nothing." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
@@ -161,6 +169,11 @@ type (
 		KeyHeader
 		PreferHeader
 		Body PeopleLinkRequest
+	}
+	peopleSourceRequestInput struct {
+		KeyHeader
+		PreferHeader
+		Body PeopleSourceChangeRequest
 	}
 	peopleUnlinkRequestInput struct {
 		KeyHeader
@@ -548,6 +561,38 @@ func registerPeopleLink(a *API) {
 		}
 		return &peopleLinkAskOutput{Status: resp.Status, Replayed: replayedHeader(resp.Replayed), Applied: applied(resp), Body: resp.Body}, nil
 	})
+
+	register(a, authz.RequestPeopleSourceChange, huma.Operation{
+		OperationID: "requestPeopleSourceChange", Method: http.MethodPost, Path: "/v1/people-link/sources", Tags: []string{"People"}, DefaultStatus: http.StatusAccepted,
+		Summary: "Ask to move where a People and HR feature lives",
+		Description: "Asks to move one feature (records, payroll, leave or letters) to Nemura, to an external system or to none, from a date (FR-PPL-16). It is dual controlled like linking: the Owner and a second approver " +
+			"approve, and nothing changes until they do. Moving to Nemura needs an active link; moving payroll away does not end the link or touch any posted entry. Side effects: the approval request and its audit " +
+			"event; once approved, the source from that date, audited as people_source.set. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. Needs a person signed in with step-up. " +
+			"On the never-list for the AI and MCP (§9.6).",
+	}, append(append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired, CodeStepUpRequired, CodeInvalid, CodeUnavailable, approval.CodePending, CodeNoLink}, locks...), storage.CodePeopleLink),
+		func(ctx context.Context, in *peopleSourceRequestInput) (*peopleLinkAskOutput, error) {
+			p, _ := authn.From(ctx)
+			day, err := time.Parse(time.DateOnly, in.Body.EffectiveFrom)
+			today := a.deps.Clock.Now().UTC().Truncate(24 * time.Hour)
+			if err != nil || day.Before(today) {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.effective_from", Message: "is not a date, or is before today", Fix: "Send today or a later day as YYYY-MM-DD"}})
+			}
+			resp, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
+				if in.Body.Source == storage.SourceNemura {
+					if l, err := u.PeopleLinks().Live(ctx); err != nil || l.State != storage.LinkActive {
+						return Approval{}, problem(CodeNoLink, "A feature moves to Nemura only while the link is active.", "Ask the Owner to link Nemura first.")
+					}
+				}
+				change := map[string]any{"feature": in.Body.Feature, "source": in.Body.Source, "effective_from": in.Body.EffectiveFrom, "reason": in.Body.Reason}
+				diff := []ApprovalDiff{{Field: in.Body.Feature + " lives in", After: in.Body.Source}, {Field: "from", After: in.Body.EffectiveFrom}, {Field: "reason", After: in.Body.Reason}}
+				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectPeopleLink, ObjectKey: p.Organisation.String(), Operation: approval.OpPeopleSource,
+					Summary: "Move " + in.Body.Feature + " to " + in.Body.Source + " from " + in.Body.EffectiveFrom, Execute: change, Diff: diff})
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &peopleLinkAskOutput{Status: resp.Status, Replayed: replayedHeader(resp.Replayed), Applied: applied(resp), Body: resp.Body}, nil
+		})
 
 	eventCodes := append(append([]string{CodeNoLink, CodeLinkClient, CodeLinkMinimum, peoplelink.CodeMalformed, peoplelink.CodeSignature, peoplelink.CodeDigest, peoplelink.CodeReplay,
 		peoplelink.CodeEpoch, peoplelink.CodeOrg}, locks...), storage.CodePeopleLink)
@@ -1004,6 +1049,17 @@ func (a *API) executePeopleLink(ctx context.Context, u storage.UnitOfWork, r sto
 			return err
 		}
 		return a.tellNemuraEveryone(ctx, u) // what each identity may enter, so the switch and the passkey warning are right from the first day
+	case approval.OpPeopleSource:
+		day, err := time.Parse(time.DateOnly, str("effective_from"))
+		if err != nil {
+			return err
+		}
+		if str("source") == storage.SourceNemura { // checked again at approval: the link may have ended since it was asked for
+			if l, err := u.PeopleLinks().Live(ctx); err != nil || l.State != storage.LinkActive {
+				return problem(CodeNoLink, "A feature moves to Nemura only while the link is active.", "Ask the Owner to link Nemura first.")
+			}
+		}
+		return u.PeopleLinks().SetSource(ctx, storage.PeopleSource{Feature: str("feature"), Source: str("source"), EffectiveFrom: day, ApprovalID: r.ID, SetAt: now})
 	case approval.OpPeopleUnlink:
 		l, err := u.PeopleLinks().Live(ctx)
 		if err != nil {

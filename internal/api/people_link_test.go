@@ -353,6 +353,9 @@ var matrixPeopleLink = map[string]func(e *env, tok string) (response, func() boo
 	"receivePeopleSessionEvent": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/people-link/session-events", tok, map[string]any{}), nil
 	},
+	"requestPeopleSourceChange": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/people-link/sources", steppedUp(e, tok), map[string]any{"feature": "payroll", "source": "none", "effective_from": e.clock.Now().AddDate(0, 0, 1).Format(time.DateOnly), "reason": "Matrix"}, "Prefer", "return=preview"), nil
+	},
 	"receivePeopleAvailabilityEvent": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/people-link/availability-events", tok, map[string]any{}), nil
 	},

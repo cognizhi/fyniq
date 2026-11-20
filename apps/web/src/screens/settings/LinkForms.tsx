@@ -141,3 +141,76 @@ export function Unlink({ state, inFlight, onDone }: { state: string; inFlight?: 
     </form>
   );
 }
+
+const sourceWords: Record<string, string> = { nemura: "Nemura", external: "An external system (a payroll provider's file)", none: "None: posted by manual journal" };
+
+// SourceChange asks to move where one feature lives (FR-PPL-16): the Owner and a second approver approve it, and nothing moves by asking.
+export function SourceChange({ linkState, onDone }: { linkState: string; onDone: (what: string) => void }) {
+  const id = useId();
+  const h = helpText("people.source");
+  const confirm = useConfirm();
+  const [feature, setFeature] = useState<Feature>("payroll");
+  const [source, setSource] = useState<"nemura" | "external" | "none">("external");
+  const [from, setFrom] = useState("");
+  const [reason, setReason] = useState("");
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const [busy, setBusy] = useState(false);
+  const run = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/people-link/sources", { params: { header: { "Idempotency-Key": newKey() } }, body: { feature, source, effective_from: from, reason: reason.trim() } }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    onDone(`Asked to move ${features[feature].toLowerCase()} to ${(sourceWords[source] ?? source).toLowerCase()} from ${from}. The Owner and a second approver approve it.`);
+  };
+  return (
+    <form className="fy-stack fy-stack--2" onSubmit={(e) => void run(e)} noValidate aria-label="Move a feature">
+      {problem && <Refusal problem={problem} title="The move was not asked for" />}
+      <div className="fy-field">
+        <label className="fy-label" htmlFor={`${id}-feature`}>
+          Feature
+        </label>
+        <select className="fy-select" id={`${id}-feature`} value={feature} onChange={(e) => setFeature(e.target.value as Feature)}>
+          {(Object.keys(features) as Feature[]).map((f) => (
+            <option key={f} value={f}>
+              {features[f]}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="fy-field">
+        <label className="fy-label" htmlFor={`${id}-source`}>
+          Lives in
+        </label>
+        <select className="fy-select" id={`${id}-source`} value={source} onChange={(e) => setSource(e.target.value as typeof source)}>
+          {Object.entries(sourceWords).map(([k, v]) => (
+            <option key={k} value={k} disabled={k === "nemura" && linkState !== "active"}>
+              {v}
+            </option>
+          ))}
+        </select>
+        {linkState !== "active" && <span className="fy-hint">Nemura needs an active link.</span>}
+      </div>
+      <div className="fy-field">
+        <label className="fy-label" htmlFor={`${id}-from`}>
+          From
+        </label>
+        <input className="fy-input" id={`${id}-from`} type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+      </div>
+      <div className="fy-field">
+        <label className="fy-label" htmlFor={`${id}-reason`}>
+          Why
+        </label>
+        <input className="fy-input" id={`${id}-reason`} value={reason} onChange={(e) => setReason(e.target.value)} />
+      </div>
+      <div className="fy-row justify-end gap-2">
+        <Button variant="secondary" type="submit" disabled={busy || !from || !reason.trim()} title={h.tooltip}>
+          {h.label}
+        </Button>
+      </div>
+    </form>
+  );
+}
