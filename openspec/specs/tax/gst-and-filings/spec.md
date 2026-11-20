@@ -291,7 +291,7 @@ Source: PRD-001 §8.11 · Priority S · Phase P2
 - **THEN** it starts from the ledger's profit, adds the adjustments entered with reasons and evidence, and ends at the chargeable income with the exemption and rebate from the pack
 - **AND** it names the form (C-S Lite, C-S or C) by revenue
 
-#### Scenario: The adjustments are kept with their evidence (rev 0.612)
+#### Scenario: The adjustments are kept with their evidence (rev 0.613)
 - **GIVEN** a financial year's adjustments with their reasons, kept as a draft paper
 - **WHEN** the tax agent attaches what supports them and records the paper
 - **THEN** the paper keeps the figures it worked out then, changes no more and keeps its files for the retention period, and a paper with adjustments and no file is refused
