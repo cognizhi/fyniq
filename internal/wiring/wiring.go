@@ -58,6 +58,8 @@ type Kit struct {
 	// AccessPoint is the InvoiceNow access point (FR-AR-12); nil until one is connected (question 2): local mode has a stand-in,
 	// and the release build answers "not available here".
 	AccessPoint ports.AccessPoint
+	// IRASFiler files returns with IRAS through its API (FR-TAX-03); nil until IRAS's API is connected (its payloads are [live-verify]): local mode has a stand-in, a release has none.
+	IRASFiler ports.IRASFiler
 	// Prices is the public model price catalogue read daily (AI-82, AI-85): LiteLLM's through the platform's egress
 	// guard in a release, a directory of files locally; nil: every model stays unpriced.
 	Prices ports.PriceCatalogue
