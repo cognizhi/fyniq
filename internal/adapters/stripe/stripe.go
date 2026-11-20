@@ -412,6 +412,22 @@ func object(kind ports.ProviderKind, doc map[string]any, raw []byte) (ports.Prov
 			}
 		}
 	}
+	switch kind {
+	case ports.ProviderInvoice:
+		var err error
+		if o.Invoice, err = invoiceData(doc, cur); err != nil {
+			return o, err
+		}
+	case ports.ProviderCustomer:
+		o.Customer = customerData(doc)
+	case ports.ProviderSubscription:
+		if cur != "" {
+			var err error
+			if o.Subscription, err = subscriptionData(doc, cur); err != nil {
+				return o, err
+			}
+		}
+	}
 	link := func(to ports.ProviderKind, key string) {
 		if v := str(doc, key); v != "" {
 			o.Links[to] = append(o.Links[to], v)
@@ -624,9 +640,8 @@ func Verify(secret string, h http.Header, body []byte, now time.Time) error {
 
 // handled are the event types whose object the sweep's mirror needs fetched now, each with the kind of object it names: a
 // charge, refund, dispute or payout changes what the provider reports beside the statement lines (the payout and what it
-// settles), and the processor records it and queues a sweep. informational are known event types that need nothing more:
-// the invoices, credit notes, subscriptions and customers of Model B are not mirrored yet (p1-payment-providers task 3.2,
-// left for an owner decision on how a mirrored invoice is made), so their events are recorded as processed and post nothing.
+// settles), and the processor records it and queues a sweep; an invoice, customer or subscription event names an object Model B mirrors
+// (FR-PSP-03). informational are known event types that need nothing more (credit notes are not mirrored yet).
 // An event type in neither is unknown: it is stored and parked for a person (UC-PSP-01).
 var handled = map[string]ports.ProviderKind{
 	"charge.succeeded": ports.ProviderCharge, "charge.refunded": ports.ProviderCharge, "refund.created": ports.ProviderRefund,
@@ -634,6 +649,13 @@ var handled = map[string]ports.ProviderKind{
 	"charge.dispute.funds_withdrawn": ports.ProviderDispute, "charge.dispute.funds_reinstated": ports.ProviderDispute,
 	"payout.created": ports.ProviderPayout, "payout.paid": ports.ProviderPayout, "payout.failed": ports.ProviderPayout,
 	"payout.canceled": ports.ProviderPayout, "payout.updated": ports.ProviderPayout,
+	// Model B (FR-PSP-03, FR-PSP-07): the mirror of the customers, subscriptions and invoices a provider bills.
+	"invoice.created": ports.ProviderInvoice, "invoice.updated": ports.ProviderInvoice, "invoice.finalized": ports.ProviderInvoice, "invoice.paid": ports.ProviderInvoice,
+	"invoice.payment_succeeded": ports.ProviderInvoice, "invoice.payment_failed": ports.ProviderInvoice, "invoice.voided": ports.ProviderInvoice,
+	"invoice.marked_uncollectible": ports.ProviderInvoice, "customer.created": ports.ProviderCustomer, "customer.updated": ports.ProviderCustomer,
+	"customer.subscription.created": ports.ProviderSubscription, "customer.subscription.updated": ports.ProviderSubscription,
+	"customer.subscription.deleted": ports.ProviderSubscription, "customer.subscription.paused": ports.ProviderSubscription,
+	"customer.subscription.resumed": ports.ProviderSubscription,
 }
 
 // HandledKinds are the kinds of object the events the adapter handles name: each needs a handler in the processor.
@@ -648,11 +670,8 @@ func HandledKinds() []ports.ProviderKind {
 	return out
 }
 
-var informational = []string{"invoice.created", "invoice.updated", "invoice.finalized", "invoice.finalization_failed", "invoice.upcoming",
-	"invoice.paid", "invoice.payment_succeeded", "invoice.payment_failed", "invoice.voided", "invoice.marked_uncollectible",
-	"credit_note.created", "credit_note.updated", "credit_note.voided", "customer.created", "customer.updated",
-	"customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted", "customer.subscription.paused",
-	"customer.subscription.resumed", "customer.subscription.trial_will_end", "charge.failed", "charge.updated", "charge.pending",
+var informational = []string{"invoice.finalization_failed", "invoice.upcoming",
+	"credit_note.created", "credit_note.updated", "credit_note.voided", "customer.subscription.trial_will_end", "charge.failed", "charge.updated", "charge.pending",
 	"payment_intent.succeeded", "payment_intent.created", "payment_intent.payment_failed", "balance.available"}
 
 // ParseEvent reads a verified webhook: its ID, type and API version, the object it names, and whether its type is known.

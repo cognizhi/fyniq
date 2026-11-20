@@ -443,3 +443,11 @@ func (r peopleLinks) ReplaysSince(ctx context.Context, link uuid.UUID, since tim
 	}
 	return out, nil
 }
+
+func (r peopleLinks) ProjectionDepartment(ctx context.Context, user uuid.UUID) (uuid.UUID, error) {
+	if err := r.u.check(); err != nil {
+		return uuid.Nil, err
+	}
+	d, err := r.u.q.ProjectionDepartmentOfUser(ctx, user)
+	return d, mapError(err)
+}

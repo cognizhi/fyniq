@@ -512,6 +512,17 @@ func (q *Queries) PersonProjections(ctx context.Context) ([]PersonProjectionsRow
 	return items, nil
 }
 
+const projectionDepartmentOfUser = `-- name: ProjectionDepartmentOfUser :one
+SELECT coalesce(fyniq.projection_department($1::uuid), '00000000-0000-0000-0000-000000000000'::uuid)::uuid AS department
+`
+
+func (q *Queries) ProjectionDepartmentOfUser(ctx context.Context, userID uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, projectionDepartmentOfUser, userID)
+	var department uuid.UUID
+	err := row.Scan(&department)
+	return department, err
+}
+
 const setPeopleLinkState = `-- name: SetPeopleLinkState :one
 UPDATE fyniq.people_link SET state = $1, client_id = $2, version = version + 1, changed_at = $3
 WHERE id = $4 AND version = $5

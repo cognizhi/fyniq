@@ -141,6 +141,12 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **THEN** Fyniq shows the attempt count and the next retry date, sends no reminder of its own, makes no charge and mirrors the final status
 - **AND** MRR and churn follow the provider status
 
+#### Scenario: Model B mirrors a provider invoice and issues it only when the totals agree (rev 0.524)
+- **GIVEN** a Stripe provider account with a revenue account, and an open invoice of S$100.00 with one line over three months
+- **WHEN** the provider's event arrives or the sweep lists it
+- **THEN** one draft invoice is made by the narrow function, with the customer's contact made once, the line spread over its months, saved by psp:invoices
+- **AND** the API issues it only when its total, GST included, is the provider's to the cent; a total of S$109.00 the invoice rules do not charge, or a discount, is parked with why and posts nothing
+- **AND** the worker makes no document itself and Fyniq's reminders do not run on the invoice
 ### Requirement: FR-PSP-07 Model B events and postings
 The system SHALL treat each Model B provider invoice as a mirrored AR document and post each of its events by a fixed rule, recognising revenue by each line's service period, never by the payment date.
 

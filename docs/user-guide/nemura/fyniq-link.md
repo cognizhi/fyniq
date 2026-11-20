@@ -25,6 +25,8 @@ The page also lists the API clients registered before the link: the two people w
 
 **How the link is doing** shows what waits, what was not delivered yet (Nemura tries again), what was sent and what Fyniq refused for good, with Fyniq's code and the object and version it is about; never the content. A sync that has failed for 24 hours shows a warning here and on Checks. If a sequence number never arrived or something was refused, select **Send the current state to Fyniq again**: it sends each person's present record, bank-detail version and hold again and what failed. Fyniq ignores a version it already holds, so it is safe to repeat.
 
+The Payroll administrator and the Owner are also told, once for each oldest stuck event: after an hour while an approved pay run still waits for Fyniq's posting, and after 24 hours at any time. Nothing is told for a link that is not active.
+
 ## After a restore of Nemura's database
 
 When Nemura's database has been restored, the people who run the deployment record it, and the link is held: nothing is sent or paid. **After a restore** lists each pay run approved with proof whose answer the restored database does not hold, because Fyniq may have posted it after the restore point. For each, look at the run in Fyniq (its People and HR page shows what it posted) and choose **Fyniq posted it** with Fyniq's reference, or **Fyniq did not post it**: that approval is then sent again. When the last is decided the link resumes and the current state is sent again.

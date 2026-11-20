@@ -68,6 +68,14 @@ var matrixPaymentProviders = map[string]func(e *env, tok string) (response, func
 	"cancelInvoicePaymentLink": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/invoices/"+uuid.NewString()+"/payment-link/cancellation", tok, map[string]any{"reason": "Not needed"}), nil
 	},
+	// Model B (FR-PSP-03): reading the mirror needs a right on Bank transactions; issuing the drafts made of it is the right to post on Invoices, and with none to
+	// issue it does nothing and the matrix's books are unchanged.
+	"getPaymentProviderInvoices": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/payment-providers/invoices", tok, nil), nil
+	},
+	"postPaymentProviderInvoices": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/payment-providers/invoices/post", tok, nil), nil
+	},
 	"listPaymentProviderAccounts": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/payment-providers/accounts", tok, nil), nil
 	},

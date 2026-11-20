@@ -20,7 +20,7 @@ type pspLedger struct{ u *unitOfWork }
 
 func toPSPAccount(r sqlcdb.PSPAccountRow) storage.PSPAccount {
 	return storage.PSPAccount{MoneyAccountID: r.MoneyAccountID, ConnectorID: r.ConnectorID, PayoutAccountID: r.PayoutAccountID, FeeAccountID: r.FeeAccountID,
-		DisputesAccountID: r.DisputesAccountID, DisputeLossAccountID: r.DisputeLossAccountID, SweptThrough: nullDate(r.SweptThrough), SweptAt: r.SweptAt, SweepError: str(r.SweepError), Version: int(r.Version)}
+		DisputesAccountID: r.DisputesAccountID, DisputeLossAccountID: r.DisputeLossAccountID, RevenueAccountID: r.RevenueAccountID, SweptThrough: nullDate(r.SweptThrough), SweptAt: r.SweptAt, SweepError: str(r.SweepError), Version: int(r.Version)}
 }
 
 func (l pspLedger) Accounts(ctx context.Context) ([]storage.PSPAccount, error) {
@@ -57,7 +57,7 @@ func (l pspLedger) SaveAccount(ctx context.Context, n storage.NewPSPAccount, ver
 	var out storage.PSPAccount
 	if version == 0 {
 		r, err := l.u.q.InsertPSPAccount(ctx, sqlcdb.InsertPSPAccountParams{MoneyAccountID: n.MoneyAccountID, ConnectorID: n.ConnectorID,
-			PayoutAccountID: n.PayoutAccountID, FeeAccountID: n.FeeAccountID, DisputesAccountID: n.DisputesAccountID, DisputeLossAccountID: n.DisputeLossAccountID, CreatedBy: l.u.actor(ctx), CreatedAt: n.At})
+			PayoutAccountID: n.PayoutAccountID, FeeAccountID: n.FeeAccountID, DisputesAccountID: n.DisputesAccountID, DisputeLossAccountID: n.DisputeLossAccountID, RevenueAccountID: n.RevenueAccountID, CreatedBy: l.u.actor(ctx), CreatedAt: n.At})
 		if err != nil {
 			return storage.PSPAccount{}, mapError(err)
 		}
@@ -72,7 +72,7 @@ func (l pspLedger) SaveAccount(ctx context.Context, n storage.NewPSPAccount, ver
 			return storage.PSPAccount{}, &storage.Error{Code: storage.CodeVersion, Message: "the account moved on"}
 		}
 		r, err := l.u.q.UpdatePSPAccount(ctx, sqlcdb.UpdatePSPAccountParams{PayoutAccountID: n.PayoutAccountID, FeeAccountID: n.FeeAccountID,
-			DisputesAccountID: n.DisputesAccountID, DisputeLossAccountID: n.DisputeLossAccountID, MoneyAccountID: n.MoneyAccountID, Version: int32(version)}) // #nosec G115 -- a version, checked against MaxInt32 above
+			DisputesAccountID: n.DisputesAccountID, DisputeLossAccountID: n.DisputeLossAccountID, RevenueAccountID: n.RevenueAccountID, MoneyAccountID: n.MoneyAccountID, Version: int32(version)}) // #nosec G115 -- a version, checked against MaxInt32 above
 		if errors.Is(err, pgx.ErrNoRows) {
 			return storage.PSPAccount{}, &storage.Error{Code: storage.CodeVersion, Message: "the provider account was changed by someone else: read it again"}
 		}
@@ -89,13 +89,13 @@ func (l pspLedger) SaveAccount(ctx context.Context, n storage.NewPSPAccount, ver
 	}
 	changes := map[string][2]any{"connector_id": {nil, out.ConnectorID.String()}, "fee_account_id": {nil, out.FeeAccountID.String()},
 		"payout_account_id": {nil, ptr(out.PayoutAccountID)}, "disputes_account_id": {nil, ptr(out.DisputesAccountID)},
-		"dispute_loss_account_id": {nil, ptr(out.DisputeLossAccountID)}}
+		"dispute_loss_account_id": {nil, ptr(out.DisputeLossAccountID)}, "revenue_account_id": {nil, ptr(out.RevenueAccountID)}}
 	action := "psp_account.created"
 	if before != nil {
 		action = "psp_account.changed"
 		changes = map[string][2]any{"fee_account_id": {before.FeeAccountID.String(), out.FeeAccountID.String()},
 			"payout_account_id": {ptr(before.PayoutAccountID), ptr(out.PayoutAccountID)}, "disputes_account_id": {ptr(before.DisputesAccountID), ptr(out.DisputesAccountID)},
-			"dispute_loss_account_id": {ptr(before.DisputeLossAccountID), ptr(out.DisputeLossAccountID)}}
+			"dispute_loss_account_id": {ptr(before.DisputeLossAccountID), ptr(out.DisputeLossAccountID)}, "revenue_account_id": {ptr(before.RevenueAccountID), ptr(out.RevenueAccountID)}}
 	}
 	v := out.Version
 	return out, l.u.event(ctx, action, "psp_account", out.MoneyAccountID, &v, changes)

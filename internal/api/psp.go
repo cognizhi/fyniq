@@ -44,6 +44,8 @@ type PaymentProviderAccount struct {
 	DisputesName         string `json:"disputes_account_name,omitempty" doc:"Its code and name." example:"1055 Payment disputes clearing"`
 	DisputeLossAccountID string `json:"dispute_loss_account_id,omitempty" format:"uuid" doc:"The expense account a lost dispute is written off to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b14"`
 	DisputeLossName      string `json:"dispute_loss_account_name,omitempty" doc:"Its code and name." example:"5045 Dispute losses"`
+	RevenueAccountID     string `json:"revenue_account_id,omitempty" format:"uuid" doc:"The revenue chart account a Model B provider's invoices book to (FR-PSP-03); none: they wait for a person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b15"`
+	RevenueName          string `json:"revenue_account_name,omitempty" doc:"Its code and name." example:"4010 Subscription revenue"`
 	SweptThrough         string `json:"swept_through,omitempty" format:"date" doc:"The day the daily sweep has made the account complete to (FR-PSP-01)." example:"2026-11-18"`
 	SweepError           string `json:"sweep_error,omitempty" doc:"Why the last sweep could not close a gap (C.2 #43)." example:"the provider answered 503"`
 	ProviderBalance      *Money `json:"provider_balance,omitempty" doc:"What the provider said it holds for the organisation and has not paid out, at the last sweep."`
@@ -57,6 +59,7 @@ type PaymentProviderAccountDraft struct {
 	FeeAccountID         string `json:"fee_account_id" format:"uuid" doc:"The expense chart account fees post to, such as 5040." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b12"`
 	DisputesAccountID    string `json:"disputes_account_id,omitempty" format:"uuid" doc:"A chart account, not a money account, a disputed amount waits in, such as 1055; left out, a dispute waits for a person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b13"`
 	DisputeLossAccountID string `json:"dispute_loss_account_id,omitempty" format:"uuid" doc:"The expense account a lost dispute's draft journal writes its money off to, such as 5045 Dispute losses; left out, no draft can be prepared." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b14"`
+	RevenueAccountID     string `json:"revenue_account_id,omitempty" format:"uuid" doc:"The revenue chart account a Model B provider's invoices book to, such as 4010 Subscription revenue; left out, a mirrored invoice waits for a person (FR-PSP-03)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b15"`
 }
 
 // PaymentProviderTxn is a balance transaction a payout settles, and whether its lines have posted.
@@ -220,6 +223,12 @@ func pspAccountOf(ctx context.Context, a *API, u storage.UnitOfWork, x storage.P
 			return out, err
 		}
 	}
+	if x.RevenueAccountID != nil {
+		out.RevenueAccountID = x.RevenueAccountID.String()
+		if out.RevenueName, err = name(*x.RevenueAccountID); err != nil {
+			return out, err
+		}
+	}
 	if x.SweptThrough != nil {
 		out.SweptThrough = dateOf(*x.SweptThrough)
 	}
@@ -304,8 +313,9 @@ func registerPaymentProviders(a *API) {
 		disputes, bad2 := optionalID("body.disputes_account_id", in.Body.DisputesAccountID)
 		lossAcc, bad4 := optionalID("body.dispute_loss_account_id", in.Body.DisputeLossAccountID)
 		fee, bad3 := optionalID("body.fee_account_id", in.Body.FeeAccountID)
-		if bad != nil || bad2 != nil || bad3 != nil || bad4 != nil || fee == nil {
-			problems := fieldProblems(bad, bad2, bad3, bad4)
+		revenue, bad5 := optionalID("body.revenue_account_id", in.Body.RevenueAccountID)
+		if bad != nil || bad2 != nil || bad3 != nil || bad4 != nil || bad5 != nil || fee == nil {
+			problems := fieldProblems(bad, bad2, bad3, bad4, bad5)
 			if fee == nil && bad3 == nil {
 				problems = append(problems, FieldProblem{Code: CodeInvalid, Field: "body.fee_account_id", Message: "is missing", Fix: "Choose the expense account fees post to, such as 5040"})
 			}
@@ -355,6 +365,15 @@ func registerPaymentProviders(a *API) {
 					return PaymentProviderAccount{}, err
 				}
 			}
+			if revenue != nil {
+				racc, err := u.Accounts().Get(ctx, *revenue)
+				if errors.Is(err, ports.ErrNotFound) || (err == nil && (racc.Type != storage.Revenue || racc.Group || !racc.Active || racc.MoneyAccount)) {
+					return PaymentProviderAccount{}, problem(CodePSPFee, "The account invoices book revenue to is not a revenue account that takes postings.",
+						"Choose an active revenue account, such as 4010 Subscription revenue", FieldProblem{Code: CodePSPFee, Field: "body.revenue_account_id"})
+				} else if err != nil {
+					return PaymentProviderAccount{}, err
+				}
+			}
 			version := 0
 			if cur, err := u.PSP().Account(ctx, id); err == nil {
 				version = cur.Version
@@ -365,7 +384,7 @@ func registerPaymentProviders(a *API) {
 				return PaymentProviderAccount{}, err
 			}
 			saved, err := u.PSP().SaveAccount(ctx, storage.NewPSPAccount{MoneyAccountID: id, ConnectorID: connector, PayoutAccountID: payout, FeeAccountID: *fee,
-				DisputesAccountID: disputes, DisputeLossAccountID: lossAcc, At: a.deps.Clock.Now()}, version)
+				DisputesAccountID: disputes, DisputeLossAccountID: lossAcc, RevenueAccountID: revenue, At: a.deps.Clock.Now()}, version)
 			if err != nil {
 				return PaymentProviderAccount{}, err
 			}

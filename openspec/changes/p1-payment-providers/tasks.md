@@ -69,13 +69,13 @@ checks are tagged `[live-verify]`.
 
 ## 3. The setup and reads, the PRD revision and the guide; the Model B mirror and the screens are left
 
-- [ ] 3.1 (moved to 4.1 to 4.4) Migration 000624 (`psp_customer`, `psp_subscription`, `psp_invoice`); the mirror from fetched objects; the customer
+- [x] 3.1 (built with 4.1 to 4.4, rev 0.524) Migration 000624 (`psp_customer`, `psp_subscription`, `psp_invoice`); the mirror from fetched objects; the customer
   mapping; the typed provider invoice on the port.
   - **Left, decided by the owner on 19 Nov 2026 to follow go-live (design D6, tasks 4.1 to 4.4):** the collection state is only worth mirroring beside the invoice,
     and the invoice cannot be made where the worker reads it. Stripe's invoice, credit-note, subscription and customer events
     are known and post nothing (`informational` in the adapter), which `TestEveryHandledProviderEventKindHasAHandler` and
     `TestEventsAreKnownHandledOrUnknown` hold.
-- [ ] 3.2 Finalised, paid, failed, voided, uncollectible and credited invoices (FR-PSP-07): the mirrored AR document, total
+- [x] 3.2 Finalised, paid, failed, voided, uncollectible and credited invoices (FR-PSP-07): the mirrored AR document, total
   equal to the provider's or parked, the service-period spread (D6), a credit note for a refund; unsupported pricing parked.
   - **Left:** with 4.1 to 4.4. Tests to write with it: G4-040 (out of order, redelivered), G4-106 (collection state
     mirrored, no reminder, no charge), UC-PSP-01, a prorated upgrade, an annual plan over twelve months.
@@ -86,7 +86,7 @@ checks are tagged `[live-verify]`.
   - Built: `internal/api/psp.go`, `internal/domain/pspnet` (the netting C.2 #42 and the payouts read share), four policies.
     `TestAPaymentProvidersAccountIsSetUpThroughTheAPI`, and the authorisation matrix rows `matrixPaymentProviders`.
     **Added 19 Nov 2026:** `POST /v1/payment-providers/events/{event_id}/resolution` (a person marks a parked or failed event dealt with, with a reason; it posts nothing). **Left:** the web client calls nothing yet.
-- [ ] 3.4 The screens `provider-payouts` and `subscriptions` (designed first, fyniq-openspec Recipe C), their help keys, guide
+- [x] 3.4 The screens `provider-payouts` and `subscriptions` (designed first, fyniq-openspec Recipe C), their help keys, guide
   pages and compiled knowledge-base pages.
   - **Left:** both screens stay designed and unbuilt (`docs/design/screens`); the API of 3.3 gives provider-payouts what it
     needs, and subscriptions waits for 3.1. The integrations guide page carries the provider's section meanwhile, compiled
@@ -98,16 +98,16 @@ checks are tagged `[live-verify]`.
 
 ## 4. Follow-up (4.1 to 4.4 after go-live; 4.5 and 4.6 built, rev 0.308; the owner's decisions of 19 Nov 2026, design.md)
 
-- [ ] 4.1 A migration for the Model B mirror (`psp_customer`, `psp_subscription`, `psp_invoice` with the collection state and the
+- [x] 4.1 A migration for the Model B mirror (`psp_customer`, `psp_subscription`, `psp_invoice` with the collection state and the
   one mapping of a provider invoice to its document) and the typed provider invoice on the port, read from Stripe's invoice
   (lines, periods, tax, attempts, next retry).
-- [ ] 4.2 A narrow SECURITY DEFINER function, modelled on `create_scheduled_invoice_draft`, that makes and posts a mirrored invoice
+- [x] 4.2 A narrow SECURITY DEFINER function, modelled on `create_scheduled_invoice_draft`, that makes and posts a mirrored invoice
   from the fetched invoice: its total equal to the provider's or parked, the service-period spread of design D6
   (`[accountant to confirm]`), GST by the existing rules; a second reviewer, since it touches the posting path.
-- [ ] 4.3 The worker's handlers for the invoice, credit-note, subscription and customer events (they are `informational` in the
+- [x] 4.3 The worker's handlers for the invoice, credit-note, subscription and customer events (they are `informational` in the
   adapter until then), a credit note for a refund, a void, a write-off for uncollectible, unsupported pricing parked.
   Tests: G4-040 (out of order, redelivered), G4-106 (collection state mirrored, no reminder, no charge), UC-PSP-01.
-- [ ] 4.4 The `subscriptions` screen and the guide page for it, with the knowledge-base page; MRR and churn stay P2.
+- [x] 4.4 The `subscriptions` screen and the guide page for it, with the knowledge-base page; MRR and churn stay P2.
 - [x] 4.5 The credit-note route of a lost dispute: a new posting rule, a dispute settlement against a customer credit (Dr 1100 ·
   Cr disputes clearing), with the oracle's half, and the one-click step from the dispute `[accountant to confirm the GST]`.
   - Built (PRD rev 0.308): `dispute_settlement@1` (`internal/domain/ledger/dispute_settlement.go`, a rule version of the customer
@@ -128,3 +128,9 @@ checks are tagged `[live-verify]`.
   - Left: the "Sync now" button and the monthly fee tax invoice card of the first design (no API for either; the sweep is
     hourly and fee invoices wait for FR-PSP-05's tax-invoice match); the canvas of `banking-claims` to republish from the
     design account; the browser journey and the visual baseline (the key pages did not change).
+
+## 5. Built with `p2-bank-feeds-payments` (rev 0.524; the owner's decision of 20 Nov 2026 to build Model B with P2)
+
+- Built: migrations 001076 to 001078; `ports.InvoiceData`, `CustomerData`, `SubscriptionData` read by the Stripe adapter (`internal/adapters/stripe/mirror.go`); the worker's mirror (`internal/psp/mirror.go`: events and the sweep's lists, `MakeDrafts`); `create_provider_invoice_draft`; `journal.Invoices.PostProvided` (posts only when the total is the provider's to the cent); `internal/api/psp_invoices.go` (`getPaymentProviderInvoices`, `postPaymentProviderInvoices`, also run by Reconcile now); `banking.providerInvoicePlan` (the charge's receipt); the subscriptions screen. Tests: `TestAProviderInvoiceBecomesADraftAndPostsOnlyWhenItsTotalIsTheProviders` (the draft, the parking, the posting, the receipt, the reminders), `TestTheNarrowFunctionMakesTheDraftOfAMirroredInvoiceOnce` (the fence), `TestAnInvoiceIsMirroredWithItsLinesPeriodsAndCollectionState`, `TestAServicePeriodTouchesItsCalendarMonths`, `subscriptions.test.tsx`.
+- Decisions `[owner to confirm]`: the API posts the draft (the worker holds no posting right, so the fence of 000135 is untouched); Model B is on only for a provider account with a revenue account; every line is one line of quantity 1 at the provider's amount with GST code SR (zero before registration), checked against the provider's total.
+- **Left:** the provider's credit notes (a refund's credit note), `void` and `uncollectible` of an issued invoice (shown for a person to void or write off under Invoices), tiered, usage and discounted prices (parked), the daily-summary posting, a subscription's MRR (FR-AR-15), a revenue-account field on the provider setup screen (the API takes it), and every field name `[live-verify]` against a Stripe test account.

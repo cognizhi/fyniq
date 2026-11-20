@@ -1,22 +1,22 @@
 -- name: PSPAccounts :many
-SELECT money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, swept_through, swept_at, sweep_error, version
+SELECT money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, revenue_account_id, swept_through, swept_at, sweep_error, version
   FROM fyniq.psp_account ORDER BY money_account_id;
 
 -- name: PSPAccount :one
-SELECT money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, swept_through, swept_at, sweep_error, version
+SELECT money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, revenue_account_id, swept_through, swept_at, sweep_error, version
   FROM fyniq.psp_account WHERE money_account_id = sqlc.arg(money_account_id);
 
 -- name: InsertPSPAccount :one
-INSERT INTO fyniq.psp_account (money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, created_by, created_at)
-VALUES (sqlc.arg(money_account_id), sqlc.arg(connector_id), sqlc.narg(payout_account_id), sqlc.arg(fee_account_id), sqlc.narg(disputes_account_id), sqlc.narg(dispute_loss_account_id),
+INSERT INTO fyniq.psp_account (money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, revenue_account_id, created_by, created_at)
+VALUES (sqlc.arg(money_account_id), sqlc.arg(connector_id), sqlc.narg(payout_account_id), sqlc.arg(fee_account_id), sqlc.narg(disputes_account_id), sqlc.narg(dispute_loss_account_id), sqlc.narg(revenue_account_id),
   sqlc.arg(created_by), sqlc.arg(created_at))
-RETURNING money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, swept_through, swept_at, sweep_error, version;
+RETURNING money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, revenue_account_id, swept_through, swept_at, sweep_error, version;
 
 -- name: UpdatePSPAccount :one
 UPDATE fyniq.psp_account SET payout_account_id = sqlc.narg(payout_account_id), fee_account_id = sqlc.arg(fee_account_id),
-  disputes_account_id = sqlc.narg(disputes_account_id), dispute_loss_account_id = sqlc.narg(dispute_loss_account_id), version = version + 1
+  disputes_account_id = sqlc.narg(disputes_account_id), dispute_loss_account_id = sqlc.narg(dispute_loss_account_id), revenue_account_id = sqlc.narg(revenue_account_id), version = version + 1
 WHERE money_account_id = sqlc.arg(money_account_id) AND version = sqlc.arg(version)
-RETURNING money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, swept_through, swept_at, sweep_error, version;
+RETURNING money_account_id, connector_id, payout_account_id, fee_account_id, disputes_account_id, dispute_loss_account_id, revenue_account_id, swept_through, swept_at, sweep_error, version;
 
 -- name: SweptPSPAccount :execrows
 UPDATE fyniq.psp_account SET swept_through = COALESCE(sqlc.narg(swept_through)::date, swept_through),
