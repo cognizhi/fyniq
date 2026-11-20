@@ -6,7 +6,11 @@
       "description": "The kinds of record you may search.",
       "items": {
         "description": "A kind of record files are attached to.",
-        "enum": [
+        "examples": [
+          "bill"
+        ],
+        "type": "string",
+        "x-extensible-enum": [
           "bill",
           "invoice",
           "journal",
@@ -22,11 +26,7 @@
           "tax_paper",
           "corporate",
           "board_pack"
-        ],
-        "examples": [
-          "bill"
-        ],
-        "type": "string"
+        ]
       },
       "type": "array"
     },
