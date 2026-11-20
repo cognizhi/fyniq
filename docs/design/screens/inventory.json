@@ -7554,6 +7554,39 @@
     "not today",
     "ended"
    ]
+  },
+  {
+   "id": "workflow-rules",
+   "file": "WorkflowRules",
+   "title": "Workflow rules",
+   "canvas": "workflows",
+   "module": "Settings",
+   "route": "/settings/workflow-rules",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-AUT-03"
+   ],
+   "purpose": "Tell members when a document of a kind, above an amount, is posted, without code and without any way to post, approve, pay or file.",
+   "content": [
+    "The rules, each with its words (when a kind of document is posted, with debits of at least an amount, tell these members) and its state",
+    "Add rule: a name, a kind of document or any, an optional amount in the base currency and the members to tell",
+    "Pause, Resume and Archive; an archived rule is final",
+    "Note: a rule only tells people; each member named must be allowed to see the document"
+   ],
+   "states": [
+    "off until an Owner turns it on",
+    "empty",
+    "active",
+    "paused",
+    "archived"
+   ]
   }
  ]
 }
