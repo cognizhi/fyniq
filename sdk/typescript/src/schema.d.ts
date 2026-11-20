@@ -31679,11 +31679,11 @@ export interface components {
              */
             run_id?: string;
             /**
-             * @description What raised it: a run's finding, or an approved proposal.
+             * @description What raised it: a run's finding, an approved proposal, or the platform itself (a statutory pack update waiting).
              * @example agent_run
              * @enum {string}
              */
-            source: "agent_run" | "ai_proposal";
+            source: "agent_run" | "ai_proposal" | "system";
             /**
              * @description open; done or dismissed by a person; cleared when its finding cleared.
              * @example open
@@ -50244,6 +50244,11 @@ export interface components {
              */
             available: string;
             changes: components["schemas"]["PackChange"][];
+            /**
+             * @description true when the available version takes effect on the same day as the current one (or earlier): it corrects the period the current one already covers, and the platform raises a task to assess the documents dated in it (ENG-33).
+             * @example false
+             */
+            correction: boolean;
             /**
              * @description The version the organisation has active.
              * @example sg-gst@2026.2

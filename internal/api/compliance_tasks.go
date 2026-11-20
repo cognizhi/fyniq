@@ -33,7 +33,7 @@ type ComplianceTask struct {
 	OwnerUser  string `json:"owner_user,omitempty" format:"uuid" doc:"The member who owns it." example:"0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e"`
 	DueOn      string `json:"due_on,omitempty" format:"date" example:"2027-01-31"`
 	Escalated  bool   `json:"escalated" doc:"Whether the Owner is told too, as its deadline nears (AI-62)." example:"false"`
-	Source     string `json:"source" enum:"agent_run,ai_proposal" doc:"What raised it: a run's finding, or an approved proposal." example:"agent_run"`
+	Source     string `json:"source" enum:"agent_run,ai_proposal,system" doc:"What raised it: a run's finding, an approved proposal, or the platform itself (a statutory pack update waiting)." example:"agent_run"`
 	RunID      string `json:"run_id,omitempty" format:"uuid" doc:"The run whose finding raised it." example:"0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c12"`
 	ProposalID string `json:"proposal_id,omitempty" format:"uuid" doc:"The approved proposal that made it." example:"0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d"`
 	Status     string `json:"status" enum:"open,done,dismissed,cleared" doc:"open; done or dismissed by a person; cleared when its finding cleared." example:"open"`

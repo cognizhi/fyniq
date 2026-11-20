@@ -169,3 +169,34 @@ func TestAttackComplianceTasksKeepTheirCourse(t *testing.T) {
 		wantState(t, c.what, err, "FY351")
 	}
 }
+
+// The platform's own task (ENG-33, rev 0.611): a pack update waiting is raised by the worker's job with no run and no proposal, source system; the API and the executor cannot raise one
+// (the worker's alone, by the guard), a system task with a run is refused by the check, it has one open task per finding like any other, and the worker clears it when its finding clears.
+// req: ENG-33
+// req: AI-65
+// asvs: V4.1.3, V8.2.1
+func TestThePlatformRaisesItsOwnTasksAndNobodyElseDoes(t *testing.T) {
+	b := newRunBooks(t, "System tasks Pte Ltd")
+	raise := func(role string) (storage.ComplianceTask, error) {
+		return b.tasks(t, role, func(ctx context.Context, r storage.ComplianceTasks) (storage.ComplianceTask, error) {
+			return r.RaiseSystem(ctx, storage.NewComplianceTask{FindingKey: "pack_update:sg-gst:2026.3", Title: "Statutory pack update waiting: sg-gst@2026.3", OwnerRole: "controller", CreatedAt: b.now})
+		})
+	}
+	for _, role := range []string{"fyniq_api", "fyniq_executor"} {
+		if _, err := raise(role); err == nil {
+			t.Errorf("%s raised a system task", role)
+		}
+	}
+	task, err := raise("fyniq_worker")
+	if err != nil || task.Source != "system" || task.Run != nil || task.Status != storage.TaskOpen {
+		t.Fatalf("the worker's system task: %+v %v", task, err)
+	}
+	if _, err := raise("fyniq_worker"); storage.CodeOf(err) != storage.CodeDuplicate {
+		t.Errorf("a second open task for the finding: %v", err)
+	}
+	if _, err := b.tasks(t, "fyniq_worker", func(ctx context.Context, r storage.ComplianceTasks) (storage.ComplianceTask, error) {
+		return r.Clear(ctx, task.ID, task.Version, b.now.Add(time.Hour))
+	}); err != nil {
+		t.Errorf("clearing it: %v", err)
+	}
+}
