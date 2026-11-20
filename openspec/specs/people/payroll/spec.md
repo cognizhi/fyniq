@@ -272,3 +272,8 @@ Source: PRD-002 §9 · Priority M · Phase P2
 #### Scenario: A rejected submission is kept
 - **WHEN** IRAS answers with return code 30
 - **THEN** the field messages are shown by record and nothing is marked submitted
+
+#### Scenario: The IR8A file of an income year (rev 0.56)
+- **GIVEN** an approved run paid in 2026 with S$4,500.00 of basic salary and S$900.00 of employee CPF, and a person with an NRIC and their sex and address on record
+- **WHEN** the IR8A file is made for the year
+- **THEN** the payload has salary 4,500, the employee CPF 900 and the total income 4,500, and a person with no particulars is listed as left out

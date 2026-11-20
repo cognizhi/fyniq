@@ -603,10 +603,10 @@ func (p PayrollService) FinalPayOf(ctx context.Context, s api.Session, person uu
 // Export makes the journal file or the bank payment file of an approved version, with its manifest (NM-PAY-05).
 func (p PayrollService) Export(ctx context.Context, s api.Session, run uuid.UUID, in api.ExportInput) (api.ExportFile, error) {
 	var out api.ExportFile
-	if in.Kind != "journal" && in.Kind != "payments" && in.Kind != "cpf" {
-		return out, &payroll.Refusal{Code: payroll.CodeInvalid, Message: "kind: choose the journal file, the payments file or the CPF file."}
+	if in.Kind != "journal" && in.Kind != "payments" && in.Kind != "cpf" && in.Kind != "ais" {
+		return out, &payroll.Refusal{Code: payroll.CodeInvalid, Message: "kind: choose the journal file, the payments file, the CPF file or the IR8A (Auto-Inclusion Scheme) file."}
 	}
-	if (in.Kind == "payments" || in.Kind == "cpf") && p.Cipher == nil {
+	if (in.Kind == "payments" || in.Kind == "cpf" || in.Kind == "ais") && p.Cipher == nil {
 		return out, &payroll.Refusal{Code: "NM_UNAVAILABLE", Message: "This deployment has no key service to open bank accounts with yet: ask whoever runs Nemura."}
 	}
 	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
@@ -618,6 +618,8 @@ func (p PayrollService) Export(ctx context.Context, s api.Session, run uuid.UUID
 			file, m, err = ExportJournal(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, run, in.Version)
 		case "cpf":
 			file, m, err = ExportCPF(ctx, tx, p.Cipher, s.Organisation, p.Clock.Now(), s.Member, run, in.Version, CPFInput{PaymentType: in.PaymentType, Serial: in.Serial, AdviceCode: in.AdviceCode})
+		case "ais":
+			file, m, err = ExportAIS(ctx, tx, p.Cipher, s.Organisation, p.Clock.Now(), s.Member, run, in.Version, AISInput{AuthorisedPerson: in.AuthorisedPerson, ContactNumber: in.ContactNumber, Email: in.Email, SubmissionType: in.SubmissionType})
 		default:
 			file, m, err = ExportPayments(ctx, tx, p.Cipher, s.Organisation, p.Clock.Now(), s.Member, run, in.Version)
 		}

@@ -611,6 +611,12 @@ Source: PRD-001 §8.5 · Priority S · Phase P2
 - **WHEN** an amendment is accounted for
 - **THEN** the accounting for its kind follows the revenue policy (FR-ORG-10) [verify against the framework chosen]
 
+#### Scenario: A contract's monthly value follows its dated amendments (rev 0.566)
+- **GIVEN** a contract from 15 Jan at 100.00 a month with an agreed end of 31 Dec, an upgrade to 150.00 on 1 Apr, a downgrade to 120.00 on 1 Jul, a cancellation on 10 Sep and a renewal at 130.00 on 1 Nov
+- **WHEN** its schedule is read
+- **THEN** the month-end values are 100.00 for Jan to Mar, 150.00 for Apr to Jun, 120.00 for Jul and Aug, nothing for Sep and Oct, and 130.00 from Nov
+- **AND** the contracted MRR on a day is the sum of the active contracts' values by currency, and an amendment dated in a closed month, before the contract's last amendment or against what the contract is that day is refused
+
 ### Requirement: FR-AR-16 Send quotes and invoices
 The system SHALL send quotes and invoices by email with a branded PDF and a secure online view link (FR-AR-06), and SHALL let the customer accept or decline a quote online.
 

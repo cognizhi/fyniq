@@ -106,6 +106,32 @@ func (q *Queries) InsertPayrollReceipt(ctx context.Context, arg InsertPayrollRec
 	return id, err
 }
 
+const insertPayrollRunRefusal = `-- name: InsertPayrollRunRefusal :one
+INSERT INTO fyniq.payroll_run_refusal (link_id, run_id, version, code, refused_at)
+VALUES ($1, $2, $3, $4, $5) RETURNING id
+`
+
+type InsertPayrollRunRefusalParams struct {
+	LinkID    uuid.UUID
+	RunID     uuid.UUID
+	Version   int32
+	Code      string
+	RefusedAt time.Time
+}
+
+func (q *Queries) InsertPayrollRunRefusal(ctx context.Context, arg InsertPayrollRunRefusalParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertPayrollRunRefusal,
+		arg.LinkID,
+		arg.RunID,
+		arg.Version,
+		arg.Code,
+		arg.RefusedAt,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const latestPayrollMapping = `-- name: LatestPayrollMapping :one
 SELECT id, version, set_by, set_at FROM fyniq.payroll_mapping ORDER BY version DESC LIMIT 1
 `
@@ -181,6 +207,44 @@ func (q *Queries) LatestPayrollReceipt(ctx context.Context, arg LatestPayrollRec
 		&i.ReceivedAt,
 	)
 	return i, err
+}
+
+const openPayrollRunRefusals = `-- name: OpenPayrollRunRefusals :many
+SELECT DISTINCT ON (r.run_id) r.run_id, r.version, r.code, r.refused_at FROM fyniq.payroll_run_refusal r
+WHERE NOT EXISTS (SELECT 1 FROM fyniq.payroll_run_receipt p WHERE p.run_id = r.run_id AND p.version >= r.version)
+ORDER BY r.run_id, r.version DESC, r.refused_at DESC
+`
+
+type OpenPayrollRunRefusalsRow struct {
+	RunID     uuid.UUID
+	Version   int32
+	Code      string
+	RefusedAt time.Time
+}
+
+func (q *Queries) OpenPayrollRunRefusals(ctx context.Context) ([]OpenPayrollRunRefusalsRow, error) {
+	rows, err := q.db.Query(ctx, openPayrollRunRefusals)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OpenPayrollRunRefusalsRow
+	for rows.Next() {
+		var i OpenPayrollRunRefusalsRow
+		if err := rows.Scan(
+			&i.RunID,
+			&i.Version,
+			&i.Code,
+			&i.RefusedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const payrollEnvelopeUsed = `-- name: PayrollEnvelopeUsed :one

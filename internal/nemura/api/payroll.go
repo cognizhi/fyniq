@@ -386,8 +386,8 @@ type ExportSkipped struct {
 // ExportFile is a hand-off file with its manifest.
 type ExportFile struct {
 	ID            string          `json:"id" format:"uuid" doc:"The manifest's ID." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f70"`
-	Kind          string          `json:"kind" enum:"journal,payments,cpf" doc:"The journal file, the bank payment file or the CPF EZPay file." example:"payments"`
-	FileName      string          `json:"file_name,omitempty" doc:"The CPF file's name, which the Board's EZPay expects: <CSN><month paid><advice code>.DTL." example:"202312345KPTE01JUN202601.DTL"`
+	Kind          string          `json:"kind" enum:"journal,payments,cpf,ais" doc:"The journal file, the bank payment file, the CPF EZPay file or the IR8A (Auto-Inclusion Scheme) payload." example:"payments"`
+	FileName      string          `json:"file_name,omitempty" doc:"The CPF file's name, which the Board's EZPay expects (<CSN><month paid><advice code>.DTL), or the IR8A payload's." example:"202312345KPTE01JUN202601.DTL"`
 	Version       int             `json:"version" minimum:"1" doc:"The approved version it was made from." example:"2"`
 	Month         string          `json:"wage_month" format:"date" doc:"The wage month." example:"2026-06-01"`
 	Lines         int             `json:"lines" doc:"How many lines the file has." example:"12"`
@@ -402,11 +402,16 @@ type ExportFile struct {
 // ExportInput asks for a file.
 type ExportInput struct {
 	Version int    `json:"version" minimum:"1" doc:"The approved version to make the file from." example:"2"`
-	Kind    string `json:"kind" enum:"journal,payments,cpf" doc:"The journal file, the bank payment file or the CPF EZPay file." example:"payments"`
+	Kind    string `json:"kind" enum:"journal,payments,cpf,ais" doc:"The journal file, the bank payment file, the CPF EZPay file or the IR8A (Auto-Inclusion Scheme) payload of the income year the run is paid in." example:"payments"`
 	// For the CPF file: the employer's own CPF Submission Number parts and advice code (never guessed).
 	PaymentType string `json:"payment_type,omitempty" pattern:"^[A-Za-z0-9]{3}$" doc:"The payment type of the employer's CPF Submission Number, as its CPF EZPay account holds it; needed for the CPF file." example:"PTE"`
 	Serial      string `json:"serial,omitempty" pattern:"^(0[1-9]|[1-9][0-9])$" doc:"The serial number of the CPF Submission Number, 01 to 99; needed for the CPF file." example:"01"`
-	AdviceCode  string `json:"advice_code,omitempty" pattern:"^(0[1-9]|[1-9][0-9])$" doc:"The advice code, 01 to 99: records with the same code print on the same record of payment; needed for the CPF file." example:"01"`
+	// For the IR8A payload: who the employer authorises to file, and how IRAS reaches them (never guessed).
+	AuthorisedPerson string `json:"authorised_person,omitempty" maxLength:"100" doc:"The person authorised to file the IR8A, as IRAS has them; needed for the IR8A payload (data item A5)." example:"John Adams"`
+	ContactNumber    string `json:"contact_number,omitempty" pattern:"^[0-9]{1,12}$" doc:"Their contact number, digits only; needed for the IR8A payload (A6)." example:"91234567"`
+	Email            string `json:"email,omitempty" maxLength:"320" doc:"Their email address; needed for the IR8A payload (A7)." example:"abc@email.com.sg"`
+	SubmissionType   string `json:"submission_type,omitempty" enum:"O,A,R" doc:"O for an original submission (the default), A for an amendment, R for a revision (A8)." example:"O"`
+	AdviceCode       string `json:"advice_code,omitempty" pattern:"^(0[1-9]|[1-9][0-9])$" doc:"The advice code, 01 to 99: records with the same code print on the same record of payment; needed for the CPF file." example:"01"`
 }
 
 // Payroll is pay records behind the API.
@@ -1035,7 +1040,7 @@ func (a *API) registerPayRuns() {
 		if err != nil {
 			return nil, err
 		}
-		if (in.Body.Kind == "payments" || in.Body.Kind == "cpf") && !s.Fresh(a.d.Clock.Now()) {
+		if (in.Body.Kind == "payments" || in.Body.Kind == "cpf" || in.Body.Kind == "ais") && !s.Fresh(a.d.Clock.Now()) {
 			return nil, Err(CodeStepUp, "Confirm it is you with your passkey, then try again: the file holds bank account numbers or NRICs.")
 		}
 		id, err := uuid.Parse(in.ID)

@@ -10,6 +10,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
 	"github.com/cognizhi/fyniq/internal/domain/payrollimport"
 	"github.com/cognizhi/fyniq/internal/domain/salarybatch"
+	"github.com/cognizhi/fyniq/internal/domain/subscription"
 	"io"
 	"net/http"
 	"os"
@@ -352,7 +353,7 @@ var pastPolicy = map[string]string{"grantCapTableAccess": CodeCapGrantOwner, "re
 	"uploadMigrationParallelWorkbook": migration.CodeCommit, "decideMigrationParallelDifference": migration.CodeCommit,
 	"signMigrationParallel": migration.CodeCommit, "getMigrationParallelReport": CodeNotFound,
 	"uploadMigrationArchivePDF": migration.CodeCommit, "archiveMigration": migration.CodeParallel,
-	"createInvoiceDispute": CodeNotFound, "getInvoiceDisputes": CodeNotFound, "resolveInvoiceDispute": CodeNotFound, "createInvoicePaymentLink": CodeLinkConnector, "getInvoicePaymentLink": CodeNotFound, "cancelInvoicePaymentLink": CodeLinkClosed, "prepareDisputeLoss": CodePSPDisputeState, "settleDisputeCredit": CodePSPDisputeState, "resolvePaymentProviderEvent": CodePSPEventState,
+	"createInvoiceDispute": CodeNotFound, "createSubscriptionContract": subscription.CodeContact, "getSubscriptionContract": CodeNotFound, "amendSubscriptionContract": CodeNotFound, "getInvoiceDisputes": CodeNotFound, "resolveInvoiceDispute": CodeNotFound, "createInvoicePaymentLink": CodeLinkConnector, "getInvoicePaymentLink": CodeNotFound, "cancelInvoicePaymentLink": CodeLinkClosed, "prepareDisputeLoss": CodePSPDisputeState, "settleDisputeCredit": CodePSPDisputeState, "resolvePaymentProviderEvent": CodePSPEventState,
 	"addExpenseClaimEvidenceFromMessage": CodeMessageFile,
 	"getSalaryBatch":                     CodeNotFound, "prepareSalaryBatch": CodeNotFound, "requestSalaryBatchApproval": CodeNotFound, "releaseSalaryBatch": CodeNotFound, "getSalaryBatchFile": CodeNotFound, "cancelSalaryBatch": CodeNotFound, "recordSalaryLineState": CodeNotFound, "matchSalaryBankLine": CodeNotFound, "setPayrollArrangement": salarybatch.CodeState, "importPayrollJournal": payrollimport.CodeAccount} // the matrix member has no mail at an address of their own; a salary batch is made by Nemura's lines, which the matrix sends none of
 

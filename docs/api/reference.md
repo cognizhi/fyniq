@@ -8222,6 +8222,122 @@ Emails a statement of account made (FR-AR-08; PRD-001 rev 0.138) to the customer
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `SALESDOC-03`, `SALESDOC-04`, `STATEMENT-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `TPL-17`
 
+### `GET /v1/subscription-contracts`
+
+**List subscription contracts** (`listSubscriptionContracts`)
+
+The organisation's subscription contracts, oldest first, a page at a time, optionally one customer's (FR-AR-15), each with its status and monthly value today. Read-only.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `contact_id` (query): Only this customer's contracts.
+- **Responses:**
+  - `200` OK [`SubscriptionContractPage`](../../contracts/schemas/SubscriptionContractPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/subscription-contracts`
+
+**Record a customer's subscription contract** (`createSubscriptionContract`)
+
+Records a subscription of an active customer: its name, currency, first day, an optional agreed last day and the monthly value at the start (FR-AR-15). A contract is a record, not a posting: invoices and credit notes post through their own rules, and the schedule and the contracted MRR are derived from it and its amendments. It never changes; a change is an amendment (amendSubscriptionContract). Idempotent with Idempotency-Key; Prefer: return=preview records nothing.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`CreateSubscriptionInputBody`](../../contracts/schemas/CreateSubscriptionInputBody.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`SubscriptionContractDetail`](../../contracts/schemas/SubscriptionContractDetail.schema.json)
+  - `201` Created [`SubscriptionContractDetail`](../../contracts/schemas/SubscriptionContractDetail.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AR-SUB-01` A subscription is for an active customer; `AR-SUB-02` The subscription's terms are not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `AR-SUB-01`, `AR-SUB-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/subscription-contracts/{contract_id}`
+
+**Read a subscription contract with its amendments and schedule** (`getSubscriptionContract`)
+
+The contract, its amendments by effective day, and its schedule month by month: the monthly value in force on each month's last day, which is its contracted MRR at month end (FR-AR-15, FR-KPI-02). Derived on every read. Read-only.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `contract_id` (path, required): The contract's ID.
+- **Responses:**
+  - `200` OK [`SubscriptionContractDetail`](../../contracts/schemas/SubscriptionContractDetail.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/subscription-contracts/{contract_id}/amendments`
+
+**Amend a subscription contract from a day** (`amendSubscriptionContract`)
+
+Records a dated amendment (FR-AR-15): an upgrade or downgrade sets a new monthly value from its day, a cancellation ends the subscription on its day, and a renewal starts it again after it ended. The day is on or after the contract's start, after its last amendment, and in an open month: a closed month's figures are never rewritten (FR-GL-12). The accounting of the invoices and credit notes it causes follows the revenue policy and is entered as they are (FR-ORG-10). Needs If-Match with the contract's ETag. Idempotent with Idempotency-Key; Prefer: return=preview records nothing.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `contract_id` (path, required): The contract's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AmendSubscriptionInputBody`](../../contracts/schemas/AmendSubscriptionInputBody.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`SubscriptionContractDetail`](../../contracts/schemas/SubscriptionContractDetail.schema.json)
+  - `201` Created [`SubscriptionContractDetail`](../../contracts/schemas/SubscriptionContractDetail.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AR-SUB-03` The amendment does not fit what the contract is that day; `AR-SUB-04` The amendment's day is not valid; `AR-SUB-05` The amendment's monthly value is not valid; `AR-SUB-06` An amendment needs its reason.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `AR-SUB-03`, `AR-SUB-04`, `AR-SUB-05`, `AR-SUB-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/subscription-mrr`
+
+**Read the contracted MRR on a day** (`getContractedMRR`)
+
+The monthly value of the subscription contracts active on the day, by currency (FR-AR-15; the contracted MRR of FR-KPI-02, which differs from the booked MRR recognised in the ledger by mid-month starts, credits, unpaid or failed invoices and FX). Nothing is converted. Read-only.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `as_at` (query): The day; today when left out.
+- **Responses:**
+  - `200` OK [`ContractedMRROutputBody`](../../contracts/schemas/ContractedMRROutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
 ### `GET /v1/write-offs`
 
 **List the write-offs** (`listWriteOffs`)

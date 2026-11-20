@@ -2867,6 +2867,16 @@ type FyniqPayrollRunReceipt struct {
 	CreatedXact     int64
 }
 
+type FyniqPayrollRunRefusal struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	LinkID         uuid.UUID
+	RunID          uuid.UUID
+	Version        int32
+	Code           string
+	RefusedAt      time.Time
+}
+
 type FyniqPdAnonymisation struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -4010,6 +4020,32 @@ type FyniqStatutoryPackVersions struct {
 	Sources       []byte
 	Digest        string
 	LoadedAt      time.Time
+}
+
+type FyniqSubscriptionAmendment struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ContractID     uuid.UUID
+	Kind           string
+	EffectiveOn    time.Time
+	Mrr            string
+	Reason         string
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
+type FyniqSubscriptionContract struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ContactID      uuid.UUID
+	Name           string
+	Currency       string
+	StartsOn       time.Time
+	EndsOn         pgtype.Date
+	Mrr            string
+	Version        int32
+	CreatedBy      string
+	CreatedAt      time.Time
 }
 
 type FyniqSuperAdmin struct {

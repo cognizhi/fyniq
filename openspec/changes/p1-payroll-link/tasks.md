@@ -89,7 +89,7 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
 
 - [ ] 7.1 A provider's journal or file import as a draft journal, idempotent per period and version, with a preview (design D12).
   (Built, 21 Nov 2026, the file import: migration 000914 `payroll_import`, `importPayrollJournal` (a CSV by account and department with a column mapping, a draft journal under Journals, idempotent per source system, period and version, the difference of a later version once the earlier journal is posted, a preview, refused while payroll lives in Nemura: `PPL-29`), `listPayrollImports`; `TestAProvidersPayrollJournalIsOnlyEverADraftOncePerPeriodAndVersion`. **Left:** one provider's connector (a provider qualifies only once its API is verified: `[live-verify]`, NM-EXT-02) and salary payment lines from an external system.)
-- [ ] 7.2 The payroll go-live gate (FR-PAY-15) and the checks C.1 #19 to #21, C.2 #14, #24 (a director's pay deferred without a choice, FM-handoff from
+- [ ] 7.2 (C.1 #19 and #20 built 21 Nov 2026: migration 000921 `payroll_run_refusal`, `payroll.pay-lines-cannot-post` and `payroll.pay-lines-to-review`; #20 read as salary batches with lines that wait [owner to confirm]; `TestPayLinesToReviewListsTheBatchesWithLinesThatWait`, `TestAttackAPayRunRefusalIsKeptAppendOnlyAndPerOrganisation`.) The payroll go-live gate (FR-PAY-15) and the checks C.1 #19 to #21, C.2 #14, #24 (a director's pay deferred without a choice, FM-handoff from
   `p1-founders-money`) and #45.
 
 ## 8. Screens, help and the close
