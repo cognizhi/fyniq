@@ -1,10 +1,10 @@
 ---
 key: nemura.onboarding
 type: task
-title: Invite new people to Fyniq and record who is leaving in Nemura
-summary: The task to invite a new person to Fyniq, how a leaving is recorded with its dates kept apart, and what the leave settlement shows
+title: Plan a joiner's first weeks, invite them to Fyniq and record who is leaving in Nemura
+summary: Onboarding plans from templates for HR, the manager, IT and the joiner; the Fyniq invitation task; a leaving's dates and its leave settlement
 sources:
-  - docs/user-guide/nemura/onboarding.md sha256:87fffad97dc9630d9f3393973edbc82996822fa7c06ed95512a93a8774c4bf9d
+  - docs/user-guide/nemura/onboarding.md sha256:74a05f8cb80df12c7c1b56706a1a7778737fe897c12533396e6ab9de65d10602
 data_class: personal
 taint: trusted
 status: published
@@ -18,10 +18,17 @@ aliases:
   - last day
   - invite to Fyniq
   - joiner task
+  - onboarding plan
+  - onboarding template
   - leave settlement
 ---
 
-# Invite new people to Fyniq and record who is leaving in Nemura
+# Plan a joiner's first weeks, invite them to Fyniq and record who is leaving in Nemura
+
+## Onboarding plans
+
+- A plan is made for each person who joins from a template: tasks for HR, their manager, IT and the joiner, each due a number of days from the start date (key employment terms within 14 days, bank and CPF details before the first pay run, pass collection, equipment, accounts, introductions). A template is never edited; make a new one and archive the old. (src: docs/user-guide/nemura/onboarding.md#plan-a-joiners-first-weeks)
+- Each person sees the tasks that are theirs on My home: the joiner their own, a line manager those of their reports, IT an Administrator, HR administrator or Owner, and the people team HR's. A task is decided once; only the people team skips one. (src: docs/user-guide/nemura/onboarding.md#plan-a-joiners-first-weeks)
 
 ## What it is
 

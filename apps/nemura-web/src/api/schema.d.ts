@@ -1668,6 +1668,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My onboarding tasks
+         * @description The onboarding tasks the caller can act on: their own as a joiner, those of the people who report to them, IT's when they are an Administrator, HR administrator or the Owner, and HR's when they are in the people team; soonest due first, with those decided in the last 14 days. Any signed-in member. It changes nothing.
+         */
+        get: operations["listMyOnboardingTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/overtime": {
         parameters: {
             query?: never;
@@ -1848,6 +1868,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/onboarding/plan-tasks/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark an onboarding task done or skipped
+         * @description Marks a task done, once. A joiner's task is done by the joiner, a manager's by the joiner's line manager, IT's by an Administrator, HR administrator or the Owner, and any by the people team, who alone may skip one that does not apply. Anyone else is told there is no such task. It is audited.
+         */
+        post: operations["decideOnboardingTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/onboarding/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Onboarding plans
+         * @description Every person's plan with its tasks, the ones with the most left first. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listOnboardingPlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/onboarding/plans/{id}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a task to a plan
+         * @description Adds one task to a person's plan, for HR, the manager, IT or the joiner, due on a day. Its words and date never change once added. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["addOnboardingTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/onboarding/settings": {
         parameters: {
             query?: never;
@@ -1906,6 +1986,50 @@ export interface paths {
          * @description Marks a task done (the person was invited in Fyniq) or dismissed (it does not apply), once. The HR administrator, the Administrator and the Owner. It is audited.
          */
         post: operations["decideJoinTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/onboarding/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Onboarding templates
+         * @description PRD-002 NM-ONB-01. The company's templates of onboarding tasks, the live ones first. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listOnboardingTemplates"];
+        put?: never;
+        /**
+         * Make an onboarding template
+         * @description Makes a template of tasks, each for HR, the manager, IT or the joiner and due a number of days from the start date. With no tasks it copies the standard template (offer documents, equipment, accounts, pass collection, introductions, bank and CPF details, the key employment terms within 14 days, a first check-in). A template is never edited: make a new one and archive the old. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["makeOnboardingTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/onboarding/templates/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive an onboarding template
+         * @description Archives a template so no new plan is made from it; plans already made are unchanged. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["archiveOnboardingTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2822,6 +2946,26 @@ export interface paths {
          * @description Withdraws a leaving before its last day has passed, such as a resignation withdrawn: the leaving date on the record is cleared. The HR officer, the HR administrator and the Owner. It is audited.
          */
         post: operations["cancelLeaving"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/onboarding-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a person's onboarding plan
+         * @description Makes the person's plan from a template (the standard one when none is named): each task is due from the person's start date. A person has one plan. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["startOnboardingPlan"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4734,6 +4878,11 @@ export interface components {
             reason: string;
         };
         Feature: {
+            /**
+             * @description Whether a feature of a later phase is built, so that it can be switched on.
+             * @example false
+             */
+            built: boolean;
             /**
              * @description The system that holds its data, when external.
              * @example Acme Payroll
@@ -8138,6 +8287,234 @@ export interface components {
              * @example false
              */
             shg_opt_out?: boolean;
+        };
+        Plan: {
+            /**
+             * Format: int64
+             * @description Tasks done or skipped.
+             * @example 3
+             */
+            done: number;
+            /**
+             * Format: uuid
+             * @description The plan.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a21
+             */
+            id: string;
+            /**
+             * @description The joiner's legal name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The joiner.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * Format: date
+             * @description The start date its tasks are due from.
+             * @example 2026-12-01
+             */
+            start_date: string;
+            /** @description Its tasks, soonest due first. */
+            tasks: components["schemas"]["PlanTask"][];
+            /**
+             * @description The name of the template it was made from.
+             * @example Office joiner
+             */
+            template: string;
+            /**
+             * Format: int64
+             * @description All its tasks.
+             * @example 8
+             */
+            total: number;
+        };
+        PlanDecisionInputBody: {
+            /**
+             * @description A note.
+             * @example Collected on the first day.
+             */
+            note?: string;
+            /**
+             * @description Done; or skipped because it does not apply (the HR team only).
+             * @example done
+             * @enum {string}
+             */
+            state: "done" | "skipped";
+        };
+        PlanStartInputBody: {
+            /**
+             * Format: uuid
+             * @description The template to use; empty uses the standard template.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a01
+             */
+            template_id?: string;
+        };
+        PlanTask: {
+            /**
+             * @description Who it is for.
+             * @example hr
+             * @enum {string}
+             */
+            assignee: "hr" | "manager" | "it" | "joiner";
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-12-02T10:00:00Z
+             */
+            decided_at?: string;
+            /**
+             * @description Who marked it done or skipped.
+             * @example Sarah Koh
+             */
+            decided_by?: string;
+            /**
+             * @description How, or what good looks like.
+             * @example Within 14 days of the start date.
+             */
+            detail?: string;
+            /**
+             * Format: date
+             * @description The day it is due.
+             * @example 2026-12-15
+             */
+            due_on: string;
+            /**
+             * Format: uuid
+             * @description The task.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a11
+             */
+            id: string;
+            /**
+             * @description The note left when it was decided.
+             * @example Collected on the first day.
+             */
+            note?: string;
+            /**
+             * @description An open task past its due date.
+             * @example false
+             */
+            overdue: boolean;
+            /**
+             * @description The joiner's legal name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The joiner.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * Format: uuid
+             * @description Its plan.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a21
+             */
+            plan_id: string;
+            /**
+             * @description Where it is.
+             * @example open
+             * @enum {string}
+             */
+            state: "open" | "done" | "skipped";
+            /**
+             * @description What is to be done.
+             * @example Issue the key employment terms (KETs)
+             */
+            title: string;
+        };
+        PlanTaskInput: {
+            /**
+             * @description Who it is for.
+             * @example hr
+             * @enum {string}
+             */
+            assignee: "hr" | "manager" | "it" | "joiner";
+            /**
+             * @description How, or what good looks like.
+             * @example The building office needs two days.
+             */
+            detail?: string;
+            /**
+             * Format: date
+             * @description The day it is due.
+             * @example 2026-12-03
+             */
+            due_on: string;
+            /**
+             * @description What is to be done.
+             * @example Order a security pass
+             */
+            title: string;
+        };
+        PlanTasksOutputBody: {
+            /** @description The tasks the caller can act on, soonest due first, with those decided in the last 14 days. */
+            tasks: components["schemas"]["PlanTask"][];
+        };
+        PlanTemplate: {
+            /**
+             * @description Whether it was archived: plans already made from it are unchanged.
+             * @example false
+             */
+            archived: boolean;
+            /**
+             * Format: uuid
+             * @description The template.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d2a01
+             */
+            id: string;
+            /**
+             * @description What it is for.
+             * @example Office joiner
+             */
+            name: string;
+            /** @description Its tasks in order. */
+            tasks: components["schemas"]["PlanTemplateTask"][];
+        };
+        PlanTemplateInputBody: {
+            /**
+             * @description What it is for.
+             * @example Office joiner
+             */
+            name: string;
+            /** @description Its tasks. Leave empty to start from the standard template, which you then own. */
+            tasks?: components["schemas"]["PlanTemplateTask"][] | null;
+        };
+        PlanTemplateTask: {
+            /**
+             * @description Who it is for: the HR team, the joiner's line manager, IT (an Administrator, HR administrator or the Owner) or the joiner.
+             * @example it
+             * @enum {string}
+             */
+            assignee: "hr" | "manager" | "it" | "joiner";
+            /**
+             * @description How, or what good looks like.
+             * @example Order, set up and label what the role needs.
+             */
+            detail?: string;
+            /**
+             * Format: int64
+             * @description Days from the start date it is due: negative before it.
+             * @example -3
+             */
+            due_offset_days: number;
+            /**
+             * @description What is to be done.
+             * @example Prepare the laptop and equipment
+             */
+            title: string;
+        };
+        PlanTemplatesOutputBody: {
+            /** @description The templates, the live ones first. */
+            templates: components["schemas"]["PlanTemplate"][];
+        };
+        PlansOutputBody: {
+            /** @description The plans, the ones with the most left first. */
+            plans: components["schemas"]["Plan"][];
         };
         PolicyOutputBody: {
             /**
@@ -16753,6 +17130,74 @@ export interface operations {
             };
         };
     };
+    listMyOnboardingTasks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanTasksOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     recordOvertime: {
         parameters: {
             query?: never;
@@ -17359,6 +17804,258 @@ export interface operations {
             };
         };
     };
+    decideOnboardingTask: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The task. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanDecisionInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listOnboardingPlans: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlansOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addOnboardingTask: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The plan. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanTaskInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanTask"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getOnboardingSettings: {
         parameters: {
             query?: never;
@@ -17612,6 +18309,251 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listOnboardingTemplates: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanTemplatesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    makeOnboardingTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanTemplateInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanTemplate"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    archiveOnboardingTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The template. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21752,6 +22694,99 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    startOnboardingPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person who joins. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanStartInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Plan"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

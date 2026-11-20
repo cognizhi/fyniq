@@ -61,7 +61,11 @@ link_run_approval | nemura_migrator | true | true
 link_run_posting | nemura_migrator | true | true
 member | nemura_migrator | true | true
 offboarding | nemura_migrator | true | true
+onboarding_plan | nemura_migrator | true | true
 onboarding_settings | nemura_migrator | true | true
+onboarding_task | nemura_migrator | true | true
+onboarding_template | nemura_migrator | true | true
+onboarding_template_task | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
 outbox | nemura_migrator | true | true
 overtime_entry | nemura_migrator | true | true
@@ -720,10 +724,44 @@ offboarding | state | text | true | 'active'::text
 offboarding | created_by | uuid | true | 
 offboarding | created_at | timestamp with time zone | true | 
 offboarding | updated_at | timestamp with time zone | true | 
+onboarding_plan | organisation_id | uuid | true | nemura.current_org()
+onboarding_plan | id | uuid | true | uuidv7()
+onboarding_plan | person_id | uuid | true | 
+onboarding_plan | template_name | text | true | 
+onboarding_plan | start_date | date | true | 
+onboarding_plan | created_by | uuid | true | 
+onboarding_plan | created_at | timestamp with time zone | true | 
 onboarding_settings | organisation_id | uuid | true | nemura.current_org()
 onboarding_settings | invite_to_fyniq | boolean | true | false
 onboarding_settings | updated_by | uuid | true | 
 onboarding_settings | updated_at | timestamp with time zone | true | 
+onboarding_task | organisation_id | uuid | true | nemura.current_org()
+onboarding_task | id | uuid | true | uuidv7()
+onboarding_task | plan_id | uuid | true | 
+onboarding_task | person_id | uuid | true | 
+onboarding_task | position | integer | true | 
+onboarding_task | title | text | true | 
+onboarding_task | detail | text | true | ''::text
+onboarding_task | assignee | text | true | 
+onboarding_task | due_on | date | true | 
+onboarding_task | state | text | true | 'open'::text
+onboarding_task | decided_by | uuid | false | 
+onboarding_task | decided_at | timestamp with time zone | false | 
+onboarding_task | note | text | false | 
+onboarding_template | organisation_id | uuid | true | nemura.current_org()
+onboarding_template | id | uuid | true | uuidv7()
+onboarding_template | name | text | true | 
+onboarding_template | created_by | uuid | true | 
+onboarding_template | created_at | timestamp with time zone | true | 
+onboarding_template | archived_at | timestamp with time zone | false | 
+onboarding_template_task | organisation_id | uuid | true | nemura.current_org()
+onboarding_template_task | id | uuid | true | uuidv7()
+onboarding_template_task | template_id | uuid | true | 
+onboarding_template_task | position | integer | true | 
+onboarding_template_task | title | text | true | 
+onboarding_template_task | detail | text | true | ''::text
+onboarding_template_task | assignee | text | true | 
+onboarding_template_task | due_offset_days | integer | true | 
 organisation | organisation_id | uuid | true | nemura.current_org()
 organisation | name | text | true | 
 organisation | created_at | timestamp with time zone | true | now()
@@ -2111,6 +2149,18 @@ offboarding | offboarding_state_known | CHECK ((state = ANY (ARRAY['active'::tex
 offboarding | offboarding_state_not_null | NOT NULL state
 offboarding | offboarding_updated_at_not_null | NOT NULL updated_at
 offboarding | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+onboarding_plan | onboarding_plan_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+onboarding_plan | onboarding_plan_created_at_not_null | NOT NULL created_at
+onboarding_plan | onboarding_plan_created_by_not_null | NOT NULL created_by
+onboarding_plan | onboarding_plan_id_not_null | NOT NULL id
+onboarding_plan | onboarding_plan_one_each | UNIQUE (organisation_id, person_id)
+onboarding_plan | onboarding_plan_organisation_id_not_null | NOT NULL organisation_id
+onboarding_plan | onboarding_plan_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+onboarding_plan | onboarding_plan_person_id_not_null | NOT NULL person_id
+onboarding_plan | onboarding_plan_pkey | PRIMARY KEY (organisation_id, id)
+onboarding_plan | onboarding_plan_start_date_not_null | NOT NULL start_date
+onboarding_plan | onboarding_plan_template_name_not_null | NOT NULL template_name
+onboarding_plan | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 onboarding_settings | onboarding_settings_by_fkey | FOREIGN KEY (organisation_id, updated_by) REFERENCES nemura.member(organisation_id, id)
 onboarding_settings | onboarding_settings_invite_to_fyniq_not_null | NOT NULL invite_to_fyniq
 onboarding_settings | onboarding_settings_organisation_id_not_null | NOT NULL organisation_id
@@ -2118,6 +2168,51 @@ onboarding_settings | onboarding_settings_pkey | PRIMARY KEY (organisation_id)
 onboarding_settings | onboarding_settings_updated_at_not_null | NOT NULL updated_at
 onboarding_settings | onboarding_settings_updated_by_not_null | NOT NULL updated_by
 onboarding_settings | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+onboarding_task | onboarding_task_assignee_known | CHECK ((assignee = ANY (ARRAY['hr'::text, 'manager'::text, 'it'::text, 'joiner'::text])))
+onboarding_task | onboarding_task_assignee_not_null | NOT NULL assignee
+onboarding_task | onboarding_task_by_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
+onboarding_task | onboarding_task_decided_whole | CHECK (((state = 'open'::text) = ((decided_at IS NULL) AND (decided_by IS NULL))))
+onboarding_task | onboarding_task_detail_length | CHECK ((length(detail) <= 1000))
+onboarding_task | onboarding_task_detail_not_null | NOT NULL detail
+onboarding_task | onboarding_task_due_on_not_null | NOT NULL due_on
+onboarding_task | onboarding_task_id_not_null | NOT NULL id
+onboarding_task | onboarding_task_note_length | CHECK (((note IS NULL) OR (length(note) <= 300)))
+onboarding_task | onboarding_task_organisation_id_not_null | NOT NULL organisation_id
+onboarding_task | onboarding_task_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+onboarding_task | onboarding_task_person_id_not_null | NOT NULL person_id
+onboarding_task | onboarding_task_pkey | PRIMARY KEY (organisation_id, id)
+onboarding_task | onboarding_task_plan_fkey | FOREIGN KEY (organisation_id, plan_id) REFERENCES nemura.onboarding_plan(organisation_id, id)
+onboarding_task | onboarding_task_plan_id_not_null | NOT NULL plan_id
+onboarding_task | onboarding_task_position_not_null | NOT NULL "position"
+onboarding_task | onboarding_task_state_known | CHECK ((state = ANY (ARRAY['open'::text, 'done'::text, 'skipped'::text])))
+onboarding_task | onboarding_task_state_not_null | NOT NULL state
+onboarding_task | onboarding_task_title_length | CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)))
+onboarding_task | onboarding_task_title_not_null | NOT NULL title
+onboarding_task | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+onboarding_template | onboarding_template_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+onboarding_template | onboarding_template_created_at_not_null | NOT NULL created_at
+onboarding_template | onboarding_template_created_by_not_null | NOT NULL created_by
+onboarding_template | onboarding_template_id_not_null | NOT NULL id
+onboarding_template | onboarding_template_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))
+onboarding_template | onboarding_template_name_not_null | NOT NULL name
+onboarding_template | onboarding_template_organisation_id_not_null | NOT NULL organisation_id
+onboarding_template | onboarding_template_pkey | PRIMARY KEY (organisation_id, id)
+onboarding_template | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+onboarding_template_task | onboarding_template_task_assignee_known | CHECK ((assignee = ANY (ARRAY['hr'::text, 'manager'::text, 'it'::text, 'joiner'::text])))
+onboarding_template_task | onboarding_template_task_assignee_not_null | NOT NULL assignee
+onboarding_template_task | onboarding_template_task_detail_length | CHECK ((length(detail) <= 1000))
+onboarding_template_task | onboarding_template_task_detail_not_null | NOT NULL detail
+onboarding_template_task | onboarding_template_task_due_offset_days_not_null | NOT NULL due_offset_days
+onboarding_template_task | onboarding_template_task_id_not_null | NOT NULL id
+onboarding_template_task | onboarding_template_task_offset_range | CHECK (((due_offset_days >= '-60'::integer) AND (due_offset_days <= 365)))
+onboarding_template_task | onboarding_template_task_organisation_id_not_null | NOT NULL organisation_id
+onboarding_template_task | onboarding_template_task_pkey | PRIMARY KEY (organisation_id, id)
+onboarding_template_task | onboarding_template_task_position | UNIQUE (organisation_id, template_id, "position")
+onboarding_template_task | onboarding_template_task_position_not_null | NOT NULL "position"
+onboarding_template_task | onboarding_template_task_template_fkey | FOREIGN KEY (organisation_id, template_id) REFERENCES nemura.onboarding_template(organisation_id, id)
+onboarding_template_task | onboarding_template_task_template_id_not_null | NOT NULL template_id
+onboarding_template_task | onboarding_template_task_title_length | CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)))
+onboarding_template_task | onboarding_template_task_title_not_null | NOT NULL title
 organisation | organisation_created_at_not_null | NOT NULL created_at
 organisation | organisation_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 200)))
 organisation | organisation_name_not_null | NOT NULL name
@@ -2923,7 +3018,16 @@ CREATE UNIQUE INDEX link_run_posting_pkey ON nemura.link_run_posting USING btree
 CREATE UNIQUE INDEX member_pkey ON nemura.member USING btree (organisation_id, id)
 CREATE UNIQUE INDEX offboarding_one_active ON nemura.offboarding USING btree (organisation_id, person_id) WHERE (state = 'active'::text)
 CREATE UNIQUE INDEX offboarding_pkey ON nemura.offboarding USING btree (organisation_id, id)
+CREATE UNIQUE INDEX onboarding_plan_one_each ON nemura.onboarding_plan USING btree (organisation_id, person_id)
+CREATE UNIQUE INDEX onboarding_plan_pkey ON nemura.onboarding_plan USING btree (organisation_id, id)
 CREATE UNIQUE INDEX onboarding_settings_pkey ON nemura.onboarding_settings USING btree (organisation_id)
+CREATE INDEX onboarding_task_open_idx ON nemura.onboarding_task USING btree (organisation_id, due_on) WHERE (state = 'open'::text)
+CREATE UNIQUE INDEX onboarding_task_pkey ON nemura.onboarding_task USING btree (organisation_id, id)
+CREATE INDEX onboarding_task_plan_idx ON nemura.onboarding_task USING btree (organisation_id, plan_id, "position")
+CREATE UNIQUE INDEX onboarding_template_name_once ON nemura.onboarding_template USING btree (organisation_id, lower(name)) WHERE (archived_at IS NULL)
+CREATE UNIQUE INDEX onboarding_template_pkey ON nemura.onboarding_template USING btree (organisation_id, id)
+CREATE UNIQUE INDEX onboarding_template_task_pkey ON nemura.onboarding_template_task USING btree (organisation_id, id)
+CREATE UNIQUE INDEX onboarding_template_task_position ON nemura.onboarding_template_task USING btree (organisation_id, template_id, "position")
 CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX outbox_business_key ON nemura.outbox USING btree (organisation_id, kind, business_key)
 CREATE UNIQUE INDEX outbox_pkey ON nemura.outbox USING btree (organisation_id, id)
@@ -3109,7 +3213,14 @@ CREATE TRIGGER member_deactivated AFTER UPDATE OF deactivated_at ON nemura.membe
 CREATE TRIGGER member_no_delete BEFORE DELETE ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.members_no_delete()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('member', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.offboarding DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('offboarding', 'id')
+CREATE TRIGGER onboarding_plan_append_only BEFORE DELETE OR UPDATE ON nemura.onboarding_plan FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('An onboarding plan')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.onboarding_plan DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('onboarding_plan', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.onboarding_settings DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('onboarding_settings', 'organisation_id')
+CREATE TRIGGER onboarding_task_guard BEFORE DELETE OR UPDATE ON nemura.onboarding_task FOR EACH ROW EXECUTE FUNCTION nemura.onboarding_task_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER UPDATE ON nemura.onboarding_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('onboarding_task', 'id')
+CREATE TRIGGER onboarding_template_guard BEFORE DELETE OR UPDATE ON nemura.onboarding_template FOR EACH ROW EXECUTE FUNCTION nemura.onboarding_template_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.onboarding_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('onboarding_template', 'id')
+CREATE TRIGGER onboarding_template_task_append_only BEFORE DELETE OR UPDATE ON nemura.onboarding_template_task FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('An onboarding template task')
 CREATE TRIGGER organisation_registered AFTER INSERT ON nemura.organisation FOR EACH ROW EXECUTE FUNCTION nemura.organisation_registered()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('organisation', 'organisation_id')
 CREATE TRIGGER outbox_guard BEFORE UPDATE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_guard()
@@ -3254,7 +3365,11 @@ link_run_approval | tenant_isolation | (organisation_id = nemura.current_org()) 
 link_run_posting | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 offboarding | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+onboarding_plan | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 onboarding_settings | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+onboarding_task | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+onboarding_template | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+onboarding_template_task | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 outbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 overtime_entry | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -4365,6 +4480,34 @@ CREATE OR REPLACE FUNCTION nemura.members_no_delete()
 AS $function$
 BEGIN
   RAISE EXCEPTION 'Members are deactivated, not deleted' USING ERRCODE = 'NM081';
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.onboarding_task_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR OLD.state <> 'open' OR NEW.state = 'open'
+     OR (NEW.plan_id, NEW.person_id, NEW.position, NEW.title, NEW.detail, NEW.assignee, NEW.due_on) IS DISTINCT FROM (OLD.plan_id, OLD.person_id, OLD.position, OLD.title, OLD.detail, OLD.assignee, OLD.due_on) THEN
+    RAISE EXCEPTION 'An onboarding task is done or skipped once, and its words and due date never change' USING ERRCODE = 'NM212';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.onboarding_template_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR OLD.archived_at IS NOT NULL OR NEW.archived_at IS NULL
+     OR (NEW.name, NEW.created_by, NEW.created_at) IS DISTINCT FROM (OLD.name, OLD.created_by, OLD.created_at) THEN
+    RAISE EXCEPTION 'An onboarding template is archived once and otherwise never changes' USING ERRCODE = 'NM212';
+  END IF;
+  RETURN NEW;
 END
 $function$
 
