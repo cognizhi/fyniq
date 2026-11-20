@@ -467,6 +467,7 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"project_revenue_run.earned":              func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "earned", v) },
 	"project_revenue_run.adjustment":          func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "run", v) },
 	"subscription_amendment.mrr":              func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "amendment", v) },
+	"automation_rule.amount_at_least":         func(t *testing.T, b porttest.Books, v string) error { return rawAutomationRule(t, b, v) },
 	"payment_link.amount":                     func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLink(t, b, v) },
 	"payment_link_payment.amount":             func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLinkPayment(t, b, v) },
 	"kpi_alert.spend":                         func(t *testing.T, b porttest.Books, v string) error { return rawKPIAlert(t, b, "spend", v) },

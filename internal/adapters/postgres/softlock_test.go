@@ -250,3 +250,16 @@ func TestAttackSoftLockRecordsAreKeptAndOnlyTheAPIWritesThem(t *testing.T) {
 	// The audit trigger wants an audit event in the same transaction; the API's unit of work writes it, a bare insert is refused.
 	wantState(t, "an exception with no audit event", run("fyniq_api", ins, pass.ID, period.ID, entry, ann, now), "FY061")
 }
+
+// rawAutomationRule inserts a workflow rule whose amount is v, as the API role, for the NaN and range attacks on its numeric column (FR-AUT-03).
+func rawAutomationRule(t *testing.T, b porttest.Books, v string) error {
+	t.Helper()
+	ctx := context.Background()
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	maker := founder(t, store(t, "fyniq_api"), b.Org, 41, now)
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.automation_rule (name, trigger, document_type, amount_at_least, action, recipients, created_by, created_at, updated_at)
+			VALUES ('x', 'document.posted', NULL, $1::numeric, 'notify', $2, $3, $4, $4)`, v, []uuid.UUID{maker}, maker, now)
+		return err
+	})
+}

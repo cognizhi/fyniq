@@ -232706,6 +232706,8 @@ paths:
         - STORAGE-PERIOD-03
         - STORAGE-RETRY-01
         - STORAGE-SOFTLOCK-01
+      x-fyniq-exempt:
+        If-Match: "A pass is a new record that leaves the period as it was: there is no version of the period to match, and each pass is the person's own."
       x-fyniq-permission:
         capability: Period close / reopen
         note: Only a person with the Accountant role, signed in to Fyniq and stepped up in the last 5 minutes (FR-GL-09).

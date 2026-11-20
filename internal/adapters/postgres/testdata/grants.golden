@@ -561,6 +561,9 @@ fyniq_api       INSERT    period_close (attested_at, attested_by, check_id, clos
 fyniq_api       SELECT    period_close
 fyniq_api       INSERT    period_close_check (checked_at, checked_by, clean, ledger_revision, period_id, result)
 fyniq_api       SELECT    period_close_check
+fyniq_api       INSERT    period_module_lock (changed_at, changed_by, locked, module, period_id)
+fyniq_api       SELECT    period_module_lock
+fyniq_api       UPDATE    period_module_lock (changed_at, changed_by, locked, version)
 fyniq_api       INSERT    period_reopen (after_hash, after_snapshot, approval_id, before_hash, close_id, period_id, reason, reopened_at, reopened_by, reopened_revision)
 fyniq_api       SELECT    period_reopen
 fyniq_api       INSERT    period_variance_explanation (account_id, current_amount, explanation, kind, period_id, previous_amount, written_at, written_by)
@@ -729,6 +732,10 @@ fyniq_api       EXECUTE   sign_in_methods()
 fyniq_api       EXECUTE   skip_job_slots()
 fyniq_api       INSERT    sod_override (conflict, created_at, created_by, reason, request_id, team_mode_version, user_id)
 fyniq_api       SELECT    sod_override
+fyniq_api       INSERT    soft_lock_exception (created_at, entry_id, pass_id, period_id, posting_date, reason, scope, source_type, user_id)
+fyniq_api       SELECT    soft_lock_exception
+fyniq_api       INSERT    soft_lock_pass (created_at, expires_at, period_id, reason, user_id)
+fyniq_api       SELECT    soft_lock_pass
 fyniq_api       EXECUTE   start_session()
 fyniq_api       EXECUTE   start_session_from()
 fyniq_api       EXECUTE   started_job_slot()
@@ -887,6 +894,7 @@ fyniq_executor  UPDATE    outbox (attempts, deadline_at, dispatches, job_executi
 fyniq_executor  SELECT    period
 fyniq_executor  SELECT    period_close
 fyniq_executor  SELECT    period_close_check
+fyniq_executor  SELECT    period_module_lock
 fyniq_executor  SELECT    period_reopen
 fyniq_executor  SELECT    period_variance_explanation
 fyniq_executor  SELECT    person_cost_rate
@@ -913,6 +921,8 @@ fyniq_executor  SELECT    role_assignment_scope
 fyniq_executor  SELECT    sales_reminder
 fyniq_executor  USAGE     schema fyniq
 fyniq_executor  SELECT    sod_override
+fyniq_executor  SELECT    soft_lock_exception
+fyniq_executor  SELECT    soft_lock_pass
 fyniq_executor  SELECT    statutory_pack_activation
 fyniq_executor  SELECT    statutory_pack_rows
 fyniq_executor  SELECT    statutory_pack_versions
@@ -1136,6 +1146,7 @@ fyniq_readonly  SELECT    people_source
 fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    period_close
 fyniq_readonly  SELECT    period_close_check
+fyniq_readonly  SELECT    period_module_lock
 fyniq_readonly  SELECT    period_reopen
 fyniq_readonly  SELECT    period_variance_explanation
 fyniq_readonly  SELECT    person_cost_rate
@@ -1200,6 +1211,8 @@ fyniq_readonly  SELECT    security_incident_step
 fyniq_readonly  EXECUTE   share_class_of()
 fyniq_readonly  SELECT    share_issue
 fyniq_readonly  SELECT    sod_override
+fyniq_readonly  SELECT    soft_lock_exception
+fyniq_readonly  SELECT    soft_lock_pass
 fyniq_readonly  SELECT    statement_mapping
 fyniq_readonly  SELECT    statutory_pack_activation
 fyniq_readonly  SELECT    statutory_pack_rows
@@ -1550,6 +1563,7 @@ fyniq_worker    SELECT    people_source
 fyniq_worker    SELECT    period
 fyniq_worker    SELECT    period_close
 fyniq_worker    SELECT    period_close_check
+fyniq_worker    SELECT    period_module_lock
 fyniq_worker    SELECT    period_reopen
 fyniq_worker    SELECT    period_variance_explanation
 fyniq_worker    SELECT    person_cost_rate
@@ -1653,6 +1667,8 @@ fyniq_worker    EXECUTE   share_class_of()
 fyniq_worker    SELECT    share_issue
 fyniq_worker    EXECUTE   shred_person_keys()
 fyniq_worker    SELECT    sod_override
+fyniq_worker    SELECT    soft_lock_exception
+fyniq_worker    SELECT    soft_lock_pass
 fyniq_worker    SELECT    statement_mapping
 fyniq_worker    SELECT    statutory_pack_activation
 fyniq_worker    SELECT    statutory_pack_rows

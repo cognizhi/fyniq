@@ -299,7 +299,7 @@ func registerSoftLocks(a *API) {
 			return moduleOp(ctx, in, "Releasing a module lock", false)
 		})
 
-	register(a, authz.MakeSoftLockPass, huma.Operation{
+	register(a, authz.MakeSoftLockPass, exempt(huma.Operation{
 		OperationID: "makeSoftLockPass", Method: http.MethodPost, Path: "/v1/periods/{period_id}/soft-lock-passes", Tags: []string{"Periods"}, DefaultStatus: http.StatusCreated,
 		Summary: "Make a pass to post into a locked period",
 		Description: "Lets the Accountant who asks post into a soft-locked period, or a locked module of one, for 1 to 8 hours (default 4), with a reason of at least 10 characters (FR-GL-09): `{ \"reason\": " +
@@ -307,7 +307,8 @@ func registerSoftLocks(a *API) {
 			"minutes, can make one, and it is theirs alone: no job, integration, agent or AI proposal holds a pass, whatever the person's role. Every posting made under it is on the exceptions " +
 			"report with the reason. The hard close is not affected: a closed period takes nothing. Idempotent with Idempotency-Key; Prefer: return=preview checks it and makes nothing. " +
 			"Not on the AI or MCP surface.",
-	}, append(append([]string{CodeNotFound, CodeInvalid}, people...), append(SoftLockCodes, locks...)...),
+	}, "If-Match", "A pass is a new record that leaves the period as it was: there is no version of the period to match, and each pass is the person's own."),
+		append(append([]string{CodeNotFound, CodeInvalid}, people...), append(SoftLockCodes, locks...)...),
 		func(ctx context.Context, in *softLockPassInput) (*softLockPassOutput, error) {
 			id, err := parseID("period_id", in.PeriodID)
 			if err != nil {

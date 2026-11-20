@@ -43,7 +43,7 @@ func TestConventionExemptions(t *testing.T) {
 	// Posting the provider's drafts does nothing twice by its state (FR-PSP-07, rev 0.524).
 	want = append(want, "postPaymentProviderInvoices Idempotency-Key")
 	// A dispute or promise is a record of its own (FR-AR-08, rev 0.521).
-	want = append(want, "createInvoiceDispute If-Match", "createSubscriptionContract If-Match", "proposeProjectRevenueJournal If-Match")
+	want = append(want, "makeSoftLockPass If-Match", "createInvoiceDispute If-Match", "createSubscriptionContract If-Match", "proposeProjectRevenueJournal If-Match")
 	// A portal link carries a one-time secret, and is a record of its own (FR-AR-14, rev 0.512).
 	want = append(want, "createPortalLink Idempotency-Key", "createPortalLink Prefer", "createPortalLink If-Match")
 	// A payment link is a record of its own (FR-AR-13, rev 0.511): it changes nothing of the invoice, and a link closes once.
