@@ -88,7 +88,7 @@ Source: PRD-001 §8.9 · Priority M · Phase P1
 - **THEN** Fyniq posts no disposal for it in P1, since the gift is a deemed supply at its open market value [accountant to confirm]
 
 ### Requirement: FR-FA-04 Asset reports and capital allowances
-The system SHALL report NBV, accumulated depreciation and the movement schedule (for the financial statements), and SHALL produce a tax capital allowance schedule (S19, S19A) from the company's election for each asset (rev 0.590, IRAS's page checked 20 Nov 2026) [accountant to confirm].
+The system SHALL report NBV, accumulated depreciation and the movement schedule (for the financial statements), and SHALL produce a tax capital allowance schedule (S19, S19A) from the company's election for each asset (rev 0.591, IRAS's page checked 20 Nov 2026) [accountant to confirm].
 
 Source: PRD-001 §8.9 · Priority S · Phase P2
 
@@ -102,7 +102,7 @@ Source: PRD-001 §8.9 · Priority S · Phase P2
 - **THEN** it follows S19 (20% initial allowance, the rest over a working life elected irrevocably: 6 or 12 years for a prescribed life of 12 or less, 6, 12 or 16 for 16), S19A(1) (3 years) or S19A(10A) (assets up to S$5,000, at most S$30,000 a year) as the company elected for each asset
 - **AND** the year of assessment of a purchase is the year after the financial year it was bought in ends, and each year's allowances add to the cost exactly
 
-#### Scenario: An asset the schedule cannot place (rev 0.590)
+#### Scenario: An asset the schedule cannot place (rev 0.591)
 - **WHEN** an asset has no election, was bought before YA 2023, has a disposal that stands, has a working life its prescribed life does not allow, or is over the limits of S19A(10A)
 - **THEN** it is listed apart with the reason and claims nothing, and is never guessed
 - **AND** a S19 election, once made, never changes

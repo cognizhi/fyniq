@@ -928,7 +928,7 @@ var (
 	GetFixedAsset      = Policy{Operation: "getFixedAsset", Capability: FixedAssets, Need: View}
 	RegisterFixedAsset = Policy{Operation: "registerFixedAsset", Capability: FixedAssets, Need: Create}
 	ChangeFixedAsset   = Policy{Operation: "changeFixedAsset", Capability: FixedAssets, Need: Create}
-	// The asset reports (FR-FA-04, rev 0.582): the movement schedule and the tax capital allowance schedule, read under V on "Fixed assets".
+	// The asset reports (FR-FA-04, rev 0.591): the movement schedule and the tax capital allowance schedule, read under V on "Fixed assets".
 	GetFixedAssetMovement       = Policy{Operation: "getFixedAssetMovement", Capability: FixedAssets, Need: View}
 	GetCapitalAllowanceSchedule = Policy{Operation: "getCapitalAllowanceSchedule", Capability: FixedAssets, Need: View}
 	// The purchases on asset accounts not in the register yet (FR-FA-01; design D5), read under V.

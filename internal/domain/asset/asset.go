@@ -35,8 +35,8 @@ const (
 	CodeDisposed   = "ASSET-12" // a change of an asset nothing of which is left
 	CodeAssetVoid  = "ASSET-20" // (rev 0.151) a void refused: a disposal of the asset stands, or a month to reverse is in a period not open
 	CodeVoided     = "ASSET-21" // (rev 0.151) an asset voided: it changes, disposes and voids no more
-	CodeTaxMethod  = "ASSET-23" // (rev 0.582) a capital allowance election that is not section 19, 19A(1) or 19A(10A), or whose working life the pack does not allow
-	CodeTaxFixed   = "ASSET-24" // (rev 0.582) a section 19 election changed: the company's election of a working life is irrevocable
+	CodeTaxMethod  = "ASSET-23" // (rev 0.591) a capital allowance election that is not section 19, 19A(1) or 19A(10A), or whose working life the pack does not allow
+	CodeTaxFixed   = "ASSET-24" // (rev 0.591) a section 19 election changed: the company's election of a working life is irrevocable
 )
 
 // The longest texts an asset keeps, and its longest life.
@@ -73,7 +73,7 @@ const (
 	TaxS19A10A = "s19a10a" // section 19A(10A): the whole cost in one year, for a low-value asset
 )
 
-// TaxElection is the capital allowance claim a company elects for an asset (FR-FA-04, rev 0.582): the method and, under section 19, the working life the Sixth Schedule
+// TaxElection is the capital allowance claim a company elects for an asset (FR-FA-04, rev 0.591): the method and, under section 19, the working life the Sixth Schedule
 // prescribes for it (6, 12 or 16 years) and the years elected, which the pack allows for that life. Nil until the company elects: the capital allowance schedule lists such an
 // asset apart and never guesses. It changes nothing in the books: the depreciation is the asset's own.
 type TaxElection struct {
