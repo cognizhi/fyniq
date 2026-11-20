@@ -459,6 +459,7 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"psp_subscription.amount":                 func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "subscription", v) },
 	"psp_invoice.total":                       func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "total", v) },
 	"psp_invoice.amount_paid":                 func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "paid", v) },
+	"psp_credit_note.total":                   func(t *testing.T, b porttest.Books, v string) error { return rawPSPMirror(t, b, "credit_total", v) },
 	"invoice_dispute.amount":                  func(t *testing.T, b porttest.Books, v string) error { return rawInvoiceDispute(t, b, v) },
 	"subscription_contract.mrr":               func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "contract", v) },
 	"project_revenue_election.estimated_cost": func(t *testing.T, b porttest.Books, v string) error { return rawProjectRevenue(t, b, "election", v) },
@@ -1604,6 +1605,11 @@ func rawPSPMirror(t *testing.T, b porttest.Books, which, value string) error {
 		if which == "subscription" {
 			_, err := tx.Exec(ctx, `INSERT INTO fyniq.psp_subscription (connector_id, provider_subscription_id, provider_customer_id, status, currency, amount, interval_unit, interval_count, seen_at)
 VALUES ($1, 'sub_1', 'cus_1', 'active', 'SGD', $2::numeric, 'month', 1, now())`, uuid.New(), value)
+			return err
+		}
+		if which == "credit_total" {
+			_, err := tx.Exec(ctx, `INSERT INTO fyniq.psp_credit_note (connector_id, provider_credit_note_id, provider_invoice_id, status, currency, total, seen_at)
+VALUES ($1, 'cn_1', 'in_1', 'issued', 'SGD', $2::numeric, now())`, uuid.New(), value)
 			return err
 		}
 		total, paid := "10.00", "0.00"

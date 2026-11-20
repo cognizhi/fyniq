@@ -247,15 +247,13 @@ func TestEventsAreKnownHandledOrUnknown(t *testing.T) {
 	if err != nil || e.ID != "evt_1" || !e.Known || !e.Handled || e.Kind != ports.ProviderPayout || e.ObjectID != "po_1" || e.APIVersion != "2025-09-30.clover" {
 		t.Fatalf("%+v, %v", e, err)
 	}
-	// Model B's invoice, customer and subscription events name the object the mirror fetches (FR-PSP-03); a credit note's is known and mirrored by no one yet.
-	for typ, kind := range map[string]ports.ProviderKind{"invoice.paid": ports.ProviderInvoice, "customer.updated": ports.ProviderCustomer, "customer.subscription.updated": ports.ProviderSubscription} {
+	// Model B's invoice, customer and subscription events name the object the mirror fetches (FR-PSP-03); so do a credit note's (FR-PSP-07).
+	for typ, kind := range map[string]ports.ProviderKind{"invoice.paid": ports.ProviderInvoice, "customer.updated": ports.ProviderCustomer, "customer.subscription.updated": ports.ProviderSubscription,
+		"credit_note.created": ports.ProviderCreditNote, "credit_note.voided": ports.ProviderCreditNote} {
 		e, _ := ParseEvent(nil, []byte(`{"id":"evt_9","type":"`+typ+`","data":{"object":{"id":"x_1"}}}`))
 		if !e.Known || !e.Handled || e.Kind != kind || e.ObjectID != "x_1" {
 			t.Errorf("%s: %+v", typ, e)
 		}
-	}
-	if cn, _ := ParseEvent(nil, []byte(`{"id":"evt_8","type":"credit_note.created","data":{"object":{"id":"cn_1"}}}`)); !cn.Known || cn.Handled {
-		t.Errorf("credit_note.created: %+v", cn)
 	}
 	info, _ := ParseEvent(nil, []byte(`{"id":"evt_2","type":"payment_intent.succeeded","data":{"object":{"id":"pi_1"}}}`))
 	if !info.Known || info.Handled {
@@ -314,7 +312,7 @@ func TestThePartnerContractNamesEveryOperationTheAdapterCalls(t *testing.T) {
 	if err := yaml.Unmarshal(raw, &doc); err != nil {
 		t.Fatal(err)
 	}
-	for _, p := range []string{"/v1/balance", "/v1/balance_transactions", "/v1/charges/{id}", "/v1/invoice_payments", "/v1/invoices/{id}", "/v1/payouts/{id}"} {
+	for _, p := range []string{"/v1/balance", "/v1/balance_transactions", "/v1/charges/{id}", "/v1/credit_notes/{id}", "/v1/invoice_payments", "/v1/invoices/{id}", "/v1/payouts/{id}"} {
 		ops, ok := doc.Paths[p]
 		if !ok {
 			t.Errorf("the contract has no %s", p)
@@ -374,5 +372,40 @@ func TestAnInvoiceIsMirroredWithItsLinesPeriodsAndCollectionState(t *testing.T) 
 	if err != nil || so.Subscription == nil || so.Subscription.Amount != "100.00" || so.Subscription.IntervalUnit != "month" || so.Subscription.Status != "active" ||
 		so.Subscription.PeriodEnd == nil {
 		t.Errorf("the subscription: %+v, %v", so.Subscription, err)
+	}
+}
+
+// A credit note against an invoice is read as Stripe reports it (FR-PSP-07; field names [live-verify]): the invoice it credits, its status and reason, each line's amount
+// before tax as an exact decimal and the total with tax. One with a discount, a negative line, more lines than a page, no lines, or lines and tax that do not add up to its
+// total is read with why it is unsupported, so a person decides it. req: FR-PSP-07
+func TestACreditNoteIsReadWithItsInvoiceLinesAndTotal(t *testing.T) {
+	raw := []byte(`{"id":"cn_1","object":"credit_note","invoice":"in_1","number":"ACME-0001-CN-01","status":"issued","reason":"order_change","currency":"sgd","created":1793750400,
+	  "total":3270,"total_taxes":[{"amount":270}],"lines":{"data":[{"id":"cnli_1","description":"Credit for the workshop","amount":3000,"discount_amounts":[]}],"has_more":false}}`)
+	doc, err := decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	o, err := object(ports.ProviderCreditNote, doc, raw)
+	if err != nil || o.CreditNote == nil {
+		t.Fatalf("%v %v", o, err)
+	}
+	c := o.CreditNote
+	if o.Currency != "SGD" || o.Amount != "32.70" || c.Total != "32.70" || c.InvoiceID != "in_1" || c.Status != "issued" || c.Reason != "order_change" || c.Number != "ACME-0001-CN-01" ||
+		len(c.Lines) != 1 || c.Lines[0].Amount != "30.00" || c.Unsupported != "" || len(o.Links[ports.ProviderInvoice]) != 1 {
+		t.Fatalf("the credit note: %+v %+v", o, c)
+	}
+	for name, change := range map[string]func(string) string{
+		"a discount": func(s string) string {
+			return strings.Replace(s, `"discount_amounts":[]`, `"discount_amounts":[{"amount":100}]`, 1)
+		},
+		"a negative line":                  func(s string) string { return strings.Replace(s, `"amount":3000`, `"amount":-3000`, 1) },
+		"more lines than one page":         func(s string) string { return strings.Replace(s, `"has_more":false`, `"has_more":true`, 1) },
+		"lines and tax that do not add up": func(s string) string { return strings.Replace(s, `"total":3270`, `"total":3300`, 1) },
+	} {
+		d, _ := decode([]byte(change(string(raw))))
+		x, err := object(ports.ProviderCreditNote, d, raw)
+		if err != nil || x.CreditNote == nil || !strings.Contains(x.CreditNote.Unsupported, name[strings.Index(name, " ")+1:]) {
+			t.Errorf("%s: %+v, %v", name, x.CreditNote, err)
+		}
 	}
 }

@@ -590,6 +590,8 @@ fyniq_api       SELECT    psp_account
 fyniq_api       UPDATE    psp_account (dispute_loss_account_id, disputes_account_id, fee_account_id, payout_account_id, revenue_account_id, version)
 fyniq_api       SELECT    psp_balance
 fyniq_api       SELECT    psp_charge_invoice
+fyniq_api       SELECT    psp_credit_note
+fyniq_api       UPDATE    psp_credit_note (parked_reason, state, version)
 fyniq_api       SELECT    psp_customer
 fyniq_api       INSERT    psp_dispute_credit (amount, connector_id, created_at, created_by, credit_note_id, currency, dispute_id, refund_id)
 fyniq_api       SELECT    psp_dispute_credit
@@ -1109,6 +1111,7 @@ fyniq_readonly  SELECT    project_task
 fyniq_readonly  SELECT    psp_account
 fyniq_readonly  SELECT    psp_balance
 fyniq_readonly  SELECT    psp_charge_invoice
+fyniq_readonly  SELECT    psp_credit_note
 fyniq_readonly  SELECT    psp_customer
 fyniq_readonly  SELECT    psp_dispute_credit
 fyniq_readonly  SELECT    psp_dispute_loss
@@ -1305,6 +1308,7 @@ fyniq_worker    SELECT    conversion_step
 fyniq_worker    EXECUTE   count_super_admins()
 fyniq_worker    EXECUTE   create_payment_link_by_platform()
 fyniq_worker    EXECUTE   create_project_revenue_draft()
+fyniq_worker    EXECUTE   create_provider_credit_note_draft()
 fyniq_worker    EXECUTE   create_provider_invoice_draft()
 fyniq_worker    EXECUTE   create_scheduled_bill_draft()
 fyniq_worker    EXECUTE   create_scheduled_draft()
@@ -1508,6 +1512,9 @@ fyniq_worker    INSERT    psp_balance (amount, connector_id, currency, taken_at)
 fyniq_worker    SELECT    psp_balance
 fyniq_worker    INSERT    psp_charge_invoice (charge_id, connector_id, provider_invoice_id, seen_at)
 fyniq_worker    SELECT    psp_charge_invoice
+fyniq_worker    INSERT    psp_credit_note (connector_id, currency, draft_lines, issued_on, number, provider_credit_note_id, provider_invoice_id, reason, seen_at, status, total)
+fyniq_worker    SELECT    psp_credit_note
+fyniq_worker    UPDATE    psp_credit_note (draft_lines, issued_on, number, parked_reason, reason, seen_at, state, status, total, version)
 fyniq_worker    INSERT    psp_customer (connector_id, email, name, provider_customer_id, seen_at)
 fyniq_worker    SELECT    psp_customer
 fyniq_worker    UPDATE    psp_customer (email, name, seen_at)

@@ -418,6 +418,13 @@ func object(kind ports.ProviderKind, doc map[string]any, raw []byte) (ports.Prov
 		if o.Invoice, err = invoiceData(doc, cur); err != nil {
 			return o, err
 		}
+	case ports.ProviderCreditNote:
+		if cur != "" {
+			var err error
+			if o.CreditNote, err = creditNoteData(doc, cur); err != nil {
+				return o, err
+			}
+		}
 	case ports.ProviderCustomer:
 		o.Customer = customerData(doc)
 	case ports.ProviderSubscription:
@@ -641,7 +648,7 @@ func Verify(secret string, h http.Header, body []byte, now time.Time) error {
 // handled are the event types whose object the sweep's mirror needs fetched now, each with the kind of object it names: a
 // charge, refund, dispute or payout changes what the provider reports beside the statement lines (the payout and what it
 // settles), and the processor records it and queues a sweep; an invoice, customer or subscription event names an object Model B mirrors
-// (FR-PSP-03). informational are known event types that need nothing more (credit notes are not mirrored yet).
+// (FR-PSP-03). informational are known event types that need nothing more.
 // An event type in neither is unknown: it is stored and parked for a person (UC-PSP-01).
 var handled = map[string]ports.ProviderKind{
 	"charge.succeeded": ports.ProviderCharge, "charge.refunded": ports.ProviderCharge, "refund.created": ports.ProviderRefund,
@@ -656,6 +663,8 @@ var handled = map[string]ports.ProviderKind{
 	"customer.subscription.created": ports.ProviderSubscription, "customer.subscription.updated": ports.ProviderSubscription,
 	"customer.subscription.deleted": ports.ProviderSubscription, "customer.subscription.paused": ports.ProviderSubscription,
 	"customer.subscription.resumed": ports.ProviderSubscription,
+	// Model B's credit notes (FR-PSP-07): mirrored like invoices, made into a draft AR credit note of the mirrored invoice.
+	"credit_note.created": ports.ProviderCreditNote, "credit_note.updated": ports.ProviderCreditNote, "credit_note.voided": ports.ProviderCreditNote,
 }
 
 // HandledKinds are the kinds of object the events the adapter handles name: each needs a handler in the processor.
@@ -671,7 +680,7 @@ func HandledKinds() []ports.ProviderKind {
 }
 
 var informational = []string{"invoice.finalization_failed", "invoice.upcoming",
-	"credit_note.created", "credit_note.updated", "credit_note.voided", "customer.subscription.trial_will_end", "charge.failed", "charge.updated", "charge.pending",
+	"customer.subscription.trial_will_end", "charge.failed", "charge.updated", "charge.pending",
 	"payment_intent.succeeded", "payment_intent.created", "payment_intent.payment_failed", "balance.available"}
 
 // ParseEvent reads a verified webhook: its ID, type and API version, the object it names, and whether its type is known.

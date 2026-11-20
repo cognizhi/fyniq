@@ -2,6 +2,22 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "credit_notes_parked": {
+      "description": "Credit note drafts set aside for a person: the total differs, or the invoice rules refuse them.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "credit_notes_posted": {
+      "description": "Credit note drafts issued: their total is the provider's to the cent.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
     "parked": {
       "description": "Set aside for a person: the invoice rules' total differs from the provider's, or the invoice cannot be issued.",
       "examples": [
@@ -30,7 +46,9 @@
   "required": [
     "posted",
     "parked",
-    "waiting"
+    "waiting",
+    "credit_notes_posted",
+    "credit_notes_parked"
   ],
   "title": "PostedProviderInvoices",
   "type": "object"
