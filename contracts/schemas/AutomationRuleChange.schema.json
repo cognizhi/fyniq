@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount_at_least": {
+      "description": "A new amount; an empty string for any amount.",
+      "pattern": "^([0-9]+(\\.[0-9]{1,4})?)?$",
+      "type": "string"
+    },
+    "document_type": {
+      "description": "A new kind of document; an empty string for any kind.",
+      "maxLength": 41,
+      "type": "string"
+    },
+    "name": {
+      "description": "A new name.",
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "recipients": {
+      "description": "The new recipients, replacing the old.",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "type": "array"
+    },
+    "state": {
+      "description": "active or paused to turn it on or off; archived ends it for good.",
+      "enum": [
+        "active",
+        "paused",
+        "archived"
+      ],
+      "type": "string"
+    }
+  },
+  "title": "AutomationRuleChange",
+  "type": "object"
+}

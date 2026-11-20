@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount_at_least": {
+      "description": "Fires only when the document's debits in the base currency are at least this; leave it out for any amount.",
+      "examples": [
+        "5000.00"
+      ],
+      "pattern": "^[0-9]+(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "document_type": {
+      "description": "The kind of document it watches, such as bill, invoice or journal (the kinds whose postings tell people); leave it out for any kind.",
+      "examples": [
+        "bill"
+      ],
+      "maxLength": 41,
+      "type": "string"
+    },
+    "name": {
+      "description": "The rule's name.",
+      "examples": [
+        "Large bills"
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "recipients": {
+      "description": "The active members told (user IDs). Each must hold the right to view the document, which is checked every time the rule fires.",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "recipients"
+  ],
+  "title": "AutomationRuleInput",
+  "type": "object"
+}

@@ -43,6 +43,11 @@ channels:
     messages:
       fyniq.approval.requested.v1:
         $ref: '#/components/messages/fyniq.approval.requested.v1'
+  fyniq.automation.rule.v1:
+    address: fyniq.automation.rule.v1
+    messages:
+      fyniq.automation.rule.v1:
+        $ref: '#/components/messages/fyniq.automation.rule.v1'
   fyniq.bills.due.v1:
     address: fyniq.bills.due.v1
     messages:
@@ -289,6 +294,13 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.approval.requested.v1.schema.json'
+    fyniq.automation.rule.v1:
+      name: fyniq.automation.rule.v1
+      title: fyniq.automation.rule.v1
+      summary: "Fires when: A workflow rule of your organisation fired"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.automation.rule.v1.schema.json'
     fyniq.bills.due.v1:
       name: fyniq.bills.due.v1
       title: fyniq.bills.due.v1

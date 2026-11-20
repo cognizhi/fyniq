@@ -95,6 +95,7 @@ var fyCodes = map[string]string{
 	"FYW01": storage.CodeInvalid,  // a webhook endpoint changed beyond its rules, or a webhook record deleted (001151)
 	"FYW02": storage.CodeInvalid,  // a webhook delivery changed beyond its rules (001151)
 	"FYM01": storage.CodeInvalid,  // a third-party AI app changed beyond noting its removal, or deleted (001153)
+	"FYA01": storage.CodeInvalid,  // a workflow rule changed out of its course, or deleted (001202)
 	"FYD01": storage.CodeApproval, // a delegation of approval authority changed beyond being ended, or deleted (001200)
 	"FYD02": storage.CodeApproval, // a signature on behalf of someone without a live delegation, or twice for one person (001200)
 	"FYD03": storage.CodeApproval, // a recorded approval reminder changed or deleted (001200)

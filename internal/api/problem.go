@@ -40,6 +40,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/domain/automation"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/banktransaction"
@@ -626,6 +627,9 @@ var codeFacts = map[string]struct {
 	approval.CodeRules:            {422, "The policy's rules cannot be applied"},
 	approval.CodeFixed:            {409, "This approval policy is fixed"},
 	approval.CodeAuthority:        {409, "An earlier approver no longer holds the right: nothing was changed"},
+	automation.CodeRule:           {422, "The workflow rule cannot be saved that way"},
+	automation.CodeOff:            {409, "Workflow rules are off"},
+	automation.CodeNotFound:       {404, "No such workflow rule"},
 	approval.CodeDelegation:       {422, "The delegation cannot be made that way"},
 	approval.CodeDelegationNotFor: {409, "That delegation cannot be ended by you, or has ended"},
 	approval.CodeNotYourStep:      {403, "The request's current step needs someone else"},

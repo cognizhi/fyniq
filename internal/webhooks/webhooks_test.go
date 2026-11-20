@@ -21,6 +21,7 @@ import (
 // libraries' own, which the specification does not carry [verify], and the properties a receiver relies on: a changed body, id, timestamp or secret does not verify, a stale timestamp is
 // refused, and two signatures while a secret rolls both verify.
 // req: FR-INT-12
+// req: FR-AUT-04
 // asvs: V11.2.1, V13.2.1
 func TestTheSignatureIsStandardWebhooksV1(t *testing.T) {
 	const secret = "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw"
@@ -81,6 +82,7 @@ func TestSecretsAreRandomAndShowOnlyTheirLastFour(t *testing.T) {
 
 // Retries: 5 s, 5 min, 30 min, 2 h, 5 h, 10 h, then every 12 h, until three days from the first attempt, then no more.
 // req: FR-INT-12
+// req: FR-AUT-04
 func TestTheRetriesBackOffForThreeDays(t *testing.T) {
 	first := time.Date(2026, 11, 21, 9, 0, 0, 0, time.UTC)
 	now, tried := first, 0
