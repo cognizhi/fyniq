@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -123,7 +124,7 @@ func registerPayrollRuns(a *API) {
 		Summary: "Set the next version of the account mapping",
 		Description: "Sets the next version of the mapping pay runs post by (FR-EMP-02's minimum): each department's salary expense account and each kind of " +
 			"deduction's account. A new version makes a run calculated against the old one refused until Nemura recalculates it. Side effects: the new " +
-			"version and its audit event. Idempotent with Idempotency-Key. On the never-list for the AI and MCP (§9.6). Left: dual control by the approval engine.",
+			"version and its audit event, and, with a link that has keys, `people.department.changed` for Nemura (the mapping's version and its departments by ID and name, never an account). Idempotent with Idempotency-Key. On the never-list for the AI and MCP (§9.6). Left: dual control by the approval engine.",
 	}, append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeInvalid}, locks...), func(ctx context.Context, in *payrollMappingInput) (*payrollMappingOutput, error) {
 		p, _ := authn.From(ctx)
 		resp, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (PayrollMapping, error) {
@@ -141,6 +142,11 @@ func registerPayrollRuns(a *API) {
 			now := a.deps.Clock.Now()
 			m, err := u.PayrollRuns().SetMapping(ctx, entries, "user:"+p.UserID.String(), now)
 			if err != nil {
+				return PayrollMapping{}, err
+			}
+			// Nemura is told the mapping's version and its departments, in the same unit of work, so a pay run is calculated against the mapping Fyniq holds (PPL-16); nothing is queued with no link
+			// that has keys. The accounts never travel: only the departments' IDs and names.
+			if err := a.tellNemuraOfTheMapping(ctx, u, p.Organisation, m.Version, entries); err != nil {
 				return PayrollMapping{}, err
 			}
 			out := PayrollMapping{Version: m.Version, Entries: in.Body.Entries, SetBy: m.SetBy, SetAt: &now}
@@ -171,6 +177,32 @@ func registerPayrollRuns(a *API) {
 		ledger.CodeDimensionValue, ledger.CodeNoDate, ledger.CodeTooLong}, locks...), func(ctx context.Context, in *payrollRunInput) (*payrollRunOutput, error) {
 		return a.submitPayrollRun(ctx, in)
 	})
+}
+
+// tellNemuraOfTheMapping queues people.department.changed for a mapping version: each department the mapping names, by Fyniq's dimension value and its name, in order.
+func (a *API) tellNemuraOfTheMapping(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, version int, entries map[string]uuid.UUID) error {
+	payload := linksend.DepartmentChanged{MappingVersion: version, Departments: []linksend.Department{}}
+	for k := range entries {
+		id, ok := strings.CutPrefix(k, "department:")
+		if !ok {
+			continue
+		}
+		value, err := uuid.Parse(id)
+		if err != nil {
+			continue
+		}
+		v, err := u.Dimensions().GetValue(ctx, value)
+		if errors.Is(err, ports.ErrNotFound) {
+			continue // a department the mapping names and the chart of dimensions does not have cannot be named to Nemura
+		}
+		if err != nil {
+			return err
+		}
+		payload.Departments = append(payload.Departments, linksend.Department{DepartmentID: v.ID.String(), Name: v.Name})
+	}
+	sort.Slice(payload.Departments, func(i, j int) bool { return payload.Departments[i].DepartmentID < payload.Departments[j].DepartmentID })
+	_, err := linksend.Queue(ctx, u, linksend.TypeDepartmentChanged, "payroll_mapping", org.String(), version, payload)
+	return err
 }
 
 func exemptByEventID(op huma.Operation) huma.Operation {

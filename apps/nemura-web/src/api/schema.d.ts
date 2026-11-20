@@ -1804,6 +1804,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll/runs/{id}/approval-envelope": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The approval envelope of a pay run version
+         * @description While Nemura is linked to Fyniq a pay run is approved with proof: this is the approval envelope the approver reads and signs, the figures Fyniq will post by Fyniq's department with the pay run's CPF, SDL, SHG, deductions and reimbursements, the packs and Fyniq's mapping version it was calculated against and the preparer and approver by sign-in identity, with its SHA-256 and the challenge to sign it with: a passkey the approver enrolled in Fyniq, at Nemura's origin, for the shared relying party. The reasons it cannot be signed yet are listed in plain words. While not linked it says so and the plain approval applies. The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["getPayRunApprovalEnvelope"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payroll/runs/{id}/changes": {
         parameters: {
             query?: never;
@@ -1838,6 +1858,26 @@ export interface paths {
          * @description Makes the standalone journal file (the run's balanced entry, one line for each account) or the bank payment file (one row for each person owed money with a bank account on record) of an approved version, as generic CSV with a manifest of the run, the version, the totals and the SHA-256 of the exact bytes. The file is not kept, only its manifest is. A person is left out of a payment file, and listed with why, when nothing is owed (a tax-clearance hold), no bank account is on record, the payment is on its way or paid, or its outcome is unknown. A file is never proof of payment. The payment file holds bank account numbers, so it needs a passkey confirmation in the last five minutes. The Payroll administrator and the Owner. It is audited, never with an amount or an account.
          */
         post: operations["exportPayRunFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/runs/{id}/linked-approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a pay run version with the link's proof
+         * @description Approves the newest version, while it is calculated, as the plain approval does (a passkey confirmed in the last five minutes, over the run's digest, the approver never the preparer) and also with the approver's passkey assertion over the approval envelope's digest. Nemura checks that the answer is for this envelope, at its own origin, for the shared relying party and with the person present and verified, keeps it with the envelope, and queues the submission to Fyniq in the same transaction; Fyniq verifies the signature against the passkey the approver enrolled there before it posts anything. While the apps are linked the plain approval is closed. It is audited with the run, the version and the digests, never an amount. The Payroll administrator and the Owner.
+         */
+        post: operations["approvePayRunVersionLinked"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1902,6 +1942,30 @@ export interface paths {
          * @description Makes the itemised payslip of each person of an approved version: MOM's twelve items as data, the PDF drawn from them and its SHA-256, published to each person's My pay. Once for a version; a corrected version has its own. The employer's name is the letterhead's. The Payroll administrator and the Owner. It is audited without any amount.
          */
         post: operations["publishPayslips"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/runs/{id}/submission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What became of a pay run's submission to Fyniq
+         * @description For the newest version approved while linked: whether it was sent, Fyniq's answer (the posting's reference, or the code and words of its refusal, with which the run waits) and whether sending the same approval again could change the answer. The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["getPayRunSubmission"];
+        put?: never;
+        /**
+         * Send a pay run's approval to Fyniq again
+         * @description After a refusal that can change (the approver has no passkey enrolled in Fyniq, a period is closed there, an account is missing), sends the same stored approval again as a new event. The proof is never remade: it is what was approved. A refusal of the figures or the proof needs a new calculation and a new approval. The Payroll administrator and the Owner. It is audited.
+         */
+        post: operations["retryPayRunSubmission"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5486,6 +5550,26 @@ export interface components {
              */
             state: "none" | "proposed" | "active" | "suspended" | "unlinking" | "unlinked";
         };
+        LinkedApprovalInput: {
+            /** @description The approver's passkey assertion over the envelope's digest. */
+            approval: components["schemas"]["RunProof"];
+            /**
+             * @description The digest of the version as the approver read it (the run's own).
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            digest: string;
+            /**
+             * @description The envelope's digest as the approver read it: it must be the one the passkey signed.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            envelope_sha256: string;
+            /**
+             * Format: int64
+             * @description The version approved: the newest, while it is calculated.
+             * @example 2
+             */
+            version: number;
+        };
         MyDetails: {
             /**
              * @description Your home address.
@@ -7071,6 +7155,42 @@ export interface components {
              */
             pay_group_id: string;
         };
+        RunApprovalEnvelope: {
+            /**
+             * @description The WebAuthn challenge: the digest's 32 raw bytes, base64url without padding. Sign exactly this, with a passkey enrolled in Fyniq, and no other.
+             * @example n4bQgYhMfWWaL-qgxVrQFaO_TxsrC4Is0V1sFbDwCgg
+             */
+            challenge?: string;
+            /** @description The figures that will be posted. */
+            envelope: components["schemas"]["RunEnvelopeView"];
+            /**
+             * @description The SHA-256 of the envelope's canonical form, lower-case hexadecimal: what the passkey signs.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            envelope_sha256?: string;
+            /** @description Why the envelope cannot be signed yet, in plain words: a department Fyniq does not have, a person with no sign-in identity, no mapping yet. */
+            issues: string[] | null;
+            /**
+             * @description True while the apps are linked: the run is then approved with this envelope's proof; false: approve the usual way.
+             * @example true
+             */
+            linked: boolean;
+            /**
+             * @description Nemura's own origin, where the passkey answers; Fyniq checks it against the link.
+             * @example https://people.example.test
+             */
+            origin: string;
+            /**
+             * @description True when the envelope can be signed now; false with the reasons in issues.
+             * @example true
+             */
+            ready: boolean;
+            /**
+             * @description The relying party the two apps share: pass it as rpId, so one authenticator works in both.
+             * @example example.test
+             */
+            rp_id: string;
+        };
         RunApprovalInputBody: {
             /**
              * @description The digest of the version as the approver read it.
@@ -7196,6 +7316,112 @@ export interface components {
             pay_group_id: string;
             /** @description Every version, newest first. */
             versions: components["schemas"]["RunVersion"][] | null;
+        };
+        RunEnvelopeDeduction: {
+            /**
+             * @description The month's deductions of that kind, as a decimal string in dollars.
+             * @example 150.00
+             */
+            amount: string;
+            /**
+             * @description The kind of deduction, which Fyniq's mapping gives its account.
+             * @example recovery
+             */
+            kind: string;
+        };
+        RunEnvelopeDepartment: {
+            /**
+             * Format: uuid
+             * @description Fyniq's department (a dimension value): departments come from Fyniq.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e70
+             */
+            department_id: string;
+            /**
+             * @description Gross pay of the department's people in the wage month, as a decimal string in dollars.
+             * @example 12450.00
+             */
+            gross: string;
+        };
+        RunEnvelopeView: {
+            /**
+             * @description The right the approver holds: payroll.approve.
+             * @example payroll.approve
+             */
+            approver_right: string;
+            /** @description Deductions by kind. */
+            deductions: components["schemas"]["RunEnvelopeDeduction"][] | null;
+            /** @description Gross pay by Fyniq's department. */
+            departments: components["schemas"]["RunEnvelopeDepartment"][] | null;
+            /**
+             * @description The employees' CPF for the month.
+             * @example 2480.00
+             */
+            employee_cpf: string;
+            /**
+             * @description The employer's CPF for the month.
+             * @example 2108.00
+             */
+            employer_cpf: string;
+            /**
+             * Format: int64
+             * @description The version of Fyniq's account mapping the run was calculated against.
+             * @example 3
+             */
+            mapping_version: number;
+            /**
+             * Format: uuid
+             * @description This Nemura organisation.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+             */
+            organisation: string;
+            /**
+             * @description The statutory packs the run was calculated under.
+             * @example sg-cpf@2026.1,sg-sdl@2026.1
+             */
+            pack_version: string;
+            /**
+             * @description The people pack.
+             * @example sg-people@2026.1
+             */
+            policy_version: string;
+            /**
+             * @description Claims paid with the salary.
+             * @example 0.00
+             */
+            reimbursements: string;
+            /**
+             * Format: uuid
+             * @description The run.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+             */
+            run_id: string;
+            /**
+             * @description The Skills Development Levy for the month.
+             * @example 34.75
+             */
+            sdl: string;
+            /**
+             * @description Self-help group fund contributions for the month.
+             * @example 12.00
+             */
+            shg: string;
+            /**
+             * Format: int64
+             * @description The version this one corrects: Fyniq posts the difference from it; 0 for the first.
+             * @example 1
+             */
+            supersedes: number;
+            /**
+             * Format: int64
+             * @description The version approved.
+             * @example 2
+             */
+            version: number;
+            /**
+             * @description The wage month, YYYY-MM.
+             * @example 2026-11
+             */
+            wage_month: string;
         };
         RunFlag: {
             /**
@@ -7427,6 +7653,60 @@ export interface components {
              */
             version: number;
         };
+        RunPosting: {
+            /**
+             * @description Fyniq's stable code of a refusal.
+             * @example PPL-19
+             */
+            code?: string;
+            /**
+             * @description Fyniq's plain words for a refusal.
+             * @example The approver has no passkey enrolled in Fyniq.
+             */
+            message?: string;
+            /**
+             * Format: date-time
+             * @description When Nemura received the answer.
+             * @example 2026-11-25T09:00:00Z
+             */
+            received_at: string;
+            /**
+             * @description The posting's reference in Fyniq.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
+             */
+            reference?: string;
+            /**
+             * @description posted: Fyniq booked it; refused: it did not, and the run waits.
+             * @example posted
+             * @enum {string}
+             */
+            status: "posted" | "refused";
+        };
+        RunProof: {
+            /**
+             * @description The authenticator data.
+             * @example SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MFAAAAAQ
+             */
+            authenticator_data: string;
+            /**
+             * @description The client data JSON, with the challenge and the origin.
+             * @example eyJ0eXBlIjoid2ViYXV0aG4uZ2V0In0
+             */
+            client_data: string;
+            /**
+             * @description The signature.
+             * @example MEUCIQ
+             */
+            signature: string;
+        };
+        RunRetryInputBody: {
+            /**
+             * Format: int64
+             * @description The newest approved version.
+             * @example 2
+             */
+            version: number;
+        };
         RunStartInputBody: {
             /**
              * Format: date
@@ -7452,6 +7732,43 @@ export interface components {
              * @example Rates employer 0.17 and employee 0.20: total 1850.
              */
             text: string;
+        };
+        RunSubmissionView: {
+            /**
+             * @description The stable code of the last failure or refusal.
+             * @example PPL-19
+             */
+            code?: string;
+            /**
+             * @description Whether the apps are linked.
+             * @example true
+             */
+            linked: boolean;
+            /** @description Fyniq's answer, when it has given one. */
+            posting?: components["schemas"]["RunPosting"];
+            /**
+             * @description True when sending the same approval again could change Fyniq's answer: its refusal is about something on Fyniq's side, such as the approver's passkey or a closed period.
+             * @example true
+             */
+            retryable: boolean;
+            /**
+             * Format: date-time
+             * @description When the event was sent or refused.
+             * @example 2026-11-25T09:00:01Z
+             */
+            settled_at?: string;
+            /**
+             * @description none: nothing queued; queued: waiting to be sent; sent: Fyniq took it; failed: not delivered yet, tried again; refused: Fyniq refused it on the way in.
+             * @example sent
+             * @enum {string}
+             */
+            state: "none" | "queued" | "sent" | "failed" | "refused";
+            /**
+             * Format: int64
+             * @description The newest approved version; 0 when none was approved while linked.
+             * @example 2
+             */
+            version: number;
         };
         RunTotals: {
             /**
@@ -15154,6 +15471,89 @@ export interface operations {
             };
         };
     };
+    getPayRunApprovalEnvelope: {
+        parameters: {
+            query?: {
+                /** @description The version to approve. */
+                version?: number;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunApprovalEnvelope"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getPayRunChanges: {
         parameters: {
             query?: never;
@@ -15257,6 +15657,102 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ExportFile"];
                 };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    approvePayRunVersionLinked: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkedApprovalInput"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Unauthorized */
             401: {
@@ -15602,6 +16098,182 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PayslipsPublishOutputBody"];
                 };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPayRunSubmission: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunSubmissionView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    retryPayRunSubmission: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunRetryInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Unauthorized */
             401: {

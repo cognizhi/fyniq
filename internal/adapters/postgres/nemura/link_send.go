@@ -104,6 +104,19 @@ func linkPayload(ctx context.Context, tx pgx.Tx, q QueuedEvent, now time.Time) (
 			return nil, fmt.Errorf("the bank-details event %s names a version that does not exist", q.EventID)
 		}
 		return ev, nil
+	case link.TypePayrollRunApproved:
+		run, err := uuid.Parse(q.ObjectID)
+		if err != nil {
+			return nil, fmt.Errorf("the run event %s names no run", q.EventID)
+		}
+		sub, ok, err := runSubmissionAt(ctx, tx, run, q.ObjectVersion)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, fmt.Errorf("the run event %s names a version that was not approved with proof", q.EventID)
+		}
+		return sub, nil
 	case "people.tax_hold.changed":
 		person, err := uuid.Parse(q.ObjectID)
 		if err != nil {
@@ -128,6 +141,8 @@ func linkRoute(typ string) (path, scope string, ok bool) {
 		return "/v1/people-link/projection-events", "people.projection.write", true
 	case "people.tax_hold.changed":
 		return "/v1/people-link/hold-events", "people.holds.write", true
+	case link.TypePayrollRunApproved:
+		return "/v1/people-link/payroll-runs", "payroll.journal.submit", true
 	}
 	return "", "", false
 }

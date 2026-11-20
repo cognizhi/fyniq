@@ -763,6 +763,14 @@ func (a *API) executePeopleLink(ctx context.Context, u storage.UnitOfWork, r sto
 				return err
 			}
 		}
+		// The mapping Fyniq already holds goes to Nemura with the link, so a run is calculated against it from the first (NM-INT-01); nothing is queued while Fyniq has none.
+		if m, err := u.PayrollRuns().Mapping(ctx); err == nil {
+			if err := a.tellNemuraOfTheMapping(ctx, u, organisation.ID, m.Version, m.Entries); err != nil {
+				return err
+			}
+		} else if !errors.Is(err, ports.ErrNotFound) {
+			return err
+		}
 		return nil
 	case approval.OpPeopleUnlink:
 		l, err := u.PeopleLinks().Live(ctx)

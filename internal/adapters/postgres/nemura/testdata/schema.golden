@@ -47,6 +47,7 @@ link_event | nemura_migrator | true | true
 link_inbox | nemura_migrator | true | true
 link_mapping | nemura_migrator | true | true
 link_object_version | nemura_migrator | true | true
+link_run_approval | nemura_migrator | true | true
 link_run_posting | nemura_migrator | true | true
 member | nemura_migrator | true | true
 offboarding | nemura_migrator | true | true
@@ -566,6 +567,22 @@ link_object_version | organisation_id | uuid | true | nemura.current_org()
 link_object_version | object_type | text | true | 
 link_object_version | object_id | text | true | 
 link_object_version | version | integer | true | 
+link_run_approval | organisation_id | uuid | true | nemura.current_org()
+link_run_approval | id | uuid | true | uuidv7()
+link_run_approval | run_id | uuid | true | 
+link_run_approval | version | integer | true | 
+link_run_approval | envelope | bytea | true | 
+link_run_approval | envelope_sha256 | text | true | 
+link_run_approval | mapping_version | integer | true | 
+link_run_approval | approver_member_id | uuid | true | 
+link_run_approval | approver_issuer | text | true | 
+link_run_approval | approver_subject | text | true | 
+link_run_approval | preparer_issuer | text | true | 
+link_run_approval | preparer_subject | text | true | 
+link_run_approval | authenticator_data | bytea | true | 
+link_run_approval | client_data | bytea | true | 
+link_run_approval | signature | bytea | true | 
+link_run_approval | approved_at | timestamp with time zone | true | 
 link_run_posting | organisation_id | uuid | true | nemura.current_org()
 link_run_posting | id | uuid | true | uuidv7()
 link_run_posting | run_id | uuid | true | 
@@ -1769,6 +1786,30 @@ link_object_version | link_object_version_organisation_id_not_null | NOT NULL or
 link_object_version | link_object_version_pkey | PRIMARY KEY (organisation_id, object_type, object_id)
 link_object_version | link_object_version_positive | CHECK ((version >= 1))
 link_object_version | link_object_version_version_not_null | NOT NULL version
+link_run_approval | link_run_approval_approved_at_not_null | NOT NULL approved_at
+link_run_approval | link_run_approval_approver_fkey | FOREIGN KEY (organisation_id, approver_member_id) REFERENCES nemura.member(organisation_id, id)
+link_run_approval | link_run_approval_approver_issuer_not_null | NOT NULL approver_issuer
+link_run_approval | link_run_approval_approver_member_id_not_null | NOT NULL approver_member_id
+link_run_approval | link_run_approval_approver_subject_not_null | NOT NULL approver_subject
+link_run_approval | link_run_approval_authenticator_data_not_null | NOT NULL authenticator_data
+link_run_approval | link_run_approval_client_data_not_null | NOT NULL client_data
+link_run_approval | link_run_approval_digest | CHECK ((envelope_sha256 ~ '^[0-9a-f]{64}$'::text))
+link_run_approval | link_run_approval_envelope_not_null | NOT NULL envelope
+link_run_approval | link_run_approval_envelope_sha256_not_null | NOT NULL envelope_sha256
+link_run_approval | link_run_approval_id_not_null | NOT NULL id
+link_run_approval | link_run_approval_mapping_version_not_null | NOT NULL mapping_version
+link_run_approval | link_run_approval_not_self | CHECK (((approver_issuer <> preparer_issuer) OR (approver_subject <> preparer_subject)))
+link_run_approval | link_run_approval_once | UNIQUE (organisation_id, run_id, version)
+link_run_approval | link_run_approval_organisation_id_not_null | NOT NULL organisation_id
+link_run_approval | link_run_approval_pkey | PRIMARY KEY (organisation_id, id)
+link_run_approval | link_run_approval_preparer_issuer_not_null | NOT NULL preparer_issuer
+link_run_approval | link_run_approval_preparer_subject_not_null | NOT NULL preparer_subject
+link_run_approval | link_run_approval_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES nemura.pay_run(organisation_id, id)
+link_run_approval | link_run_approval_run_id_not_null | NOT NULL run_id
+link_run_approval | link_run_approval_signature_not_null | NOT NULL signature
+link_run_approval | link_run_approval_version | CHECK (((version >= 1) AND (mapping_version >= 1)))
+link_run_approval | link_run_approval_version_not_null | NOT NULL version
+link_run_approval | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 link_run_posting | link_run_posting_id_not_null | NOT NULL id
 link_run_posting | link_run_posting_once | UNIQUE (organisation_id, run_id, version, status)
 link_run_posting | link_run_posting_organisation_id_not_null | NOT NULL organisation_id
@@ -2576,6 +2617,8 @@ CREATE INDEX link_inbox_object ON nemura.link_inbox USING btree (organisation_id
 CREATE UNIQUE INDEX link_inbox_pkey ON nemura.link_inbox USING btree (organisation_id, id)
 CREATE UNIQUE INDEX link_mapping_pkey ON nemura.link_mapping USING btree (organisation_id, mapping_version)
 CREATE UNIQUE INDEX link_object_version_pkey ON nemura.link_object_version USING btree (organisation_id, object_type, object_id)
+CREATE UNIQUE INDEX link_run_approval_once ON nemura.link_run_approval USING btree (organisation_id, run_id, version)
+CREATE UNIQUE INDEX link_run_approval_pkey ON nemura.link_run_approval USING btree (organisation_id, id)
 CREATE UNIQUE INDEX link_run_posting_once ON nemura.link_run_posting USING btree (organisation_id, run_id, version, status)
 CREATE UNIQUE INDEX link_run_posting_pkey ON nemura.link_run_posting USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_pkey ON nemura.member USING btree (organisation_id, id)
@@ -2742,6 +2785,8 @@ CREATE TRIGGER link_department_guard BEFORE DELETE OR UPDATE ON nemura.link_depa
 CREATE TRIGGER link_event_guard BEFORE DELETE OR UPDATE ON nemura.link_event FOR EACH ROW EXECUTE FUNCTION nemura.link_event_guard()
 CREATE TRIGGER link_inbox_guard BEFORE DELETE OR UPDATE ON nemura.link_inbox FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
 CREATE TRIGGER link_mapping_guard BEFORE DELETE OR UPDATE ON nemura.link_mapping FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
+CREATE TRIGGER link_run_approval_guard BEFORE DELETE OR UPDATE ON nemura.link_run_approval FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.link_run_approval DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('link_run_approval', 'id')
 CREATE TRIGGER link_run_posting_guard BEFORE DELETE OR UPDATE ON nemura.link_run_posting FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
 CREATE TRIGGER member_deactivated AFTER UPDATE OF deactivated_at ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.member_deactivated()
 CREATE TRIGGER member_no_delete BEFORE DELETE ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.members_no_delete()
@@ -2867,6 +2912,7 @@ link_event | tenant_isolation | (organisation_id = nemura.current_org()) | (orga
 link_inbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 link_mapping | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 link_object_version | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+link_run_approval | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 link_run_posting | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 offboarding | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3583,6 +3629,19 @@ BEGIN
   UPDATE nemura.identity_directory SET active = (NEW.deactivated_at IS NULL) WHERE organisation_id = NEW.organisation_id AND member_id = NEW.id;
   RETURN NULL;
 END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.member_identity(p_member uuid)
+ RETURNS TABLE(issuer text, subject text)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT d.issuer, d.subject
+    FROM nemura.identity_directory d
+   WHERE d.organisation_id = nemura.require_org() AND d.member_id = p_member AND d.active
+   ORDER BY d.linked_at, d.issuer, d.subject
+   LIMIT 1
 $function$
 
 CREATE OR REPLACE FUNCTION nemura.members_for_identity(p_issuer text, p_subject text, p_tenant text)
