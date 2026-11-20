@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"math/big"
+	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -159,5 +160,21 @@ func TestTheSampleDirectorLinesNameTheirDirector(t *testing.T) {
 	}
 	if seen == 0 {
 		t.Fatal("no sample journal posts to a director's account, so the test proves nothing")
+	}
+}
+
+// The embedded vocabulary is the screens' sample data, byte for byte, so the sandbox organisation's company is the one the screens show
+// (DEV-04, FR-INT-18).
+// req: DEV-04
+func TestTheEmbeddedVocabularyIsTheScreensSampleData(t *testing.T) {
+	disk, err := os.ReadFile("../../docs/design/screens/sample-data.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(disk, embedded) {
+		t.Fatal("internal/seed/vocabulary.json differs from docs/design/screens/sample-data.json: copy the screens' file over it")
+	}
+	if v, err := Embedded(); err != nil || len(v.Accounts) == 0 {
+		t.Fatalf("the embedded vocabulary: %v", err)
 	}
 }

@@ -76,6 +76,7 @@ var Catalogue = []Type{
 	{Key: SignInProviderType, Label: "A sign-in provider was turned on or off, or its domains changed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: SecurityAlertType, Label: "A security alert: an unusual sign-in, export or refusals, a vendor's bank change, an audit-chain failure", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: PrivateEndpointType, Label: "A private endpoint was registered, changed or retired", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
+	{Key: SandboxType, Label: "A sandbox organisation was made", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: "security.roles", Label: "Your roles changed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: ConnectorType, Label: "A connector was paused", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: PayeeBankType, Label: "Supplier bank details", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},

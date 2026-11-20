@@ -135,7 +135,7 @@ Source: PRD-001 §8.17 · Priority C · Phase P2
 - **WHEN** a bill over S$5,000 is created
 - **THEN** X is notified
 
-#### Scenario: A rule only tells people (rev 0.619)
+#### Scenario: A rule only tells people (rev 0.620)
 - **GIVEN** a workflow rule, whose trigger and action are fixed lists the database holds
 - **WHEN** a person posts a document that meets its conditions
 - **THEN** the members it names, who may see the document, are told, and the rule posts, approves, pays and files nothing

@@ -1084,6 +1084,15 @@
     "status": "draft"
   },
   {
+    "file": "sandbox-organisation.md",
+    "key": "settings.sandbox",
+    "roles": [
+      "owner",
+      "administrator"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "schedules.md",
     "key": "accounting.schedules",
     "roles": [

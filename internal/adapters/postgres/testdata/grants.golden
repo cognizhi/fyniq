@@ -229,6 +229,7 @@ fyniq_api       SELECT    conversion_step
 fyniq_api       EXECUTE   count_ip_request()
 fyniq_api       EXECUTE   count_super_admins()
 fyniq_api       EXECUTE   create_practice_organisation()
+fyniq_api       EXECUTE   create_sandbox_organisation()
 fyniq_api       SELECT    currencies
 fyniq_api       EXECUTE   current_org()
 fyniq_api       INSERT    customer_group (name, reminder_days)
@@ -478,6 +479,7 @@ fyniq_api       INSERT    organisation_connector_secret (connector_id, expires_o
 fyniq_api       SELECT    organisation_connector_secret
 fyniq_api       UPDATE    organisation_connector_secret (valid_until)
 fyniq_api       EXECUTE   organisation_is_practice()
+fyniq_api       EXECUTE   organisation_is_sandbox()
 fyniq_api       INSERT    organisation_setting (effective_from, key, value, version)
 fyniq_api       SELECT    organisation_setting
 fyniq_api       EXECUTE   organisations_of_session()
@@ -863,6 +865,7 @@ fyniq_executor  EXECUTE   member_names()
 fyniq_executor  SELECT    opening_balance
 fyniq_executor  SELECT    operation
 fyniq_executor  SELECT    organisation
+fyniq_executor  EXECUTE   organisation_is_sandbox()
 fyniq_executor  SELECT    organisation_setting
 fyniq_executor  INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_executor  SELECT    outbox
@@ -1086,6 +1089,7 @@ fyniq_readonly  SELECT    operation
 fyniq_readonly  SELECT    organisation
 fyniq_readonly  SELECT    organisation_connector
 fyniq_readonly  SELECT    organisation_connector_secret
+fyniq_readonly  EXECUTE   organisation_is_sandbox()
 fyniq_readonly  SELECT    organisation_setting
 fyniq_readonly  SELECT    outbox
 fyniq_readonly  SELECT    owner_succession
@@ -1483,6 +1487,7 @@ fyniq_worker    SELECT    organisation
 fyniq_worker    SELECT    organisation_connector
 fyniq_worker    SELECT    organisation_connector_secret
 fyniq_worker    UPDATE    organisation_connector_secret (destroyed_at)
+fyniq_worker    EXECUTE   organisation_is_sandbox()
 fyniq_worker    SELECT    organisation_setting
 fyniq_worker    INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_worker    SELECT    outbox

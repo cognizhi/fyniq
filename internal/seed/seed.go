@@ -6,6 +6,7 @@
 package seed
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
@@ -42,12 +43,25 @@ type Vocabulary struct {
 	} `json:"people"`
 }
 
+// embedded is a copy of docs/design/screens/sample-data.json, so a service with no repository beside it (the API making a sandbox
+// organisation, FR-INT-18) can draw the sample company; a test fails while the two differ.
+//
+//go:embed vocabulary.json
+var embedded []byte
+
+// Embedded is the sample company's vocabulary the binary carries.
+func Embedded() (*Vocabulary, error) { return parseVocabulary(embedded, "the embedded sample data") }
+
 // LoadVocabulary reads sample-data.json.
 func LoadVocabulary(path string) (*Vocabulary, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read the sample data at %s: %w (run from the repository root or pass --vocab)", path, err)
 	}
+	return parseVocabulary(b, path)
+}
+
+func parseVocabulary(b []byte, path string) (*Vocabulary, error) {
 	var v Vocabulary
 	if err := json.Unmarshal(b, &v); err != nil {
 		return nil, fmt.Errorf("%s is not valid sample data: %w", path, err)

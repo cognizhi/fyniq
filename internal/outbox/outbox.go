@@ -197,6 +197,20 @@ func (h *Handler) run(ctx context.Context, m Message) (int, string) {
 		h.finish(ctx, m.OrganisationID, row, storage.OutboxDead, fmt.Sprintf("delivered to %s, but the row is for %s", h.Class, row.Class))
 		return http.StatusOK, "wrong worker class"
 	}
+	if !RunsInSandbox(row.Kind) { // FR-INT-18: a sandbox organisation's work that could leave Fyniq is ended, whatever queued it
+		var sandbox bool
+		if err := h.Store.Do(ctx, m.OrganisationID, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			sandbox, err = u.Sandboxes().Is(ctx)
+			return err
+		}); err != nil {
+			return http.StatusInternalServerError, err.Error()
+		}
+		if sandbox {
+			h.finish(ctx, m.OrganisationID, row, storage.OutboxDone, SandboxNote)
+			return http.StatusOK, "done: " + SandboxNote
+		}
+	}
 	work, ok := h.Kinds[row.Kind]
 	if !ok {
 		err = fmt.Errorf("worker class %s has no handler for %s", h.Class, row.Kind)

@@ -4,7 +4,7 @@ type: task
 title: Connect an AI app, and see what it did
 summary: Settings › Connected apps: allow AI apps for yourself, what an Owner allows, verified apps, disconnecting, waiting registrations and what the apps did
 sources:
-  - docs/user-guide/connected-apps.md sha256:e91c1c657bf2da9ec03912c513607bc03041b7e54aa8d55418e69321f8b6bfca
+  - docs/user-guide/connected-apps.md sha256:b3d6ab1e5be81e5807867aa7e6520ccca94a1184617663a0a56655d0f402f327
 data_class: general
 taint: trusted
 status: draft
@@ -63,6 +63,14 @@ aliases:
 - Turning AI apps off ends every app's tokens, and taking one app off the allowed list ends that app's tokens, once the change is made. The page also lists the integration clients and personal access tokens with their class, access and end date; they are made and revoked under Settings, Integrations.
 
 (src: docs/user-guide/connected-apps.md#what-you-see)
+
+## Apps from other publishers
+
+- An Administrator registers an AI app of another publisher by hand (Expert mode, with step-up): its name, publisher, one to five exact sign-in addresses, its purpose and where it processes data. Fyniq checks the name and addresses but contacts no one and has not verified the publisher.
+- Registering is not allowing: the app cannot connect until an Owner adds its ID to the apps that may connect with a second approver, and registration is closed until an Owner turns on both AI apps through MCP and the Administrator's right to register one. An app processing outside Singapore needs the PDPA transfer assessed first.
+- Each registration makes a data inventory entry and appears in the access review; Remove the app takes it away at once and its record stays.
+
+(src: docs/user-guide/connected-apps.md#apps-from-other-publishers)
 
 ## Changes an app proposes
 

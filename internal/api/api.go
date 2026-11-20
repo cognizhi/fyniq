@@ -57,9 +57,11 @@ type Deps struct {
 	LinkLog      LinkLog
 	Store        storage.Store
 	Installation storage.Installation // first-run setup and Super admins; nil when there is no database
-	Outbox       *outbox.Dispatcher   // queues background work, such as token revocations; nil when there is none
-	KBCompiler   bool                 // the worker holds the knowledge-base compiler's own service identity, so a recompile can run (local build; release waits for its Cloud Run job [live-verify])
-	Clock        ports.Clock
+	// Sandbox is the deployment's sandbox setting (FR-INT-18): off unless the operator turns it on.
+	Sandbox    SandboxConfig
+	Outbox     *outbox.Dispatcher // queues background work, such as token revocations; nil when there is none
+	KBCompiler bool               // the worker holds the knowledge-base compiler's own service identity, so a recompile can run (local build; release waits for its Cloud Run job [live-verify])
+	Clock      ports.Clock
 	// AccessPoint is the InvoiceNow access point (FR-AR-12); nil when none is connected: sending answers "not available here".
 	AccessPoint ports.AccessPoint
 	// IRASFiler files returns with IRAS (FR-TAX-03); nil when IRAS's API is not connected. No operation calls it until the GST F5 caller exists (p1-gst 7.2).
@@ -432,6 +434,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSavedItems(a)
 	registerRecordComments(a)
 	registerPractice(a)
+	registerSandbox(a)
 	registerInstallationConsole(a)
 	registerMCPOptIn(a)
 	registerConnectedApps(a)

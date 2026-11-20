@@ -1,4 +1,4 @@
--- Workflow rules without code (PRD-001 FR-AUT-03; p2-mobile-approvals-automation design D5, rev 0.619).
+-- Workflow rules without code (PRD-001 FR-AUT-03; p2-mobile-approvals-automation design D5, rev 0.620).
 --
 -- A rule is data, never code: a trigger from a fixed list (a document of a kind is posted), typed conditions (the kind, an amount at least in the base currency) and
 -- one action from a fixed list: notify named members. The database holds both lists, so no rule can name an action that posts, approves, pays or files. A rule is

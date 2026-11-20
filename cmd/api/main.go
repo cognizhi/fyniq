@@ -143,6 +143,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 			Audience: os.Getenv("FYNIQ_NEMURA_API_AUDIENCE"), Clock: deps.Clock}
 		d.Holds, d.LinkLog = asker, asker // one read-only client: the ask at release and the link's log by identity
 	}
+	d.Sandbox = api.SandboxConfig{Enabled: wiring.SandboxEnabled(os.Getenv), WebhookHosts: wiring.SandboxWebhookHosts(os.Getenv)} // FR-INT-18: off unless the operator turns it on
 	d.Connectors = api.ConnectorDeps{Catalogue: kit.Connectors, Secrets: kit.ConnectorSecrets, Names: kit.ConnectorNames, Runtime: kit.Runtime(deps.Clock)}
 	// The email providers' webhooks (FR-INT-21), each only with its secret: delivery events and the suppression list.
 	// Each request reads its connector's keys: the current one and one still in its rotation overlap; a disabled

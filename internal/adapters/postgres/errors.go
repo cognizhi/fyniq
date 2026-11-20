@@ -153,6 +153,8 @@ var fyCodes = map[string]string{
 	"FY712": storage.CodePracticeHeld,
 	"FY713": storage.CodePractice,
 	"FY714": storage.CodeAmount,
+	"FY960": storage.CodeSandbox, // a sandbox flag changed, removed or given to an organisation that existed (001250)
+	"FY961": storage.CodeSandbox, // a sandbox organisation's name or currency refused (001250)
 	"FY234": storage.CodeClaim,
 	"FY235": storage.CodeAsset,
 	"FY236": storage.CodeAsset,

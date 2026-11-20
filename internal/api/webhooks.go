@@ -41,7 +41,7 @@ const (
 )
 
 // WebhookCodes are the refusals of the webhook operations.
-var WebhookCodes = []string{CodeWebhooksOff, CodeWebhookURL, CodeWebhookEvents, CodeWebhookVerify, CodeWebhookState, CodeWebhookNotFound}
+var WebhookCodes = []string{CodeSandboxRefused, CodeWebhooksOff, CodeWebhookURL, CodeWebhookEvents, CodeWebhookVerify, CodeWebhookState, CodeWebhookNotFound}
 
 // secretOverlap is how long the secret before a roll still signs, so a receiver can change over.
 const secretOverlap = 24 * time.Hour
@@ -379,6 +379,14 @@ func registerWebhooks(a *API) {
 			if err := a.webhooksOn(ctx, u); err != nil {
 				return err
 			}
+			if sandbox, err := inSandbox(ctx, u); err != nil || sandbox { // FR-INT-18: only to the hosts the operator allows
+				if err != nil {
+					return err
+				}
+				if err := a.sandboxWebhookHost(address); err != nil {
+					return err
+				}
+			}
 			id := uuid.Must(uuid.NewV7())
 			secret, sealed, err := a.sealSecret(ctx, id)
 			if err != nil {
@@ -531,6 +539,14 @@ func registerWebhooks(a *API) {
 				}
 				if err := checkIfMatch(in.IfMatch, etag(before.Version)); err != nil {
 					return err
+				}
+				if sandbox, err := inSandbox(ctx, u); err != nil || sandbox { // FR-INT-18: a sandbox organisation's challenge goes only to an allowed host
+					if err != nil {
+						return err
+					}
+					if err := a.sandboxWebhookHost(before.URL); err != nil {
+						return err
+					}
 				}
 				if before.State != storage.WebhookPending {
 					return problem(CodeWebhookState, "Only a pending endpoint is verified; this one is "+before.State+".", "Change its address or set it to pending to verify it again",

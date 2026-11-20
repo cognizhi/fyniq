@@ -88,6 +88,7 @@ type Organisation struct {
 	BaseCurrency   string `json:"base_currency" doc:"The currency the books are kept in." example:"SGD"`
 	BaseMinorUnits int    `json:"base_minor_units" doc:"How many decimals the base currency has." example:"2"`
 	Practice       bool   `json:"practice,omitempty" doc:"true for a practice organisation, opened to try a task without touching the real books (FR-UX-36)." example:"false"`
+	Sandbox        bool   `json:"sandbox,omitempty" doc:"true for a sandbox organisation, made for integration testing with the sample company: it holds only synthetic data and sends nothing outside Fyniq (FR-INT-18)." example:"false"`
 	TeamMode       string `json:"team_mode" enum:"founder,standard,enterprise" doc:"The team mode (PRD-001 §6.4): Founder mode until a switch is approved (rev 0.42)." example:"founder"`
 	Version        int    `json:"version" doc:"The record's version; it also makes the ETag." example:"1"`
 }
@@ -116,7 +117,11 @@ func registerOrganisation(a *API) {
 				return err
 			}
 			practice, err := u.Practices().IsPractice(ctx, o.ID)
-			out.Body = Organisation{ID: o.ID.String(), Name: o.Name, BaseCurrency: o.BaseCurrency, BaseMinorUnits: o.BaseMinorUnits, Practice: practice, TeamMode: mode, Version: o.Version}
+			if err != nil {
+				return err
+			}
+			sandbox, err := u.Sandboxes().Is(ctx)
+			out.Body = Organisation{ID: o.ID.String(), Name: o.Name, BaseCurrency: o.BaseCurrency, BaseMinorUnits: o.BaseMinorUnits, Practice: practice, Sandbox: sandbox, TeamMode: mode, Version: o.Version}
 			out.ETag = etag(o.Version)
 			return err
 		})

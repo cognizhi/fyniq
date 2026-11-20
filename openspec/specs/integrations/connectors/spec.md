@@ -147,6 +147,12 @@ Source: PRD-001 §8.24 · Priority S · Phase P2
 - **WHEN** a person in the browser, the AI, an agent-class client or the link's client calls an inbound task operation
 - **THEN** it is refused
 
+#### Scenario: A person finishes a task in the Inbox
+- **GIVEN** an Administrator or an Owner reads Tasks from other systems in the Inbox
+- **WHEN** they mark a client's task done or cancelled over the version they read
+- **THEN** it is finished for good and the audit event names the person
+- **AND** no client, token, agent or AI finishes a task through that operation, and a Controller who only views cannot
+
 ### Requirement: FR-INT-25 Connectors and their manifest
 Every external integration SHALL be a connector: an adapter packaged with a manifest, shipped in a connector catalogue with each release.
 

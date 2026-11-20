@@ -4084,6 +4084,13 @@ type FyniqSalesReminder struct {
 	DecidedAt      time.Time
 }
 
+type FyniqSandboxOrganisation struct {
+	OrganisationID uuid.UUID
+	CreatedBy      uuid.UUID
+	ChangeID       *uuid.UUID
+	CreatedAt      time.Time
+}
+
 type FyniqSecurityIncident struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

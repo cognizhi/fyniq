@@ -14,7 +14,7 @@
 
 ## 3. Automation
 - [x] 3.1 Workflow rules without code (D5). `// req: FR-AUT-03`
-  (Built, rev 0.619, `[owner to confirm]`: migration 001202, `domain/automation`, `notify.fireRules` in the posting's unit of work, the setting `features.automation_rules` (off, dual control), three operations with matrix rows, the screen Workflow rules at `/settings/workflow-rules`, the guide and knowledge page, the design fragment and the grants for review; `TestAWorkflowRuleTellsMembersWhenABillOverItsAmountIsPosted`, `TestAttackAWorkflowRuleHasOnlyTheTriggersAndActionsTheDatabaseAllows`. **Left:** the action raise a task, triggers other than a posting.)
+  (Built, rev 0.620, `[owner to confirm]`: migration 001202, `domain/automation`, `notify.fireRules` in the posting's unit of work, the setting `features.automation_rules` (off, dual control), three operations with matrix rows, the screen Workflow rules at `/settings/workflow-rules`, the guide and knowledge page, the design fragment and the grants for review; `TestAWorkflowRuleTellsMembersWhenABillOverItsAmountIsPosted`, `TestAttackAWorkflowRuleHasOnlyTheTriggersAndActionsTheDatabaseAllows`. **Left:** the action raise a task, triggers other than a posting.)
 - [x] 3.2 Outbound webhooks: satisfied by FR-INT-12. `// req: FR-AUT-04`
   (Built by `p2-api-third-parties` (rev 0.602): signed, retried, logged webhooks with a dead-letter list; nothing more here. The spec row is covered by that change's tests.)
 

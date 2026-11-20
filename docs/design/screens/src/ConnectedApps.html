@@ -143,13 +143,25 @@
         <p class="fy-help">When it is off, no app can connect and this page lists past connections only.</p>
       </section>
 
+      <section class="fy-card fy-expert-only" aria-labelledby="third-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="third-title">Apps from other publishers</h2><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button" aria-haspopup="dialog"><i data-icon="plus"></i>Register an app</button></div>
+        <p class="fy-card__body fy-small fy-secondary">Registered by hand by an Administrator. Fyniq has not verified any of them: an Owner allows each one, with a second approver, before anyone can connect it.</p>
+        <ul class="fy-list" aria-label="Third-party apps">
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">Acme Books Assistant</span><span class="fy-help">Published by Acme Software Pte Ltd as stated at registration, processing in United States (outside Singapore: a transfer to assess under the PDPA). Signs people in at https://acme.example/oauth/callback.</span></span>
+            <span class="fy-chip fy-chip--warning">Waiting for an Owner</span>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="x"></i>Remove</button>
+          </li>
+        </ul>
+      </section>
+
       <section class="fy-card" aria-labelledby="p2-title">
         <div class="fy-card__head"><h2 class="fy-h3" id="p2-title">Integrations and developers</h2><span class="fy-tag fy-tag--expert">P2</span></div>
         <ul class="fy-list">
           <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="badge-check" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-small fy-strong">Register another app</span><span class="fy-list__meta">Verified publisher and redirect, reviewed quarterly</span></span></li>
           <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="key-round" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-small fy-strong">Personal access tokens</span><span class="fy-list__meta">Shown once, 90 days at most, proposal-only by default</span></span></li>
           <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="cable" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-small fy-strong">Integration clients</span><span class="fy-list__meta">Narrow scopes, IP allow-lists, two Owners to grant</span></span></li>
-          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="flask-conical" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-small fy-strong">Sandbox organisation</span><span class="fy-list__meta">A copy of the sample company, no real data</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="flask-conical" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-small fy-strong">Sandbox organisation</span><span class="fy-list__meta">Made by a Super admin: the sample company, sends nothing outside Fyniq</span></span></li>
         </ul>
       </section>
     </aside>

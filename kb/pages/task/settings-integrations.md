@@ -4,7 +4,7 @@ type: task
 title: Install, configure, test and run connectors, such as the email providers
 summary: Connectors and the catalogue: install, configure, secrets, test, enable, pause, upgrade, approve; email senders; Stripe and HitPay payment providers
 sources:
-  - docs/user-guide/integrations.md sha256:0e764a09d95d1888355a4d2db1f542e46f4e9d46a91b5f86f47c3406cfdee30e
+  - docs/user-guide/integrations.md sha256:2e2a6e4563e1eabdae17a6f4797987976e9333086247992fe164c552d172e965
 data_class: general
 taint: trusted
 status: draft
@@ -168,3 +168,12 @@ aliases:
   and set aside for a person, and posts nothing.
 
 (src: docs/user-guide/integrations.md#payment-providers-stripe-and-hitpay)
+
+## Tasks from other systems
+
+- A ticketing system or another connected system makes tasks, each with its own reference and a link back, which show in the Inbox under Tasks from other systems, apart from the compliance tasks.
+- The system that made a task finishes it, and a finished task stays finished. An Owner or an Administrator can also mark one done or cancel it in the Inbox, for good; ask the system for a new one rather than reopening.
+- A task never approves anything, marks no obligation met and changes no record; do not put personal data or amounts in one.
+
+(src: docs/user-guide/integrations.md#tasks-from-other-systems)
+

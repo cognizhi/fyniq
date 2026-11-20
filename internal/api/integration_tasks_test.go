@@ -142,6 +142,7 @@ func init() {
 	pastPolicy["createIntegrationTask"] = CodeIntegrationTaskClient
 	pastPolicy["updateIntegrationTask"] = CodeIntegrationTaskClient
 	pastPolicy["getIntegrationTask"] = CodeNotFound // the matrix has no task of an integration
+	pastPolicy["closeIntegrationTask"] = CodeNotFound
 }
 
 var matrixIntegrationTasks = map[string]func(e *env, tok string) (response, func() bool){
@@ -157,4 +158,44 @@ var matrixIntegrationTasks = map[string]func(e *env, tok string) (response, func
 	"updateIntegrationTask": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPatch, "/v1/tasks/"+uuid.NewString(), tok, map[string]any{"title": "Matrix"}, "If-Match", `"1"`), nil
 	},
+	"closeIntegrationTask": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/tasks/"+uuid.NewString()+"/close", tok, map[string]any{"status": "done"}, "If-Match", `"1"`), nil
+	},
+}
+
+// FR-INT-24: a person who holds the right on the row, an Owner or an Administrator, finishes a task an integration made from the Inbox, over the version they read, and
+// the audit trail names them; the Controller who only views is refused, and so is every client, token and agent, including the one that made it; a finished task stays finished.
+// req: FR-INT-24
+// asvs: V4.1.1, V4.2.1, V8.2.1
+func TestAPersonFinishesATaskAnIntegrationMade(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	jira := f.taskClient("jira", f.ahkow, authn.ClassIntegration, "fyniq.write.tasks")
+	made := e.call(http.MethodPost, "/v1/tasks", jira, map[string]any{"external_ref": "OPS-9", "title": "Chase the engagement letter"})
+	path := "/v1/tasks/" + made.str("id") + "/close"
+	body := map[string]any{"status": "done"}
+	if r := e.call(http.MethodPost, path, e.as(authz.Controller), body, "If-Match", `"1"`); r.Status != http.StatusForbidden {
+		t.Errorf("a Controller, who only views, finishes it: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, path, e.as(authz.Bookkeeper), body, "If-Match", `"1"`); r.Status != http.StatusForbidden {
+		t.Errorf("a Bookkeeper finishes it: %d %s", r.Status, r.Raw)
+	}
+	for name, who := range map[string]string{"the client that made it": jira, "another client": f.taskClient("linear", f.ahkow, authn.ClassIntegration, "fyniq.write.tasks"),
+		"an agent client": f.taskClient("agent", f.ahkow, authn.ClassAgent, "fyniq.write.tasks")} {
+		if r := e.call(http.MethodPost, path, who, body, "If-Match", `"1"`); r.Status != http.StatusForbidden && r.Status != http.StatusUnauthorized {
+			t.Errorf("%s finishes it through the person's operation: %d %s", name, r.Status, r.Raw)
+		}
+	}
+	e.problemIs(e.call(http.MethodPost, path, e.as(authz.Administrator), body), "closeIntegrationTask", http.StatusPreconditionRequired, CodeIfMatchRequired)
+	e.problemIs(e.call(http.MethodPost, path, e.as(authz.Administrator), body, "If-Match", `"7"`), "closeIntegrationTask", http.StatusPreconditionFailed, CodeStale)
+	e.problemIs(e.call(http.MethodPost, "/v1/tasks/"+uuid.NewString()+"/close", e.as(authz.Administrator), body, "If-Match", `"1"`), "closeIntegrationTask", http.StatusNotFound, CodeNotFound)
+	if r := e.call(http.MethodPost, path, e.as(authz.Administrator), map[string]any{"status": "open"}, "If-Match", `"1"`); r.Status != http.StatusUnprocessableEntity {
+		t.Errorf("reopening it: %d %s", r.Status, r.Raw)
+	}
+	done := e.call(http.MethodPost, path, e.as(authz.Administrator), body, "If-Match", `"1"`)
+	if done.Status != http.StatusOK || done.str("status") != "done" || done.str("closed_at") == "" || done.str("client_id") != "jira" || done.str("title") != "Chase the engagement letter" {
+		t.Fatalf("an Administrator finishes it: %d %s", done.Status, done.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, path, e.as(authz.Owner), body, "If-Match", `"2"`), "closeIntegrationTask", http.StatusConflict, CodeIntegrationTaskFinished)
+	e.problemIs(e.call(http.MethodPatch, "/v1/tasks/"+made.str("id"), jira, map[string]any{"status": "cancelled"}, "If-Match", `"2"`), "updateIntegrationTask", http.StatusConflict, CodeIntegrationTaskFinished)
 }

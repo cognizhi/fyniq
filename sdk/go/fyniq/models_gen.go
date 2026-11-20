@@ -3965,6 +3965,7 @@ type Organisation struct {
 	ID             string `json:"id"`
 	Name           string `json:"name"`
 	Practice       *bool  `json:"practice,omitempty"`
+	Sandbox        *bool  `json:"sandbox,omitempty"`
 	TeamMode       string `json:"team_mode"`
 	Version        int64  `json:"version"`
 }
